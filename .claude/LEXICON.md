@@ -85,6 +85,9 @@ table below is the banned list.
 | feature record | product-development | one card on the Feature Board — the tracked unit of product work: name, the why (in Description), and status |
 | project page | product-development | one page in the [DB] Tooling database describing a tool/project; each tooling entry has its own Feature Board, so a feature belongs to a tool by living in that board (containment is the link) |
 | feature lifecycle | product-development | a feature card's real Feature Board statuses: Planned → Up Next → In Development → Completed (or Canceled) |
+| ingestion | ingestion | turning an external source into standardized Notion records, human-gated on what enters |
+| source | ingestion | an external thing to ingest — a repo, doc, or dump |
+| standardize | ingestion | normalize a source's data to the target database's schema before publishing |
 
 ## Aliases (do not use → use instead)
 
