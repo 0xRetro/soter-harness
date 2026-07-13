@@ -80,6 +80,8 @@ table below is the banned list.
 | publish | publishing | to send a harness work-artifact to an external store |
 | external store | publishing | a system of record outside the harness that receives published artifacts (Notion is the first) |
 | binding | publishing | a mechanism mapping harness artifacts to one external store's API (e.g. notion-push) |
+| fetch-merge-write | publishing | update an external record by reading its current value, merging locally, then writing — never a blind write that clobbers what's there |
+| Feature Board | product-development | a Notion database of feature cards; one per tooling entry — the board a card lives in is its link to that project |
 | feature record | product-development | one card on the Feature Board — the tracked unit of product work: name, the why (in Description), and status |
 | project page | product-development | one page in the [DB] Tooling database describing a tool/project; each tooling entry has its own Feature Board, so a feature belongs to a tool by living in that board (containment is the link) |
 | feature lifecycle | product-development | a feature card's real Feature Board statuses: Planned → Up Next → In Development → Completed (or Canceled) |
@@ -101,8 +103,10 @@ observed drift.
 
 Once classified, a piece has exactly one home. When no existing system fits, that is
 the signal to define a new system card first (`.claude/systems/`), not to force-fit.
-Org- or world-specific content never lives here — it belongs in a downstream context
-overlay (not yet built).
+The harness holds all four layers (ADR-0012): generic pieces stay generic (kernel ·
+core), and org- or vendor-specific pieces live here too as declared add-ons
+(`layer: context` or `layer: automation`) — e.g. the product-development and publishing
+systems. Only kernel + core export as the generic plugin.
 
 | Piece | Directory | Mold | Evals? |
 |---|---|---|---|

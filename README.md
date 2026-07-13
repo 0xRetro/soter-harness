@@ -59,15 +59,24 @@ Deferred (not kernel): distribution system — likely core; packaging + installe
 
 ## Status
 
-The kernel above is built and sealed: `.claude/systems/` (one card per system) ·
-`.claude/templates/` (seven molds incl. the mold-for-molds) · `.claude/LEXICON.md`
-(registry + placement table) · `.claude/RUBRIC.md` (the bar) · `.claude/scripts/check.mjs`
-(the one checker — validates classification frontmatter, card/mold shape + order,
-card-path and card-concept existence, aliases, links, budgets, security; `--selftest`
-plant-and-asserts 28 codes) · `.claude/skills/` (forge, writing-adrs,
-reviewing-forge-output, promoting-pieces; all staged) · `decisions/` (ADR-0001…0011).
-Machinery ported from sky-harness (ADR-0001), classification retrofit per ADR-0002…0011.
-The seal test has run: the forge authored `promoting-pieces` end-to-end (baseline →
-evals → checks → fresh-agent pressure-test → gate), and a red-team + claims-vs-reality
-sweep hardened the checker (ADR-0010, ADR-0011). Next: the distribution decision, then
-the first context-layer overlay.
+The kernel is built and sealed: the eight systems above (`.claude/systems/`), the molds
+(`.claude/templates/`), the registry + placement table (`.claude/LEXICON.md`), the bar
+(`.claude/RUBRIC.md`), and the one checker (`.claude/scripts/check.mjs` — validates
+classification frontmatter, card/mold shape + order, card-path/card-concept/card-listing
+existence, aliases, links, budgets, security; `--selftest` plant-and-asserts every
+violation code). Machinery ported from sky-harness (ADR-0001), classification retrofit
+and hardening per the ADR log. The seal test ran end-to-end (the forge authored a piece
+through baseline → evals → checks → fresh-agent pressure-test → gate); red-team +
+claims-vs-reality sweeps harden the checker.
+
+**Add-ons built on top (ADR-0012, all four layers in one repo):**
+- **Automation — `publishing`**: create + update bindings to Notion (`pushing-to-notion`,
+  `updating-a-notion-page`), proven live against a real workspace.
+- **Context — `product-development`**: a feature lifecycle (Planned → Up Next → In
+  Development → Completed), stages `capturing-a-feature` and `defining-a-feature` built;
+  build/review/ship still to forge.
+
+Live lists (never hardcode counts): systems `ls .claude/systems/` · guides
+`ls .claude/skills/` · decisions `decisions/README.md`. Everything is **staged** until
+real use earns promotion. Next: forge the remaining lifecycle stages, or the deferred
+distribution decision.

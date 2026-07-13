@@ -1,12 +1,12 @@
 ---
 name: forge
 description: >-
-  Authors a new harness piece — a guide, house rule, standard, or mold —
-  from its mold, with eval cases, a pressure test, and the human gate. Use when the
-  user says forge, or asks to create or add a guide, rule, or standard to the
-  harness. Not for editing existing pieces, for recording a standalone decision
-  (that is /writing-adrs), for org- or app-specific content (overlay territory),
-  or for bulk changes.
+  Authors a new harness piece at any layer — a guide, house rule, standard, or mold,
+  kernel or context/automation add-on — from its mold, with eval cases, a pressure
+  test, and the human gate. Use when the user says forge, or asks to create or add a
+  guide, rule, standard, or add-on to the harness. Not for editing existing pieces, for
+  recording a standalone decision (that is /writing-adrs), for inlining org-specific
+  data into a generic kernel/core piece, or for bulk changes.
 disable-model-invocation: true
 layer: kernel
 system: authoring
@@ -24,7 +24,8 @@ A new piece merged **staged**: template-shaped, Checker-clean, with ≥3 eval ca
 - Use when: the user invokes `/forge` to add a guide, rule, standard, or mold.
 - Not for: editing existing pieces (small edits go straight to a PR); standalone
   decisions (`/writing-adrs` — though a forge run may *produce* ADRs along the way);
-  anything org-specific (overlay territory); bulk operations (that needs a plan first).
+  inlining org-specific data into a generic kernel/core piece (keep those generic —
+  context/automation add-ons ARE forgeable, ADR-0012); bulk operations (needs a plan first).
 
 ## Steps
 1. **Clarify.** Classify first — run the classification rule in `.claude/LEXICON.md`

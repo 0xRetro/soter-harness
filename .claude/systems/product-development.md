@@ -23,12 +23,17 @@ Ozone HQ boards, verified 2026-07-12; see the publishing binding's `targets.md`.
   the why in Description + Status = Planned) · runs-when: a user invokes
   `/capturing-a-feature` · invariants: the why is captured into Description before
   anything else; the card is created on the Feature Board, never an invented location.
-- The later stages (define/build/review/ship map onto the board's statuses) become
-  guides forged as the process firms up. Pushing lives in the publishing system.
+- **defining** — reads: a captured (Planned) card · produces: a scope/definition
+  appended to the card's Description (why preserved) · runs-when: a user invokes
+  `/defining-a-feature` · invariants: uses the publishing update binding
+  (fetch-merge-write); leaves status at Planned (advancing is the build stage's move).
+- The remaining stages (build/review/ship map onto the board's statuses) become guides
+  forged as the process firms up. Pushing/updating live in the publishing system.
 
 ## Components
-- `.claude/skills/capturing-a-feature/SKILL.md` — the capture-stage guide. Notion
-  targets for the cards and project pages live in the publishing binding's `targets.md`.
+- `.claude/skills/capturing-a-feature/SKILL.md` — the capture-stage guide
+- `.claude/skills/defining-a-feature/SKILL.md` — the define-stage guide. Notion targets
+  for the cards and project pages live in the publishing binding's `targets.md`.
 
 ## Concepts
 feature record · project page · feature lifecycle
