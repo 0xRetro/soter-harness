@@ -54,8 +54,8 @@ entries were updated, not duplicated.
    checkpoint from the per-write confirms inside the bindings (it curates *selection and
    altitude*, not write mechanics; the downstream confirms don't replace it).
 6. **Resolve the board.** Find or create the tooling page in [DB] Tooling; find or create
-   that tool's Feature Board; get its `data_source_id`. (Feature boards are per-tooling —
-   the card's board is its project link.)
+   that tool's Feature Board; get its `data_source_id`. (Feature boards are per tooling
+   entry — containment is the card's link to its tooling page.)
 7. **Land the approved set — delegate the shaping.** Each approved NEW feature goes through
    `/capturing-a-feature` (target = the tool's Feature Board) — that guide is the single
    card-shaping authority; don't re-shape cards here. Tooling-page fields and existing

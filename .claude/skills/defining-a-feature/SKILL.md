@@ -28,7 +28,8 @@ and the status left at Planned.
 
 ## Steps
 1. **Find the card.** Locate the feature card on its tool's Feature Board (by name/id).
-   Its board tells you which tool it belongs to — that containment is the project link.
+   Its board tells you which tool it belongs to — containment is the link to the
+   tooling page.
    If you were handed only a name, confirm the owning board/tool at fetch time before
    writing — don't guess which board it lives on.
 2. **Write the definition.** Pin down: what it actually is (one clear sentence), scope
@@ -46,8 +47,8 @@ and the status left at Planned.
   appended to the why. Use the update binding's fetch-merge-write so the why survives.
 - Defining is not starting: resist advancing status to Up Next/In Development here —
   that's the build stage's move (per the product-development status rule).
-- Don't guess which tool a feature serves — the tool is the project link (containment);
-  if it's unknown, ask rather than filing it under the wrong board.
+- Don't guess which tool a feature serves — containment (the board it lives in) is the
+  only link to its tool; if it's unknown, ask rather than filing it under the wrong board.
 
 ## Evals
 - `.claude/evals/defining-a-feature/happy-path.md`

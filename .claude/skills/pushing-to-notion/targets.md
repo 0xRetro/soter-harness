@@ -18,17 +18,6 @@ before a push if the board may have changed (a property added/renamed).
 
 ## Targets
 
-### feature-cards  *(a tool's Feature Board — feature records)*
-Feature boards are PER TOOLING ENTRY — the board a card lives in is its link to that
-project. The id below is Soter Notion's board; resolve the right tool's board id when
-capturing a feature for a different tool (fetch the tooling page, read its embedded
-Feature Board's data_source_id).
-- **data_source_id:** `318d79b5-de38-809b-a1e6-000b2d709d33`  *(Soter Notion's board)*
-- **properties:**
-  - `Name` → title
-  - `Description` → text        <!-- holds the WHY: the value it creates / problem it removes -->
-  - `Status` → status          <!-- Planned · Up Next · In Development · Completed · Canceled -->
-
 ### tooling-pages  *(the [DB] Tooling database — one page per tool/product)*
 - **data_source_id:** `ed2e2463-6963-472e-951d-95582e681e56`
 - **properties:**
@@ -39,6 +28,22 @@ Feature Board's data_source_id).
   - `Type` → select            <!-- Bot · Tool · Platform · Library · Dashboard -->
   - `GitHub` → url
   - `Prod URL` → url
+- Every tooling entry EMBEDS its own Feature Board — the `feature-cards` target below
+  is resolved through this database, never stored as a fixed id.
+
+### feature-cards  *(a tooling entry's embedded Feature Board — PER ENTRY, no fixed id)*
+There is no global feature board. Each tooling page embeds its own board (duplicated
+from [DB] Tooling's new-product page template in Notion), and a card belongs to a tool
+by living in that tool's board (containment). Resolve the id fresh each time:
+1. find the tool's page in `tooling-pages` (create it first if it doesn't exist);
+2. fetch that page and read its embedded database's `data_source_id`.
+Duplicated boards KEEP the title "Feature Board Template" — identify a board by the
+tooling page that embeds it, never by its title. (Verified live: the Soter Notion
+entry's own board is `318d79b5-de38-809b-a1e6-000b2d709d33`, still template-titled.)
+- **properties** *(every entry's board shares this shape)*:
+  - `Name` → title
+  - `Description` → text        <!-- holds the WHY: the value it creates / problem it removes -->
+  - `Status` → status          <!-- Planned · Up Next · In Development · Completed · Canceled -->
 
 ### tasks  *(the [DB] Tasks database — actionable work items)*
 - **data_source_id:** `2abd79b5-de38-80f8-9470-000b7181b18d` *(live-verified 2026-07-13)*
