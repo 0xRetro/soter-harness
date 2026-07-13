@@ -27,8 +27,8 @@ of stale surprises — though live is still the source of truth, ADR-0016).
   fetch-live → diff → report → gated-reconcile shape.
 
 ## Components
-- the `auditing-a-schema-doc` guide (forging). Uses the publishing update binding
-  (`updating-a-notion-page`) to write reconciliations.
+- `.claude/skills/auditing-a-schema-doc/SKILL.md` — the audit/reconcile guide. Uses the
+  publishing update binding (`updating-a-notion-page`) to write reconciliations.
 
 ## Concepts
 schema doc · schema drift
