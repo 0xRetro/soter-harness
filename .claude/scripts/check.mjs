@@ -169,6 +169,17 @@ function checkClassification(root, file, fm, out) {
       'fix the field, add the mold, or use mold: singleton for a unique shape (ADR-0007)'));
 }
 
+// Anti-drift: a classified content piece must be listed on its declared system's card
+// (the card is the one definition of a system; a piece missing from it is card-vs-disk drift).
+function checkSystemListing(root, file, fm, relPath, out) {
+  if (!fm || !fm.system) return;
+  const cardPath = path.join(root, '.claude', 'systems', `${fm.system}.md`);
+  if (exists(cardPath) && !read(cardPath).includes(relPath))
+    out.push(V(file, 'SYSTEM_UNLISTED', `piece not listed on its system card (.claude/systems/${fm.system}.md)`,
+      'the card is the one definition of a system — a piece missing from it is card-vs-disk drift',
+      `add ${relPath} to the Mechanisms/Components of .claude/systems/${fm.system}.md`));
+}
+
 // A mold must wear the mold-for-molds' shape. Hints are legitimate here.
 function checkMold(root, file, out) {
   const text = read(file);
@@ -260,6 +271,7 @@ function checkStandard(root, file, out) {
   checkName(file, path.basename(file, '.md'), out);
   checkSecurity(file, text, out);
   checkClassification(root, file, fm, out);
+  checkSystemListing(root, file, fm, `.claude/standards/${path.basename(file)}`, out);
   if (!EXCLUSION_RE.test(text))
     out.push(V(file, 'EXCLUSION_MISSING', 'no "doesn\'t apply when" clause',
       'a standard without boundaries gets applied everywhere',
@@ -303,16 +315,7 @@ function checkSkill(root, dir, out) {
       out.push(V(f, 'AUTOMATION_AUTOFIRE', 'automation-layer guide is auto-invocable',
         'automation guides write to external systems; auto-firing one is an uncontrolled side effect',
         'add `disable-model-invocation: true` — automation guides are always user-invoked'));
-    // Anti-drift: a skill must be listed on its declared system's card (the card is the
-    // one definition of a system; a skill missing from it is card-vs-disk drift).
-    if (fm.system) {
-      const cardPath = path.join(root, '.claude', 'systems', `${fm.system}.md`);
-      const skillRel = `.claude/skills/${skillName}/SKILL.md`;
-      if (exists(cardPath) && !read(cardPath).includes(skillRel))
-        out.push(V(f, 'SYSTEM_UNLISTED', `skill not listed on its system card (.claude/systems/${fm.system}.md)`,
-          'the card is the one definition of a system — a skill missing from it is card-vs-disk drift',
-          `add ${skillRel} to the Mechanisms/Components of .claude/systems/${fm.system}.md`));
-    }
+    checkSystemListing(root, f, fm, `.claude/skills/${skillName}/SKILL.md`, out);
   }
   const n = lines(body(text)).length;
   if (n >= BUDGETS.skillBodyLines)
@@ -353,7 +356,9 @@ function checkRule(root, file, out) {
   checkPlaceholders(file, text, out);
   checkName(file, path.basename(file, '.md'), out);
   checkSecurity(file, text, out);
-  checkClassification(root, file, parseFrontmatter(text), out);
+  const rfm = parseFrontmatter(text);
+  checkClassification(root, file, rfm, out);
+  checkSystemListing(root, file, rfm, `.claude/rules/${path.basename(file)}`, out);
   const n = lines(text).length;
   if (n > BUDGETS.ruleLines)
     out.push(V(file, 'BUDGET_RULE', `rule file is ${n} lines (guideline ≤ ${BUDGETS.ruleLines})`,
@@ -787,7 +792,16 @@ if (argv.includes('--selftest')) {
     });
     const logDir = path.join(ROOT, '.claude', 'evals', 'logs');
     fs.mkdirSync(logDir, { recursive: true });
-    fs.appendFileSync(path.join(logDir, 'events.jsonl'), line + '\n');
+    const logFile = path.join(logDir, 'events.jsonl');
+    // Rotation guard (olympus lesson: a 25MB unrotated log). At 2MB, keep the last
+    // half so the trace stays bounded — it's local trace evidence, not an archive.
+    try {
+      if (fs.existsSync(logFile) && fs.statSync(logFile).size > 2_000_000) {
+        const kept = read(logFile).split('\n').slice(-5000).join('\n');
+        fs.writeFileSync(logFile, kept);
+      }
+    } catch { /* fail-open */ }
+    fs.appendFileSync(logFile, line + '\n');
   } catch { /* fail-open */ }
   process.exit(0);
 } else if (argv.includes('--hook')) {

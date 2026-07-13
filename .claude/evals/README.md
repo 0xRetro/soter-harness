@@ -13,8 +13,10 @@ sequences — never "does the prose read well." No LLM-judge platform (ADR-0006)
 | 3 Artifact | did the observable side effects happen? | plain bash on the working tree (files, frontmatter, exit codes) |
 | 4 Invariant | did anything forbidden happen? | bash + log grep for "Never" items |
 
-`logs/events.jsonl` (gitignored) is written by the checker's `--log-event` hook — one JSON
-line per tool call in this repo: `{ts, tool, file, cmd}`.
+`logs/events.jsonl` (gitignored, self-rotating at 2MB) is written by the checker's
+`--log-event` hook — one JSON line per tool call: `{ts, tool, file, cmd}`. It records
+TOOL CALLS, not skill invocations, so it feeds trace/artifact checks for a future runner
+but can't count guide uses (promotion evidence stays git history + gotcha growth).
 
 ## How a run works (v1 — deliberately light)
 
