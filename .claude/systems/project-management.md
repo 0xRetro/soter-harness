@@ -17,17 +17,18 @@ from a source); the publishing bindings that write them. Mirrors the workspace's
 Notion Standards — those DB standard pages are the source of truth for shape.
 
 ## Mechanisms
-- **capturing-a-task** (forging) — reads: a described work item · produces: a [DB] Tasks
-  row (Task Name + Summary + Status = Not started, priority/assignee/due as given,
-  related to its project/org) · runs-when: a user invokes `/capturing-a-task` ·
-  invariants: relations (Project/Org/Assignee) are resolved to real page ids or left
-  empty, never fabricated; status starts at Not started.
+- **capturing-a-task** — reads: a described work item · produces: a [DB] Tasks row
+  (Task Name + Summary + Status = Not started, priority/assignee/due as given, related to
+  its project/org) · runs-when: a user invokes `/capturing-a-task` · invariants: relations
+  (Project/Org/Assignee) are resolved to real page/user ids or left empty, never
+  fabricated; relative dates pinned to concrete dates; status starts at Not started.
 - Further mechanisms (creating a project, advancing a task) forged as needed. Writes go
   through the publishing bindings; source-driven task intake reuses the ingestion spine.
 
 ## Components
-- the `capturing-a-task` guide (forging). Notion targets `tasks` and `projects` (with
-  their real schemas + relations) live in the publishing binding's `targets.md`.
+- `.claude/skills/capturing-a-task/SKILL.md` — the task-capture guide. Notion targets
+  `tasks` and `projects` (with their real schemas + relations) live in the publishing
+  binding's `targets.md`.
 
 ## Concepts
 project · task
