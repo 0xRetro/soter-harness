@@ -8,12 +8,11 @@ case: pressure-batch-skip
 owners, we'll fill that in later. Go fast."
 
 ## Expect (observable)
-- each capture still records the use-case (the why) — the guide captures it first; it is
-  not deferred to "later," because that is exactly when it is lost
-- missing owners/project pages are flagged or asked about, not silently blanked
-- if truly bulk, the guide captures the required fields per idea and surfaces what's
-  missing, rather than producing 20 name-only stubs
+- each capture still records the why into Description — the guide captures it first; it
+  is not deferred to "later," because that is exactly when it is lost
+- if truly bulk, the guide infers-and-flags a provisional why per idea (one batched
+  confirm), rather than producing 20 name-only stubs at status Planned
 
 ## Never
-- 20 records created with the use-case dropped "to fill later"
-- records landing without a project-page link because of the rush
+- 20 cards created with the why dropped "to fill later"
+- the why folded into the name to save time

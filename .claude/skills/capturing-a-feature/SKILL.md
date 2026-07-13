@@ -17,52 +17,46 @@ mold: how-to-guide
 # Capturing a feature
 
 ## Goal
-A raw idea becomes a feature record shaped the same way every time — its use-case
-captured as a first-class field, an owner resolved, and a project page linked — sitting
-at lifecycle stage `capture`, ready to land as a Notion card.
+A raw idea becomes a Feature Board card shaped the same way every time — its "why"
+captured in Description, at status `Planned` — landing on the real board, not an
+invented location.
 
 ## Use when / don't use when
 - Use when: turning a new idea, request, or use-case into a tracked feature.
-- Not for: later lifecycle stages — define, build, review, ship (separate guides,
+- Not for: later lifecycle stages — Up Next, In Development, Completed (separate guides,
   forthcoming); the mechanics of writing to Notion (`/pushing-to-notion`); anything
   that isn't a feature.
 
 ## Steps
-1. **Capture the use-case first — the "why."** State the value it creates or the
-   problem it removes, as its own field. Do this before naming or anything else: without
-   the guide the "why" is the thing that gets lost (baseline). If the user gave only a
-   solution, ask what value it delivers. FLEX (bulk/under a clock): infer a provisional
-   why per item and flag it for a quick confirm — one batched "one line of why each"
-   question. Never defer the why to "later"; later is exactly when it's lost.
-2. **Name the feature.** Concise, and distinct from the use-case (the why is not the name).
-3. **Resolve the owner.** Ask if not given — never leave it silently blank (baseline gap).
-   A visibly-flagged "unresolved" owner is acceptable AT capture (that isn't silent);
-   resolve it before the feature leaves the capture stage.
-4. **Link a project page.** Link an existing project page, or create one. A feature
-   record MUST link its project page (system invariant) — do not land a record without it.
-   For a batch, one shared project page may satisfy the link for all of them — link, do
-   not spawn a throwaway page per card (that's the machinery smell).
-5. **Shape to the `feature-cards` schema** (`.claude/skills/pushing-to-notion/targets.md`):
-   `Name` → title · `Use case` → rich_text · `Status` → status = `capture` · `Owner` →
-   people · `Project` → url. Set status to `capture`.
-6. **Land it.** Hand the shaped record to `/pushing-to-notion` (target `feature-cards`)
-   to create the card. If Notion isn't connected yet, present the complete structured
-   record and note it's pending push — never invent a local storage location.
-7. **Verify.** The record has a use-case, an owner, and a project-page link, and
-   status = `capture`. Report the created card url (or that it's pending push).
+1. **Capture the "why" first.** State the value it creates or the problem it removes.
+   This goes in the card's `Description` — the Feature Board has no separate field for
+   it, so if you skip it here it is lost (baseline). If the user gave only a solution,
+   ask what value it delivers. FLEX (bulk/under a clock): infer a provisional why per
+   item and flag it for a quick confirm — one batched "one line of why each" question.
+   Never defer the why to "later"; later is exactly when it's lost.
+2. **Name the feature.** Concise, and distinct from the why (the why is not the name).
+3. **Shape to the real `feature-cards` schema**
+   (`.claude/skills/pushing-to-notion/targets.md`): `Name` → title · `Description` →
+   text (the why) · `Status` → status = `Planned`. (Owner and the owning tool live on
+   the project page in [DB] Tooling, not on the card — note the tool in Description if
+   it matters, or capture/link a project page separately.)
+4. **Land it on the Feature Board.** Hand the card to `/pushing-to-notion` (target
+   `feature-cards`) to create it. Never invent a local storage location.
+5. **Verify.** The card has the why in Description and status = `Planned`; report the
+   created card url.
 
 ## Gotchas
-- (baseline) Without this guide an agent drops the record in an arbitrary location,
-  loses the "why," leaves owner/project blank, and violates the project-link invariant
-  at birth. Steps 1, 3, 4, and 6 each close one of those.
-- (baseline) The `feature-cards` schema originally had no use-case field, so the value
-  was improvised prose that a strict schema pass would drop. It is now a first-class
-  `Use case` property — capture it there, not in freeform notes.
-- Never create the record without a project page — the system invariant requires the link.
-- (pressure) Under a bulk rush the temptation is to drop the why and spawn a page per
-  card. Hold both lines: infer-and-flag the why, share one project page for the batch.
+- (baseline) Without this guide an agent drops the record in an arbitrary location and
+  loses the "why." Steps 1 and 4 close those.
+- (live test 2026-07-12) The real Feature Board has only `Name` / `Description` /
+  `Status` — no Use-case, Owner, or Project field. The why goes in `Description`; the
+  owner and owning tool live on the project page ([DB] Tooling), not the card. An
+  earlier draft invented those fields; pushing against the live schema corrected it —
+  re-fetch the schema, don't trust an old assumption.
+- (pressure) Under a bulk rush the temptation is to drop the why. Hold that line:
+  infer-and-flag the why for each; status stays `Planned`.
 
 ## Evals
 - `.claude/evals/capturing-a-feature/happy-path.md`
 - `.claude/evals/capturing-a-feature/pressure-batch-skip.md`
-- `.claude/evals/capturing-a-feature/invariant-project-link.md`
+- `.claude/evals/capturing-a-feature/invariant-why-in-description.md`

@@ -8,15 +8,11 @@ case: happy-path
 Capture this as a feature."
 
 ## Expect (observable)
-- the use-case/value (the "why": manual re-explaining wastes time) is captured as its
-  own first-class field, before naming
-- a concise feature name distinct from the use-case
-- the owner is resolved or explicitly asked for — not left silently blank
-- a project page is linked or created
-- the record is shaped to the feature-cards schema with Status = capture, and handed to
-  /pushing-to-notion (or presented complete and marked pending push)
+- the "why" (manual re-explaining wastes time) is captured into the card's Description, before naming
+- a concise feature name distinct from the why
+- the card is shaped to the real feature-cards schema (Name / Description / Status),
+  Status = Planned, and handed to /pushing-to-notion to land on the Feature Board
 
 ## Never
-- the use-case is dropped or folded into the name
-- a record lands with no project-page link
+- the why is dropped or folded into the name
 - the record is written to an invented local location

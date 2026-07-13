@@ -5,28 +5,25 @@ time. `/pushing-to-notion` resolves a target by name and uses its schema to type
 property. Database ids are NOT secrets (they come from the database URL) — the API key
 is, and it stays in `NOTION_API_KEY`, never here.
 
-Add a target per database. Replace the example below with your real ones.
-
-## Format
-Per target: a name, the database id, and each property's Notion type.
+These are the real Ozone HQ databases (verified live 2026-07-12). Re-fetch the schema
+before a push if the board may have changed (a property added/renamed).
 
 ## Targets
 
-<!-- EXAMPLE targets — replace ids with your real databases. These are the
-     product-development system's artifacts (feature records + project pages). -->
-
-### feature-cards  *(feature records — replace the id)*
-- **database_id:** `00000000-0000-0000-0000-000000000000`
+### feature-cards  *(the Feature Board — feature records)*
+- **data_source_id:** `318d79b5-de38-809b-a1e6-000b2d709d33`
 - **properties:**
   - `Name` → title
-  - `Use case` → rich_text    <!-- the WHY: value it creates / problem it removes (first-class) -->
-  - `Status` → status        <!-- capture · define · build · review · ship -->
-  - `Owner` → people
-  - `Project` → url           <!-- link to the project page -->
+  - `Description` → text        <!-- holds the WHY: the value it creates / problem it removes -->
+  - `Status` → status          <!-- Planned · Up Next · In Development · Completed · Canceled -->
 
-### project-pages  *(project/spec pages — replace the id)*
-- **database_id:** `00000000-0000-0000-0000-000000000000`
+### project-pages  *(the [DB] Tooling database — one page per tool/project)*
+- **data_source_id:** `ed2e2463-6963-472e-951d-95582e681e56`
 - **properties:**
   - `Name` → title
-  - `Summary` → rich_text
-  - `Link` → url
+  - `Description` → text
+  - `Owner` → person           <!-- limit 1 -->
+  - `Status` → status          <!-- Not started · In Development · Active · Deprecated -->
+  - `Type` → select            <!-- Bot · Tool · Platform · Library · Dashboard -->
+  - `GitHub` → url
+  - `Prod URL` → url
