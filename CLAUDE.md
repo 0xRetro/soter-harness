@@ -21,7 +21,8 @@ here. Docs: `README.md` (the map) · `.claude/LEXICON.md` (terms + classificatio
 - ALWAYS give a new guide an exclusion clause and ≥3 eval cases (one a pressure case).
 - NEVER write a script when prose can do the job; when code is truly needed, extend
   the one shared checker — never add a per-rule script.
-- NEVER add org-specific content to this repo.
+- Generic pieces (kernel · core) stay generic; org- or vendor-specific pieces are
+  declared `layer: context` or `layer: automation` and live as modular add-ons (ADR-0012).
 - NEVER exceed the budgets: this file < 200 lines; a guide body < 500 lines;
   a description ≤ 1024 chars.
 - NEVER let a failing eval or checker merge; fix the piece or fix the mold.

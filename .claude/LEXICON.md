@@ -76,6 +76,10 @@ table below is the banned list.
 | script | platform | logic that is executed, never read into context |
 | worktree | platform | an isolated working copy; the sandbox for authoring |
 | subagent | platform | an agent spawned for one task (testing, exploration) |
+| add-on | governance | a modular bundle of context/automation pieces that stacks on the kernel, reusing its molds, checker, and lexicon (ADR-0012) |
+| publish | publishing | to send a harness work-artifact to an external store |
+| external store | publishing | a system of record outside the harness that receives published artifacts (Notion is the first) |
+| binding | publishing | a mechanism mapping harness artifacts to one external store's API (e.g. notion-push) |
 
 ## Aliases (do not use → use instead)
 

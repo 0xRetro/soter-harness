@@ -16,3 +16,4 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0009](ADR-0009-classifying-non-markdown-logic.md) | Non-markdown logic is classified on its system's card | Accepted |
 | [ADR-0010](ADR-0010-checker-is-a-drift-catcher.md) | The checker is a cooperative drift-catcher, not a security boundary | Accepted |
 | [ADR-0011](ADR-0011-check-rules-name-their-enforcer.md) | Every declared check rule names its enforcer | Accepted |
+| [ADR-0012](ADR-0012-all-layers-one-repo.md) | Harness holds all four layers; genericness is per-piece; context/automation are add-ons | Accepted |
