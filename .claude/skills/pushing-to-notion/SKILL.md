@@ -23,8 +23,8 @@ correctly, the write confirmed by a human first, and the created page verified.
 ## Use when / don't use when
 - Use when: the user invokes `/pushing-to-notion` to publish harness output (a plan,
   a record, a status) into a Notion database.
-- Not for: reading from Notion; updating or deleting existing pages (destructive —
-  needs its own guide); stores other than Notion (a different binding).
+- Not for: reading from Notion; updating existing pages (`/updating-a-notion-page`) or
+  deleting them; stores other than Notion (a different binding).
 
 ## Steps
 1. **Resolve the target.** Look it up by name in `targets.md` (this folder), or ask for
@@ -42,7 +42,7 @@ correctly, the write confirmed by a human first, and the created page verified.
 4. **De-dup check.** This guide only CREATES pages (never updates). If a row might
    already exist — or the user says "make sure it's there" — query the database for a
    matching key first, or a blind create makes a duplicate. Existing row + update wanted
-   → out of scope (a different guide).
+   → `/updating-a-notion-page`.
 5. **Confirm before writing.** Show the resolved database + full property map (+ row
    count for a batch) and get an explicit human okay. Non-negotiable, even under time
    pressure — an external, hard-to-undo write.

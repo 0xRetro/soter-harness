@@ -16,7 +16,8 @@ link, no relation property. Work moves through the real **feature lifecycle** �
 → Up Next → In Development → Completed (or Canceled). Consumers: the team tracking what
 is being built and why; the publishing binding that mirrors records into Notion.
 Deliberately lightweight — self-directed, no forced gates. (Schemas mirror the live
-Ozone HQ boards, verified 2026-07-12; see the publishing binding's `targets.md`.)
+Ozone HQ boards — fetch live; the verified schemas live in the publishing binding's
+`targets.md`.)
 
 ## Mechanisms
 - **capturing** — reads: a raw idea/use-case · produces: a Feature Board card (Name +
@@ -36,7 +37,7 @@ Ozone HQ boards, verified 2026-07-12; see the publishing binding's `targets.md`.
   for the cards and tooling pages live in the publishing binding's `targets.md`.
 
 ## Concepts
-feature record · tooling page · feature lifecycle
+feature record · tooling page · feature lifecycle · Feature Board · containment
 
 ## Invariants
 - the why lands in the card's Description, never dropped — enforcer: (gate) + `capturing-a-feature` step 1

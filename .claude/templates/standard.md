@@ -33,3 +33,4 @@ A standard at `.claude/standards/<name>.md`.
 ## Check rules
 - classification valid; exclusion clause present — checker `FM_CLASS` + `EXCLUSION_MISSING`
 - no hints remain — checker `PLACEHOLDER`
+- listed on its declared system's card — checker `SYSTEM_UNLISTED`

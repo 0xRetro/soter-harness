@@ -30,11 +30,13 @@ the system.)
 ## Components
 - `.claude/skills/pushing-to-notion/SKILL.md` — the notion-push (create) binding
 - `.claude/skills/updating-a-notion-page/SKILL.md` — the notion-update binding
+- `.claude/skills/pushing-to-notion/targets.md` — the target registry (live-verified
+  database ids + schemas) both bindings and every domain guide resolve against
 - `.claude/standards/writing-records-to-notion.md` — the shared write-discipline every
   domain guide references (fetch schema · resolve · match options · dedup · confirm)
 
 ## Concepts
-publish · external store · binding · relation · option set · resolve · page
+publish · external store · binding · fetch-merge-write · relation · option set · resolve · page
 
 ## Invariants
 - external writes require explicit human confirmation — enforcer: the skill's confirm step + (gate)

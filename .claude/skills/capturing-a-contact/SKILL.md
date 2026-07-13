@@ -36,7 +36,7 @@ confirm · publish. Contact-specific:
    no real `Role`. Per the standard: match a live option or leave empty and ask — don't
    over-read into a strong option.
 3. **Org relation:** search [DB] Orgs → the page id; if absent, create the org first
-   (`capturing-an-org`, forthcoming) or leave empty and flag.
+   (`/capturing-an-org`) or leave empty and flag.
 
 ## Gotchas
 Shared write-discipline gotchas live in the `writing-records-to-notion` standard;

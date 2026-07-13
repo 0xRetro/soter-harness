@@ -4,6 +4,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -14,7 +17,7 @@ jobs:
           node-version: 22
       # Prove the Checker itself catches violations (plant-and-assert)…
       - run: node .claude/scripts/check.mjs --selftest
-      # …then hold the whole repo to the bar. This is the hard gate (ADR-0004).
+      # …then hold the whole repo to the bar. This is the hard gate (ADR-0003).
       - run: node .claude/scripts/check.mjs --all
 
   # Plugin invariant: the plugin + marketplace manifest must validate before ship.

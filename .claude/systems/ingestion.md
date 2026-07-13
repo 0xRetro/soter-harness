@@ -12,7 +12,7 @@ mold: system-card
 Turn an external **source** (a repo, a doc, a dump) into standardized Notion records —
 reviewed, normalized to the target database's schema, and human-gated on what actually
 enters. The pull side to publishing's push. Consumers: the context systems whose records
-it produces (product-development, and project-management / crm as they're built); the
+it produces (product-development, project-management, crm); the
 publishing bindings it writes through.
 
 ## Mechanisms

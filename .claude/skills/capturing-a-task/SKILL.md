@@ -18,7 +18,7 @@ mold: how-to-guide
 
 ## Goal
 An actionable item becomes a [DB] Tasks row shaped to the real schema — its relations
-resolved to real ids, its date concrete, de-duped and confirmed — at Status = Not started.
+resolved to real ids, its date concrete, de-duped and confirmed — at Status = To Do.
 
 ## Use when / don't use when
 - Use when: turning a described work item into a tracked task.
@@ -31,8 +31,8 @@ spine — fetch schema · resolve relations (never fabricate) · match options �
 de-dup · confirm · publish via the binding. Task-specific:
 1. **Shape (live schema):** `Name` (title) · `Status` = `To Do` (at capture) · `Context`
    (select — Internal/Service/Project/Client, only if clear). The live board has NO
-   Priority/Tag/Summary/Due field (the March Standards page was stale — targets.md is now
-   live-verified); don't try to set them.
+   Priority/Tag/Summary/Due field — don't try to set them (see Gotchas; the Standards
+   page lags, targets.md records the live-verified schema).
 2. **Resolve:** `Assigned To` (and `Client Contact` if named) via `Notion:notion-get-users`
    ("me" → the user's email → their id); `Project` via search; `Next Action` is the date
    field — pin relative dates. Target `tasks`.

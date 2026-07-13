@@ -1,9 +1,10 @@
 # Soter Harness (kernel)
 
-This repo IS the harness kernel: the systems, molds, and light wiring that make
-Claude work consistently and help build more of itself. Everything here stays
-generic — org-specific content lives in a downstream overlay (context layer), never
-here. Docs: `README.md` (the map) · `.claude/LEXICON.md` (terms + classification) ·
+This repo IS the harness: the kernel systems, molds, and light wiring that make
+Claude work consistently and help build more of itself — plus the declared add-ons
+that stack on top. Generic pieces (kernel · core) stay generic; org- or vendor-specific
+pieces live here too, declared `layer: context` or `layer: automation` (ADR-0012).
+Docs: `README.md` (the map) · `.claude/LEXICON.md` (terms + classification) ·
 `.claude/systems/` (one card per system) · `.claude/RUBRIC.md` (quality bar) ·
 `decisions/` (why things are the way they are).
 

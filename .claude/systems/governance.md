@@ -29,7 +29,7 @@ authoring loop (the gate), users (a harness that can't silently rewrite itself).
 - `.claude/skills/promoting-pieces/SKILL.md` — the staged→promoted decision guide
 
 ## Concepts
-gate · ADR · staged · promoted
+gate · ADR · staged · promoted · add-on
 
 ## Invariants
 - Accepted ADRs are immutable (supersede only) — enforcer: `writing-adrs` + reviewer + git history

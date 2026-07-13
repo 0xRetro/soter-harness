@@ -30,4 +30,5 @@ Why: see `decisions/ADR-<n>`.
 ## Check rules
 - ≤ 100 lines (warn) — checker `BUDGET_RULE`
 - classification valid — checker `FM_CLASS`
+- listed on its declared system's card — checker `SYSTEM_UNLISTED`
 - one topic; bullets only; rationale in ADRs; judgment-needing rules become guides — (gate)

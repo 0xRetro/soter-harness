@@ -70,8 +70,9 @@ through baseline → evals → checks → fresh-agent pressure-test → gate); r
 claims-vs-reality sweeps harden the checker.
 
 **Add-ons built on top (ADR-0012, all four layers in one repo):** a Notion intake engine —
-**automation** systems `publishing` (create/update bindings, live-proven) and `ingestion`
-(review a source → curate → publish), plus **context** domains `product-development`,
+**automation** systems `publishing` (create/update bindings, live-proven), `ingestion`
+(review a source → curate → publish), and `schema-audit` (keep Notion's own schema docs
+true to the live DBs), plus **context** domains `product-development`,
 `project-management`, and `crm` that each shape their records and write through the
 bindings. The shared write-discipline lives once in `.claude/standards/writing-records-to-notion.md`;
 each domain guide references it and adds only its nuance.

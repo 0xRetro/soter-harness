@@ -11,7 +11,7 @@ mold: system-card
 ## Promise
 Track delivery above the feature level: **projects** (client/internal engagements) and
 the **tasks** that execute them, mirrored to the real Notion [DB] Projects and [DB] Tasks
-databases and kept standardized to their documented schemas. Consumers: the team
+databases. Consumers: the team
 tracking what's being delivered, for whom, by when; ingestion (which can produce tasks
 from a source); the publishing bindings that write them. Mirrors the LIVE [DB] Tasks /
 [DB] Projects schemas — the Standards pages document these but can lag (they did; fetch
@@ -19,10 +19,10 @@ live, ADR-0016).
 
 ## Mechanisms
 - **capturing-a-task** — reads: a described work item · produces: a [DB] Tasks row
-  (Task Name + Summary + Status = Not started, priority/assignee/due as given, related to
-  its project/org) · runs-when: a user invokes `/capturing-a-task` · invariants: relations
+  (Name + Status = To Do, assignee/context/next-action as given, related to its
+  project/org) · runs-when: a user invokes `/capturing-a-task` · invariants: relations
   (Project/Org/Assignee) are resolved to real page/user ids or left empty, never
-  fabricated; relative dates pinned to concrete dates; status starts at Not started.
+  fabricated; relative dates pinned to concrete dates; status starts at To Do.
 - Further mechanisms (creating a project, advancing a task) forged as needed. Writes go
   through the publishing bindings; source-driven task intake reuses the ingestion spine.
 

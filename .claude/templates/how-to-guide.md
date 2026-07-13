@@ -51,3 +51,4 @@ A guide at `.claude/skills/<name>/SKILL.md` — steps the model loads on demand.
 - description ≤ 1024 chars, no XML; exclusion clause present — checker `DESC_LEN` + `DESC_XML` + `EXCLUSION_MISSING`
 - ≥3 evals incl. pressure; auto-invocable adds a no-trigger case — checker `EVALS_MIN` + `PRESSURE_MISSING` + `TRIGGER_EVAL_MISSING`
 - classification valid; no hints remain — checker `FM_CLASS` + `PLACEHOLDER`
+- listed on its declared system's card — checker `SYSTEM_UNLISTED`

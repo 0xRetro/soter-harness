@@ -10,8 +10,8 @@ mold: system-card
 
 ## Promise
 Track relationships: organizations (**orgs**) and the people at them (**contacts**),
-mirrored to the real Notion [DB] Orgs and [DB] Contacts and standardized to their
-documented schemas. A contact belongs to an org (the Org relation). Consumers: the team
+mirrored to the real Notion [DB] Orgs and [DB] Contacts. A contact belongs to an org
+(the Org relation). Consumers: the team
 managing relationships; ingestion (people/orgs from a source); the publishing bindings.
 Mirrors the LIVE [DB] Orgs / [DB] Contacts schemas — the Standards pages document these
 but can lag; fetch live (ADR-0016).

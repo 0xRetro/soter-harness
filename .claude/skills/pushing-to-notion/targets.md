@@ -1,3 +1,11 @@
+---
+name: targets
+layer: automation
+system: publishing
+kind: component
+mold: singleton
+---
+
 # Notion push targets
 
 Named targets so a push doesn't re-specify the database id and property types every
