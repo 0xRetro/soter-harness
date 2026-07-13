@@ -94,6 +94,8 @@ table below is the banned list.
 | standardize | ingestion | normalize a source's data to the target database's schema before publishing |
 | intake gate | ingestion | the human decision on WHAT from a source actually gets ingested — distinct from a merge gate (governance) and from a per-write confirm |
 | containment | product-development | a feature belongs to a tool by living in that tool's Feature Board — the board IS the link, no relation property |
+| schema doc | schema-audit | a Notion page documenting a database's schema (the workspace's "[DB] X Standards" pages) — distinct from a harness standard |
+| schema drift | schema-audit | divergence between a schema doc and the live database's actual fields/types/options |
 | project | project-management | one row in the [DB] Projects database — a client or internal engagement (type, status, dates, org, contact), tracking work above the task level |
 | task | project-management | one row in the [DB] Tasks database — an actionable work item (status, priority, assignee, due), related to a project and/or org |
 | org | crm | one row in the [DB] Orgs database — an organization (type, tags, links), with related contacts and projects |
