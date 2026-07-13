@@ -27,7 +27,8 @@ the working tree and the event log — most are one `ls`/`grep` each.
 
 Record a pass by noting the commit hash it passed at in the case file's frontmatter
 (`passed: <sha>`), which is the golden baseline: re-run cases when their guide changes;
-a previously-passing case failing = regression.
+a previously-passing case failing = regression. The checker warns (`GOLDEN_STALE`) when
+a golden predates the guide's last edit — stale evidence proves nothing (ADR-0020).
 
 ## What CI enforces (headless, every PR)
 

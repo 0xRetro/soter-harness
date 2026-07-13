@@ -17,6 +17,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 
 const BUDGETS = {
   claudeMdLines: 200,
@@ -368,7 +369,7 @@ function checkRule(root, file, out) {
       'keep always/never bullets here; move steps to a skill', 'warn'));
 }
 
-function checkEvalCase(file, out) {
+function checkEvalCase(root, file, out) {
   const text = read(file);
   const fm = parseFrontmatter(text);
   checkPlaceholders(file, text, out);
@@ -382,6 +383,31 @@ function checkEvalCase(file, out) {
       out.push(V(file, 'SECTIONS_MISSING', `missing "${sec}" section`,
         'all three levels (attempt/observable/invariant) are required',
         'fill per .claude/templates/eval-case.md'));
+  checkGoldenFresh(root, file, fm, out);
+}
+
+// GOLDEN_STALE (warn): a golden (`passed: <sha>`) is regression evidence about the guide
+// AS OF that commit — once the guide's SKILL.md changes after it (committed or in the
+// working tree), the evidence proves nothing about the current guide; re-run the case.
+// The checker's one git coupling (ADR-0020): needs full history (CI: fetch-depth 0).
+// Fail-open when git can't answer (no repo / shallow clone / unknown sha): a missed
+// warning is recoverable at the gate; spurious warnings on every run are not.
+function checkGoldenFresh(root, file, fm, out) {
+  if (!fm || !fm.passed || !fm.skill) return;
+  if (!/^[0-9a-f]{6,40}$/i.test(fm.passed) || !/^[a-z0-9-]+$/.test(fm.skill)) return;
+  const rel = `.claude/skills/${fm.skill}/SKILL.md`;
+  if (!exists(path.join(root, rel))) return; // orphan case; other checks own that
+  const git = (args) => execFileSync('git', ['-C', root, ...args],
+    { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+  try {
+    const since = git(['rev-list', `${fm.passed}..HEAD`, '--', rel]);
+    const dirty = git(['status', '--porcelain', '--', rel]);
+    if (since || dirty)
+      out.push(V(file, 'GOLDEN_STALE',
+        `golden passed at ${fm.passed}, but the guide changed since${dirty ? ' (uncommitted edits)' : ''}`,
+        'a golden is evidence about the guide as of that commit — after an edit it proves nothing (eval README: goldens are the regression baseline)',
+        're-run the case against the current guide and update passed:, or fix the piece', 'warn'));
+  } catch { /* fail-open: no git / shallow clone / unknown sha — the gate still reads the rule */ }
 }
 
 function checkAdr(file, out) {
@@ -597,7 +623,7 @@ function checkAll(root, census = {}) {
             out.push(V(p, 'UNEXPECTED_FILE', 'nested directory inside an eval-case folder',
               'the eval walk is one level deep — nested cases are invisible to every check',
               'flatten cases directly into the skill\'s eval folder'));
-          else if (e.name.endsWith('.md')) { census.evalCases++; checkEvalCase(p, out); }
+          else if (e.name.endsWith('.md')) { census.evalCases++; checkEvalCase(root, p, out); }
         }
   const decDir = path.join(root, 'decisions');
   if (exists(decDir))
@@ -635,7 +661,7 @@ function checkOne(root, file) {
   else if (/^\.claude\/systems\/[^/]+\.md$/.test(rel)) checkSystemCard(root, file, out);
   else if (/^\.claude\/templates\/[^/]+\.md$/.test(rel)) checkMold(root, file, out);
   else if (/^\.claude\/rules\/[^/]+\.md$/.test(rel)) checkRule(root, file, out);
-  else if (/^\.claude\/evals\/[^/]+\/[^/]+\.md$/.test(rel)) checkEvalCase(file, out);
+  else if (/^\.claude\/evals\/[^/]+\/[^/]+\.md$/.test(rel)) checkEvalCase(root, file, out);
   else if (/^decisions\/ADR-.*\.md$/.test(rel)) checkAdr(file, out);
   else if (rel.startsWith('.claude/') && rel.endsWith('.md')) {
     checkAliases(root, [file], out); // reference files etc.: alias lint at minimum
@@ -780,11 +806,38 @@ function selftest() {
     fs.rmSync(canary, { recursive: true, force: true });
   }
 
+  // --- Stage 6: GOLDEN_STALE — a golden older than the guide's last edit must warn
+  // (real git fixture: commit v1, golden at v1, commit v2 — evidence is now stale)
+  const gr = mkroot('checker-golden-');
+  try {
+    const wg = writer(gr);
+    const gitq = (args) => execFileSync('git', ['-C', gr, ...args], { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    gitq(['init', '-q']);
+    wg('.claude/LEXICON.md', LEX);
+    wg('.claude/skills/tested-guide/SKILL.md', 'v1 of the guide. Not for anything.\n');
+    gitq(['add', '-A']);
+    gitq(['-c', 'user.email=selftest@local', '-c', 'user.name=selftest', 'commit', '-qm', 'v1']);
+    const goldSha = gitq(['rev-parse', '--short', 'HEAD']);
+    wg('.claude/evals/tested-guide/happy.md', `---\nskill: tested-guide\ncase: happy\npassed: ${goldSha}\n---\n## Try\nx\n## Expect\n- y\n## Never\n- z\n`);
+    wg('.claude/skills/tested-guide/SKILL.md', 'v2 of the guide. Not for anything.\n');
+    gitq(['add', '-A']);
+    gitq(['-c', 'user.email=selftest@local', '-c', 'user.name=selftest', 'commit', '-qm', 'v2']);
+    if (!checkAll(gr).some((v) => v.code === 'GOLDEN_STALE'))
+      fails.push('guide edited after its golden did not raise GOLDEN_STALE');
+    wg('.claude/evals/tested-guide/happy.md', `---\nskill: tested-guide\ncase: happy\npassed: ${gitq(['rev-parse', '--short', 'HEAD'])}\n---\n## Try\nx\n## Expect\n- y\n## Never\n- z\n`);
+    if (checkAll(gr).some((v) => v.code === 'GOLDEN_STALE'))
+      fails.push('golden at the guide-editing commit itself wrongly raised GOLDEN_STALE');
+  } catch (e) {
+    fails.push(`GOLDEN_STALE fixture errored (git available?): ${e.message}`);
+  } finally {
+    fs.rmSync(gr, { recursive: true, force: true });
+  }
+
   if (fails.length) {
     for (const f of fails) console.error(`SELFTEST FAIL: ${f}`);
     process.exit(1);
   }
-  console.log(`SELFTEST PASS: ${mustFire.length} codes fired; clean silent; empty-root fails; alias-table guard live; default-root aim verified.`);
+  console.log(`SELFTEST PASS: ${mustFire.length} codes fired; clean silent; empty-root fails; alias-table guard live; default-root aim verified; golden freshness live.`);
 }
 
 // ---------- main ---------------------------------------------------------------
