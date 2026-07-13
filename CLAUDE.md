@@ -36,7 +36,9 @@ Docs: `README.md` (the map) · `.claude/LEXICON.md` (terms + classification) ·
 <!-- One line per promoted guide. Staged guides are deliberately not indexed;
      the full invocable list is `ls .claude/skills/`. -->
 - `/forge` — authors a new harness piece through the loop: mold → evals →
-  pressure-test → gate. Always user-invoked. (A standalone decision is `/writing-adrs`.)
+  pressure-test → gate. Always user-invoked.
+- `/writing-adrs` — records a durable decision as an ADR in `decisions/`. Always
+  user-invoked. (ADR-0018)
 
 ## Layout
 

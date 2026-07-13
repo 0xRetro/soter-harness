@@ -35,3 +35,4 @@ gate · ADR · staged · promoted · add-on
 - Accepted ADRs are immutable (supersede only) — enforcer: `writing-adrs` + reviewer + git history
 - new pieces land staged; promotion is a separate explicit decision — enforcer: `disable-model-invocation` + guide index
 - only a human merges a harness change — enforcer: the merge itself (ADR-0005)
+- a system exists only if born (≥3 real pieces + a named consumer) or decreed by an ADR — enforcer: (gate) + ADR-0017
