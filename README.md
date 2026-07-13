@@ -69,14 +69,14 @@ and hardening per the ADR log. The seal test ran end-to-end (the forge authored 
 through baseline → evals → checks → fresh-agent pressure-test → gate); red-team +
 claims-vs-reality sweeps harden the checker.
 
-**Add-ons built on top (ADR-0012, all four layers in one repo):**
-- **Automation — `publishing`**: create + update bindings to Notion (`pushing-to-notion`,
-  `updating-a-notion-page`), proven live against a real workspace.
-- **Context — `product-development`**: a feature lifecycle (Planned → Up Next → In
-  Development → Completed), stages `capturing-a-feature` and `defining-a-feature` built;
-  build/review/ship still to forge.
+**Add-ons built on top (ADR-0012, all four layers in one repo):** a Notion intake engine —
+**automation** systems `publishing` (create/update bindings, live-proven) and `ingestion`
+(review a source → curate → publish), plus **context** domains `product-development`,
+`project-management`, and `crm` that each shape their records and write through the
+bindings. The shared write-discipline lives once in `.claude/standards/writing-records-to-notion.md`;
+each domain guide references it and adds only its nuance.
 
-Live lists (never hardcode counts): systems `ls .claude/systems/` · guides
-`ls .claude/skills/` · decisions `decisions/README.md`. Everything is **staged** until
-real use earns promotion. Next: forge the remaining lifecycle stages, or the deferred
-distribution decision.
+Add-ons are anything not in the kernel-8 (`lexicon · template · enforcement · eval ·
+standards · governance · authoring · platform`). Live lists (never hardcode counts):
+systems `ls .claude/systems/` · guides `ls .claude/skills/` · decisions
+`decisions/README.md`. Everything is **staged** until real use earns promotion.

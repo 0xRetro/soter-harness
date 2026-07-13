@@ -36,4 +36,4 @@ org · contact
 - contacts and orgs are shaped to the live [DB] Contacts / [DB] Orgs schemas, never an assumed one — enforcer: (gate) + publishing's live schema fetch
 - select/multi_select values are matched to the live option set, never invented — enforcer: (gate) + the guide's schema-fetch step
 - the Org relation is resolved to a real page id or left empty — enforcer: (gate) + the guide's resolve step
-- records reach Notion through the publishing bindings, never a bespoke push — enforcer: (gate) + the publishing system
+- records reach Notion through the publishing bindings (the canonical rule; see the publishing card) — enforcer: (gate) + publishing

@@ -22,8 +22,11 @@ captured in Description, at status `Planned` — landing on the real board, not 
 invented location.
 
 ## Use when / don't use when
-- Use when: turning a new idea, request, or use-case into a tracked feature.
-- Not for: later lifecycle stages — Up Next, In Development, Completed (separate guides,
+- Use when: turning a single new idea, request, or use-case into a tracked feature. This
+  is the single card-shaping authority — bulk repo ingestion (`/reviewing-a-repo`)
+  delegates each approved card here.
+- Not for: bulk ingestion from a repo (that is `/reviewing-a-repo`, which calls this per
+  card); later lifecycle stages — Up Next, In Development, Completed (separate guides,
   forthcoming); the mechanics of writing to Notion (`/pushing-to-notion`); anything
   that isn't a feature.
 

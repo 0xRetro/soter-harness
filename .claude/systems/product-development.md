@@ -41,4 +41,4 @@ feature record · tooling page · feature lifecycle
 ## Invariants
 - the why lands in the card's Description, never dropped — enforcer: (gate) + `capturing-a-feature` step 1
 - a feature card is created in its tool's Feature Board, not an invented location — enforcer: (gate)
-- records reach Notion through the publishing binding, never a bespoke push — enforcer: (gate) + the publishing system
+- records reach Notion through the publishing bindings (the canonical rule; see the publishing card) — enforcer: (gate) + publishing

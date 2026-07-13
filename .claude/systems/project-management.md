@@ -36,4 +36,4 @@ project · task
 ## Invariants
 - tasks and projects are shaped to the live [DB] Tasks / [DB] Projects schemas, never an assumed one — enforcer: (gate) + publishing's live schema fetch
 - relations are resolved to real target page ids or left empty — enforcer: (gate) + the guide's resolve step
-- records reach Notion through the publishing bindings, never a bespoke push — enforcer: (gate) + the publishing system
+- records reach Notion through the publishing bindings (the canonical rule; see the publishing card) — enforcer: (gate) + publishing

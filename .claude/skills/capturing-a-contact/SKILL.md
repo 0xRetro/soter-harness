@@ -26,38 +26,23 @@ real option, the Org resolved to a real id or empty, de-duped and confirmed befo
   (`/pushing-to-notion`); tasks (`/capturing-a-task`) or features.
 
 ## Steps
-1. **Shape the plain fields** (schema in `.claude/skills/pushing-to-notion/targets.md`):
-   `Name` (title) · `Email` · `Telegram`/`Signal`/`Github`/`Timezone (UTC)`/`Source`
-   (text). Record where the contact came from in `Source` if known.
-2. **Fetch the live option sets and MATCH — never invent (the load-bearing step).** For
-   `Role`, `Status`, `Disposition`, `Authority`, `Tags`, fetch the live schema's options
-   (fetch the target data source — the same schema fetch `/pushing-to-notion` does) and
-   map the description to an EXISTING one. "VP of Engineering" → the closest real `Role`,
-   or leave it empty and flag if none fits. A value not in the set is rejected or silently
-   creates a junk option. Don't over-read fuzzy words — "supportive" is not necessarily
-   "Champion" (vs "Coach"). Tie-breaker: if no option clearly fits, leave the field empty
-   and ask — never force a closest-match under pressure.
-3. **Resolve the Org relation.** Search [DB] Orgs for the org name → its page id. If not
-   found: create the org first (a `capturing-an-org` step, forthcoming) or leave the
-   relation empty and flag — never fabricate an id.
-4. **Don't invent unstated fields.** Leave blank what the user didn't say; don't silently
-   default `Status`. If you apply a default, flag it as a default, not a fact.
-5. **De-dup.** Search [DB] Contacts by name and email before creating.
-6. **Confirm before writing.** Show the resolved record — the matched option values, the
-   resolved-or-empty Org, and any flagged defaults — and get an explicit okay. External,
-   hard-to-undo write.
-7. **Publish + verify.** Create via `/pushing-to-notion` (target `contacts`); report the
-   created url and confirm the Org linked.
+Follow the **`writing-records-to-notion`** standard (`.claude/standards/`) for the shared
+spine — fetch schema · resolve relations · match options (never invent) · de-dup ·
+confirm · publish. Contact-specific:
+1. **Shape:** `Name` · `Email` · `Telegram`/`Signal`/`Github`/`Timezone (UTC)`/`Source`
+   (text). Record where the contact came from in `Source` if known. Target `contacts`.
+2. **Fuzzy option-reads need care.** `Role`/`Disposition`/`Authority` map from prose —
+   "supportive" is not necessarily "Champion" (vs "Coach"); "VP of Engineering" may match
+   no real `Role`. Per the standard: match a live option or leave empty and ask — don't
+   over-read into a strong option.
+3. **Org relation:** search [DB] Orgs → the page id; if absent, create the org first
+   (`capturing-an-org`, forthcoming) or leave empty and flag.
 
 ## Gotchas
-- (baseline) Never invent a select/multi_select value — fetch the live options and match,
-  or leave empty; a wrong value is rejected or creates a junk option (the core failure).
-- (baseline) Don't over-read a fuzzy description into a strong option ("supportive" ≠
-  automatically "Champion") — pick the defensible read or ask.
-- (baseline) Never fabricate the Org page id — resolve via search, create the org first,
-  or leave empty and flag.
-- (baseline) Don't silently default `Status` or other unstated fields — a default is a
-  guess; flag it. De-dup and confirm before the write.
+Shared write-discipline gotchas live in the `writing-records-to-notion` standard;
+contact-specific ones only:
+- (baseline) Fuzzy descriptions over-map to strong options ("supportive" ≠ automatically
+  "Champion") — pick the defensible read or ask; leave empty rather than force a match.
 
 ## Evals
 - `.claude/evals/capturing-a-contact/happy-path.md`

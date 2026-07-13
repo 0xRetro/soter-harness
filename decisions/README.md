@@ -19,3 +19,4 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0012](ADR-0012-all-layers-one-repo.md) | Harness holds all four layers; genericness is per-piece; context/automation are add-ons | Accepted |
 | [ADR-0013](ADR-0013-automation-layer-safety-enforcement.md) | Automation-layer safety (no autofire, no secret leaks) is mechanically enforced | Accepted |
 | [ADR-0014](ADR-0014-mirror-live-notion-schema.md) | Product-development mirrors the live Notion schema; reality is the source of truth | Accepted |
+| [ADR-0015](ADR-0015-shared-write-discipline-standard.md) | The Notion write-discipline lives in one shared standard; domain guides reference it | Accepted |

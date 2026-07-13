@@ -81,6 +81,10 @@ table below is the banned list.
 | external store | publishing | a system of record outside the harness that receives published artifacts (Notion is the first) |
 | binding | publishing | a mechanism mapping harness artifacts to one external store's API (e.g. notion-push) |
 | fetch-merge-write | publishing | update an external record by reading its current value, merging locally, then writing — never a blind write that clobbers what's there |
+| relation | publishing | a field pointing to another record; written as the TARGET page's id (resolve it, never fabricate) |
+| option set | publishing | the fixed list of allowed values for a select/multi_select field; a value must match an existing option, never invented |
+| resolve | publishing | to turn a name/description into the real Notion id or existing option it refers to (via search / get-users / live schema), or leave it empty — never fabricate |
+| page | publishing | one entry in a Notion database; a "card" (board view) and "row" (table view) are renderings of the same page, not new concepts |
 | Feature Board | product-development | a Notion database of feature cards; one per tooling entry — the board a card lives in is its link to that tooling page |
 | feature record | product-development | one card on the Feature Board — the tracked unit of product work: name, the why (in Description), and status |
 | tooling page | product-development | one page in the [DB] Tooling database describing a tool/product; each tooling entry has its own Feature Board, so a feature belongs to a tool by living in that board (containment is the link) |
@@ -88,6 +92,8 @@ table below is the banned list.
 | ingestion | ingestion | turning an external source into standardized Notion records, human-gated on what enters |
 | source | ingestion | an external thing to ingest — a repo, doc, or dump |
 | standardize | ingestion | normalize a source's data to the target database's schema before publishing |
+| intake gate | ingestion | the human decision on WHAT from a source actually gets ingested — distinct from a merge gate (governance) and from a per-write confirm |
+| containment | product-development | a feature belongs to a tool by living in that tool's Feature Board — the board IS the link, no relation property |
 | project | project-management | one row in the [DB] Projects database — a client or internal engagement (type, status, dates, org, contact), tracking work above the task level |
 | task | project-management | one row in the [DB] Tasks database — an actionable work item (status, priority, assignee, due), related to a project and/or org |
 | org | crm | one row in the [DB] Orgs database — an organization (type, tags, links), with related contacts and projects |

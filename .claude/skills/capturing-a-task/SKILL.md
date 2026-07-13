@@ -26,38 +26,21 @@ resolved to real ids, its date concrete, de-duped and confirmed — at Status = 
   cards (`/capturing-a-feature`).
 
 ## Steps
-1. **Shape the given fields** (schema in `.claude/skills/pushing-to-notion/targets.md`):
-   `Task Name` (title) · `Summary` (context) · `Priority` → Low/Medium/High/Urgent ·
-   `Status` = `Not started` (always, at capture). Leave fields the user didn't give empty.
-   Expressed urgency about the request ("I'm slammed", "ASAP") is NOT a stated `Priority`
-   — don't set it from that.
-2. **Resolve relations to real ids — never fabricate (the load-bearing step).**
-   - Assignee/person: `Notion:notion-get-users` to map the person (e.g. "me" → the user's
-     email → their user id). A person field needs the id, not a name.
-   - `Project` / `Org` relations: `Notion:notion-search` or query the target DB by name →
-     the real page id. If a named project/org is NOT found, distinguish unresolved from
-     nonexistent: ask (wrong name? create it first? leave empty?) — never guess an id, and
-     never leave it silently blank as if resolved.
-3. **Pin relative dates to a concrete date.** "next `<weekday>`" = the nearest upcoming one
-   (today is knowable); if it's only a few days out and could mean the following week,
-   confirm which. Write `Due` as an ISO date, never a relative phrase.
-4. **Tag (optional).** Set a `Tag` only if the work obviously maps (Bug/Feature/…);
-   otherwise leave it — don't force a guess.
-5. **De-dup.** Search [DB] Tasks by name for an existing matching task before creating.
-6. **Confirm before writing.** Show the resolved record — resolved assignee/project names
-   AND ids, the concrete date, and which relations are empty and why — and get an explicit
-   okay. External, hard-to-undo write.
-7. **Publish + verify.** Create via `/pushing-to-notion` (target `tasks`); report the
-   created task url and confirm the relations linked.
+Follow the **`writing-records-to-notion`** standard (`.claude/standards/`) for the shared
+spine — fetch schema · resolve relations (never fabricate) · match options · pin dates ·
+de-dup · confirm · publish via the binding. Task-specific:
+1. **Shape:** `Task Name` (title) · `Summary` (context) · `Priority` → Low/Medium/High/Urgent
+   · `Status` = `Not started` (always, at capture). Expressed urgency about the *request*
+   ("I'm slammed", "ASAP") is NOT a `Priority` — don't set it from that.
+2. **Assignee** resolves via `Notion:notion-get-users` ("me" → the user's email → their
+   id — a person field needs the id, not a name); `Project`/`Org` via search. Target
+   `tasks`.
 
 ## Gotchas
-- (baseline) Never fabricate a page/user id — resolve via search/get-users, or leave the
-  relation empty and flag it. The schema-shaping half is easy; the id half is the risk.
-- (baseline) A named project/org may not exist — distinguish "unresolved" from "doesn't
-  exist"; ask rather than silently blanking or inventing.
+Shared write-discipline gotchas live in the `writing-records-to-notion` standard;
+task-specific ones only:
 - (baseline) "next Friday" is ambiguous (nearest vs following week) — pin the convention
   and confirm when it's close; never store a relative phrase.
-- (baseline) De-dup before create and confirm before write — a create isn't reversible.
 - (pressure) `get-users` may return multiple people or a bot — email→id isn't always 1:1;
   confirm the right person before using an id, don't grab the first match.
 

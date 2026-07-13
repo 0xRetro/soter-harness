@@ -30,12 +30,16 @@ the system.)
 ## Components
 - `.claude/skills/pushing-to-notion/SKILL.md` — the notion-push (create) binding
 - `.claude/skills/updating-a-notion-page/SKILL.md` — the notion-update binding
+- `.claude/standards/writing-records-to-notion.md` — the shared write-discipline every
+  domain guide references (fetch schema · resolve · match options · dedup · confirm)
 
 ## Concepts
-publish · external store · binding
+publish · external store · binding · relation · option set · resolve · page
 
 ## Invariants
 - external writes require explicit human confirmation — enforcer: the skill's confirm step + (gate)
 - automation guides never auto-fire — enforcer: checker `AUTOMATION_AUTOFIRE`
 - no real credentials in any harness content — enforcer: checker `SECRET_LEAK`
+- every context record is written through a binding, never a bespoke push (the canonical
+  rule the domain cards reference) — enforcer: (gate) + review
 - every pushed property is typed to the target schema — `unenforced: runtime + gate` (no static schema check yet)

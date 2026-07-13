@@ -30,9 +30,9 @@ publishing bindings it writes through.
   never a bespoke push.
 
 ## Concepts
-source · ingestion · standardize
+source · ingestion · standardize · intake gate
 
 ## Invariants
-- nothing enters Notion without a human gate on what to ingest — enforcer: (gate) + the guide's review step
+- nothing enters Notion without an intake gate (a human curating what to ingest) — enforcer: (gate) + the guide's intake-gate step
 - ingested records are standardized to the target database's schema before publish — enforcer: (gate) + publishing's live schema fetch
 - re-ingesting a source doesn't duplicate — `unenforced: the guide's de-dup step`

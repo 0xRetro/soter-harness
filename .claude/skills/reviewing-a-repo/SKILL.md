@@ -25,7 +25,9 @@ entries were updated, not duplicated.
 ## Use when / don't use when
 - Use when: ingesting a repo into Notion as a tooling page + feature cards.
 - Not for: non-repo sources; the Notion write mechanics (`/pushing-to-notion`,
-  `/updating-a-notion-page`); defining an already-captured feature (`/defining-a-feature`).
+  `/updating-a-notion-page`); shaping a single feature card (that is `/capturing-a-feature`,
+  which this delegates to per approved card); defining an already-captured feature
+  (`/defining-a-feature`).
 
 ## Steps
 1. **Read the code, not just the README.** README drifts from reality (baseline: three
@@ -44,18 +46,19 @@ entries were updated, not duplicated.
    it has a Feature Board, its existing cards. Mark each candidate NEW vs EXISTING. For a
    tool that ALREADY exists, do step 6 (resolve its board) first, then de-dup against
    that board's real cards — the order inverts for existing tools.
-5. **Human review gate — the load-bearing step.** Present the tooling page + the candidate
+5. **Intake gate — the load-bearing step.** Present the tooling page + the candidate
    feature list (new vs existing, granularity visible) and let the human CURATE: which
    become cards, at what altitude, which are noise. NOTHING is written before this okay.
-   This is ingestion's "nothing enters without a human gate" invariant. It is a DISTINCT
-   gate from the per-write confirms inside the publishing bindings (step 7) — it curates
-   *selection and altitude*, not write mechanics; the downstream confirms do not replace it.
+   This is ingestion's "nothing enters without an intake gate" invariant — a DISTINCT
+   checkpoint from the per-write confirms inside the bindings (it curates *selection and
+   altitude*, not write mechanics; the downstream confirms don't replace it).
 6. **Resolve the board.** Find or create the tooling page in [DB] Tooling; find or create
    that tool's Feature Board; get its `data_source_id`. (Feature boards are per-tooling —
    the card's board is its project link.)
-7. **Publish the approved set.** New cards → `/pushing-to-notion` (target = the tool's
-   Feature Board, Status = Planned, why in Description). Updates (tooling-page fields,
-   existing cards) → `/updating-a-notion-page`. Each keeps its own confirm.
+7. **Land the approved set — delegate the shaping.** Each approved NEW feature goes through
+   `/capturing-a-feature` (target = the tool's Feature Board) — that guide is the single
+   card-shaping authority; don't re-shape cards here. Tooling-page fields and existing
+   cards get updated via `/updating-a-notion-page`.
 8. **Verify + report.** List what was created and updated with urls; confirm nothing was
    fabricated and no duplicates were made.
 
