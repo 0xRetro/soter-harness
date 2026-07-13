@@ -16,8 +16,8 @@ it produces (product-development, and project-management / crm as they're built)
 publishing bindings it writes through.
 
 ## Mechanisms
-- **reviewing-a-repo** (forging) — reads: a git repo · produces: proposed feature records
-  + a tooling/project page, for a human to accept or drop · runs-when: a user invokes
+- **reviewing-a-repo** — reads: a git repo · produces: proposed feature records + a
+  tooling/project page, curated by a human before any write · runs-when: a user invokes
   `/reviewing-a-repo` · invariants: nothing is written without a human deciding what to
   ingest; records are standardized to the target schema before publish; re-review
   doesn't duplicate.
@@ -25,8 +25,9 @@ publishing bindings it writes through.
   follows the same spine (source → review → standardize → confirm → publish).
 
 ## Components
-- the `reviewing-a-repo` guide (forging) — Notion writes go through the publishing
-  bindings (`pushing-to-notion` / `updating-a-notion-page`), never a bespoke push.
+- `.claude/skills/reviewing-a-repo/SKILL.md` — the first intake mechanism. Notion writes
+  go through the publishing bindings (`pushing-to-notion` / `updating-a-notion-page`),
+  never a bespoke push.
 
 ## Concepts
 source · ingestion · standardize
