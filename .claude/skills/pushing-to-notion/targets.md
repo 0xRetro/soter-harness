@@ -33,27 +33,27 @@ Feature Board's data_source_id).
   - `Prod URL` → url
 
 ### tasks  *(the [DB] Tasks database — actionable work items)*
-- **data_source_id:** `2abd79b5-de38-80f8-9470-000b7181b18d`
+- **data_source_id:** `2abd79b5-de38-80f8-9470-000b7181b18d` *(live-verified 2026-07-13)*
 - **properties:**
-  - `Task Name` → title
-  - `Status` → status          <!-- Not started · In progress · Done -->
-  - `Priority` → select        <!-- Low · Medium · High · Urgent -->
-  - `Tag` → multi_select       <!-- Bug · Feature · Improvement · Research · Documentation · Operations · Client · Internal · Blocked -->
-  - `Assignee` → person
-  - `Due` → date
-  - `Summary` → text
-  - `Project` · `Org` · `Parent task` → relation   <!-- relations need the TARGET page id; resolve/search first -->
+  - `Name` → title
+  - `Status` → status          <!-- Backlog · To Do · Blocked · In Progress · Cancelled · Done · Archived -->
+  - `Context` → select         <!-- Internal · Service · Project · Client -->
+  - `Prime Agent` → select     <!-- Spark · ALL · Skybase · Grove · Keel -->
+  - `Assigned To` → person
+  - `Client Contact` → person
+  - `Next Action` → date
+  - `Project` · `Related Docs` → relation   <!-- resolve the TARGET page id first -->
+  <!-- No Priority/Tag/Summary/Due — the March Standards page listed those; the live DB doesn't have them. -->
 
 ### projects  *(the [DB] Projects database — client/internal engagements)*
-- **data_source_id:** `721bfb88-e8d5-4934-ac26-cc82e1afc7a0`
+- **data_source_id:** `721bfb88-e8d5-4934-ac26-cc82e1afc7a0` *(live-verified 2026-07-13)*
 - **properties:**
-  - `Project Name` → title
-  - `Type` → select            <!-- Client · Internal · Research · Pilot -->
-  - `Status` → status          <!-- Not started · In progress · Done -->
+  - `Name` → title
+  - `Type` → select            <!-- Project · Ongoing · Deal -->
+  - `Status` → status          <!-- Not Started · Active · On Hold · Complete · Cancelled -->
   - `Start Date` · `Target End Date` → date
-  - `Description` → text
-  - `Code` → text
-  - `Organization` · `Primary Contact` · `Tasks` → relation   <!-- resolve target page ids first -->
+  - `PM` · `Client Contact` → person
+  - `Organization` · `Tasks` · `Docs` · `Opportunity` · `Service` → relation   <!-- resolve target page ids first -->
 
 ### orgs  *(the [DB] Orgs database — organizations)*
 - **data_source_id:** `2b2d79b5-de38-817a-981e-000b27e5575b`

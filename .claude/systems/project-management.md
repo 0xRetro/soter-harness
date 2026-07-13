@@ -13,8 +13,9 @@ Track delivery above the feature level: **projects** (client/internal engagement
 the **tasks** that execute them, mirrored to the real Notion [DB] Projects and [DB] Tasks
 databases and kept standardized to their documented schemas. Consumers: the team
 tracking what's being delivered, for whom, by when; ingestion (which can produce tasks
-from a source); the publishing bindings that write them. Mirrors the workspace's own
-Notion Standards — those DB standard pages are the source of truth for shape.
+from a source); the publishing bindings that write them. Mirrors the LIVE [DB] Tasks /
+[DB] Projects schemas — the Standards pages document these but can lag (they did; fetch
+live, ADR-0016).
 
 ## Mechanisms
 - **capturing-a-task** — reads: a described work item · produces: a [DB] Tasks row

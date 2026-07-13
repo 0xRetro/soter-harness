@@ -29,18 +29,22 @@ resolved to real ids, its date concrete, de-duped and confirmed — at Status = 
 Follow the **`writing-records-to-notion`** standard (`.claude/standards/writing-records-to-notion.md`) for the shared
 spine — fetch schema · resolve relations (never fabricate) · match options · pin dates ·
 de-dup · confirm · publish via the binding. Task-specific:
-1. **Shape:** `Task Name` (title) · `Summary` (context) · `Priority` → Low/Medium/High/Urgent
-   · `Status` = `Not started` (always, at capture). Expressed urgency about the *request*
-   ("I'm slammed", "ASAP") is NOT a `Priority` — don't set it from that.
-2. **Assignee** resolves via `Notion:notion-get-users` ("me" → the user's email → their
-   id — a person field needs the id, not a name); `Project`/`Org` via search. Target
-   `tasks`.
+1. **Shape (live schema):** `Name` (title) · `Status` = `To Do` (at capture) · `Context`
+   (select — Internal/Service/Project/Client, only if clear). The live board has NO
+   Priority/Tag/Summary/Due field (the March Standards page was stale — targets.md is now
+   live-verified); don't try to set them.
+2. **Resolve:** `Assigned To` (and `Client Contact` if named) via `Notion:notion-get-users`
+   ("me" → the user's email → their id); `Project` via search; `Next Action` is the date
+   field — pin relative dates. Target `tasks`.
 
 ## Gotchas
 Shared write-discipline gotchas live in the `writing-records-to-notion` standard;
 task-specific ones only:
-- (baseline) "next Friday" is ambiguous (nearest vs following week) — pin the convention
-  and confirm when it's close; never store a relative phrase.
+- (live 2026-07-13) The live [DB] Tasks schema differs from the March Standards page
+  (no Priority/Tag/Summary/Due; `Name` not "Task Name"; `Assigned To`; `Next Action` date;
+  Status starts at To Do). Fetch live; never trust the Standards page as the schema.
+- (baseline) "next Friday" is ambiguous (nearest vs following week) — pin `Next Action` to
+  a concrete date and confirm when it's close; never store a relative phrase.
 - (pressure) `get-users` may return multiple people or a bot — email→id isn't always 1:1;
   confirm the right person before using an id, don't grab the first match.
 
