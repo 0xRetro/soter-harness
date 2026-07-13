@@ -1,0 +1,14 @@
+{
+  "name": "soter-harness-marketplace",
+  "owner": {
+    "name": "Soter Labs"
+  },
+  "plugins": [
+    {
+      "name": "soter-harness",
+      "source": "./.claude",
+      "description": "The soter harness kernel (base plugin). Overlays pin to a semver of this."
+    }
+  ],
+  "description": "Private marketplace for the soter-harness kernel and its overlays."
+}

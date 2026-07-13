@@ -1,0 +1,9 @@
+{
+  "name": "soter-harness",
+  "description": "Soter harness kernel: systems-first classification (layer/system/kind/mold), molds, one fail-closed checker, artifact evals, forge self-build with human gate, ADR log.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Soter Labs"
+  },
+  "license": "UNLICENSED"
+}

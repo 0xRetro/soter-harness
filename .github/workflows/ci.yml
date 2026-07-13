@@ -1,0 +1,30 @@
+name: harness-ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Prove the Checker itself catches violations (plant-and-assert)…
+      - run: node .claude/scripts/check.mjs --selftest
+      # …then hold the whole repo to the bar. This is the hard gate (ADR-0004).
+      - run: node .claude/scripts/check.mjs --all
+
+  # Plugin invariant: the plugin + marketplace manifest must validate before ship.
+  # Separate job so a packaging break is distinct from a content break.
+  plugin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install -g @anthropic-ai/claude-code
+      - run: claude plugin validate .

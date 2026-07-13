@@ -1,0 +1,33 @@
+---
+name: authoring
+layer: kernel
+system: authoring
+kind: component
+mold: house-rule
+---
+
+# Authoring harness pieces
+
+Applies whenever creating or editing rules, guides, standards, molds, or evals.
+
+- ALWAYS fill every required section of the mold; delete all hints from the
+  finished piece.
+- ALWAYS declare classification frontmatter (`layer · system · kind · mold`) on
+  durable content pieces.
+- ALWAYS write descriptions in third person stating what it does AND when to use it,
+  with the trigger words a user would actually say; NEVER summarize the piece's steps
+  in the description (agents follow the summary instead of reading the body).
+- ALWAYS mark judgment spots in steps with `FLEX:` and state the bounds; make
+  fragile/irreversible steps exact (commands or check rules, not prose).
+- ALWAYS check neighboring guides' exclusion clauses — no two pieces may both claim
+  (or both reject) the same territory.
+- ALWAYS record failure modes you actually observed in the piece's Gotchas section.
+- NEVER include time-sensitive content (dates, versions, "currently") in a piece;
+  point to where the live fact lives instead.
+- NEVER name a piece `helper`, `utils`, or another vague word; use lowercase-hyphenated,
+  gerund-preferred names (`reviewing-prs`).
+- Forge-authored pieces ALWAYS land staged first — user-invoke-only until promoted
+  (auto-invocation + guide-index entry) after real use (ADR-0005).
+- Guides ALWAYS include at least one pressure eval case (realistic stakes; ADR-0006).
+
+Why: see `decisions/ADR-0002`, `ADR-0003`, `ADR-0005`, `ADR-0006` and `.claude/RUBRIC.md`.
