@@ -11,7 +11,7 @@ mold: system-card
 ## Promise
 Carry a captured use-case to a shipped feature, tracked lightly. Each feature is a
 **feature record** (a card) that lives in its tool's Feature Board — the board it lives
-in IS its link to the **project page** (that [DB] Tooling entry), so containment is the
+in IS its link to the **tooling page** (that [DB] Tooling entry), so containment is the
 link, no relation property. Work moves through the real **feature lifecycle** — Planned
 → Up Next → In Development → Completed (or Canceled). Consumers: the team tracking what
 is being built and why; the publishing binding that mirrors records into Notion.
@@ -33,10 +33,10 @@ Ozone HQ boards, verified 2026-07-12; see the publishing binding's `targets.md`.
 ## Components
 - `.claude/skills/capturing-a-feature/SKILL.md` — the capture-stage guide
 - `.claude/skills/defining-a-feature/SKILL.md` — the define-stage guide. Notion targets
-  for the cards and project pages live in the publishing binding's `targets.md`.
+  for the cards and tooling pages live in the publishing binding's `targets.md`.
 
 ## Concepts
-feature record · project page · feature lifecycle
+feature record · tooling page · feature lifecycle
 
 ## Invariants
 - the why lands in the card's Description, never dropped — enforcer: (gate) + `capturing-a-feature` step 1

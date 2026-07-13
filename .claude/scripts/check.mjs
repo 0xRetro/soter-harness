@@ -534,7 +534,10 @@ function contentFiles(root) {
       else if (e.name.endsWith('.md')) found.push(p);
     }
   };
-  ['.claude/skills', '.claude/standards', '.claude/systems', '.claude/evals', '.claude/rules', '.claude/templates', 'decisions'].forEach((d) => walk(path.join(root, d)));
+  // NB: decisions/ is deliberately NOT alias-linted — ADRs are immutable historical
+  // records and may use the vocabulary of their time; forcing current terms on a frozen
+  // record contradicts ADR immutability. (Security/placeholder checks still run on them.)
+  ['.claude/skills', '.claude/standards', '.claude/systems', '.claude/evals', '.claude/rules', '.claude/templates'].forEach((d) => walk(path.join(root, d)));
   // Always-loaded/authored harness content — but NOT LEXICON.md, which legitimately
   // holds the banned words in its alias table (would self-flag). (sweep: scope was too narrow)
   for (const f of ['CLAUDE.md', 'README.md', '.claude/RUBRIC.md'])

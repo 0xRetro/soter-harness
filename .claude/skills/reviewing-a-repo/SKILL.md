@@ -2,7 +2,7 @@
 name: reviewing-a-repo
 description: >-
   Reviews a code repository and turns it into standardized Notion records — a
-  tooling/project page plus feature cards — with granularity and selection curated by a
+  tooling page plus feature cards — with granularity and selection curated by a
   human before anything is written, and existing entries updated rather than duplicated.
   Use when the user wants to ingest, review, or "suck in" a repo into Notion as features
   and a tooling page. Not for non-repo sources, not for the Notion write mechanics

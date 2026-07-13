@@ -38,8 +38,8 @@ invented location.
 3. **Shape to the real `feature-cards` schema**
    (`.claude/skills/pushing-to-notion/targets.md`): `Name` → title · `Description` →
    text (the why) · `Status` → status = `Planned`. (Owner and the owning tool live on
-   the project page in [DB] Tooling, not on the card — note the tool in Description if
-   it matters, or capture/link a project page separately.)
+   the tooling page in [DB] Tooling, not on the card — note the tool in Description if
+   it matters, or capture/link a tooling page separately.)
 4. **Land it on the Feature Board.** Hand the card to `/pushing-to-notion` (target
    `feature-cards`) to create it. Never invent a local storage location.
 5. **Verify.** The card has the why in Description and status = `Planned`; report the
@@ -50,7 +50,7 @@ invented location.
   loses the "why." Steps 1 and 4 close those.
 - (live test 2026-07-12) The real Feature Board has only `Name` / `Description` /
   `Status` — no Use-case, Owner, or Project field. The why goes in `Description`; the
-  owner and owning tool live on the project page ([DB] Tooling), not the card. An
+  owner and owning tool live on the tooling page ([DB] Tooling), not the card. An
   earlier draft invented those fields; pushing against the live schema corrected it —
   re-fetch the schema, don't trust an old assumption.
 - (pressure) Under a bulk rush the temptation is to drop the why. Hold that line:

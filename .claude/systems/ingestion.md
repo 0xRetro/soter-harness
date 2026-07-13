@@ -17,7 +17,7 @@ publishing bindings it writes through.
 
 ## Mechanisms
 - **reviewing-a-repo** — reads: a git repo · produces: proposed feature records + a
-  tooling/project page, curated by a human before any write · runs-when: a user invokes
+  tooling page, curated by a human before any write · runs-when: a user invokes
   `/reviewing-a-repo` · invariants: nothing is written without a human deciding what to
   ingest; records are standardized to the target schema before publish; re-review
   doesn't duplicate.

@@ -81,13 +81,15 @@ table below is the banned list.
 | external store | publishing | a system of record outside the harness that receives published artifacts (Notion is the first) |
 | binding | publishing | a mechanism mapping harness artifacts to one external store's API (e.g. notion-push) |
 | fetch-merge-write | publishing | update an external record by reading its current value, merging locally, then writing — never a blind write that clobbers what's there |
-| Feature Board | product-development | a Notion database of feature cards; one per tooling entry — the board a card lives in is its link to that project |
+| Feature Board | product-development | a Notion database of feature cards; one per tooling entry — the board a card lives in is its link to that tooling page |
 | feature record | product-development | one card on the Feature Board — the tracked unit of product work: name, the why (in Description), and status |
-| project page | product-development | one page in the [DB] Tooling database describing a tool/project; each tooling entry has its own Feature Board, so a feature belongs to a tool by living in that board (containment is the link) |
+| tooling page | product-development | one page in the [DB] Tooling database describing a tool/product; each tooling entry has its own Feature Board, so a feature belongs to a tool by living in that board (containment is the link) |
 | feature lifecycle | product-development | a feature card's real Feature Board statuses: Planned → Up Next → In Development → Completed (or Canceled) |
 | ingestion | ingestion | turning an external source into standardized Notion records, human-gated on what enters |
 | source | ingestion | an external thing to ingest — a repo, doc, or dump |
 | standardize | ingestion | normalize a source's data to the target database's schema before publishing |
+| project | project-management | one row in the [DB] Projects database — a client or internal engagement (type, status, dates, org, contact), tracking work above the task level |
+| task | project-management | one row in the [DB] Tasks database — an actionable work item (status, priority, assignee, due), related to a project and/or org |
 
 ## Aliases (do not use → use instead)
 
@@ -101,6 +103,7 @@ observed drift.
 | judgment point | flex point |
 | template file | mold |
 | category | system |
+| project page | tooling page |
 
 ## Where it goes (placement table)
 
