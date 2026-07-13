@@ -448,10 +448,15 @@ function checkAliases(root, files, out) {
   }
   for (const file of files) {
     const text = read(file);
+    // Strip inline-code spans before scanning: a backticked token is a literal identifier
+    // or quoted mention (e.g. a live Notion field named `Category`), not harness prose
+    // vocabulary — the same "backtick = mention, not residue" rule the PLACEHOLDER lint
+    // uses above. The alias lint governs authoring vocabulary, not external schema names.
+    const scanLines = lines(text).map((l) => l.replace(/`[^`\n]*`/g, ''));
     for (const { alias, canonical } of aliases) {
       // \b…s? catches the plural too (playbook → playbooks); the exact word still wins.
       const re = new RegExp(`\\b${alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}s?\\b`, 'i');
-      const hit = lines(text).findIndex((l) => re.test(l));
+      const hit = scanLines.findIndex((l) => re.test(l));
       if (hit !== -1)
         out.push(V(`${file}:${hit + 1}`, 'ALIAS', `uses "${alias}" — the LEXICON term is "${canonical}"`,
           'one term per concept keeps the harness coherent',
@@ -738,7 +743,7 @@ function selftest() {
   wc('.claude/templates/how-to-guide.md', `---\nname: how-to-guide\n${CLASS}mold: mold\n---\n\n# Guide mold` + MOLDBODY);
   wc('.claude/systems/guides.md', `---\nname: guides\n${CLASS}mold: system-card\n---\n\n# System: guides\n\n## Promise\nx\n\n## Mechanisms\nnone\n\n## Components\n- .claude/skills/greeting-users/SKILL.md\n\n## Concepts\nnone\n\n## Invariants\nnone\n`);
   wc('.claude/skills/greeting-users/SKILL.md',
-    `---\nname: greeting-users\ndescription: Greets users warmly. Use when the user asks for a greeting. Not for farewells.\n${CLASS}mold: how-to-guide\n---\n\n# Greeting users\n\n## Use when / don\'t use when\n- Use when: greeting\n- Not for: farewells\n\n## Steps\n1. Say hello.\n`);
+    `---\nname: greeting-users\ndescription: Greets users warmly. Use when the user asks for a greeting. Not for farewells.\n${CLASS}mold: how-to-guide\n---\n\n# Greeting users\n\n## Use when / don\'t use when\n- Use when: greeting\n- Not for: farewells\n\n## Steps\n1. Say hello.\n2. Copy the \`playbook\` column verbatim.\n`);   // backticked alias must stay silent (code-span strip)
   for (const c of ['happy', 'pressure', 'invariant', 'no-trigger'])
     wc(`.claude/evals/greeting-users/${c}.md`, `---\nskill: greeting-users\ncase: ${c}\n---\n## Try\ngreet me\n## Expect\n- greeting produced\n## Never\n- rude output\n`);
   const silent = checkAll(clean).filter((v) => v.level !== 'warn');
