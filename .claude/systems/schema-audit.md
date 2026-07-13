@@ -17,7 +17,7 @@ schema docs; every harness guide that reads a schema (a true doc means fewer liv
 of stale surprises — though live is still the source of truth, ADR-0016).
 
 ## Mechanisms
-- **auditing-a-schema-doc** (forging) — reads: a DB's live schema + its schema doc's
+- **auditing-a-schema-doc** — reads: a DB's live schema + its schema doc's
   documented fields · produces: a drift report (fields missing/extra, type mismatches,
   option-set changes) and, on a human okay, the doc updated to match live · runs-when: a
   user invokes `/auditing-a-schema-doc` · invariants: the diff is against the LIVE schema,
