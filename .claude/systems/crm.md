@@ -22,12 +22,17 @@ truth for shape.
   invokes `/capturing-a-contact` · invariants: the Org relation is resolved to a real
   page id or left empty, never fabricated; select/multi_select values are matched to the
   live option set, never invented.
-- Capturing/updating orgs is forged as needed. Writes go through the publishing bindings.
+- **capturing-an-org** — reads: a described organization · produces: a [DB] Orgs row
+  (Name + Type/Tags matched to live options, handles normalized to URLs) · runs-when: a
+  user invokes `/capturing-an-org` · invariants: sector words go to Tags not Type;
+  Type/Tags matched to the live option set; dedup is alias-aware (orgs are relation targets).
+- Updating orgs/contacts is forged as needed. Writes go through the publishing bindings.
 
 ## Components
-- `.claude/skills/capturing-a-contact/SKILL.md` — the contact-capture guide. Notion
-  targets `orgs` and `contacts` (with their real schemas + relations) live in the
-  publishing binding's `targets.md`.
+- `.claude/skills/capturing-a-contact/SKILL.md` — the contact-capture guide
+- `.claude/skills/capturing-an-org/SKILL.md` — the org-capture guide. Notion targets
+  `orgs` and `contacts` (with their real schemas + relations) live in the publishing
+  binding's `targets.md`.
 
 ## Concepts
 org · contact

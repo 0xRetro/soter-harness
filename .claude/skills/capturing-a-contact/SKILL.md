@@ -26,7 +26,7 @@ real option, the Org resolved to a real id or empty, de-duped and confirmed befo
   (`/pushing-to-notion`); tasks (`/capturing-a-task`) or features.
 
 ## Steps
-Follow the **`writing-records-to-notion`** standard (`.claude/standards/`) for the shared
+Follow the **`writing-records-to-notion`** standard (`.claude/standards/writing-records-to-notion.md`) for the shared
 spine — fetch schema · resolve relations · match options (never invent) · de-dup ·
 confirm · publish. Contact-specific:
 1. **Shape:** `Name` · `Email` · `Telegram`/`Signal`/`Github`/`Timezone (UTC)`/`Source`

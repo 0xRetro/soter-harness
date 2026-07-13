@@ -26,7 +26,7 @@ resolved to real ids, its date concrete, de-duped and confirmed — at Status = 
   cards (`/capturing-a-feature`).
 
 ## Steps
-Follow the **`writing-records-to-notion`** standard (`.claude/standards/`) for the shared
+Follow the **`writing-records-to-notion`** standard (`.claude/standards/writing-records-to-notion.md`) for the shared
 spine — fetch schema · resolve relations (never fabricate) · match options · pin dates ·
 de-dup · confirm · publish via the binding. Task-specific:
 1. **Shape:** `Task Name` (title) · `Summary` (context) · `Priority` → Low/Medium/High/Urgent
