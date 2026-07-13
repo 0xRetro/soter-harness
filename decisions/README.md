@@ -17,3 +17,4 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0010](ADR-0010-checker-is-a-drift-catcher.md) | The checker is a cooperative drift-catcher, not a security boundary | Accepted |
 | [ADR-0011](ADR-0011-check-rules-name-their-enforcer.md) | Every declared check rule names its enforcer | Accepted |
 | [ADR-0012](ADR-0012-all-layers-one-repo.md) | Harness holds all four layers; genericness is per-piece; context/automation are add-ons | Accepted |
+| [ADR-0013](ADR-0013-automation-layer-safety-enforcement.md) | Automation-layer safety (no autofire, no secret leaks) is mechanically enforced | Accepted |

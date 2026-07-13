@@ -31,5 +31,6 @@ publish · external store · binding
 
 ## Invariants
 - external writes require explicit human confirmation — enforcer: the skill's confirm step + (gate)
-- the push skill is side-effecting → stays `disable-model-invocation` — enforcer: checker (staged) + reviewer
+- automation guides never auto-fire — enforcer: checker `AUTOMATION_AUTOFIRE`
+- no real credentials in any harness content — enforcer: checker `SECRET_LEAK`
 - every pushed property is typed to the target schema — `unenforced: runtime + gate` (no static schema check yet)
