@@ -19,6 +19,7 @@ Per target: a name, the database id, and each property's Notion type.
 - **database_id:** `00000000-0000-0000-0000-000000000000`
 - **properties:**
   - `Name` → title
+  - `Use case` → rich_text    <!-- the WHY: value it creates / problem it removes (first-class) -->
   - `Status` → status        <!-- capture · define · build · review · ship -->
   - `Owner` → people
   - `Project` → url           <!-- link to the project page -->

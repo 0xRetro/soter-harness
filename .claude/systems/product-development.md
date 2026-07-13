@@ -16,13 +16,17 @@ team tracking what is being built and why; the publishing binding that mirrors r
 and pages into Notion. Deliberately lightweight — self-directed, no forced gates.
 
 ## Mechanisms
-None yet. Each lifecycle stage becomes a guide forged as the process firms up
-(capturing, defining, reviewing, shipping). Pushing records and pages out lives in the
-publishing system, not here.
+- **capturing** — reads: a raw idea/use-case · produces: a schema-shaped feature record
+  (status = capture) with the use-case captured first-class and a project page linked ·
+  runs-when: a user invokes `/capturing-a-feature` · invariants: the use-case is
+  captured before anything else; owner resolved (never silently blank); project page
+  linked before the record lands.
+- The later stages (defining, reviewing, shipping) become guides forged as the process
+  firms up. Pushing records and pages out lives in the publishing system, not here.
 
 ## Components
-None yet — a feature-record schema and stage guides are forged as needed. Notion
-targets for the cards and project pages live in the publishing binding's `targets.md`.
+- `.claude/skills/capturing-a-feature/SKILL.md` — the capture-stage guide. Notion
+  targets for the cards and project pages live in the publishing binding's `targets.md`.
 
 ## Concepts
 feature record · project page · feature lifecycle
