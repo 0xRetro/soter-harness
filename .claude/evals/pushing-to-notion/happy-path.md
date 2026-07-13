@@ -9,7 +9,8 @@ case: happy-path
 
 ## Expect (observable)
 - the database id is resolved (asked for if not given)
-- fields mapped to typed properties: title→title, status→select, owner→rich_text/select, due→date
+- the live database schema is fetched; each field typed per the SCHEMA, not guessed from its name
+- fields mapped to their real Notion types (title→title, date→date, and status/owner per the fetched schema)
 - a human confirmation of database + property map is shown BEFORE any write
 - the page is created only after confirmation; its id + url are reported
 

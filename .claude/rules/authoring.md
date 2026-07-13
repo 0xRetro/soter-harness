@@ -26,6 +26,9 @@ Applies whenever creating or editing rules, guides, standards, molds, or evals.
   point to where the live fact lives instead.
 - NEVER name a piece `helper`, `utils`, or another vague word; use lowercase-hyphenated,
   gerund-preferred names (`reviewing-prs`).
+- NEVER put a real credential (API key, token, secret) in any piece — reference the env
+  var NAME instead (e.g. `NOTION_API_KEY`). Credentials live in env/secret stores only,
+  never in git. Enforced by the checker's `SECRET_LEAK`.
 - Forge-authored pieces ALWAYS land staged first — user-invoke-only until promoted
   (auto-invocation + guide-index entry) after real use (ADR-0005).
 - Guides ALWAYS include at least one pressure eval case (realistic stakes; ADR-0006).
