@@ -32,8 +32,8 @@ guide.
    becomes separate runs — evidence never transfers between pieces.
 2. **Gather evidence from artifacts, never testimony.** Primary: the git history
    touching the piece and its Gotchas section (real use grows dated gotchas).
-   Secondary: the event log (`.claude/evals/logs/events.jsonl`) — today it records
-   tool calls without skill attribution, so treat it as corroboration, not proof.
+   Secondary: the event log (`.claude/evals/logs/events.jsonl`) — it records tool
+   calls without skill attribution (see Gotchas), so treat it as corroboration, not proof.
    A claim of use is a pointer to evidence, not the evidence. FLEX: what counts as
    enough, above this floor: ≥3 real uses across ≥2 distinct sessions, and zero
    pending redlines from the gate. A refused promotion needs no artifact — just say

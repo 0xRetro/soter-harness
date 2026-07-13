@@ -33,7 +33,8 @@ confirm · publish. Contact-specific:
    (text). Record where the contact came from in `Source` if known. Target `contacts`.
 2. **Fuzzy option-reads need care.** `Role`/`Disposition`/`Authority` map from prose —
    "supportive" is not necessarily "Champion" (vs "Coach"); "VP of Engineering" may match
-   no real `Role`. Per the standard: match a live option or leave empty and ask — don't
+   no real `Role`. FLEX: which live option a fuzzy phrase maps to, bounded by: it must be
+   a defensible read of an existing option — otherwise leave empty and ask; never
    over-read into a strong option.
 3. **Org relation:** search [DB] Orgs → the page id; if absent, create the org first
    (`/capturing-an-org`) or leave empty and flag.

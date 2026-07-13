@@ -39,8 +39,9 @@ entries were updated, not duplicated.
    Leave a field blank rather than invent it. This ask survives a "don't ask me / just
    do it" instruction — blank beats invented.
 3. **Draft the tooling page + candidate features at ONE altitude.** A feature = a
-   user-facing capability someone would put on a roadmap — not per-file/route/service
-   (too fine), not the whole product (too coarse). If the tool already has a Feature
+   user-facing capability someone would put on a roadmap — FLEX: where exactly the
+   altitude line falls, bounded by: coarser than per-file/route/service, finer than
+   the whole product; the human redraws it at step 5. If the tool already has a Feature
    Board, calibrate granularity against its existing cards.
 4. **De-dup against Notion.** Search for the tooling page (by Name / GitHub url) and, if
    it has a Feature Board, its existing cards. Mark each candidate NEW vs EXISTING. For a

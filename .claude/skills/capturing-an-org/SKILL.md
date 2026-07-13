@@ -33,9 +33,11 @@ spine — fetch schema · match options (never invent) · de-dup · confirm · p
 1. **Shape:** `Name` (title); `Website`/`Twitter` (url) — normalize a bare handle/domain
    to a full URL (`@nebulalabs` → `https://twitter.com/nebulalabs`; `nebulalabs.io` →
    `https://nebulalabs.io`).
-2. **Type is a single forced-choice classification from prose.** Sector words ("DeFi",
-   "L2", "grants") usually belong in `Tags`, NOT `Type` — don't fold a sector into Type,
-   and don't silently drop it. ("DeFi foundation" → Type `Foundation` + consider a DeFi tag.)
+2. **Type is a single forced-choice classification from prose.** FLEX: which live Type
+   option the prose maps to, bounded by: a defensible read of a real option, else ask.
+   Sector words ("DeFi", "L2", "grants") usually belong in `Tags`, NOT `Type` — don't
+   fold a sector into Type, and don't silently drop it. ("DeFi foundation" → Type
+   `Foundation` + consider a DeFi tag.)
 3. **De-dup hard.** Orgs are relation targets — a duplicate silently splits the
    relationship graph. Search [DB] Orgs by name AND likely aliases ("Nebula Labs" /
    "Nebula" / "NebulaLabs") before creating.

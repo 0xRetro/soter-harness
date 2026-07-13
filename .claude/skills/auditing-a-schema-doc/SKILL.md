@@ -1,12 +1,11 @@
 ---
 name: auditing-a-schema-doc
 description: >-
-  Audits a database's schema doc (a Notion "[DB] X Standards" page) against the live
-  schema and reconciles drift through a human gate — diffing fields by option and type,
-  distinguishing renames from deletions, quarantining not-yet-built fields, and correcting
-  a false "consistent" callout with surgical edits. Use when the user wants to audit,
-  reconcile, or fix a DB's schema doc, or check one for drift. Not for writing records
-  (the capturing guides) or the write mechanics (/updating-a-notion-page).
+  Keeps a database's schema doc (a Notion "[DB] X Standards" page) true to the live
+  database, reconciling any drift found through a human gate. Use when the user wants
+  to audit, reconcile, or fix a DB's schema doc, check one for drift, or suspects the
+  documented fields no longer match the real database. Not for writing records (the
+  capturing guides) or the write mechanics (/updating-a-notion-page).
 disable-model-invocation: true
 layer: automation
 system: schema-audit
@@ -54,8 +53,9 @@ binding. Audit-specific:
    flag them — don't edit them here.
 7. **Reconcile on the human okay** — via `/updating-a-notion-page` (fetch-merge-write,
    surgical). Never overwrite the whole page. Under "don't make me review" pressure, keep
-   the gate but make it cheap: present a tight summary + only the decisions that actually
-   need a human (rename confirmations, delete-vs-quarantine) — not a wall of diff.
+   the gate but make it cheap — FLEX: how far to compress the review, anywhere from the
+   full diff to a tight summary, but the decisions that need a human (rename
+   confirmations, delete-vs-quarantine) always reach them explicitly.
 
 ## Gotchas
 - (baseline) `Status` "matches" by name but not options — compare option sets

@@ -47,8 +47,8 @@ correctly, the write confirmed by a human first, and the created page verified.
    count for a batch) and get an explicit human okay. Non-negotiable, even under time
    pressure — an external, hard-to-undo write.
 6. **Push.** Create each page via the Notion MCP tool (`Notion:create-database-row`) or a
-   POST to `https://api.notion.com/v1/pages` (`Notion-Version: 2022-06-28`, key from
-   `NOTION_API_KEY`).
+   POST to `https://api.notion.com/v1/pages` (the `Notion-Version` header set per
+   Notion's current API docs, key from `NOTION_API_KEY`).
 7. **Verify + report.** Report each created page's id and url. For a batch there is no
    rollback — if row N fails, say which rows were written and which weren't.
 
