@@ -10,8 +10,12 @@ before a push if the board may have changed (a property added/renamed).
 
 ## Targets
 
-### feature-cards  *(the Feature Board — feature records)*
-- **data_source_id:** `318d79b5-de38-809b-a1e6-000b2d709d33`
+### feature-cards  *(a tool's Feature Board — feature records)*
+Feature boards are PER TOOLING ENTRY — the board a card lives in is its link to that
+project. The id below is Soter Notion's board; resolve the right tool's board id when
+capturing a feature for a different tool (fetch the tooling page, read its embedded
+Feature Board's data_source_id).
+- **data_source_id:** `318d79b5-de38-809b-a1e6-000b2d709d33`  *(Soter Notion's board)*
 - **properties:**
   - `Name` → title
   - `Description` → text        <!-- holds the WHY: the value it creates / problem it removes -->
