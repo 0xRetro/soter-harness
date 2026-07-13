@@ -1,6 +1,6 @@
 # ADR-0018: Promote writing-adrs to the guide index
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-13
 
 ## Context

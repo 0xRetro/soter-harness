@@ -1,6 +1,6 @@
 # ADR-0017: Systems are born from real pieces or decreed by ADR
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-13
 
 ## Context
