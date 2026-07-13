@@ -22,9 +22,14 @@ the system.)
   invariants: every property is typed per Notion's API; a human confirms before any
   write; never silently overwrites an existing page. (Pattern mirrors
   `~/dev/process-platform`'s `notion_create_database_item` step.)
+- **notion-update** — reads: an existing page id + the fields to change · produces: the
+  page updated in place · runs-when: a user invokes `/updating-a-notion-page` (never
+  auto) · invariants: fetch-merge-write (never blind-write — Notion replaces a whole
+  property value); only the named properties sent; a human confirms before the write.
 
 ## Components
-- `.claude/skills/pushing-to-notion/SKILL.md` — the notion-push binding (a guide)
+- `.claude/skills/pushing-to-notion/SKILL.md` — the notion-push (create) binding
+- `.claude/skills/updating-a-notion-page/SKILL.md` — the notion-update binding
 
 ## Concepts
 publish · external store · binding
