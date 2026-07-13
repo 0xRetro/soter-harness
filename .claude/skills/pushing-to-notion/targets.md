@@ -36,16 +36,21 @@ There is no global feature board. Each tooling page embeds its own board (duplic
 from [DB] Tooling's new-product page template in Notion), and a card belongs to a tool
 by living in that tool's board (containment). Resolve the id fresh each time:
 1. find the tool's page in `tooling-pages` (create it first if it doesn't exist);
-2. fetch that page and read its embedded database's `data_source_id`.
-Duplicated boards KEEP the title "Feature Board Template" — identify a board by the
-tooling page that embeds it, never by its title. (Verified live: the Soter Notion
-entry's own board is `318d79b5-de38-809b-a1e6-000b2d709d33`, still template-titled.)
-- **properties** *(every entry's board shares this shape)*:
+2. fetch that page and read the `data_source_id` of its embedded 🔧 Feature Board —
+   the first inline database on the page. A page can embed OTHER databases too
+   (e.g. a glossary), so don't grab just any embedded database.
+Board titles are unreliable in BOTH directions (live survey 2026-07-13, 6 entries):
+most keep the duplicated title "Feature Board Template"; some are renamed ("Txn Keeper
+Features"). Identify a board only by the tooling page that embeds it.
+- **properties** — the shared core, observed on every surveyed board:
   - `Name` → title
   - `Description` → text        <!-- holds the WHY: the value it creates / problem it removes -->
   - `Status` → status          <!-- Planned · Up Next · In Development · Completed · Canceled -->
+- Boards MAY add per-tool properties beyond the core (Process Platform's adds `Area` /
+  `Priority` / `Type` selects) — always fetch the SPECIFIC board's live schema before
+  writing; fill extras only when the value is clear and matches a live option.
 
-### tasks  *(the [DB] Tasks database — actionable work items)*
+### tasks  *(the [DB] Tasks database — actionable items)*
 - **data_source_id:** `2abd79b5-de38-80f8-9470-000b7181b18d` *(live-verified 2026-07-13)*
 - **properties:**
   - `Name` → title
@@ -67,6 +72,24 @@ entry's own board is `318d79b5-de38-809b-a1e6-000b2d709d33`, still template-titl
   - `Start Date` · `Target End Date` → date
   - `PM` · `Client Contact` → person
   - `Organization` · `Tasks` · `Docs` · `Opportunity` · `Service` → relation   <!-- resolve target page ids first -->
+
+### process-inventory  *(the [DB] Process Inventory database — one entry per repeatable process)*
+- **data_source_id:** `31ad79b5-de38-8031-b789-000b661de83f` *(live-verified 2026-07-13)*
+- **properties:**
+  - `Name` → title
+  - `Status` → status          <!-- Backlog · AI Draft · To Draft (top priority) · Draft · AI Cleanup · Mapper Review · Stakeholder Review · Ready (Internal) · Ready (External) · ProcessOS Ready · ProcessOS Imported · ProcessOS Live · Retired -->
+  - `Maturity` → select        <!-- Mature · Established · Readying · Developing · Draft · Requested · New · On Hold -->
+  - `Category` → select        <!-- 18 options (Governance · Operations — <team> · NFAT - <product>) — fetch live for the full list -->
+  - `Source` → select          <!-- Notion & Merlin · Soter Notion · Merlin -->
+  - `Frequency` → select       <!-- Daily · Weekly · Bi-Weekly · Monthly · Quarterly · Per-Event · One-Time -->
+  - `Soter Involvement` → select   <!-- Global Process · Global Process Soter Owns · Soter Owns · Soter/ Prime · Executed in Core Spell · Retro + LB Owners · OEA Facilitator Workflow -->
+  - `Tags` → multi_select      <!-- large set (Governance · Risk · MSC · CRM · Finance · Operations · …) — fetch live -->
+  - `Prio` → number            <!-- 0 = highest priority -->
+  - `Related Atlas Section` → url
+  - `Process Logic Owner` → text   <!-- free text: person, agent name, multiple, or unknown -->
+  - `Related Service` → relation   <!-- → Services Catalog (data source 2d1d79b5-de38-800d-b88d-000b4c3bf89f); resolve or leave empty -->
+- New entries start from the DB's default body template (page `cb0744051c564c4a91be9891af30b12a`);
+  shape the body per the `shaping-a-process` standard (steps + work-items), not free-form.
 
 ### orgs  *(the [DB] Orgs database — organizations)*
 - **data_source_id:** `2b2d79b5-de38-817a-981e-000b27e5575b`

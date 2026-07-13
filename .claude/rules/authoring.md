@@ -32,5 +32,11 @@ Applies whenever creating or editing rules, guides, standards, molds, or evals.
 - Forge-authored pieces ALWAYS land staged first — user-invoke-only until promoted
   (auto-invocation + guide-index entry) after real use (ADR-0005).
 - Guides ALWAYS include at least one pressure eval case (realistic stakes; ADR-0006).
+- ALWAYS re-run a guide's affected eval cases after editing its steps and record the
+  new pass (`passed: <sha>`) — goldens are the regression baseline; a golden that
+  stops passing never merges.
+- NEVER document an external system's shape from a template or a single example —
+  survey several live instances first (live is the source of truth, ADR-0016; a
+  template shows the starting shape, not what instances became).
 
-Why: see `decisions/ADR-0002`, `ADR-0003`, `ADR-0005`, `ADR-0006` and `.claude/RUBRIC.md`.
+Why: see `decisions/ADR-0002`, `ADR-0003`, `ADR-0005`, `ADR-0006`, `ADR-0016` and `.claude/RUBRIC.md`.

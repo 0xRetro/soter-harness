@@ -38,11 +38,13 @@ invented location.
    item and flag it for a quick confirm — one batched "one line of why each" question.
    Never defer the why to "later"; later is exactly when it's lost.
 2. **Name the feature.** Concise, and distinct from the why (the why is not the name).
-3. **Shape to the real `feature-cards` schema**
-   (`.claude/skills/pushing-to-notion/targets.md`): `Name` → title · `Description` →
-   text (the why) · `Status` → status = `Planned`. (Owner and the owning tool live on
-   the tooling page in [DB] Tooling, not on the card — note the tool in Description if
-   it matters, or capture/link a tooling page separately.)
+3. **Shape to the board's live schema** (`feature-cards` in
+   `.claude/skills/pushing-to-notion/targets.md`). The core every board shares:
+   `Name` → title · `Description` → text (the why) · `Status` → status = `Planned`.
+   A board may carry per-tool extras beyond the core (e.g. `Area`/`Priority`/`Type`
+   selects) — fetch the specific board's schema and fill an extra only when the value
+   is clear and matches a live option; otherwise leave it empty. (Owner and the owning
+   tool live on the tooling page in [DB] Tooling, not on the card.)
 4. **Land it on the Feature Board.** Resolve the target tool's own board first —
    `feature-cards` is per tooling entry, resolved through the tool's tooling page
    (targets.md has the two-step rule), never a stored id. Then hand the card to
@@ -60,10 +62,12 @@ invented location.
   re-fetch the schema, don't trust an old assumption.
 - (pressure) Under a bulk rush the temptation is to drop the why. Hold that line:
   infer-and-flag the why for each; status stays `Planned`.
-- (live eval 2026-07-13) A tooling entry's duplicated board keeps the title "Feature
-  Board Template", so a board's title is no evidence of which tool owns it (or that
-  it's "just a template"). Identify a board only via the tooling page that embeds it
-  (targets.md's resolution rule).
+- (live survey 2026-07-13, 6 tooling entries) Board titles are unreliable both ways —
+  most keep the duplicated "Feature Board Template" title, some are renamed ("Txn
+  Keeper Features"). Identify a board only via the tooling page that embeds it
+  (targets.md's resolution rule). And board schemas diverge: the Name/Description/
+  Status core held everywhere, but Process Platform's board adds Area/Priority/Type —
+  the 3-field shape is the floor, not the whole schema; fetch the board's live schema.
 
 ## Evals
 - `.claude/evals/capturing-a-feature/happy-path.md`
