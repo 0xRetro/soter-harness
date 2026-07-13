@@ -17,16 +17,17 @@ Mirrors the workspace's Notion Standards — those DB standard pages are the sou
 truth for shape.
 
 ## Mechanisms
-- **capturing-a-contact** (forging) — reads: a described person · produces: a [DB]
-  Contacts row (Name + Email + Role/Status/etc. as given, Org relation resolved) ·
-  runs-when: a user invokes `/capturing-a-contact` · invariants: the Org relation is
-  resolved to a real page id or left empty, never fabricated; select/multi_select values
-  are matched to the live option set, never invented.
+- **capturing-a-contact** — reads: a described person · produces: a [DB] Contacts row
+  (Name + Email + Role/Status/etc. as given, Org relation resolved) · runs-when: a user
+  invokes `/capturing-a-contact` · invariants: the Org relation is resolved to a real
+  page id or left empty, never fabricated; select/multi_select values are matched to the
+  live option set, never invented.
 - Capturing/updating orgs is forged as needed. Writes go through the publishing bindings.
 
 ## Components
-- the `capturing-a-contact` guide (forging). Notion targets `orgs` and `contacts` (with
-  their real schemas + relations) live in the publishing binding's `targets.md`.
+- `.claude/skills/capturing-a-contact/SKILL.md` — the contact-capture guide. Notion
+  targets `orgs` and `contacts` (with their real schemas + relations) live in the
+  publishing binding's `targets.md`.
 
 ## Concepts
 org · contact
