@@ -90,6 +90,8 @@ table below is the banned list.
 | standardize | ingestion | normalize a source's data to the target database's schema before publishing |
 | project | project-management | one row in the [DB] Projects database — a client or internal engagement (type, status, dates, org, contact), tracking work above the task level |
 | task | project-management | one row in the [DB] Tasks database — an actionable work item (status, priority, assignee, due), related to a project and/or org |
+| org | crm | one row in the [DB] Orgs database — an organization (type, tags, links), with related contacts and projects |
+| contact | crm | one row in the [DB] Contacts database — a person (email, role, status, disposition), related to their org |
 
 ## Aliases (do not use → use instead)
 

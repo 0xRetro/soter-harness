@@ -55,6 +55,30 @@ Feature Board's data_source_id).
   - `Code` → text
   - `Organization` · `Primary Contact` · `Tasks` → relation   <!-- resolve target page ids first -->
 
+### orgs  *(the [DB] Orgs database — organizations)*
+- **data_source_id:** `2b2d79b5-de38-817a-981e-000b27e5575b`
+- **properties:**
+  - `Name` → title
+  - `Type` → select        <!-- Ecosystem DAO · Facilitator Team · Foundation · Prime/Executor Agent · DevCo · GovOps · … -->
+  - `Tags` → multi_select  <!-- large set (Prospect · Priority · Vendor · CRM-ONLY · …) — fetch live for the full list -->
+  - `Website` · `Twitter` → url
+  - `Contacts` · `Projects` → relation   <!-- resolve target page ids -->
+
+### contacts  *(the [DB] Contacts database — people)*
+- **data_source_id:** `2b2d79b5-de38-81d0-852e-000bc3fdf8d2`
+- **properties:**
+  - `Name` → title
+  - `Email` → email
+  - `Role` → select        <!-- ~26 options (Founder · COO · BD · Facilitator · …) — fetch live, don't invent -->
+  - `Status` → select      <!-- Active · Inactive -->
+  - `Disposition` → select <!-- Detractor · Neutral · Coach · Champion -->
+  - `Authority` → multi_select   <!-- Technical Buyer · Economic Buyer · User Buyer -->
+  - `Tags` → multi_select  <!-- Nerd · redline · Services -->
+  - `Telegram` · `Signal` · `Discord ID` · `Github` · `Timezone (UTC)` · `Source` → text
+  - `Org` → relation       <!-- resolve to the [DB] Orgs page id -->
+
 > **Relations:** the create/update bindings write a relation as the TARGET page's id.
 > Resolve it (search the related DB by name) before writing, or leave the relation empty
 > and link it in a follow-up. Don't fabricate a page id.
+> **Select/multi_select:** the value must be an EXISTING option — fetch the live schema
+> and match; never invent an option name (a wrong one is rejected or silently creates junk).
