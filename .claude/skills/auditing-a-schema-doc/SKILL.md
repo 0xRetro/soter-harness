@@ -68,11 +68,14 @@ binding. Audit-specific:
   it actively lies to the team.
 - (baseline) Surgical edits only — rewriting the Fields table clobbers the doc's other
   sections.
-- (live run 2026-07-13, real Tasks doc) `updating-a-notion-page`'s `update_content` does a
-  true surgical text search-replace (proven: only the matched text changed, every other
-  section preserved) — but it edits TEXT, not a callout's color/type. A green "✅" callout
-  can be made to SAY "⚠️ Drifted" yet stays green; note the color caveat or use block-level
-  ops to recolor.
+- (live run 2026-07-13, real Tasks + Projects docs) `updating-a-notion-page`'s
+  `update_content` does true surgical search-replace — proven end-to-end on a FULL
+  reconciliation of two real docs: field-row removes/adds, whole option-table swaps, and
+  prose fixes all matched the fetched `<td>...</td>` table format, and every unrelated
+  section stayed byte-for-byte. Batch many edits in one call (atomic — one mismatch fails
+  the whole call, so no half-writes). Caveat: it edits TEXT, not a callout's color/type —
+  a green "✅" callout can be made to SAY "⚠️ Drifted" yet stays green; note the color
+  caveat or use block-level ops to recolor.
 
 ## Evals
 - `.claude/evals/auditing-a-schema-doc/happy-path.md`
