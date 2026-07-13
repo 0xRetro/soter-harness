@@ -1,0 +1,10 @@
+# OS
+.DS_Store
+
+# Node
+node_modules/
+*.log
+
+# Claude Code — personal / runtime (never shared)
+.claude/settings.local.json
+.claude/evals/logs/*.jsonl
