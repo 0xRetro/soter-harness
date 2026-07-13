@@ -12,12 +12,20 @@ Per target: a name, the database id, and each property's Notion type.
 
 ## Targets
 
-<!-- EXAMPLE — replace with your real database. -->
-### projects  *(example — not a real database)*
+<!-- EXAMPLE targets — replace ids with your real databases. These are the
+     product-development system's artifacts (feature records + project pages). -->
+
+### feature-cards  *(feature records — replace the id)*
 - **database_id:** `00000000-0000-0000-0000-000000000000`
 - **properties:**
   - `Name` → title
-  - `Status` → select
-  - `Owner` → rich_text
-  - `Due` → date
+  - `Status` → status        <!-- capture · define · build · review · ship -->
+  - `Owner` → people
+  - `Project` → url           <!-- link to the project page -->
+
+### project-pages  *(project/spec pages — replace the id)*
+- **database_id:** `00000000-0000-0000-0000-000000000000`
+- **properties:**
+  - `Name` → title
+  - `Summary` → rich_text
   - `Link` → url

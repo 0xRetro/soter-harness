@@ -80,6 +80,9 @@ table below is the banned list.
 | publish | publishing | to send a harness work-artifact to an external store |
 | external store | publishing | a system of record outside the harness that receives published artifacts (Notion is the first) |
 | binding | publishing | a mechanism mapping harness artifacts to one external store's API (e.g. notion-push) |
+| feature record | product-development | one card per feature — the tracked unit of product work (status, owner, links), mirrored to a Notion database |
+| project page | product-development | the page describing a feature/tooling and its spec; the feature record links to it |
+| feature lifecycle | product-development | the stages a feature moves through: capture → define → build → review → ship |
 
 ## Aliases (do not use → use instead)
 
