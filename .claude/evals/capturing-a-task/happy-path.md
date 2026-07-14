@@ -1,6 +1,7 @@
 ---
 skill: capturing-a-task
 case: happy-path
+passed: 46232be
 ---
 
 ## Try

@@ -39,7 +39,8 @@ A new piece merged **staged**: template-shaped, Checker-clean, with ≥3 eval ca
    exclusion clause. Overlap found → stop and propose extending that piece instead.
 3. **Sandbox.** Create a worktree on branch `forge/<name>`. Nothing touches main.
 4. **Baseline (RED).** Before drafting, dispatch a fresh-context subagent on the
-   pressure scenario *without* the piece. Record what it actually does wrong and the
+   pressure scenario *without* the piece (dispatch-and-judge mechanics per
+   `/running-evals`: neutral prompt, `eval-runner` containment, artifact verdicts). Record what it actually does wrong and the
    rationalizations it produces. No observed failure → stop: the piece may not be
    needed. ("If you didn't watch an agent fail without it, you don't know it teaches
    the right thing.")
@@ -53,7 +54,8 @@ A new piece merged **staged**: template-shaped, Checker-clean, with ≥3 eval ca
    (see the placement table in `.claude/LEXICON.md`).
 7. **Check.** Run `node .claude/scripts/check.mjs --all`; fix until 0 errors.
 8. **Pressure-test.** Dispatch a **fresh-context subagent** with only the draft and
-   the pressure scenario — never the drafting conversation. Verify it *uses* the
+   the pressure scenario — never the drafting conversation (mechanics per
+   `/running-evals`). Verify it *uses* the
    piece and *complies* with its steps. Confusion or noncompliance → fix the draft,
    record the gotcha, re-test.
 9. **Human gate.** Present: the draft, the baseline (RED) evidence, the eval list, and
