@@ -1,6 +1,6 @@
 # ADR-0035: The turn gate — the session fixes its own breakage
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-14
 
 ## Context

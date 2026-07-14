@@ -1,6 +1,6 @@
 # ADR-0036: Session enforcement floor — guard regex over permission denies
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-14
 
 ## Context
