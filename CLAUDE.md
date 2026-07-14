@@ -46,6 +46,15 @@ Docs: `README.md` (the map) · `.claude/LEXICON.md` (terms + classification) ·
 - `/running-evals` — runs an eval scenario as a fresh-context, write-contained
   subagent; verdicts from artifacts, goldens recorded. Always user-invoked
   (side-effecting). (ADR-0033)
+- `/pushing-to-notion` — pushes a structured artifact to a Notion database as a new
+  typed page, human-confirmed before the write. Always user-invoked (side-effecting). (ADR-0039)
+- `/updating-a-notion-page` — updates an existing Notion page fetch-merge-write,
+  named properties only, human-confirmed. Always user-invoked (side-effecting). (ADR-0040)
+- `/auditing-a-schema-doc` — audits a schema doc + targets mirror against the live
+  DB, drift reconciled through a human gate. Always user-invoked (side-effecting). (ADR-0041)
+- `/capturing-a-task` — captures an actionable item as a [DB] Tasks row, relations
+  resolved never fabricated, confirmed before the write. Always user-invoked
+  (side-effecting). (ADR-0042)
 
 ## Layout
 
