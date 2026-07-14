@@ -67,9 +67,12 @@ Follow the **`writing-records-to-notion`** standard for the write spine, and
 5. **Confirm at the gate.** Present the doc with two explicit lists: decisions needed
    (`not defined` items) and proposals awaiting a yes (`(proposed)` items). Human okay
    before any write; urgency never waives it.
-6. **Write + log.** Create via `/pushing-to-notion` (target `policy-standards`, from the
-   skeleton) or expand via `/updating-a-notion-page`; add a Change Log row with a version
-   bump. Verify: re-fetch shows the shaped doc and the new change-log entry.
+6. **Write + log — current state only.** On the okay, confirmed proposals are IMPLEMENTED
+   (the schema/value changes land alongside the doc) and their `(proposed)` markers come
+   off; declined ones are dropped. Create via `/pushing-to-notion` (target
+   `policy-standards`, from the skeleton) or expand via `/updating-a-notion-page`; add a
+   Change Log row with a version bump. Verify: re-fetch shows the shaped doc, the new
+   change-log entry, and no `(proposed)` residue.
 
 ## Gotchas
 - (baseline 2026-07-13, skeleton-only draft) an unguided draft silently DROPPED the

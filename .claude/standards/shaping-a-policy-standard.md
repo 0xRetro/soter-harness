@@ -54,8 +54,12 @@ target); this standard is the shape every doc must keep.
 - every lifecycle transition → an operating rule naming its actor and gate;
 - every integrity constraint on a field or relation → a data rule naming its Enforced-by.
 
-No placeholder slots in a finished doc (e.g. a "screenshot slot" note) — content is either
-present or `not defined`. One policy standard per subject; the live database stays the
+A governing doc carries **current state only** — what is decided and built today.
+`(proposed)` markers exist only between draft and gate: on confirmation a proposal is
+IMPLEMENTED (the schema or value change lands with the doc) and its marker comes off, or
+it is dropped. Deferred or aspirational content never lands in a governing doc; `not
+defined` is the only marker for the undecided. No placeholder slots (e.g. a "screenshot
+slot" note) — content is either present or `not defined`. One policy standard per subject; the live database stays the
 source of truth over the Fields section (ADR-0016). Observed failure this shape counters:
 a draft generated from the bare skeleton silently DROPPED the step-by-step determination
 logic ("proven by on-chain evidence", no how-to) and left extension criteria undefined

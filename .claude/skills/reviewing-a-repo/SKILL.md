@@ -83,11 +83,13 @@ entries were updated, not duplicated.
   content/site repos; removed unused `Library`). Update the option-set mirror in
   `targets.md` in the same change — and note an ALTER of a select property wipes that
   property's description in Notion.
-- (live run 2026-07-14) Creating the tooling page from the DB's template: `template_id`
-  on page-create may silently not apply, and `apply_template` is async — poll the async
-  task result rather than re-applying (a blind retry double-applied the template; the
-  extra Feature Board + sections had to be deleted). The fetch view can also serve a
-  stale cached snapshot for ~a minute; trust the async task status, not the fetch.
+- (live run 2026-07-14) Template application to a new tooling page is async and every
+  submission eventually lands: `template_id` at create looked like a no-op, two explicit
+  `apply_template` retries followed, and all THREE materialized minutes apart — two extra
+  Feature Boards had to be deleted, one of them appearing AFTER a "verified clean" fetch.
+  Submit the template exactly once and poll the async task for it. Never re-submit
+  because a fetch looks unchanged, and never trust a verify fetch whose "as of" timestamp
+  predates your last write — the view cache serves stale snapshots for ~a minute.
 
 ## Evals
 - `.claude/evals/reviewing-a-repo/happy-path.md`
