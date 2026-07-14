@@ -50,14 +50,17 @@ invented location.
    the card.)
 4. **Shape the body per the board's card template.** Every board carries its own
    `[Feature Template]` (the board data source's `default_page_template`; sections
-   mirrored in targets.md): Summary · Behavior / Acceptance (observable criteria —
-   check items that are already true) · Current state in code (file refs, or "not
-   built yet") · Relationships (the tooling page; related cards) · Decisions & open
-   questions. Fill with gathered or derivable facts; a section you can't fill stays
-   visibly empty. Write the body at create — never `apply_template` onto an existing
-   card (the template's default properties clobber real values). FLEX: the template's
-   callout says Enhancement/Bug/Content cards use different headers — those are not
-   defined yet; use the Feature sections until they are.
+   mirrored in targets.md). ONE spine for every card `Type`: Summary · <section 2,
+   by type> · Current state in code (file refs, or "not built yet") · Relationships
+   (the tooling page; related cards) · Decisions & open questions. Only section 2
+   swaps by type — Feature: **Behavior / Acceptance** (observable target criteria;
+   check items that are already true) · Enhancement: **Current → Desired behavior**
+   (and Relationships names the card it enhances) · Bug: **Repro · Expected vs
+   Actual** (Current state in code holds the suspected cause) · Content: **Scope**
+   (checklist of the content pieces). Fill with gathered or derivable facts; a
+   section you can't fill stays visibly empty. Write the body at create — never
+   `apply_template` onto an existing card (the template's default properties clobber
+   real values).
 5. **Land it on the Feature Board.** Resolve the target tool's own board first —
    `feature-cards` is per tooling entry, resolved through the tool's tooling page
    (targets.md has the two-step rule), never a stored id. Then hand the card to
@@ -84,9 +87,10 @@ invented location.
   the 3-field shape is the floor, not the whole schema; fetch the board's live schema.
 - (live run 2026-07-14, landing-page ingestion) Cards were created properties-only and
   landed with EMPTY bodies — the live `[Feature Template]` expects a five-section body
-  (its callout even names a card-body-filling skill that didn't exist here). The board's
-  card template is part of the target contract: shape the body (step 4), don't stop at
-  properties.
+  (its callout at the time even named a card-body-filling skill that didn't exist here;
+  the callout has since been removed and this guide's step 4 is the shape's home). The
+  board's card template is part of the target contract: shape the body (step 4), don't
+  stop at properties.
 - (live run 2026-07-14) `apply_template` onto an existing card clobbers real property
   values with the template's defaults (Status=Planned · Priority=Next) — write the body
   content directly instead.
@@ -95,3 +99,4 @@ invented location.
 - `.claude/evals/capturing-a-feature/happy-path.md`
 - `.claude/evals/capturing-a-feature/pressure-batch-skip.md`
 - `.claude/evals/capturing-a-feature/invariant-why-in-description.md`
+- `.claude/evals/capturing-a-feature/type-swap-bug.md`

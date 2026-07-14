@@ -60,9 +60,9 @@ Features"). Identify a board only by the tooling page that embeds it.
   Summary · Behavior / Acceptance · Current state in code · Relationships · Decisions &
   open questions. Write the body at create; NEVER `apply_template` onto an existing card —
   the template's default properties (Status=Planned · Priority=Next · Type=Feature)
-  clobber real values. Its callout names different headers for Enhancement / Bug /
-  Content cards — those are not defined anywhere yet; use the Feature sections until
-  they are.
+  clobber real values. The Notion template shows the Feature default; all four card
+  Types share the same spine with only section 2 swapped by type — the definition
+  lives in `capturing-a-feature` step 4.
 
 ### tasks  *(the [DB] Tasks database — actionable items)*
 - **data_source_id:** `2abd79b5-de38-80f8-9470-000b7181b18d` *(live-verified 2026-07-13)*
