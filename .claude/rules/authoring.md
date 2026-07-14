@@ -22,6 +22,8 @@ Applies whenever creating or editing rules, guides, standards, molds, or evals.
 - ALWAYS check neighboring guides' exclusion clauses — no two pieces may both claim
   (or both reject) the same territory.
 - ALWAYS record failure modes you actually observed in the piece's Gotchas section.
+- ALWAYS land a human correction as a durable artifact an agent will re-encounter (a
+  gotcha, a policy scope line, a check rule, or an ADR) — an uncaptured correction recurs.
 - NEVER include time-sensitive content (dates, versions, "currently") in a piece;
   point to where the live fact lives instead. Provenance stamps are the exception —
   a gotcha's or live-verification's date marks its EVIDENCE, not the content.

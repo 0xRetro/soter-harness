@@ -413,6 +413,22 @@ function checkGoldenFresh(root, file, fm, out) {
   const git = (args) => execFileSync('git', ['-C', root, ...args],
     { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
   try {
+    // A sha absent from history (a squash-merge rewrote it) must WARN, not fail-open —
+    // otherwise freshness checking silently disables itself for exactly those cases
+    // (found live 2026-07-14: five goldens dangling, zero warnings). Fail-open stays
+    // only for shallow clones, where absence proves nothing.
+    let known = true;
+    try { git(['cat-file', '-e', `${fm.passed}^{commit}`]); } catch { known = false; }
+    if (!known) {
+      let shallow = false;
+      try { shallow = git(['rev-parse', '--is-shallow-repository']) === 'true'; } catch { /* no git */ }
+      if (!shallow)
+        out.push(V(file, 'GOLDEN_STALE',
+          `golden sha ${fm.passed} is not in this repo's history (squash-merge rewrote it?)`,
+          'an unverifiable golden proves nothing, and its freshness check was silently OFF',
+          're-run the case and re-stamp passed: with a commit that exists on this branch', 'warn'));
+      return;
+    }
     const since = git(['rev-list', `${fm.passed}..HEAD`, '--', rel]);
     const dirty = git(['status', '--porcelain', '--', rel]);
     if (since || dirty)
@@ -420,7 +436,75 @@ function checkGoldenFresh(root, file, fm, out) {
         `golden passed at ${fm.passed}, but the guide changed since${dirty ? ' (uncommitted edits)' : ''}`,
         'a golden is evidence about the guide as of that commit — after an edit it proves nothing (eval README: goldens are the regression baseline)',
         're-run the case against the current guide and update passed:, or fix the piece', 'warn'));
-  } catch { /* fail-open: no git / shallow clone / unknown sha — the gate still reads the rule */ }
+  } catch { /* fail-open: no git — the gate still reads the rule */ }
+}
+
+// TARGET_STALE (warn): targets.md mirrors live Notion schemas with dated `live-verified`
+// stamps (ADR-0016). The checker can't fetch Notion (ADR-0010) — but it CAN read the
+// stamps offline: a stamp older than TARGET_STALE_DAYS, or a registered target with no
+// stamp at all, is the audit cadence firing (ADR-0029). The nag clears only when
+// /auditing-a-schema-doc re-verifies against live and re-stamps the entry.
+const TARGET_STALE_DAYS = 30;
+function checkTargetFreshness(root, out) {
+  const p = path.join(root, '.claude', 'skills', 'pushing-to-notion', 'targets.md');
+  if (!exists(p)) return;
+  let target = null, hasId = false, stamp = null;
+  const flush = () => {
+    if (!target || !hasId) return;
+    if (!stamp)
+      out.push(V(p, 'TARGET_STALE', `target "${target}" has a data_source_id but no live-verified stamp`,
+        'an unstamped mirror has unverifiable freshness — its schema may be anyone\'s guess (ADR-0029)',
+        `run /auditing-a-schema-doc for the DB and stamp the entry (live-verified YYYY-MM-DD)`, 'warn'));
+    else if ((Date.now() - Date.parse(stamp)) / 86400000 > TARGET_STALE_DAYS)
+      out.push(V(p, 'TARGET_STALE', `target "${target}" last live-verified ${stamp} (> ${TARGET_STALE_DAYS} days)`,
+        'the mirror rots silently between audits — the stamp age IS the audit cadence (ADR-0029)',
+        're-run /auditing-a-schema-doc for the DB and refresh the stamp', 'warn'));
+  };
+  for (const line of read(p).split('\n')) {
+    const h = line.match(/^###\s+(\S+)/);
+    if (h) { flush(); target = h[1]; hasId = false; stamp = null; continue; }
+    if (/\*\*data_source_id:\*\*/.test(line)) hasId = true;
+    const s = line.match(/live-verified (\d{4}-\d{2}-\d{2})/);
+    if (s && target && !stamp) stamp = s[1];
+  }
+  flush();
+}
+
+// GUARD (PreToolUse, exit 2 blocks): the parallel-sessions rule parks the ROOT checkout
+// on main — no commits, no staging, no branch switches there (ADR-0027). Sessions slip:
+// a shell cwd reset once aimed a `git add` at root and only a pathspec miss saved it.
+// This makes the rule mechanical. Best-effort by design — it reads the hook's cwd (or a
+// `git -C` target); a `cd` inside a compound command can evade it. The rule and the PR
+// gate still stand behind it; this catches the common slip, not a determined bypass.
+const GUARD_GIT_MUTATING = /\bgit\b[^|;&]*?\b(commit|add|checkout|switch|rebase|merge|reset|stash)\b/;
+// Publishing from an AGENT worktree (branch worktree-agent-*): three contained eval runs
+// obediently pushed and opened REAL PRs on 2026-07-14 — the guide under test said "land
+// via the PR gate" and Bash+gh was an open channel. Agent work stays local; humans publish.
+const GUARD_PUBLISH = /\bgit\b[^|;&]*?\bpush\b|\bgh\s+(?:pr\s+(?:create|merge)|api|repo\s+(?:create|delete|edit))\b/;
+function guardBashVerdict(cwd, command) {
+  try {
+    if (!command || !(GUARD_GIT_MUTATING.test(command) || GUARD_PUBLISH.test(command))) return null;
+    const mC = command.match(/\bgit\s+-C\s+(?:"([^"]+)"|'([^']+)'|(\S+))/);
+    const dir = mC ? (mC[1] || mC[2] || mC[3]) : cwd;
+    if (!dir || !exists(dir)) return null;
+    const git = (args) => execFileSync('git', ['-C', dir, ...args],
+      { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    const branch = git(['branch', '--show-current']);
+    if (GUARD_PUBLISH.test(command) && /^worktree-agent-/.test(branch))
+      return 'BLOCKED: agent worktrees never push or open PRs — agent work stays local; '
+        + 'commit on your branch and REPORT (the human publishes). '
+        + '(.claude/agents/eval-runner.md; running-evals stand-down protocol)';
+    if (!GUARD_GIT_MUTATING.test(command)) return null;
+    const top = git(['rev-parse', '--show-toplevel']);
+    const gitDir = path.resolve(top, git(['rev-parse', '--git-dir']));
+    const common = path.resolve(top, git(['rev-parse', '--git-common-dir']));
+    if (gitDir !== common) return null;               // a worktree — sessions belong there
+    if (branch !== 'main') return null;
+    return 'BLOCKED: this git command targets the ROOT checkout on main, which stays '
+      + 'parked and read-only (.claude/rules/parallel-sessions.md, ADR-0027). Run it from '
+      + 'your session worktree instead — or create one: '
+      + 'git worktree add .claude/worktrees/<topic> -b <branch> origin/main';
+  } catch { return null; } // fail-open: not a repo / no git — the prose rule still governs
 }
 
 function checkAdr(file, out) {
@@ -652,6 +736,7 @@ function checkAll(root, census = {}) {
   checkAliasTable(root, out);
   checkDescriptionBudget(root, out);
   checkLinks(root, out);
+  checkTargetFreshness(root, out);
   // ADR-0003: green carries evidence — an empty scan is an error, never a pass.
   const total = census.claudeMd + census.skills + census.standards + census.systems + census.molds
     + census.singletons + census.rules + census.evalCases + census.adrs;
@@ -755,6 +840,8 @@ function selftest() {
   w('.claude/skills/auto-pusher-false/SKILL.md', '---\nname: auto-pusher-false\ndescription: Pushes to a store. Use when asked to push. Not for reads.\nlayer: automation\nsystem: guides\nkind: component\nmold: how-to-guide\ndisable-model-invocation: false\n---\n\nNot for reads.\n'); // AUTOMATION_AUTOFIRE (flag present but false — value check, not key presence)
   w('.claude/systems/lonely.md', '---\nname: lonely\nlayer: kernel\nsystem: lonely\nkind: component\nmold: singleton\n---\n\n# Card\n\n## Promise\nx\n\n## Mechanisms\nnone\n\n## Components\nnone\n\n## Concepts\nnone\n\n## Invariants\nnone\n');
   w('.claude/skills/orphan-skill/SKILL.md', '---\nname: orphan-skill\ndescription: Does x. Use when asked. Not for y.\nlayer: kernel\nsystem: lonely\nkind: component\nmold: how-to-guide\ndisable-model-invocation: true\n---\n\nNot for y.\n'); // SYSTEM_UNLISTED (lonely card doesn't list it)
+  w('.claude/skills/pushing-to-notion/targets.md',                          // TARGET_STALE ×2 (stale stamp + unstamped)
+    '---\nname: targets\nlayer: automation\nsystem: publishing\nkind: component\nmold: singleton\n---\n\n# T\n\n### old-target\n- **data_source_id:** `abc` *(live-verified 2020-01-01)*\n\n### unstamped-target\n- **data_source_id:** `def`\n');
   const planted = checkAll(tmp);
   const codes = new Set(planted.map((v) => v.code));
   const mustFire = ['BUDGET_CLAUDEMD', 'NAME_LINT', 'FM_MISSING', 'PLACEHOLDER', 'EXCLUSION_MISSING',
@@ -763,7 +850,7 @@ function selftest() {
     'SEC_LINT', 'DESC_XML', 'TRIGGER_EVAL_MISSING', 'LINK_BROKEN',
     'FM_CLASS', 'SYSTEM_UNKNOWN', 'MOLD_UNKNOWN', 'MOLD_SHAPE', 'CARD_OWNER', 'CARD_PATH', 'CARD_CONCEPT', 'CARD_ADR',
     'ALIAS_ROW_MALFORMED', 'SECTION_ORDER', 'AUTOMATION_AUTOFIRE', 'SECRET_LEAK', 'SYSTEM_UNLISTED',
-    'GOLDEN_NONE'];
+    'TARGET_STALE', 'GOLDEN_NONE'];
   const missed = mustFire.filter((c) => !codes.has(c));
   if (missed.length) fails.push(`planted violations not detected: ${missed.join(', ')}`);
   // Count assertions where one plant per code isn't enough to prove the rule:
@@ -771,6 +858,8 @@ function selftest() {
   if (leaks < 2) fails.push(`SECRET_LEAK fired ${leaks}x — both planted key shapes (ntn_, sk-ant-…) must be caught`);
   const autofire = planted.filter((v) => v.code === 'AUTOMATION_AUTOFIRE').length;
   if (autofire < 2) fails.push(`AUTOMATION_AUTOFIRE fired ${autofire}x — both plants (flag missing, flag: false) must be caught`);
+  const staleTargets = planted.filter((v) => v.code === 'TARGET_STALE').length;
+  if (staleTargets < 2) fails.push(`TARGET_STALE fired ${staleTargets}x — both plants (stale stamp, no stamp) must be caught`);
   fs.rmSync(tmp, { recursive: true, force: true });
 
   // --- Stage 2: a clean fixture must be silent (classification-era shape)
@@ -846,17 +935,51 @@ function selftest() {
       fails.push('golden at the guide-editing commit itself wrongly raised GOLDEN_STALE');
     if (fresh.some((v) => v.code === 'GOLDEN_NONE'))
       fails.push('guide with a recorded golden wrongly raised GOLDEN_NONE');
+    wg('.claude/evals/tested-guide/dangling.md', `---\nskill: tested-guide\ncase: dangling\npassed: deadbeef\n---\n## Try\nx\n## Expect\n- y\n## Never\n- z\n`);
+    if (!checkAll(gr).some((v) => v.code === 'GOLDEN_STALE' && /not in this repo/.test(v.what)))
+      fails.push('a golden sha absent from history did not raise GOLDEN_STALE (squash-merge blind spot)');
   } catch (e) {
     fails.push(`GOLDEN_STALE fixture errored (git available?): ${e.message}`);
   } finally {
     fs.rmSync(gr, { recursive: true, force: true });
   }
 
+  // --- Stage 7: root-main guard — a mutating git command at the root checkout on main
+  // must block; the same command in a worktree must pass; read-only git must pass.
+  const groot = mkroot('checker-guard-');
+  try {
+    const gg = (args, dir = groot) => execFileSync('git', ['-C', dir, ...args], { stdio: ['ignore', 'pipe', 'ignore'] });
+    gg(['init', '-q', '-b', 'main']);
+    gg(['-c', 'user.email=selftest@local', '-c', 'user.name=selftest', 'commit', '--allow-empty', '-qm', 'x']);
+    if (!guardBashVerdict(groot, 'git commit -m "y"'))
+      fails.push('guard: a commit at the root checkout on main was not blocked');
+    if (guardBashVerdict(groot, 'git status && git log --oneline'))
+      fails.push('guard: a read-only git command was wrongly blocked');
+    const wt = path.join(groot, 'wt');
+    gg(['worktree', 'add', '-q', wt, '-b', 'selftest-topic']);
+    if (guardBashVerdict(wt, 'git commit -m "y"'))
+      fails.push('guard: a worktree commit was wrongly blocked');
+    if (guardBashVerdict(wt, 'git push origin HEAD'))
+      fails.push('guard: a session-worktree push was wrongly blocked');
+    const wtA = path.join(groot, 'wta');
+    gg(['worktree', 'add', '-q', wtA, '-b', 'worktree-agent-selftest']);
+    if (!guardBashVerdict(wtA, 'git push -u origin HEAD'))
+      fails.push('guard: an agent-worktree push was not blocked');
+    if (!guardBashVerdict(wtA, 'gh pr create --title x --body y'))
+      fails.push('guard: an agent-worktree gh pr create was not blocked');
+    if (guardBashVerdict(wtA, 'git commit -m "y"'))
+      fails.push('guard: an agent-worktree local commit was wrongly blocked');
+  } catch (e) {
+    fails.push(`guard fixture errored (git available?): ${e.message}`);
+  } finally {
+    fs.rmSync(groot, { recursive: true, force: true });
+  }
+
   if (fails.length) {
     for (const f of fails) console.error(`SELFTEST FAIL: ${f}`);
     process.exit(1);
   }
-  console.log(`SELFTEST PASS: ${mustFire.length} codes fired; clean silent; empty-root fails; alias-table guard live; default-root aim verified; golden freshness live.`);
+  console.log(`SELFTEST PASS: ${mustFire.length} codes fired; clean silent; empty-root fails; alias-table guard live; default-root aim verified; golden freshness live; root-main guard live.`);
 }
 
 // ---------- main ---------------------------------------------------------------
@@ -898,6 +1021,14 @@ if (argv.includes('--selftest')) {
     } catch { /* fail-open */ }
     fs.appendFileSync(logFile, line + '\n');
   } catch { /* fail-open */ }
+  process.exit(0);
+} else if (argv.includes('--guard-bash')) {
+  // PreToolUse guard on Bash: exit 2 blocks the tool call (stderr reaches the agent);
+  // any other exit allows. Fail-open on unparseable input — never wedge the session.
+  let ev = null;
+  try { ev = JSON.parse(fs.readFileSync(0, 'utf8')); } catch { /* fail-open */ }
+  const verdict = ev ? guardBashVerdict(ev.cwd, ev.tool_input?.command) : null;
+  if (verdict) { console.error(verdict); process.exit(2); }
   process.exit(0);
 } else if (argv.includes('--hook')) {
   let stdin = '';

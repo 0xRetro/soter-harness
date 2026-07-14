@@ -80,6 +80,12 @@ as a fix to the piece.
   pull it from the transcript on disk instead of re-pinging the agent.
 - (observed 2026-07-14) Concurrent scenario agents tripped a live API's rate limit
   (429) — agents that waited and retried passed anyway; stagger when it matters.
+- (observed 3×, 2026-07-14, live) Contained runners with Bash PUSHED branches and opened
+  REAL PRs on the org repo — the guide under test said "land via the PR gate" and they
+  obeyed; Notion-only containment doesn't cover git/gh. Counter: the eval-runner agent
+  definition forbids publishing, and the bash guard blocks push/`gh pr` from agent
+  worktrees. A PR that does land is a containment FINDING: report it with urls
+  (stand-down protocol), never quietly clean it up.
 - (observed 2026-07-14, meta-case) A nested agent CANNOT dispatch custom agent types
   (its roster is the generic set) — a meta-case run prepares the neutral prompt and
   escalates the eval-runner dispatch to the main session; substituting a

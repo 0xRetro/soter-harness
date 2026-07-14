@@ -14,8 +14,9 @@ the **tasks** that execute them, mirrored to the real Notion [DB] Projects and [
 databases. Consumers: the team
 tracking what's being delivered, for whom, by when; ingestion (which can produce tasks
 from a source); the publishing bindings that write them. Mirrors the LIVE [DB] Tasks /
-[DB] Projects schemas — the Standards pages document these but can lag (they did; fetch
-live, ADR-0016). Decreed with the first add-on wave (ADR-0017).
+[DB] Projects schemas (documentation can lag — fetch live, ADR-0016); task and project
+semantics are governed by the subjects' policy standards in the org's registry
+(ADR-0021). Decreed with the first add-on wave (ADR-0017).
 
 ## Mechanisms
 - **capturing-a-task** — reads: a described actionable item · produces: a [DB] Tasks row
@@ -38,3 +39,4 @@ project · task
 - tasks and projects are shaped to the live [DB] Tasks / [DB] Projects schemas, never an assumed one — enforcer: (gate) + publishing's live schema fetch
 - relations are resolved to real target page ids or left empty — enforcer: (gate) + the guide's resolve step
 - records reach Notion through the publishing bindings (the canonical rule; see the publishing card) — enforcer: (gate) + publishing
+- task and project semantics and lifecycle follow the subjects' policy standards (ADR-0021) — enforcer: (gate) + the write discipline's fetch-policy step

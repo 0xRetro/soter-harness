@@ -38,6 +38,12 @@ specific to it. The spine:
 
 Don't silently default an unstated field — a default is a guess; flag it, don't assert it.
 
+**Org-facing content speaks the org's language (ADR-0031).** Never write harness
+internals — ADR numbers, checker codes, guide/file names, the harness's own vocabulary —
+into a Notion record or doc unless the human explicitly allows it for that doc's purpose.
+Boundary and machinery rules live in the harness, not in org docs; if an org doc needs an
+exclusion, phrase it in the org's terms.
+
 ### Async writes, templates, and schema changes (learned live 2026-07-14)
 
 - **Submit a template/content operation exactly once, then poll its async task.** Notion
