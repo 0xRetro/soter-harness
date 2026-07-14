@@ -11,6 +11,8 @@
 //   node .claude/scripts/check.mjs --hook      PostToolUse hook mode: reads hook JSON on stdin,
 //                                              checks the written file, always exits 0 (warn only)
 //   node .claude/scripts/check.mjs --selftest  plant-and-assert incl. default-root aim canary
+//   node .claude/scripts/check.mjs --gate      Stop hook mode: exit 2 holds the turn open while
+//                                              checker ERRORS stand (once — stop_hook_active)
 //   --root <dir>                               override repo root
 
 import fs from 'node:fs';
@@ -969,6 +971,8 @@ function selftest() {
   if (staleTargets < 2) fails.push(`TARGET_STALE fired ${staleTargets}x — both plants (stale stamp, no stamp) must be caught`);
   const parity = planted.filter((v) => v.code === 'HOOK_PARITY').length;
   if (parity < 2) fails.push(`HOOK_PARITY fired ${parity}x — both directions (repo-only hook, plugin-only hook) must be caught`);
+  if (!gateVerdict(tmp))
+    fails.push('turn gate: a root full of planted errors produced no verdict');
   fs.rmSync(tmp, { recursive: true, force: true });
 
   // --- Stage 2: a clean fixture must be silent (classification-era shape)
@@ -991,12 +995,16 @@ function selftest() {
   wc('.claude/hooks/hooks.json', JSON.stringify({ hooks: { PostToolUse: [{ matcher: 'Write|Edit', hooks: [{ type: 'command', command: 'node "${CLAUDE_PLUGIN_ROOT}/scripts/check.mjs" --hook' }] }] } }));
   const silent = checkAll(clean).filter((v) => v.level !== 'warn');
   if (silent.length) fails.push(`clean fixture produced ${silent.length} error(s): ${silent.map((v) => v.code).join(', ')}`);
+  if (gateVerdict(clean))
+    fails.push('turn gate blocked a clean fixture — warnings must never hold a turn open');
   fs.rmSync(clean, { recursive: true, force: true });
 
   // --- Stage 3: an empty root must FAIL, never pass (ADR-0003: green carries evidence)
   const empty = mkroot('checker-empty-');
   if (!checkAll(empty).some((v) => v.code === 'SCAN_EMPTY'))
     fails.push('empty root did not raise SCAN_EMPTY — vacuous green is possible');
+  if (gateVerdict(empty))
+    fails.push('turn gate blocked an empty root — a non-harness project (plugin install) must fail open');
   fs.rmSync(empty, { recursive: true, force: true });
 
   // --- Stage 4: a reworded alias table must FAIL, not silently disable the lint
@@ -1081,6 +1089,12 @@ function selftest() {
       fails.push('guard: read-only merge-base was wrongly blocked (hyphen counts as a word boundary)');
     if (guardBashVerdict(wt, 'git push origin HEAD'))
       fails.push('guard: a session-worktree push was wrongly blocked');
+    if (!guardBashVerdict(wt, 'git push --force origin HEAD'))
+      fails.push('guard: a bare force push was not blocked');
+    if (!guardBashVerdict(wt, 'git push origin +HEAD:main'))
+      fails.push('guard: a +refspec force push was not blocked');
+    if (guardBashVerdict(wt, 'git push --force-with-lease origin HEAD'))
+      fails.push('guard: --force-with-lease (the sanctioned rebase escape) was wrongly blocked');
     if (!guardBashVerdict(wt, 'git add -A'))
       fails.push('guard: git add -A in a session worktree was not blocked');
     if (!guardBashVerdict(wt, 'git commit -m "y" && git add --all'))

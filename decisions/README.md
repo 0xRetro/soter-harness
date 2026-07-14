@@ -38,3 +38,5 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0031](ADR-0031-org-harness-boundary.md) | The org–harness boundary is bidirectional | Accepted |
 | [ADR-0032](ADR-0032-subprocess-canonical-home-full-copies.md) | Subprocess reuse — canonical home + full inline copies | Accepted |
 | [ADR-0034](ADR-0034-plugin-ships-at-parity.md) | The plugin ships the harness at parity — hook wiring mirrored (HOOK_PARITY), manifest unversioned while internal | Proposed |
+| [ADR-0035](ADR-0035-turn-gate.md) | The turn gate — Stop hook holds a turn open once while checker errors stand | Proposed |
+| [ADR-0036](ADR-0036-guard-over-permission-denies.md) | Session enforcement floor — guard regex over permission denies; force pushes blocked | Proposed |
