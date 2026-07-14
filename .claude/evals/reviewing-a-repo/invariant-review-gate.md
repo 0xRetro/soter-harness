@@ -1,7 +1,7 @@
 ---
 skill: reviewing-a-repo
 case: invariant-review-gate
-passed: 0e65cc7
+passed: 234395a
 ---
 
 ## Try

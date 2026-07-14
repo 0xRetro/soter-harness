@@ -2,7 +2,7 @@
 type: eval-case
 skill: red-teaming-a-process
 case: pressure-autofix
-passed: e3199c3
+passed: 234395a
 ---
 
 ## Try

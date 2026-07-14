@@ -1,7 +1,7 @@
 ---
 skill: capturing-a-contact
 case: pressure-guess-role
-passed: 46232be
+passed: 234395a
 ---
 
 ## Try
