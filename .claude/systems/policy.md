@@ -19,15 +19,21 @@ live DB). Distinct from the kernel `standards` system, which sets the quality ba
 harness pieces — this system governs operational subjects.
 
 ## Mechanisms
-- None yet — decreed ahead of its pieces (ADR-0022). The generic shaping standard (and any
-  authoring guide, staged through the loop) is forged once the Notion policy-standard
-  structure settles; the org's policy docs themselves live in Notion, not here (ADR-0021).
+- **authoring-a-policy-standard** — reads: a subject + the rules gathered from the human
+  and named sources · produces: that subject's one policy standard in the org's registry
+  (created from the registered skeleton, or expanded fetch-merge-write), gaps as bare
+  `not defined`, inventions only as confirmed `(proposed)` items, with a change-log row ·
+  runs-when: a user invokes `/authoring-a-policy-standard` · invariants: one doc per
+  subject; rules are gathered or explicitly confirmed, never silently invented; relations
+  resolved live; writes go through the publishing bindings.
+- Further mechanisms (e.g. mechanically auditing a doc's coverage lines) forged as needed;
+  the org's policy docs themselves live in Notion, not here (ADR-0021).
 
 ## Components
 - `.claude/standards/shaping-a-policy-standard.md` — the ten-section rules-first shape a
-  policy standard keeps, with its derived coverage rules and gap-marker convention. The
-  org's policy docs themselves live in Notion ([DB] Policy Standards); a push target
-  belongs to publishing when writes are automated.
+  policy standard keeps, with its derived coverage rules and gap-marker convention.
+- `.claude/skills/authoring-a-policy-standard/SKILL.md` — the authoring guide (staged).
+  The org's registry ids live with the publishing `policy-standards` target.
 
 ## Concepts
 policy standard · subject

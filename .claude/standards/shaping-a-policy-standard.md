@@ -32,6 +32,10 @@ target); this standard is the shape every doc must keep.
   its **Enforced by** (a field, state, or process); external grounding is a **Basis**.
   Evolution rules go to Change Control, never here.
 - **Lifecycle & States** — a state table; no silent transitions, every move names its gate.
+  A schema field that ENCODES lifecycle — whatever its property type (status, select,
+  checkbox), and even a value hiding inside another field's option set — is documented
+  here, its Fields row's Implements pointing at Lifecycle & States, never at a
+  classification.
 - **Fields** — the policy→schema bridge; every field's **Implements** names the section or
   rule it serves (by name or D-id); flag any rule the schema cannot yet express.
 - **Relations & Cross-references** — links to other subjects, each governed (e.g.

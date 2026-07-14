@@ -101,25 +101,27 @@ Features"). Identify a board only by the tooling page that embeds it.
   an existing doc before creating.
 
 ### orgs  *(the [DB] Orgs database — organizations)*
-- **data_source_id:** `2b2d79b5-de38-817a-981e-000b27e5575b`
+- **data_source_id:** `2b2d79b5-de38-817a-981e-000b27e5575b` *(live-verified 2026-07-14)*
 - **properties:**
   - `Name` → title
-  - `Type` → select        <!-- Ecosystem DAO · Facilitator Team · Foundation · Prime/Executor Agent · DevCo · GovOps · … -->
-  - `Tags` → multi_select  <!-- large set (Prospect · Priority · Vendor · CRM-ONLY · …) — fetch live for the full list -->
+  - `Type` → select        <!-- Ecosystem DAO · Facilitator Team · Foundation · Prime Agent · Executor Agent · DevCo · GovOps · Halo Agent · Core Devs · Ecosystem Actor -->
+  - `Tags` → multi_select  <!-- 24 options (Prospect · Priority · Vendor · CRM-ONLY · Terminated · …) — fetch live for the full list -->
   - `Website` · `Twitter` → url
-  - `Contacts` · `Projects` → relation   <!-- resolve target page ids -->
+  - `🫂 Contacts` · `Projects` · `📅 Meetings` · `📜 Docs` · `🔮 Associated Opps` · `Offerings Table` → relation
+  <!-- emoji-prefixed property names are LITERAL — use them exactly; resolve target page ids first -->
 
 ### contacts  *(the [DB] Contacts database — people)*
-- **data_source_id:** `2b2d79b5-de38-81d0-852e-000bc3fdf8d2`
+- **data_source_id:** `2b2d79b5-de38-81d0-852e-000bc3fdf8d2` *(live-verified 2026-07-14)*
 - **properties:**
   - `Name` → title
   - `Email` → email
-  - `Role` → select        <!-- ~26 options (Founder · COO · BD · Facilitator · …) — fetch live, don't invent -->
+  - `Role` → select        <!-- 25 options (Founder · COO · BD · Facilitator · …) — fetch live, don't invent -->
   - `Status` → select      <!-- Active · Inactive -->
   - `Disposition` → select <!-- Detractor · Neutral · Coach · Champion -->
   - `Authority` → multi_select   <!-- Technical Buyer · Economic Buyer · User Buyer -->
   - `Tags` → multi_select  <!-- Nerd · redline · Services -->
-  - `Telegram` · `Signal` · `Discord ID` · `Github` · `Timezone (UTC)` · `Source` → text
+  - `Telegram` · `Signal` · `Discord ID` · `Github` · `Timezone (UTC)` · `Source` · `Sky Forum` → text
+  - `Schedule appointment` → url
   - `Org` → relation       <!-- resolve to the [DB] Orgs page id -->
 
 > **Relations:** the create/update bindings write a relation as the TARGET page's id.
