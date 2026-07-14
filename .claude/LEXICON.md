@@ -106,6 +106,13 @@ table below is the banned list.
 | contact | crm | one row in the [DB] Contacts database — a person (email, role, status, disposition), related to their org |
 | policy standard | policy | the rules-first governance doc for ONE subject — definition, scope, classifications with overlap rules, rules, lifecycle, then representation; lives in the org's policy-standards registry in the external store, with its subject's data; exactly one per subject (ADR-0021) |
 | subject | policy | the one thing a policy standard governs — a record type, a concept, or a mechanism; named, never implied |
+| Sky ecosystem | sky | the Sky (formerly MakerDAO) ecosystem the org operates within — the umbrella for its stars, agents, and governance artifacts |
+| Atlas | sky | the Sky Atlas — the ecosystem's governance rulebook; articles cited as A.x.y links (sky-atlas.io) |
+| spell | sky | a governance/protocol action executed on-chain as a spell |
+| MSC | sky | the Monthly Settlement Cycle |
+| star | sky | a semi-autonomous sub-organization of the Sky ecosystem (e.g. Laniakea), onboarded via the Star Onboarding process |
+| Prime Agent | sky | an agent-organization rank in the ecosystem's agent framework — an org Type in [DB] Orgs and the Tasks `Prime Agent` select (Spark · Skybase · Grove · Keel) |
+| NFAT | sky | the NFAT product line — Beacon · Configurator · Relay |
 
 ## Aliases (do not use → use instead)
 
