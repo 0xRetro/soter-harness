@@ -14,13 +14,13 @@ The primitives that are used to create anything within the harness are:
 - Layer - a tier of generality; where a thing lives based on how required/generic it is 
 - systems - a collection of mechanisms that accomplish an objective or purpose 
 - mechanisms - a way or routine of doing something 
-- components - a collection of things used in mechanisms and systems 
+- components - an artifact that is read or executed; used by mechanisms and systems 
 - concepts  - a defined thing, so we don't confuse or misuse things. 
 
 The Kernel Layer involves 
 - soter-harness lexicon system
   - lexicon registry component (md file — data, no machinery of its own)
-    - concept entries: one concept → one term + accepted synonyms + banned synonyms
+    - concept entries: one concept → one term; synonyms are banned (the aliases table)
   - lexicon check rule components (data rows the enforcement checker runs)
   - concepts: term · alias · concept
 - soter-harness template system

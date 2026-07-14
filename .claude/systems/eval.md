@@ -41,7 +41,7 @@ CI (regression).
   (platform agent-def frontmatter, so classified here on its owning card, like scripts)
 
 ## Concepts
-baseline · pressure case · golden · eval case
+baseline · pressure case · golden · eval case · meta-case
 
 ## Invariants
 - ≥3 cases per guide, one a pressure case — enforcer: checker `EVALS_MIN` + `PRESSURE_MISSING`
