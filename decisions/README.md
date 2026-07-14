@@ -36,3 +36,4 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0029](ADR-0029-schema-sync-enforcement.md) | Schema sync is enforced by same-pass mirror audits and a checker freshness nag | Proposed |
 | [ADR-0030](ADR-0030-adr-allocation-scans-live-branches.md) | ADR numbers are allocated against main plus every live branch (0028/0029 claimed on live branches) | Proposed |
 | [ADR-0031](ADR-0031-org-harness-boundary.md) | The org–harness boundary is bidirectional | Proposed |
+| [ADR-0032](ADR-0032-subprocess-canonical-home-full-copies.md) | Subprocess reuse — canonical home + full inline copies | Accepted |

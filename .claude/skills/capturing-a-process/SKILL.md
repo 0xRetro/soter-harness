@@ -42,11 +42,14 @@ binding. Process-specific:
 2. **Resolve `Related Service`** by searching the Services Catalog for the named service →
    its page id; if not found, ask (leave empty vs create-first) — never fabricate an id.
 3. **Shape the body per `shaping-a-process`** (`.claude/standards/shaping-a-process.md`):
-   fetch the live default template body first, then follow the standard — Purpose · Trigger ·
-   role-bounded **Steps** (a narrative intro; work-items as `- [ ]` headline + prose how,
-   with `⤷ condition → En` branch pointers) · plus the recommended Cadence · Roles ·
-   Exception Handling · Post Run Summary. FLEX: which recommended sections apply to a given
-   process — but Purpose, Steps, and their work-items are always present.
+   fetch the live default template body first, then follow the standard — Purpose · Trigger
+   (prose intro + objective tagged conditions) · Cadence · Roles · **Initialization** (a
+   section, not a step: the run entry, its Roles map, its declared Inputs) · role-bounded
+   **Steps** (narrative intro; work-items as `- [ ]` headline + prose how on its own line,
+   no example values, `⤷ condition → En` pointers) · Exception Handling · Post Run Summary
+   Report (declares the run field's line items). FLEX: which recommended sections apply —
+   but Purpose, Initialization, Steps, and their work-items are always present. A reused
+   sequence is a subprocess (ADR-0032): copy it in full, name its canonical home.
 4. **De-dup:** search [DB] Process Inventory by name before creating; an existing entry is
    updated (`/updating-a-notion-page`), not duplicated.
 5. **Confirm** the resolved row (matched options, resolved-or-empty Related Service, flagged
@@ -56,9 +59,9 @@ binding. Process-specific:
 ## Gotchas
 Shared write-discipline gotchas live in the `writing-records-to-notion` standard;
 process-specific ones only:
-- (live 2026-07-13) `Status` and `Maturity` are TWO separate fields that BOTH contain a
-  "Draft" option — they are not the same field; set each from its own option set, don't
-  collapse them.
+- (live 2026-07-14) `Status` is a pure lifecycle (Backlog · Up Next · Draft · In Review ·
+  Active · Retired); `ProcessOS` (Not Ready · Ready · Live) and `Prio` are SEPARATE fields —
+  never encode adoption stage or priority into Status. (The old `Maturity` field was dropped.)
 - (convergence) Source bodies and older docs label the stage grouping with a different word;
   the canonical shape is **steps** holding **work-items** (ADR-0019) — normalize to steps,
   don't copy the source's label.

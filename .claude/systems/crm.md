@@ -9,11 +9,13 @@ mold: system-card
 # System: crm
 
 ## Promise
-Track relationships: organizations (**orgs**) and the people at them (**contacts**),
-mirrored to the real Notion [DB] Orgs and [DB] Contacts. A contact belongs to an org
-(the Org relation). Consumers: the team
-managing relationships; ingestion (people/orgs from a source); the publishing bindings.
-Mirrors the LIVE [DB] Orgs / [DB] Contacts schemas — the Standards pages document these
+Track relationships: organizations (**orgs**), the people at them (**contacts**), and the
+communication venues connecting us (**channels**), mirrored to the real Notion [DB] Orgs,
+[DB] Contacts, and [DB] Channels. A contact belongs to an org (the Org relation); a channel
+links its member contacts and related orgs. Consumers: the team
+managing relationships; ingestion (people/orgs from a source); the publishing bindings;
+the process system (runs name channels as inputs and comms venues).
+Mirrors the LIVE schemas — the Standards pages document these
 but can lag; fetch live (ADR-0016). Decreed with the first add-on wave (ADR-0017).
 
 ## Mechanisms
@@ -26,19 +28,23 @@ but can lag; fetch live (ADR-0016). Decreed with the first add-on wave (ADR-0017
   (Name + Type/Tags matched to live options, handles normalized to URLs) · runs-when: a
   user invokes `/capturing-an-org` · invariants: sector words go to Tags not Type;
   Type/Tags matched to the live option set; dedup is alias-aware (orgs are relation targets).
+- **channels** — the [DB] Channels directory + its policy are live (a channel record links
+  member contacts and related orgs); processes reference channels today via the publishing
+  bindings. A dedicated `capturing-a-channel` guide is forged when channel writes become
+  routine.
 - Updating orgs/contacts is forged as needed. Writes go through the publishing bindings.
 
 ## Components
 - `.claude/skills/capturing-a-contact/SKILL.md` — the contact-capture guide
 - `.claude/skills/capturing-an-org/SKILL.md` — the org-capture guide. Notion targets
-  `orgs` and `contacts` (with their real schemas + relations) live in the publishing
-  binding's `targets.md`.
+  `orgs`, `contacts`, and `channels` (with their real schemas + relations) live in the
+  publishing binding's `targets.md`.
 
 ## Concepts
-org · contact
+org · contact · channel
 
 ## Invariants
-- contacts and orgs are shaped to the live [DB] Contacts / [DB] Orgs schemas, never an assumed one — enforcer: (gate) + publishing's live schema fetch
+- orgs, contacts, and channels are shaped to their live [DB] schemas, never an assumed one — enforcer: (gate) + publishing's live schema fetch
 - select/multi_select values are matched to the live option set, never invented — enforcer: (gate) + the guide's schema-fetch step
 - the Org relation is resolved to a real page id or left empty — enforcer: (gate) + the guide's resolve step
 - records reach Notion through the publishing bindings (the canonical rule; see the publishing card) — enforcer: (gate) + publishing

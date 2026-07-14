@@ -105,8 +105,12 @@ table below is the banned list.
 | step | process | an ordered stage within a process that groups the work-items done in that stage |
 | work-item | process | one thing to get done inside a step (a checkbox in the process body); the process concept, deliberately NOT a [DB] Tasks task |
 | process run | process | one execution of a process — one row in [DB] Process Runs; its working detail lives in the run body (Run Log), deliberately NOT in [DB] Tasks rows |
+| role | process | a named responsibility bundle a process binds its steps to — one row in [DB] Roles (definition, requirements, training, held-by); a run's Roles field maps each to a contact |
+| capability | process | a tag on a [DB] Roles row naming an authorization or skill the role requires (values defined in the Processes policy); a person is matched to a role by holding every capability it requires |
+| subprocess | process | a reused executable sequence with one canonical [DB] Process Inventory home; callers carry it in full (never a pointer) and the home's Used By list is the update obligation (ADR-0032) |
 | org | crm | one row in the [DB] Orgs database — an organization (type, tags, links), with related contacts and projects |
 | contact | crm | one row in the [DB] Contacts database — a person (email, role, status, disposition), related to their org |
+| channel | crm | one row in the [DB] Channels database — a communication venue (platform, members, related orgs) where work arrives or is coordinated |
 | policy standard | policy | the rules-first governance doc for ONE subject — definition, scope, classifications with overlap rules, rules, lifecycle, then representation; lives in the org's policy-standards registry in the external store, with its subject's data; exactly one per subject (ADR-0021) |
 | subject | policy | the one thing a policy standard governs — a record type, a concept, or a mechanism; named, never implied |
 | resource | resources | one row in [DB] Resources — an external account, platform, shared asset, or registry the team uses (type, access path, admin), governed by the Resources policy standard |
