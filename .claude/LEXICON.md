@@ -104,6 +104,7 @@ table below is the banned list.
 | process run | process | one execution of a process; its work-items are tracked as [DB] Tasks rows — the seam to project-management |
 | role | process | a named responsibility bundle a process binds its steps to — one row in [DB] Roles (definition, requirements, training, held-by); a run's Roles field maps each to a contact |
 | capability | process | a tag on a [DB] Roles row naming an authorization or skill the role requires (values defined in the Processes policy); a person is matched to a role by holding every capability it requires |
+| subprocess | process | a reused executable sequence with one canonical [DB] Process Inventory home; callers carry it in full (never a pointer) and the home's Used By list is the update obligation (ADR-0028) |
 | org | crm | one row in the [DB] Orgs database — an organization (type, tags, links), with related contacts and projects |
 | contact | crm | one row in the [DB] Contacts database — a person (email, role, status, disposition), related to their org |
 | channel | crm | one row in the [DB] Channels database — a communication venue (platform, members, related orgs) where work arrives or is coordinated |
