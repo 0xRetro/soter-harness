@@ -16,22 +16,23 @@ warning), reviewers (the mechanical floor).
 ## Mechanisms
 - **checker** — reads: all harness files, the lexicon's aliases table, the molds'
   shapes, the system cards · produces: pass/fail with what/why/fix · runs-when:
-  PostToolUse hook (warn only, fail-open), PreToolUse Bash guard (`--guard-bash`:
-  root-on-main git, agent publishes, add -A, force pushes; fail-open on unparseable
-  input), Stop turn gate (`--gate`: holds a turn open ONCE while checker errors
-  stand; warnings never block; fail-open off-harness and on any internal error,
-  ADR-0035), CI (block), `--selftest` (plant-and-assert) · invariants: ONE shared
-  script, rules as data, never per-rule scripts; must catch every planted violation;
-  the PostToolUse hook never blocks.
+  lint hook (warn only, fail-open), Bash guard (`--guard-bash`, block: root-on-main
+  git, agent publishes, add -A, force pushes; fail-open on unparseable input),
+  turn gate (`--gate`, block: holds a turn open ONCE while checker errors stand;
+  warnings never block; fail-open off-harness and on any internal error, ADR-0035),
+  CI (block), `--selftest` (plant-and-assert) · invariants: ONE shared script,
+  rules as data, never per-rule scripts; must catch every planted violation; the
+  lint hook never blocks. Which platform events fire these is the platform card's
+  wiring, not this card's.
 
 ## Components
 - `.claude/scripts/check.mjs` — the one shared engine (logic, executed never read)
 
 ## Concepts
-check rule · green carries evidence
+check rule · green carries evidence · turn gate
 
 ## Invariants
 - CI is the merge gate; the lint hook is advisory; the turn gate blocks at most once
-  per turn (`stop_hook_active`) — enforcer: `.github/workflows/ci.yml` + checker `--gate`
+  per turn (its loop guard) — enforcer: `.github/workflows/ci.yml` + checker `--gate`
 - zero checkable artifacts = error — enforcer: checker `SCAN_EMPTY`
 - the selftest plants every violation code and a default-root canary — enforcer: CI selftest step
