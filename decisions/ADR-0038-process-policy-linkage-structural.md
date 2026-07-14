@@ -1,6 +1,6 @@
 # ADR-0038: Process↔policy linkage is a row relation, not body pointers
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-14
 
 ## Context
