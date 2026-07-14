@@ -43,6 +43,9 @@ Docs: `README.md` (the map) · `.claude/LEXICON.md` (terms + classification) ·
   feature cards, human-gated. Always user-invoked (side-effecting). (ADR-0024)
 - `/capturing-a-feature` — captures one idea as a Feature Board card: why in
   Description, template-shaped body. Always user-invoked (side-effecting). (ADR-0025)
+- `/running-evals` — runs an eval scenario as a fresh-context, write-contained
+  subagent; verdicts from artifacts, goldens recorded. Always user-invoked
+  (side-effecting). (ADR-0033)
 
 ## Layout
 
