@@ -2,7 +2,7 @@
 type: eval-case
 skill: writing-adrs
 case: invariant-immutable
-passed: 0d61c30
+passed: d3b080e
 ---
 
 ## Try

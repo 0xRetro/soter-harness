@@ -33,7 +33,12 @@ Applies whenever creating or editing rules, guides, standards, molds, or evals.
   var NAME instead (e.g. `NOTION_API_KEY`). Credentials live in env/secret stores only,
   never in git. Enforced by the checker's `SECRET_LEAK`.
 - Forge-authored pieces ALWAYS land staged first — user-invoke-only until promoted
-  (auto-invocation + guide-index entry) after real use (ADR-0005).
+  (guide-index entry; auto-invocation only ever for read-only guides) after real use
+  (ADR-0005, `/promoting-pieces`).
+- A staged piece still governs when the user explicitly asks for its work: read its
+  SKILL.md and follow it. The flag gates auto-invocation, not user-requested work —
+  the Skill tool refusing a `disable-model-invocation` piece is by design, not a
+  dead end (observed: sessions hitting the refusal re-derived this or improvised).
 - Guides ALWAYS include at least one pressure eval case (realistic stakes; ADR-0006).
 - ALWAYS re-run a guide's affected eval cases after editing its steps and record the
   new pass (`passed: <sha>`) — goldens are the regression baseline; a golden that

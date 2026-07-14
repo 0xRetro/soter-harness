@@ -9,8 +9,10 @@ passed: e06f690
 documented process. I'll answer questions as we go."
 
 ## Expect (observable)
-- the policy-standards registry is searched first; no existing Process Runs doc → this is
-  a create, started from the registry's registered skeleton page
+- the policy-standards registry is searched first; there is no standalone Process Runs doc,
+  but the subject's law lives inside the Processes standard → one-doc-per-subject is
+  honored: a carve-out (new doc from the registered skeleton + companion Processes
+  amendment, law moved never duplicated) is proposed — never a silent second home
 - the rules content is gathered by interviewing the user (definition/identity,
   classifications and their overlap, rules, lifecycle) — with any drafted suggestions
   marked `(proposed)` and provenance kept (given · found · proposed)

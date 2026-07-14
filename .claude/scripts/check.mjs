@@ -542,7 +542,9 @@ function gateVerdict(root) {
 // The mutating verb must be git's SUBCOMMAND (global opts skipped) — a bare keyword
 // match read `git worktree add` as `git add` and blocked the exact bootstrap command
 // the guard's own message recommends (observed 2026-07-14, chicken-and-egg lockout).
-const GUARD_GIT_MUTATING = /\bgit\s+(?:-C\s+\S+\s+|-c\s+\S+\s+|--[\w-]+(?:=\S+)?\s+)*(commit|add|checkout|switch|rebase|merge|reset|stash)\b/;
+const GUARD_GIT_MUTATING = /\bgit\s+(?:-C\s+\S+\s+|-c\s+\S+\s+|--[\w-]+(?:=\S+)?\s+)*(commit|add|checkout|switch|rebase|merge|reset|stash)(?![\w-])/;
+// (?![\w-]) not \b: a bare \b let `git merge-base` (read-only) match as `merge` —
+// hyphen is a word boundary (observed 2026-07-14, blocked a branch survey at root).
 // Publishing from an AGENT worktree (branch worktree-agent-*): three contained eval runs
 // obediently pushed and opened REAL PRs on 2026-07-14 — the guide under test said "land
 // via the PR gate" and Bash+gh was an open channel. Agent work stays local; humans publish.
@@ -563,6 +565,14 @@ function guardBashVerdict(cwd, command) {
         + 'work and dangle the commits goldens are stamped with (ADR-0036). After a rebase, '
         + 'push your own branch with --force-with-lease instead.';
     if (!(GUARD_GIT_MUTATING.test(command) || GUARD_PUBLISH.test(command))) return null;
+    // `git add -A/--all` is banned EVERYWHERE, not just at root-on-main — it once swept
+    // another session's worktree gitlink into a commit (ADR-0027). Needs no repo state;
+    // each git call's own pipeline segment is checked, so a later `&& git add -A` still trips.
+    for (const mv of command.matchAll(new RegExp(GUARD_GIT_MUTATING.source, 'g')))
+      if (mv[1] === 'add' && /\s(?:-A|--all)\b/.test(command.slice(mv.index).split(/[|;&]/)[0]))
+        return 'BLOCKED: git add -A/--all is never used in this repo — stage named paths '
+          + 'instead; a bulk add once swept another session\'s worktree gitlink into a '
+          + 'commit (.claude/rules/parallel-sessions.md, ADR-0027).';
     const mC = command.match(/\bgit\s+-C\s+(?:"([^"]+)"|'([^']+)'|(\S+))/);
     // A leading `cd <dir> &&` moves the git call — judge that dir, not the stale cwd
     // (observed 2026-07-14: a cd-into-worktree compound was blocked as root-on-main).
@@ -1067,8 +1077,16 @@ function selftest() {
       fails.push('guard: a cd-into-worktree compound was judged by the stale cwd');
     if (!guardBashVerdict(wt, `git -C ${groot} add file`))
       fails.push('guard: a -C-to-root mutating command was not blocked after the subcommand-anchor change');
+    if (guardBashVerdict(groot, 'git merge-base HEAD origin/main'))
+      fails.push('guard: read-only merge-base was wrongly blocked (hyphen counts as a word boundary)');
     if (guardBashVerdict(wt, 'git push origin HEAD'))
       fails.push('guard: a session-worktree push was wrongly blocked');
+    if (!guardBashVerdict(wt, 'git add -A'))
+      fails.push('guard: git add -A in a session worktree was not blocked');
+    if (!guardBashVerdict(wt, 'git commit -m "y" && git add --all'))
+      fails.push('guard: add --all in a later compound segment was not blocked');
+    if (guardBashVerdict(wt, 'git add CLAUDE.md .claude/LEXICON.md'))
+      fails.push('guard: a named-path git add in a worktree was wrongly blocked');
     const wtA = path.join(groot, 'wta');
     gg(['worktree', 'add', '-q', wtA, '-b', 'worktree-agent-selftest']);
     if (!guardBashVerdict(wtA, 'git push -u origin HEAD'))

@@ -21,6 +21,12 @@ authoring loop (the gate), users (a harness that can't silently rewrite itself).
 - **decision recording** — reads: a durable choice made in conversation · produces:
   an ADR + an index line · runs-when: a decision would otherwise live only in chat ·
   invariants: append-only; supersede, never edit; walked via the `writing-adrs` guide.
+- **promotion** — reads: a staged piece's real-use evidence (git history, gotcha
+  growth) · produces: a guide-index entry and, for read-only guides only,
+  auto-invocation — or a recorded refusal · runs-when: a user invokes
+  `/promoting-pieces` · invariants: one piece per decision; evidence from artifacts,
+  never testimony; side-effecting guides keep `disable-model-invocation` forever;
+  the decision lands as an ADR (ADR-0008).
 
 ## Components
 - `decisions/` — the ADR log (workshop, not shipped)

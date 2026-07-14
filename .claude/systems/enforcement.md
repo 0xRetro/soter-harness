@@ -16,9 +16,11 @@ warning), reviewers (the mechanical floor).
 ## Mechanisms
 - **checker** — reads: all harness files, the lexicon's aliases table, the molds'
   shapes, the system cards · produces: pass/fail with what/why/fix · runs-when:
-  PostToolUse hook (warn only, fail-open), CI (block), `--selftest`
-  (plant-and-assert) · invariants: ONE shared script, rules as data, never
-  per-rule scripts; must catch every planted violation; hook mode never blocks.
+  PostToolUse hook (warn only, fail-open), PreToolUse Bash guard (`--guard-bash`,
+  the ONE blocking mode: root-on-main git, agent publishes; fail-open on unparseable
+  input), CI (block), `--selftest` (plant-and-assert) · invariants: ONE shared
+  script, rules as data, never per-rule scripts; must catch every planted violation;
+  the PostToolUse hook never blocks.
 
 ## Components
 - `.claude/scripts/check.mjs` — the one shared engine (logic, executed never read)
