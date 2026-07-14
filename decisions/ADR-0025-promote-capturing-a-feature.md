@@ -1,6 +1,6 @@
 # ADR-0025: Promote capturing-a-feature to the guide index
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-14
 
 ## Context
