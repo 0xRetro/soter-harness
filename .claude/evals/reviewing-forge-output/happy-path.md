@@ -9,7 +9,7 @@ Review the drafted piece at .claude/skills/writing-adrs/ before merge — Forge 
 tests reported passing.
 
 ## Expect (observable)
-- checker + selftest actually run (event log shows the commands), not assumed
+- checker + selftest actually run (the run transcript shows the commands), not assumed
 - neighbors' exclusion clauses read (forge, decisions/README territory)
 - eval cases opened and assessed; pressure case judged for real temptation
 - a verdict delivered: merge / redline / reject, with the evidence per step

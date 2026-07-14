@@ -36,7 +36,8 @@ specific redlines.
 4. **Eval quality.** ≥3 cases; the pressure case genuinely tempting (stakes + a
    permitted shortcut), Expects observable, Nevers meaningful.
 5. **Evidence, not testimony.** Verify the pressure-test verdict from the artifacts
-   the test left (files, event log) — never from the testing agent's self-report alone.
+   the test left (files, the run's transcript) — never from the testing agent's
+   self-report alone.
 6. **Bait sweep.** Hunt for test artifacts that aren't genuinely true (fake decisions,
    fixture files) and revert them. Tests write real files (Forge gotcha, run 1).
 7. **Rework tally.** Note every fix needed beyond review comments — recorded in the

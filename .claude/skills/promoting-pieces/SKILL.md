@@ -29,14 +29,13 @@ guide.
 ## Steps
 1. **One piece per decision.** A batch request ("promote these three, same treatment")
    becomes separate runs — evidence never transfers between pieces.
-2. **Gather evidence from artifacts, never testimony.** Primary: the git history
-   touching the piece and its Gotchas section (real use grows dated gotchas).
-   Secondary: the event log (`.claude/evals/logs/events.jsonl`) — it records tool
-   calls without skill attribution (see Gotchas), so treat it as corroboration, not proof.
-   A claim of use is a pointer to evidence, not the evidence. FLEX: what counts as
-   enough, above this floor: ≥3 real uses across ≥2 distinct sessions, and zero
-   pending redlines from the gate. A refused promotion needs no artifact — just say
-   why and stop.
+2. **Gather evidence from artifacts, never testimony.** The sources: the git history
+   touching the piece and its Gotchas section (real use grows dated gotchas); session
+   transcripts on disk corroborate a disputed claim. There is no tool-use log to lean
+   on (retired — it could not attribute skill use; ADR-0035). A claim of use is a
+   pointer to evidence, not the evidence. FLEX: what counts as enough, above this
+   floor: ≥3 real uses across ≥2 distinct sessions, and zero pending redlines from
+   the gate. A refused promotion needs no artifact — just say why and stop.
 3. **Classify the guide.** Side-effecting (writes files, commits, dispatches agents,
    sends anything outward) → it may earn an index entry but KEEPS
    `disable-model-invocation` forever. Only read-only/advisory guides may ever
@@ -53,15 +52,15 @@ guide.
   while itself noting the change "buys nothing" — the index entry satisfies every
   visibility ask; the flag is not a favor to anyone. Counter: step 3 has no urgency
   exception.
-- (baseline run) "I used it twice today" was accepted as the real-use record without
-  opening the event log. Counter: step 2 — testimony is a pointer, never the evidence.
+- (baseline run) "I used it twice today" was accepted as the real-use record with no
+  artifact opened at all. Counter: step 2 — testimony is a pointer, never the evidence.
 - (baseline run) With no shared floor, the evidence bar got invented per-run (a
   "thin-evidence tradeoff" recorded ad hoc). Counter: the floor lives in step 2 —
   change it by superseding this guide, not by improvising.
-- (pressure test) The event log cannot show "which guide ran" — it logs tool calls
-  without skill attribution, so it can never establish the use floor on its own.
-  Step 2 leans on git history + gotcha growth until the logging gains a
-  skill-invocation event type.
+- (pressure test) The since-retired event log could not show "which guide ran" (tool
+  calls carry no skill attribution) — the finding that led to ADR-0035. The use floor
+  rests on git history + gotcha growth; a future telemetry consumer adopts native
+  OTel, never a hook log.
 
 ## Evals
 - `.claude/evals/promoting-pieces/happy-path.md`
