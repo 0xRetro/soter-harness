@@ -38,14 +38,19 @@ context.
    - **Decision** — 1-3 lines, active voice, the choice itself (not the journey).
    - **Consequences** — costs, constraints, what it enables/forbids, and the
      **revisit trigger** (what would justify superseding it).
-5. Status: `Proposed` — unless the human accepts it in the same exchange, then `Accepted`.
+5. Status: `Proposed`. It flips to `Accepted` at the gate that lands it. In-session
+   acceptance counts ONLY when the human confirmed the decision CONTENT itself — a
+   go-ahead to do the work is NOT acceptance of the decision it produces; when in doubt,
+   `Proposed` (the merge flips it — ADR-0027's own precedent).
 6. Add one line to the index in `decisions/README.md`.
 7. If superseding: the ONLY edit to the old ADR is its Status line →
    `Superseded by ADR-XXXX`.
 8. Verify: `node .claude/scripts/check.mjs --all` passes; the index line links to a real file.
-9. Land it: if the human accepted the decision in this exchange, the ADR + its index
-   line may commit directly to main (they record an already-made call); anything else —
-   or any edit beyond those two files — goes through a branch + PR like all harness work.
+9. Land it: on the session's branch like all harness work — never from the root
+   checkout (it stays parked on main; parallel-sessions rule). With in-session
+   acceptance the PR may merge without further review (that approval WAS the gate);
+   otherwise it waits for the human. The merge — or the human's explicit flip — sets
+   `Accepted`.
 
 ## Gotchas
 (none yet — grows from real use)

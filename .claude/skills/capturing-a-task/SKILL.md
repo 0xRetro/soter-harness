@@ -28,10 +28,15 @@ resolved to real ids, its date concrete, de-duped and confirmed — at Status = 
 Follow the **`writing-records-to-notion`** standard (`.claude/standards/writing-records-to-notion.md`) for the shared
 spine — fetch schema · resolve relations (never fabricate) · match options · pin dates ·
 de-dup · confirm · publish via the binding. Task-specific:
-1. **Shape (live schema):** `Name` (title) · `Status` = `To Do` (at capture) · `Context`
-   (select — Internal/Service/Project/Client, only if clear). The live board has NO
-   Priority/Tag/Summary/Due field — don't try to set them (see Gotchas; the Standards
-   page lags, targets.md records the live-verified schema).
+1. **Shape (live schema + policy):** `Name` (title) · `Status` = `To Do` (at capture) ·
+   `Context` per the Tasks policy standard's D1 (linked to a project → Project; ongoing
+   service work → Service; client-facing without either → Client; else Internal; leave
+   empty when unclear — never guess). The subject's law is the `Tasks` policy standard in
+   the policy-standards registry (pointer on the `tasks` target in targets.md); the write
+   discipline's fetch-policy step applies. NEVER set `Prime Agent` (deprecated — a dupe of
+   the Project/Org links; the policy standard records this). The live board has NO
+   Priority/Tag/Summary/Due field — don't try to set them (see Gotchas; targets.md records
+   the live-verified schema).
 2. **Resolve:** `Assigned To` (and `Client Contact` if named) via `Notion:notion-get-users`
    ("me" → the user's email → their id); `Project` via search; `Next Action` is the date
    field — pin relative dates. Target `tasks`.
