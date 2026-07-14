@@ -24,7 +24,14 @@ semantics are governed by the subjects' policy standards in the org's registry
   project/org) · runs-when: a user invokes `/capturing-a-task` · invariants: relations
   (Project/Org/Assignee) are resolved to real page/user ids or left empty, never
   fabricated; relative dates pinned to concrete dates; status starts at To Do.
-- Further mechanisms (creating a project, advancing a task) forged as needed. Writes go
+- Further mechanisms (creating a project, advancing a task) forged as needed — ONLY on
+  an observed RED baseline. Project capture evaluated 2026-07-14: baseline GREEN — a
+  fresh contained agent shaped a correct [DB] Projects row from the
+  `writing-records-to-notion` spine, the `projects` target, and the sibling task guide
+  alone (Type per the policy's D1, PM/Organization resolved to real ids, de-dup caught
+  a genuine possible duplicate, write held at the confirm gate with the user away), so
+  no capturing-a-project guide was authored (forge step 4). Re-propose only on an
+  observed project-capture failure. Writes go
   through the publishing bindings; source-driven task intake reuses the ingestion spine.
 
 ## Components
