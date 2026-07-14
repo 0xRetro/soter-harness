@@ -1,6 +1,6 @@
 # ADR-0045: Engines and delegated mechanisms
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-14
 
 ## Context
