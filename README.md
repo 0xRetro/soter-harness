@@ -32,13 +32,13 @@ keeps the behavior (ADR-0045).
 | System | Promise | Mechanisms | Key components | Concepts |
 |---|---|---|---|---|
 | **template** | Every piece starts as a copy of its mold, so shape is guaranteed by instantiation rather than policing. | scaffold<br>(delegated to the forge) | `templates/` (the molds) | mold<br>shape<br>hint |
-| **lexicon** | Every term is defined once and referenced everywhere, so classification is mechanical rather than a judgment call. | None of its own —<br>alias lint, delegated<br>to enforcement's checker | `LEXICON.md` | term<br>alias<br>concept<br>engine<br>delegated mechanism |
-| **standards** | There is one explicit bar for quality, naming, and budgets, so review is a checklist rather than taste. | None of its own — delegated:<br>rubric review → the human gate<br>budgets/naming → the checker | `RUBRIC.md`<br>`standards/degrees-of-freedom.md` | budget<br>degree of freedom<br>flex point<br>rubric |
+| **lexicon** | Every term is defined once and referenced everywhere, so classification is mechanical rather than a judgment call. | alias lint<br>(delegated to the checker) | `LEXICON.md` | term<br>alias<br>concept<br>engine<br>delegated mechanism |
+| **standards** | There is one explicit bar for quality, naming, and budgets, so review is a checklist rather than taste. | rubric review<br>(delegated to the human gate)<br>budgets/naming<br>(delegated to the checker) | `RUBRIC.md`<br>`standards/degrees-of-freedom.md` | budget<br>degree of freedom<br>flex point<br>rubric |
 | **eval** | Every piece proves it was needed (a watched baseline failure) and holds up under realistic pressure. | baseline · pressure-test<br>(delegated to the forge)<br>running-evals | `evals/` (the cases)<br>`running-evals`<br>`agents/eval-runner.md` | baseline<br>pressure case<br>golden<br>eval case<br>meta-case |
-| **enforcement** | Everything the harness declares is mechanically verified, and a green result always carries evidence. | checker (an engine) — 5 triggers:<br>lint hook (warn)<br>Bash guard<br>ADR guard<br>turn gate<br>CI | `scripts/check.mjs` | check rule<br>green carries evidence<br>turn gate |
+| **enforcement** | Everything the harness declares is mechanically verified, and a green result always carries evidence. | checker (an engine) | `scripts/check.mjs` | check rule<br>green carries evidence<br>turn gate |
 | **governance** | The harness changes only deliberately: decisions are recorded, humans gate every merge, and new pieces earn trust before autonomy. | human gate<br>decision recording<br>promotion | `decisions/`<br>`writing-adrs`<br>`reviewing-forge-output`<br>`promoting-pieces` | gate<br>ADR<br>staged<br>promoted<br>add-on<br>decree |
 | **authoring** | New pieces are born through one loop — mold, evals, checks, gate — never freehand. | forge | `skills/forge/`<br>`rules/authoring.md` | piece<br>the loop<br>exclusion clause<br>gotcha |
-| **platform** | All claude-code coupling is quarantined in one place, so every other system stays portable. | None —<br>usage standards authored only on<br>an observed RED baseline<br>(hooks evaluated: GREEN, ADR-0044) | `settings.json`<br>`hooks/hooks.json`<br>`plugin.json`<br>`rules/parallel-sessions.md` | hook · skill · agent<br>command · script<br>worktree · subagent<br>session · guide |
+| **platform** | All claude-code coupling is quarantined in one place, so every other system stays portable. | None | `settings.json`<br>`hooks/hooks.json`<br>`plugin.json`<br>`rules/parallel-sessions.md` | hook · skill · agent<br>command · script<br>worktree · subagent<br>session · guide |
 
 ### Core — generic capability above the kernel
 
@@ -50,19 +50,19 @@ keeps the behavior (ADR-0045).
 
 | System | Promise | Mechanisms | Key components | Concepts |
 |---|---|---|---|---|
-| **crm** | Organizations, the people at them, and the channels connecting us are mirrored to the live CRM databases. | capturing-an-org<br>capturing-a-contact<br>(channel capture deferred) | `capturing-an-org`<br>`capturing-a-contact` | org<br>contact<br>channel |
-| **project-management** | Delivery is tracked above the feature level — projects and the tasks that execute them, per their policy standards. | capturing-a-task<br>(project capture: deliberate no-guide,<br>GREEN baseline) | `capturing-a-task` | project<br>task |
-| **product-development** | A captured use-case is carried to a shipped feature, tracked lightly on its own tool's board. | capturing<br>defining<br>(build/ship stages future) | `capturing-a-feature`<br>`defining-a-feature` | feature record<br>tooling page<br>feature lifecycle<br>Feature Board<br>containment |
+| **crm** | Organizations, the people at them, and the channels connecting us are mirrored to the live CRM databases. | capturing-an-org<br>capturing-a-contact | `capturing-an-org`<br>`capturing-a-contact` | org<br>contact<br>channel |
+| **project-management** | Delivery is tracked above the feature level — projects and the tasks that execute them, per their policy standards. | capturing-a-task | `capturing-a-task` | project<br>task |
+| **product-development** | A captured use-case is carried to a shipped feature, tracked lightly on its own tool's board. | capturing<br>defining | `capturing-a-feature`<br>`defining-a-feature` | feature record<br>tooling page<br>feature lifecycle<br>Feature Board<br>containment |
 | **process** | Repeatable work is defined once in the live Process Inventory — definitions, not a runtime. | capturing-a-process<br>red-teaming | `standards/shaping-a-process.md`<br>`capturing-a-process`<br>`red-teaming-a-process` | process · step<br>work-item<br>process run<br>role · capability |
-| **resources** | The team's external accounts and platforms are tracked with clear access and administration answers. | validating-resources<br>(capture/update: deliberate no-guide,<br>ADR-0028) | `validating-resources` | resource |
-| **sky** | Sky-ecosystem vocabulary has one home, so terms don't drift per surface. | None —<br>decreed ahead of its pieces<br>(ADR-0026) | None | Sky ecosystem · Atlas<br>spell · MSC · star<br>Prime Agent · NFAT |
+| **resources** | The team's external accounts and platforms are tracked with clear access and administration answers. | validating-resources | `validating-resources` | resource |
+| **sky** | Sky-ecosystem vocabulary has one home, so terms don't drift per surface. | None | None | Sky ecosystem · Atlas<br>spell · MSC · star<br>Prime Agent · NFAT |
 
 ### Automation — pushing, pulling, and keeping stores honest
 
 | System | Promise | Mechanisms | Key components | Concepts |
 |---|---|---|---|---|
 | **publishing** | Work reaches external systems of record deliberately — typed, de-duplicated, human-confirmed; Notion is the first binding, not the system. | notion-push<br>notion-update | `pushing-to-notion`<br>`updating-a-notion-page`<br>`targets.md`<br>`writing-records-to-notion.md` | publish · binding<br>external store<br>fetch-merge-write<br>relation · option set<br>resolve · page |
-| **ingestion** | External sources become standardized records, with a human gating what actually enters; the pull side. | reviewing-a-repo<br>(more sources forged as needed) | `reviewing-a-repo` | source<br>ingestion<br>standardize<br>intake gate |
+| **ingestion** | External sources become standardized records, with a human gating what actually enters; the pull side. | reviewing-a-repo | `reviewing-a-repo` | source<br>ingestion<br>standardize<br>intake gate |
 | **schema-audit** | Notion's schema docs and the harness's own mirror stay true to the live databases. | auditing-a-schema-doc | `auditing-a-schema-doc` | schema doc<br>schema drift |
 
 The `rules/` folder is a delivery form (always-on), not a system — each rule declares
