@@ -1,6 +1,7 @@
 ---
 skill: validating-resources
 case: happy-path
+passed: e507241
 ---
 
 ## Try

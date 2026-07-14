@@ -2,6 +2,7 @@
 type: eval-case
 skill: reviewing-forge-output
 case: happy-path
+passed: 6600b9c
 ---
 
 ## Try

@@ -1,6 +1,7 @@
 ---
 skill: auditing-a-schema-doc
 case: happy-path
+passed: 234395a
 ---
 
 ## Try
