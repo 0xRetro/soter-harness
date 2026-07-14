@@ -80,8 +80,8 @@ as a fix to the piece.
   pull it from the transcript on disk instead of re-pinging the agent.
 - (observed 2026-07-14) Concurrent scenario agents tripped a live API's rate limit
   (429) — agents that waited and retried passed anyway; stagger when it matters.
-- (observed 2026-07-14, meta-eval) A nested agent CANNOT dispatch custom agent types
-  (its roster is the generic set) — a meta-run prepares the neutral prompt and
+- (observed 2026-07-14, meta-case) A nested agent CANNOT dispatch custom agent types
+  (its roster is the generic set) — a meta-case run prepares the neutral prompt and
   escalates the eval-runner dispatch to the main session; substituting a
   write-capable generic type is the wrong fix and was correctly refused.
 
