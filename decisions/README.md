@@ -9,7 +9,7 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0002](ADR-0002-systems-first-classification.md) | Systems-first classification: four declared fields | Accepted |
 | [ADR-0003](ADR-0003-one-shared-checker.md) | One enforcement system, one shared checker, rules as data | Accepted |
 | [ADR-0004](ADR-0004-platform-quarantine.md) | Platform primitives are forms, not systems; one quarantine system | Accepted |
-| [ADR-0005](ADR-0005-standards-governance-separate.md) | Standards and governance are separate kernel systems | Accepted |
+| [ADR-0005](ADR-0005-standards-governance-separate.md) | Standards and governance are separate kernel systems | Superseded by ADR-0028 |
 | [ADR-0006](ADR-0006-evals-kernel-substrate.md) | Evals are kernel substrate; cases are data, the runner is replaceable | Accepted |
 | [ADR-0007](ADR-0007-classification-scope-singletons.md) | Classification frontmatter scope; `mold: singleton` allowed | Accepted |
 | [ADR-0008](ADR-0008-promotion-third-state.md) | The promotion lifecycle has a third state (index-only) | Accepted |
@@ -32,3 +32,4 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0025](ADR-0025-promote-capturing-a-feature.md) | Promote capturing-a-feature to the guide index | Accepted |
 | [ADR-0026](ADR-0026-sky-context-system.md) | The sky context system — ecosystem vocabulary owned once | Accepted |
 | [ADR-0027](ADR-0027-multi-agent-operating-model.md) | Multi-agent operating model — worktrees per session, contained eval runners | Accepted |
+| [ADR-0028](ADR-0028-standards-governance-hard-forks.md) | Standards and governance stay separate; hard forks are fine when add-ons feel slow | Proposed |

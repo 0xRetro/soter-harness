@@ -1,6 +1,6 @@
 # ADR-0005: Standards and governance are separate kernel systems
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR-0028
 - **Date:** 2026-07-12
 
 ## Context
