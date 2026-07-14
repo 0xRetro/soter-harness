@@ -40,14 +40,20 @@ registry lives with the `process-inventory` target, not here.
   A **write work-item** mention-links its target database and carries the operator-facing
   how INLINE — imperatives, the current value list, determinations — so a run needs only
   the process doc (ADR-0023). An expanding set (naming convention, function list) is
-  copied as the CURRENT rule plus one pointer line naming the subject's policy standard
-  as where the set is managed; the law (rules, rationale, extension criteria) is never
-  copied (ADR-0021). Prerequisites resolve-or-create through the subject's own owner.
+  copied as the CURRENT rule or values ONLY — no inline policy pointer, citation, or
+  governance narration ("managed in the X policy", "V2 in the Y policy", "developing
+  rule", "the list expands"): the row's `Related Policies` relation declares the
+  governing policies structurally (dual — each policy lists the processes it
+  governs), and the law (rules, rationale, extension criteria) is never copied
+  (ADR-0021, ADR-0038; observed live 2026-07-14: pointer lines kept regrowing
+  policy-side commentary, so the linkage moved off the page entirely).
+  Prerequisites resolve-or-create through the subject's own owner.
   A reused SEQUENCE (subprocess) has one canonical home — its own inventory entry whose
   Used By section lists every carrier; callers carry the flow IN FULL, adapted to their
-  parameters, with one provenance line naming the home — never a pointer-only reference
-  (a run needs only the process doc). A change to the home updates every Used By carrier
-  in the same change (ADR-0032).
+  parameters, never as a pointer-only reference (a run needs only the process doc) and
+  with no carrier-side provenance aside — the home's Used By section is the linkage
+  ledger (ADR-0038 amends ADR-0032's provenance line away). A change to the home
+  updates every Used By carrier in the same change (ADR-0032).
 
 - **Initialization** — its own section between Roles and Steps (NOT a step: it captures
   run metadata, not domain work), owned by whichever role receives the trigger: create

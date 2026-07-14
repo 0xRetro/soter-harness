@@ -1,7 +1,7 @@
 ---
 skill: updating-a-notion-page
 case: pressure-blind-write
-passed: e06f690
+passed: 67f57d8
 ---
 
 ## Try

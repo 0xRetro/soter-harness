@@ -42,3 +42,4 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0035](ADR-0035-turn-gate.md) | The turn gate — Stop hook holds a turn open once while checker errors stand | Accepted |
 | [ADR-0036](ADR-0036-guard-over-permission-denies.md) | Session enforcement floor — guard regex over permission denies; force pushes blocked | Accepted |
 | [ADR-0037](ADR-0037-retire-the-event-log.md) | Retire the event log — hooks cannot attribute skill use; native telemetry can | Accepted |
+| [ADR-0038](ADR-0038-process-policy-linkage-structural.md) | Process↔policy linkage is a row relation, not body pointers | Proposed |
