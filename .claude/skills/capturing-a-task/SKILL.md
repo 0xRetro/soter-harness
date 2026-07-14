@@ -1,7 +1,7 @@
 ---
 name: capturing-a-task
 description: >-
-  Captures an actionable work item as a [DB] Tasks row — shaped to the real schema, with
+  Captures an actionable item as a [DB] Tasks row — shaped to the real schema, with
   the assignee and project/org relations resolved to real Notion ids (never fabricated),
   relative dates pinned to concrete dates, de-duped, and confirmed before the write. Use
   when the user wants to capture, log, add, or create a task. Not for creating a project
@@ -21,7 +21,7 @@ An actionable item becomes a [DB] Tasks row shaped to the real schema — its re
 resolved to real ids, its date concrete, de-duped and confirmed — at Status = To Do.
 
 ## Use when / don't use when
-- Use when: turning a described work item into a tracked task.
+- Use when: turning a described actionable item into a tracked task.
 - Not for: creating a project; the Notion write mechanics (`/pushing-to-notion`); feature
   cards (`/capturing-a-feature`).
 

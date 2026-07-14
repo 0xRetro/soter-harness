@@ -18,7 +18,7 @@ from a source); the publishing bindings that write them. Mirrors the LIVE [DB] T
 live, ADR-0016).
 
 ## Mechanisms
-- **capturing-a-task** — reads: a described work item · produces: a [DB] Tasks row
+- **capturing-a-task** — reads: a described actionable item · produces: a [DB] Tasks row
   (Name + Status = To Do, assignee/context/next-action as given, related to its
   project/org) · runs-when: a user invokes `/capturing-a-task` · invariants: relations
   (Project/Org/Assignee) are resolved to real page/user ids or left empty, never

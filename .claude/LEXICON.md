@@ -97,7 +97,11 @@ table below is the banned list.
 | schema doc | schema-audit | a Notion page documenting a database's schema (the workspace's "[DB] X Standards" pages) — distinct from a harness standard |
 | schema drift | schema-audit | divergence between a schema doc and the live database's actual fields/types/options |
 | project | project-management | one row in the [DB] Projects database — a client or internal engagement (type, status, dates, org, contact), tracking work above the task level |
-| task | project-management | one row in the [DB] Tasks database — an actionable work item (status, priority, assignee, due), related to a project and/or org |
+| task | project-management | one row in the [DB] Tasks database — an actionable unit of delivery (status, assignee, next action), related to a project and/or org |
+| process | process | a reusable definition of how repeatable work gets done — one entry in the live [DB] Process Inventory (row + shaped body), distinct from any single run of it |
+| step | process | an ordered stage within a process that groups the work-items done in that stage |
+| work-item | process | one thing to get done inside a step (a checkbox in the process body); the process concept, deliberately NOT a [DB] Tasks task |
+| process run | process | one execution of a process; its work-items are tracked as [DB] Tasks rows — the seam to project-management |
 | org | crm | one row in the [DB] Orgs database — an organization (type, tags, links), with related contacts and projects |
 | contact | crm | one row in the [DB] Contacts database — a person (email, role, status, disposition), related to their org |
 
@@ -114,6 +118,7 @@ observed drift.
 | template file | mold |
 | category | system |
 | project page | tooling page |
+| phase | step |
 
 ## Where it goes (placement table)
 

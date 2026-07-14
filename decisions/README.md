@@ -23,3 +23,5 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0016](ADR-0016-live-schema-over-standards-pages.md) | The live Notion data source is the source of truth, not the Standards pages | Accepted |
 | [ADR-0017](ADR-0017-systems-born-or-decreed.md) | Systems are born from real pieces or decreed by ADR | Accepted |
 | [ADR-0018](ADR-0018-promote-writing-adrs.md) | Promote writing-adrs to the guide index | Accepted |
+| [ADR-0019](ADR-0019-process-system.md) | The process system — Process → Step → Work-item, defined not engineered | Accepted |
+| [ADR-0020](ADR-0020-golden-freshness-git-coupling.md) | The checker reads git history for golden freshness (GOLDEN_STALE) | Accepted |
