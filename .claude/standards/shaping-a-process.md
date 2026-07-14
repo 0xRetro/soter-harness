@@ -52,9 +52,12 @@ registry lives with the `process-inventory` target, not here.
   roles too), and capture the inputs (`Inputs` — one line per input; the Initialization
   capture list IS the process's input declaration; @-mention the input's record where
   one exists, raw value otherwise — upgraded to the mention once registered). The FINAL
-  step closes the run (Completed · State · Outcome). Proof and deviations live on the
-  run's record (Notes), and when the process verifies a subject record, that record
-  links the run.
+  step closes the run (Completed · State · Outcome · the Post Run Summary Report field).
+  Working detail accrues in the run's page body per the [Run Template] (Inputs ·
+  Outputs & Proof · Run Log) — proof lands there as the run progresses; the Post Run
+  Summary Report field carries the closing summary (Proof · Exceptions or deviations ·
+  Improvements noted). When the process verifies a subject record, that record links
+  the run.
 
 **Recommended (light):**
 - **Cadence** — one line, mirrors the `Frequency` property.
@@ -63,9 +66,10 @@ registry lives with the `process-inventory` target, not here.
 - **Exception Handling** — labeled exceptions (**E1, E2, …**), each failure → workaround,
   defined once here; a work-item that can trigger one carries an inline `⤷ condition → En`
   pointer instead of restating the handling.
-- **Post Run Summary** — a short template for the post-run report (outcome · proof/artifacts
-  produced · deviations · improvements), filled in after each run. A run's work-items are
-  tracked as [DB] Tasks (the run→tasks seam).
+- **Post Run Summary Report** — the doc section mirrors the run record's Post Run Summary
+  Report field (Proof · Exceptions or deviations · Improvements noted), filled at close;
+  working detail lives in the run body, not here. A run's work-items are tracked as
+  [DB] Tasks (the run→tasks seam).
 
 **Add later, as the process firms up (not needed for a first version):** Prerequisites ·
 Resources · Inputs & Outputs · Sub-process rules · Connections · Improvement opportunities ·
