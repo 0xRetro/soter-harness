@@ -54,6 +54,10 @@ worklist (the policy-doc convention, generalized to records).
   differs from what you wrote — Notion auto-linkifies emails/URLs, so an old_str copied
   from your own draft may never match. Copy old_str from a FRESH fetch, and verify
   every op landed.
+- **Never blind-append either.** insert_content on an unfetched body lands under
+  whatever is already there (observed 2026-07-14: six records carried pre-existing
+  freeform blocks — one with an expired invite link — above blind-appended sections).
+  Fetch the body before ANY content write, insert included.
 - **Never `apply_template` onto a record that already has real property values** — a
   template's default properties overwrite them. Write the body content directly instead.
 - **A schema change checks the DB's registered templates AND affected record bodies.**
