@@ -27,6 +27,18 @@ the card when it matters. A mechanism marked "delegated" runs inside one of the
 engines — the checker, the forge loop, or the human gate — while its owning system
 keeps the behavior (ADR-0045).
 
+<!-- Editing rules for these tables (aligned in PR #35):
+  - One table per layer; columns: System · Promise · Mechanisms · Key components · Concepts.
+  - Promise: one full sentence, from the card's Promise.
+  - Mechanisms & Key components: bare names, one per line (<br>). No annotations —
+    decree/deferral/verdict notes and trigger lists live on the system card.
+    Only allowed markers: "(delegated to the checker/forge/human gate)" (ADR-0045)
+    and "(an engine)".
+  - "None" only when the system truly has none.
+  - Concepts: from the card's Concepts line; group 2-3 per line with · only when a list is long.
+  - No hardcoded counts (live-lists rule) — role words instead ("the molds").
+-->
+
 ### Kernel — required substrate: makes the harness run and self-build
 
 | System | Promise | Mechanisms | Key components | Concepts |
