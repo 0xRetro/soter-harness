@@ -1,4 +1,4 @@
-# ADR-0024: The sky context system — ecosystem vocabulary owned once
+# ADR-0026: The sky context system — ecosystem vocabulary owned once
 
 - **Status:** Accepted
 - **Date:** 2026-07-14

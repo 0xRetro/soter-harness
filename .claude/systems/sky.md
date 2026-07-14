@@ -15,10 +15,10 @@ harness home instead of drifting per-surface re-explanations. Consumers: the oth
 context systems (process, project-management, crm, product-development) whose records
 carry these words; the policy docs whose value definitions copy them; the layer
 discipline itself (ecosystem words are context — this card is where they legitimately
-live, ADR-0024).
+live, ADR-0026).
 
 ## Mechanisms
-- None yet — decreed ahead of its pieces (ADR-0024). Sky-specific mechanisms (e.g.
+- None yet — decreed ahead of its pieces (ADR-0026). Sky-specific mechanisms (e.g.
   Atlas-citation resolution, star-scoped captures) are forged here as real need emerges,
   staged through the loop.
 
