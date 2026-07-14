@@ -19,7 +19,7 @@ before a push if the board may have changed (a property added/renamed).
 ## Targets
 
 ### tooling-pages  *(the [DB] Tooling database — one page per tool/product)*
-- **data_source_id:** `ed2e2463-6963-472e-951d-95582e681e56`
+- **data_source_id:** `ed2e2463-6963-472e-951d-95582e681e56` *(live-verified 2026-07-12)*
 - **properties:**
   - `Name` → title
   - `Description` → text

@@ -416,6 +416,37 @@ function checkGoldenFresh(root, file, fm, out) {
   } catch { /* fail-open: no git / shallow clone / unknown sha — the gate still reads the rule */ }
 }
 
+// TARGET_STALE (warn): targets.md mirrors live Notion schemas with dated `live-verified`
+// stamps (ADR-0016). The checker can't fetch Notion (ADR-0010) — but it CAN read the
+// stamps offline: a stamp older than TARGET_STALE_DAYS, or a registered target with no
+// stamp at all, is the audit cadence firing (ADR-0029). The nag clears only when
+// /auditing-a-schema-doc re-verifies against live and re-stamps the entry.
+const TARGET_STALE_DAYS = 30;
+function checkTargetFreshness(root, out) {
+  const p = path.join(root, '.claude', 'skills', 'pushing-to-notion', 'targets.md');
+  if (!exists(p)) return;
+  let target = null, hasId = false, stamp = null;
+  const flush = () => {
+    if (!target || !hasId) return;
+    if (!stamp)
+      out.push(V(p, 'TARGET_STALE', `target "${target}" has a data_source_id but no live-verified stamp`,
+        'an unstamped mirror has unverifiable freshness — its schema may be anyone\'s guess (ADR-0029)',
+        `run /auditing-a-schema-doc for the DB and stamp the entry (live-verified YYYY-MM-DD)`, 'warn'));
+    else if ((Date.now() - Date.parse(stamp)) / 86400000 > TARGET_STALE_DAYS)
+      out.push(V(p, 'TARGET_STALE', `target "${target}" last live-verified ${stamp} (> ${TARGET_STALE_DAYS} days)`,
+        'the mirror rots silently between audits — the stamp age IS the audit cadence (ADR-0029)',
+        're-run /auditing-a-schema-doc for the DB and refresh the stamp', 'warn'));
+  };
+  for (const line of read(p).split('\n')) {
+    const h = line.match(/^###\s+(\S+)/);
+    if (h) { flush(); target = h[1]; hasId = false; stamp = null; continue; }
+    if (/\*\*data_source_id:\*\*/.test(line)) hasId = true;
+    const s = line.match(/live-verified (\d{4}-\d{2}-\d{2})/);
+    if (s && target && !stamp) stamp = s[1];
+  }
+  flush();
+}
+
 function checkAdr(file, out) {
   const text = read(file);
   checkPlaceholders(file, text, out);   // sweep: <title>/YYYY-MM-DD/<!-- residue was slipping through
@@ -645,6 +676,7 @@ function checkAll(root, census = {}) {
   checkAliasTable(root, out);
   checkDescriptionBudget(root, out);
   checkLinks(root, out);
+  checkTargetFreshness(root, out);
   // ADR-0003: green carries evidence — an empty scan is an error, never a pass.
   const total = census.claudeMd + census.skills + census.standards + census.systems + census.molds
     + census.singletons + census.rules + census.evalCases + census.adrs;
@@ -748,6 +780,8 @@ function selftest() {
   w('.claude/skills/auto-pusher-false/SKILL.md', '---\nname: auto-pusher-false\ndescription: Pushes to a store. Use when asked to push. Not for reads.\nlayer: automation\nsystem: guides\nkind: component\nmold: how-to-guide\ndisable-model-invocation: false\n---\n\nNot for reads.\n'); // AUTOMATION_AUTOFIRE (flag present but false — value check, not key presence)
   w('.claude/systems/lonely.md', '---\nname: lonely\nlayer: kernel\nsystem: lonely\nkind: component\nmold: singleton\n---\n\n# Card\n\n## Promise\nx\n\n## Mechanisms\nnone\n\n## Components\nnone\n\n## Concepts\nnone\n\n## Invariants\nnone\n');
   w('.claude/skills/orphan-skill/SKILL.md', '---\nname: orphan-skill\ndescription: Does x. Use when asked. Not for y.\nlayer: kernel\nsystem: lonely\nkind: component\nmold: how-to-guide\ndisable-model-invocation: true\n---\n\nNot for y.\n'); // SYSTEM_UNLISTED (lonely card doesn't list it)
+  w('.claude/skills/pushing-to-notion/targets.md',                          // TARGET_STALE ×2 (stale stamp + unstamped)
+    '---\nname: targets\nlayer: automation\nsystem: publishing\nkind: component\nmold: singleton\n---\n\n# T\n\n### old-target\n- **data_source_id:** `abc` *(live-verified 2020-01-01)*\n\n### unstamped-target\n- **data_source_id:** `def`\n');
   const planted = checkAll(tmp);
   const codes = new Set(planted.map((v) => v.code));
   const mustFire = ['BUDGET_CLAUDEMD', 'NAME_LINT', 'FM_MISSING', 'PLACEHOLDER', 'EXCLUSION_MISSING',
@@ -755,7 +789,7 @@ function selftest() {
     'REF_DEPTH', 'PRESSURE_MISSING', 'UNEXPECTED_FILE', 'BUDGET_RULE',
     'SEC_LINT', 'DESC_XML', 'TRIGGER_EVAL_MISSING', 'LINK_BROKEN',
     'FM_CLASS', 'SYSTEM_UNKNOWN', 'MOLD_UNKNOWN', 'MOLD_SHAPE', 'CARD_OWNER', 'CARD_PATH', 'CARD_CONCEPT', 'CARD_ADR',
-    'ALIAS_ROW_MALFORMED', 'SECTION_ORDER', 'AUTOMATION_AUTOFIRE', 'SECRET_LEAK', 'SYSTEM_UNLISTED'];
+    'ALIAS_ROW_MALFORMED', 'SECTION_ORDER', 'AUTOMATION_AUTOFIRE', 'SECRET_LEAK', 'SYSTEM_UNLISTED', 'TARGET_STALE'];
   const missed = mustFire.filter((c) => !codes.has(c));
   if (missed.length) fails.push(`planted violations not detected: ${missed.join(', ')}`);
   // Count assertions where one plant per code isn't enough to prove the rule:
@@ -763,6 +797,8 @@ function selftest() {
   if (leaks < 2) fails.push(`SECRET_LEAK fired ${leaks}x — both planted key shapes (ntn_, sk-ant-…) must be caught`);
   const autofire = planted.filter((v) => v.code === 'AUTOMATION_AUTOFIRE').length;
   if (autofire < 2) fails.push(`AUTOMATION_AUTOFIRE fired ${autofire}x — both plants (flag missing, flag: false) must be caught`);
+  const staleTargets = planted.filter((v) => v.code === 'TARGET_STALE').length;
+  if (staleTargets < 2) fails.push(`TARGET_STALE fired ${staleTargets}x — both plants (stale stamp, no stamp) must be caught`);
   fs.rmSync(tmp, { recursive: true, force: true });
 
   // --- Stage 2: a clean fixture must be silent (classification-era shape)
