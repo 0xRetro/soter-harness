@@ -10,7 +10,8 @@ mold: system-card
 
 ## Promise
 Repeatable work is defined once, consistently, in the live Notion [DB] Process Inventory:
-a **process** (row + shaped body) made of **steps**, each holding **work-items**. Consumers:
+a **process** (row + shaped body) made of **steps**, each holding **work-items**; steps bind
+to **roles** defined once in the [DB] Roles directory. Consumers:
 the team documenting how work gets done and converging the process-platform app + Merlin docs
 + Notion onto one definition (ADR-0019); project-management, which tracks a **process run**'s
 work-items as [DB] Tasks. Mirrors the LIVE [DB] Process Inventory schema — fetch live, never
@@ -36,7 +37,7 @@ runtime engine (ADR-0003, ADR-0019).
   `targets.md`.
 
 ## Concepts
-process · step · work-item · process run
+process · step · work-item · process run · role
 
 ## Invariants
 - a process is shaped to the live [DB] Process Inventory schema, never an assumed one — enforcer: (gate) + publishing's live schema fetch

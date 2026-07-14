@@ -9,11 +9,13 @@ mold: system-card
 # System: crm
 
 ## Promise
-Track relationships: organizations (**orgs**) and the people at them (**contacts**),
-mirrored to the real Notion [DB] Orgs and [DB] Contacts. A contact belongs to an org
-(the Org relation). Consumers: the team
-managing relationships; ingestion (people/orgs from a source); the publishing bindings.
-Mirrors the LIVE [DB] Orgs / [DB] Contacts schemas — the Standards pages document these
+Track relationships: organizations (**orgs**), the people at them (**contacts**), and the
+communication venues connecting us (**channels**), mirrored to the real Notion [DB] Orgs,
+[DB] Contacts, and [DB] Channels. A contact belongs to an org (the Org relation); a channel
+links its member contacts and related orgs. Consumers: the team
+managing relationships; ingestion (people/orgs from a source); the publishing bindings;
+the process system (runs name channels as inputs and comms venues).
+Mirrors the LIVE schemas — the Standards pages document these
 but can lag; fetch live (ADR-0016). Decreed with the first add-on wave (ADR-0017).
 
 ## Mechanisms
@@ -35,7 +37,7 @@ but can lag; fetch live (ADR-0016). Decreed with the first add-on wave (ADR-0017
   binding's `targets.md`.
 
 ## Concepts
-org · contact
+org · contact · channel
 
 ## Invariants
 - contacts and orgs are shaped to the live [DB] Contacts / [DB] Orgs schemas, never an assumed one — enforcer: (gate) + publishing's live schema fetch
