@@ -1,6 +1,6 @@
 # ADR-0037: Retire the event log — hooks cannot attribute skill use; native telemetry can
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-14
 
 ## Context

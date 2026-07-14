@@ -41,4 +41,4 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0034](ADR-0034-plugin-ships-at-parity.md) | The plugin ships the harness at parity — hook wiring mirrored (HOOK_PARITY), manifest unversioned while internal | Accepted |
 | [ADR-0035](ADR-0035-turn-gate.md) | The turn gate — Stop hook holds a turn open once while checker errors stand | Accepted |
 | [ADR-0036](ADR-0036-guard-over-permission-denies.md) | Session enforcement floor — guard regex over permission denies; force pushes blocked | Accepted |
-| [ADR-0037](ADR-0037-retire-the-event-log.md) | Retire the event log — hooks cannot attribute skill use; native telemetry can | Proposed |
+| [ADR-0037](ADR-0037-retire-the-event-log.md) | Retire the event log — hooks cannot attribute skill use; native telemetry can | Accepted |
