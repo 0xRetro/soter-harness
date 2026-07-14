@@ -447,6 +447,33 @@ function checkTargetFreshness(root, out) {
   flush();
 }
 
+// GUARD (PreToolUse, exit 2 blocks): the parallel-sessions rule parks the ROOT checkout
+// on main — no commits, no staging, no branch switches there (ADR-0027). Sessions slip:
+// a shell cwd reset once aimed a `git add` at root and only a pathspec miss saved it.
+// This makes the rule mechanical. Best-effort by design — it reads the hook's cwd (or a
+// `git -C` target); a `cd` inside a compound command can evade it. The rule and the PR
+// gate still stand behind it; this catches the common slip, not a determined bypass.
+const GUARD_GIT_MUTATING = /\bgit\b[^|;&]*?\b(commit|add|checkout|switch|rebase|merge|reset|stash)\b/;
+function guardBashVerdict(cwd, command) {
+  try {
+    if (!command || !GUARD_GIT_MUTATING.test(command)) return null;
+    const mC = command.match(/\bgit\s+-C\s+(?:"([^"]+)"|'([^']+)'|(\S+))/);
+    const dir = mC ? (mC[1] || mC[2] || mC[3]) : cwd;
+    if (!dir || !exists(dir)) return null;
+    const git = (args) => execFileSync('git', ['-C', dir, ...args],
+      { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    const top = git(['rev-parse', '--show-toplevel']);
+    const gitDir = path.resolve(top, git(['rev-parse', '--git-dir']));
+    const common = path.resolve(top, git(['rev-parse', '--git-common-dir']));
+    if (gitDir !== common) return null;               // a worktree — sessions belong there
+    if (git(['branch', '--show-current']) !== 'main') return null;
+    return 'BLOCKED: this git command targets the ROOT checkout on main, which stays '
+      + 'parked and read-only (.claude/rules/parallel-sessions.md, ADR-0027). Run it from '
+      + 'your session worktree instead — or create one: '
+      + 'git worktree add .claude/worktrees/<topic> -b <branch> origin/main';
+  } catch { return null; } // fail-open: not a repo / no git — the prose rule still governs
+}
+
 function checkAdr(file, out) {
   const text = read(file);
   checkPlaceholders(file, text, out);   // sweep: <title>/YYYY-MM-DD/<!-- residue was slipping through
@@ -877,11 +904,32 @@ function selftest() {
     fs.rmSync(gr, { recursive: true, force: true });
   }
 
+  // --- Stage 7: root-main guard — a mutating git command at the root checkout on main
+  // must block; the same command in a worktree must pass; read-only git must pass.
+  const groot = mkroot('checker-guard-');
+  try {
+    const gg = (args, dir = groot) => execFileSync('git', ['-C', dir, ...args], { stdio: ['ignore', 'pipe', 'ignore'] });
+    gg(['init', '-q', '-b', 'main']);
+    gg(['-c', 'user.email=selftest@local', '-c', 'user.name=selftest', 'commit', '--allow-empty', '-qm', 'x']);
+    if (!guardBashVerdict(groot, 'git commit -m "y"'))
+      fails.push('guard: a commit at the root checkout on main was not blocked');
+    if (guardBashVerdict(groot, 'git status && git log --oneline'))
+      fails.push('guard: a read-only git command was wrongly blocked');
+    const wt = path.join(groot, 'wt');
+    gg(['worktree', 'add', '-q', wt, '-b', 'selftest-topic']);
+    if (guardBashVerdict(wt, 'git commit -m "y"'))
+      fails.push('guard: a worktree commit was wrongly blocked');
+  } catch (e) {
+    fails.push(`guard fixture errored (git available?): ${e.message}`);
+  } finally {
+    fs.rmSync(groot, { recursive: true, force: true });
+  }
+
   if (fails.length) {
     for (const f of fails) console.error(`SELFTEST FAIL: ${f}`);
     process.exit(1);
   }
-  console.log(`SELFTEST PASS: ${mustFire.length} codes fired; clean silent; empty-root fails; alias-table guard live; default-root aim verified; golden freshness live.`);
+  console.log(`SELFTEST PASS: ${mustFire.length} codes fired; clean silent; empty-root fails; alias-table guard live; default-root aim verified; golden freshness live; root-main guard live.`);
 }
 
 // ---------- main ---------------------------------------------------------------
@@ -923,6 +971,14 @@ if (argv.includes('--selftest')) {
     } catch { /* fail-open */ }
     fs.appendFileSync(logFile, line + '\n');
   } catch { /* fail-open */ }
+  process.exit(0);
+} else if (argv.includes('--guard-bash')) {
+  // PreToolUse guard on Bash: exit 2 blocks the tool call (stderr reaches the agent);
+  // any other exit allows. Fail-open on unparseable input — never wedge the session.
+  let ev = null;
+  try { ev = JSON.parse(fs.readFileSync(0, 'utf8')); } catch { /* fail-open */ }
+  const verdict = ev ? guardBashVerdict(ev.cwd, ev.tool_input?.command) : null;
+  if (verdict) { console.error(verdict); process.exit(2); }
   process.exit(0);
 } else if (argv.includes('--hook')) {
   let stdin = '';

@@ -1,6 +1,6 @@
 # ADR-0029: Schema sync is enforced by same-pass mirror audits and a checker freshness nag
 
-- **Status:** Accepted
+- **Status:** Proposed
 - **Date:** 2026-07-14
 
 ## Context
