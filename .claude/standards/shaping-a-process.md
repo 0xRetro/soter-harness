@@ -25,11 +25,17 @@ heavier sections only when a real process forces them (ADR-0019; minimum viable,
 - **Steps** — ordered `### Step N: <name>`; each is a set of **work-items** as `- [ ]`
   checkboxes. A work-item MAY carry `Rationale / Expected / Branches / Notes` lines beneath it
   when the process needs that rigor (security, capital); otherwise a plain checkbox.
+  A **write work-item** names its target and the fields this step supplies
+  (`verb → [DB] <subject>` + `sets: …`) — field definitions and how-to-fill live in the
+  subject's policy standard, referenced never restated (ADR-0021); prerequisites
+  resolve-or-create through the subject's own owner.
 
 **Recommended (light):**
 - **Cadence** — one line, mirrors the `Frequency` property.
 - **Roles** — Role · Who · Responsibility (only when more than one actor).
-- **Exception Handling** — failure → workaround (when the process really has failure modes).
+- **Exception Handling** — labeled exceptions (**E1, E2, …**), each failure → workaround,
+  defined once here; a work-item that can trigger one carries an inline `⤷ condition → En`
+  pointer instead of restating the handling.
 - **Post Run Summary** — a short template for the post-run report (outcome · proof/artifacts
   produced · deviations · improvements), filled in after each run. A run's work-items are
   tracked as [DB] Tasks (the run→tasks seam).

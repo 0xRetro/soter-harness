@@ -24,13 +24,15 @@ harness pieces — this system governs operational subjects.
   structure settles; the org's policy docs themselves live in Notion, not here (ADR-0021).
 
 ## Components
-- None yet — a [DB] Policy Standards push target belongs to publishing when writes are
-  automated; harness components arrive with the shaping standard.
+- `.claude/standards/shaping-a-policy-standard.md` — the ten-section rules-first shape a
+  policy standard keeps, with its derived coverage rules and gap-marker convention. The
+  org's policy docs themselves live in Notion ([DB] Policy Standards); a push target
+  belongs to publishing when writes are automated.
 
 ## Concepts
 policy standard · subject
 
 ## Invariants
 - one policy standard per subject; policies and processes reference a subject's policy standard, never restate it — enforcer: (gate) + the forge's territory check
-- rules before representation: definition, classifications, rules, and lifecycle precede any field table — enforcer: (gate) until the shaping standard lands
+- rules before representation: definition, classifications, rules, and lifecycle precede any field table — enforcer: (gate) + shaping-a-policy-standard
 - the live database is the source of truth; a policy standard's representation is audited against it, never trusted over it (ADR-0016) — enforcer: (gate) + schema-audit
