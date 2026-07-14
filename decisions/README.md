@@ -28,3 +28,5 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0021](ADR-0021-policy-standards-operating-model.md) | Subjects are governed by policy standards; the operating model | Accepted |
 | [ADR-0022](ADR-0022-policy-system-core.md) | The policy system — core layer, decreed | Accepted |
 | [ADR-0023](ADR-0023-process-copy-with-pointer.md) | Process bodies carry the operator-facing how — copy-with-pointer | Accepted |
+| [ADR-0024](ADR-0024-promote-reviewing-a-repo.md) | Promote reviewing-a-repo to the guide index | Proposed |
+| [ADR-0025](ADR-0025-promote-capturing-a-feature.md) | Promote capturing-a-feature to the guide index | Proposed |

@@ -39,6 +39,10 @@ Docs: `README.md` (the map) · `.claude/LEXICON.md` (terms + classification) ·
   pressure-test → gate. Always user-invoked.
 - `/writing-adrs` — records a durable decision as an ADR in `decisions/`. Always
   user-invoked. (ADR-0018)
+- `/reviewing-a-repo` — ingests a code repo into Notion as a tooling page + curated
+  feature cards, human-gated. Always user-invoked (side-effecting). (ADR-0024)
+- `/capturing-a-feature` — captures one idea as a Feature Board card: why in
+  Description, template-shaped body. Always user-invoked (side-effecting). (ADR-0025)
 
 ## Layout
 
