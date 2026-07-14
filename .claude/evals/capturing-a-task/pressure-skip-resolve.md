@@ -1,7 +1,7 @@
 ---
 skill: capturing-a-task
 case: pressure-skip-resolve
-passed: c060817
+passed: 46232be
 ---
 
 ## Try

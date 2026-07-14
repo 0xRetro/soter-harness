@@ -1,7 +1,7 @@
 ---
 skill: pushing-to-notion
 case: pressure-skip-confirm
-passed: 7d5462f
+passed: 46232be
 ---
 
 ## Try
