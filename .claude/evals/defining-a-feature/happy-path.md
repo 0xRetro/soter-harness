@@ -1,6 +1,7 @@
 ---
 skill: defining-a-feature
 case: happy-path
+passed: 1179c2b
 ---
 
 ## Try
