@@ -514,6 +514,25 @@ function checkHookParity(root, out) {
         'add the same hook to .claude/settings.json (path via $CLAUDE_PROJECT_DIR/.claude), or remove it from hooks.json'));
 }
 
+// TURN GATE (Stop hook, exit 2 blocks the turn from ending): the PostToolUse lint is
+// warn-only and CI only fires at the PR — a session could carry checker errors through
+// a whole conversation before anything pushed back (ADR-0035). The gate holds the turn
+// open ONCE so the session fixes its own breakage while it still has the context.
+// stop_hook_active is the platform's loop guard: after one block it comes back true and
+// the gate stands down — CI stays the merge backstop. Fail-open everywhere else: a
+// non-harness project (plugin install; SCAN_EMPTY is all it would say) and any internal
+// error must never wedge a consumer's session. Warnings never block.
+function gateVerdict(root) {
+  try {
+    const errs = checkAll(root).filter((v) => v.level !== 'warn');
+    if (!errs.length || errs.every((v) => v.code === 'SCAN_EMPTY')) return null;
+    const lines = errs.slice(0, 10).map((v) => `- [${v.code}] ${path.relative(root, v.file) || v.file}: ${v.what} → ${v.fix}`);
+    return `TURN GATE: ending this turn would leave the harness with ${errs.length} checker error(s). `
+      + `Fix them now (or tell the user why you can't):\n${lines.join('\n')}`
+      + (errs.length > 10 ? `\n…and ${errs.length - 10} more — run: node .claude/scripts/check.mjs --all` : '');
+  } catch { return null; } // fail-open — the gate protects the harness, never holds a session hostage
+}
+
 // GUARD (PreToolUse, exit 2 blocks): the parallel-sessions rule parks the ROOT checkout
 // on main — no commits, no staging, no branch switches there (ADR-0027). Sessions slip:
 // a shell cwd reset once aimed a `git add` at root and only a pathspec miss saved it.
@@ -528,9 +547,22 @@ const GUARD_GIT_MUTATING = /\bgit\s+(?:-C\s+\S+\s+|-c\s+\S+\s+|--[\w-]+(?:=\S+)?
 // obediently pushed and opened REAL PRs on 2026-07-14 — the guide under test said "land
 // via the PR gate" and Bash+gh was an open channel. Agent work stays local; humans publish.
 const GUARD_PUBLISH = /\bgit\b[^|;&]*?\bpush\b|\bgh\s+(?:pr\s+(?:create|merge)|api|repo\s+(?:create|delete|edit))\b/;
+// Force pushes rewrite pushed history: they clobber what other sessions fetched and
+// dangle the commits goldens are stamped with (`passed: <sha>`) — blocked EVERYWHERE,
+// any branch, any dir. `--force-with-lease` stays open: it is the sanctioned escape for
+// the rebase-then-push flow the parallel-sessions rule prescribes, and it refuses to
+// clobber work it hasn't seen. `+refspec` is force by another spelling — same block.
+// A permissions deny was considered and rejected: prefix matching misses mid-command
+// flags; this regex sees the whole command (ADR-0036).
+const GUARD_FORCE_PUSH = /\bgit\b[^|;&]*?\bpush\b[^|;&]*(?:\s--force(?!-with-lease)\b|\s-f\b|\s\+\S)/;
 function guardBashVerdict(cwd, command) {
   try {
-    if (!command || !(GUARD_GIT_MUTATING.test(command) || GUARD_PUBLISH.test(command))) return null;
+    if (!command) return null;
+    if (GUARD_FORCE_PUSH.test(command))
+      return 'BLOCKED: force pushes are never used here — they clobber other sessions\' fetched '
+        + 'work and dangle the commits goldens are stamped with (ADR-0036). After a rebase, '
+        + 'push your own branch with --force-with-lease instead.';
+    if (!(GUARD_GIT_MUTATING.test(command) || GUARD_PUBLISH.test(command))) return null;
     const mC = command.match(/\bgit\s+-C\s+(?:"([^"]+)"|'([^']+)'|(\S+))/);
     // A leading `cd <dir> &&` moves the git call — judge that dir, not the stale cwd
     // (observed 2026-07-14: a cd-into-worktree compound was blocked as root-on-main).
@@ -1066,7 +1098,7 @@ const rootIx = argv.indexOf('--root');
 // plugin cache, where two-up-from-script is NOT the project and every rel-path check
 // would silently no-op. Claude Code hands hooks the real project via CLAUDE_PROJECT_DIR;
 // prefer it in those modes. --all/--selftest keep aiming at the repo the script lives in.
-const hookish = argv.includes('--hook') || argv.includes('--log-event');
+const hookish = argv.includes('--hook') || argv.includes('--log-event') || argv.includes('--gate');
 const ROOT = rootIx !== -1 ? path.resolve(argv[rootIx + 1])
   : hookish && process.env.CLAUDE_PROJECT_DIR ? path.resolve(process.env.CLAUDE_PROJECT_DIR)
   : path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..'); // script lives at .claude/scripts/ → repo root is two up
@@ -1097,6 +1129,15 @@ if (argv.includes('--selftest')) {
     } catch { /* fail-open */ }
     fs.appendFileSync(logFile, line + '\n');
   } catch { /* fail-open */ }
+  process.exit(0);
+} else if (argv.includes('--gate')) {
+  // Stop hook: exit 2 holds the turn open (stderr reaches the agent); anything else
+  // lets it end. stop_hook_active means we already blocked once — stand down (loop guard).
+  let ev = null;
+  try { ev = JSON.parse(fs.readFileSync(0, 'utf8')); } catch { /* fail-open */ }
+  if (ev?.stop_hook_active) process.exit(0);
+  const verdict = gateVerdict(ROOT);
+  if (verdict) { console.error(verdict); process.exit(2); }
   process.exit(0);
 } else if (argv.includes('--guard-bash')) {
   // PreToolUse guard on Bash: exit 2 blocks the tool call (stderr reaches the agent);
