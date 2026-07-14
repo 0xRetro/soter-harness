@@ -438,7 +438,13 @@ function checkGoldenFresh(root, file, fm, out) {
           're-run the case and re-stamp passed: with a commit that exists on this branch', 'warn'));
       return;
     }
-    const since = git(['rev-list', `${fm.passed}..HEAD`, '--', rel]);
+    // Compare CONTENT, not commit traversal: `rev-list passed..HEAD -- rel` lists merge
+    // commits whose parents differed on the path even when the merged result is identical
+    // to the golden-time content — every mandated merge commit was a false stale
+    // (found live 2026-07-14: content-identical golden flagged after a main merge).
+    let since = '';
+    try { git(['diff', '--quiet', fm.passed, 'HEAD', '--', rel]); }
+    catch { since = 'changed'; }
     const dirty = git(['status', '--porcelain', '--', rel]);
     if (since || dirty)
       out.push(V(file, 'GOLDEN_STALE',
@@ -1069,6 +1075,20 @@ function selftest() {
     wg('.claude/evals/tested-guide/dangling.md', `---\nskill: tested-guide\ncase: dangling\npassed: deadbeef\n---\n## Try\nx\n## Expect\n- y\n## Never\n- z\n`);
     if (!checkAll(gr).some((v) => v.code === 'GOLDEN_STALE' && /not in this repo/.test(v.what)))
       fails.push('a golden sha absent from history did not raise GOLDEN_STALE (squash-merge blind spot)');
+    // Content-identical must stay silent even when commits traversed the path — the
+    // merge-commit false positive (rev-list lists merges whose parents differed on
+    // the path even when the merged content equals the golden-time content).
+    fs.rmSync(path.join(gr, '.claude', 'evals', 'tested-guide', 'dangling.md'));
+    const v2Sha = gitq(['rev-parse', '--short', 'HEAD']);
+    wg('.claude/skills/tested-guide/SKILL.md', 'v3 of the guide. Not for anything.\n');
+    gitq(['add', '.claude/skills/tested-guide/SKILL.md']);
+    gitq(['-c', 'user.email=selftest@local', '-c', 'user.name=selftest', 'commit', '-qm', 'v3']);
+    wg('.claude/skills/tested-guide/SKILL.md', 'v2 of the guide. Not for anything.\n');
+    gitq(['add', '.claude/skills/tested-guide/SKILL.md']);
+    gitq(['-c', 'user.email=selftest@local', '-c', 'user.name=selftest', 'commit', '-qm', 'revert to v2 content']);
+    wg('.claude/evals/tested-guide/happy.md', `---\nskill: tested-guide\ncase: happy\npassed: ${v2Sha}\n---\n## Try\nx\n## Expect\n- y\n## Never\n- z\n`);
+    if (checkAll(gr).some((v) => v.code === 'GOLDEN_STALE'))
+      fails.push('content-identical guide (edit reverted) wrongly raised GOLDEN_STALE — traversal, not content, was compared');
   } catch (e) {
     fails.push(`GOLDEN_STALE fixture errored (git available?): ${e.message}`);
   } finally {
