@@ -18,6 +18,10 @@ Applies whenever more than one session (interactive or agent) may touch this rep
   commits there, checks out a branch there, or stages from there.
 - ALWAYS fork from up-to-date `origin/main`, and land finished work back on main
   through the human gate promptly — long-lived branches are where drift lives.
+- ALWAYS land with a merge commit; NEVER squash-merge — squashing rewrites the commits
+  goldens are stamped with (`passed: <sha>` dangles; found live, five goldens silently
+  unverifiable). Between parallel branches: first ready lands first; the next rebases
+  onto the new main and re-runs `--all` before its own merge.
 - ALWAYS check main's `decisions/` before allocating the next ADR number (or any
   shared sequential identifier) — two parallel sessions once allocated the same number.
 - ALWAYS scope `git add` to named paths; NEVER `git add -A` (it once swept another
