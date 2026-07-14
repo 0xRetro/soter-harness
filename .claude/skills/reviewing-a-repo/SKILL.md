@@ -99,6 +99,18 @@ entries were updated, not duplicated.
   materialized minutes apart here, one AFTER a "verified clean" fetch. The submit-once /
   poll-the-async-task / verify-against-a-newer-snapshot discipline lives in
   `writing-records-to-notion` (Async writes, templates, and schema changes).
+- (live run 2026-07-14, tx-keeper) Re-reviewing an EXISTING tool, ground-truth the
+  existing cards' statuses against the code too — two cards sat behind reality (a
+  built diff view still "In Development"; a built calendar model still "Up Next").
+  Status advances are proposed with code evidence and decided at the gate, like
+  everything else.
+- (live run 2026-07-14, tx-keeper) Pre-template-era boards may lack the extras
+  entirely (no `Type` property, no registered card template) — the body spine still
+  applies; a bug card carries its nature in its Name and the Bug section swap.
+- (live run 2026-07-14, tx-keeper) A code review can surface security findings (a
+  committed API key in a public repo). Where the finding lands is a gate decision
+  (here: a bug card on the board) — and the secret itself is NEVER copied into any
+  record, only its location referenced.
 
 ## Evals
 - `.claude/evals/reviewing-a-repo/happy-path.md`
