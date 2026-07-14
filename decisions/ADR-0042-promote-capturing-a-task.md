@@ -1,6 +1,6 @@
 # ADR-0042: Promote capturing-a-task to the guide index
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-14
 
 ## Context

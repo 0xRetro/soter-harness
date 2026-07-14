@@ -61,6 +61,12 @@ guide.
   calls carry no skill attribution) — the finding that led to ADR-0037. The use floor
   rests on git history + gotcha growth; a future telemetry consumer adopts native
   OTel, never a hook log.
+- (live 2026-07-14, first wave) Four index-only promotions and one refusal ran through
+  this guide in one wave (ADR-0039–0042). The refusal was the floor working: a guide
+  everyone believed heavily used (authoring-a-policy-standard) had only baseline-tagged
+  gotchas — belief without artifacts fails step 2. Corollary: a mechanism-guide used
+  THROUGH callers accrues its evidence in the callers and the shared standard, not its
+  own gotchas — read the evidence at that altitude (recorded in ADR-0039).
 
 ## Evals
 - `.claude/evals/promoting-pieces/happy-path.md`

@@ -1,6 +1,6 @@
 # ADR-0040: Promote updating-a-notion-page to the guide index
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-14
 
 ## Context

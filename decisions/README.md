@@ -43,7 +43,7 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0036](ADR-0036-guard-over-permission-denies.md) | Session enforcement floor — guard regex over permission denies; force pushes blocked | Accepted |
 | [ADR-0037](ADR-0037-retire-the-event-log.md) | Retire the event log — hooks cannot attribute skill use; native telemetry can | Accepted |
 | [ADR-0038](ADR-0038-process-policy-linkage-structural.md) | Process↔policy linkage is a row relation, not body pointers | Accepted |
-| [ADR-0039](ADR-0039-promote-pushing-to-notion.md) | Promote pushing-to-notion to the guide index | Proposed |
-| [ADR-0040](ADR-0040-promote-updating-a-notion-page.md) | Promote updating-a-notion-page to the guide index | Proposed |
-| [ADR-0041](ADR-0041-promote-auditing-a-schema-doc.md) | Promote auditing-a-schema-doc to the guide index | Proposed |
-| [ADR-0042](ADR-0042-promote-capturing-a-task.md) | Promote capturing-a-task to the guide index | Proposed |
+| [ADR-0039](ADR-0039-promote-pushing-to-notion.md) | Promote pushing-to-notion to the guide index | Accepted |
+| [ADR-0040](ADR-0040-promote-updating-a-notion-page.md) | Promote updating-a-notion-page to the guide index | Accepted |
+| [ADR-0041](ADR-0041-promote-auditing-a-schema-doc.md) | Promote auditing-a-schema-doc to the guide index | Accepted |
+| [ADR-0042](ADR-0042-promote-capturing-a-task.md) | Promote capturing-a-task to the guide index | Accepted |

@@ -1,6 +1,6 @@
 # ADR-0041: Promote auditing-a-schema-doc to the guide index
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-14
 
 ## Context
