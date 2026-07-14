@@ -47,6 +47,8 @@ table below is the banned list.
 | term | lexicon | a word with exactly one meaning here, defined in this registry |
 | alias | lexicon | a banned synonym; the checker flags it and names the canonical term |
 | concept | lexicon | a defined idea; a registry row, never a file |
+| engine | lexicon | a component whose execution runs other systems' delegated mechanisms on its own trigger; today the checker, the forge loop, and the human gate (ADR-0045) |
+| delegated mechanism | lexicon | a mechanism whose owning system delegates execution to an engine — ownership stays with the system, the trigger with the engine (ADR-0045) |
 | mold | template | the standard shape a piece is instantiated from; lives in `.claude/templates/` |
 | shape | template | the required frontmatter + sections a mold prescribes |
 | hint | template | an HTML comment in a mold guiding the author; deleted when filled |

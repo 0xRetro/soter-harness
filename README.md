@@ -23,20 +23,22 @@ One row per system, all four layers. The source of truth for every row is the
 system's card in `.claude/systems/` — this table is a hand-synced overview, so a PR
 that changes a card updates its row in the same PR. Promises drift slowest;
 mechanisms, components, and concepts change with nearly every merge — verify against
-the card when it matters.
+the card when it matters. A mechanism marked "delegated" runs inside one of the
+engines — the checker, the forge loop, or the human gate — while its owning system
+keeps the behavior (ADR-0045).
 
 ### Kernel — required substrate: makes the harness run and self-build
 
 | System | Promise | Mechanisms | Key components | Concepts |
 |---|---|---|---|---|
-| **template** | Every piece starts as a copy of its mold, so shape is guaranteed by instantiation rather than policing. | scaffold (a forge step) | `templates/` (the molds) | mold<br>shape<br>hint |
-| **lexicon** | Every term is defined once and referenced everywhere, so classification is mechanical rather than a judgment call. | none of its own —<br>rules run as data<br>inside enforcement's checker | `LEXICON.md` | term<br>alias<br>concept |
-| **standards** | There is one explicit bar for quality, naming, and budgets, so review is a checklist rather than taste. | none of its own —<br>rubric → governance's human gate<br>budgets/naming → enforcement's checker | `RUBRIC.md`<br>`standards/degrees-of-freedom.md` | budget<br>degree of freedom<br>flex point<br>rubric |
-| **eval** | Every piece proves it was needed (a watched baseline failure) and holds up under realistic pressure. | baseline<br>pressure-test<br>running-evals | `evals/` (the cases)<br>`running-evals`<br>`agents/eval-runner.md` | baseline<br>pressure case<br>golden<br>eval case<br>meta-case |
-| **enforcement** | Everything the harness declares is mechanically verified, and a green result always carries evidence. | checker — one engine, 5 triggers:<br>lint hook (warn)<br>Bash guard<br>ADR guard<br>turn gate<br>CI | `scripts/check.mjs` | check rule<br>green carries evidence<br>turn gate |
+| **template** | Every piece starts as a copy of its mold, so shape is guaranteed by instantiation rather than policing. | scaffold<br>(delegated to the forge) | `templates/` (the molds) | mold<br>shape<br>hint |
+| **lexicon** | Every term is defined once and referenced everywhere, so classification is mechanical rather than a judgment call. | None of its own —<br>alias lint, delegated<br>to enforcement's checker | `LEXICON.md` | term<br>alias<br>concept<br>engine<br>delegated mechanism |
+| **standards** | There is one explicit bar for quality, naming, and budgets, so review is a checklist rather than taste. | None of its own — delegated:<br>rubric review → the human gate<br>budgets/naming → the checker | `RUBRIC.md`<br>`standards/degrees-of-freedom.md` | budget<br>degree of freedom<br>flex point<br>rubric |
+| **eval** | Every piece proves it was needed (a watched baseline failure) and holds up under realistic pressure. | baseline · pressure-test<br>(delegated to the forge)<br>running-evals | `evals/` (the cases)<br>`running-evals`<br>`agents/eval-runner.md` | baseline<br>pressure case<br>golden<br>eval case<br>meta-case |
+| **enforcement** | Everything the harness declares is mechanically verified, and a green result always carries evidence. | checker (an engine) — 5 triggers:<br>lint hook (warn)<br>Bash guard<br>ADR guard<br>turn gate<br>CI | `scripts/check.mjs` | check rule<br>green carries evidence<br>turn gate |
 | **governance** | The harness changes only deliberately: decisions are recorded, humans gate every merge, and new pieces earn trust before autonomy. | human gate<br>decision recording<br>promotion | `decisions/`<br>`writing-adrs`<br>`reviewing-forge-output`<br>`promoting-pieces` | gate<br>ADR<br>staged<br>promoted<br>add-on<br>decree |
 | **authoring** | New pieces are born through one loop — mold, evals, checks, gate — never freehand. | forge | `skills/forge/`<br>`rules/authoring.md` | piece<br>the loop<br>exclusion clause<br>gotcha |
-| **platform** | All claude-code coupling is quarantined in one place, so every other system stays portable. | none yet —<br>usage standards authored only on<br>an observed RED baseline<br>(hooks evaluated: GREEN, ADR-0044) | `settings.json`<br>`hooks/hooks.json`<br>`plugin.json`<br>`rules/parallel-sessions.md` | hook · skill · agent<br>command · script<br>worktree · subagent<br>session · guide |
+| **platform** | All claude-code coupling is quarantined in one place, so every other system stays portable. | None —<br>usage standards authored only on<br>an observed RED baseline<br>(hooks evaluated: GREEN, ADR-0044) | `settings.json`<br>`hooks/hooks.json`<br>`plugin.json`<br>`rules/parallel-sessions.md` | hook · skill · agent<br>command · script<br>worktree · subagent<br>session · guide |
 
 ### Core — generic capability above the kernel
 
@@ -53,7 +55,7 @@ the card when it matters.
 | **product-development** | A captured use-case is carried to a shipped feature, tracked lightly on its own tool's board. | capturing<br>defining<br>(build/ship stages future) | `capturing-a-feature`<br>`defining-a-feature` | feature record<br>tooling page<br>feature lifecycle<br>Feature Board<br>containment |
 | **process** | Repeatable work is defined once in the live Process Inventory — definitions, not a runtime. | capturing-a-process<br>red-teaming | `standards/shaping-a-process.md`<br>`capturing-a-process`<br>`red-teaming-a-process` | process · step<br>work-item<br>process run<br>role · capability |
 | **resources** | The team's external accounts and platforms are tracked with clear access and administration answers. | validating-resources<br>(capture/update: deliberate no-guide,<br>ADR-0028) | `validating-resources` | resource |
-| **sky** | Sky-ecosystem vocabulary has one home, so terms don't drift per surface. | none yet —<br>decreed ahead of its pieces<br>(ADR-0026) | none yet | Sky ecosystem · Atlas<br>spell · MSC · star<br>Prime Agent · NFAT |
+| **sky** | Sky-ecosystem vocabulary has one home, so terms don't drift per surface. | None —<br>decreed ahead of its pieces<br>(ADR-0026) | None | Sky ecosystem · Atlas<br>spell · MSC · star<br>Prime Agent · NFAT |
 
 ### Automation — pushing, pulling, and keeping stores honest
 
@@ -83,7 +85,7 @@ and hardening per the ADR log. The seal test ran end-to-end (the forge authored 
 through baseline → evals → checks → fresh-agent pressure-test → gate); red-team +
 claims-vs-reality sweeps harden the checker.
 
-**Add-ons built on top (ADR-0012, all four layers in one repo):** a Notion intake engine —
+**Add-ons built on top (ADR-0012, all four layers in one repo):** a Notion intake stack —
 **automation** systems `publishing` (create/update bindings, live-proven), `ingestion`
 (review a source → curate → publish), and `schema-audit` (keep Notion's own schema docs
 true to the live DBs), plus **context** domains `product-development`,
