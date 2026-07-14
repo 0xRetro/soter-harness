@@ -65,6 +65,10 @@ entries were updated, not duplicated.
    Team from git history, Use Cases / How it works / Capabilities from the code review
    (Capabilities links the landed cards, ✅ built / ⬜ planned), Resources from the repo +
    prod URLs. What isn't derivable stays visibly placeholder — say so when reporting.
+   An EXISTING page is RECONCILED to the template, not left as found and not bulldozed:
+   add its missing template sections the same way, and keep hand-written content and
+   custom sections (e.g. an Architecture table) — conformance is section-level, cell
+   edits are fetch-merge-write.
    Tooling-page fields and existing cards get updated via `/updating-a-notion-page`.
 8. **Verify + report.** List what was created and updated with urls; confirm nothing was
    fabricated and no duplicates were made.
