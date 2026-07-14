@@ -18,8 +18,8 @@ registry lives with the `process-inventory` target, not here.
 
 **Body — the lean core (always):**
 - **Purpose** — what the process produces or verifies, and why (1–3 lines).
-- **Trigger** — what starts a run: `<kind>: <condition>` (Request · Event · Schedule ·
-  Emergency).
+- **Trigger** — what starts a run: `<kind>` — <condition> (kinds: Request · Event ·
+  Schedule · Emergency; the kind is backticked, no colon after it).
 - **Steps** — role-bounded: `### Step N — (Role) <objective>`. One role owns a step, so
   each step transition is a role handoff — that handoff IS the gate; no separate gate
   lines. Each step opens with a 1–3 line narrative intro: how the work actually arrives
