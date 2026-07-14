@@ -14,8 +14,8 @@ is a checklist, not taste. Consumers: authors (while writing), reviewers (at the
 gate), the checker (the mechanical ⚙ items).
 
 ## Mechanisms
-None — standards are read, not run. Their mechanical items execute inside the
-enforcement checker; their judgment items execute at the human gate.
+None of its own — delegated mechanisms only (ADR-0045): the mechanical items run
+inside enforcement's checker; the judgment items run at governance's human gate.
 
 ## Components
 - `.claude/RUBRIC.md` — THE checklist every piece clears (includes the naming and
