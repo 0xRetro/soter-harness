@@ -25,6 +25,11 @@ runtime engine (ADR-0003, ADR-0019).
   invariants: shaped to the live schema; select/relation values resolved to real options/ids
   or left empty, never fabricated; work-items are definition-level checkboxes, never
   fabricated [DB] Tasks ids.
+- **red-teaming** — reads: a documented process + its policies, live schemas, and runs ·
+  produces: ranked verified findings (never silent fixes) · runs-when: a user invokes
+  `/red-teaming-a-process` (the In Review → Active gate's mechanism) · invariants: the
+  reviewing agent is read-only toward external systems; criticals are reproduced before
+  reporting; fixes are decisions, not side effects.
 - Further mechanisms (maintaining a process, spawning a run's tasks into [DB] Tasks) forged as
   needed. Writes go through the publishing bindings; a run's work-items reach [DB] Tasks
   through project-management's `capturing-a-task`, never a bespoke push.
@@ -35,6 +40,7 @@ runtime engine (ADR-0003, ADR-0019).
 - `.claude/skills/capturing-a-process/SKILL.md` — the process-capture guide. The Notion
   target `process-inventory` (its real schema + relations) lives in the publishing binding's
   `targets.md`.
+- `.claude/skills/red-teaming-a-process/SKILL.md` — the review-gate guide (staged).
 
 ## Concepts
 process · step · work-item · process run · role
