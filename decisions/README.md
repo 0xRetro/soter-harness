@@ -37,3 +37,4 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0030](ADR-0030-adr-allocation-scans-live-branches.md) | ADR numbers are allocated against main plus every live branch (0028/0029 claimed on live branches) | Accepted |
 | [ADR-0031](ADR-0031-org-harness-boundary.md) | The org–harness boundary is bidirectional | Accepted |
 | [ADR-0032](ADR-0032-subprocess-canonical-home-full-copies.md) | Subprocess reuse — canonical home + full inline copies | Accepted |
+| [ADR-0034](ADR-0034-plugin-ships-at-parity.md) | The plugin ships the harness at parity — hook wiring mirrored (HOOK_PARITY), manifest unversioned while internal | Proposed |
