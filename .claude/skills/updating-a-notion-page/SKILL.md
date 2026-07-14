@@ -57,6 +57,13 @@ everything else preserved byte-for-byte, and the write confirmed by a human firs
 - (baseline) Append is not idempotent — a retry double-appends; check before appending.
 - (baseline) Send only the properties you change; unlisted ones are preserved — don't
   echo Status/Name back or you risk clobbering them with a stale value.
+- (observed 2026-07-14, live) A content search-and-replace SILENTLY NO-OPED: the page
+  stored `<subject>` with escaped angle brackets (`\<subject\>`), the old_str didn't
+  match, and the update call still returned success — other edits in the same batch
+  applied, so the miss was invisible. Counter: the post-write verify fetch is where
+  this surfaces; diff the fetched text against what you sent, character-for-character
+  on the edited region, and take old_str from the FETCHED form (escapes included),
+  never from what you originally wrote.
 
 ## Evals
 - `.claude/evals/updating-a-notion-page/happy-path.md`
