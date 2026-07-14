@@ -2,7 +2,7 @@
 type: eval-case
 skill: forge
 case: system-branch
-passed: c7200fe
+passed: 69d72f7
 ---
 
 ## Try
