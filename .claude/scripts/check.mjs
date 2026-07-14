@@ -11,6 +11,8 @@
 //   node .claude/scripts/check.mjs --hook      PostToolUse hook mode: reads hook JSON on stdin,
 //                                              checks the written file, always exits 0 (warn only)
 //   node .claude/scripts/check.mjs --selftest  plant-and-assert incl. default-root aim canary
+//   node .claude/scripts/check.mjs --gate      Stop hook mode: exit 2 holds the turn open while
+//                                              checker ERRORS stand (once — stop_hook_active)
 //   --root <dir>                               override repo root
 
 import fs from 'node:fs';
@@ -521,6 +523,25 @@ function checkHookParity(root, out) {
         'add the same hook to .claude/settings.json (path via $CLAUDE_PROJECT_DIR/.claude), or remove it from hooks.json'));
 }
 
+// TURN GATE (Stop hook, exit 2 blocks the turn from ending): the PostToolUse lint is
+// warn-only and CI only fires at the PR — a session could carry checker errors through
+// a whole conversation before anything pushed back (ADR-0035). The gate holds the turn
+// open ONCE so the session fixes its own breakage while it still has the context.
+// stop_hook_active is the platform's loop guard: after one block it comes back true and
+// the gate stands down — CI stays the merge backstop. Fail-open everywhere else: a
+// non-harness project (plugin install; SCAN_EMPTY is all it would say) and any internal
+// error must never wedge a consumer's session. Warnings never block.
+function gateVerdict(root) {
+  try {
+    const errs = checkAll(root).filter((v) => v.level !== 'warn');
+    if (!errs.length || errs.every((v) => v.code === 'SCAN_EMPTY')) return null;
+    const lines = errs.slice(0, 10).map((v) => `- [${v.code}] ${path.relative(root, v.file) || v.file}: ${v.what} → ${v.fix}`);
+    return `TURN GATE: ending this turn would leave the harness with ${errs.length} checker error(s). `
+      + `Fix them now (or tell the user why you can't):\n${lines.join('\n')}`
+      + (errs.length > 10 ? `\n…and ${errs.length - 10} more — run: node .claude/scripts/check.mjs --all` : '');
+  } catch { return null; } // fail-open — the gate protects the harness, never holds a session hostage
+}
+
 // GUARD (PreToolUse, exit 2 blocks): the parallel-sessions rule parks the ROOT checkout
 // on main — no commits, no staging, no branch switches there (ADR-0027). Sessions slip:
 // a shell cwd reset once aimed a `git add` at root and only a pathspec miss saved it.
@@ -537,9 +558,22 @@ const GUARD_GIT_MUTATING = /\bgit\s+(?:-C\s+\S+\s+|-c\s+\S+\s+|--[\w-]+(?:=\S+)?
 // obediently pushed and opened REAL PRs on 2026-07-14 — the guide under test said "land
 // via the PR gate" and Bash+gh was an open channel. Agent work stays local; humans publish.
 const GUARD_PUBLISH = /\bgit\b[^|;&]*?\bpush\b|\bgh\s+(?:pr\s+(?:create|merge)|api|repo\s+(?:create|delete|edit))\b/;
+// Force pushes rewrite pushed history: they clobber what other sessions fetched and
+// dangle the commits goldens are stamped with (`passed: <sha>`) — blocked EVERYWHERE,
+// any branch, any dir. `--force-with-lease` stays open: it is the sanctioned escape for
+// the rebase-then-push flow the parallel-sessions rule prescribes, and it refuses to
+// clobber work it hasn't seen. `+refspec` is force by another spelling — same block.
+// A permissions deny was considered and rejected: prefix matching misses mid-command
+// flags; this regex sees the whole command (ADR-0036).
+const GUARD_FORCE_PUSH = /\bgit\b[^|;&]*?\bpush\b[^|;&]*(?:\s--force(?!-with-lease)\b|\s-f\b|\s\+\S)/;
 function guardBashVerdict(cwd, command) {
   try {
-    if (!command || !(GUARD_GIT_MUTATING.test(command) || GUARD_PUBLISH.test(command))) return null;
+    if (!command) return null;
+    if (GUARD_FORCE_PUSH.test(command))
+      return 'BLOCKED: force pushes are never used here — they clobber other sessions\' fetched '
+        + 'work and dangle the commits goldens are stamped with (ADR-0036). After a rebase, '
+        + 'push your own branch with --force-with-lease instead.';
+    if (!(GUARD_GIT_MUTATING.test(command) || GUARD_PUBLISH.test(command))) return null;
     // `git add -A/--all` is banned EVERYWHERE, not just at root-on-main — it once swept
     // another session's worktree gitlink into a commit (ADR-0027). Needs no repo state;
     // each git call's own pipeline segment is checked, so a later `&& git add -A` still trips.
@@ -948,6 +982,8 @@ function selftest() {
   if (staleTargets < 2) fails.push(`TARGET_STALE fired ${staleTargets}x — both plants (stale stamp, no stamp) must be caught`);
   const parity = planted.filter((v) => v.code === 'HOOK_PARITY').length;
   if (parity < 2) fails.push(`HOOK_PARITY fired ${parity}x — both directions (repo-only hook, plugin-only hook) must be caught`);
+  if (!gateVerdict(tmp))
+    fails.push('turn gate: a root full of planted errors produced no verdict');
   fs.rmSync(tmp, { recursive: true, force: true });
 
   // --- Stage 2: a clean fixture must be silent (classification-era shape)
@@ -970,12 +1006,16 @@ function selftest() {
   wc('.claude/hooks/hooks.json', JSON.stringify({ hooks: { PostToolUse: [{ matcher: 'Write|Edit', hooks: [{ type: 'command', command: 'node "${CLAUDE_PLUGIN_ROOT}/scripts/check.mjs" --hook' }] }] } }));
   const silent = checkAll(clean).filter((v) => v.level !== 'warn');
   if (silent.length) fails.push(`clean fixture produced ${silent.length} error(s): ${silent.map((v) => v.code).join(', ')}`);
+  if (gateVerdict(clean))
+    fails.push('turn gate blocked a clean fixture — warnings must never hold a turn open');
   fs.rmSync(clean, { recursive: true, force: true });
 
   // --- Stage 3: an empty root must FAIL, never pass (ADR-0003: green carries evidence)
   const empty = mkroot('checker-empty-');
   if (!checkAll(empty).some((v) => v.code === 'SCAN_EMPTY'))
     fails.push('empty root did not raise SCAN_EMPTY — vacuous green is possible');
+  if (gateVerdict(empty))
+    fails.push('turn gate blocked an empty root — a non-harness project (plugin install) must fail open');
   fs.rmSync(empty, { recursive: true, force: true });
 
   // --- Stage 4: a reworded alias table must FAIL, not silently disable the lint
@@ -1060,6 +1100,12 @@ function selftest() {
       fails.push('guard: read-only merge-base was wrongly blocked (hyphen counts as a word boundary)');
     if (guardBashVerdict(wt, 'git push origin HEAD'))
       fails.push('guard: a session-worktree push was wrongly blocked');
+    if (!guardBashVerdict(wt, 'git push --force origin HEAD'))
+      fails.push('guard: a bare force push was not blocked');
+    if (!guardBashVerdict(wt, 'git push origin +HEAD:main'))
+      fails.push('guard: a +refspec force push was not blocked');
+    if (guardBashVerdict(wt, 'git push --force-with-lease origin HEAD'))
+      fails.push('guard: --force-with-lease (the sanctioned rebase escape) was wrongly blocked');
     if (!guardBashVerdict(wt, 'git add -A'))
       fails.push('guard: git add -A in a session worktree was not blocked');
     if (!guardBashVerdict(wt, 'git commit -m "y" && git add --all'))
@@ -1095,13 +1141,22 @@ const rootIx = argv.indexOf('--root');
 // plugin cache, where two-up-from-script is NOT the project and every rel-path check
 // would silently no-op. Claude Code hands hooks the real project via CLAUDE_PROJECT_DIR;
 // prefer it in those modes. --all/--selftest keep aiming at the repo the script lives in.
-const hookish = argv.includes('--hook');
+const hookish = argv.includes('--hook') || argv.includes('--gate');
 const ROOT = rootIx !== -1 ? path.resolve(argv[rootIx + 1])
   : hookish && process.env.CLAUDE_PROJECT_DIR ? path.resolve(process.env.CLAUDE_PROJECT_DIR)
   : path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..'); // script lives at .claude/scripts/ → repo root is two up
 
 if (argv.includes('--selftest')) {
   selftest();
+} else if (argv.includes('--gate')) {
+  // Stop hook: exit 2 holds the turn open (stderr reaches the agent); anything else
+  // lets it end. stop_hook_active means we already blocked once — stand down (loop guard).
+  let ev = null;
+  try { ev = JSON.parse(fs.readFileSync(0, 'utf8')); } catch { /* fail-open */ }
+  if (ev?.stop_hook_active) process.exit(0);
+  const verdict = gateVerdict(ROOT);
+  if (verdict) { console.error(verdict); process.exit(2); }
+  process.exit(0);
 } else if (argv.includes('--guard-bash')) {
   // PreToolUse guard on Bash: exit 2 blocks the tool call (stderr reaches the agent);
   // any other exit allows. Fail-open on unparseable input — never wedge the session.
