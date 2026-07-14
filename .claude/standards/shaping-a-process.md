@@ -54,9 +54,10 @@ registry lives with the `process-inventory` target, not here.
   one exists, raw value otherwise — upgraded to the mention once registered). The FINAL
   step closes the run (Completed · State · Outcome · the Post Run Summary Report field).
   Working detail accrues in the run's page body per the [Run Template] (Run · Inputs ·
-  Outputs & Proof) — proof lands there as the run progresses; the Post Run Summary
-  Report field carries one line per field the process's Post Run Summary Report section
-  declares. Identifiers are never truncated — full value, linked to the canonical
+  Outputs & Proof) — one parent bullet per artifact, one FACT per nested bullet, never
+  facts chained inline with `·`; proof lands there as the run progresses; the Post Run
+  Summary Report field carries one line per field the process's Post Run Summary Report
+  section declares. Identifiers are never truncated — full value, linked to the canonical
   source (explorer, record) where one exists. When the process verifies a subject
   record, that record links the run.
 
