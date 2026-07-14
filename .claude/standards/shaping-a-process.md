@@ -43,6 +43,11 @@ registry lives with the `process-inventory` target, not here.
   copied as the CURRENT rule plus one pointer line naming the subject's policy standard
   as where the set is managed; the law (rules, rationale, extension criteria) is never
   copied (ADR-0021). Prerequisites resolve-or-create through the subject's own owner.
+  A reused SEQUENCE (subprocess) has one canonical home — its own inventory entry whose
+  Used By section lists every carrier; callers carry the flow IN FULL, adapted to their
+  parameters, with one provenance line naming the home — never a pointer-only reference
+  (a run needs only the process doc). A change to the home updates every Used By carrier
+  in the same change (ADR-0028).
 
 - **Initialization** — its own section between Roles and Steps (NOT a step: it captures
   run metadata, not domain work), owned by whichever role receives the trigger: create
