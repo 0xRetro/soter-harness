@@ -16,7 +16,7 @@ a human gate. The inverse of publishing: it keeps Notion's own documentation hon
 than writing records. Consumers: the team that trusts the schema docs; the policy system
 (whose Fields sections this audits); every harness guide that reads a schema (a true doc
 means fewer live re-fetches of stale surprises — though live is still the source of truth,
-ADR-0016).
+ADR-0016). Decreed with the first add-on wave (ADR-0017).
 
 ## Mechanisms
 - **auditing-a-schema-doc** — reads: a DB's live schema + its schema doc's

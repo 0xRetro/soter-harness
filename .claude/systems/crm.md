@@ -14,7 +14,7 @@ mirrored to the real Notion [DB] Orgs and [DB] Contacts. A contact belongs to an
 (the Org relation). Consumers: the team
 managing relationships; ingestion (people/orgs from a source); the publishing bindings.
 Mirrors the LIVE [DB] Orgs / [DB] Contacts schemas — the Standards pages document these
-but can lag; fetch live (ADR-0016).
+but can lag; fetch live (ADR-0016). Decreed with the first add-on wave (ADR-0017).
 
 ## Mechanisms
 - **capturing-a-contact** — reads: a described person · produces: a [DB] Contacts row

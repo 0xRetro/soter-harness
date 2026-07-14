@@ -15,7 +15,7 @@ databases. Consumers: the team
 tracking what's being delivered, for whom, by when; ingestion (which can produce tasks
 from a source); the publishing bindings that write them. Mirrors the LIVE [DB] Tasks /
 [DB] Projects schemas — the Standards pages document these but can lag (they did; fetch
-live, ADR-0016).
+live, ADR-0016). Decreed with the first add-on wave (ADR-0017).
 
 ## Mechanisms
 - **capturing-a-task** — reads: a described actionable item · produces: a [DB] Tasks row
