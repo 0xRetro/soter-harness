@@ -1,11 +1,9 @@
 ---
 name: running-evals
 description: >-
-  Runs an eval scenario as a fresh-context, write-contained subagent and judges it
-  against the case's Expect/Never from artifacts, never self-report. Use to run or
-  re-run eval cases — after step edits, at forge baseline/pressure-test, or to record
-  a golden. Not for writing cases (eval-case mold), the forge loop (/forge), or
-  promotion (/promoting-pieces).
+  Runs an eval scenario as a fresh-context, write-contained subagent; verdicts come
+  from artifacts, never self-report. Use to run or re-run eval cases and record
+  goldens. Not for writing cases (eval-case mold), /forge, or promotion decisions.
 disable-model-invocation: true
 layer: kernel
 system: eval
@@ -46,7 +44,9 @@ as a fix to the piece.
    read-only toward external stores (`.claude/agents/eval-runner.md`) — a leaked
    write becomes a visible denied tool call, which IS evidence. Parallel cases are
    fine; FLEX: stagger them when they hit the same live records or a rate-limited
-   API (a 429 the agent retries through is not a failure).
+   API (a 429 the agent retries through is not a failure). FLEX: a meta-case whose
+   scenario itself dispatches agents (evals of kernel run/authoring guides) uses the
+   default agent type — `eval-runner` deliberately lacks the Agent tool.
 4. **Judge from artifacts, never testimony.** Sources: the final report, the
    transcript on disk (the session's `subagents/agent-a<name>-*.jsonl` — tool calls
    are all visible there), and any artifacts the run touched. Walk every Expect and
