@@ -476,7 +476,10 @@ function checkTargetFreshness(root, out) {
 // This makes the rule mechanical. Best-effort by design — it reads the hook's cwd (or a
 // `git -C` target); a `cd` inside a compound command can evade it. The rule and the PR
 // gate still stand behind it; this catches the common slip, not a determined bypass.
-const GUARD_GIT_MUTATING = /\bgit\b[^|;&]*?\b(commit|add|checkout|switch|rebase|merge|reset|stash)\b/;
+// The mutating verb must be git's SUBCOMMAND (global opts skipped) — a bare keyword
+// match read `git worktree add` as `git add` and blocked the exact bootstrap command
+// the guard's own message recommends (observed 2026-07-14, chicken-and-egg lockout).
+const GUARD_GIT_MUTATING = /\bgit\s+(?:-C\s+\S+\s+|-c\s+\S+\s+|--[\w-]+(?:=\S+)?\s+)*(commit|add|checkout|switch|rebase|merge|reset|stash)\b/;
 // Publishing from an AGENT worktree (branch worktree-agent-*): three contained eval runs
 // obediently pushed and opened REAL PRs on 2026-07-14 — the guide under test said "land
 // via the PR gate" and Bash+gh was an open channel. Agent work stays local; humans publish.
@@ -485,7 +488,11 @@ function guardBashVerdict(cwd, command) {
   try {
     if (!command || !(GUARD_GIT_MUTATING.test(command) || GUARD_PUBLISH.test(command))) return null;
     const mC = command.match(/\bgit\s+-C\s+(?:"([^"]+)"|'([^']+)'|(\S+))/);
-    const dir = mC ? (mC[1] || mC[2] || mC[3]) : cwd;
+    // A leading `cd <dir> &&` moves the git call — judge that dir, not the stale cwd
+    // (observed 2026-07-14: a cd-into-worktree compound was blocked as root-on-main).
+    const mCd = command.match(/^\s*cd\s+(?:"([^"]+)"|'([^']+)'|(\S+))\s*&&/);
+    const dir = mC ? (mC[1] || mC[2] || mC[3])
+      : mCd ? (mCd[1] || mCd[2] || mCd[3]) : cwd;
     if (!dir || !exists(dir)) return null;
     const git = (args) => execFileSync('git', ['-C', dir, ...args],
       { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
@@ -723,9 +730,19 @@ function checkAll(root, census = {}) {
           else if (e.name.endsWith('.md')) { census.evalCases++; checkEvalCase(root, p, out); }
         }
   const decDir = path.join(root, 'decisions');
+  const adrNums = new Map(); // number -> first filename seen
   if (exists(decDir))
     for (const f of fs.readdirSync(decDir)) {
-      if (/^ADR-/.test(f)) { census.adrs++; checkAdr(path.join(decDir, f), out); }
+      if (/^ADR-/.test(f)) {
+        census.adrs++; checkAdr(path.join(decDir, f), out);
+        const n = f.match(/^ADR-(\d{4})-/);
+        if (n && adrNums.has(n[1]))
+          out.push(V(path.join(decDir, f), 'ADR_DUP',
+            `ADR number ${n[1]} is allocated twice: ${adrNums.get(n[1])} and ${f}`,
+            'two decisions under one number corrupt the append-only log — parallel branches double-allocated twice in one wave (0028, 0030), caught only by eyeball',
+            'renumber the Proposed one to the next free number; the first-merged keeps it (parallel-sessions rule)'));
+        else if (n) adrNums.set(n[1], f);
+      }
       else if (f.endsWith('.md') && f !== 'README.md')
         out.push(V(path.join(decDir, f), 'UNEXPECTED_FILE', `"${f}" is not ADR-numbered and not the index`,
           'files that dodge the ADR- prefix are exempt from every ADR check',
@@ -826,6 +843,7 @@ function selftest() {
   for (let i = 0; i < 15; i++)                                             // DESC_TOTAL (15×1000 chars > 14k)
     w(`.claude/skills/bulk-${i}/SKILL.md`, `---\nname: bulk-${i}\ndescription: ${'y'.repeat(1000)}\n---\nNot for anything.\n`);
   w('decisions/ADR-0001-bad.md', '# ADR-0001: x\n\nADR-XXXX\n');           // PLACEHOLDER(adr), SECTIONS_MISSING
+  w('decisions/ADR-0001-dupe.md', '# ADR-0001: y\n\nADR-XXXX\n');          // ADR_DUP (same number, second file)
   w('.claude/systems/disordered.md',                                        // SECTION_ORDER (Invariants before Concepts)
     '---\nname: disordered\nlayer: kernel\nsystem: disordered\nkind: component\nmold: singleton\n---\n\n# Card\n\n## Promise\nx\n\n## Mechanisms\nnone\n\n## Components\nnone\n\n## Invariants\nnone\n\n## Concepts\nnone\n');
   w('decisions/adr-9999-sneaky.md', 'dodges the ADR- prefix');             // UNEXPECTED_FILE
@@ -850,7 +868,7 @@ function selftest() {
     'SEC_LINT', 'DESC_XML', 'TRIGGER_EVAL_MISSING', 'LINK_BROKEN',
     'FM_CLASS', 'SYSTEM_UNKNOWN', 'MOLD_UNKNOWN', 'MOLD_SHAPE', 'CARD_OWNER', 'CARD_PATH', 'CARD_CONCEPT', 'CARD_ADR',
     'ALIAS_ROW_MALFORMED', 'SECTION_ORDER', 'AUTOMATION_AUTOFIRE', 'SECRET_LEAK', 'SYSTEM_UNLISTED',
-    'TARGET_STALE', 'GOLDEN_NONE'];
+    'TARGET_STALE', 'GOLDEN_NONE', 'ADR_DUP'];
   const missed = mustFire.filter((c) => !codes.has(c));
   if (missed.length) fails.push(`planted violations not detected: ${missed.join(', ')}`);
   // Count assertions where one plant per code isn't enough to prove the rule:
@@ -959,6 +977,12 @@ function selftest() {
     gg(['worktree', 'add', '-q', wt, '-b', 'selftest-topic']);
     if (guardBashVerdict(wt, 'git commit -m "y"'))
       fails.push('guard: a worktree commit was wrongly blocked');
+    if (guardBashVerdict(groot, 'git worktree add .claude/worktrees/x -b topic origin/main'))
+      fails.push('guard: the bootstrap worktree-add at root was wrongly blocked (chicken-and-egg lockout)');
+    if (guardBashVerdict(groot, `cd ${wt} && git commit -m "y"`))
+      fails.push('guard: a cd-into-worktree compound was judged by the stale cwd');
+    if (!guardBashVerdict(wt, `git -C ${groot} add file`))
+      fails.push('guard: a -C-to-root mutating command was not blocked after the subcommand-anchor change');
     if (guardBashVerdict(wt, 'git push origin HEAD'))
       fails.push('guard: a session-worktree push was wrongly blocked');
     const wtA = path.join(groot, 'wta');

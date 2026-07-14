@@ -1,11 +1,11 @@
 ---
 name: promoting-pieces
 description: >-
-  Walks the promotion decision for a staged harness piece — real-use evidence verified
-  from artifacts, then a guide-index entry and (read-only guides only) auto-invocation.
-  Use when the user asks to promote a piece, enable auto-invocation, or add a guide to
-  the index. Not for merge review of a draft (/reviewing-forge-output), authoring
-  (/forge), or retiring a piece (record an ADR directly).
+  Walks the promotion decision for a staged harness piece — real-use evidence
+  verified from artifacts, then a guide-index entry and (read-only guides)
+  auto-invocation. Use when asked to promote a piece or enable auto-invocation. Not
+  for draft merge review (/reviewing-forge-output), authoring (/forge), or retiring
+  (record an ADR).
 disable-model-invocation: true
 layer: kernel
 system: governance

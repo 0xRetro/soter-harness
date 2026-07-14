@@ -1,11 +1,10 @@
 ---
 name: red-teaming-a-process
 description: >-
-  Red-teams a documented process: a fresh read-only agent sweeps five lenses —
-  operator execution, adversarial, consistency, completeness, failure paths — and
-  findings come back verified, ranked, and reported, never silently fixed. Use when
-  the user says red-team, stress-test, or review a process before it goes Active.
-  Not for schema-doc audits, harness-piece reviews, or editing the process itself.
+  Red-teams a documented process: a fresh read-only agent sweeps five lenses and
+  findings return verified and ranked, never silently fixed. Use when the user says
+  red-team, stress-test, or review a process before it goes Active. Not for
+  schema-doc audits, harness-piece reviews, or editing the process.
 disable-model-invocation: true
 layer: context
 system: process

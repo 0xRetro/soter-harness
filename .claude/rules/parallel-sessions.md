@@ -22,10 +22,16 @@ Applies whenever more than one session (interactive or agent) may touch this rep
   goldens are stamped with (`passed: <sha>` dangles; found live, five goldens silently
   unverifiable). Between parallel branches: first ready lands first; the next rebases
   onto the new main and re-runs `--all` before its own merge.
+- ALWAYS push the session branch to origin at its first commit and keep pushing as
+  work lands — unpushed work is invisible to every other session's allocation scan
+  and lives on one disk (observed: 17 commits staged for a combine existed nowhere
+  but a laptop).
 - ALWAYS check main's `decisions/` AND every live worktree branch's (`git worktree
   list`, then each branch's `decisions/`) before allocating the next ADR number (or
   any shared sequential identifier) — checking main alone still collides: unmerged
   branches hold allocations main can't see (observed twice: ADR-0024, ADR-0028).
+  On a collision, the later-merging branch renumbers its still-Proposed ADR; the
+  first-merged keeps the number (the checker's ADR_DUP catches what eyeballs miss).
 - ALWAYS scope `git add` to named paths; NEVER `git add -A` (it once swept another
   session's worktree gitlink into a commit).
 - NEVER treat worktree isolation as covering live state — Notion records, the memory

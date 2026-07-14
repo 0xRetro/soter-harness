@@ -1,11 +1,10 @@
 ---
 name: forge
 description: >-
-  Authors a new harness piece at any layer — guide, house rule, standard, mold, or
-  system — from its mold, with eval cases, a pressure test, and the human gate. Use
-  when the user says forge, or asks to create or add a guide, rule, standard, system,
-  or add-on to the harness. Not for editing existing pieces, recording a standalone
-  decision (/writing-adrs), inlining org data into a generic piece, or bulk changes.
+  Authors a new harness piece — guide, rule, standard, mold, or system — from its
+  mold, with evals, a pressure test, and the human gate. Use when the user says forge
+  or asks to add a guide, rule, standard, or system to the harness. Not for editing
+  existing pieces, standalone decisions (/writing-adrs), or bulk changes.
 disable-model-invocation: true
 layer: kernel
 system: authoring

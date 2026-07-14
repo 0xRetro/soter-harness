@@ -1,12 +1,11 @@
 ---
 name: reviewing-a-repo
 description: >-
-  Reviews a code repository and turns it into standardized Notion records — a tooling
-  page plus feature cards — selection curated by a human before anything is written,
-  existing entries updated not duplicated. Use when the user wants to ingest, review,
-  or "suck in" a repo into Notion as features and a tooling page. Not for non-repo
-  sources, the write mechanics (/pushing-to-notion, /updating-a-notion-page), or
-  defining a captured feature (/defining-a-feature).
+  Turns a code repo into Notion records — a tooling page plus human-curated feature
+  cards; existing entries updated, not duplicated. Use to ingest, review, or "suck
+  in" a repo into Notion. Not for non-repo sources, write mechanics
+  (/pushing-to-notion, /updating-a-notion-page), or defining a feature
+  (/defining-a-feature).
 disable-model-invocation: true
 layer: automation
 system: ingestion
