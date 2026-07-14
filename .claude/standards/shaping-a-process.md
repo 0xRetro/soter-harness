@@ -42,16 +42,16 @@ registry lives with the `process-inventory` target, not here.
   defined once here; a work-item that can trigger one carries an inline `⤷ condition → En`
   pointer instead of restating the handling.
 - **Post Run Summary** — a short template for the post-run report (outcome · proof/artifacts
-  produced · deviations · improvements), filled in after each run. A run's work-items are
-  tracked as [DB] Tasks (the run→tasks seam).
+  produced · deviations · improvements), filled in after each run. A run's working detail
+  lives in the run body (Run Log) — deliberately NOT in [DB] Tasks rows.
 
 **Add later, as the process firms up (not needed for a first version):** Prerequisites ·
 Resources · Inputs & Outputs · Sub-process rules · Connections · Improvement opportunities ·
 Notes · Change Log.
 
-Vocabulary: **steps** (never `phases`), **work-items** (never `tasks` — a [DB] Tasks task is
-a run's tracked copy of a work-item). Fetch the live default template body before shaping —
-don't invent the section set (ADR-0016).
+Vocabulary: **steps** (never `phases`), **work-items** (never `tasks` — a work-item is the
+process concept, deliberately not a [DB] Tasks row). Fetch the live default template body
+before shaping — don't invent the section set (ADR-0016).
 
 ## Use when / don't
 - Applies when: shaping or reviewing the *body* of a [DB] Process Inventory entry.

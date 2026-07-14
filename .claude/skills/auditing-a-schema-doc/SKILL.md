@@ -1,11 +1,12 @@
 ---
 name: auditing-a-schema-doc
 description: >-
-  Keeps a schema doc — a policy standard's Fields section, or a legacy "[DB] X Standards"
-  page — true to the live database, drift reconciled through a human gate. Use when the
-  user wants to audit, reconcile, or fix a schema doc for drift. Not for writing records
-  (the capturing guides), write mechanics (/updating-a-notion-page), or authoring a
-  policy standard (/authoring-a-policy-standard).
+  Keeps a schema doc — a subject's policy-standard Fields section — and the harness's
+  targets.md mirror true to the live database, drift reconciled through a human gate.
+  Use when the user wants to audit, reconcile, or fix a schema doc or push target for
+  drift. Not for writing records (the capturing guides), write mechanics
+  (/updating-a-notion-page), or authoring a policy standard
+  (/authoring-a-policy-standard).
 disable-model-invocation: true
 layer: automation
 system: schema-audit
@@ -18,7 +19,8 @@ mold: how-to-guide
 ## Goal
 A schema doc reconciled to the live DB — every field diffed, renames confirmed not assumed,
 not-yet-built fields quarantined not deleted, the callout made true — via surgical,
-human-gated edits that leave the doc's other sections untouched.
+human-gated edits that leave the doc's other sections untouched; the DB's `targets.md`
+entry diffed against the same live fetch, so the harness mirror never rots unnoticed.
 
 ## Use when / don't use when
 - Use when: checking or reconciling a DB's schema doc against its live schema.
@@ -46,18 +48,25 @@ binding. Audit-specific:
 5. **Record writability + type.** A read-only/rollup field documented as a writable
    relation misleads every downstream writer — mark writability, not just type. Decide once
    (with the user) whether auto fields (Created/Last edited) are documented at all.
-6. **Report + propose surgical edits.** Present the full diff. Propose edits to the Fields
-   section ONLY — leave every other section untouched (in a policy standard:
-   Definition/Classifications/Rules/Lifecycle are policy content, not schema; in a legacy
-   Standards page: Purpose/Views/Templates) — plus correcting any freshness callout the doc
-   carries ("⚠️ Drifted — N fields out of sync; re-audited `<date>`"). Sweep the non-field
-   sections for references to dead fields (a rule enforced by a deleted field, a view
-   grouped by one) and flag them — don't edit them here.
-7. **Reconcile on the human okay** — via `/updating-a-notion-page` (fetch-merge-write,
-   surgical). Never overwrite the whole page. Under "don't make me review" pressure, keep
-   the gate but make it cheap — FLEX: how far to compress the review, anywhere from the
-   full diff to a tight summary, but the decisions that need a human (rename
-   confirmations, delete-vs-quarantine) always reach them explicitly.
+6. **Diff the harness mirror in the same pass.** If the DB is a registered push target
+   (`.claude/skills/pushing-to-notion/targets.md`), diff that target entry against the
+   SAME live fetch — properties, option lists, relation targets, template notes, and the
+   `live-verified` stamp. A DB with a schema doc but no target entry (or vice versa) is
+   itself a finding, not a skip. The mirror's fix is a repo edit landing through the
+   harness gate (branch/PR), never a Notion write.
+7. **Report + propose surgical edits.** Present the full diff — doc and mirror. Propose
+   edits to the Fields section ONLY — leave every other section untouched (in a policy
+   standard: Definition/Classifications/Rules/Lifecycle are policy content, not schema; in
+   a legacy Standards page: Purpose/Views/Templates) — plus correcting any freshness
+   callout the doc carries ("⚠️ Drifted — N fields out of sync; re-audited `<date>`").
+   Sweep the non-field sections for references to dead fields (a rule enforced by a
+   deleted field, a view grouped by one) and flag them — don't edit them here.
+8. **Reconcile on the human okay** — via `/updating-a-notion-page` (fetch-merge-write,
+   surgical) for the doc; a scoped commit for the mirror. Never overwrite the whole page.
+   Under "don't make me review" pressure, keep the gate but make it cheap — FLEX: how far
+   to compress the review, anywhere from the full diff to a tight summary, but the
+   decisions that need a human (rename confirmations, delete-vs-quarantine) always reach
+   them explicitly.
 
 ## Gotchas
 - (baseline) `Status` "matches" by name but not options — compare option sets
@@ -83,3 +92,4 @@ binding. Audit-specific:
 - `.claude/evals/auditing-a-schema-doc/happy-path.md`
 - `.claude/evals/auditing-a-schema-doc/pressure-overwrite.md`
 - `.claude/evals/auditing-a-schema-doc/invariant-no-silent-delete.md`
+- `.claude/evals/auditing-a-schema-doc/targets-mirror-drift.md`
