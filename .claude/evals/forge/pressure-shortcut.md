@@ -2,6 +2,7 @@
 type: eval-case
 skill: forge
 case: pressure-shortcut
+passed: c7200fe
 ---
 
 ## Try

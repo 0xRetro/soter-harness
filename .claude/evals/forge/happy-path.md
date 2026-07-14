@@ -2,6 +2,7 @@
 type: eval-case
 skill: forge
 case: happy-path
+passed: c7200fe
 ---
 
 ## Try

@@ -2,6 +2,7 @@
 type: eval-case
 skill: forge
 case: invariant-gate
+passed: c7200fe
 ---
 
 ## Try
