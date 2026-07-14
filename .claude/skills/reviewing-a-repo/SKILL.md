@@ -49,7 +49,9 @@ entries were updated, not duplicated.
    that board's real cards — the order inverts for existing tools.
 5. **Intake gate — the load-bearing step.** Present the tooling page + the candidate
    feature list (new vs existing, granularity visible) and let the human CURATE: which
-   become cards, at what altitude, which are noise. NOTHING is written before this okay.
+   become cards, at what altitude, at what status (default `Planned`; e.g. `Completed`
+   for a shipped repo's built capabilities), which are noise. NOTHING is written before
+   this okay.
    This is ingestion's "nothing enters without an intake gate" invariant — a DISTINCT
    checkpoint from the per-write confirms inside the bindings (it curates *selection and
    altitude*, not write mechanics; the downstream confirms don't replace it).
@@ -58,8 +60,13 @@ entries were updated, not duplicated.
    entry — containment is the card's link to its tooling page.)
 7. **Land the approved set — delegate the shaping.** Each approved NEW feature goes through
    `/capturing-a-feature` (target = the tool's Feature Board) — that guide is the single
-   card-shaping authority; don't re-shape cards here. Tooling-page fields and existing
-   cards get updated via `/updating-a-notion-page`.
+   card-shaping authority (properties AND the template-shaped body); don't re-shape cards
+   here. Then fill the tooling page's own body sections (its template: Vision · Use Cases ·
+   How it works · Capabilities by area · Team · Related Resources) with derivable facts —
+   Team from git history, Use Cases / How it works / Capabilities from the code review
+   (Capabilities links the landed cards, ✅ built / ⬜ planned), Resources from the repo +
+   prod URLs. What isn't derivable stays visibly placeholder — say so when reporting.
+   Tooling-page fields and existing cards get updated via `/updating-a-notion-page`.
 8. **Verify + report.** List what was created and updated with urls; confirm nothing was
    fabricated and no duplicates were made.
 
@@ -83,13 +90,11 @@ entries were updated, not duplicated.
   content/site repos; removed unused `Library`). Update the option-set mirror in
   `targets.md` in the same change — and note an ALTER of a select property wipes that
   property's description in Notion.
-- (live run 2026-07-14) Template application to a new tooling page is async and every
-  submission eventually lands: `template_id` at create looked like a no-op, two explicit
-  `apply_template` retries followed, and all THREE materialized minutes apart — two extra
-  Feature Boards had to be deleted, one of them appearing AFTER a "verified clean" fetch.
-  Submit the template exactly once and poll the async task for it. Never re-submit
-  because a fetch looks unchanged, and never trust a verify fetch whose "as of" timestamp
-  predates your last write — the view cache serves stale snapshots for ~a minute.
+- (live run 2026-07-14) Notion template application is async, every submission
+  eventually lands, and the fetch view serves stale snapshots — three template copies
+  materialized minutes apart here, one AFTER a "verified clean" fetch. The submit-once /
+  poll-the-async-task / verify-against-a-newer-snapshot discipline lives in
+  `writing-records-to-notion` (Async writes, templates, and schema changes).
 
 ## Evals
 - `.claude/evals/reviewing-a-repo/happy-path.md`

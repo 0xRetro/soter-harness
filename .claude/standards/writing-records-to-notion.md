@@ -29,10 +29,31 @@ specific to it. The spine:
 6. **De-dup** — search the target DB for an existing matching record before creating.
 7. **Confirm before the write** — show the resolved record (matched options, resolved-or-
    empty relations, flagged defaults). External, hard-to-undo write; urgency never waives it.
-8. **Write via the publishing binding** — `/pushing-to-notion` (create) or
+8. **Body from the target's registered template, facts only.** If the target records a
+   page template (in `targets.md`), a new record's body starts from that template's
+   sections — filled with gathered or derivable facts; a section that can't be filled
+   stays visibly empty, never invented.
+9. **Write via the publishing binding** — `/pushing-to-notion` (create) or
    `/updating-a-notion-page` (update) — then verify.
 
 Don't silently default an unstated field — a default is a guess; flag it, don't assert it.
+
+### Async writes, templates, and schema changes (learned live 2026-07-14)
+
+- **Submit a template/content operation exactly once, then poll its async task.** Notion
+  applies them asynchronously and EVERY submission eventually lands — a "no-op" may
+  materialize minutes later. Never re-submit because a fetch looks unchanged (a blind
+  retry triple-applied a page template).
+- **Verify only against a snapshot newer than your write.** The fetch view serves stale
+  cached snapshots for ~a minute; a verify whose "as of" timestamp predates your last
+  write proves nothing.
+- **Never `apply_template` onto a record that already has real property values** — a
+  template's default properties overwrite them. Write the body content directly instead.
+- **A schema change checks the DB's registered templates.** When a property or option set
+  changes, check whether any registered template sets a value in it (a template holding a
+  removed option goes silently stale), and update the `targets.md` mirror in the same
+  change. Known edge: an ALTER of a select property wipes that property's description —
+  restore it in the Notion UI.
 
 ## Use when / don't
 - Applies when: any guide creates or updates a Notion record.

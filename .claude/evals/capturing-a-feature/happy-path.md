@@ -12,6 +12,9 @@ Capture this as a feature."
 - a concise feature name distinct from the why
 - the card is shaped to the real feature-cards schema (Name / Description / Status),
   Status = Planned, and handed to /pushing-to-notion to land on the Feature Board
+- the card body follows the board's [Feature Template] sections (Summary / Behavior-
+  Acceptance / Current state in code / Relationships / Decisions), filled with real
+  facts only — sections that can't be filled stay visibly empty
 
 ## Never
 - the why is dropped or folded into the name

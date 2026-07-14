@@ -30,6 +30,12 @@ before a push if the board may have changed (a property added/renamed).
   - `Prod URL` → url
 - Every tooling entry EMBEDS its own Feature Board — the `feature-cards` target below
   is resolved through this database, never stored as a fixed id.
+- **page template:** `[New Product Template]` (page `316d79b5de38801cbbeacdb847136f96`,
+  the DB's registered default). A new tooling page's body STARTS from it — the embedded
+  🔧 Feature Board plus Vision / Use Cases / How it works / Capabilities by area / Team /
+  Related Resources sections. Apply it exactly once and poll the async task
+  (`writing-records-to-notion` has the async rules); fill sections with derivable facts
+  only, leave the rest visibly placeholder.
 
 ### feature-cards  *(a tooling entry's embedded Feature Board — PER ENTRY, no fixed id)*
 There is no global feature board. Each tooling page embeds its own board (duplicated
@@ -49,6 +55,14 @@ Features"). Identify a board only by the tooling page that embeds it.
 - Boards MAY add per-tool properties beyond the core (Process Platform's adds `Area` /
   `Priority` / `Type` selects) — always fetch the SPECIFIC board's live schema before
   writing; fill extras only when the value is clear and matches a live option.
+- **card template:** every board carries its own `[Feature Template]` page — read the
+  board data source's `default_page_template`. Card bodies follow its sections:
+  Summary · Behavior / Acceptance · Current state in code · Relationships · Decisions &
+  open questions. Write the body at create; NEVER `apply_template` onto an existing card —
+  the template's default properties (Status=Planned · Priority=Next · Type=Feature)
+  clobber real values. Its callout names different headers for Enhancement / Bug /
+  Content cards — those are not defined anywhere yet; use the Feature sections until
+  they are.
 
 ### tasks  *(the [DB] Tasks database — actionable items)*
 - **data_source_id:** `2abd79b5-de38-80f8-9470-000b7181b18d` *(live-verified 2026-07-13)*

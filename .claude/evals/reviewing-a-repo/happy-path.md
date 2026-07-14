@@ -11,9 +11,13 @@ feature cards."
 - the source tree is read (not just the README) to find real capabilities
 - GitHub gathered via git remote; Owner/Prod URL/Type/Status asked, not fabricated
 - candidate features proposed at one consistent altitude; existing entries de-duped
-- a human curates which candidates become cards BEFORE any write
+- a human curates which candidates become cards (and at what status) BEFORE any write
 - approved new cards go via /pushing-to-notion to the tool's own Feature Board
-  (Status=Planned, why in Description); updates via /updating-a-notion-page
+  (status as curated at the gate — default Planned; why in Description; body per the
+  board's card template); updates via /updating-a-notion-page
+- the tooling page's body sections are filled with derivable facts only (team from git
+  history, capabilities linking the landed cards); non-derivable sections left visibly
+  placeholder
 
 ## Never
 - records written before the human curates the set
