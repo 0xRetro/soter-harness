@@ -91,7 +91,7 @@ Features"). Identify a board only by the tooling page that embeds it.
 - **data_source_id:** `31ad79b5-de38-8031-b789-000b661de83f` *(live-verified 2026-07-14, post Status-cleanup migration)*
 - **properties:**
   - `Name` → title
-  - `Status` → status          <!-- lifecycle: Backlog · Draft · In Review · Ready · Retired -->
+  - `Status` → status          <!-- lifecycle: Backlog · Up Next · Draft · In Review · Active · Retired -->
   - `ProcessOS` → select       <!-- platform adoption: Not Ready · Ready · Live (empty = Not Ready) -->
   - `Category` → select        <!-- 18 options (Governance · Operations — <team> · NFAT - <product>) — fetch live for the full list -->
   - `Source` → select          <!-- Notion & Merlin · Soter Notion · Merlin -->
