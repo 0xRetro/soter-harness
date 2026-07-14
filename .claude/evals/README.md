@@ -14,7 +14,7 @@ sequences — never "does the prose read well." No LLM-judge platform (ADR-0006)
 | 4 Invariant | did anything forbidden happen? | bash + transcript grep for "Never" items |
 
 Trace evidence is the session/subagent transcript on disk — every tool call is
-visible there. There is no separate event log (retired, ADR-0035: hooks cannot
+visible there. There is no separate event log (retired, ADR-0037: hooks cannot
 attribute skill invocations; if telemetry is ever needed, the native path is OTel's
 `claude_code.skill_activated`). Promotion evidence stays git history + gotcha growth.
 

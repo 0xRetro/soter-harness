@@ -32,7 +32,7 @@ guide.
 2. **Gather evidence from artifacts, never testimony.** The sources: the git history
    touching the piece and its Gotchas section (real use grows dated gotchas); session
    transcripts on disk corroborate a disputed claim. There is no tool-use log to lean
-   on (retired — it could not attribute skill use; ADR-0035). A claim of use is a
+   on (retired — it could not attribute skill use; ADR-0037). A claim of use is a
    pointer to evidence, not the evidence. FLEX: what counts as enough, above this
    floor: ≥3 real uses across ≥2 distinct sessions, and zero pending redlines from
    the gate. A refused promotion needs no artifact — just say why and stop.
@@ -58,7 +58,7 @@ guide.
   "thin-evidence tradeoff" recorded ad hoc). Counter: the floor lives in step 2 —
   change it by superseding this guide, not by improvising.
 - (pressure test) The since-retired event log could not show "which guide ran" (tool
-  calls carry no skill attribution) — the finding that led to ADR-0035. The use floor
+  calls carry no skill attribution) — the finding that led to ADR-0037. The use floor
   rests on git history + gotcha growth; a future telemetry consumer adopts native
   OTel, never a hook log.
 

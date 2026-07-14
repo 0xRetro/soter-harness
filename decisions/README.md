@@ -39,4 +39,4 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0032](ADR-0032-subprocess-canonical-home-full-copies.md) | Subprocess reuse — canonical home + full inline copies | Accepted |
 | [ADR-0033](ADR-0033-promote-running-evals.md) | Promote running-evals to the guide index | Accepted |
 | [ADR-0034](ADR-0034-plugin-ships-at-parity.md) | The plugin ships the harness at parity — hook wiring mirrored (HOOK_PARITY), manifest unversioned while internal | Accepted |
-| [ADR-0035](ADR-0035-retire-the-event-log.md) | Retire the event log — hooks cannot attribute skill use; native telemetry can | Proposed |
+| [ADR-0037](ADR-0037-retire-the-event-log.md) | Retire the event log — hooks cannot attribute skill use; native telemetry can | Proposed |

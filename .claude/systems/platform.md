@@ -19,7 +19,7 @@ None yet — this system defines forms and owns wiring; concrete hooks/skills/ag
 are mechanisms OF the systems that use them.
 
 ## Components
-- `.claude/settings.json` — in-repo wiring (Bash guard + checker hook; event log retired, ADR-0035)
+- `.claude/settings.json` — in-repo wiring (Bash guard + checker hook; event log retired, ADR-0037)
 - `.claude/hooks/hooks.json` — plugin-shipped wiring, always at parity with
   settings.json: same guard and checker hook (ADR-0034)
 - `.claude/.claude-plugin/plugin.json` — the plugin manifest (the `.claude/` dir IS the
