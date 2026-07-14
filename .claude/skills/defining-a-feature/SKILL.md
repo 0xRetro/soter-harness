@@ -6,6 +6,7 @@ description: >-
   define, scope, flesh out, or specify an already-captured (Planned) feature. Not for
   capturing (/capturing-a-feature), build/ship stages, or advancing status.
 disable-model-invocation: true
+promotion-hold: refused at the ADR-0024/0025 wave (commit ad8e349); re-evaluate on new evidence
 layer: context
 system: product-development
 kind: component

@@ -374,7 +374,25 @@ function checkSkill(root, dir, out) {
     out.push(V(f, 'TRIGGER_EVAL_MISSING', 'auto-invocable guide has no should-NOT-trigger eval case',
       'triggering is never measured otherwise; near-misses are how routing fails at scale',
       `add a "*no-trigger*" or "*boundary*" case in .claude/evals/${skillName}/`));
+  // STAGED_MATURE (warn): a staged guide whose real-use evidence (a dated live/observed
+  // gotcha) is STAGED_MATURE_DAYS old with no promotion decision on record has stalled —
+  // staged-forever is drift too (the ADR-0008 lifecycle assumes decisions get made).
+  // A deliberate hold (e.g. a refused promotion) is `promotion-hold: <reason>` in
+  // frontmatter, which silences the nag; the reason travels with the piece.
+  if (fm && fm['disable-model-invocation'] === 'true' && !fm['promotion-hold']) {
+    const indexed = read(path.join(root, 'CLAUDE.md')).includes('`/' + skillName + '`');
+    const gotchas = (text.split(/^## Gotchas/m)[1] || '').split(/\n## /m)[0];
+    let oldest = null;
+    for (const m of gotchas.matchAll(/\((?:live|observed)[^)]*?(\d{4}-\d{2}-\d{2})/g))
+      if (!oldest || m[1] < oldest) oldest = m[1];
+    const age = oldest ? Math.floor((Date.now() - Date.parse(oldest)) / 86_400_000) : 0;
+    if (!indexed && oldest && age >= STAGED_MATURE_DAYS)
+      out.push(V(f, 'STAGED_MATURE', `staged guide has real-use evidence ${age} days old and no promotion decision`,
+        'evidence accrues but the lifecycle stalls silently — staged-forever is drift (ADR-0008)',
+        'run /promoting-pieces (index entry only if side-effecting), or record a deliberate hold: `promotion-hold: <reason>` in frontmatter', 'warn'));
+  }
 }
+const STAGED_MATURE_DAYS = 14;
 
 function checkRule(root, file, out) {
   const text = read(file);
@@ -942,6 +960,10 @@ function selftest() {
   w('.claude/skills/deep-refs/sub/ref.md', 'nested ref');
   for (const c of ['one', 'two', 'three'])                                 // 3 evals, none pressure → PRESSURE_MISSING (deep-refs)
     w(`.claude/evals/deep-refs/${c}.md`, `---\nskill: deep-refs\ncase: ${c}\n---\n## Try\nx\n## Expect\n- y\n## Never\n- z\n`);
+  w('.claude/skills/stalled-staged/SKILL.md',                              // STAGED_MATURE (old live gotcha, staged, unindexed)
+    '---\nname: stalled-staged\ndescription: Does x. Use when asked. Not for y.\nlayer: kernel\nsystem: guides\nkind: component\nmold: how-to-guide\ndisable-model-invocation: true\n---\n\nNot for y.\n\n## Gotchas\n- (live 2020-01-01) an observed failure from real use\n');
+  w('.claude/skills/held-staged/SKILL.md',                                 // must NOT raise STAGED_MATURE (promotion-hold)
+    '---\nname: held-staged\ndescription: Does x. Use when asked. Not for y.\nlayer: kernel\nsystem: guides\nkind: component\nmold: how-to-guide\ndisable-model-invocation: true\npromotion-hold: refused — see the decision log\n---\n\nNot for y.\n\n## Gotchas\n- (live 2020-01-01) an observed failure from real use\n');
   w('.claude/skills/half-tested/SKILL.md',                                 // GOLDEN_PARTIAL (1 of 3 cases stamped)
     '---\nname: half-tested\ndescription: Does x. Use when asked. Not for y.\nlayer: kernel\nsystem: guides\nkind: component\nmold: how-to-guide\ndisable-model-invocation: true\n---\n\nNot for y.\n');
   for (const [c, gold] of [['happy', 'passed: abc1234\n'], ['pressure', ''], ['invariant', '']])
@@ -976,7 +998,7 @@ function selftest() {
     'SEC_LINT', 'DESC_XML', 'TRIGGER_EVAL_MISSING', 'LINK_BROKEN',
     'FM_CLASS', 'SYSTEM_UNKNOWN', 'MOLD_UNKNOWN', 'MOLD_SHAPE', 'CARD_OWNER', 'CARD_PATH', 'CARD_CONCEPT', 'CARD_ADR',
     'ALIAS_ROW_MALFORMED', 'SECTION_ORDER', 'AUTOMATION_AUTOFIRE', 'SECRET_LEAK', 'SYSTEM_UNLISTED',
-    'TARGET_STALE', 'GOLDEN_NONE', 'GOLDEN_PARTIAL', 'ADR_DUP', 'HOOK_PARITY'];
+    'TARGET_STALE', 'GOLDEN_NONE', 'GOLDEN_PARTIAL', 'ADR_DUP', 'HOOK_PARITY', 'STAGED_MATURE'];
   const missed = mustFire.filter((c) => !codes.has(c));
   if (missed.length) fails.push(`planted violations not detected: ${missed.join(', ')}`);
   // Count assertions where one plant per code isn't enough to prove the rule:
@@ -988,6 +1010,8 @@ function selftest() {
   if (staleTargets < 2) fails.push(`TARGET_STALE fired ${staleTargets}x — both plants (stale stamp, no stamp) must be caught`);
   const parity = planted.filter((v) => v.code === 'HOOK_PARITY').length;
   if (parity < 2) fails.push(`HOOK_PARITY fired ${parity}x — both directions (repo-only hook, plugin-only hook) must be caught`);
+  if (planted.some((v) => v.code === 'STAGED_MATURE' && v.file.includes('held-staged')))
+    fails.push('STAGED_MATURE fired on a guide with promotion-hold — the deliberate-hold escape is broken');
   if (!gateVerdict(tmp))
     fails.push('turn gate: a root full of planted errors produced no verdict');
   fs.rmSync(tmp, { recursive: true, force: true });
