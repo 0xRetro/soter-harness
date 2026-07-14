@@ -15,7 +15,9 @@ domain guide **references this standard** for the shared spine and states only w
 specific to it. The spine:
 
 1. **Fetch the live schema first.** Never assume field names, types, or option sets
-   (ADR-0014); re-fetch if the DB may have changed.
+   (ADR-0014); re-fetch if the DB may have changed. If the target's subject has a
+   **policy standard**, fetch that too — its rules govern field semantics and how values
+   are determined (ADR-0021).
 2. **Shape plain fields** to the real schema (title/text/number/email/url/date/checkbox).
 3. **Resolve relations to real target page ids — never fabricate.** Search the related DB
    by name → its page id. Unresolved ≠ nonexistent: if not found, ask (create it first?

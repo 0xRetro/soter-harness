@@ -12,8 +12,9 @@ mold: standard
 A policy standard is **rules-first** (ADR-0021): what the subject IS and what must HOLD
 come before any field list. Ten sections, in this order, unnumbered — cross-reference
 sections by NAME and determination rules by short id (D1, D2, …), never by section number.
-The workspace's Policy Standard Template page is the live skeleton; this standard is the
-shape it must keep.
+The org's policy-standards registry holds one doc per subject, each started from the
+registry's registered skeleton page (ids live with the publishing `policy-standards`
+target); this standard is the shape every doc must keep.
 
 - **Definition** — what the subject is + what makes one instance unique (identity).
 - **Scope** — in AND out; an unknown exclusion is written `not defined`, never left
@@ -57,8 +58,8 @@ without marking them — the coverage lines and the `not defined` convention exi
 exactly that.
 
 ## Use when / don't
-- Applies when: shaping or reviewing a policy standard (a [DB] Policy Standards doc
-  governing one subject).
+- Applies when: shaping or reviewing a policy standard (a doc in the org's
+  policy-standards registry governing one subject).
 - Doesn't apply when: shaping a process body (`shaping-a-process`); the Notion write
   mechanics (`writing-records-to-notion`); auditing a doc against its live DB
   (`auditing-a-schema-doc`); the quality bar for harness pieces (`.claude/RUBRIC.md`, the

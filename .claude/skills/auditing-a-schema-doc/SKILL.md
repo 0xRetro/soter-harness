@@ -1,11 +1,12 @@
 ---
 name: auditing-a-schema-doc
 description: >-
-  Keeps a database's schema doc (a Notion "[DB] X Standards" page) true to the live
-  database, reconciling any drift found through a human gate. Use when the user wants
-  to audit, reconcile, or fix a DB's schema doc, check one for drift, or suspects the
-  documented fields no longer match the real database. Not for writing records (the
-  capturing guides) or the write mechanics (/updating-a-notion-page).
+  Keeps a database's schema doc — the Fields section of its subject's policy standard,
+  or a legacy "[DB] X Standards" page — true to the live database, reconciling drift
+  through a human gate. Use when the user wants to audit, reconcile, or fix a schema
+  doc, check one for drift, or suspects the documented fields no longer match the real
+  database. Not for writing records (the capturing guides), the write mechanics
+  (/updating-a-notion-page), or authoring a policy standard (/authoring-a-policy-standard).
 disable-model-invocation: true
 layer: automation
 system: schema-audit
@@ -47,10 +48,12 @@ binding. Audit-specific:
    relation misleads every downstream writer — mark writability, not just type. Decide once
    (with the user) whether auto fields (Created/Last edited) are documented at all.
 6. **Report + propose surgical edits.** Present the full diff. Propose edits to the Fields
-   section ONLY (leave Purpose/Views/Templates untouched) plus correcting the callout to
-   the truth ("⚠️ Drifted — N fields out of sync; re-audited `<date>`"). Sweep the
-   non-field sections for references to dead fields (a view grouped by a deleted field) and
-   flag them — don't edit them here.
+   section ONLY — leave every other section untouched (in a policy standard:
+   Definition/Classifications/Rules/Lifecycle are policy content, not schema; in a legacy
+   Standards page: Purpose/Views/Templates) — plus correcting any freshness callout the doc
+   carries ("⚠️ Drifted — N fields out of sync; re-audited `<date>`"). Sweep the non-field
+   sections for references to dead fields (a rule enforced by a deleted field, a view
+   grouped by one) and flag them — don't edit them here.
 7. **Reconcile on the human okay** — via `/updating-a-notion-page` (fetch-merge-write,
    surgical). Never overwrite the whole page. Under "don't make me review" pressure, keep
    the gate but make it cheap — FLEX: how far to compress the review, anywhere from the

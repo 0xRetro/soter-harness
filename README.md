@@ -75,7 +75,11 @@ claims-vs-reality sweeps harden the checker.
 true to the live DBs), plus **context** domains `product-development`,
 `project-management`, and `crm` that each shape their records and write through the
 bindings. The shared write-discipline lives once in `.claude/standards/writing-records-to-notion.md`;
-each domain guide references it and adds only its nuance.
+each domain guide references it and adds only its nuance. An ops tier builds on the same
+spine: **context** system `process` defines repeatable work (Process → Step → Work-item)
+in the live Process Inventory, governed by **core** system `policy` — one rules-first
+policy standard per subject (ADR-0021/0022), whose Fields sections are what schema-audit
+now audits.
 
 Add-ons are anything not in the kernel-8 (`lexicon · template · enforcement · eval ·
 standards · governance · authoring · platform`). Live lists (never hardcode counts):

@@ -9,12 +9,14 @@ mold: system-card
 # System: schema-audit
 
 ## Promise
-Each database's **schema doc** (the Notion page documenting its fields — the workspace's
-"[DB] X Standards" pages) stays true to the live DB. Drift between doc and reality is
-detected and reconciled through a human gate. The inverse of publishing: it keeps Notion's
-own documentation honest, rather than writing records. Consumers: the team that trusts the
-schema docs; every harness guide that reads a schema (a true doc means fewer live re-fetches
-of stale surprises — though live is still the source of truth, ADR-0016).
+Each database's **schema doc** — today the Fields section of its subject's policy standard
+(ADR-0021); historically the workspace's "[DB] X Standards" pages, its ungoverned ancestor —
+stays true to the live DB. Drift between doc and reality is detected and reconciled through
+a human gate. The inverse of publishing: it keeps Notion's own documentation honest, rather
+than writing records. Consumers: the team that trusts the schema docs; the policy system
+(whose Fields sections this audits); every harness guide that reads a schema (a true doc
+means fewer live re-fetches of stale surprises — though live is still the source of truth,
+ADR-0016).
 
 ## Mechanisms
 - **auditing-a-schema-doc** — reads: a DB's live schema + its schema doc's

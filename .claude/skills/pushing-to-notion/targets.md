@@ -91,6 +91,15 @@ Features"). Identify a board only by the tooling page that embeds it.
 - New entries start from the DB's default body template (page `cb0744051c564c4a91be9891af30b12a`);
   shape the body per the `shaping-a-process` standard (steps + work-items), not free-form.
 
+### policy-standards  *(the [DB] Policy Standards database — one rules-first policy standard per subject)*
+- **data_source_id:** `39dd79b5-de38-8042-9d47-000b9293ab47` *(live-verified 2026-07-14)*
+- **properties:**
+  - `Name` → title             <!-- the subject's name; the policy lives in the doc body -->
+- New entries start from the DB's registered page template ("Policy Standard Template",
+  page `2243621d7eec4ceabe35342970b66644`) — the live skeleton. Shape the body per the
+  `shaping-a-policy-standard` standard (rules-first); one doc per subject, so search for
+  an existing doc before creating.
+
 ### orgs  *(the [DB] Orgs database — organizations)*
 - **data_source_id:** `2b2d79b5-de38-817a-981e-000b27e5575b`
 - **properties:**
