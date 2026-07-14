@@ -13,7 +13,7 @@ Turn an external **source** (a repo, a doc, a dump) into standardized Notion rec
 reviewed, normalized to the target database's schema, and human-gated on what actually
 enters. The pull side to publishing's push. Consumers: the context systems whose records
 it produces (product-development, project-management, crm); the
-publishing bindings it writes through.
+publishing bindings it writes through. Decreed with the first add-on wave (ADR-0017).
 
 ## Mechanisms
 - **reviewing-a-repo** — reads: a git repo · produces: proposed feature records + a

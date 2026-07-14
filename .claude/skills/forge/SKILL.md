@@ -1,11 +1,11 @@
 ---
 name: forge
 description: >-
-  Authors a new harness piece at any layer — guide, house rule, standard, or mold —
-  from its mold, with eval cases, a pressure test, and the human gate. Use when the
-  user says forge, or asks to create or add a guide, rule, standard, or add-on to the
-  harness. Not for editing existing pieces, recording a standalone decision
-  (/writing-adrs), inlining org data into a generic piece, or bulk changes.
+  Authors a new harness piece at any layer — guide, house rule, standard, mold, or
+  system — from its mold, with eval cases, a pressure test, and the human gate. Use
+  when the user says forge, or asks to create or add a guide, rule, standard, system,
+  or add-on to the harness. Not for editing existing pieces, recording a standalone
+  decision (/writing-adrs), inlining org data into a generic piece, or bulk changes.
 disable-model-invocation: true
 layer: kernel
 system: authoring
@@ -20,7 +20,7 @@ A new piece merged **staged**: template-shaped, Checker-clean, with ≥3 eval ca
 (one a pressure case), pressure-tested by fresh eyes, and human-approved.
 
 ## Use when / don't use when
-- Use when: the user invokes `/forge` to add a guide, rule, standard, or mold.
+- Use when: the user invokes `/forge` to add a guide, rule, standard, mold, or system.
 - Not for: editing existing pieces (small edits go straight to a PR); standalone
   decisions (`/writing-adrs` — though a forge run may *produce* ADRs along the way);
   inlining org-specific data into a generic kernel/core piece (keep those generic —
@@ -30,6 +30,11 @@ A new piece merged **staged**: template-shaped, Checker-clean, with ≥3 eval ca
 1. **Clarify.** Classify first — run the classification rule in `.claude/LEXICON.md`
    (kind · system · layer · mold) — then name and scope. Ask only what's unclear.
    FLEX: naming and scope, within `.claude/rules/authoring.md` conventions.
+   A **new SYSTEM** branches to ADR-0017's path instead of the eval loop: a born-or-
+   decreed ADR (via `/writing-adrs`) + the card from the system-card mold + its concepts
+   registered in the LEXICON — no evals or pressure-test (a card doesn't execute). Steps
+   2, 7, and 9 still apply (territory, checker, gate), and the card must cite its birth
+   ADR (checker `CARD_ADR`).
 2. **Territory check.** Read the CLAUDE.md guide index and every existing piece's
    exclusion clause. Overlap found → stop and propose extending that piece instead.
 3. **Sandbox.** Create a worktree on branch `forge/<name>`. Nothing touches main.
@@ -72,6 +77,9 @@ transcript showed compliance; the human okay is the merge itself (git provenance
   that are genuinely true. Better: make test scenarios out of real work you want anyway.
 - Timing note: step 3 creates the worktree *before* drafting (sandbox-first) —
   deliberate; nothing should ever draft on main.
+- (live 2026-07-14) System creation had NO owning procedure — this guide's scope didn't
+  cover system cards, so births were freestyle-consistent-with-precedent, and three
+  add-on cards never cited their decree. Counter: step 1's system branch + `CARD_ADR`.
 
 ## Evals
 - `.claude/evals/forge/happy-path.md`

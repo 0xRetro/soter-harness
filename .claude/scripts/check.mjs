@@ -244,6 +244,12 @@ function checkSystemCard(root, file, out) {
     out.push(V(file, 'CARD_OWNER', `card "${fm.name}" declares system "${fm.system}"`,
       'each system owns its own card (system == name on cards)',
       'set system: to the card\'s own name'));
+  // ADR-0017: a non-kernel system is BORN or DECREED — its card cites the ADR recording
+  // that birth. The kernel-8 predate the rule (founded as a set, ADR-0001/0002) — exempt.
+  if (fm && fm.layer && LAYERS.includes(fm.layer) && fm.layer !== 'kernel' && !/ADR-\d{4}/.test(text))
+    out.push(V(file, 'CARD_ADR', 'non-kernel system card cites no ADR',
+      'a system is born from real pieces or decreed (ADR-0017) — the card must point at the decision that birthed it',
+      'cite the born-or-decreed ADR on the card (Promise or Invariants)'));
   // The system-card mold's declared cross-checks (were paper-enforced; now real):
   // every backticked repo path in ## Components exists…
   for (const m of cardSection(text, 'Components').matchAll(/`((?:\.claude|decisions|\.github|\.claude-plugin)\/[^`]*)`/g)) {
@@ -713,6 +719,8 @@ function selftest() {
     '---\nname: badmold\nlayer: kernel\nsystem: ghost\nkind: component\nmold: singleton\n---\n\n# M\n\nno sections\n');
   w('.claude/systems/pathless.md',                                          // CARD_PATH, CARD_CONCEPT
     '---\nname: pathless\nlayer: kernel\nsystem: pathless\nkind: component\nmold: singleton\n---\n\n# Card\n\n## Promise\nx\n\n## Mechanisms\nnone\n\n## Components\n- `.claude/nope-does-not-exist.md` — ghost\n\n## Concepts\nflibber\n\n## Invariants\nnone\n');
+  w('.claude/systems/adrless.md',                                            // CARD_ADR (non-kernel card, no birth ADR cited)
+    '---\nname: adrless\nlayer: context\nsystem: adrless\nkind: component\nmold: singleton\n---\n\n# Card\n\n## Promise\nx\n\n## Mechanisms\nnone\n\n## Components\nnone\n\n## Concepts\nnone\n\n## Invariants\nnone\n');
   w('.claude/rules/bad-rule.md', '<Topic>\n' + Array(120).fill('- ALWAYS x').join('\n')); // PLACEHOLDER(rules), BUDGET_RULE(warn), FM_CLASS
   w('.claude/skills/deep-refs/SKILL.md',                                   // DESC_LEN, BUDGET_SKILL, REF_DEPTH, DESC_XML, TRIGGER_EVAL_MISSING (auto-invocable, no no-trigger case)
     `---\nname: deep-refs\ndescription: <tag> ${'x'.repeat(1100)}\n---\n\nNot for anything.\n` + Array(510).fill('line').join('\n'));
@@ -746,7 +754,7 @@ function selftest() {
     'EVALS_MIN', 'ALIAS', 'SECTIONS_MISSING', 'BUDGET_SKILL', 'DESC_LEN', 'DESC_TOTAL',
     'REF_DEPTH', 'PRESSURE_MISSING', 'UNEXPECTED_FILE', 'BUDGET_RULE',
     'SEC_LINT', 'DESC_XML', 'TRIGGER_EVAL_MISSING', 'LINK_BROKEN',
-    'FM_CLASS', 'SYSTEM_UNKNOWN', 'MOLD_UNKNOWN', 'MOLD_SHAPE', 'CARD_OWNER', 'CARD_PATH', 'CARD_CONCEPT',
+    'FM_CLASS', 'SYSTEM_UNKNOWN', 'MOLD_UNKNOWN', 'MOLD_SHAPE', 'CARD_OWNER', 'CARD_PATH', 'CARD_CONCEPT', 'CARD_ADR',
     'ALIAS_ROW_MALFORMED', 'SECTION_ORDER', 'AUTOMATION_AUTOFIRE', 'SECRET_LEAK', 'SYSTEM_UNLISTED'];
   const missed = mustFire.filter((c) => !codes.has(c));
   if (missed.length) fails.push(`planted violations not detected: ${missed.join(', ')}`);

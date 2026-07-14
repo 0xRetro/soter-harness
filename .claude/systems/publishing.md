@@ -13,7 +13,7 @@ Harness work-artifacts reach external systems of record deliberately, in a typed
 verifiable way. Consumers: humans and tools that read the external store; the
 automation layer that wires harness output to where work is tracked. (Named for the
 concern — pushing artifacts out — not for a vendor; Notion is the first binding, not
-the system.)
+the system.) Decreed with the first add-on wave (ADR-0017).
 
 ## Mechanisms
 - **notion-push** — reads: a structured artifact + a target Notion database id + a

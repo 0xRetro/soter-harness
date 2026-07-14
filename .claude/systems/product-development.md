@@ -17,7 +17,7 @@ link, no relation property. Work moves through the real **feature lifecycle** �
 is being built and why; the publishing binding that mirrors records into Notion.
 Deliberately lightweight — self-directed, no forced gates. (Schemas mirror the live
 Ozone HQ boards — fetch live; the verified schemas live in the publishing binding's
-`targets.md`.)
+`targets.md`.) Decreed with the first add-on wave (ADR-0017; live-schema doctrine ADR-0014).
 
 ## Mechanisms
 - **capturing** — reads: a raw idea/use-case · produces: a Feature Board card (Name +
