@@ -37,6 +37,8 @@ specific to it. The spine:
    `/updating-a-notion-page` (update) — then verify.
 
 Don't silently default an unstated field — a default is a guess; flag it, don't assert it.
+Unknowns in a record's body stay bare `not defined` — searchable, and they ARE the
+worklist (the policy-doc convention, generalized to records).
 
 ### Async writes, templates, and schema changes (learned live 2026-07-14)
 
@@ -54,11 +56,13 @@ Don't silently default an unstated field — a default is a guess; flag it, don'
   every op landed.
 - **Never `apply_template` onto a record that already has real property values** — a
   template's default properties overwrite them. Write the body content directly instead.
-- **A schema change checks the DB's registered templates.** When a property or option set
-  changes, check whether any registered template sets a value in it (a template holding a
-  removed option goes silently stale), and update the `targets.md` mirror in the same
-  change. Known edge: an ALTER of a select property wipes that property's description —
-  restore it in the Notion UI.
+- **A schema change checks the DB's registered templates AND affected record bodies.**
+  When a property or option set changes, check whether any registered template sets a
+  value in it (a template holding a removed option goes silently stale), sweep record
+  bodies for references to the changed field (a removed property leaves "set the X
+  property" strays), and update the `targets.md` mirror in the same change. Known edge:
+  an ALTER of a select property wipes that property's description — restore it in the
+  Notion UI.
 
 ## Use when / don't
 - Applies when: any guide creates or updates a Notion record.
