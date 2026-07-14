@@ -94,7 +94,6 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Status` → status          <!-- lifecycle: Backlog · Up Next · Draft · In Review · Active · Retired -->
   - `ProcessOS` → select       <!-- platform adoption: Not Ready · Ready · Live (empty = Not Ready) -->
   - `Category` → select        <!-- 18 options (Governance · Operations — <team> · NFAT - <product>) — fetch live for the full list -->
-  - `Source` → select          <!-- Notion & Merlin · Soter Notion · Merlin -->
   - `Frequency` → select       <!-- Daily · Weekly · Bi-Weekly · Monthly · Quarterly · Per-Event · One-Time -->
   - `Soter Involvement` → select   <!-- Global Process · Global Process Soter Owns · Soter Owns · Soter/ Prime · Executed in Core Spell · Retro + LB Owners · OEA Facilitator Workflow -->
   - `Tags` → multi_select      <!-- large set (Governance · Risk · MSC · CRM · Finance · Operations · …) — fetch live -->
