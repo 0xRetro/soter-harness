@@ -1,7 +1,7 @@
 ---
 skill: capturing-a-feature
 case: happy-path
-passed: 46232be
+passed: 1179c2b
 ---
 
 ## Try
