@@ -1,14 +1,12 @@
 ---
 name: capturing-a-process
 description: >-
-  Captures a repeatable process as a [DB] Process Inventory entry — the row shaped to the
-  live schema (Status/Frequency and other selects matched to real options, Related Service resolved
-  or left empty), and the body shaped into steps and work-items per the process shape
+  Captures a repeatable process as a [DB] Process Inventory entry — row shaped to the
+  live schema, body shaped into role-bounded steps and work-items per the process shape
   standard, de-duped and confirmed before the write. Use when the user wants to capture,
-  document, add, or define a process (a repeatable how-we-do-it) in the Process Inventory.
-  Not for capturing a task (a [DB] Tasks row, /capturing-a-task), a feature
-  (/capturing-a-feature), the Notion write mechanics (/pushing-to-notion), or auditing a
-  schema doc (/auditing-a-schema-doc).
+  document, add, or define a process. Not for tasks (/capturing-a-task), features
+  (/capturing-a-feature), write mechanics (/pushing-to-notion), or schema-doc audits
+  (/auditing-a-schema-doc).
 disable-model-invocation: true
 layer: context
 system: process

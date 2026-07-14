@@ -1,12 +1,11 @@
 ---
 name: capturing-a-contact
 description: >-
-  Captures a person as a [DB] Contacts row — shaped to the live schema, with every
-  select/multi-select value matched to a real existing option (never invented), the Org
-  relation resolved to a real page id or left empty, de-duped, and confirmed before the
-  write. Use when the user wants to add, capture, or log a contact or person into the
-  CRM. Not for organizations (a separate guide), not for the Notion write mechanics
-  (/pushing-to-notion), and not for tasks or features.
+  Captures a person as a [DB] Contacts row — shaped to the live schema, selects matched
+  to real options (never invented), the Org relation resolved or left empty, de-duped,
+  and confirmed before the write. Use when the user wants to add, capture, or log a
+  contact or person into the CRM. Not for organizations (/capturing-an-org), write
+  mechanics (/pushing-to-notion), or tasks and features.
 disable-model-invocation: true
 layer: context
 system: crm

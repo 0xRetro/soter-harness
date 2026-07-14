@@ -1,12 +1,11 @@
 ---
 name: auditing-a-schema-doc
 description: >-
-  Keeps a database's schema doc — the Fields section of its subject's policy standard,
-  or a legacy "[DB] X Standards" page — true to the live database, reconciling drift
-  through a human gate. Use when the user wants to audit, reconcile, or fix a schema
-  doc, check one for drift, or suspects the documented fields no longer match the real
-  database. Not for writing records (the capturing guides), the write mechanics
-  (/updating-a-notion-page), or authoring a policy standard (/authoring-a-policy-standard).
+  Keeps a schema doc — a policy standard's Fields section, or a legacy "[DB] X Standards"
+  page — true to the live database, drift reconciled through a human gate. Use when the
+  user wants to audit, reconcile, or fix a schema doc for drift. Not for writing records
+  (the capturing guides), write mechanics (/updating-a-notion-page), or authoring a
+  policy standard (/authoring-a-policy-standard).
 disable-model-invocation: true
 layer: automation
 system: schema-audit

@@ -1,12 +1,11 @@
 ---
 name: defining-a-feature
 description: >-
-  Defines a captured feature — clarifies what it actually is, its scope (in and out),
-  and how you'll know it's done — and appends that definition to the feature card's
-  Description without touching the why or the status. Use when the user wants to define,
-  scope, flesh out, or specify a feature that's already been captured (a Planned card).
-  Not for capturing a brand-new feature (that is /capturing-a-feature), not for later
-  build/ship stages, and not for advancing the card's status.
+  Defines a captured feature — what it is, its scope (in and out), and how you'll know
+  it's done — appended to the card's Description without touching the why or the status.
+  Use when the user wants to define, scope, flesh out, or specify an already-captured
+  (Planned) feature. Not for capturing a new feature (/capturing-a-feature), later
+  build/ship stages, or advancing status.
 disable-model-invocation: true
 layer: context
 system: product-development

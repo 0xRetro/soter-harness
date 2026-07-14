@@ -1,12 +1,11 @@
 ---
 name: pushing-to-notion
 description: >-
-  Pushes a structured harness artifact to a Notion database as a new page, mapping
-  each field to a typed Notion property and confirming with a human before the write.
-  Use when the user asks to push, send, publish, or sync something to Notion, or to
-  create a Notion database row/page from harness output. Not for reading from Notion,
-  not for updating or deleting existing pages, and not for non-Notion stores (a
-  different binding covers those).
+  Pushes a structured harness artifact to a Notion database as a new page — each field
+  mapped to a typed property, a human confirming before the write. Use when the user
+  asks to push, send, publish, or sync something to Notion, or create a database
+  row/page from harness output. Not for reading, updating existing pages
+  (/updating-a-notion-page), or non-Notion stores.
 disable-model-invocation: true
 layer: automation
 system: publishing

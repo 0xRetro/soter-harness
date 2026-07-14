@@ -1,12 +1,11 @@
 ---
 name: capturing-a-feature
 description: >-
-  Turns a raw idea or use-case into a Feature Board card — the "why" captured in the
-  card's Description, at status Planned — landing on the real board, not an invented
-  location. Use when the user wants to capture a new feature, log an idea, or start
-  tracking something to build. Not for later lifecycle stages (Up Next, In Development,
-  Completed), not for Notion push mechanics (that is /pushing-to-notion), and not for
-  content unrelated to features.
+  Turns a raw idea or use-case into a Feature Board card — the why captured in the
+  Description, at status Planned, on the real board. Use when the user wants to capture
+  a new feature, log an idea, or start tracking something to build. Not for later
+  lifecycle stages, push mechanics (/pushing-to-notion), or content unrelated to
+  features.
 disable-model-invocation: true
 layer: context
 system: product-development
