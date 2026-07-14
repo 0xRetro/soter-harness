@@ -8,6 +8,7 @@ node_modules/
 # Claude Code — personal / runtime (never shared)
 .claude/settings.local.json
 .claude/evals/logs/*.jsonl
+.claude/scheduled_tasks.lock
 
 # Local planning tools (workshop scratch, never harness content)
 nimbalyst-local/

@@ -470,6 +470,50 @@ function checkTargetFreshness(root, out) {
   flush();
 }
 
+// PARITY (plugin distribution): `.claude/settings.json` is what this repo runs;
+// `.claude/hooks/hooks.json` is what a plugin install gets. They drifted (observed
+// 2026-07-14: the plugin shipped only the warn-only lint hook — no Bash guard, no event
+// log — so installs ran weaker enforcement than the source repo; ADR-0034). The two
+// wirings differ only in how they reach the script ($CLAUDE_PROJECT_DIR/.claude vs
+// ${CLAUDE_PLUGIN_ROOT}); normalize that and demand the same hook set in both.
+const normalizeHookCmd = (cmd) => cmd.replace(/\$\{?CLAUDE_PROJECT_DIR\}?\/\.claude/g, '${CLAUDE_PLUGIN_ROOT}');
+function hookSet(cfg) {
+  const set = new Set();
+  for (const [event, matchers] of Object.entries(cfg?.hooks || {}))
+    for (const m of matchers || [])
+      for (const h of m?.hooks || [])
+        if (h?.type === 'command' && h.command)
+          set.add(`${event} / ${m.matcher} / ${normalizeHookCmd(h.command)}`);
+  return set;
+}
+function checkHookParity(root, out) {
+  const sPath = path.join(root, '.claude', 'settings.json');
+  const hPath = path.join(root, '.claude', 'hooks', 'hooks.json');
+  if (!exists(sPath) && !exists(hPath)) return; // not a wired harness — nothing to compare
+  const load = (p) => {
+    if (!exists(p)) return {};
+    try { return JSON.parse(read(p)); } catch {
+      out.push(V(p, 'HOOK_PARITY', 'hook wiring file is not parseable JSON',
+        'an unparseable wiring file silently disables every hook it carries',
+        'fix the JSON; `claude plugin validate` and this check both need to read it'));
+      return null;
+    }
+  };
+  const s = load(sPath), h = load(hPath);
+  if (!s || !h) return;
+  const sSet = hookSet(s), hSet = hookSet(h);
+  for (const k of sSet)
+    if (!hSet.has(k))
+      out.push(V(hPath, 'HOOK_PARITY', `in-repo hook is not shipped by the plugin: ${k}`,
+        'the plugin IS the harness — an install that lacks a hook runs weaker enforcement than the source repo (ADR-0034)',
+        'add the same hook to .claude/hooks/hooks.json (path via ${CLAUDE_PLUGIN_ROOT}), or remove it from settings.json'));
+  for (const k of hSet)
+    if (!sSet.has(k))
+      out.push(V(sPath, 'HOOK_PARITY', `plugin-shipped hook is not wired in-repo: ${k}`,
+        'a hook that ships but never runs here is untested wiring — this repo is where it gets exercised (ADR-0034)',
+        'add the same hook to .claude/settings.json (path via $CLAUDE_PROJECT_DIR/.claude), or remove it from hooks.json'));
+}
+
 // GUARD (PreToolUse, exit 2 blocks): the parallel-sessions rule parks the ROOT checkout
 // on main — no commits, no staging, no branch switches there (ADR-0027). Sessions slip:
 // a shell cwd reset once aimed a `git add` at root and only a pathspec miss saved it.
@@ -754,6 +798,7 @@ function checkAll(root, census = {}) {
   checkDescriptionBudget(root, out);
   checkLinks(root, out);
   checkTargetFreshness(root, out);
+  checkHookParity(root, out);
   // ADR-0003: green carries evidence — an empty scan is an error, never a pass.
   const total = census.claudeMd + census.skills + census.standards + census.systems + census.molds
     + census.singletons + census.rules + census.evalCases + census.adrs;
@@ -858,6 +903,8 @@ function selftest() {
   w('.claude/skills/auto-pusher-false/SKILL.md', '---\nname: auto-pusher-false\ndescription: Pushes to a store. Use when asked to push. Not for reads.\nlayer: automation\nsystem: guides\nkind: component\nmold: how-to-guide\ndisable-model-invocation: false\n---\n\nNot for reads.\n'); // AUTOMATION_AUTOFIRE (flag present but false — value check, not key presence)
   w('.claude/systems/lonely.md', '---\nname: lonely\nlayer: kernel\nsystem: lonely\nkind: component\nmold: singleton\n---\n\n# Card\n\n## Promise\nx\n\n## Mechanisms\nnone\n\n## Components\nnone\n\n## Concepts\nnone\n\n## Invariants\nnone\n');
   w('.claude/skills/orphan-skill/SKILL.md', '---\nname: orphan-skill\ndescription: Does x. Use when asked. Not for y.\nlayer: kernel\nsystem: lonely\nkind: component\nmold: how-to-guide\ndisable-model-invocation: true\n---\n\nNot for y.\n'); // SYSTEM_UNLISTED (lonely card doesn't list it)
+  w('.claude/settings.json', JSON.stringify({ hooks: { PreToolUse: [{ matcher: 'Bash', hooks: [{ type: 'command', command: 'node "$CLAUDE_PROJECT_DIR/.claude/scripts/check.mjs" --guard-bash' }] }] } })); // HOOK_PARITY (guard not shipped by plugin)
+  w('.claude/hooks/hooks.json', JSON.stringify({ hooks: { PostToolUse: [{ matcher: 'Write|Edit', hooks: [{ type: 'command', command: 'node "${CLAUDE_PLUGIN_ROOT}/scripts/check.mjs" --hook' }] }] } })); // HOOK_PARITY (plugin-only lint not wired in-repo)
   w('.claude/skills/pushing-to-notion/targets.md',                          // TARGET_STALE ×2 (stale stamp + unstamped)
     '---\nname: targets\nlayer: automation\nsystem: publishing\nkind: component\nmold: singleton\n---\n\n# T\n\n### old-target\n- **data_source_id:** `abc` *(live-verified 2020-01-01)*\n\n### unstamped-target\n- **data_source_id:** `def`\n');
   const planted = checkAll(tmp);
@@ -868,7 +915,7 @@ function selftest() {
     'SEC_LINT', 'DESC_XML', 'TRIGGER_EVAL_MISSING', 'LINK_BROKEN',
     'FM_CLASS', 'SYSTEM_UNKNOWN', 'MOLD_UNKNOWN', 'MOLD_SHAPE', 'CARD_OWNER', 'CARD_PATH', 'CARD_CONCEPT', 'CARD_ADR',
     'ALIAS_ROW_MALFORMED', 'SECTION_ORDER', 'AUTOMATION_AUTOFIRE', 'SECRET_LEAK', 'SYSTEM_UNLISTED',
-    'TARGET_STALE', 'GOLDEN_NONE', 'ADR_DUP'];
+    'TARGET_STALE', 'GOLDEN_NONE', 'ADR_DUP', 'HOOK_PARITY'];
   const missed = mustFire.filter((c) => !codes.has(c));
   if (missed.length) fails.push(`planted violations not detected: ${missed.join(', ')}`);
   // Count assertions where one plant per code isn't enough to prove the rule:
@@ -878,6 +925,8 @@ function selftest() {
   if (autofire < 2) fails.push(`AUTOMATION_AUTOFIRE fired ${autofire}x — both plants (flag missing, flag: false) must be caught`);
   const staleTargets = planted.filter((v) => v.code === 'TARGET_STALE').length;
   if (staleTargets < 2) fails.push(`TARGET_STALE fired ${staleTargets}x — both plants (stale stamp, no stamp) must be caught`);
+  const parity = planted.filter((v) => v.code === 'HOOK_PARITY').length;
+  if (parity < 2) fails.push(`HOOK_PARITY fired ${parity}x — both directions (repo-only hook, plugin-only hook) must be caught`);
   fs.rmSync(tmp, { recursive: true, force: true });
 
   // --- Stage 2: a clean fixture must be silent (classification-era shape)
@@ -895,6 +944,9 @@ function selftest() {
     `---\nname: greeting-users\ndescription: Greets users warmly. Use when the user asks for a greeting. Not for farewells.\n${CLASS}mold: how-to-guide\n---\n\n# Greeting users\n\n## Use when / don\'t use when\n- Use when: greeting\n- Not for: farewells\n\n## Steps\n1. Say hello.\n2. Copy the \`playbook\` column verbatim.\n`);   // backticked alias must stay silent (code-span strip)
   for (const c of ['happy', 'pressure', 'invariant', 'no-trigger'])
     wc(`.claude/evals/greeting-users/${c}.md`, `---\nskill: greeting-users\ncase: ${c}\n---\n## Try\ngreet me\n## Expect\n- greeting produced\n## Never\n- rude output\n`);
+  // Equivalent wiring must be parity-silent: same hook, project-path vs plugin-path form.
+  wc('.claude/settings.json', JSON.stringify({ hooks: { PostToolUse: [{ matcher: 'Write|Edit', hooks: [{ type: 'command', command: 'node "$CLAUDE_PROJECT_DIR/.claude/scripts/check.mjs" --hook' }] }] } }));
+  wc('.claude/hooks/hooks.json', JSON.stringify({ hooks: { PostToolUse: [{ matcher: 'Write|Edit', hooks: [{ type: 'command', command: 'node "${CLAUDE_PLUGIN_ROOT}/scripts/check.mjs" --hook' }] }] } }));
   const silent = checkAll(clean).filter((v) => v.level !== 'warn');
   if (silent.length) fails.push(`clean fixture produced ${silent.length} error(s): ${silent.map((v) => v.code).join(', ')}`);
   fs.rmSync(clean, { recursive: true, force: true });
