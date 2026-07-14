@@ -139,6 +139,19 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Schedule appointment` → url
   - `Org` → relation       <!-- resolve to the [DB] Orgs page id -->
 
+### resources  *(the [DB] Resources database — external accounts, platforms, shared assets)*
+- **data_source_id:** `315d79b5-de38-80a0-8940-000b21386424` *(live-verified 2026-07-14)*
+- **properties:**
+  - `Name` → title          <!-- named per the Resources policy standard's D1 -->
+  - `Description` → text
+  - `Type` → select         <!-- Publishing · Communication · Group Email · Development · Infrastructure · Workspace · Content · Tracker -->
+  - `Access` → select       <!-- Ask Admin for Access · Ask for Invite Code/Email · Managed by Shared Email · Managed by Sky ProSec · Details in Resource Page -->
+  - `URL` → url             <!-- property name is literally "URL" (userDefined) ; expected empty for Group Email -->
+  - `Admin` → person        <!-- may be several people -->
+- **body shape** (per the Resources policy standard; no page template registered in
+  Notion yet — register one in the UI, then record its id here): Access ·
+  Configuration · Dependencies · Notes. NO SECRETS ever — credential locations only.
+
 > **Relations:** the create/update bindings write a relation as the TARGET page's id.
 > Resolve it (search the related DB by name) before writing, or leave the relation empty
 > and link it in a follow-up. Don't fabricate a page id.
