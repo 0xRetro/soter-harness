@@ -148,12 +148,12 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Access` → select       <!-- Ask Admin for Access · Ask for Invite Code/Email · Managed by Shared Email · Managed by Sky ProSec · Details in Resource Page -->
   - `URL` → url             <!-- property name is literally "URL" (userDefined) ; expected empty for Group Email -->
   - `Admin` → person        <!-- may be several people -->
-  - `Plan` → text           <!-- the platform's own tier name, verbatim -->
   - `Last Verified` → date  <!-- stamped only on actual verification -->
 - **page template:** `[Resource Template]` (page `39dd79b5de388039993bfb1b4a7a8d8b`,
   registered on the DB). Body shape (per the Resources policy standard): Access ·
   Subscription & Billing (as applicable; org billing defaults live in the policy
-  standard) · Configuration · Members (as applicable; member + role) · Security (as
+  standard; the tier name lives in the BODY — no Plan property) · Configuration ·
+  Members (as applicable; member + role) · Security (as
   applicable; workspace-level settings like 2FA-required, never per-individual) ·
   Notes. Unknowns stay bare `not defined` — they are the worklist. NO SECRETS ever —
   credential locations only; standing invite links only by explicit admin decision.
