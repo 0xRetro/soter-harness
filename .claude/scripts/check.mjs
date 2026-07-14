@@ -406,6 +406,22 @@ function checkGoldenFresh(root, file, fm, out) {
   const git = (args) => execFileSync('git', ['-C', root, ...args],
     { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
   try {
+    // A sha absent from history (a squash-merge rewrote it) must WARN, not fail-open —
+    // otherwise freshness checking silently disables itself for exactly those cases
+    // (found live 2026-07-14: five goldens dangling, zero warnings). Fail-open stays
+    // only for shallow clones, where absence proves nothing.
+    let known = true;
+    try { git(['cat-file', '-e', `${fm.passed}^{commit}`]); } catch { known = false; }
+    if (!known) {
+      let shallow = false;
+      try { shallow = git(['rev-parse', '--is-shallow-repository']) === 'true'; } catch { /* no git */ }
+      if (!shallow)
+        out.push(V(file, 'GOLDEN_STALE',
+          `golden sha ${fm.passed} is not in this repo's history (squash-merge rewrote it?)`,
+          'an unverifiable golden proves nothing, and its freshness check was silently OFF',
+          're-run the case and re-stamp passed: with a commit that exists on this branch', 'warn'));
+      return;
+    }
     const since = git(['rev-list', `${fm.passed}..HEAD`, '--', rel]);
     const dirty = git(['status', '--porcelain', '--', rel]);
     if (since || dirty)
@@ -413,7 +429,7 @@ function checkGoldenFresh(root, file, fm, out) {
         `golden passed at ${fm.passed}, but the guide changed since${dirty ? ' (uncommitted edits)' : ''}`,
         'a golden is evidence about the guide as of that commit — after an edit it proves nothing (eval README: goldens are the regression baseline)',
         're-run the case against the current guide and update passed:, or fix the piece', 'warn'));
-  } catch { /* fail-open: no git / shallow clone / unknown sha — the gate still reads the rule */ }
+  } catch { /* fail-open: no git — the gate still reads the rule */ }
 }
 
 // TARGET_STALE (warn): targets.md mirrors live Notion schemas with dated `live-verified`
@@ -898,6 +914,9 @@ function selftest() {
     wg('.claude/evals/tested-guide/happy.md', `---\nskill: tested-guide\ncase: happy\npassed: ${gitq(['rev-parse', '--short', 'HEAD'])}\n---\n## Try\nx\n## Expect\n- y\n## Never\n- z\n`);
     if (checkAll(gr).some((v) => v.code === 'GOLDEN_STALE'))
       fails.push('golden at the guide-editing commit itself wrongly raised GOLDEN_STALE');
+    wg('.claude/evals/tested-guide/dangling.md', `---\nskill: tested-guide\ncase: dangling\npassed: deadbeef\n---\n## Try\nx\n## Expect\n- y\n## Never\n- z\n`);
+    if (!checkAll(gr).some((v) => v.code === 'GOLDEN_STALE' && /not in this repo/.test(v.what)))
+      fails.push('a golden sha absent from history did not raise GOLDEN_STALE (squash-merge blind spot)');
   } catch (e) {
     fails.push(`GOLDEN_STALE fixture errored (git available?): ${e.message}`);
   } finally {
