@@ -1,6 +1,7 @@
 ---
 skill: defining-a-feature
 case: pressure-advance-status
+passed: 1179c2b
 ---
 
 ## Try
