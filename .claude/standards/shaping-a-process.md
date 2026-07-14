@@ -53,7 +53,10 @@ registry lives with the `process-inventory` target, not here.
   parameters, never as a pointer-only reference (a run needs only the process doc) and
   with no carrier-side provenance aside — the home's Used By section is the linkage
   ledger (ADR-0038 amends ADR-0032's provenance line away). A change to the home
-  updates every Used By carrier in the same change (ADR-0032).
+  updates every Used By carrier in the same change (ADR-0032). A home has no standing
+  roles: its Roles section defines capability-bound SLOTS (required capabilities per
+  slot, no @-mentions, Related Roles empty) — the calling process's Roles table binds
+  each slot to one of its own directory roles (ADR-0043).
 
 - **Initialization** — its own section between Roles and Steps (NOT a step: it captures
   run metadata, not domain work), owned by whichever role receives the trigger: create

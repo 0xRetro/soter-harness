@@ -21,15 +21,19 @@ what the role owns in that process, as capability-keyed dash-lines
 (**Capability** — responsibility; unkeyed where no formal capability
 applies) — each responsibility names the capability it leverages. The
 role's capability LIST is never restated in the table; a capability name
-appears only as such a key. Capability-bound subprocess slots (Proposer, Executor) are
-directory rows like any role — unheld, bound by the calling process.
+appears only as such a key. A subprocess home carries capability-bound
+SLOTS, not directory roles: its Roles section defines each slot's required
+capabilities and the calling process's Roles table binds them — the
+directory holds only standing roles.
 
 ## Consequences
 Roles bind by reference, not name-matching: a rename propagates, a missing
 directory row is impossible to hide, and each role row lists every process
-that binds it. Applied same-day: [DB] Roles relation dualized, Proposer +
-Executor added, penny test + Transaction Verification tables restructured,
-[Process Template] and Processes policy v0.14 updated, `shaping-a-process`
-in this change. Cost: the relation is set per process alongside the table —
+that binds it. Applied same-day: [DB] Roles relation dualized; the penny
+test table restructured and capability-keyed; Transaction Verification's
+Roles section became slot definitions (Proposer/Executor slot rows were
+tried as directory entries and removed the same day — the user trimmed the
+directory to standing roles only); [Process Template] and Processes policy
+v0.14–0.16 updated, `shaping-a-process` in this change. Cost: the relation is set per process alongside the table —
 review checks both agree. Revisit if the two-column table proves too thin
 for a process with many per-role constraints.
