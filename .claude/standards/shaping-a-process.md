@@ -81,13 +81,14 @@ registry lives with the `process-inventory` target, not here.
   calling run already exists), and evidence lands on the calling run.
 
 - **Initialization** — its own section between Roles and Steps (NOT a step: it captures
-  run metadata, not domain work), owned by whichever role receives the trigger: create
-  the run entry in [DB] Process Runs (Name · Process · Started · State as field
-  sub-checkboxes), assign the roles (`Roles` — one line per role from the Roles table,
-  each an @-mention of the person's [DB] Contacts record; external counterparties are
-  roles too), and capture the inputs (`Inputs` — one line per input; the Initialization
-  capture list IS the process's input declaration; @-mention the input's record where
-  one exists, raw value otherwise — upgraded to the mention once registered). The FINAL
+  run metadata, not domain work), owned by whichever role receives the trigger: ONE
+  record-write work-item creating the run entry in [DB] Process Runs, its fields in the
+  standard field table (Name · Process · Roles · Inputs · Started · State). The `Roles`
+  row's instruction lists one bullet per role from the Roles table, each an @-mention of
+  the person's [DB] Contacts record (external counterparties are roles too); the
+  `Inputs` row's bullets are one per input — those bullets ARE the process's input
+  declaration; @-mention the input's record where one exists, raw value otherwise,
+  upgraded to the mention once registered. The FINAL
   step closes the run (Completed · State · Outcome · the Post Run Summary Report field).
   Working detail accrues in the run's page body per the [Run Template] (Run · Inputs ·
   Outputs & Proof) — one parent bullet per artifact, one FACT per nested bullet, never
