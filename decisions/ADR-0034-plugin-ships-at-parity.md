@@ -1,6 +1,6 @@
 # ADR-0034: The plugin ships the harness at parity
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-14
 
 ## Context
