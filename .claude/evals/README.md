@@ -25,6 +25,14 @@ subagent gets the case's `## Try` prompt (this is the forge pressure-test step f
 how we re-test after edits). Then the `## Expect` / `## Never` bullets are checked against
 the working tree and the event log — most are one `ls`/`grep` each.
 
+Two run rules learned live (2026-07-14): for a `disable-model-invocation` guide the
+scenario must SIMULATE the invocation (tell the subagent the user invoked the skill and
+point it at the SKILL.md) — a raw Try prompt never reaches a staged guide, since staged
+guides aren't in the guide index, and the agent improvises without it. And eval cases
+live in-repo, so the agent under test can read its own case's Expect/Never (one did);
+verdicts must rest on the observable bullets, judged from artifacts, knowing the answer
+key was discoverable.
+
 Record a pass by noting the commit hash it passed at in the case file's frontmatter
 (`passed: <sha>`), which is the golden baseline: re-run cases when their guide changes;
 a previously-passing case failing = regression. The checker warns (`GOLDEN_STALE`) when

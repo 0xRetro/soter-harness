@@ -71,6 +71,11 @@ entries were updated, not duplicated.
    fabricated and no duplicates were made.
 
 ## Gotchas
+- (baseline 2026-07-14, live) An agent given this guide's exact ingest request WITHOUT
+  the guide loaded wrote a tooling page to the live DB with NO human gate and it was a
+  DUPLICATE of an existing entry — it surveyed the template and two instances but never
+  de-duped by name. Both core invariants violated in one run; the guide is load-bearing,
+  and being staged it must be explicitly invoked to be in play at all.
 - (baseline) Review the CODE — the README omitted three real integrations; a
   README-only pass under-counts capabilities.
 - (baseline) Don't fabricate Status/Type/Owner/GitHub — gather (`git remote`) or ask;
