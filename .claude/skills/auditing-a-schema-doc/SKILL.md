@@ -1,12 +1,11 @@
 ---
 name: auditing-a-schema-doc
 description: >-
-  Keeps a schema doc — a subject's policy-standard Fields section — and the harness's
-  targets.md mirror true to the live database, drift reconciled through a human gate.
-  Use when the user wants to audit, reconcile, or fix a schema doc or push target for
-  drift. Not for writing records (the capturing guides), write mechanics
-  (/updating-a-notion-page), or authoring a policy standard
-  (/authoring-a-policy-standard).
+  Keeps a subject's policy-standard Fields section and the harness's targets.md mirror
+  true to the live DB, drift reconciled through a human gate. Use when the user wants
+  to audit, reconcile, or fix a schema doc or push target for drift. Not for writing
+  records (the capturing guides), write mechanics (/updating-a-notion-page), or
+  authoring a policy standard (/authoring-a-policy-standard).
 disable-model-invocation: true
 layer: automation
 system: schema-audit
