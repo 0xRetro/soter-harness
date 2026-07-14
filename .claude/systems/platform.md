@@ -22,11 +22,13 @@ are mechanisms OF the systems that use them.
 - `.claude/settings.json` — in-repo wiring (checker hook + event log)
 - `.claude/hooks/hooks.json` — plugin-shipped wiring (checker hook, warn only)
 - `.claude/.claude-plugin/plugin.json` — the plugin manifest (the `.claude/` dir IS the plugin)
+- `.claude/rules/parallel-sessions.md` — the multi-session operating rule: one
+  session = one worktree = one branch; root checkout parked on main (ADR-0027)
 - per-primitive usage standards — planned; authored via the forge as needed
   (`unenforced: tracked here until they exist`)
 
 ## Concepts
-hook · skill · agent · command · script · worktree · subagent · guide
+hook · skill · agent · command · script · worktree · subagent · session · guide
 
 ## Invariants
 - physical layout is platform-shaped (`.claude/skills/` etc.); a piece's system is

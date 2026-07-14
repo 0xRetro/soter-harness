@@ -1,4 +1,4 @@
-# ADR-0028: Subprocess reuse — canonical home + full inline copies
+# ADR-0032: Subprocess reuse — canonical home + full inline copies
 
 **Status:** Accepted
 **Date:** 2026-07-14

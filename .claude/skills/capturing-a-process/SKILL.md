@@ -49,7 +49,7 @@ binding. Process-specific:
    no example values, `⤷ condition → En` pointers) · Exception Handling · Post Run Summary
    Report (declares the run field's line items). FLEX: which recommended sections apply —
    but Purpose, Initialization, Steps, and their work-items are always present. A reused
-   sequence is a subprocess (ADR-0028): copy it in full, name its canonical home.
+   sequence is a subprocess (ADR-0032): copy it in full, name its canonical home.
 4. **De-dup:** search [DB] Process Inventory by name before creating; an existing entry is
    updated (`/updating-a-notion-page`), not duplicated.
 5. **Confirm** the resolved row (matched options, resolved-or-empty Related Service, flagged

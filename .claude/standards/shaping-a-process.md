@@ -47,7 +47,7 @@ registry lives with the `process-inventory` target, not here.
   Used By section lists every carrier; callers carry the flow IN FULL, adapted to their
   parameters, with one provenance line naming the home — never a pointer-only reference
   (a run needs only the process doc). A change to the home updates every Used By carrier
-  in the same change (ADR-0028).
+  in the same change (ADR-0032).
 
 - **Initialization** — its own section between Roles and Steps (NOT a step: it captures
   run metadata, not domain work), owned by whichever role receives the trigger: create
@@ -75,16 +75,16 @@ registry lives with the `process-inventory` target, not here.
   pointer instead of restating the handling.
 - **Post Run Summary Report** — the doc section DECLARES the run field's line items (as
   Initialization declares inputs): the structured facts this process's close-out must
-  record, one line per field, filled at close. Working detail lives in the run body,
-  not here. A run's work-items are tracked as [DB] Tasks (the run→tasks seam).
+  record, one line per field, filled at close. Working detail lives in the run body
+  (Run Log) — deliberately NOT in [DB] Tasks rows.
 
 **Add later, as the process firms up (not needed for a first version):** Prerequisites ·
 Resources · Inputs & Outputs · Sub-process rules · Connections · Improvement opportunities ·
 Notes · Change Log.
 
-Vocabulary: **steps** (never `phases`), **work-items** (never `tasks` — a [DB] Tasks task is
-a run's tracked copy of a work-item). Fetch the live default template body before shaping —
-don't invent the section set (ADR-0016).
+Vocabulary: **steps** (never `phases`), **work-items** (never `tasks` — a work-item is the
+process concept, deliberately not a [DB] Tasks row). Fetch the live default template body
+before shaping — don't invent the section set (ADR-0016).
 
 ## Use when / don't
 - Applies when: shaping or reviewing the *body* of a [DB] Process Inventory entry.

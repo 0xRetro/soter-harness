@@ -60,6 +60,7 @@ table below is the banned list.
 | pressure case | eval | an eval scenario with realistic stakes tempting the agent to skip the piece |
 | golden | eval | a recorded known-good pass (`passed: <sha>`); a golden that stops passing is a regression |
 | eval case | eval | one artifact-level test: Try / Expect (observable) / Never |
+| meta-case | eval | an eval case whose scenario itself dispatches agents (evals of run/authoring guides); runs via the default agent type, since `eval-runner` lacks the Agent tool |
 | budget | standards | a hard size cap (CLAUDE.md, guide bodies, descriptions) the checker enforces |
 | degree of freedom | standards | how tightly a step is specified: narrow bridge → exact; open field → heuristics |
 | flex point | standards | a marked spot (`FLEX:`) where judgment is allowed, with stated bounds |
@@ -74,9 +75,11 @@ table below is the banned list.
 | agent | platform | an isolated-context delegate with its own tools/prompt |
 | command | platform | a typeable shortcut over existing capability |
 | script | platform | logic that is executed, never read into context |
-| worktree | platform | an isolated working copy; the sandbox for authoring |
+| worktree | platform | an isolated git working copy; the unit of session isolation — one per session (ADR-0027) — and the sandbox for authoring |
 | subagent | platform | an agent spawned for one task (testing, exploration) |
+| session | platform | one running Claude instance (interactive or agent) touching the repo; one session = one worktree = one branch (ADR-0027) |
 | add-on | governance | a modular bundle of context/automation pieces that stacks on the kernel, reusing its molds, checker, and lexicon (ADR-0012) |
+| decree | governance | bringing a system into existence by ADR before it has pieces; the other birth path is ≥3 real pieces + a named consumer (ADR-0017) |
 | publish | publishing | to send a harness work-artifact to an external store |
 | external store | publishing | a system of record outside the harness that receives published artifacts (Notion is the first) |
 | binding | publishing | a mechanism mapping harness artifacts to one external store's API (e.g. notion-push) |
@@ -101,15 +104,16 @@ table below is the banned list.
 | process | process | a reusable definition of how repeatable work gets done — one entry in the live [DB] Process Inventory (row + shaped body), distinct from any single run of it |
 | step | process | an ordered stage within a process that groups the work-items done in that stage |
 | work-item | process | one thing to get done inside a step (a checkbox in the process body); the process concept, deliberately NOT a [DB] Tasks task |
-| process run | process | one execution of a process; its work-items are tracked as [DB] Tasks rows — the seam to project-management |
+| process run | process | one execution of a process — one row in [DB] Process Runs; its working detail lives in the run body (Run Log), deliberately NOT in [DB] Tasks rows |
 | role | process | a named responsibility bundle a process binds its steps to — one row in [DB] Roles (definition, requirements, training, held-by); a run's Roles field maps each to a contact |
 | capability | process | a tag on a [DB] Roles row naming an authorization or skill the role requires (values defined in the Processes policy); a person is matched to a role by holding every capability it requires |
-| subprocess | process | a reused executable sequence with one canonical [DB] Process Inventory home; callers carry it in full (never a pointer) and the home's Used By list is the update obligation (ADR-0028) |
+| subprocess | process | a reused executable sequence with one canonical [DB] Process Inventory home; callers carry it in full (never a pointer) and the home's Used By list is the update obligation (ADR-0032) |
 | org | crm | one row in the [DB] Orgs database — an organization (type, tags, links), with related contacts and projects |
 | contact | crm | one row in the [DB] Contacts database — a person (email, role, status, disposition), related to their org |
 | channel | crm | one row in the [DB] Channels database — a communication venue (platform, members, related orgs) where work arrives or is coordinated |
 | policy standard | policy | the rules-first governance doc for ONE subject — definition, scope, classifications with overlap rules, rules, lifecycle, then representation; lives in the org's policy-standards registry in the external store, with its subject's data; exactly one per subject (ADR-0021) |
 | subject | policy | the one thing a policy standard governs — a record type, a concept, or a mechanism; named, never implied |
+| resource | resources | one row in [DB] Resources — an external account, platform, shared asset, or registry the team uses (type, access path, admin), governed by the Resources policy standard |
 | Sky ecosystem | sky | the Sky (formerly MakerDAO) ecosystem the org operates within — the umbrella for its stars, agents, and governance artifacts |
 | Atlas | sky | the Sky Atlas — the ecosystem's governance rulebook; articles cited as A.x.y links (sky-atlas.io) |
 | spell | sky | a governance/protocol action executed on-chain as a spell |

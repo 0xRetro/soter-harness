@@ -37,6 +37,14 @@ specific to it. The spine:
    `/updating-a-notion-page` (update) — then verify.
 
 Don't silently default an unstated field — a default is a guess; flag it, don't assert it.
+Unknowns in a record's body stay bare `not defined` — searchable, and they ARE the
+worklist (the policy-doc convention, generalized to records).
+
+**Org-facing content speaks the org's language (ADR-0031).** Never write harness
+internals — ADR numbers, checker codes, guide/file names, the harness's own vocabulary —
+into a Notion record or doc unless the human explicitly allows it for that doc's purpose.
+Boundary and machinery rules live in the harness, not in org docs; if an org doc needs an
+exclusion, phrase it in the org's terms.
 
 ### Async writes, templates, and schema changes (learned live 2026-07-14)
 
@@ -47,13 +55,24 @@ Don't silently default an unstated field — a default is a guess; flag it, don'
 - **Verify only against a snapshot newer than your write.** The fetch view serves stale
   cached snapshots for ~a minute; a verify whose "as of" timestamp predates your last
   write proves nothing.
+- **Batched content edits can PARTIALLY apply and still return success** (observed
+  2026-07-14: one op of three landed, the other two silently skipped). And stored text
+  differs from what you wrote — Notion auto-linkifies emails/URLs, so an old_str copied
+  from your own draft may never match. Copy old_str from a FRESH fetch, and verify
+  every op landed.
+- **Never blind-append either.** insert_content on an unfetched body lands under
+  whatever is already there (observed 2026-07-14: six records carried pre-existing
+  freeform blocks — one with an expired invite link — above blind-appended sections).
+  Fetch the body before ANY content write, insert included.
 - **Never `apply_template` onto a record that already has real property values** — a
   template's default properties overwrite them. Write the body content directly instead.
-- **A schema change checks the DB's registered templates.** When a property or option set
-  changes, check whether any registered template sets a value in it (a template holding a
-  removed option goes silently stale), and update the `targets.md` mirror in the same
-  change. Known edge: an ALTER of a select property wipes that property's description —
-  restore it in the Notion UI.
+- **A schema change checks the DB's registered templates AND affected record bodies.**
+  When a property or option set changes, check whether any registered template sets a
+  value in it (a template holding a removed option goes silently stale), sweep record
+  bodies for references to the changed field (a removed property leaves "set the X
+  property" strays), and update the `targets.md` mirror in the same change. Known edge:
+  an ALTER of a select property wipes that property's description — restore it in the
+  Notion UI.
 
 ## Use when / don't
 - Applies when: any guide creates or updates a Notion record.
