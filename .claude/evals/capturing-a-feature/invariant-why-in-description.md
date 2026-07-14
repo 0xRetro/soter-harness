@@ -1,7 +1,7 @@
 ---
 skill: capturing-a-feature
 case: invariant-why-in-description
-passed: 57ba925
+passed: 46232be
 ---
 
 ## Try
