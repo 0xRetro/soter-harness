@@ -53,7 +53,10 @@ registry lives with the `process-inventory` target, not here.
   parameters, never as a pointer-only reference (a run needs only the process doc) and
   with no carrier-side provenance aside — the home's Used By section is the linkage
   ledger (ADR-0038 amends ADR-0032's provenance line away). A change to the home
-  updates every Used By carrier in the same change (ADR-0032).
+  updates every Used By carrier in the same change (ADR-0032). A home has no standing
+  roles: its Roles section defines capability-bound SLOTS (required capabilities per
+  slot, no @-mentions, Related Roles empty) — the calling process's Roles table binds
+  each slot to one of its own directory roles (ADR-0043).
 
 - **Initialization** — its own section between Roles and Steps (NOT a step: it captures
   run metadata, not domain work), owned by whichever role receives the trigger: create
@@ -74,8 +77,16 @@ registry lives with the `process-inventory` target, not here.
 
 **Recommended (light):**
 - **Cadence** — one line, mirrors the `Frequency` property.
-- **Roles** — Role · Who · Responsibility; the step headings bind to these roles, so the
-  table exists whenever steps do.
+- **Roles** — two columns, Role · Responsibility: the Role cell @-mentions the [DB]
+  Roles row (a new role is defined in the directory FIRST). The Responsibility cell is
+  one dash-line per responsibility, keyed by the capability it exercises —
+  **Capability** — responsibility, multiple capabilities joined with `·`; a
+  responsibility exercising no formal capability stands unkeyed; process-specific
+  constraints inline. Role-level facts — the capability LIST, definition, who holds
+  it — live on the directory row: a capability appears in the table only as the key of
+  a responsibility using it, never as the role's list (no Who column; ADR-0043). The
+  row's `Related Roles` relation mirrors the table. The step headings bind to these
+  roles, so the table exists whenever steps do.
 - **Exception Handling** — labeled exceptions (**E1, E2, …**), each failure → workaround,
   defined once here; a work-item that can trigger one carries an inline `⤷ condition → En`
   pointer instead of restating the handling.
