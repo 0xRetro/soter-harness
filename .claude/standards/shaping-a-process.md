@@ -75,12 +75,15 @@ registry lives with the `process-inventory` target, not here.
 **Recommended (light):**
 - **Cadence** — one line, mirrors the `Frequency` property.
 - **Roles** — two columns, Role · Responsibility: the Role cell @-mentions the [DB]
-  Roles row (a new role is defined in the directory FIRST), and the Responsibility cell
-  carries only what the role owns in THIS process, with process-specific constraints
-  inline. Role-level facts — capabilities, definition, who holds it — live on the
-  directory row and are never restated in the table (no Who column, no capability
-  lists; ADR-0043). The row's `Related Roles` relation mirrors the table. The step
-  headings bind to these roles, so the table exists whenever steps do.
+  Roles row (a new role is defined in the directory FIRST). The Responsibility cell is
+  one dash-line per responsibility, keyed by the capability it exercises —
+  **Capability** — responsibility, multiple capabilities joined with `·`; a
+  responsibility exercising no formal capability stands unkeyed; process-specific
+  constraints inline. Role-level facts — the capability LIST, definition, who holds
+  it — live on the directory row: a capability appears in the table only as the key of
+  a responsibility using it, never as the role's list (no Who column; ADR-0043). The
+  row's `Related Roles` relation mirrors the table. The step headings bind to these
+  roles, so the table exists whenever steps do.
 - **Exception Handling** — labeled exceptions (**E1, E2, …**), each failure → workaround,
   defined once here; a work-item that can trigger one carries an inline `⤷ condition → En`
   pointer instead of restating the handling.

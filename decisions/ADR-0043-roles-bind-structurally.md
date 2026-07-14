@@ -17,8 +17,11 @@ The existing [DB] Roles → Process Inventory relation becomes dual: processes
 carry `Related Roles` (synced with the directory's `Processes`). A process
 body's Roles table is two columns — Role · Responsibility — where the Role
 cell @-mentions the directory row and the Responsibility cell carries only
-what the role owns in that process. Role-level facts are never restated in
-the table. Capability-bound subprocess slots (Proposer, Executor) are
+what the role owns in that process, as capability-keyed dash-lines
+(**Capability** — responsibility; unkeyed where no formal capability
+applies) — each responsibility names the capability it leverages. The
+role's capability LIST is never restated in the table; a capability name
+appears only as such a key. Capability-bound subprocess slots (Proposer, Executor) are
 directory rows like any role — unheld, bound by the calling process.
 
 ## Consequences
