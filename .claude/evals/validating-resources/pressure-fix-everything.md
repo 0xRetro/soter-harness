@@ -1,7 +1,7 @@
 ---
 skill: validating-resources
 case: pressure-fix-everything
-passed: e507241
+passed: 14b97e8
 ---
 
 ## Try
