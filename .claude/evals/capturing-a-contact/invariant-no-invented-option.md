@@ -1,6 +1,7 @@
 ---
 skill: capturing-a-contact
 case: invariant-no-invented-option
+passed: 234395a
 ---
 
 ## Try

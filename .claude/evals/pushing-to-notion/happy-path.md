@@ -1,6 +1,7 @@
 ---
 skill: pushing-to-notion
 case: happy-path
+passed: 46232be
 ---
 
 ## Try
