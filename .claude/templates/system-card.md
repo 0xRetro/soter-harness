@@ -21,6 +21,8 @@ Per the mold-for-molds. Note: a system card is owned by the system it describes
 ## Shape
 - `## Promise` — one sentence: what this system guarantees, and to which consumer.
 - `## Mechanisms` — the things that run, each as a card row: name · reads · produces · runs-when · invariants.
+  A user-invocable guide is a mechanism of its owning system — give it a row here;
+  its SKILL.md file is the component realizing it (listed under Components).
 - `## Components` — the artifacts this system owns, with their paths.
 - `## Concepts` — the terms this system contributes to the lexicon registry.
 - `## Invariants` — what must always hold; each names its enforcer (a check rule, the gate, or `unenforced: <reason>`).

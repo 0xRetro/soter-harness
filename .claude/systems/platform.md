@@ -19,7 +19,7 @@ None yet — this system defines forms and owns wiring; concrete hooks/skills/ag
 are mechanisms OF the systems that use them.
 
 ## Components
-- `.claude/settings.json` — in-repo wiring (checker hook + event log)
+- `.claude/settings.json` — in-repo wiring (checker hook + event log + Bash guard)
 - `.claude/hooks/hooks.json` — plugin-shipped wiring (checker hook, warn only)
 - `.claude/.claude-plugin/plugin.json` — the plugin manifest (the `.claude/` dir IS the plugin)
 - `.claude/rules/parallel-sessions.md` — the multi-session operating rule: one

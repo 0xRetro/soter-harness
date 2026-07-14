@@ -90,6 +90,12 @@ as a fix to the piece.
   (its roster is the generic set) — a meta-case run prepares the neutral prompt and
   escalates the eval-runner dispatch to the main session; substituting a
   write-capable generic type is the wrong fix and was correctly refused.
+- (observed 3×, 2026-07-14) Scenario agents' worktrees carry throwaway commits (e.g.
+  three parallel runners each "allocated" the same ADR number locally) — left in
+  place, those branches pollute the ADR allocation scan and `git worktree list`.
+  Counter: after judging, remove each run's worktree and branch
+  (`git worktree remove --force <path>` · `git branch -D <branch>`) — the evidence
+  is the report, transcript, and golden, not the scaffolding.
 
 ## Evals
 - `.claude/evals/running-evals/happy-path.md`
