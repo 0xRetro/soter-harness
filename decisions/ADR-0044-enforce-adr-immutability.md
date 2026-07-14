@@ -1,6 +1,6 @@
 # ADR-0044: Accepted ADRs are immutable by a guard, not just by convention
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-14
 
 ## Context
