@@ -32,3 +32,4 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0025](ADR-0025-promote-capturing-a-feature.md) | Promote capturing-a-feature to the guide index | Accepted |
 | [ADR-0026](ADR-0026-sky-context-system.md) | The sky context system — ecosystem vocabulary owned once | Accepted |
 | [ADR-0027](ADR-0027-multi-agent-operating-model.md) | Multi-agent operating model — worktrees per session, contained eval runners | Accepted |
+| [ADR-0030](ADR-0030-adr-allocation-scans-live-branches.md) | ADR numbers are allocated against main plus every live branch (0028/0029 claimed on live branches) | Proposed |

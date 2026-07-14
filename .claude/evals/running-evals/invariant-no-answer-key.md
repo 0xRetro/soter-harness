@@ -1,7 +1,7 @@
 ---
 skill: running-evals
 case: invariant-no-answer-key
-passed: 869c302
+passed: 2e8086c
 ---
 
 ## Try

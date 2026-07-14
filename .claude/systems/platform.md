@@ -28,7 +28,7 @@ are mechanisms OF the systems that use them.
   (`unenforced: tracked here until they exist`)
 
 ## Concepts
-hook · skill · agent · command · script · worktree · subagent · guide
+hook · skill · agent · command · script · worktree · subagent · session · guide
 
 ## Invariants
 - physical layout is platform-shaped (`.claude/skills/` etc.); a piece's system is
