@@ -83,9 +83,9 @@ Follow the **`writing-records-to-notion`** standard for the write spine, and
   (value sets, identity, operating rules) as a polished doc. Everything was marked
   `(proposed)` — but a rushed okay turns inventions into org policy; surface proposals as
   an explicit decision list, never only inline.
-- (baseline 2026-07-14) a resolvable relation target ([DB] Process Inventory — registered
-  in the harness's own target registry) was left `not defined` instead of fetched —
-  resolve live first; `not defined` is for decisions, not for lookups you skipped.
+- (baseline 2026-07-14) a resolvable relation target — a database registered in the
+  harness's own target registry — was left `not defined` instead of fetched — resolve
+  live first; `not defined` is for decisions, not for lookups you skipped.
 
 ## Evals
 - `.claude/evals/authoring-a-policy-standard/happy-path.md`

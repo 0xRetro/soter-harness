@@ -23,7 +23,8 @@ Applies whenever creating or editing rules, guides, standards, molds, or evals.
   (or both reject) the same territory.
 - ALWAYS record failure modes you actually observed in the piece's Gotchas section.
 - NEVER include time-sensitive content (dates, versions, "currently") in a piece;
-  point to where the live fact lives instead.
+  point to where the live fact lives instead. Provenance stamps are the exception —
+  a gotcha's or live-verification's date marks its EVIDENCE, not the content.
 - NEVER name a piece `helper`, `utils`, or another vague word; use lowercase-hyphenated,
   gerund-preferred names (`reviewing-prs`).
 - NEVER put a real credential (API key, token, secret) in any piece — reference the env

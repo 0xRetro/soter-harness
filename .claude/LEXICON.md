@@ -104,8 +104,8 @@ table below is the banned list.
 | process run | process | one execution of a process; its work-items are tracked as [DB] Tasks rows — the seam to project-management |
 | org | crm | one row in the [DB] Orgs database — an organization (type, tags, links), with related contacts and projects |
 | contact | crm | one row in the [DB] Contacts database — a person (email, role, status, disposition), related to their org |
-| policy standard | policy | the rules-first governance doc for ONE subject — definition, scope, classifications with overlap rules, rules, lifecycle, then representation; lives in Notion ([DB] Policy Standards) with its subject's data; exactly one per subject (ADR-0021) |
-| subject | policy | the one thing a policy standard governs — a record type ([DB] Addresses rows), a concept, or a mechanism; named, never implied |
+| policy standard | policy | the rules-first governance doc for ONE subject — definition, scope, classifications with overlap rules, rules, lifecycle, then representation; lives in the org's policy-standards registry in the external store, with its subject's data; exactly one per subject (ADR-0021) |
+| subject | policy | the one thing a policy standard governs — a record type, a concept, or a mechanism; named, never implied |
 
 ## Aliases (do not use → use instead)
 

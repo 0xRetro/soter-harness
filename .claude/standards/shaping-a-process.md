@@ -13,10 +13,8 @@ A process definition is one [DB] Process Inventory entry: its metadata lives in 
 its runbook in the **body**. Keep the body lean — the essentials needed to run it — and add
 heavier sections only when a real process forces them (ADR-0019; minimum viable, grows).
 
-**Row** — set the known [DB] Process Inventory properties (`Name` · `Status` · `Maturity` ·
-`Category` · `Frequency` · `Source` · `Soter Involvement` · `Tags` · `Prio` ·
-`Process Logic Owner` · `Related Service`), each matched to a live option (the
-`process-inventory` target).
+**Row** — set the known row properties, each matched to a live option; the property
+registry lives with the `process-inventory` target, not here.
 
 **Body — the lean core (always):**
 - **Purpose** — what the process produces or verifies, and why (1–3 lines).
