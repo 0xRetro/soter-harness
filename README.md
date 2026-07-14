@@ -63,7 +63,9 @@ The kernel is built and sealed: the eight systems above (`.claude/systems/`), th
 (`.claude/templates/`), the registry + placement table (`.claude/LEXICON.md`), the bar
 (`.claude/RUBRIC.md`), and the one checker (`.claude/scripts/check.mjs` — validates
 classification frontmatter, card/mold shape + order, card-path/card-concept/card-listing
-existence, aliases, links, budgets, security; `--selftest` plant-and-asserts every
+existence, aliases, links, budgets, security, hook-wiring parity, golden freshness +
+coverage, platform-coupling quarantine; blocks live via the Bash guard and the turn
+gate; `--selftest` plant-and-asserts every
 violation code). Machinery ported from sky-harness (ADR-0001), classification retrofit
 and hardening per the ADR log. The seal test ran end-to-end (the forge authored a piece
 through baseline → evals → checks → fresh-agent pressure-test → gate); red-team +

@@ -44,4 +44,7 @@ publish · external store · binding · fetch-merge-write · relation · option 
 - no real credentials in any harness content — enforcer: checker `SECRET_LEAK`
 - every context record is written through a binding, never a bespoke push (the canonical
   rule the domain cards reference) — enforcer: (gate) + review
-- every pushed property is typed to the target schema — `unenforced: runtime + gate` (no static schema check yet)
+- every pushed property is typed to the target schema — enforcer: the live API rejects
+  mistyped writes at runtime + `targets.md` freshness (checker `TARGET_STALE`) + the
+  capturing guides' eval invariants; a static check is impossible by design (the
+  checker never fetches live schemas, ADR-0010)

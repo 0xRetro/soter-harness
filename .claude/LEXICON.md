@@ -52,6 +52,7 @@ table below is the banned list.
 | hint | template | an HTML comment in a mold guiding the author; deleted when filled |
 | check rule | enforcement | one mechanical validation the checker runs; declared as data |
 | green carries evidence | enforcement | a pass must prove work happened — an empty scan is an error, never a pass |
+| turn gate | enforcement | the end-of-turn check that holds a turn open once while checker errors stand; warnings and non-harness projects never block (ADR-0035) |
 | gate | governance | a checkpoint a change must pass; the human gate is merge approval |
 | ADR | governance | an append-only decision record in `decisions/`; immutable once Accepted — supersede, never edit |
 | staged | governance | merged but user-invoke-only, not in the guide index — every new piece starts here |

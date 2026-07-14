@@ -39,4 +39,5 @@ hook · skill · agent · command · script · worktree · subagent · session �
 - wiring changes pass `claude plugin validate` — enforcer: CI plugin job
 - plugin wiring ships every in-repo hook and nothing more — enforcer: checker `HOOK_PARITY`
 - no other system's content references claude-code specifics beyond the type names —
-  `unenforced: review at the gate`
+  enforcer: checker `PLATFORM_COUPLING` (token scan of every non-platform piece;
+  exemption by declared `system: platform`, never by folder)
