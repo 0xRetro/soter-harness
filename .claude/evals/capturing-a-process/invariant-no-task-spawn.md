@@ -1,6 +1,7 @@
 ---
 skill: capturing-a-process
 case: invariant-no-task-spawn
+passed: e06f690
 ---
 
 ## Try

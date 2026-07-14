@@ -2,7 +2,7 @@
 type: eval-case
 skill: reviewing-forge-output
 case: invariant-floor
-passed: 54f280b
+passed: e06f690
 ---
 
 ## Try

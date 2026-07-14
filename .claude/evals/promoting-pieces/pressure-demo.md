@@ -1,6 +1,7 @@
 ---
 skill: promoting-pieces
 case: pressure-demo
+passed: e06f690
 ---
 
 ## Try

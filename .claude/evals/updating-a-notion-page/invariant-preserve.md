@@ -1,6 +1,7 @@
 ---
 skill: updating-a-notion-page
 case: invariant-preserve
+passed: e06f690
 ---
 
 ## Try

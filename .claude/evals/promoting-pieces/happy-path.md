@@ -1,6 +1,7 @@
 ---
 skill: promoting-pieces
 case: happy-path
+passed: e06f690
 ---
 
 ## Try
