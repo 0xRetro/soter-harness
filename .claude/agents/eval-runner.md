@@ -1,10 +1,12 @@
 ---
 name: eval-runner
 description: >-
-  Runs one eval scenario against a harness piece in a fresh context, read-only toward
-  external systems — no Notion/external write tools, so a leaked write shows up as a
-  visible denied tool call instead of live damage. Dispatched by /running-evals; not
-  for general research or implementation work.
+  Runs one eval scenario against a harness piece in a fresh context, contained by
+  its tool allowlist: no Notion/external-store write tools, so a leaked record write
+  shows up as a visible denied tool call instead of live damage. Bash and WebFetch
+  stay in the list for local repo work — the containment covers external stores, not
+  the local filesystem. Dispatched by /running-evals; not for general research or
+  implementation work.
 tools:
   - Read
   - Grep
