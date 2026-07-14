@@ -27,11 +27,13 @@ registry lives with the `process-inventory` target, not here.
 - **Steps** — role-bounded: `### Step N — (Role) <objective>`. One role owns a step, so
   each step transition is a role handoff — that handoff IS the gate; no separate gate
   lines. Each step opens with a 1–3 line narrative intro: how the work actually arrives
-  and what the step accomplishes — plain, concrete, never flowery. Work-items are `- [ ]`
-  checkboxes: a bolded action headline, then the how (and the why, where it isn't obvious)
-  woven into prose — no citation tags. A write work-item sets each field as its OWN
-  checkbox (field-per-checkbox — never several fields bundled into one box), and a
-  value list is bulleted, never inlined. A branch is an inline `⤷ condition → En` pointer.
+  and what the step accomplishes — plain, concrete, never flowery, never restating the
+  Trigger. Work-items are `- [ ]` checkboxes: a bolded action headline; the how (and the
+  why, where it isn't obvious) goes in prose on its own indented line under the headline —
+  never run-on after the bold; no citation tags. Then nested elements as required: field
+  sub-checkboxes under a record-write parent (field-per-checkbox — never several fields
+  bundled into one box), bulleted value lists (never inlined), determination arrows, and
+  `⤷ condition → En` branch pointers.
   A **write work-item** mention-links its target database and carries the operator-facing
   how INLINE — imperatives, the current value list, determinations — so a run needs only
   the process doc (ADR-0023). An expanding set (naming convention, function list) is
@@ -39,10 +41,14 @@ registry lives with the `process-inventory` target, not here.
   as where the set is managed; the law (rules, rationale, extension criteria) is never
   copied (ADR-0021). Prerequisites resolve-or-create through the subject's own owner.
 
-- **Run logging** — the first step opens the run in [DB] Process Runs (name · Process ·
-  Started · State, each its own checkbox); the closing step completes it (Completed ·
-  State · Outcome). Proof and deviations gathered along the way live on the run's record,
-  and when the process verifies a subject record, that record links the run.
+- **Step 0 — Initialize** — every process opens with the same step, owned by whichever
+  role receives the trigger: create the run entry in [DB] Process Runs (Name · Process ·
+  Started · State as field sub-checkboxes), assign the roles (`Roles` — one line per role
+  from the Roles table, each mapped to a person), and capture the inputs (`Inputs` — one
+  line per input; Step 0's capture list IS the process's input declaration). The FINAL
+  step closes the run (Completed · State · Outcome). Proof and deviations live on the
+  run's record (Notes), and when the process verifies a subject record, that record
+  links the run.
 
 **Recommended (light):**
 - **Cadence** — one line, mirrors the `Frequency` property.
