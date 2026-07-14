@@ -86,8 +86,8 @@ as a fix to the piece.
   definition forbids publishing, and the bash guard blocks push/`gh pr` from agent
   worktrees. A PR that does land is a containment FINDING: report it with urls
   (stand-down protocol), never quietly clean it up.
-- (observed 2026-07-14, meta-eval) A nested agent CANNOT dispatch custom agent types
-  (its roster is the generic set) — a meta-run prepares the neutral prompt and
+- (observed 2026-07-14, meta-case) A nested agent CANNOT dispatch custom agent types
+  (its roster is the generic set) — a meta-case run prepares the neutral prompt and
   escalates the eval-runner dispatch to the main session; substituting a
   write-capable generic type is the wrong fix and was correctly refused.
 

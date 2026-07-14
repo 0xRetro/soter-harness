@@ -1,4 +1,4 @@
-# ADR-0030: The org–harness boundary is bidirectional
+# ADR-0031: The org–harness boundary is bidirectional
 
 - **Status:** Proposed
 - **Date:** 2026-07-14

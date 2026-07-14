@@ -22,8 +22,10 @@ Applies whenever more than one session (interactive or agent) may touch this rep
   goldens are stamped with (`passed: <sha>` dangles; found live, five goldens silently
   unverifiable). Between parallel branches: first ready lands first; the next rebases
   onto the new main and re-runs `--all` before its own merge.
-- ALWAYS check main's `decisions/` before allocating the next ADR number (or any
-  shared sequential identifier) — two parallel sessions once allocated the same number.
+- ALWAYS check main's `decisions/` AND every live worktree branch's (`git worktree
+  list`, then each branch's `decisions/`) before allocating the next ADR number (or
+  any shared sequential identifier) — checking main alone still collides: unmerged
+  branches hold allocations main can't see (observed twice: ADR-0024, ADR-0028).
 - ALWAYS scope `git add` to named paths; NEVER `git add -A` (it once swept another
   session's worktree gitlink into a commit).
 - NEVER treat worktree isolation as covering live state — Notion records, the memory
@@ -32,4 +34,4 @@ Applies whenever more than one session (interactive or agent) may touch this rep
 - `.worktreeinclude` (gitignore syntax, repo root) copies env files into new worktrees
   when local runs need them — credentials still never enter git.
 
-Why: see `decisions/ADR-0027`.
+Why: see `decisions/ADR-0027` and `decisions/ADR-0030`.

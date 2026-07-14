@@ -41,9 +41,10 @@ CI (regression).
   (platform agent-def frontmatter, so classified here on its owning card, like scripts)
 
 ## Concepts
-baseline · pressure case · golden · eval case
+baseline · pressure case · golden · eval case · meta-case
 
 ## Invariants
 - ≥3 cases per guide, one a pressure case — enforcer: checker `EVALS_MIN` + `PRESSURE_MISSING`
 - auto-invocable guides have a should-NOT-trigger case — enforcer: checker `TRIGGER_EVAL_MISSING`
+- a guide with cases has at least one recorded golden (regression baseline exists) — enforcer: checker `GOLDEN_NONE` (warn)
 - cases are data; any runner may execute them — `unenforced: recorded in ADR-0006`

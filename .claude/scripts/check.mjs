@@ -351,6 +351,13 @@ function checkSkill(root, dir, out) {
     out.push(V(f, 'PRESSURE_MISSING', 'no pressure eval case found',
       'polite tests lie — guides must survive realistic stakes (ADR-0006)',
       `add a case named/marked "pressure" in .claude/evals/${skillName}/`));
+  // GOLDEN_NONE (warn): GOLDEN_STALE only guards stamps that exist — a guide whose
+  // cases have never recorded a pass has no regression baseline at all, invisibly.
+  if (evalFiles.length > 0
+      && !evalFiles.some((x) => /^[0-9a-f]{6,40}$/i.test(parseFrontmatter(read(path.join(evalDir, x)))?.passed || '')))
+    out.push(V(f, 'GOLDEN_NONE', 'no eval case for this guide has a recorded golden (`passed: <sha>`)',
+      'goldens are the regression baseline — a guide with zero recorded passes is untested in effect',
+      `run the cases via /running-evals and record passed: in .claude/evals/${skillName}/`, 'warn'));
   // Auto-invocable guides must prove they DON'T fire on near-misses (executable exclusion clause)
   const autoInvocable = fm && fm['disable-model-invocation'] !== 'true';
   if (autoInvocable && evalFiles.length > 0
@@ -842,7 +849,8 @@ function selftest() {
     'REF_DEPTH', 'PRESSURE_MISSING', 'UNEXPECTED_FILE', 'BUDGET_RULE',
     'SEC_LINT', 'DESC_XML', 'TRIGGER_EVAL_MISSING', 'LINK_BROKEN',
     'FM_CLASS', 'SYSTEM_UNKNOWN', 'MOLD_UNKNOWN', 'MOLD_SHAPE', 'CARD_OWNER', 'CARD_PATH', 'CARD_CONCEPT', 'CARD_ADR',
-    'ALIAS_ROW_MALFORMED', 'SECTION_ORDER', 'AUTOMATION_AUTOFIRE', 'SECRET_LEAK', 'SYSTEM_UNLISTED', 'TARGET_STALE'];
+    'ALIAS_ROW_MALFORMED', 'SECTION_ORDER', 'AUTOMATION_AUTOFIRE', 'SECRET_LEAK', 'SYSTEM_UNLISTED',
+    'TARGET_STALE', 'GOLDEN_NONE'];
   const missed = mustFire.filter((c) => !codes.has(c));
   if (missed.length) fails.push(`planted violations not detected: ${missed.join(', ')}`);
   // Count assertions where one plant per code isn't enough to prove the rule:
@@ -922,8 +930,11 @@ function selftest() {
     if (!checkAll(gr).some((v) => v.code === 'GOLDEN_STALE'))
       fails.push('guide edited after its golden did not raise GOLDEN_STALE');
     wg('.claude/evals/tested-guide/happy.md', `---\nskill: tested-guide\ncase: happy\npassed: ${gitq(['rev-parse', '--short', 'HEAD'])}\n---\n## Try\nx\n## Expect\n- y\n## Never\n- z\n`);
-    if (checkAll(gr).some((v) => v.code === 'GOLDEN_STALE'))
+    const fresh = checkAll(gr);
+    if (fresh.some((v) => v.code === 'GOLDEN_STALE'))
       fails.push('golden at the guide-editing commit itself wrongly raised GOLDEN_STALE');
+    if (fresh.some((v) => v.code === 'GOLDEN_NONE'))
+      fails.push('guide with a recorded golden wrongly raised GOLDEN_NONE');
     wg('.claude/evals/tested-guide/dangling.md', `---\nskill: tested-guide\ncase: dangling\npassed: deadbeef\n---\n## Try\nx\n## Expect\n- y\n## Never\n- z\n`);
     if (!checkAll(gr).some((v) => v.code === 'GOLDEN_STALE' && /not in this repo/.test(v.what)))
       fails.push('a golden sha absent from history did not raise GOLDEN_STALE (squash-merge blind spot)');
