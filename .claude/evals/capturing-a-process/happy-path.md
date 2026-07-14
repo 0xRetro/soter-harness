@@ -13,8 +13,9 @@ against the reference, then propose and sign any changes."
 - the live [DB] Process Inventory schema is fetched; the row is shaped to target
   `process-inventory` with `Name`, `Status` = Draft, `Frequency` = Monthly (matched to the
   live option), `Process Logic Owner` = the Security lead
-- the body is shaped per `shaping-a-process`: Purpose, the three described stages as **steps**
-  each with a gate/outcome and **work-items** as checkboxes, and a Run Checklist
+- the body is shaped per `shaping-a-process`: Purpose · Trigger · Roles · Initialization,
+  the described stages as role-bounded **steps** with **work-items** as checkboxes, and a
+  closing step that fills the `Post Run Summary Report`
 - [DB] Process Inventory is searched for an existing "signer review" entry before creating
 - the resolved row + step/work-item outline is shown and confirmed before the write, then
   created via `/pushing-to-notion`

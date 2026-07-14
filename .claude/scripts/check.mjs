@@ -479,7 +479,9 @@ function checkTargetFreshness(root, out) {
 // The mutating verb must be git's SUBCOMMAND (global opts skipped) — a bare keyword
 // match read `git worktree add` as `git add` and blocked the exact bootstrap command
 // the guard's own message recommends (observed 2026-07-14, chicken-and-egg lockout).
-const GUARD_GIT_MUTATING = /\bgit\s+(?:-C\s+\S+\s+|-c\s+\S+\s+|--[\w-]+(?:=\S+)?\s+)*(commit|add|checkout|switch|rebase|merge|reset|stash)\b/;
+const GUARD_GIT_MUTATING = /\bgit\s+(?:-C\s+\S+\s+|-c\s+\S+\s+|--[\w-]+(?:=\S+)?\s+)*(commit|add|checkout|switch|rebase|merge|reset|stash)(?![\w-])/;
+// (?![\w-]) not \b: a bare \b let `git merge-base` (read-only) match as `merge` —
+// hyphen is a word boundary (observed 2026-07-14, blocked a branch survey at root).
 // Publishing from an AGENT worktree (branch worktree-agent-*): three contained eval runs
 // obediently pushed and opened REAL PRs on 2026-07-14 — the guide under test said "land
 // via the PR gate" and Bash+gh was an open channel. Agent work stays local; humans publish.
@@ -983,6 +985,8 @@ function selftest() {
       fails.push('guard: a cd-into-worktree compound was judged by the stale cwd');
     if (!guardBashVerdict(wt, `git -C ${groot} add file`))
       fails.push('guard: a -C-to-root mutating command was not blocked after the subcommand-anchor change');
+    if (guardBashVerdict(groot, 'git merge-base HEAD origin/main'))
+      fails.push('guard: read-only merge-base was wrongly blocked (hyphen counts as a word boundary)');
     if (guardBashVerdict(wt, 'git push origin HEAD'))
       fails.push('guard: a session-worktree push was wrongly blocked');
     const wtA = path.join(groot, 'wta');
