@@ -150,13 +150,13 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Admin` → person        <!-- may be several people -->
   - `Plan` → text           <!-- the platform's own tier name, verbatim -->
   - `Last Verified` → date  <!-- stamped only on actual verification -->
-- **body shape** (per the Resources policy standard; no page template registered in
-  Notion yet — register one in the UI, then record its id here): Access ·
+- **page template:** `[Resource Template]` (page `39dd79b5de388039993bfb1b4a7a8d8b`,
+  registered on the DB). Body shape (per the Resources policy standard): Access ·
   Subscription & Billing (as applicable; org billing defaults live in the policy
   standard) · Configuration · Members (as applicable; member + role) · Security (as
   applicable; workspace-level settings like 2FA-required, never per-individual) ·
-  Notes. NO SECRETS ever — credential locations only; standing invite links only by
-  explicit admin decision.
+  Notes. Unknowns stay bare `not defined` — they are the worklist. NO SECRETS ever —
+  credential locations only; standing invite links only by explicit admin decision.
 
 > **Relations:** the create/update bindings write a relation as the TARGET page's id.
 > Resolve it (search the related DB by name) before writing, or leave the relation empty
