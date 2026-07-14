@@ -1137,42 +1137,17 @@ function selftest() {
 
 const argv = process.argv.slice(2);
 const rootIx = argv.indexOf('--root');
-// Hook/log-event modes may run from wherever the harness is installed — including the
+// Hook modes may run from wherever the harness is installed — including the
 // plugin cache, where two-up-from-script is NOT the project and every rel-path check
 // would silently no-op. Claude Code hands hooks the real project via CLAUDE_PROJECT_DIR;
 // prefer it in those modes. --all/--selftest keep aiming at the repo the script lives in.
-const hookish = argv.includes('--hook') || argv.includes('--log-event') || argv.includes('--gate');
+const hookish = argv.includes('--hook') || argv.includes('--gate');
 const ROOT = rootIx !== -1 ? path.resolve(argv[rootIx + 1])
   : hookish && process.env.CLAUDE_PROJECT_DIR ? path.resolve(process.env.CLAUDE_PROJECT_DIR)
   : path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..'); // script lives at .claude/scripts/ → repo root is two up
 
 if (argv.includes('--selftest')) {
   selftest();
-} else if (argv.includes('--log-event')) {
-  // Event log for evals (trigger/trace levels): one JSON line per tool call.
-  // Wired as a PostToolUse "*" hook. Fail-open, never blocks.
-  try {
-    const ev = JSON.parse(fs.readFileSync(0, 'utf8'));
-    const line = JSON.stringify({
-      ts: new Date().toISOString(),
-      tool: ev.tool_name || null,
-      file: ev.tool_input?.file_path || null,
-      cmd: ev.tool_input?.command?.slice(0, 200) || null,
-    });
-    const logDir = path.join(ROOT, '.claude', 'evals', 'logs');
-    fs.mkdirSync(logDir, { recursive: true });
-    const logFile = path.join(logDir, 'events.jsonl');
-    // Rotation guard (olympus lesson: a 25MB unrotated log). At 2MB, keep the last
-    // 5000 lines so the trace stays bounded — it's local trace evidence, not an archive.
-    try {
-      if (fs.existsSync(logFile) && fs.statSync(logFile).size > 2_000_000) {
-        const kept = read(logFile).split('\n').slice(-5000).join('\n');
-        fs.writeFileSync(logFile, kept);
-      }
-    } catch { /* fail-open */ }
-    fs.appendFileSync(logFile, line + '\n');
-  } catch { /* fail-open */ }
-  process.exit(0);
 } else if (argv.includes('--gate')) {
   // Stop hook: exit 2 holds the turn open (stderr reaches the agent); anything else
   // lets it end. stop_hook_active means we already blocked once — stand down (loop guard).

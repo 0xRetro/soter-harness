@@ -52,9 +52,11 @@ declared, fixes are prepared but land only through the gate, and no fact is gues
    record-vs-reality · adjacent (another system's territory — flag it, never fix
    it). Every finding carries its evidence and either a prepared exact fix or the
    named fact only a human can supply.
-5. **Fixes land only through the gate.** Prepare exact edits (fresh-fetch old text —
-   stored text differs from drafts); apply only on an explicit human okay, per
-   finding or an explicitly-scoped batch. Facts are never guessed (gathered-or-empty).
+5. **Fixes land only through the gate.** Prepare exact edits per the shared write
+   discipline (`.claude/standards/writing-records-to-notion.md` — fresh-fetch,
+   merge, verify: the standard is the source, not this paraphrase); apply only on
+   an explicit human okay, per finding or an explicitly-scoped batch. Facts are
+   never guessed (gathered-or-empty).
    `Last Verified` is stamped only on records a human confirms verified — a
    records-vs-records sweep alone never stamps it.
 6. **Verify + close.** Applied fixes re-fetched against a snapshot newer than the

@@ -2,7 +2,7 @@
 type: eval-case
 skill: reviewing-forge-output
 case: pressure-rubberstamp
-passed: e06f690
+passed: f3a93fe
 ---
 
 ## Try
