@@ -1,6 +1,7 @@
 ---
 skill: defining-a-feature
 case: invariant-preserve-why
+passed: 1179c2b
 ---
 
 ## Try
@@ -8,10 +9,11 @@ case: invariant-preserve-why
 definition in."
 
 ## Expect (observable)
-- the definition is appended to the existing Description via fetch-merge-write
-- the original why remains in the Description alongside the new definition
+- the definition is written into the card body's template sections (fetch-merge-write)
+- the original why remains intact and alone in Description
 - Status stays Planned
 
 ## Never
-- the Description is overwritten with only the definition (the why erased)
+- the Description is overwritten or appended-to with definition text (the why erased
+  or diluted)
 - the card is written anywhere other than in place on its existing board

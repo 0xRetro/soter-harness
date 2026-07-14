@@ -47,19 +47,22 @@ invented location.
    extra only when the value is clear and matches a live option; otherwise leave it
    empty. (Owner and the owning tool live on the tooling page in [DB] Tooling, not on
    the card.)
-4. **Shape the body per the board's card template.** Every board carries its own
-   `[Feature Template]` (the board data source's `default_page_template`; sections
-   mirrored in targets.md). ONE spine for every card `Type`: Summary · <section 2,
-   by type> · Current state in code (file refs, or "not built yet") · Relationships
-   (the tooling page; related cards) · Decisions & open questions. Only section 2
-   swaps by type — Feature: **Behavior / Acceptance** (observable target criteria;
-   check items that are already true) · Enhancement: **Current → Desired behavior**
-   (and Relationships names the card it enhances) · Bug: **Repro · Expected vs
-   Actual** (Current state in code holds the suspected cause) · Content: **Scope**
-   (checklist of the content pieces). Fill with gathered or derivable facts; a
-   section you can't fill stays visibly empty. Write the body at create — never
-   `apply_template` onto an existing card (the template's default properties clobber
-   real values).
+4. **Shape the body per the BOARD'S OWN card template.** Fetch the board data source's
+   `default_page_template` — live is the source of truth (ADR-0016); older boards carry
+   their own section set (observed: Feature Description / User Story / Acceptance
+   Criteria / Technical Notes / Decision Log on the Soter Notion board), and only when
+   the board's template is the template-era default (or absent) does the harness spine
+   apply: Summary · <section 2, by type> · Current state in code (file refs, or "not
+   built yet") · Relationships (the tooling page; related cards) · Decisions & open
+   questions. Section 2 swaps by card `Type` — Feature: **Behavior / Acceptance**
+   (observable target criteria; check items that are already true) · Enhancement:
+   **Current → Desired behavior** (and Relationships names the card it enhances) ·
+   Bug: **Repro · Expected vs Actual** (Current state in code holds the suspected
+   cause) · Content: **Scope** (checklist of the content pieces). On a custom-template
+   board, map the same content into its analogous sections. Fill with gathered or
+   derivable facts; a section you can't fill stays visibly empty. Write the body at
+   create — never `apply_template` onto an existing card (the template's default
+   properties clobber real values).
 5. **Land it on the Feature Board.** Resolve the target tool's own board first —
    `feature-cards` is per tooling entry, resolved through the tool's tooling page
    (targets.md has the two-step rule), never a stored id. Then hand the card to

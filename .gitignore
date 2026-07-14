@@ -11,3 +11,4 @@ node_modules/
 
 # Local planning tools (workshop scratch, never harness content)
 nimbalyst-local/
+.claude/worktrees/

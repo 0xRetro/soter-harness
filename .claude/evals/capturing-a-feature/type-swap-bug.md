@@ -1,7 +1,7 @@
 ---
 skill: capturing-a-feature
 case: type-swap-bug
-passed: 46232be
+passed: 1179c2b
 ---
 
 ## Try

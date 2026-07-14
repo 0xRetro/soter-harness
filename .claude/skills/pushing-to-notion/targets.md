@@ -56,13 +56,15 @@ Features"). Identify a board only by the tooling page that embeds it.
   `Priority` / `Type` selects) — always fetch the SPECIFIC board's live schema before
   writing; fill extras only when the value is clear and matches a live option.
 - **card template:** every board carries its own `[Feature Template]` page — read the
-  board data source's `default_page_template`. Card bodies follow its sections:
-  Summary · Behavior / Acceptance · Current state in code · Relationships · Decisions &
-  open questions. Write the body at create; NEVER `apply_template` onto an existing card —
-  the template's default properties (Status=Planned · Priority=Next · Type=Feature)
-  clobber real values. The Notion template shows the Feature default; all four card
-  Types share the same spine with only section 2 swapped by type — the definition
-  lives in `capturing-a-feature` step 4.
+  board data source's `default_page_template`; card bodies follow THAT template's
+  sections (live over assumed, ADR-0016 — the Soter Notion board's differs entirely:
+  Feature Description / User Story / Acceptance Criteria / Technical Notes / Decision
+  Log). Boards on the template-era default use the harness spine: Summary · Behavior /
+  Acceptance · Current state in code · Relationships · Decisions & open questions, with
+  section 2 swapped by card Type — the mapping lives in `capturing-a-feature` step 4.
+  Write the body at create; NEVER `apply_template` onto an existing card — the
+  template's default properties (Status=Planned · Priority=Next · Type=Feature) clobber
+  real values.
 
 ### tasks  *(the [DB] Tasks database — actionable items)*
 - **data_source_id:** `2abd79b5-de38-80f8-9470-000b7181b18d` *(live-verified 2026-07-13)*
