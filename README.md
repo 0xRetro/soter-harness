@@ -63,8 +63,9 @@ the card when it matters.
 | **ingestion** | External source → curated, standardized, human-gated records; the pull side | reviewing-a-repo<br>(more sources forged as needed) | `reviewing-a-repo` | source<br>ingestion<br>standardize<br>intake gate |
 | **schema-audit** | Schema docs + the `targets.md` mirror stay true to the live DBs | auditing-a-schema-doc | `auditing-a-schema-doc` | schema doc<br>schema drift |
 
-Cross-cutting (not systems): the always-on rules (`rules/authoring.md`,
-`rules/parallel-sessions.md`) and the primitives above.
+The `rules/` folder is a delivery form (always-on), not a system — each rule declares
+its owning system in frontmatter (`authoring.md` → authoring; `parallel-sessions.md`
+→ platform), per the folder-never-implies-system rule.
 
 Deferred (not kernel): distribution system — likely core; packaging + installer, decided later.
 
