@@ -616,6 +616,84 @@ const GUARD_PUBLISH = /\bgit\b[^|;&]*?\bpush\b|\bgh\s+(?:pr\s+(?:create|merge)|a
 // A permissions deny was considered and rejected: prefix matching misses mid-command
 // flags; this regex sees the whole command (ADR-0036).
 const GUARD_FORCE_PUSH = /\bgit\b[^|;&]*?\bpush\b[^|;&]*(?:\s--force(?!-with-lease)\b|\s-f\b|\s\+\S)/;
+
+// ADR IMMUTABILITY GUARD: CLAUDE.md's "NEVER edit an Accepted ADR (supersede it)" and the
+// adr mold's "Immutable once Accepted" were prose only — an agent could rewrite an Accepted
+// decision and only the human gate might catch it (ADR-0044). These make it mechanical. The
+// guard runs at PreToolUse (exit 2 blocks before the edit lands); a companion clause in the
+// Bash guard closes the shell bypass. The ONE edit an Accepted ADR may still receive is
+// flipping its own Status line from Accepted to "Superseded by ADR-<n>"; everything else is
+// blocked. Best-effort like the git guard: it reads the tool input the platform hands the
+// hook, fails open on anything it can't parse — the prose rule and PR gate stand behind it.
+const ADR_FILE = /(?:^|\/)decisions\/ADR-\d{4}-[a-z0-9-]+\.md$/;
+const ADR_STATUS_ACCEPTED = /\*\*Status:\*\*\s*Accepted\b/;
+const ADR_STATUS_SUPERSEDED = /\*\*Status:\*\*\s*Superseded by ADR-\d{4}\b/;
+// A path token as it appears in a shell command (optional leading dirs, ends at the ADR name).
+const ADR_PATH_TOKEN = "(?:[^\\s'\"|;&()>]*\\/)?decisions\\/ADR-\\d{4}-[a-z0-9-]+\\.md";
+// True only when the sole line that changed is this ADR's own Status line going
+// Accepted → Superseded by ADR-####. Supersession is an in-place edit: no lines added or
+// removed, no other line touched — so a body rewrite piggybacking the flip is caught.
+function adrSupersessionOnly(oldText, newText) {
+  const o = oldText.split('\n'), n = newText.split('\n');
+  if (o.length !== n.length) return false;
+  let flipped = 0;
+  for (let i = 0; i < o.length; i++) {
+    if (o[i] === n[i]) continue;
+    if (ADR_STATUS_ACCEPTED.test(o[i]) && ADR_STATUS_SUPERSEDED.test(n[i])) { flipped++; continue; }
+    return false;
+  }
+  return flipped > 0;
+}
+const ADR_BLOCK_MSG = (abs) => `BLOCKED: ${path.basename(abs)} is an Accepted ADR, which is immutable `
+  + '(CLAUDE.md: "NEVER edit an Accepted ADR (supersede it)"; adr mold: "supersede, never edit"). '
+  + 'Do not edit it. Record the change as a NEW ADR that supersedes this one (see /writing-adrs); '
+  + 'the only edit allowed here is flipping this ADR\'s own Status line to "Superseded by ADR-<n>".';
+// PreToolUse guard for Write/Edit. tool_input carries file_path plus either content (Write)
+// or old_string/new_string/replace_all (Edit). Returns a block message or null (allow).
+function guardAdrVerdict(cwd, ti) {
+  try {
+    const fp = ti?.file_path;
+    if (!fp || !ADR_FILE.test(fp)) return null;              // only ADR files under decisions/
+    const abs = path.isAbsolute(fp) ? fp : path.resolve(cwd || '.', fp);
+    if (!exists(abs)) return null;                           // creating a new ADR — fine
+    const oldText = read(abs);
+    if (!ADR_STATUS_ACCEPTED.test(oldText)) return null;     // only Accepted ADRs are frozen (Proposed edits fine)
+    let newText;
+    if (typeof ti.content === 'string') {                    // Write: full new body
+      newText = ti.content;
+    } else if (typeof ti.old_string === 'string') {          // Edit: splice old→new
+      const ins = typeof ti.new_string === 'string' ? ti.new_string : '';
+      if (!oldText.includes(ti.old_string)) return ADR_BLOCK_MSG(abs); // stale edit on a frozen ADR — refuse, don't guess
+      newText = ti.replace_all
+        ? oldText.split(ti.old_string).join(ins)
+        : (() => { const i = oldText.indexOf(ti.old_string); return oldText.slice(0, i) + ins + oldText.slice(i + ti.old_string.length); })();
+    } else {
+      return null;                                           // shape we don't understand — fail-open
+    }
+    if (newText === oldText) return null;                    // no-op — harmless
+    if (adrSupersessionOnly(oldText, newText)) return null;  // the sanctioned flip
+    return ADR_BLOCK_MSG(abs);
+  } catch { return null; }                                   // fail-open — the prose rule still governs
+}
+// Shell bypass of the ADR guard: a redirect, tee, sed -i, or truncate whose DESTINATION is an
+// Accepted ADR. Conservative on purpose (write-position only) — a read like
+// `cat decisions/ADR-0001-x.md` or `sed -n … file` must never trip it.
+function bashWriteToAcceptedAdr(cwd, command) {
+  const t = ADR_PATH_TOKEN;
+  const res = [
+    new RegExp('>>?\\s*(' + t + ')'),
+    new RegExp('\\btee\\b(?:\\s+-\\S+)*\\s+(' + t + ')'),
+    new RegExp('\\bsed\\b[^|;&]*?\\s-i\\S*[^|;&]*?\\s(' + t + ')'),
+    new RegExp('\\btruncate\\b[^|;&]*?\\s(' + t + ')'),
+  ];
+  for (const re of res) {
+    const m = command.match(re);
+    if (!m) continue;
+    const abs = path.isAbsolute(m[1]) ? m[1] : path.resolve(cwd || '.', m[1]);
+    if (exists(abs) && ADR_STATUS_ACCEPTED.test(read(abs))) return abs;
+  }
+  return null;
+}
 function guardBashVerdict(cwd, command) {
   try {
     if (!command) return null;
@@ -623,6 +701,8 @@ function guardBashVerdict(cwd, command) {
       return 'BLOCKED: force pushes are never used here — they clobber other sessions\' fetched '
         + 'work and dangle the commits goldens are stamped with (ADR-0036). After a rebase, '
         + 'push your own branch with --force-with-lease instead.';
+    const adrHit = bashWriteToAcceptedAdr(cwd, command);
+    if (adrHit) return ADR_BLOCK_MSG(adrHit);
     if (!(GUARD_GIT_MUTATING.test(command) || GUARD_PUBLISH.test(command))) return null;
     // `git add -A/--all` is banned EVERYWHERE, not just at root-on-main — it once swept
     // another session's worktree gitlink into a commit (ADR-0027). Needs no repo state;
@@ -1198,11 +1278,56 @@ function selftest() {
     fs.rmSync(groot, { recursive: true, force: true });
   }
 
+  // --- Stage 8: ADR immutability guard — an Accepted ADR is frozen except for the Status
+  // flip to Superseded; a Proposed ADR, a brand-new ADR, and non-ADR files stay editable;
+  // the shell bypass (a redirect or sed -i onto an Accepted ADR) is blocked, a read is not.
+  const adrRoot = mkroot('checker-adr-');
+  try {
+    const dec = path.join(adrRoot, 'decisions');
+    fs.mkdirSync(dec, { recursive: true });
+    const accepted = path.join(dec, 'ADR-0001-frozen.md');
+    const acceptedText = '# ADR-0001: frozen\n\n- **Status:** Accepted\n- **Date:** 2026-01-01\n\n## Context\nc\n\n## Decision\nd\n\n## Consequences\nq\n';
+    fs.writeFileSync(accepted, acceptedText);
+    const proposed = path.join(dec, 'ADR-0002-open.md');
+    fs.writeFileSync(proposed, '# ADR-0002: open\n\n- **Status:** Proposed\n- **Date:** 2026-01-01\n\n## Context\nc\n\n## Decision\nd\n\n## Consequences\nq\n');
+    const flipped = acceptedText.replace('- **Status:** Accepted', '- **Status:** Superseded by ADR-0044');
+    if (!guardAdrVerdict(adrRoot, { file_path: accepted, content: acceptedText.replace('## Decision\nd', '## Decision\nREWRITTEN') }))
+      fails.push('adr-guard: a Write rewriting an Accepted ADR body was not blocked');
+    if (!guardAdrVerdict(adrRoot, { file_path: accepted, old_string: '## Decision\nd', new_string: '## Decision\nREWRITTEN' }))
+      fails.push('adr-guard: an Edit rewriting an Accepted ADR body was not blocked');
+    if (guardAdrVerdict(adrRoot, { file_path: accepted, old_string: '- **Status:** Accepted', new_string: '- **Status:** Superseded by ADR-0044' }))
+      fails.push('adr-guard: the sanctioned Accepted→Superseded flip (Edit) was wrongly blocked');
+    if (guardAdrVerdict(adrRoot, { file_path: accepted, content: flipped }))
+      fails.push('adr-guard: the sanctioned Accepted→Superseded flip (Write) was wrongly blocked');
+    if (!guardAdrVerdict(adrRoot, { file_path: accepted, content: flipped.replace('## Decision\nd', '## Decision\nSNEAK') }))
+      fails.push('adr-guard: a status flip piggybacking a body edit was not blocked');
+    if (!guardAdrVerdict(adrRoot, { file_path: accepted, old_string: 'nonexistent-old-string', new_string: 'x' }))
+      fails.push('adr-guard: a stale (non-matching) edit on a frozen ADR was not blocked');
+    if (guardAdrVerdict(adrRoot, { file_path: proposed, old_string: 'c', new_string: 'CHANGED' }))
+      fails.push('adr-guard: editing a Proposed ADR was wrongly blocked');
+    if (guardAdrVerdict(adrRoot, { file_path: path.join(dec, 'ADR-0009-new.md'), content: '# new' }))
+      fails.push('adr-guard: creating a brand-new ADR was wrongly blocked');
+    if (guardAdrVerdict(adrRoot, { file_path: path.join(adrRoot, 'CLAUDE.md'), content: 'x' }))
+      fails.push('adr-guard: a non-ADR write was wrongly judged');
+    if (!guardBashVerdict(adrRoot, "sed -i '' 's/d/x/' decisions/ADR-0001-frozen.md"))
+      fails.push('adr-guard: a sed -i onto an Accepted ADR was not blocked');
+    if (!guardBashVerdict(adrRoot, 'echo hacked > decisions/ADR-0001-frozen.md'))
+      fails.push('adr-guard: a redirect onto an Accepted ADR was not blocked');
+    if (guardBashVerdict(adrRoot, 'cat decisions/ADR-0001-frozen.md'))
+      fails.push('adr-guard: reading an Accepted ADR was wrongly blocked');
+    if (guardBashVerdict(adrRoot, 'echo x > decisions/ADR-0002-open.md'))
+      fails.push('adr-guard: a redirect onto a Proposed ADR was wrongly blocked');
+  } catch (e) {
+    fails.push(`adr-guard fixture errored: ${e.message}`);
+  } finally {
+    fs.rmSync(adrRoot, { recursive: true, force: true });
+  }
+
   if (fails.length) {
     for (const f of fails) console.error(`SELFTEST FAIL: ${f}`);
     process.exit(1);
   }
-  console.log(`SELFTEST PASS: ${mustFire.length} codes fired; clean silent; empty-root fails; alias-table guard live; default-root aim verified; golden freshness live; root-main guard live.`);
+  console.log(`SELFTEST PASS: ${mustFire.length} codes fired; clean silent; empty-root fails; alias-table guard live; default-root aim verified; golden freshness live; root-main guard live; adr-immutability guard live.`);
 }
 
 // ---------- main ---------------------------------------------------------------
@@ -1235,6 +1360,14 @@ if (argv.includes('--selftest')) {
   let ev = null;
   try { ev = JSON.parse(fs.readFileSync(0, 'utf8')); } catch { /* fail-open */ }
   const verdict = ev ? guardBashVerdict(ev.cwd, ev.tool_input?.command) : null;
+  if (verdict) { console.error(verdict); process.exit(2); }
+  process.exit(0);
+} else if (argv.includes('--guard-write')) {
+  // PreToolUse guard on Write|Edit: exit 2 blocks the edit before it lands (stderr reaches
+  // the agent); any other exit allows. Fail-open on unparseable input — never wedge a session.
+  let ev = null;
+  try { ev = JSON.parse(fs.readFileSync(0, 'utf8')); } catch { /* fail-open */ }
+  const verdict = ev ? guardAdrVerdict(ev.cwd, ev.tool_input) : null;
   if (verdict) { console.error(verdict); process.exit(2); }
   process.exit(0);
 } else if (argv.includes('--hook')) {

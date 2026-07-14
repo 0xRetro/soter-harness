@@ -19,16 +19,20 @@ None yet — this system defines forms and owns wiring; concrete hooks/skills/ag
 are mechanisms OF the systems that use them.
 
 ## Components
-- `.claude/settings.json` — in-repo wiring (Bash guard + checker hook + turn gate +
-  the checker-command permissions allow; event log retired, ADR-0037)
+- `.claude/settings.json` — in-repo wiring (Bash guard + Write|Edit ADR-immutability
+  guard + checker hook + turn gate + the checker-command permissions allow; event log
+  retired, ADR-0037)
 - `.claude/hooks/hooks.json` — plugin-shipped wiring, always at parity with
-  settings.json: same guard, checker hook, and turn gate (ADR-0034)
+  settings.json: same guards, checker hook, and turn gate (ADR-0034)
 - `.claude/.claude-plugin/plugin.json` — the plugin manifest (the `.claude/` dir IS the
   plugin); carries no version while the harness is internal — every commit ships (ADR-0034)
 - `.claude/rules/parallel-sessions.md` — the multi-session operating rule: one
   session = one worktree = one branch; root checkout parked on main (ADR-0027)
-- per-primitive usage standards — planned; authored via the forge as needed
-  (`unenforced: tracked here until they exist`)
+- per-primitive usage standards — authored via the forge ONLY on an observed RED
+  baseline. Hooks evaluated 2026-07-14: baseline GREEN — a fresh agent wired a new
+  guard correctly from the existing rules, cards, and checker precedents alone, so
+  no standard was authored (forge step 4; the baseline's product landed as the ADR
+  immutability guard, ADR-0044). Re-propose only on an observed hook-authoring failure.
 
 ## Concepts
 hook · skill · agent · command · script · worktree · subagent · session · guide

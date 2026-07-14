@@ -47,3 +47,4 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0040](ADR-0040-promote-updating-a-notion-page.md) | Promote updating-a-notion-page to the guide index | Accepted |
 | [ADR-0041](ADR-0041-promote-auditing-a-schema-doc.md) | Promote auditing-a-schema-doc to the guide index | Accepted |
 | [ADR-0042](ADR-0042-promote-capturing-a-task.md) | Promote capturing-a-task to the guide index | Accepted |
+| [ADR-0044](ADR-0044-enforce-adr-immutability.md) | Accepted ADRs are immutable, enforced by a guard not just convention | Proposed |
