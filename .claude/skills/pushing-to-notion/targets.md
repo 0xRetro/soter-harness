@@ -149,9 +149,10 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `URL` → url             <!-- property name is literally "URL" (userDefined) ; expected empty for Group Email -->
   - `Admin` → person        <!-- may be several people -->
 - **body shape** (per the Resources policy standard; no page template registered in
-  Notion yet — register one in the UI, then record its id here): Access (incl.
-  2FA-required) · Subscription & Billing (as applicable; org billing defaults live in
-  the policy standard) · Configuration · Members (as applicable) · Dependencies ·
+  Notion yet — register one in the UI, then record its id here): Access ·
+  Subscription & Billing (as applicable; org billing defaults live in the policy
+  standard) · Configuration · Members (as applicable; member + role) · Security (as
+  applicable; workspace-level settings like 2FA-required, never per-individual) ·
   Notes. NO SECRETS ever — credential locations only; standing invite links only by
   explicit admin decision.
 
