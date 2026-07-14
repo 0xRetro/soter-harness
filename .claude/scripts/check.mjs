@@ -470,19 +470,29 @@ function checkTargetFreshness(root, out) {
 // `git -C` target); a `cd` inside a compound command can evade it. The rule and the PR
 // gate still stand behind it; this catches the common slip, not a determined bypass.
 const GUARD_GIT_MUTATING = /\bgit\b[^|;&]*?\b(commit|add|checkout|switch|rebase|merge|reset|stash)\b/;
+// Publishing from an AGENT worktree (branch worktree-agent-*): three contained eval runs
+// obediently pushed and opened REAL PRs on 2026-07-14 — the guide under test said "land
+// via the PR gate" and Bash+gh was an open channel. Agent work stays local; humans publish.
+const GUARD_PUBLISH = /\bgit\b[^|;&]*?\bpush\b|\bgh\s+(?:pr\s+(?:create|merge)|api|repo\s+(?:create|delete|edit))\b/;
 function guardBashVerdict(cwd, command) {
   try {
-    if (!command || !GUARD_GIT_MUTATING.test(command)) return null;
+    if (!command || !(GUARD_GIT_MUTATING.test(command) || GUARD_PUBLISH.test(command))) return null;
     const mC = command.match(/\bgit\s+-C\s+(?:"([^"]+)"|'([^']+)'|(\S+))/);
     const dir = mC ? (mC[1] || mC[2] || mC[3]) : cwd;
     if (!dir || !exists(dir)) return null;
     const git = (args) => execFileSync('git', ['-C', dir, ...args],
       { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    const branch = git(['branch', '--show-current']);
+    if (GUARD_PUBLISH.test(command) && /^worktree-agent-/.test(branch))
+      return 'BLOCKED: agent worktrees never push or open PRs — agent work stays local; '
+        + 'commit on your branch and REPORT (the human publishes). '
+        + '(.claude/agents/eval-runner.md; running-evals stand-down protocol)';
+    if (!GUARD_GIT_MUTATING.test(command)) return null;
     const top = git(['rev-parse', '--show-toplevel']);
     const gitDir = path.resolve(top, git(['rev-parse', '--git-dir']));
     const common = path.resolve(top, git(['rev-parse', '--git-common-dir']));
     if (gitDir !== common) return null;               // a worktree — sessions belong there
-    if (git(['branch', '--show-current']) !== 'main') return null;
+    if (branch !== 'main') return null;
     return 'BLOCKED: this git command targets the ROOT checkout on main, which stays '
       + 'parked and read-only (.claude/rules/parallel-sessions.md, ADR-0027). Run it from '
       + 'your session worktree instead — or create one: '
@@ -938,6 +948,16 @@ function selftest() {
     gg(['worktree', 'add', '-q', wt, '-b', 'selftest-topic']);
     if (guardBashVerdict(wt, 'git commit -m "y"'))
       fails.push('guard: a worktree commit was wrongly blocked');
+    if (guardBashVerdict(wt, 'git push origin HEAD'))
+      fails.push('guard: a session-worktree push was wrongly blocked');
+    const wtA = path.join(groot, 'wta');
+    gg(['worktree', 'add', '-q', wtA, '-b', 'worktree-agent-selftest']);
+    if (!guardBashVerdict(wtA, 'git push -u origin HEAD'))
+      fails.push('guard: an agent-worktree push was not blocked');
+    if (!guardBashVerdict(wtA, 'gh pr create --title x --body y'))
+      fails.push('guard: an agent-worktree gh pr create was not blocked');
+    if (guardBashVerdict(wtA, 'git commit -m "y"'))
+      fails.push('guard: an agent-worktree local commit was wrongly blocked');
   } catch (e) {
     fails.push(`guard fixture errored (git available?): ${e.message}`);
   } finally {
