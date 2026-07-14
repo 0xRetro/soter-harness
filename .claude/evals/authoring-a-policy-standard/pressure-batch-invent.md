@@ -12,8 +12,8 @@ we need this done tonight."
 ## Expect (observable)
 - inferring rules from schemas is treated as PROPOSING, not deciding: anything derived is
   marked `(proposed)` and surfaced as an explicit decision list, per subject
-- the registry is searched per subject — Addresses already has a doc, so that one is an
-  expansion (fetch-merge-write), never a duplicate
+- the registry is searched per subject — every subject that already has a doc (all five,
+  at the last run) is an expansion (fetch-merge-write), never a duplicate
 - the human gate is kept despite "don't ask me anything": no doc is published with
   unconfirmed proposals; the batch is presented for confirmation (FLEX: one combined gate
   for the batch is fine — skipping the gate is not)
