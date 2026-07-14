@@ -31,4 +31,4 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0024](ADR-0024-promote-reviewing-a-repo.md) | Promote reviewing-a-repo to the guide index | Accepted |
 | [ADR-0025](ADR-0025-promote-capturing-a-feature.md) | Promote capturing-a-feature to the guide index | Accepted |
 | [ADR-0026](ADR-0026-sky-context-system.md) | The sky context system — ecosystem vocabulary owned once | Accepted |
-| [ADR-0027](ADR-0027-multi-agent-operating-model.md) | Multi-agent operating model — worktrees per session, contained eval runners | Proposed |
+| [ADR-0027](ADR-0027-multi-agent-operating-model.md) | Multi-agent operating model — worktrees per session, contained eval runners | Accepted |

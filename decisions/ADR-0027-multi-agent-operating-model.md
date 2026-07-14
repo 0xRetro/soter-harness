@@ -1,6 +1,6 @@
 # ADR-0027: Multi-agent operating model — worktrees per session, contained eval runners
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-14
 
 ## Context
