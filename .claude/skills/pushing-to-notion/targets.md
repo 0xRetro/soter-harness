@@ -32,10 +32,15 @@ before a push if the board may have changed (a property added/renamed).
   is resolved through this database, never stored as a fixed id.
 - **page template:** `[New Product Template]` (page `316d79b5de38801cbbeacdb847136f96`,
   the DB's registered default). A new tooling page's body STARTS from it — the embedded
-  🔧 Feature Board plus Vision / Use Cases / How it works / Capabilities by area / Team /
-  Related Resources sections. Apply it exactly once and poll the async task
+  🔧 Feature Board plus Vision / Use Cases / How it works / Team / Related Resources /
+  Capabilities by area sections (Capabilities LAST since 2026-07-15: it is a linked
+  board view of the page's OWN embedded board grouped by `Area` — self-syncing, no
+  hand-written card lists; template application re-points the view to the duplicated
+  board, verified live). Apply the template exactly once and poll the async task
   (`writing-records-to-notion` has the async rules); fill sections with derivable facts
-  only, leave the rest visibly placeholder.
+  only, DELETE each hint once its section is filled, leave unfillable sections visibly
+  empty. Define the board's `Area` options (the tool's own 4–7 axis) at the intake gate
+  and tag every card.
 
 ### feature-cards  *(a tooling entry's embedded Feature Board — PER ENTRY, no fixed id)*
 There is no global feature board. Each tooling page embeds its own board (duplicated
@@ -55,6 +60,9 @@ Features"). Identify a board only by the tooling page that embeds it.
 - Boards MAY add per-tool properties beyond the core (Process Platform's adds `Area` /
   `Priority` / `Type` selects) — always fetch the SPECIFIC board's live schema before
   writing; fill extras only when the value is clear and matches a live option.
+  Template-era boards ship `Area` with an EMPTY option set — defining the tool's own
+  axis (4–7 options) is an intake-gate decision, and the tooling page's Capabilities
+  view groups by it (e.g. the Soter Harness board's Kernel · Core · Context · Automation).
 - **card template:** every board carries its own `[Feature Template]` page — read the
   board data source's `default_page_template`; card bodies follow THAT template's
   sections (live over assumed, ADR-0016 — the Soter Notion board's differs entirely:
