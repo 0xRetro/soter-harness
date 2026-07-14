@@ -44,10 +44,12 @@ registry lives with the `process-inventory` target, not here.
 - **Step 0 — Initialize** — every process opens with the same step, owned by whichever
   role receives the trigger: create the run entry in [DB] Process Runs (Name · Process ·
   Started · State as field sub-checkboxes), assign the roles (`Roles` — one line per role
-  from the Roles table, each mapped to a person), and capture the inputs (`Inputs` — one
-  line per input; Step 0's capture list IS the process's input declaration). The FINAL
-  step closes the run (Completed · State · Outcome). Proof and deviations live on the
-  run's record (Notes), and when the process verifies a subject record, that record
+  from the Roles table, each an @-mention of the person's [DB] Contacts record; external
+  counterparties are roles too), and capture the inputs (`Inputs` — one line per input;
+  Step 0's capture list IS the process's input declaration; @-mention the input's record
+  where one exists, raw value otherwise — upgraded to the mention once registered). The
+  FINAL step closes the run (Completed · State · Outcome). Proof and deviations live on
+  the run's record (Notes), and when the process verifies a subject record, that record
   links the run.
 
 **Recommended (light):**
