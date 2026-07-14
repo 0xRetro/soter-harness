@@ -25,14 +25,20 @@ registry lives with the `process-inventory` target, not here.
   lines. Each step opens with a 1–3 line narrative intro: how the work actually arrives
   and what the step accomplishes — plain, concrete, never flowery. Work-items are `- [ ]`
   checkboxes: a bolded action headline, then the how (and the why, where it isn't obvious)
-  woven into prose — no citation tags. Registering a record may go field-per-checkbox
-  when each field is real work. A branch is an inline `⤷ condition → En` pointer.
+  woven into prose — no citation tags. A write work-item sets each field as its OWN
+  checkbox (field-per-checkbox — never several fields bundled into one box), and a
+  value list is bulleted, never inlined. A branch is an inline `⤷ condition → En` pointer.
   A **write work-item** mention-links its target database and carries the operator-facing
   how INLINE — imperatives, the current value list, determinations — so a run needs only
   the process doc (ADR-0023). An expanding set (naming convention, function list) is
   copied as the CURRENT rule plus one pointer line naming the subject's policy standard
   as where the set is managed; the law (rules, rationale, extension criteria) is never
   copied (ADR-0021). Prerequisites resolve-or-create through the subject's own owner.
+
+- **Run logging** — the first step opens the run in [DB] Process Runs (name · Process ·
+  Started · State, each its own checkbox); the closing step completes it (Completed ·
+  State · Outcome). Proof and deviations gathered along the way live on the run's record,
+  and when the process verifies a subject record, that record links the run.
 
 **Recommended (light):**
 - **Cadence** — one line, mirrors the `Frequency` property.
