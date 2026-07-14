@@ -22,7 +22,10 @@ registry lives with the `process-inventory` target, not here.
   method-selection context), then one tagged line per trigger: `<kind>` — <condition>.
   Kinds: `Request` (someone asks) · `Event` (observed state demands a run) · `Schedule` ·
   `Emergency` — the kind is backticked, no colon after it, and honest about who/what
-  initiates. Each tagged line is an OBJECTIVE condition checkable true/false; assumptions,
+  initiates. The backticks carry the kind ALONE — a qualifier or sub-label never joins
+  it (observed live 2026-07-14: `Event — unverified destination`); the qualifier belongs
+  in the condition text, and same-kind triggers repeat as separate lines. Each tagged
+  line is an OBJECTIVE condition checkable true/false; assumptions,
   advice, and process notes never live here (a real precondition goes to Prerequisites).
 - **Steps** — role-bounded: `### Step N — (Role) <objective>`. One role owns a step, so
   each step transition is a role handoff — that handoff IS the gate; no separate gate
@@ -53,10 +56,14 @@ registry lives with the `process-inventory` target, not here.
   parameters, never as a pointer-only reference (a run needs only the process doc) and
   with no carrier-side provenance aside — the home's Used By section is the linkage
   ledger (ADR-0038 amends ADR-0032's provenance line away). A change to the home
-  updates every Used By carrier in the same change (ADR-0032). A home has no standing
-  roles: its Roles section defines capability-bound SLOTS (required capabilities per
-  slot, no @-mentions, Related Roles empty) — the calling process's Roles table binds
-  each slot to one of its own directory roles (ADR-0043).
+  updates every Used By carrier in the same change (ADR-0032). A home binds slots or
+  roles: a directory role it always needs binds like any process (entering Related
+  Roles); where the role is the caller's to choose, its Roles section defines a
+  capability-bound SLOT (required capabilities, no @-mention, never in Related Roles) —
+  the calling process's Roles table binds each slot to one of its own directory roles
+  (ADR-0043). A home starts from the live [Subprocess Template]: its Initialization
+  declares only the caller-supplied inputs (no run entry, no role assignment — the
+  calling run already exists), and evidence lands on the calling run.
 
 - **Initialization** — its own section between Roles and Steps (NOT a step: it captures
   run metadata, not domain work), owned by whichever role receives the trigger: create
