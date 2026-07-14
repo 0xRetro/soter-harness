@@ -130,7 +130,7 @@ Features"). Identify a board only by the tooling page that embeds it.
 - **properties:**
   - `Name` → title
   - `Email` → email
-  - `Role` → select        <!-- 25 options (Founder · COO · BD · Facilitator · …) — fetch live, don't invent -->
+  - `Role` → select        <!-- 19 options (Founder · COO · BD · Facilitator · …) — fetch live, don't invent -->
   - `Status` → select      <!-- Active · Inactive -->
   - `Disposition` → select <!-- Detractor · Neutral · Coach · Champion -->
   - `Authority` → multi_select   <!-- Technical Buyer · Economic Buyer · User Buyer -->
