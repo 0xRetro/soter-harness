@@ -1,6 +1,6 @@
 # ADR-0028: The resources context system — decreed
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-14
 
 ## Context

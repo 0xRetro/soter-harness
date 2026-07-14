@@ -32,8 +32,8 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0025](ADR-0025-promote-capturing-a-feature.md) | Promote capturing-a-feature to the guide index | Accepted |
 | [ADR-0026](ADR-0026-sky-context-system.md) | The sky context system — ecosystem vocabulary owned once | Accepted |
 | [ADR-0027](ADR-0027-multi-agent-operating-model.md) | Multi-agent operating model — worktrees per session, contained eval runners | Accepted |
-| [ADR-0028](ADR-0028-resources-context-system.md) | The resources context system — decreed mechanism-less; baseline complied unguided | Proposed |
-| [ADR-0029](ADR-0029-schema-sync-enforcement.md) | Schema sync is enforced by same-pass mirror audits and a checker freshness nag | Proposed |
-| [ADR-0030](ADR-0030-adr-allocation-scans-live-branches.md) | ADR numbers are allocated against main plus every live branch (0028/0029 claimed on live branches) | Proposed |
-| [ADR-0031](ADR-0031-org-harness-boundary.md) | The org–harness boundary is bidirectional | Proposed |
+| [ADR-0028](ADR-0028-resources-context-system.md) | The resources context system — decreed mechanism-less; baseline complied unguided | Accepted |
+| [ADR-0029](ADR-0029-schema-sync-enforcement.md) | Schema sync is enforced by same-pass mirror audits and a checker freshness nag | Accepted |
+| [ADR-0030](ADR-0030-adr-allocation-scans-live-branches.md) | ADR numbers are allocated against main plus every live branch (0028/0029 claimed on live branches) | Accepted |
+| [ADR-0031](ADR-0031-org-harness-boundary.md) | The org–harness boundary is bidirectional | Accepted |
 | [ADR-0032](ADR-0032-subprocess-canonical-home-full-copies.md) | Subprocess reuse — canonical home + full inline copies | Accepted |

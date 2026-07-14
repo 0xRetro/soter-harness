@@ -1,6 +1,6 @@
 # ADR-0030: ADR numbers are allocated against main plus every live branch
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-14
 
 ## Context
