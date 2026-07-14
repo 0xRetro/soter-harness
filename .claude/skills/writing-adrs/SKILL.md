@@ -1,12 +1,11 @@
 ---
 name: writing-adrs
 description: >-
-  Records a decision as a well-formed ADR in decisions/ — the context, the choice,
-  and its consequences, in the house shape. Use when the user says record this
-  decision, write an ADR, or when a durable strategy/architecture/convention choice
-  emerges mid-task and would otherwise live only in chat. Not for the full
-  piece-authoring loop (that is /forge), and not for the log's own conventions
-  (see decisions/README.md).
+  Records a decision as a well-formed ADR in decisions/ — context, choice, and
+  consequences, in the house shape. Use when the user says record this decision or
+  write an ADR, or a durable strategy/architecture/convention choice emerges mid-task.
+  Not for the piece-authoring loop (/forge) or the log's own conventions
+  (decisions/README.md).
 disable-model-invocation: true
 layer: kernel
 system: governance
