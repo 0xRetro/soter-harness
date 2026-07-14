@@ -1,6 +1,6 @@
 # ADR-0043: Roles bind structurally — @-mentioned directory rows, dual relation
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-14
 
 ## Context
