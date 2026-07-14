@@ -17,49 +17,43 @@ The primitives that are used to create anything within the harness are:
 - components - an artifact that is read or executed; used by mechanisms and systems 
 - concepts  - a defined thing, so we don't confuse or misuse things. 
 
-The Kernel Layer involves 
-- soter-harness lexicon system
-  - lexicon registry component (md file — data, no machinery of its own)
-    - concept entries: one concept → one term; synonyms are banned (the aliases table)
-  - lexicon check rule components (data rows the enforcement checker runs)
-  - concepts: term · alias · concept
-- soter-harness template system
-  - scaffold mechanism (a new piece = a copy of its mold)
-  - template mold components (one mold per piece shape, incl. the mold-for-molds)
-  - shape check rule components (data rows the enforcement checker runs)
-  - concepts: mold · shape
-- soter-harness enforcement system
-  - checker mechanism (ONE shared engine — reads every system's check rules as data)
-  - check registry component
-  - concepts: check rule · green carries evidence (an empty scan is a failure, never a pass)
-- soter-harness eval system
-  - baseline mechanism (prove the failure without the piece, first)
-  - pressure-test mechanism (fresh agent, realistic stakes — polite tests lie)
-  - eval case components (data, ≥3 per piece; the runner is replaceable machinery)
-  - concepts: baseline · pressure case
-- soter-harness standards system (kernel: the gate consumes it)
-  - rubric component (THE checklist) · naming standard · budget standard
-  - degrees-of-freedom standard component (where judgement is allowed, with bounds)
-  - concepts: budget · degree of freedom · flex point
-- soter-harness governance system (separate from standards; ratifies them, the gate consumes them)
-  - human gate mechanism (merge approval on every harness change)
-  - ADR log component (append-only decision records)
-  - concepts: gate · ADR · staged → promoted
-- soter-harness authoring system (the self-build loop — kernel by definition)
-  - forge mechanism (authors a new piece end-to-end: mold → evals → checks → gate; never freehand)
-  - authoring guide component (how pieces are born, baseline-failure first)
-  - concepts: piece · the loop
-- soter-harness platform system (claude-code only — ALL platform coupling quarantined here; kept separate for exactly that reason)
-  - one usage-standard component per primitive: hooks · skills · agents · commands · worktrees · orchestration
-  - wiring component (settings/hooks.json — how mechanisms get attached to the platform)
-  - concepts: hook (auto-triggered deterministic infra) · skill (on-demand loaded procedure) · agent (isolated-context delegate) · command (typeable shortcut) · script (executed, never read) · worktree (isolated working copy)
-  - note: a concrete hook/skill/agent file is a mechanism or component OF the system that uses it — the platform system only defines what these forms ARE and how we use them
+## Systems inventory
+
+One row per system, all four layers. The source of truth for every row is the
+system's card in `.claude/systems/` — this table is a hand-synced overview, so a PR
+that changes a card updates its row in the same PR. Promises drift slowest;
+mechanisms, components, and concepts change with nearly every merge — verify against
+the card when it matters.
+
+| Layer | System | Promise (short) | Mechanisms | Key components | Concepts |
+|---|---|---|---|---|---|
+| kernel | **template** | Every piece starts as a copy of a mold | scaffold (a forge step) | 7 molds in `templates/` incl. the mold-for-molds | mold · shape · hint |
+| kernel | **lexicon** | Every term defined once; classification mechanical | — (data only; checker runs its rules) | `LEXICON.md` registry | term · alias · concept |
+| kernel | **standards** | One explicit bar for "good" | — (read at gate; mechanical items in checker) | `RUBRIC.md` · `degrees-of-freedom.md` | budget · degree of freedom · flex point · rubric |
+| kernel | **eval** | Pieces prove need (baseline) and hold under pressure | baseline · pressure-test · running-evals | `evals/` cases · `running-evals` guide · `eval-runner` agent | baseline · pressure case · golden · eval case · meta-case |
+| kernel | **enforcement** | Everything declared is verified; green carries evidence | checker (one engine, 5 triggers: lint hook · Bash guard · ADR guard · turn gate · CI) | `scripts/check.mjs` | check rule · green carries evidence · turn gate |
+| kernel | **governance** | Changes are deliberate; humans gate merges | human gate · decision recording · promotion | `decisions/` · `writing-adrs` · `reviewing-forge-output` · `promoting-pieces` | gate · ADR · staged · promoted · add-on · decree |
+| kernel | **authoring** | Pieces born through the loop, never freehand | forge | `forge` guide · `rules/authoring.md` | piece · the loop · exclusion clause · gotcha |
+| kernel | **platform** | claude-code coupling quarantined; rest stays portable | — (owns wiring; usage standards only on RED baseline) | `settings.json` · `hooks.json` · `plugin.json` · `rules/parallel-sessions.md` | hook · skill · agent · command · script · worktree · subagent · session · guide |
+| core | **policy** | One rules-first policy standard per governed subject (docs live in Notion) | authoring-a-policy-standard | `shaping-a-policy-standard.md` · the authoring guide | policy standard · subject |
+| context | **crm** | Orgs, contacts, channels → [DB] Orgs/Contacts/Channels | capturing-an-org · capturing-a-contact (channel guide deferred) | the two capture guides | org · contact · channel |
+| context | **project-management** | Projects + tasks → [DB] Projects/Tasks, per their policies | capturing-a-task (project capture: deliberate no-guide, GREEN baseline) | `capturing-a-task` guide | project · task |
+| context | **product-development** | Use-case → shipped feature; board containment IS the tool link | capturing · defining (build/ship stages future) | `capturing-a-feature` · `defining-a-feature` | feature record · tooling page · feature lifecycle · Feature Board · containment |
+| context | **process** | Repeatable work defined once → [DB] Process Inventory; definitional, not runtime | capturing-a-process · red-teaming | `shaping-a-process.md` · the two guides | process · step · work-item · process run · role · capability |
+| context | **resources** | External accounts/platforms → [DB] Resources, per its policy | validating-resources (capture/update: deliberate no-guide, ADR-0028) | `validating-resources` guide | resource |
+| context | **sky** | Sky-ecosystem vocabulary defined once | — (decreed ahead of pieces, ADR-0026) | — (concepts are its substance) | Sky ecosystem · Atlas · spell · MSC · star · Prime Agent · NFAT |
+| automation | **publishing** | Artifacts reach external stores typed + human-confirmed; Notion = first binding | notion-push · notion-update | binding guides · `targets.md` mirror · `writing-records-to-notion.md` spine | publish · external store · binding · fetch-merge-write · relation · option set · resolve · page |
+| automation | **ingestion** | External source → curated, standardized records; the pull side | reviewing-a-repo (more sources forged as needed) | `reviewing-a-repo` guide | source · ingestion · standardize · intake gate |
+| automation | **schema-audit** | Schema docs + `targets.md` mirror stay true to live DBs | auditing-a-schema-doc | `auditing-a-schema-doc` guide | schema doc · schema drift |
+
+Cross-cutting (not systems): the always-on rules (`rules/authoring.md`,
+`rules/parallel-sessions.md`) and the primitives above.
 
 Deferred (not kernel): distribution system — likely core; packaging + installer, decided later.
 
 ## Status
 
-The kernel is built and sealed: the eight systems above (`.claude/systems/`), the molds
+The kernel is built and sealed: the eight kernel systems in the table above (`.claude/systems/`), the molds
 (`.claude/templates/`), the registry + placement table (`.claude/LEXICON.md`), the bar
 (`.claude/RUBRIC.md`), and the one checker (`.claude/scripts/check.mjs` — validates
 classification frontmatter, card/mold shape + order, card-path/card-concept/card-listing
