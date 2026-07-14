@@ -20,6 +20,9 @@ A guide at `.claude/skills/<name>/SKILL.md` — steps the model loads on demand.
   (read by: platform triggering, checker)
 - `disable-model-invocation: true` — required while staged, and forever for
   side-effecting guides (read by: platform)
+- `promotion-hold: <reason>` — optional: records a deliberate decision NOT to
+  promote (e.g. a refusal) and silences the checker's staged-maturity nag
+  (read by: checker `STAGED_MATURE`)
 - `layer · system · kind · mold` — per the classification rule (read by: checker)
 
 ## Shape
