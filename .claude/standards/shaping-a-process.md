@@ -31,12 +31,25 @@ registry lives with the `process-inventory` target, not here.
   each step transition is a role handoff — that handoff IS the gate; no separate gate
   lines. Each step opens with a 1–3 line narrative intro: how the work actually arrives
   and what the step accomplishes — plain, concrete, never flowery, never restating the
-  Trigger. Work-items are `- [ ]` checkboxes: a bolded action headline; the how (and the
-  why, where it isn't obvious) goes in prose on its own indented line under the headline —
-  never run-on after the bold; no citation tags. Then nested elements as required: field
-  sub-checkboxes under a record-write parent (field-per-checkbox — never several fields
-  bundled into one box), bulleted value lists (never inlined), determination arrows, and
-  `⤷ condition → En` branch pointers. Work-items carry NO example values — an `e.g.`
+  Trigger. Work-items are `- [ ]` checkboxes: a SHORT bold sentence as the headline; the
+  how goes in prose on its own indented line under it — opening with the exercised
+  capability in backticks (`Ops`, `Signer`, …) where a formal capability applies — never
+  run-on after the bold; no citation tags. Prose is plain full sentences — no arrow
+  shorthand (determination arrows inside tables are the one exception). A
+  **record-write or evidence-capture work-item** (one per record written or evidence
+  block filled) carries its fields as a page TABLE under the parent, columns
+  ☐ · Field · Type · Required · Instruction · Why: ☐ is a glyph (ticking happens on the
+  run or its form — the doc is a read-do script); Field is the live field name in
+  backticks; Type is the concrete input shape (select · relation → its target · file +
+  accepted formats · text · checkbox · URL); Instruction is the plain what-to-do — one
+  lead sentence, then `• ` bullets for determinations (evidence → **Value**), value
+  lists, and `⤷ condition → En` pointers; Why is the operator-facing reason the field
+  matters — exactness dicta (verbatim, in full, never truncated) live in Why, never in
+  Instruction. A value convention is written in italics (*[Org] [Program]*), never in
+  backticks. A value list ends with a bare @-mention of the owning policy as its
+  terminal bullet — `(@ <policy> — add/change enum options)` — the ONE permitted inline
+  policy pointer: a locator for the option set's home, never narration (scoped exception
+  to ADR-0038's no-pointer rule). Work-items carry NO example values — an `e.g.`
   literal reads as THE input at run time; worked examples live in the subject's policy
   standard or on real records. Plain operator language only — write "add it if it is not
   on file", never harness jargon like resolve-or-create.
