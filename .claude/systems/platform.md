@@ -28,8 +28,11 @@ are mechanisms OF the systems that use them.
   plugin); carries no version while the harness is internal — every commit ships (ADR-0034)
 - `.claude/rules/parallel-sessions.md` — the multi-session operating rule: one
   session = one worktree = one branch; root checkout parked on main (ADR-0027)
-- per-primitive usage standards — planned; authored via the forge as needed
-  (`unenforced: tracked here until they exist`)
+- per-primitive usage standards — authored via the forge ONLY on an observed RED
+  baseline. Hooks evaluated 2026-07-14: baseline GREEN — a fresh agent wired a new
+  guard correctly from the existing rules, cards, and checker precedents alone, so
+  no standard was authored (forge step 4; the baseline's product landed as the ADR
+  immutability guard, ADR-0044). Re-propose only on an observed hook-authoring failure.
 
 ## Concepts
 hook · skill · agent · command · script · worktree · subagent · session · guide
