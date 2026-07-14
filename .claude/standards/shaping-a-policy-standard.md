@@ -27,8 +27,9 @@ target); this standard is the shape every doc must keep.
   criteria live in Change Control, not here.
 - **Rules** — bucketed by what they govern, so every rule has exactly one home:
   **Data** (what a valid record is) · **Operating** (who may act, on what, through which
-  channel) · **Determination** (how a value is assigned, step by step; each carries a
-  short id that Proven-by lines point at). Every rule is one imperative sentence naming
+  channel) · **Determination** (how a value is assigned — evidence steps, naming
+  conventions, and other assignment rules; each carries a short id that Proven-by and
+  Implements lines point at). Every rule is one imperative sentence naming
   its **Enforced by** (a field, state, or process); external grounding is a **Basis**.
   Evolution rules go to Change Control, never here.
 - **Lifecycle & States** — a state table; no silent transitions, every move names its gate.

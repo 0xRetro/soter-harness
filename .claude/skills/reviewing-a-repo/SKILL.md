@@ -74,6 +74,20 @@ entries were updated, not duplicated.
   (the chicken-and-egg); don't push cards to a global board.
 - (baseline) De-dup before create — match on Name/GitHub; existing → update, never a
   second copy.
+- (live run 2026-07-14, soterlabs/landing-page) An already-shipped repo's approved
+  features land at the status the human sets at the intake gate (here `Completed`) —
+  `capturing-a-feature`'s `Planned` default is for forward-looking capture, and the
+  gate's curation overrides it.
+- (live run 2026-07-14) No fitting `Type` option on [DB] Tooling is a gate decision,
+  not a blocker: the human may expand the live option set (added `Content` for
+  content/site repos; removed unused `Library`). Update the option-set mirror in
+  `targets.md` in the same change — and note an ALTER of a select property wipes that
+  property's description in Notion.
+- (live run 2026-07-14) Creating the tooling page from the DB's template: `template_id`
+  on page-create may silently not apply, and `apply_template` is async — poll the async
+  task result rather than re-applying (a blind retry double-applied the template; the
+  extra Feature Board + sections had to be deleted). The fetch view can also serve a
+  stale cached snapshot for ~a minute; trust the async task status, not the fetch.
 
 ## Evals
 - `.claude/evals/reviewing-a-repo/happy-path.md`

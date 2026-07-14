@@ -25,7 +25,7 @@ before a push if the board may have changed (a property added/renamed).
   - `Description` → text
   - `Owner` → person           <!-- limit 1 -->
   - `Status` → status          <!-- Not started · In Development · Active · Deprecated -->
-  - `Type` → select            <!-- Bot · Tool · Platform · Library · Dashboard -->
+  - `Type` → select            <!-- Bot · Tool · Platform · Dashboard · Content (Library removed 2026-07-14) -->
   - `GitHub` → url
   - `Prod URL` → url
 - Every tooling entry EMBEDS its own Feature Board — the `feature-cards` target below
