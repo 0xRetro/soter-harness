@@ -139,6 +139,53 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Schedule appointment` → url
   - `Org` → relation       <!-- resolve to the [DB] Orgs page id -->
 
+### process-runs  *(the [DB] Process Runs database — one row per execution of a process)*
+- **data_source_id:** `39dd79b5-de38-80b5-be73-000be2ef2b91` *(live-verified 2026-07-14)*
+- **properties:**
+  - `Name` → title             <!-- D2 naming: [Process name] — [context or counterparty] — [start date] -->
+  - `Process` → relation       <!-- → [DB] Process Inventory; resolve the process page id -->
+  - `Roles` → text             <!-- one line per role: Role — @-mention of the [DB] Contacts record -->
+  - `Inputs` → text            <!-- one line per input declared at Initialization; @-mention records where they exist -->
+  - `Started` · `Completed` → date
+  - `State` → select           <!-- In Progress · Closed -->
+  - `Outcome` → select         <!-- Success · Failed · Aborted (set at close) -->
+  - `Post Run Summary Report` → text   <!-- one line per field the process's Post Run Summary Report section declares -->
+  - `Run ID` → auto-increment  <!-- system-assigned; do not set -->
+- New rows start from the registered page template ("[Run Template]", page
+  `39dd79b5de3880ed8f4bdaeef412b5ff`) — body = Run · Inputs · Outputs & Proof.
+
+### channels  *(the [DB] Channels database — communication venues)*
+- **data_source_id:** `39dd79b5-de38-806e-995f-000b75fc3ed7` *(live-verified 2026-07-14)*
+- **properties:**
+  - `Name` → title
+  - `Platform` → select        <!-- Telegram · Slack · Discord · Email · Forum · Other -->
+  - `Link` → url
+  - `Related Orgs` · `Members` → relation   <!-- Members → [DB] Contacts; resolve page ids -->
+  - `Status` → select          <!-- Active · Archived -->
+  - `Notes` → text
+
+### addresses  *(the [DB] Addresses database — blockchain accounts)*
+- **data_source_id:** `39dd79b5-de38-8091-8617-000bd102afaa` *(live-verified 2026-07-14)*
+- **properties:**
+  - `Address` → title          <!-- full address verbatim, never truncated -->
+  - `Internal Label` → text    <!-- [Org] [Program] per Addresses policy D3 -->
+  - `Network` → select         <!-- ETH -->
+  - `Function(s)` → multi_select   <!-- IB Partner Payment · Ops Sending -->
+  - `Type` → select            <!-- EOA · SafeProxy · Contract (assigned per D1) -->
+  - `Address Source` → file    <!-- intake evidence; external addresses only -->
+  - `Related Org` → relation   <!-- → [DB] Orgs; resolve or create first -->
+  - `Verification Process` → relation   <!-- → [DB] Process Runs; the link IS verification -->
+
+### roles  *(the [DB] Roles database — the role directory)*
+- **data_source_id:** `680b7ad4-f703-4de5-a71c-324f9fc8eb88` *(live-verified 2026-07-14)*
+- **properties:**
+  - `Name` → title
+  - `Definition` · `Requirements` · `Training` → text
+  - `Capabilities` → multi_select   <!-- Safe Signer · Onchain TX Verification · TX Executor · Ops & Comms; defined in the Processes policy -->
+  - `Held by` → relation       <!-- → [DB] Contacts -->
+  - `Processes` → relation      <!-- → [DB] Process Inventory -->
+  - `Status` → select          <!-- Active · Retired -->
+
 > **Relations:** the create/update bindings write a relation as the TARGET page's id.
 > Resolve it (search the related DB by name) before writing, or leave the relation empty
 > and link it in a follow-up. Don't fabricate a page id.
