@@ -1,7 +1,7 @@
 ---
 skill: defining-a-feature
 case: invariant-preserve-why
-passed: 234395a
+passed: 70c1d0f
 ---
 
 ## Try
