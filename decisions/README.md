@@ -25,3 +25,5 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0018](ADR-0018-promote-writing-adrs.md) | Promote writing-adrs to the guide index | Accepted |
 | [ADR-0019](ADR-0019-process-system.md) | The process system — Process → Step → Work-item, defined not engineered | Accepted |
 | [ADR-0020](ADR-0020-golden-freshness-git-coupling.md) | The checker reads git history for golden freshness (GOLDEN_STALE) | Accepted |
+| [ADR-0021](ADR-0021-policy-standards-operating-model.md) | Subjects are governed by policy standards; the operating model | Accepted |
+| [ADR-0022](ADR-0022-policy-system-core.md) | The policy system — core layer, decreed | Accepted |

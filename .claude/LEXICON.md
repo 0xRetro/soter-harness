@@ -94,7 +94,7 @@ table below is the banned list.
 | standardize | ingestion | normalize a source's data to the target database's schema before publishing |
 | intake gate | ingestion | the human decision on WHAT from a source actually gets ingested — distinct from a merge gate (governance) and from a per-write confirm |
 | containment | product-development | a feature belongs to a tool by living in that tool's Feature Board — the board IS the link, no relation property |
-| schema doc | schema-audit | a Notion page documenting a database's schema (the workspace's "[DB] X Standards" pages) — distinct from a harness standard |
+| schema doc | schema-audit | the representation layer of a subject's policy standard — the documented fields that schema-audit audits against the live DB (the legacy "[DB] X Standards" pages are its ungoverned ancestor) |
 | schema drift | schema-audit | divergence between a schema doc and the live database's actual fields/types/options |
 | project | project-management | one row in the [DB] Projects database — a client or internal engagement (type, status, dates, org, contact), tracking work above the task level |
 | task | project-management | one row in the [DB] Tasks database — an actionable unit of delivery (status, assignee, next action), related to a project and/or org |
@@ -104,6 +104,8 @@ table below is the banned list.
 | process run | process | one execution of a process; its work-items are tracked as [DB] Tasks rows — the seam to project-management |
 | org | crm | one row in the [DB] Orgs database — an organization (type, tags, links), with related contacts and projects |
 | contact | crm | one row in the [DB] Contacts database — a person (email, role, status, disposition), related to their org |
+| policy standard | policy | the rules-first governance doc for ONE subject — definition, scope, classifications with overlap rules, rules, lifecycle, then representation; lives in Notion ([DB] Policy Standards) with its subject's data; exactly one per subject (ADR-0021) |
+| subject | policy | the one thing a policy standard governs — a record type ([DB] Addresses rows), a concept, or a mechanism; named, never implied |
 
 ## Aliases (do not use → use instead)
 
