@@ -37,7 +37,9 @@ registry lives with the `process-inventory` target, not here.
   run-on after the bold; no citation tags. Prose is plain full sentences — no arrow
   shorthand (determination arrows inside tables are the one exception). A
   **record-write or evidence-capture work-item** (one per record written or evidence
-  block filled) carries its fields as a page TABLE under the parent, columns
+  block filled) carries its fields as a page TABLE under the parent — fit-page-width,
+  with the mold's column proportions (narrow ☐ · Field · Type · Required, wide
+  Instruction, medium Why; copy the mold's table rather than rebuilding it) — columns
   ☐ · Field · Type · Required · Instruction · Why: ☐ is a glyph (ticking happens on the
   run or its form — the doc is a read-do script); Field is the live field name in
   backticks; Type is the concrete input shape (select · relation → its target · file +
