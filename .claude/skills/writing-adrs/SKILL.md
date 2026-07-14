@@ -31,7 +31,11 @@ context.
    work. If it's just information, stop — it isn't an ADR.
 2. Read `decisions/README.md`'s index. If an Accepted ADR already covers this ground:
    changing it means a **superseding** ADR — never an edit.
-3. Take the next number (ADR-XXXX, zero-padded, one higher than the last in the index).
+3. Allocate the next FREE number (ADR-XXXX, zero-padded) — scan main's `decisions/`
+   AND every live worktree branch's (`git worktree list`, then each branch's
+   `decisions/`), per the parallel-sessions rule (ADR-0030). "One higher than this
+   index" alone collides: unmerged branches hold numbers this checkout can't see.
+   The checker's `ADR_DUP` is the merge-time backstop, not the allocation method.
 4. Copy `.claude/templates/adr.md`. Fill:
    - **Context** — the situation and why the question arose, 2-5 lines.
      FLEX: wording and emphasis; keep it honest about what forced the choice.
@@ -43,6 +47,9 @@ context.
    go-ahead to do the work is NOT acceptance of the decision it produces; when in doubt,
    `Proposed` (the merge flips it — ADR-0027's own precedent).
 6. Add one line to the index in `decisions/README.md`.
+   If the decision introduces or redefines a term, update `.claude/LEXICON.md`'s
+   registry (and the owning card's Concepts line) in the same change — an ADR's
+   vocabulary that never reaches the registry goes stale silently.
 7. If superseding: the ONLY edit to the old ADR is its Status line →
    `Superseded by ADR-XXXX`.
 8. Verify: `node .claude/scripts/check.mjs --all` passes; the index line links to a real file.
@@ -53,7 +60,12 @@ context.
    `Accepted`.
 
 ## Gotchas
-(none yet — grows from real use)
+- (observed 2026-07-14, audit) ADR-0027 introduced `session` and redefined `worktree`,
+  but the LEXICON registry never absorbed either — caught only by a later full audit.
+  Counter: step 6's same-change registry update.
+- (observed 2026-07-14, 2×) Two pairs of parallel branches allocated the same ADR
+  number (0028, 0030) after each correctly checked main. Counter: step 3 scans live
+  worktree branches too; the first-merged keeps the number, the later renumbers.
 
 ## Evals
 - `.claude/evals/writing-adrs/happy-path.md`
