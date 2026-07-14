@@ -145,6 +145,25 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Schedule appointment` → url
   - `Org` → relation       <!-- resolve to the [DB] Orgs page id -->
 
+### resources  *(the [DB] Resources database — external accounts, platforms, shared assets)*
+- **data_source_id:** `315d79b5-de38-80a0-8940-000b21386424` *(live-verified 2026-07-14)*
+- **properties:**
+  - `Name` → title          <!-- named per the Resources policy standard's D1 -->
+  - `Description` → text
+  - `Type` → select         <!-- Publishing · Communication · Group Email · Development · Infrastructure · Workspace · Content · Tracker · Finance -->
+  - `Access` → select       <!-- Ask Admin for Access · Ask for Invite Code/Email · Managed by Shared Email · Managed by Sky ProSec · Details in Resource Page -->
+  - `URL` → url             <!-- property name is literally "URL" (userDefined) ; expected empty for Group Email -->
+  - `Admin` → person        <!-- may be several people -->
+  - `Last Verified` → date  <!-- stamped only on actual verification -->
+- **page template:** `[Resource Template]` (page `39dd79b5de388039993bfb1b4a7a8d8b`,
+  registered on the DB). Body shape (per the Resources policy standard): Access ·
+  Subscription & Billing (as applicable; org billing defaults live in the policy
+  standard; the tier name lives in the BODY — no Plan property) · Configuration ·
+  Members (as applicable; member + role) · Security (as
+  applicable; workspace-level settings like 2FA-required, never per-individual) ·
+  Notes. Unknowns stay bare `not defined` — they are the worklist. NO SECRETS ever —
+  credential locations only; standing invite links only by explicit admin decision.
+
 > **Relations:** the create/update bindings write a relation as the TARGET page's id.
 > Resolve it (search the related DB by name) before writing, or leave the relation empty
 > and link it in a follow-up. Don't fabricate a page id.

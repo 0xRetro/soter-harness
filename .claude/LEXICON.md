@@ -109,6 +109,7 @@ table below is the banned list.
 | contact | crm | one row in the [DB] Contacts database — a person (email, role, status, disposition), related to their org |
 | policy standard | policy | the rules-first governance doc for ONE subject — definition, scope, classifications with overlap rules, rules, lifecycle, then representation; lives in the org's policy-standards registry in the external store, with its subject's data; exactly one per subject (ADR-0021) |
 | subject | policy | the one thing a policy standard governs — a record type, a concept, or a mechanism; named, never implied |
+| resource | resources | one row in [DB] Resources — an external account, platform, shared asset, or registry the team uses (type, access path, admin), governed by the Resources policy standard |
 | Sky ecosystem | sky | the Sky (formerly MakerDAO) ecosystem the org operates within — the umbrella for its stars, agents, and governance artifacts |
 | Atlas | sky | the Sky Atlas — the ecosystem's governance rulebook; articles cited as A.x.y links (sky-atlas.io) |
 | spell | sky | a governance/protocol action executed on-chain as a spell |
