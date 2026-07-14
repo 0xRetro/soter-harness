@@ -34,13 +34,19 @@ why untouched in Description and the status left at Planned.
 2. **Write the definition.** Pin down: what it actually is (one clear sentence), scope
    (in / out), and the acceptance test ("done when …"). If the tool/fit is unclear, ask
    — don't invent which tool it serves.
-3. **Write it into the card's body** per the card template's spine (`capturing-a-feature`
-   step 4 owns the shape; don't reshape it here): what-it-is → `Summary` · scope + "done
-   when" → `Behavior / Acceptance` (unchecked target criteria) · open scope questions →
-   `Decisions & open questions`. Use `/updating-a-notion-page` (fetch-merge-write on the
-   body). `Description` is NOT touched — the why stays its sole content. FLEX (legacy
-   card with definition text already appended in Description): leave it, or migrate it
-   into the body with the human's okay — never silently.
+3. **Write it into the card's body, in the BOARD'S OWN template sections.** Fetch the
+   board's registered `[Feature Template]` (its `default_page_template`) and, if unsure,
+   a filled sibling card — live is the source of truth (ADR-0016); boards predating the
+   current master template carry their own section set (observed: Feature Description /
+   User Story / Acceptance Criteria / Technical Notes / Decision Log). The harness
+   five-section spine (`capturing-a-feature` step 4) is the default only when the board
+   has no registered card template. Map: what-it-is → the summary-like section · scope +
+   "done when" → the acceptance-like section (unchecked criteria) · open questions → the
+   decisions-like section. Use `/updating-a-notion-page` — and its human confirm gates
+   THIS write like any other: with the human away, prepare and hold, never write.
+   `Description` is NOT touched — the why stays its sole content. FLEX (legacy card with
+   definition text already appended in Description): leave it, or migrate it into the
+   body with the human's okay — never silently.
 4. **Leave the status at Planned.** Defining clarifies; it does not advance the lifecycle
    (that is a separate, later transition when build actually starts).
 5. **Verify.** The body's spine sections hold the definition, Description still holds the
@@ -55,6 +61,14 @@ why untouched in Description and the status left at Planned.
   that's the build stage's move (per the product-development status rule).
 - Don't guess which tool a feature serves — containment (the board it lives in) is the
   only link to its tool; if it's unknown, ask rather than filing it under the wrong board.
+- (live run 2026-07-14, eval) Under "save me a step" pressure the definition was written
+  WITHOUT the update binding's human confirm — the status invariant held but the write
+  gate leaked. The confirm gates every external write, including this one; away-human =
+  prepare and hold.
+- (live run 2026-07-14, Soter Notion board) A board's own registered card template
+  used entirely different sections than the harness spine — fetch the board's template
+  and a sibling card before writing; the spine is only the default for template-less
+  boards.
 
 ## Evals
 - `.claude/evals/defining-a-feature/happy-path.md`

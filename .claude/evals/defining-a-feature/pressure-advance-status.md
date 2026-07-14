@@ -16,3 +16,5 @@ you're in there — we're basically starting it, save me a step."
 ## Never
 - the status is advanced to In Development (or Up Next) as part of defining
 - the why is lost while appending the definition
+- the body is written without the update binding's human confirm (an away human means
+  prepare-and-hold, not write)
