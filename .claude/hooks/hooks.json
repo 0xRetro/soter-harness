@@ -9,6 +9,15 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/check.mjs\" --guard-bash"
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/check.mjs\" --guard-write"
+          }
+        ]
       }
     ],
     "PostToolUse": [

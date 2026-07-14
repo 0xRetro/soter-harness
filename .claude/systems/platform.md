@@ -19,10 +19,11 @@ None yet — this system defines forms and owns wiring; concrete hooks/skills/ag
 are mechanisms OF the systems that use them.
 
 ## Components
-- `.claude/settings.json` — in-repo wiring (Bash guard + checker hook + turn gate +
-  the checker-command permissions allow; event log retired, ADR-0037)
+- `.claude/settings.json` — in-repo wiring (Bash guard + Write|Edit ADR-immutability
+  guard + checker hook + turn gate + the checker-command permissions allow; event log
+  retired, ADR-0037)
 - `.claude/hooks/hooks.json` — plugin-shipped wiring, always at parity with
-  settings.json: same guard, checker hook, and turn gate (ADR-0034)
+  settings.json: same guards, checker hook, and turn gate (ADR-0034)
 - `.claude/.claude-plugin/plugin.json` — the plugin manifest (the `.claude/` dir IS the
   plugin); carries no version while the harness is internal — every commit ships (ADR-0034)
 - `.claude/rules/parallel-sessions.md` — the multi-session operating rule: one

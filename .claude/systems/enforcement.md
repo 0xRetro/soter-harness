@@ -18,6 +18,9 @@ warning), reviewers (the mechanical floor).
   shapes, the system cards · produces: pass/fail with what/why/fix · runs-when:
   lint hook (warn only, fail-open), Bash guard (`--guard-bash`, block: root-on-main
   git, agent publishes, add -A, force pushes; fail-open on unparseable input),
+  ADR-immutability guard (`--guard-write` + a Bash-guard clause, block: any edit or
+  shell write to an Accepted ADR except its own Status flip to Superseded; fail-open
+  on unparseable input, ADR-0044),
   turn gate (`--gate`, block: holds a turn open ONCE while checker errors stand;
   warnings never block; fail-open off-harness and on any internal error, ADR-0035),
   CI (block), `--selftest` (plant-and-assert) · invariants: ONE shared script,
