@@ -17,18 +17,23 @@ bindings that write the records. Mirrors the LIVE [DB] Resources schema — fetc
 never an assumed one (ADR-0016).
 
 ## Mechanisms
-None yet — deliberately (ADR-0028): the forge baseline for a capture guide observed
-an unguided agent fully comply (found the policy standard via the registered target,
-refused a credential, D1/D2/D3 honored, write held), so no guide was built. Capture
-runs through the publishing bindings guided by the Resources policy standard.
-Mechanisms are forged when an observed failure warrants one — validating-resources
-(URL liveness, body-shape and billing-defaults conformance, config↔Tooling
-cross-refs) is the likely first.
+- **validating-resources** — reads: the Resources policy standard + the live [DB]
+  Resources records + the cross-referenced records ([DB] Tooling, Finance records,
+  the workspace roster) · produces: a bucketed drift report with declared coverage
+  and gated fixes · runs-when: a user invokes `/validating-resources` · invariants:
+  coverage omissions are declared, never silent; fixes land only through the gate;
+  facts gathered or asked, never guessed; Last Verified never stamped by a
+  records-only sweep. Earned by baseline: an unguided sweep silently omitted URL
+  liveness and cross-checks (2026-07-14).
+- Capture and single-record updates deliberately have NO guide (ADR-0028): unguided
+  baselines fully complied twice (capture with password-bait; the Vercel update) —
+  the policy standard + target registration are the teaching layer for writes.
 
 ## Components
-- None in the harness yet. The Notion target `resources` (live schema + body shape)
-  lives in the publishing binding's `targets.md`; the rules live in the Resources
-  policy standard (Notion, one doc per subject per ADR-0021).
+- `.claude/skills/validating-resources/SKILL.md` — the validation sweep guide
+  (staged). The Notion target `resources` (live schema + body shape) lives in the
+  publishing binding's `targets.md`; the rules live in the Resources policy standard
+  (Notion, one doc per subject per ADR-0021).
 
 ## Concepts
 resource
