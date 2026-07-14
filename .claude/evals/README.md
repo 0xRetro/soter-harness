@@ -8,22 +8,22 @@ sequences — never "does the prose read well." No LLM-judge platform (ADR-0006)
 
 | Level | Question | How it's checked |
 |---|---|---|
-| 1 Trigger | did the guide activate for the intended prompt? | grep `logs/events.jsonl` |
-| 2 Trace | did steps run in the right order? | tool-call sequence in the log |
+| 1 Trigger | did the guide activate for the intended prompt? | the dispatch IS the invocation (simulated for staged guides); auto-invocation via scenario observation |
+| 2 Trace | did steps run in the right order? | tool-call sequence in the run's transcript on disk |
 | 3 Artifact | did the observable side effects happen? | plain bash on the working tree (files, frontmatter, exit codes) |
-| 4 Invariant | did anything forbidden happen? | bash + log grep for "Never" items |
+| 4 Invariant | did anything forbidden happen? | bash + transcript grep for "Never" items |
 
-`logs/events.jsonl` (gitignored, self-rotating at 2MB) is written by the checker's
-`--log-event` hook — one JSON line per tool call: `{ts, tool, file, cmd}`. It records
-TOOL CALLS, not skill invocations, so it feeds trace/artifact checks for a future runner
-but can't count guide uses (promotion evidence stays git history + gotcha growth).
+Trace evidence is the session/subagent transcript on disk — every tool call is
+visible there. There is no separate event log (retired, ADR-0035: hooks cannot
+attribute skill invocations; if telemetry is ever needed, the native path is OTel's
+`claude_code.skill_activated`). Promotion evidence stays git history + gotcha growth.
 
 ## How a run works (v1 — deliberately light)
 
 Eval scenarios are executed **agentively**, not by a bespoke runner: a fresh-context
 subagent gets the case's `## Try` prompt (this is the forge pressure-test step for new pieces, and
 how we re-test after edits). Then the `## Expect` / `## Never` bullets are checked against
-the working tree and the event log — most are one `ls`/`grep` each.
+the working tree and the run's transcript — most are one `ls`/`grep` each.
 
 The run-and-judge procedure (neutral dispatch, simulated invocation for staged guides,
 the write-contained `eval-runner` agent, artifact-based verdicts, golden recording)

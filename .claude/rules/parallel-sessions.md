@@ -34,9 +34,9 @@ Applies whenever more than one session (interactive or agent) may touch this rep
   first-merged keeps the number (the checker's ADR_DUP catches what eyeballs miss).
 - ALWAYS scope `git add` to named paths; NEVER `git add -A` (it once swept another
   session's worktree gitlink into a commit).
-- NEVER treat worktree isolation as covering live state — Notion records, the memory
-  directory, and the event log are shared across all sessions; the publishing
-  bindings' fetch-merge-write discipline governs those, worktrees only isolate git.
+- NEVER treat worktree isolation as covering live state — Notion records and the
+  memory directory are shared across all sessions; the publishing bindings'
+  fetch-merge-write discipline governs those, worktrees only isolate git.
 - `.worktreeinclude` (gitignore syntax, repo root) copies env files into new worktrees
   when local runs need them — credentials still never enter git.
 
