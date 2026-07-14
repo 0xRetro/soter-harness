@@ -47,6 +47,11 @@ Don't silently default an unstated field — a default is a guess; flag it, don'
 - **Verify only against a snapshot newer than your write.** The fetch view serves stale
   cached snapshots for ~a minute; a verify whose "as of" timestamp predates your last
   write proves nothing.
+- **Batched content edits can PARTIALLY apply and still return success** (observed
+  2026-07-14: one op of three landed, the other two silently skipped). And stored text
+  differs from what you wrote — Notion auto-linkifies emails/URLs, so an old_str copied
+  from your own draft may never match. Copy old_str from a FRESH fetch, and verify
+  every op landed.
 - **Never `apply_template` onto a record that already has real property values** — a
   template's default properties overwrite them. Write the body content directly instead.
 - **A schema change checks the DB's registered templates.** When a property or option set

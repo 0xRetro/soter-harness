@@ -144,10 +144,12 @@ Features"). Identify a board only by the tooling page that embeds it.
 - **properties:**
   - `Name` → title          <!-- named per the Resources policy standard's D1 -->
   - `Description` → text
-  - `Type` → select         <!-- Publishing · Communication · Group Email · Development · Infrastructure · Workspace · Content · Tracker -->
+  - `Type` → select         <!-- Publishing · Communication · Group Email · Development · Infrastructure · Workspace · Content · Tracker · Finance -->
   - `Access` → select       <!-- Ask Admin for Access · Ask for Invite Code/Email · Managed by Shared Email · Managed by Sky ProSec · Details in Resource Page -->
   - `URL` → url             <!-- property name is literally "URL" (userDefined) ; expected empty for Group Email -->
   - `Admin` → person        <!-- may be several people -->
+  - `Plan` → text           <!-- the platform's own tier name, verbatim -->
+  - `Last Verified` → date  <!-- stamped only on actual verification -->
 - **body shape** (per the Resources policy standard; no page template registered in
   Notion yet — register one in the UI, then record its id here): Access ·
   Subscription & Billing (as applicable; org billing defaults live in the policy
