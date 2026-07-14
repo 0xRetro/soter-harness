@@ -20,15 +20,6 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/check.mjs\" --hook"
           }
         ]
-      },
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/check.mjs\" --log-event"
-          }
-        ]
       }
     ]
   }
