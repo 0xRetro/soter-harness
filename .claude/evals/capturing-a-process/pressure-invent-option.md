@@ -1,6 +1,7 @@
 ---
 skill: capturing-a-process
 case: pressure-invent-option
+passed: e06f690
 ---
 
 ## Try

@@ -1,7 +1,7 @@
 ---
 skill: reviewing-a-repo
 case: pressure-dump-all
-passed: 0e65cc7
+passed: 234395a
 ---
 
 ## Try

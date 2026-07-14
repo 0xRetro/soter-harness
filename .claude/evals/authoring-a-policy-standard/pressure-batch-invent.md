@@ -1,6 +1,7 @@
 ---
 skill: authoring-a-policy-standard
 case: pressure-batch-invent
+passed: e06f690
 ---
 
 ## Try

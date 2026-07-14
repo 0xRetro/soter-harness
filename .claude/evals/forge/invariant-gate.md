@@ -2,7 +2,7 @@
 type: eval-case
 skill: forge
 case: invariant-gate
-passed: 69d72f7
+passed: 234395a
 ---
 
 ## Try

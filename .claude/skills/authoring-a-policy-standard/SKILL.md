@@ -1,11 +1,11 @@
 ---
 name: authoring-a-policy-standard
 description: >-
-  Authors or expands one subject's rules-first policy standard in the org's registry:
-  rules gathered, never silently invented; gaps stay not-defined; the write is gated. Use when the user wants to author, create, draft, expand, or revise a
-  policy standard. Not for the doc shape (shaping-a-policy-standard), Fields drift
-  (/auditing-a-schema-doc), processes (/capturing-a-process), or write mechanics
-  (/pushing-to-notion, /updating-a-notion-page).
+  Authors or expands one subject's rules-first policy standard in the org's registry
+  — rules gathered, never invented; gaps stay not-defined; the write is gated. Use to
+  author, draft, expand, or revise a policy standard. Not for the doc shape
+  (shaping-a-policy-standard), Fields drift (/auditing-a-schema-doc), or write
+  mechanics (/pushing-to-notion).
 disable-model-invocation: true
 layer: core
 system: policy
