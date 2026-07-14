@@ -108,6 +108,7 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Related Atlas Section` → url
   - `Process Logic Owner` → text   <!-- free text: person, agent name, multiple, or unknown -->
   - `Related Policies` → relation  <!-- → [DB] Policy Standards (dual: Governs Processes); the process↔policy linkage, ADR-0038 -->
+  - `Related Roles` → relation     <!-- → [DB] Roles (dual: the directory's Processes); mirrors the body Roles table, ADR-0043 -->
 - New entries start from the DB's default body template (page `cb0744051c564c4a91be9891af30b12a`);
   shape the body per the `shaping-a-process` standard (steps + work-items), not free-form.
 
