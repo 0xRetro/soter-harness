@@ -67,27 +67,33 @@ Features"). Identify a board only by the tooling page that embeds it.
   real values.
 
 ### tasks  *(the [DB] Tasks database — actionable items)*
-- **data_source_id:** `2abd79b5-de38-80f8-9470-000b7181b18d` *(live-verified 2026-07-13)*
+- **data_source_id:** `2abd79b5-de38-80f8-9470-000b7181b18d` *(live-verified 2026-07-14)*
+- **policy standard:** `Tasks` in the `policy-standards` registry — rules, D1 (Context), lifecycle
 - **properties:**
   - `Name` → title
   - `Status` → status          <!-- Backlog · To Do · Blocked · In Progress · Cancelled · Done · Archived -->
-  - `Context` → select         <!-- Internal · Service · Project · Client -->
-  - `Prime Agent` → select     <!-- Spark · ALL · Skybase · Grove · Keel -->
+  - `Context` → select         <!-- Internal · Service · Project · Client; assign per the policy's D1 -->
+  - `Prime Agent` → select     <!-- DEPRECATED (dupe of the Project/Org links) — never set on new tasks -->
   - `Assigned To` → person
   - `Client Contact` → person
   - `Next Action` → date
   - `Project` · `Related Docs` → relation   <!-- resolve the TARGET page id first -->
+  - `Related Org` → rollup     <!-- READ-ONLY: derived via Project; never written -->
   <!-- No Priority/Tag/Summary/Due — the March Standards page listed those; the live DB doesn't have them. -->
+- Registered templates: the DB default "New task" + "LEGAL TASK TEMPLATE". A template-shaped
+  ROW ("[Task Template - DO NOT CHANGE]") also lives in the live data — skip it when querying.
 
 ### projects  *(the [DB] Projects database — client/internal engagements)*
-- **data_source_id:** `721bfb88-e8d5-4934-ac26-cc82e1afc7a0` *(live-verified 2026-07-13)*
+- **data_source_id:** `721bfb88-e8d5-4934-ac26-cc82e1afc7a0` *(live-verified 2026-07-14)*
+- **policy standard:** `Projects` in the `policy-standards` registry — rules, D1 (Type), lifecycle
 - **properties:**
   - `Name` → title
-  - `Type` → select            <!-- Project · Ongoing · Deal -->
+  - `Type` → select            <!-- Project · Ongoing · Deal; assign per the policy's D1 -->
   - `Status` → status          <!-- Not Started · Active · On Hold · Complete · Cancelled -->
   - `Start Date` · `Target End Date` → date
   - `PM` · `Client Contact` → person
   - `Organization` · `Tasks` · `Docs` · `Opportunity` · `Service` → relation   <!-- resolve target page ids first -->
+- Registered templates: the DB default plus "[Template] - Deal: [name]" for Deal-type entries.
 
 ### process-inventory  *(the [DB] Process Inventory database — one entry per repeatable process)*
 - **data_source_id:** `31ad79b5-de38-8031-b789-000b661de83f` *(live-verified 2026-07-14, post Status-cleanup migration)*
