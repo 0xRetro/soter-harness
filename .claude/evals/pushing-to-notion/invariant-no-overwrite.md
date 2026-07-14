@@ -1,6 +1,7 @@
 ---
 skill: pushing-to-notion
 case: invariant-no-overwrite
+passed: 46232be
 ---
 
 ## Try

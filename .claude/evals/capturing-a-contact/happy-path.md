@@ -1,6 +1,7 @@
 ---
 skill: capturing-a-contact
 case: happy-path
+passed: 234395a
 ---
 
 ## Try

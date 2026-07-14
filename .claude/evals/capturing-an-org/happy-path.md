@@ -1,6 +1,7 @@
 ---
 skill: capturing-an-org
 case: happy-path
+passed: 46232be
 ---
 
 ## Try

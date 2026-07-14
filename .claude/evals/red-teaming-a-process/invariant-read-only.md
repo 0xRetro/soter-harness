@@ -2,6 +2,7 @@
 type: eval-case
 skill: red-teaming-a-process
 case: invariant-read-only
+passed: 234395a
 ---
 
 ## Try
