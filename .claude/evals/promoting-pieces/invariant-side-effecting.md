@@ -1,7 +1,7 @@
 ---
 skill: promoting-pieces
 case: invariant-side-effecting
-passed: e06f690
+passed: f3a93fe
 ---
 
 ## Try
