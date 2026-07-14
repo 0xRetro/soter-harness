@@ -87,8 +87,10 @@ registry lives with the `process-inventory` target, not here.
 - **Roles** — two columns, Role · Responsibility: the Role cell @-mentions the [DB]
   Roles row (a new role is defined in the directory FIRST). The Responsibility cell is
   one dash-line per responsibility, keyed by the capability it exercises —
-  **Capability** — responsibility, multiple capabilities joined with `·`; a
-  responsibility exercising no formal capability stands unkeyed; process-specific
+  **Capability** — responsibility, multiple capabilities joined with `·`; EVERY
+  responsibility carries its key, external roles included (externals exercise
+  capabilities from their own side); a keyless line means the wrong role owns it
+  or a capability is missing — define it policy-first; process-specific
   constraints inline. Role-level facts — the capability LIST, definition, who holds
   it — live on the directory row: a capability appears in the table only as the key of
   a responsibility using it, never as the role's list (no Who column; ADR-0043). The
