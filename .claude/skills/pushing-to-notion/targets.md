@@ -96,7 +96,7 @@ Features"). Identify a board only by the tooling page that embeds it.
 - Registered templates: the DB default plus "[Template] - Deal: [name]" for Deal-type entries.
 
 ### process-inventory  *(the [DB] Process Inventory database — one entry per repeatable process)*
-- **data_source_id:** `31ad79b5-de38-8031-b789-000b661de83f` *(live-verified 2026-07-14, post Soter Involvement + Related Service property removals)*
+- **data_source_id:** `31ad79b5-de38-8031-b789-000b661de83f` *(live-verified 2026-07-14, post Soter Involvement + Related Service property removals; Related Policies added per ADR-0038)*
 - **properties:**
   - `Name` → title
   - `Status` → status          <!-- lifecycle: Backlog · Up Next · Draft · In Review · Active · Retired -->
@@ -107,6 +107,7 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Prio` → number            <!-- 0 = highest priority; priority never encoded in Status -->
   - `Related Atlas Section` → url
   - `Process Logic Owner` → text   <!-- free text: person, agent name, multiple, or unknown -->
+  - `Related Policies` → relation  <!-- → [DB] Policy Standards (dual: Governs Processes); the process↔policy linkage, ADR-0038 -->
 - New entries start from the DB's default body template (page `cb0744051c564c4a91be9891af30b12a`);
   shape the body per the `shaping-a-process` standard (steps + work-items), not free-form.
 
@@ -179,6 +180,7 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Address Source` → file    <!-- intake evidence; external addresses only -->
   - `Related Org` → relation   <!-- → [DB] Orgs; resolve or create first -->
   - `Verification Process` → relation   <!-- → [DB] Process Runs; the link IS verification -->
+  - `Verified` → checkbox      <!-- explicit flag; checked by the closing role only with a linked Closed·Success run (Addresses policy v0.11) -->
 
 ### roles  *(the [DB] Roles database — the role directory)*
 - **data_source_id:** `680b7ad4-f703-4de5-a71c-324f9fc8eb88` *(live-verified 2026-07-14)*
