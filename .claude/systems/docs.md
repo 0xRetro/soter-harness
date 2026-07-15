@@ -17,7 +17,9 @@ Docs policy standard (Notion). Boundary: resources answers what the team USES
 audience). Decreed by ADR-0048, ahead of its pieces. Consumers: the team (find the
 doc, know its audience); the context systems whose records relate to docs; the
 publishing bindings that write the records. Mirrors the LIVE [DB] Docs schema —
-fetch live, never an assumed one (ADR-0016).
+fetch live, never an assumed one (ADR-0016). A second tier: **private-workspace
+docs** — docs in restricted collections — follow their collection's own template
+pages, are served by the harness in place, and never enter [DB] Docs (ADR-0049).
 
 ## Mechanisms
 - None of its own — decreed ahead of pieces (ADR-0048). The Docs policy standard
@@ -40,9 +42,10 @@ fetch live, never an assumed one (ADR-0016).
   (Notion, one doc per subject per ADR-0021).
 
 ## Concepts
-doc
+doc · private-workspace doc
 
 ## Invariants
 - docs records are shaped to the live [DB] Docs schema, never an assumed one — enforcer: (gate) + publishing's live schema fetch
 - relations to other records are resolved to real page ids or left empty, never fabricated — enforcer: (gate) + the bindings' resolve step
 - records reach Notion through the publishing bindings (the canonical rule; see the publishing card) — enforcer: (gate) + publishing
+- private-collection content, agendas, and page ids never enter harness pieces, evals, gotchas, org databases, or memory — the harness learns the pattern, never the instance (ADR-0049) — enforcer: (gate) + review
