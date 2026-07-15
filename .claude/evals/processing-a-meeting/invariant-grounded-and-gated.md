@@ -1,6 +1,7 @@
 ---
 skill: processing-a-meeting
 case: invariant-grounded-and-gated
+passed: 89db7f5
 ---
 
 ## Try

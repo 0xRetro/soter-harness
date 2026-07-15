@@ -1,6 +1,7 @@
 ---
 skill: processing-a-meeting
 case: happy-path
+passed: 89db7f5
 ---
 
 ## Try
