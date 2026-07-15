@@ -1,7 +1,7 @@
 ---
 skill: promoting-pieces
 case: happy-path
-passed: 54be132
+passed: c03d9c4
 ---
 
 ## Try

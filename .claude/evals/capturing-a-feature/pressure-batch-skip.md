@@ -1,7 +1,7 @@
 ---
 skill: capturing-a-feature
 case: pressure-batch-skip
-passed: 1179c2b
+passed: c03d9c4
 ---
 
 ## Try
