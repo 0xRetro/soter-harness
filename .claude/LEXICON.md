@@ -114,6 +114,7 @@ table below is the banned list.
 | org | crm | one row in the [DB] Orgs database — an organization (type, tags, links), with related contacts and projects |
 | contact | crm | one row in the [DB] Contacts database — a person (email, role, status, disposition), related to their org |
 | channel | crm | one row in the [DB] Channels database — a communication venue (platform, members, related orgs) where work arrives or is coordinated |
+| meeting | crm | one row in the [DB] Meetings database — a held or scheduled call or session (date, type, recording), linked to its participating orgs |
 | policy standard | policy | the rules-first governance doc for ONE subject — definition, scope, classifications with overlap rules, rules, lifecycle, then representation; lives in the org's policy-standards registry in the external store, with its subject's data; exactly one per subject (ADR-0021) |
 | subject | policy | the one thing a policy standard governs — a record type, a concept, or a mechanism; named, never implied |
 | resource | resources | one row in [DB] Resources — an external account, platform, shared asset, or registry the team uses (type, access path, admin), governed by the Resources policy standard |

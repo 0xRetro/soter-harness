@@ -153,6 +153,21 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Schedule appointment` → url
   - `Org` → relation       <!-- resolve to the [DB] Orgs page id -->
 
+### meetings  *(the [DB] Meetings database — held or scheduled calls and sessions)*
+- **data_source_id:** `b2550e36-38d5-4d33-86db-bbd0987aeaef` *(live-verified 2026-07-14)*
+- **properties:**
+  - `Meeting Name` → title     <!-- recurring series: series name + instance date ("Ozone EDU 2026-07-10") -->
+  - `Date` → date              <!-- when the meeting occurs/occurred; single date, no time -->
+  - `Type` → select            <!-- Team Meeting · EDU Session · BD · Client Sync · Project Sync · Office Hours · Ops -->
+  - `Org` → relation           <!-- → [DB] Orgs (two-way); the participating orgs — resolve page ids -->
+  - `Participants` · `Client Contact` → person   <!-- workspace users only — these can NOT hold [DB] Contacts rows -->
+  - `Recording` → url          <!-- the meeting owner's Otter link, added post-meeting -->
+  - `Related Docs` → relation  <!-- → [DB] Docs -->
+- Rows are PRE-CREATED ahead of the meeting (the weekly Hermes generation run, and the
+  Scheduling and Running Meetings process's "2 days in advance" step) with body skeleton
+  `## Agenda` / `## Follow Ups` — search series + date before any create; an existing row
+  is an update (`/updating-a-notion-page`), never a duplicate.
+
 ### process-runs  *(the [DB] Process Runs database — one row per execution of a process)*
 - **data_source_id:** `39dd79b5-de38-80b5-be73-000be2ef2b91` *(live-verified 2026-07-14)*
 - **properties:**
