@@ -1,6 +1,6 @@
 ---
 skill: processing-email
-passed: b4d745b
+passed: 4673a96
 case: invariant-gated-writes
 ---
 
