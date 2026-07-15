@@ -1,6 +1,6 @@
 # ADR-0057: The calendar context system — the commitments registry, never a mirror
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-15
 
 ## Context
