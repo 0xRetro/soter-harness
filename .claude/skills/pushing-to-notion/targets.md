@@ -166,9 +166,11 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Date` → date              <!-- when the meeting occurs/occurred; single date, no time -->
   - `Type` → select            <!-- Team Meeting · EDU Session · BD · Client Sync · Project Sync · Office Hours · Ops -->
   - `Org` → relation           <!-- → [DB] Orgs (two-way); the participating orgs — resolve page ids -->
-  - `Participants` · `Client Contact` → person   <!-- workspace users only — these can NOT hold [DB] Contacts rows -->
+  - `Participants` → person   <!-- workspace users only — can NOT hold [DB] Contacts rows; Client Contact (person) REMOVED 2026-07-15, ghost-valued and unusable for [DB] Contacts -->
   - `Recording` → url          <!-- the meeting owner's Otter link, added post-meeting -->
   - `Related Docs` → relation  <!-- → [DB] Docs -->
+- A processed meeting's summary doc (see the `docs` target) hangs off `Related Docs`;
+  the Recording URL's trailing id is fetchable via the Otter MCP (`mcp__otter__fetch`).
 - Rows are PRE-CREATED ahead of the meeting (the weekly Hermes generation run, and the
   Scheduling and Running Meetings process's "2 days in advance" step) with body skeleton
   `## Agenda` / `## Follow Ups` — search series + date before any create; an existing row
@@ -256,7 +258,11 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Link` → url              <!-- required for external Reference/Dashboard docs -->
   - `Owner` · `Client Contact` → person
   - `Org` · `Related Projects` → relation   <!-- resolve target page ids first; Org is always set (policy) -->
-- Meeting artifacts never enter this DB — they live in [DB] Meetings (target `meetings`).
+- Meeting RECORDS (agendas, notes, transcripts) never enter this DB — they live in
+  [DB] Meetings (target `meetings`). A meeting's derived SUMMARY is a doc: Type `Report`,
+  body from the registered `[Meeting Summary Template]` (page `39ed79b5de388058bb35e24d6c162c19`) —
+  every topic names its Related project/deal — linked from the meeting row's `Related Docs`
+  (Docs policy v0.4).
 
 ### update-feed  *(the [DB] Update Feed database — the org's typed update / decision / question feed)*
 - **data_source_id:** `fd89fc28-7aa6-4cb8-85d0-9e81741b7302` *(live-verified 2026-07-15)*
@@ -277,3 +283,11 @@ Features"). Identify a board only by the tooling page that embeds it.
 > and link it in a follow-up. Don't fabricate a page id.
 > **Select/multi_select:** the value must be an EXISTING option — fetch the live schema
 > and match; never invent an option name (a wrong one is rejected or silently creates junk).
+
+### ai-inbox  *(the AI Inbox page — the user's private review feed; APPEND-ONLY)*
+- **page id:** `39ed79b5-de38-80ea-b6f0-ff908935a32d` *(a page, not a database — insert_content at start, newest block first)*
+- After a gated BATCH of record writes, one digest block is prepended:
+  `## @<date> - Claude - <what was processed>`, one bullet per record written —
+  an @-mention plus disposition (`new (owner)` / `updated: <what>`), a `Not created:`
+  line for deliberately skipped items, and a `Source:` line @-mentioning the source
+  record. Never edit or remove existing inbox content; the user clears it after review.

@@ -39,6 +39,11 @@ specific to it. The spine:
    hint still inline).
 9. **Write via the publishing binding** — `/pushing-to-notion` (create) or
    `/updating-a-notion-page` (update) — then verify.
+10. **Digest the batch to the review inbox.** After a gated batch of writes, prepend one
+   digest block to the `ai-inbox` target (shape in `targets.md`): every record written,
+   @-mentioned with its disposition, skipped items noted, the source record cited. The
+   inbox is append-only — the human clears it after review; a single-record write on the
+   human's direct instruction may skip the digest (they watched it happen).
 
 Don't silently default an unstated field — a default is a guess; flag it, don't assert it.
 Unknowns in a record's body stay bare `not defined` — searchable, and they ARE the
