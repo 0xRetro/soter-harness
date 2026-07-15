@@ -62,7 +62,7 @@ keeps the behavior (ADR-0045).
 
 | System | Promise | Mechanisms | Key components | Concepts |
 |---|---|---|---|---|
-| **crm** | Organizations, the people at them, and the channels connecting us are mirrored to the live CRM databases. | capturing-an-org<br>capturing-a-contact | `capturing-an-org`<br>`capturing-a-contact` | org<br>contact<br>channel |
+| **crm** | Organizations, the people at them, the channels connecting us, and the meetings held with them are mirrored to the live CRM databases. | capturing-an-org<br>capturing-a-contact | `capturing-an-org`<br>`capturing-a-contact` | org<br>contact<br>channel<br>meeting |
 | **project-management** | Delivery is tracked above the feature level — projects and the tasks that execute them, per their policy standards. | capturing-a-task | `capturing-a-task` | project<br>task |
 | **product-development** | A captured use-case is carried to a shipped feature, tracked lightly on its own tool's board. | capturing<br>defining | `capturing-a-feature`<br>`defining-a-feature` | feature record<br>tooling page<br>feature lifecycle<br>Feature Board<br>containment |
 | **process** | Repeatable work is defined once in the live Process Inventory — definitions, not a runtime. | capturing-a-process<br>red-teaming | `standards/shaping-a-process.md`<br>`capturing-a-process`<br>`red-teaming-a-process` | process · step<br>work-item<br>process run<br>role · capability |
