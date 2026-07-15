@@ -92,16 +92,19 @@ Features"). Identify a board only by the tooling page that embeds it.
   ROW ("[Task Template - DO NOT CHANGE]") also lives in the live data — skip it when querying.
 
 ### projects  *(the [DB] Projects database — client/internal engagements)*
-- **data_source_id:** `721bfb88-e8d5-4934-ac26-cc82e1afc7a0` *(live-verified 2026-07-14)*
-- **policy standard:** `Projects` in the `policy-standards` registry — rules, D1 (Type), lifecycle
+- **data_source_id:** `721bfb88-e8d5-4934-ac26-cc82e1afc7a0` *(live-verified 2026-07-14, post Ongoing→Operations option rename + Opportunity/Service property removals)*
+- **policy standard:** `Projects` in the `policy-standards` registry — rules, D1 (Type), lifecycle, naming rule, body standard (sections, milestone/work-item grammar, project roles)
 - **properties:**
-  - `Name` → title
-  - `Type` → select            <!-- Project · Ongoing · Deal; assign per the policy's D1 -->
+  - `Name` → title             <!-- `<Org>: <Engagement>` per the policy's naming rule -->
+  - `Type` → select            <!-- Project · Operations · Deal; assign per the policy's D1 -->
   - `Status` → status          <!-- Not Started · Active · On Hold · Complete · Cancelled -->
   - `Start Date` · `Target End Date` → date
   - `PM` · `Client Contact` → person
-  - `Organization` · `Tasks` · `Docs` · `Opportunity` · `Service` → relation   <!-- resolve target page ids first -->
-- Registered templates: the DB default plus "[Template] - Deal: [name]" for Deal-type entries.
+  - `Organization` · `Tasks` · `Docs` → relation   <!-- resolve target page ids first -->
+- Registered templates: the DB default "[Project Template]" (implements the policy's body
+  standard and carries the template-relative filtered Project Task Board — the view API
+  cannot set relation filters, so the template is the only automated path to a per-project
+  filtered view) plus "[Template] - Deal: [name]" for Deal-type entries.
 
 ### process-inventory  *(the [DB] Process Inventory database — one entry per repeatable process)*
 - **data_source_id:** `31ad79b5-de38-8031-b789-000b661de83f` *(live-verified 2026-07-14, post Soter Involvement + Related Service property removals; Related Policies added per ADR-0038)*
@@ -200,6 +203,10 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Held by` → relation       <!-- → [DB] Contacts -->
   - `Processes` → relation      <!-- → [DB] Process Inventory (dual: its Related Roles), ADR-0043 -->
   - `Status` → select          <!-- Active · Retired -->
+- Serves processes AND projects: the project roles (Steering · Stakeholder · Project
+  Coordinator · Project Ops · Counterparty Contact) live here alongside process-execution
+  roles; project-role semantics in the Projects policy standard, capabilities in the
+  Processes policy.
 ### resources  *(the [DB] Resources database — external accounts, platforms, shared assets)*
 - **data_source_id:** `315d79b5-de38-80a0-8940-000b21386424` *(live-verified 2026-07-14)*
 - **properties:**

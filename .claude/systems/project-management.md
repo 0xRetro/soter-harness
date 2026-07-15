@@ -16,7 +16,10 @@ tracking what's being delivered, for whom, by when; ingestion (which can produce
 from a source); the publishing bindings that write them. Mirrors the LIVE [DB] Tasks /
 [DB] Projects schemas (documentation can lag — fetch live, ADR-0016); task and project
 semantics are governed by the subjects' policy standards in the org's registry
-(ADR-0021). Decreed with the first add-on wave (ADR-0017).
+(ADR-0021). The project body standard — sections, milestone/work-item grammar, and the
+project-role vocabulary drawn from the shared [DB] Roles directory — lives in the
+Projects policy standard and is implemented by the live DB default template.
+Decreed with the first add-on wave (ADR-0017).
 
 ## Mechanisms
 - **capturing-a-task** — reads: a described actionable item · produces: a [DB] Tasks row
@@ -40,7 +43,7 @@ semantics are governed by the subjects' policy standards in the org's registry
   binding's `targets.md`.
 
 ## Concepts
-project · task
+project · task · milestone
 
 ## Invariants
 - tasks and projects are shaped to the live [DB] Tasks / [DB] Projects schemas, never an assumed one — enforcer: (gate) + publishing's live schema fetch
