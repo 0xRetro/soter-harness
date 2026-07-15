@@ -25,7 +25,23 @@ are mechanisms OF the systems that use them.
 - `.claude/hooks/hooks.json` — plugin-shipped wiring, always at parity with
   settings.json: same guards, checker hook, and turn gate (ADR-0034)
 - `.claude/.claude-plugin/plugin.json` — the plugin manifest (the `.claude/` dir IS the
-  plugin); carries no version while the harness is internal — every commit ships (ADR-0034)
+  plugin); carries no version while the harness is internal — every commit ships (ADR-0034).
+  Declares plugin DEPENDENCIES for MCP servers that have an official plugin (notion, slack
+  @ claude-plugins-official) — depending, not bundling, keeps tool names stable
+  (`mcp__plugin_Notion_notion__*`); cross-marketplace resolution needs an
+  `allowCrossMarketplaceDependenciesOn` entry when a marketplace exists (distribution work).
+- `.claude/.mcp.json` — plugin-shipped MCP servers with NO official plugin (otter:
+  `https://mcp.otter.ai/mcp`, per-user OAuth at first use — no credential ships; the
+  meeting pipeline depends on it, ADR-0051).
+  **MCP coupling inventory** — every MCP server the harness leans on, and where its
+  wiring lives: notion (publishing bindings · ingestion · schema-audit · every capture
+  flow) and slack (ingesting-slack-channels · eval-runner reads) via plugin
+  dependencies; otter (meeting transcripts) via `.mcp.json`. The pattern for adding
+  one: official plugin exists → declare a dependency; otherwise → add to `.mcp.json`;
+  either way it is listed HERE. Route-qualified tool names
+  (`mcp__plugin_<plugin>_<server>__<tool>`) may appear ONLY in agent allowlists
+  (eval-runner) and permission rules — never in guide or standard prose — and must be
+  re-derived if a server's delivery route changes (allowlists fail closed).
 - `.claude/rules/parallel-sessions.md` — the multi-session operating rule: one
   session = one worktree = one branch; root checkout parked on main (ADR-0027)
 - per-primitive usage standards — authored via the forge ONLY on an observed RED
