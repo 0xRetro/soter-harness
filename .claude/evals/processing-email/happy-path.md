@@ -1,5 +1,6 @@
 ---
 skill: processing-email
+passed: b4d745b
 case: happy-path
 ---
 
