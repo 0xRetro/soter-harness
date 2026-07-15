@@ -76,7 +76,7 @@ keeps the behavior (ADR-0045).
 | System | Promise | Mechanisms | Key components | Concepts |
 |---|---|---|---|---|
 | **publishing** | Work reaches external systems of record deliberately — typed, de-duplicated, human-confirmed; Notion is the first binding, not the system. | notion-push<br>notion-update | `pushing-to-notion`<br>`updating-a-notion-page`<br>`targets.md`<br>`writing-records-to-notion.md` | publish · binding<br>external store<br>fetch-merge-write<br>relation · option set<br>resolve · page |
-| **ingestion** | External sources become standardized records, with a human gating what actually enters; the pull side. | reviewing-a-repo | `reviewing-a-repo` | source<br>ingestion<br>standardize<br>intake gate |
+| **ingestion** | External sources become standardized records, with a human gating what actually enters; the pull side. | reviewing-a-repo<br>processing-a-meeting<br>ingesting-slack-channels | `reviewing-a-repo`<br>`processing-a-meeting`<br>`ingesting-slack-channels` | source<br>ingestion<br>standardize<br>intake gate |
 | **schema-audit** | Notion's schema docs and the harness's own mirror stay true to the live databases. | auditing-a-schema-doc | `auditing-a-schema-doc` | schema doc<br>schema drift |
 
 The `rules/` folder is a delivery form (always-on), not a system — each rule declares
