@@ -23,9 +23,16 @@ fetch live, never an assumed one (ADR-0016).
 - None of its own — decreed ahead of pieces (ADR-0048). The Docs policy standard
   (Notion) and the `docs` target registration are live; a capture guide is forged
   ONLY if its baseline fails (resources' precedent, ADR-0028: the policy standard +
-  registered target may be the whole teaching layer). Authoring docs from a
-  policy-defined type shape is forged when a real need shows up; writes go through
-  the publishing bindings.
+  registered target may be the whole teaching layer). Doc capture evaluated
+  2026-07-15: baseline GREEN — a fresh contained agent captured an external
+  reference (a live dashboard URL) correctly from the policy + target + write spine
+  alone (live schema fetched, de-dup on Link+Name, Type per D2 with Link set, Org
+  resolved to a real page id, required-but-human fields flagged never guessed, D3
+  audience implication surfaced, write held at the confirm gate with the user
+  away), so no capturing-a-doc guide was authored (forge step 4). Re-propose only
+  on an observed doc-capture failure. Authoring docs from a policy-defined type
+  shape is forged when a real need shows up; writes go through the publishing
+  bindings.
 
 ## Components
 - None of its own. The Notion target `docs` (live schema mirror) lives in the
