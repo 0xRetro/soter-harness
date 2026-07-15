@@ -51,7 +51,12 @@ binding. Audit-specific:
    SAME live fetch — properties, option lists, relation targets, template notes, and the
    `live-verified` stamp. A DB with a schema doc but no target entry (or vice versa) is
    itself a finding, not a skip. The mirror's fix is a repo edit landing through the
-   harness gate (branch/PR), never a Notion write.
+   harness gate (branch/PR), never a Notion write. **Registered templates are part of
+   the mirror:** for each template the target entry documents, fetch the template page
+   live — checking the fetch's "as of" stamp is current FIRST — and verify it exists at
+   the documented id, its body carries the sections its policy's body-shape rule
+   declares (present, in order), and it sets no property value absent from the live
+   option set. A drifted template's fix is a gated Notion edit, like the doc's.
 7. **Report + propose surgical edits.** Present the full diff — doc and mirror. Propose
    edits to the Fields section ONLY — leave every other section untouched (in a policy
    standard: Definition/Classifications/Rules/Lifecycle are policy content, not schema; in
@@ -89,7 +94,9 @@ binding. Audit-specific:
   snapshot — its "as of" stamp predated the audit, so a just-made edit could hide
   behind the cache while the audit claims currency. Check the fetch's "as of"
   timestamp and record it as the audit's evidence stamp; if it predates a known
-  recent write, re-fetch before diffing.
+  recent write, re-fetch before diffing. Same-day consequence observed: the first
+  registered-template sweep returned a false "missing section" HIGH finding — a
+  fresh fetch showed the section present all along.
 
 ## Evals
 - `.claude/evals/auditing-a-schema-doc/happy-path.md`
