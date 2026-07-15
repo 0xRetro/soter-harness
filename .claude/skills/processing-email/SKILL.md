@@ -10,7 +10,7 @@ description: >-
   capture, Notion write mechanics, or sending mail — nothing sends.
 disable-model-invocation: true
 layer: automation
-system: email
+system: ingestion
 kind: component
 mold: how-to-guide
 ---

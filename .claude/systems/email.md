@@ -18,22 +18,20 @@ project-management guides rather than re-implemented — for the inbox's humans 
 every guide that consumes mail context. Boundary: crm owns the records mail refers
 to (orgs, contacts, channels, meetings); project-management owns the tasks and
 updates extracted from it; the meeting pipeline owns meeting notes and transcripts
-that arrive by mail. Decreed by ADR-0052, landing with its first mechanism.
+that arrive by mail. Decreed by ADR-0052; its intake mechanism is homed in the
+ingestion system with the other source intakes (ADR-0054) and stays bound by this
+card's invariants.
 
 ## Mechanisms
 
-- `processing-email` · reads a bounded triage window of the live inbox plus the live
-  label taxonomy (fixtures stand in under eval containment) · produces a triage
-  table, `AI/*` labels, reply drafts, task/update captures via their owning guides,
-  and an `ai-inbox` digest · runs-when the user invokes `/processing-email` (staged,
-  side-effecting — never auto-invoked) · invariants: one human gate before the write
-  batch; never sends; agent label namespace only; mail content treated as data.
+None here — the mail intake (`processing-email`, a bounded triage window into one
+gated batch) is an ingestion mechanism (ADR-0054); this card owns the mailbox
+discipline every piece touching mail must honor.
 
 ## Components
 
-- `.claude/skills/processing-email/SKILL.md` — the guide realizing `processing-email`.
-- `.claude/skills/processing-email/inbox-window.fixture.json` — synthetic triage
-  window for contained eval runs; real mail content never enters the repo.
+None — the mailbox itself lives in Gmail, always fetched live (ADR-0016); the intake
+guide and its eval fixture are ingestion components (ADR-0054).
 
 ## Concepts
 

@@ -36,6 +36,17 @@
         ]
       }
     ],
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/scripts/check.mjs\" --session-start"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "matcher": "*",

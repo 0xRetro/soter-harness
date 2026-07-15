@@ -23,6 +23,9 @@ warning), reviewers (the mechanical floor).
   on unparseable input, ADR-0044),
   turn gate (`--gate`, block: holds a turn open ONCE while checker errors stand;
   warnings never block; fail-open off-harness and on any internal error, ADR-0035),
+  post-compaction re-grounding (`--session-start`, inject-only: emits where-am-I
+  context — checkout vs worktree, branch, live checker verdict — after a context
+  compaction; fail-open off-harness, ADR-0055),
   CI (block), `--selftest` (plant-and-assert) · invariants: ONE shared script,
   rules as data, never per-rule scripts; must catch every planted violation; the
   lint hook never blocks. Which platform events fire these is the platform card's
