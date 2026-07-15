@@ -114,6 +114,14 @@ entries were updated, not duplicated.
   committed API key in a public repo). Where the finding lands is a gate decision
   (here: a bug card on the board) — and the secret itself is NEVER copied into any
   record, only its location referenced.
+- (live run 2026-07-14, soter-harness) Template guidance italics were left inline in
+  the finished page body — a Notion template's hints are deleted when their section is
+  filled, exactly like mold hints (`writing-records-to-notion` step 8 carries the rule).
+- (live run 2026-07-14, soter-harness) An extra select with an EMPTY option set (a
+  fresh board's `Area`) is a gate decision like the Type-option precedent: propose an
+  option set from the tool's own architecture at the intake gate. Don't leave the
+  property blank while hand-writing the same grouping into the body — the two then
+  drift independently (property values and body sections have no native link).
 
 ## Evals
 - `.claude/evals/reviewing-a-repo/happy-path.md`

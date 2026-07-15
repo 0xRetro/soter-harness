@@ -1,7 +1,7 @@
 ---
 skill: reviewing-a-repo
 case: happy-path
-passed: 234395a
+passed: 9338dcf
 ---
 
 ## Try

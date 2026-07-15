@@ -13,14 +13,15 @@ Every term is defined once and referenced everywhere; classification is mechanic
 Consumers: every author (human or agent), the enforcement checker.
 
 ## Mechanisms
-None — this system is data only. Its rules run inside the enforcement checker
-(alias lint reads the registry's Aliases table as data).
+None of its own — the alias lint is a delegated mechanism (ADR-0045): it runs
+inside enforcement's checker, reading the registry's Aliases table as data.
 
 ## Components
 - `.claude/LEXICON.md` — the registry: classification rule, primitives, terms, aliases (singleton)
 
 ## Concepts
-term · alias · concept · layer · system · mechanism · component
+term · alias · concept · layer · system · mechanism · component · engine ·
+delegated mechanism
 
 ## Invariants
 - one entry per concept; no synonyms in harness content — enforcer: checker `ALIAS`

@@ -17,49 +17,75 @@ The primitives that are used to create anything within the harness are:
 - components - an artifact that is read or executed; used by mechanisms and systems 
 - concepts  - a defined thing, so we don't confuse or misuse things. 
 
-The Kernel Layer involves 
-- soter-harness lexicon system
-  - lexicon registry component (md file — data, no machinery of its own)
-    - concept entries: one concept → one term; synonyms are banned (the aliases table)
-  - lexicon check rule components (data rows the enforcement checker runs)
-  - concepts: term · alias · concept
-- soter-harness template system
-  - scaffold mechanism (a new piece = a copy of its mold)
-  - template mold components (one mold per piece shape, incl. the mold-for-molds)
-  - shape check rule components (data rows the enforcement checker runs)
-  - concepts: mold · shape
-- soter-harness enforcement system
-  - checker mechanism (ONE shared engine — reads every system's check rules as data)
-  - check registry component
-  - concepts: check rule · green carries evidence (an empty scan is a failure, never a pass)
-- soter-harness eval system
-  - baseline mechanism (prove the failure without the piece, first)
-  - pressure-test mechanism (fresh agent, realistic stakes — polite tests lie)
-  - eval case components (data, ≥3 per piece; the runner is replaceable machinery)
-  - concepts: baseline · pressure case
-- soter-harness standards system (kernel: the gate consumes it)
-  - rubric component (THE checklist) · naming standard · budget standard
-  - degrees-of-freedom standard component (where judgement is allowed, with bounds)
-  - concepts: budget · degree of freedom · flex point
-- soter-harness governance system (separate from standards; ratifies them, the gate consumes them)
-  - human gate mechanism (merge approval on every harness change)
-  - ADR log component (append-only decision records)
-  - concepts: gate · ADR · staged → promoted
-- soter-harness authoring system (the self-build loop — kernel by definition)
-  - forge mechanism (authors a new piece end-to-end: mold → evals → checks → gate; never freehand)
-  - authoring guide component (how pieces are born, baseline-failure first)
-  - concepts: piece · the loop
-- soter-harness platform system (claude-code only — ALL platform coupling quarantined here; kept separate for exactly that reason)
-  - one usage-standard component per primitive: hooks · skills · agents · commands · worktrees · orchestration
-  - wiring component (settings/hooks.json — how mechanisms get attached to the platform)
-  - concepts: hook (auto-triggered deterministic infra) · skill (on-demand loaded procedure) · agent (isolated-context delegate) · command (typeable shortcut) · script (executed, never read) · worktree (isolated working copy)
-  - note: a concrete hook/skill/agent file is a mechanism or component OF the system that uses it — the platform system only defines what these forms ARE and how we use them
+## Systems inventory
+
+One row per system, all four layers. The source of truth for every row is the
+system's card in `.claude/systems/` — this table is a hand-synced overview, so a PR
+that changes a card updates its row in the same PR. Promises drift slowest;
+mechanisms, components, and concepts change with nearly every merge — verify against
+the card when it matters. A mechanism marked "delegated" runs inside one of the
+engines — the checker, the forge loop, or the human gate — while its owning system
+keeps the behavior (ADR-0045).
+
+<!-- Editing rules for these tables (aligned in PR #35):
+  - One table per layer; columns: System · Promise · Mechanisms · Key components · Concepts.
+  - Promise: one full sentence, from the card's Promise.
+  - Mechanisms & Key components: bare names, one per line (<br>). No annotations —
+    decree/deferral/verdict notes and trigger lists live on the system card.
+    Only allowed markers: "(delegated to the checker/forge/human gate)" (ADR-0045)
+    and "(an engine)".
+  - "None" only when the system truly has none.
+  - Concepts: from the card's Concepts line; group 2-3 per line with · only when a list is long.
+  - No hardcoded counts (live-lists rule) — role words instead ("the molds").
+-->
+
+### Kernel — required substrate: makes the harness run and self-build
+
+| System | Promise | Mechanisms | Key components | Concepts |
+|---|---|---|---|---|
+| **template** | Every piece starts as a copy of its mold, so shape is guaranteed by instantiation rather than policing. | scaffold<br>(delegated to the forge) | `templates/` (the molds) | mold<br>shape<br>hint |
+| **lexicon** | Every term is defined once and referenced everywhere, so classification is mechanical rather than a judgment call. | alias lint<br>(delegated to the checker) | `LEXICON.md` | term<br>alias<br>concept<br>engine<br>delegated mechanism |
+| **standards** | There is one explicit bar for quality, naming, and budgets, so review is a checklist rather than taste. | rubric review<br>(delegated to the human gate)<br>budgets/naming<br>(delegated to the checker) | `RUBRIC.md`<br>`standards/degrees-of-freedom.md` | budget<br>degree of freedom<br>flex point<br>rubric |
+| **eval** | Every piece proves it was needed (a watched baseline failure) and holds up under realistic pressure. | baseline · pressure-test<br>(delegated to the forge)<br>running-evals | `evals/` (the cases)<br>`running-evals`<br>`agents/eval-runner.md` | baseline<br>pressure case<br>golden<br>eval case<br>meta-case |
+| **enforcement** | Everything the harness declares is mechanically verified, and a green result always carries evidence. | checker (an engine) | `scripts/check.mjs` | check rule<br>green carries evidence<br>turn gate |
+| **governance** | The harness changes only deliberately: decisions are recorded, humans gate every merge, and new pieces earn trust before autonomy. | human gate<br>decision recording<br>promotion | `decisions/`<br>`writing-adrs`<br>`reviewing-forge-output`<br>`promoting-pieces` | gate<br>ADR<br>staged<br>promoted<br>add-on<br>decree |
+| **authoring** | New pieces are born through one loop — mold, evals, checks, gate — never freehand. | forge | `skills/forge/`<br>`rules/authoring.md` | piece<br>the loop<br>exclusion clause<br>gotcha |
+| **platform** | All claude-code coupling is quarantined in one place, so every other system stays portable. | None | `settings.json`<br>`hooks/hooks.json`<br>`plugin.json`<br>`rules/parallel-sessions.md` | hook · skill · agent<br>command · script<br>worktree · subagent<br>session · guide |
+
+### Core — generic capability above the kernel
+
+| System | Promise | Mechanisms | Key components | Concepts |
+|---|---|---|---|---|
+| **policy** | Every governed subject has exactly one rules-first policy standard; the docs live in Notion, their shape lives here. | authoring-a-policy-standard | `standards/shaping-a-policy-standard.md`<br>`authoring-a-policy-standard` | policy standard<br>subject |
+
+### Context — the world the harness works in
+
+| System | Promise | Mechanisms | Key components | Concepts |
+|---|---|---|---|---|
+| **crm** | Organizations, the people at them, and the channels connecting us are mirrored to the live CRM databases. | capturing-an-org<br>capturing-a-contact | `capturing-an-org`<br>`capturing-a-contact` | org<br>contact<br>channel |
+| **project-management** | Delivery is tracked above the feature level — projects and the tasks that execute them, per their policy standards. | capturing-a-task | `capturing-a-task` | project<br>task |
+| **product-development** | A captured use-case is carried to a shipped feature, tracked lightly on its own tool's board. | capturing<br>defining | `capturing-a-feature`<br>`defining-a-feature` | feature record<br>tooling page<br>feature lifecycle<br>Feature Board<br>containment |
+| **process** | Repeatable work is defined once in the live Process Inventory — definitions, not a runtime. | capturing-a-process<br>red-teaming | `standards/shaping-a-process.md`<br>`capturing-a-process`<br>`red-teaming-a-process` | process · step<br>work-item<br>process run<br>role · capability |
+| **resources** | The team's external accounts and platforms are tracked with clear access and administration answers. | validating-resources | `validating-resources` | resource |
+| **sky** | Sky-ecosystem vocabulary has one home, so terms don't drift per surface. | None | None | Sky ecosystem · Atlas<br>spell · MSC · star<br>Prime Agent · NFAT |
+
+### Automation — pushing, pulling, and keeping stores honest
+
+| System | Promise | Mechanisms | Key components | Concepts |
+|---|---|---|---|---|
+| **publishing** | Work reaches external systems of record deliberately — typed, de-duplicated, human-confirmed; Notion is the first binding, not the system. | notion-push<br>notion-update | `pushing-to-notion`<br>`updating-a-notion-page`<br>`targets.md`<br>`writing-records-to-notion.md` | publish · binding<br>external store<br>fetch-merge-write<br>relation · option set<br>resolve · page |
+| **ingestion** | External sources become standardized records, with a human gating what actually enters; the pull side. | reviewing-a-repo | `reviewing-a-repo` | source<br>ingestion<br>standardize<br>intake gate |
+| **schema-audit** | Notion's schema docs and the harness's own mirror stay true to the live databases. | auditing-a-schema-doc | `auditing-a-schema-doc` | schema doc<br>schema drift |
+
+The `rules/` folder is a delivery form (always-on), not a system — each rule declares
+its owning system in frontmatter (`authoring.md` → authoring; `parallel-sessions.md`
+→ platform), per the folder-never-implies-system rule.
 
 Deferred (not kernel): distribution system — likely core; packaging + installer, decided later.
 
 ## Status
 
-The kernel is built and sealed: the eight systems above (`.claude/systems/`), the molds
+The kernel is built and sealed: the eight kernel systems in the table above (`.claude/systems/`), the molds
 (`.claude/templates/`), the registry + placement table (`.claude/LEXICON.md`), the bar
 (`.claude/RUBRIC.md`), and the one checker (`.claude/scripts/check.mjs` — validates
 classification frontmatter, card/mold shape + order, card-path/card-concept/card-listing
@@ -71,7 +97,7 @@ and hardening per the ADR log. The seal test ran end-to-end (the forge authored 
 through baseline → evals → checks → fresh-agent pressure-test → gate); red-team +
 claims-vs-reality sweeps harden the checker.
 
-**Add-ons built on top (ADR-0012, all four layers in one repo):** a Notion intake engine —
+**Add-ons built on top (ADR-0012, all four layers in one repo):** a Notion intake stack —
 **automation** systems `publishing` (create/update bindings, live-proven), `ingestion`
 (review a source → curate → publish), and `schema-audit` (keep Notion's own schema docs
 true to the live DBs), plus **context** domains `product-development`,

@@ -15,7 +15,8 @@ not policing. Consumers: authors (human or agent), the forge, the checker.
 ## Mechanisms
 - **scaffold** — reads: the piece's mold · produces: a new piece skeleton ·
   runs-when: authoring starts (forge step "Draft") · invariants: never freehand;
-  hints deleted when filled. (Realized today as a forge step, not a separate file.)
+  hints deleted when filled. (A delegated mechanism, ADR-0045 — realized as a forge
+  step, not a separate file.)
 
 ## Components
 - `.claude/templates/mold.md` — the mold-for-molds (the one bootstrap)
