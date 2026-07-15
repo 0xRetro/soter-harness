@@ -176,9 +176,11 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Date` → date              <!-- when the meeting occurs/occurred; single date, no time -->
   - `Type` → select            <!-- Team Meeting · EDU Session · BD · Client Sync · Project Sync · Office Hours · Ops -->
   - `Org` → relation           <!-- → [DB] Orgs (two-way); the participating orgs — resolve page ids -->
-  - `Participants` · `Client Contact` → person   <!-- workspace users only — these can NOT hold [DB] Contacts rows -->
+  - `Participants` → person   <!-- workspace users only — can NOT hold [DB] Contacts rows; Client Contact (person) REMOVED 2026-07-15, ghost-valued and unusable for [DB] Contacts -->
   - `Recording` → url          <!-- the meeting owner's Otter link, added post-meeting -->
   - `Related Docs` → relation  <!-- → [DB] Docs -->
+- A processed meeting's summary doc (see the `docs` target) hangs off `Related Docs`;
+  the Recording URL's trailing id is fetchable via the Otter MCP (`mcp__otter__fetch`).
 - Rows are PRE-CREATED ahead of the meeting (the weekly Hermes generation run, and the
   Scheduling and Running Meetings process's "2 days in advance" step) with body skeleton
   `## Agenda` / `## Follow Ups` — search series + date before any create; an existing row
@@ -266,24 +268,39 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Link` → url              <!-- required for external Reference/Dashboard docs -->
   - `Owner` · `Client Contact` → person
   - `Org` · `Related Projects` → relation   <!-- resolve target page ids first; Org is always set (policy) -->
-- Meeting artifacts never enter this DB — they live in [DB] Meetings (target `meetings`).
+- Meeting RECORDS (agendas, notes, transcripts) never enter this DB — they live in
+  [DB] Meetings (target `meetings`). A meeting's derived SUMMARY is a doc: Type `Report`,
+  body from the registered `[Meeting Summary Template]` (page `39ed79b5de388058bb35e24d6c162c19`) —
+  every topic names its Related project/deal — linked from the meeting row's `Related Docs`
+  (Docs policy v0.4).
 
 ### update-feed  *(the [DB] Update Feed database — the org's typed update / decision / question feed)*
 - **data_source_id:** `fd89fc28-7aa6-4cb8-85d0-9e81741b7302` *(live-verified 2026-07-15)*
 - **properties:**
   - `Update` → title           <!-- the headline -->
-  - `Category` → select        <!-- Milestone · News · Event · Update · Launch · Status · Decision · Question -->
+  - `Category` → select        <!-- Update · Status · Decision · Question · Milestone -->
   - `Date` → date
   - `Summary` → text           <!-- typed grammars per the Projects policy: Status = Done/In progress/At risk/Next; Decision = what - decided by - why; Question = question - owner - needed by -->
   - `Source` → url
   - `Processed` → checkbox     <!-- follow-ups done / question answered -->
   - `Visibility` → select      <!-- Internal · Agent · Public -->
   - `📁 [DB] Projects` → relation   <!-- the property name is LITERAL incl. emoji; resolve the target [DB] Projects row id first -->
-- Registered template: the DB default (page `317d79b5-de38-80aa-a6df-f5dd445ee1bb`). A
-  [DB] Projects row's Updates section is a live view of this feed filtered to that project.
+- Registered templates: one per `Category` value — Status · Decision · Question · Update ·
+  Milestone — each presetting `Category` + `Visibility` `Internal` with its Summary grammar
+  as hint text; the legacy "Default Update" (page `317d79b5-de38-80aa-a6df-f5dd445ee1bb`)
+  remains the DB default. A [DB] Projects row's Updates section is a live view of this
+  feed filtered to that project.
 
 > **Relations:** the create/update bindings write a relation as the TARGET page's id.
 > Resolve it (search the related DB by name) before writing, or leave the relation empty
 > and link it in a follow-up. Don't fabricate a page id.
 > **Select/multi_select:** the value must be an EXISTING option — fetch the live schema
 > and match; never invent an option name (a wrong one is rejected or silently creates junk).
+
+### ai-inbox  *(the AI Inbox page — the user's private review feed; APPEND-ONLY)*
+- **page id:** `39ed79b5-de38-80ea-b6f0-ff908935a32d` *(a page, not a database — insert_content at start, newest block first)*
+- After a gated BATCH of record writes, one digest block is prepended:
+  `## @<date> - Claude - <what was processed>`, one bullet per record written —
+  an @-mention plus disposition (`new (owner)` / `updated: <what>`), a `Not created:`
+  line for deliberately skipped items, and a `Source:` line @-mentioning the source
+  record. Never edit or remove existing inbox content; the user clears it after review.
