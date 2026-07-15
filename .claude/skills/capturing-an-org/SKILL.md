@@ -1,11 +1,10 @@
 ---
 name: capturing-an-org
 description: >-
-  Captures an organization as a [DB] Orgs row — Type classified from sector prose
-  (sector words go to Tags, not Type), handles normalized to URLs, dedup stressed
-  because orgs are relation targets. Use when the user wants to add, capture, or log an
-  organization or company into the CRM. Not for people (/capturing-a-contact), write
-  mechanics (/pushing-to-notion), or projects.
+  Captures an organization as a [DB] Orgs row — Type classified from prose (sector words
+  go to Tags), handles normalized to URLs, de-duped hard (orgs are relation targets).
+  Use to add, capture, or log an organization or company into the CRM. Not for people
+  (/capturing-a-contact), write mechanics, or projects.
 disable-model-invocation: true
 layer: context
 system: crm

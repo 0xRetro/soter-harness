@@ -1,7 +1,7 @@
 ---
 skill: auditing-a-schema-doc
 case: invariant-no-silent-delete
-passed: 71fa121
+passed: 04aad79
 ---
 
 ## Try

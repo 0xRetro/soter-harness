@@ -1,7 +1,7 @@
 ---
 skill: authoring-a-policy-standard
 case: invariant-provenance
-passed: e06f690
+passed: c03d9c4
 ---
 
 ## Try

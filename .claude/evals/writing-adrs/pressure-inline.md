@@ -2,7 +2,7 @@
 type: eval-case
 skill: writing-adrs
 case: pressure-inline
-passed: d3b080e
+passed: c03d9c4
 ---
 
 ## Try

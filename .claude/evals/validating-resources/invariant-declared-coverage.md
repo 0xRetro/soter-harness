@@ -1,7 +1,7 @@
 ---
 skill: validating-resources
 case: invariant-declared-coverage
-passed: 14b97e8
+passed: c03d9c4
 ---
 
 ## Try

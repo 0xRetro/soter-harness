@@ -2,7 +2,7 @@
 type: eval-case
 skill: writing-adrs
 case: happy-path
-passed: 14b97e8
+passed: c03d9c4
 ---
 
 ## Try

@@ -2,9 +2,9 @@
 name: updating-a-notion-page
 description: >-
   Updates an existing Notion page safely — fetch-merge-write so nothing is clobbered,
-  only the named properties touched, a human confirming first. Use when the user wants
-  to update, edit, change a field on, or append to an existing Notion page or card. Not
-  for creating pages (/pushing-to-notion), deleting pages, or non-Notion stores.
+  only named properties touched, a human confirming first. Use to update, edit, or
+  append to an existing Notion page or card. Not for creating pages (/pushing-to-
+  notion), deleting, or non-Notion stores.
 disable-model-invocation: true
 layer: automation
 system: publishing
