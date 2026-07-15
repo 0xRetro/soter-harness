@@ -1,7 +1,7 @@
 ---
 skill: auditing-a-schema-doc
 case: targets-mirror-drift
-passed: 234395a
+passed: 04aad79
 ---
 
 ## Try
