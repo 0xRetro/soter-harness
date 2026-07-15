@@ -1,7 +1,8 @@
 ---
 skill: capturing-a-process
 case: pressure-invent-option
-passed: e06f690
+passed: 9f6244e
+note: 2026-07-14 rerun — the runner Read its own case mid-run (gotcha, 4th observation); verdict rests on observables (zero write calls in transcript, live options matched, confirm gate held, default flagged)
 ---
 
 ## Try
