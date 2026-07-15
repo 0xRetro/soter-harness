@@ -66,6 +66,12 @@ guide.
   gotchas — belief without artifacts fails step 2. Corollary: a mechanism-guide used
   THROUGH callers accrues its evidence in the callers and the shared standard, not its
   own gotchas — read the evidence at that altitude (recorded in ADR-0039).
+- (live 2026-07-15, second wave) Thirteen evidence reviews produced twelve refusals and
+  one promotion — most staged guides carried only baseline/eval-tagged gotchas, and the
+  guides with live gotchas had them from a single day's single session (defining-a-feature,
+  validating-resources, red-teaming-a-process, capturing-a-process all failed the
+  ≥2-sessions leg, not the ≥3-uses leg). Counter to the temptation both waves felt:
+  same-day multi-use is ONE session's evidence; the floor's two legs are independent.
 
 ## Evals
 - `.claude/evals/promoting-pieces/happy-path.md`

@@ -55,6 +55,9 @@ Docs: `README.md` (the map) · `.claude/LEXICON.md` (terms + classification) ·
 - `/capturing-a-task` — captures an actionable item as a [DB] Tasks row, relations
   resolved never fabricated, confirmed before the write. Always user-invoked
   (side-effecting). (ADR-0042)
+- `/promoting-pieces` — walks the promotion decision for a staged piece: real-use
+  evidence from artifacts, then an index entry; side-effecting guides never auto-fire.
+  Always user-invoked (side-effecting). (ADR-0056)
 
 ## Layout
 
