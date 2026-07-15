@@ -1,6 +1,6 @@
 # ADR-0054: The email intake mechanism is homed in ingestion
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-15
 
 ## Context

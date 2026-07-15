@@ -1,6 +1,6 @@
 # ADR-0055: Anti-drift hardening — divergence-to-eval norm, two lints, post-compaction re-grounding
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-15
 
 ## Context

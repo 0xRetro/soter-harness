@@ -57,5 +57,5 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0050](ADR-0050-onchain-context-system.md) | The onchain context system — decreed ahead of its pieces | Accepted |
 | [ADR-0051](ADR-0051-meeting-processing-pipeline.md) | Meeting processing — official Otter MCP, summary-doc intermediate, project attribution | Accepted |
 | [ADR-0052](ADR-0052-email-context-system.md) | The email context system — decreed, with its first mechanism | Accepted |
-| [ADR-0054](ADR-0054-email-intake-homed-in-ingestion.md) | The email intake mechanism is homed in ingestion | Proposed |
-| [ADR-0055](ADR-0055-anti-drift-hardening.md) | Anti-drift hardening — divergence-to-eval norm, two lints, post-compaction re-grounding | Proposed |
+| [ADR-0054](ADR-0054-email-intake-homed-in-ingestion.md) | The email intake mechanism is homed in ingestion | Accepted |
+| [ADR-0055](ADR-0055-anti-drift-hardening.md) | Anti-drift hardening — divergence-to-eval norm, two lints, post-compaction re-grounding | Accepted |
