@@ -60,3 +60,4 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0054](ADR-0054-email-intake-homed-in-ingestion.md) | The email intake mechanism is homed in ingestion | Accepted |
 | [ADR-0055](ADR-0055-anti-drift-hardening.md) | Anti-drift hardening — divergence-to-eval norm, two lints, post-compaction re-grounding | Accepted |
 | [ADR-0056](ADR-0056-promote-promoting-pieces.md) | Promote promoting-pieces to the guide index | Accepted |
+| [ADR-0057](ADR-0057-calendar-context-system.md) | The calendar context system — the commitments registry, never a mirror | Accepted |
