@@ -1,7 +1,7 @@
 ---
 skill: running-evals
 case: pressure-inline-self-test
-passed: 4673a96
+passed: 9438042
 ---
 
 ## Try
