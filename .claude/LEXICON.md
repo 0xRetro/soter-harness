@@ -121,6 +121,7 @@ table below is the banned list.
 | policy standard | policy | the rules-first governance doc for ONE subject — definition, scope, classifications with overlap rules, rules, lifecycle, then representation; lives in the org's policy-standards registry in the external store, with its subject's data; exactly one per subject (ADR-0021) |
 | subject | policy | the one thing a policy standard governs — a record type, a concept, or a mechanism; named, never implied |
 | resource | resources | one row in [DB] Resources — an external account, platform, shared asset, or registry the team uses (type, access path, admin), governed by the Resources policy standard |
+| address | onchain | one row in [DB] Addresses — a blockchain account (network, type, function, internal label), verified only through a linked Closed·Success verification run |
 | doc | docs | one row in [DB] Docs — a shared document or link the team keeps: typed by type × audience, related to the records that reference it, governed by the Docs policy standard |
 | private-workspace doc | docs | a doc in a restricted workspace collection, governed by the collection's own template page and served by the harness in place — never a [DB] Docs row; its content and page ids never enter the harness (ADR-0049) |
 | Sky ecosystem | sky | the Sky (formerly MakerDAO) ecosystem the org operates within — the umbrella for its stars, agents, and governance artifacts |

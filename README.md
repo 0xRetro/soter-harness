@@ -68,6 +68,7 @@ keeps the behavior (ADR-0045).
 | **process** | Repeatable work is defined once in the live Process Inventory — definitions, not a runtime. | capturing-a-process<br>red-teaming | `standards/shaping-a-process.md`<br>`capturing-a-process`<br>`red-teaming-a-process` | process · step<br>work-item · subprocess<br>process run · slot<br>role · capability |
 | **resources** | The team's external accounts and platforms are tracked with clear access and administration answers. | validating-resources | `validating-resources` | resource |
 | **docs** | The team's shared documents and links have one governed home, while private-collection docs are served in place and never enter it. | None | None | doc<br>private-workspace doc |
+| **onchain** | The org's onchain footprint — addresses, wallets and safes, and the rules for operating them — is tracked in the live [DB] Addresses. | None | None | address |
 | **sky** | Sky-ecosystem vocabulary has one home, so terms don't drift per surface. | None | None | Sky ecosystem · Atlas<br>spell · MSC · star<br>Prime Agent · NFAT<br>the Docs subject areas:<br>Distribution Rewards · Integration Boost<br>Governance Accessibility Rewards<br>Pioneer Chain Rewards<br>Admin & Internal Ops · Legal & Compliance<br>Business Development · Funding & Financials<br>Settlement & Payments Ops · DeFi Products<br>Vault Curation · SkyLink Bridge<br>Agent Systems · Branding Marketing & IP |
 
 ### Automation — pushing, pulling, and keeping stores honest

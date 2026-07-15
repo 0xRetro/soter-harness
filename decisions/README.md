@@ -54,3 +54,4 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0047](ADR-0047-field-table-work-items-signing-duty.md) | Field-table work-items; validation is a signing duty | Accepted |
 | [ADR-0048](ADR-0048-docs-context-system.md) | The docs context system — decreed ahead of its pieces | Accepted |
 | [ADR-0049](ADR-0049-private-workspace-docs.md) | Private-workspace docs — the docs system's second tier, never in the library | Accepted |
+| [ADR-0050](ADR-0050-onchain-context-system.md) | The onchain context system — decreed ahead of its pieces | Accepted |

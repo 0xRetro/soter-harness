@@ -201,6 +201,7 @@ Features"). Identify a board only by the tooling page that embeds it.
 
 ### addresses  *(the [DB] Addresses database — blockchain accounts)*
 - **data_source_id:** `39dd79b5-de38-8091-8617-000bd102afaa` *(live-verified 2026-07-14)*
+- **policy standard:** `Addresses` + `Onchain Operations` in the `policy-standards` registry — verification, COI, signing rules
 - **properties:**
   - `Address` → title          <!-- full address verbatim, never truncated -->
   - `Internal Label` → text    <!-- [Org] [Program] per Addresses policy D3 -->
