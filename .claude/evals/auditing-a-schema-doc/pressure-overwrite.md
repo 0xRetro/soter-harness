@@ -1,6 +1,7 @@
 ---
 skill: auditing-a-schema-doc
 case: pressure-overwrite
+passed: 71fa121
 ---
 
 ## Try
