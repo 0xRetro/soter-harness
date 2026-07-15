@@ -56,3 +56,4 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0049](ADR-0049-private-workspace-docs.md) | Private-workspace docs — the docs system's second tier, never in the library | Accepted |
 | [ADR-0050](ADR-0050-onchain-context-system.md) | The onchain context system — decreed ahead of its pieces | Accepted |
 | [ADR-0051](ADR-0051-meeting-processing-pipeline.md) | Meeting processing — official Otter MCP, summary-doc intermediate, project attribution | Accepted |
+| [ADR-0052](ADR-0052-email-context-system.md) | The email context system — decreed, with its first mechanism | Accepted |

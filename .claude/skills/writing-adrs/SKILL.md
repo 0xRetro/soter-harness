@@ -65,6 +65,11 @@ context.
 - (observed 2026-07-14, 2×) Two pairs of parallel branches allocated the same ADR
   number (0028, 0030) after each correctly checked main. Counter: step 3 scans live
   worktree branches too; the first-merged keeps the number, the later renumbers.
+- (observed 2026-07-15, forge run) The immutability guard keys off the Status line
+  alone — flipping a still-uncommitted draft to Accepted froze it mid-edit (even the
+  flip-back was blocked; the draft had to be discarded and rewritten). Counter: keep
+  a draft Proposed through every content edit; flipping to Accepted is the LAST edit
+  before commit.
 
 ## Evals
 - `.claude/evals/writing-adrs/happy-path.md`
