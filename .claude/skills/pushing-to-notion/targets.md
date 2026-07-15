@@ -268,9 +268,9 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Source` → url
   - `Processed` → checkbox     <!-- follow-ups done / question answered -->
   - `Visibility` → select      <!-- Internal · Agent · Public -->
-  - `📁 [DB] Projects` → relation   <!-- the property name is LITERAL incl. emoji; resolve the project page id first -->
+  - `📁 [DB] Projects` → relation   <!-- the property name is LITERAL incl. emoji; resolve the target [DB] Projects row id first -->
 - Registered template: the DB default (page `317d79b5-de38-80aa-a6df-f5dd445ee1bb`). A
-  project page's Updates section is a live view of this feed filtered to that project.
+  [DB] Projects row's Updates section is a live view of this feed filtered to that project.
 
 > **Relations:** the create/update bindings write a relation as the TARGET page's id.
 > Resolve it (search the related DB by name) before writing, or leave the relation empty
