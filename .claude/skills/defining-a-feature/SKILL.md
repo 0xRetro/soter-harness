@@ -1,10 +1,10 @@
 ---
 name: defining-a-feature
 description: >-
-  Defines a captured feature — what it is, scope in/out, and done criteria — written
-  into the card's body without touching the why (Description) or status. Use to
-  define, scope, flesh out, or specify an already-captured (Planned) feature. Not for
-  capturing (/capturing-a-feature), build/ship stages, or advancing status.
+  Defines a captured feature — what it is, scope in/out, done criteria — written into
+  the card body without touching the why or status. Use to define, scope, or specify an
+  already-captured (Planned) feature. Not for capturing (/capturing-a-feature),
+  build/ship stages, or advancing status.
 disable-model-invocation: true
 promotion-hold: refused at the ADR-0024/0025 wave (commit ad8e349); re-evaluate on new evidence
 layer: context
