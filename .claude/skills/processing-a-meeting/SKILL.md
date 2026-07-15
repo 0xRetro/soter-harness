@@ -55,7 +55,9 @@ staleness-triaged, and written only through one human-confirmed gate.
    dedup against open tasks first: an open task already owning the territory gets a
    checkbox folded in (`/updating-a-notion-page`), not a duplicate row. Meeting-row
    fills per the Meetings policy. A topic that moved a project milestone becomes a
-   project-body update, not a task.
+   project-body update, not a task. A topic that warrants a NEW project is created
+   PROPERLY per the Projects policy (Overview + milestones filled from the transcript,
+   never a bare template) — not left as an unfilled side-effect.
 6. **One gate for the whole batch.** Present everything: the summary, every record
    with its disposition — including what was deliberately NOT created and why (the
    not-created list is evidence of triage, not filler). On the okay, write in
