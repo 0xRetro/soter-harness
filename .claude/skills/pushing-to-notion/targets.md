@@ -75,7 +75,7 @@ Features"). Identify a board only by the tooling page that embeds it.
   real values.
 
 ### tasks  *(the [DB] Tasks database — actionable items)*
-- **data_source_id:** `2abd79b5-de38-80f8-9470-000b7181b18d` *(live-verified 2026-07-15)*
+- **data_source_id:** `2abd79b5-de38-80f8-9470-000b7181b18d` *(live-verified 2026-07-15, full audit — doc + mirror diffed, no drift)*
 - **policy standard:** `Tasks` in the `policy-standards` registry — rules, D1 (Context), lifecycle
 - **properties:**
   - `Name` → title
@@ -89,8 +89,11 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Related Org` → rollup     <!-- READ-ONLY: derived via Project; never written -->
   <!-- No Priority/Tag/Summary/Due — the March Standards page listed those; the live DB doesn't have them. -->
 - Registered templates: the DB default ("[Task Template]", page `36fd79b5de3880758f2fecd73df8e83b`,
-  renamed from "[Task Template - DO NOT CHANGE]" 2026-07-15) + "LEGAL TASK TEMPLATE". The default
-  template page ALSO surfaces as a queryable row — skip it when querying rows.
+  renamed from "[Task Template - DO NOT CHANGE]" 2026-07-15) + the legal template (page
+  `36ed79b5de38801db5b2f1797a350b77`; live title "LEGAL TASK TEMPLATE (insert a name) " —
+  placeholder suffix and trailing space literal; its body is legal-intake shaped, NOT the
+  Tasks policy's Context/Task Description shape). The default template page ALSO surfaces
+  as a queryable row — skip it when querying rows.
 
 ### projects  *(the [DB] Projects database — client/internal engagements)*
 - **data_source_id:** `721bfb88-e8d5-4934-ac26-cc82e1afc7a0` *(live-verified 2026-07-14, post Ongoing→Operations option rename + Opportunity/Service property removals)*
@@ -105,7 +108,8 @@ Features"). Identify a board only by the tooling page that embeds it.
 - Registered templates: the DB default "[Project Template]" (implements the policy's body
   standard and carries the template-relative filtered Project Task Board — the view API
   cannot set relation filters, so the template is the only automated path to a per-project
-  filtered view) plus "[Template] - Deal: [name]" for Deal-type entries.
+  filtered view) plus "[Deal Template]" for Deal-type entries (body standard + the deal
+  milestone set pre-filled; renamed/rebuilt 2026-07-15).
 
 ### process-inventory  *(the [DB] Process Inventory database — one entry per repeatable process)*
 - **data_source_id:** `31ad79b5-de38-8031-b789-000b661de83f` *(live-verified 2026-07-14, post Soter Involvement + Related Service property removals; Related Policies added per ADR-0038)*
@@ -127,9 +131,10 @@ Features"). Identify a board only by the tooling page that embeds it.
   shape the body per the `shaping-a-process` standard (steps + work-items), not free-form.
 
 ### policy-standards  *(the [DB] Policy Standards database — one rules-first policy standard per subject)*
-- **data_source_id:** `39dd79b5-de38-8042-9d47-000b9293ab47` *(live-verified 2026-07-14)*
+- **data_source_id:** `39dd79b5-de38-8042-9d47-000b9293ab47` *(live-verified 2026-07-15)*
 - **properties:**
   - `Name` → title             <!-- the subject's name; the policy lives in the doc body -->
+  - `Governs Processes` → relation   <!-- → [DB] Process Inventory (dual of Related Policies, ADR-0038); resolve target page ids first -->
 - New entries start from the DB's registered page template ("Policy Standard Template",
   page `2243621d7eec4ceabe35342970b66644`) — the live skeleton. Shape the body per the
   `shaping-a-policy-standard` standard (rules-first); one doc per subject, so search for
@@ -146,7 +151,8 @@ Features"). Identify a board only by the tooling page that embeds it.
   <!-- emoji-prefixed property names are LITERAL — use them exactly; resolve target page ids first -->
 
 ### contacts  *(the [DB] Contacts database — people)*
-- **data_source_id:** `2b2d79b5-de38-81d0-852e-000bc3fdf8d2` *(live-verified 2026-07-14)*
+- **data_source_id:** `2b2d79b5-de38-81d0-852e-000bc3fdf8d2` *(live-verified 2026-07-15, full audit — doc + mirror diffed, no schema drift)*
+- **policy standard:** `Contacts` in the `policy-standards` registry — identity/dedup, belongs-to-an-org, Role/Disposition/Authority determination rules
 - **properties:**
   - `Name` → title
   - `Email` → email
@@ -158,6 +164,10 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Telegram` · `Signal` · `Discord ID` · `Github` · `Timezone (UTC)` · `Source` · `Sky Forum` → text
   - `Schedule appointment` → url
   - `Org` → relation       <!-- resolve to the [DB] Orgs page id -->
+- Registered template: the DB default ("New person", page `2b2d79b5de3881d68863ee833d67d3ce`) —
+  sets no property values; body is Notion's stock personal-CRM sections (Address · Family
+  members · Likes · Gift ideas · Miscellaneous notes). The Contacts policy declares no
+  body-shape rule, so a new record's body carries no required sections.
 
 ### meetings  *(the [DB] Meetings database — held or scheduled calls and sessions)*
 - **data_source_id:** `b2550e36-38d5-4d33-86db-bbd0987aeaef` *(live-verified 2026-07-14)*
@@ -166,9 +176,11 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Date` → date              <!-- when the meeting occurs/occurred; single date, no time -->
   - `Type` → select            <!-- Team Meeting · EDU Session · BD · Client Sync · Project Sync · Office Hours · Ops -->
   - `Org` → relation           <!-- → [DB] Orgs (two-way); the participating orgs — resolve page ids -->
-  - `Participants` · `Client Contact` → person   <!-- workspace users only — these can NOT hold [DB] Contacts rows -->
+  - `Participants` → person   <!-- workspace users only — can NOT hold [DB] Contacts rows; Client Contact (person) REMOVED 2026-07-15, ghost-valued and unusable for [DB] Contacts -->
   - `Recording` → url          <!-- the meeting owner's Otter link, added post-meeting -->
   - `Related Docs` → relation  <!-- → [DB] Docs -->
+- A processed meeting's summary doc (see the `docs` target) hangs off `Related Docs`;
+  the Recording URL's trailing id is fetchable via the Otter MCP (`mcp__otter__fetch`).
 - Rows are PRE-CREATED ahead of the meeting (the weekly Hermes generation run, and the
   Scheduling and Running Meetings process's "2 days in advance" step) with body skeleton
   `## Agenda` / `## Follow Ups` — search series + date before any create; an existing row
@@ -256,7 +268,11 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Link` → url              <!-- required for external Reference/Dashboard docs -->
   - `Owner` · `Client Contact` → person
   - `Org` · `Related Projects` → relation   <!-- resolve target page ids first; Org is always set (policy) -->
-- Meeting artifacts never enter this DB — they live in [DB] Meetings (target `meetings`).
+- Meeting RECORDS (agendas, notes, transcripts) never enter this DB — they live in
+  [DB] Meetings (target `meetings`). A meeting's derived SUMMARY is a doc: Type `Report`,
+  body from the registered `[Meeting Summary Template]` (page `39ed79b5de388058bb35e24d6c162c19`) —
+  every topic names its Related project/deal — linked from the meeting row's `Related Docs`
+  (Docs policy v0.4).
 
 ### update-feed  *(the [DB] Update Feed database — the org's typed update / decision / question feed)*
 - **data_source_id:** `fd89fc28-7aa6-4cb8-85d0-9e81741b7302` *(live-verified 2026-07-15)*
@@ -280,3 +296,11 @@ Features"). Identify a board only by the tooling page that embeds it.
 > and link it in a follow-up. Don't fabricate a page id.
 > **Select/multi_select:** the value must be an EXISTING option — fetch the live schema
 > and match; never invent an option name (a wrong one is rejected or silently creates junk).
+
+### ai-inbox  *(the AI Inbox page — the user's private review feed; APPEND-ONLY)*
+- **page id:** `39ed79b5-de38-80ea-b6f0-ff908935a32d` *(a page, not a database — insert_content at start, newest block first)*
+- After a gated BATCH of record writes, one digest block is prepended:
+  `## @<date> - Claude - <what was processed>`, one bullet per record written —
+  an @-mention plus disposition (`new (owner)` / `updated: <what>`), a `Not created:`
+  line for deliberately skipped items, and a `Source:` line @-mentioning the source
+  record. Never edit or remove existing inbox content; the user clears it after review.

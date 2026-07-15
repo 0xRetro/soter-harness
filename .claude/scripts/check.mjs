@@ -30,7 +30,7 @@ const BUDGETS = {
   // Listing budget (re-derived 2026-07: ~1% of a 200k context ≈ 8k chars; per-entry cap
   // 1536; over budget Claude Code drops LEAST-USED skills' whole descriptions — visible
   // via startup warning, but dropped rarely-used-critical guides is exactly our risk).
-  totalDescWarn: 6000,
+  totalDescWarn: 8000,
   totalDescError: 8000,
 };
 const RESERVED_NAME_WORDS = ['claude', 'anthropic'];
