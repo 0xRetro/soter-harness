@@ -274,6 +274,22 @@ Features"). Identify a board only by the tooling page that embeds it.
   every topic names its Related project/deal — linked from the meeting row's `Related Docs`
   (Docs policy v0.4).
 
+### calendar  *(the [DB] Calendar database — the standing-commitments registry)*
+- **data_source_id:** `396d79b5-de38-8015-9843-000b38c8c6eb` *(live-verified 2026-07-15, schema created this wave)*
+- **policy standard:** `Calendar` in the `policy-standards` registry — registry-not-mirror, D1 (Kind), D3 (join key)
+- **properties:**
+  - `Name` → title
+  - `Kind` → select            <!-- Series · Event · Window; assign per D1 -->
+  - `Status` → select          <!-- lifecycle: Active · Paused · Retired -->
+  - `Date` → date              <!-- Events only; Series/Windows leave it empty -->
+  - `Cadence` → text           <!-- descriptive `frequency · day · time timezone` (D2); Google holds the schedule of record -->
+  - `Google Calendar` → select <!-- Sky Ecosystem · Ozone Internal Ops · Payments · Personal -->
+  - `Google Event ID` → text   <!-- the sync join key (D3): the RECURRING event id, instance date-suffix stripped -->
+  - `Owner` · `Participants` → person   <!-- workspace users only; external attendees in the body's Attendance -->
+  - `Org` · `Project` · `Process` → relation   <!-- resolve target page ids first -->
+- **page template:** `[Calendar Entry Template]` (row `39ed79b5de38815ca2f7c5fbd976cc49`) — body
+  Purpose · Attendance · Links · Notes. DB-template registration is a pending UI step.
+
 ### update-feed  *(the [DB] Update Feed database — the org's typed update / decision / question feed)*
 - **data_source_id:** `fd89fc28-7aa6-4cb8-85d0-9e81741b7302` *(live-verified 2026-07-15)*
 - **properties:**
