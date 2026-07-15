@@ -22,18 +22,38 @@ registry lives with the `process-inventory` target, not here.
   method-selection context), then one tagged line per trigger: `<kind>` — <condition>.
   Kinds: `Request` (someone asks) · `Event` (observed state demands a run) · `Schedule` ·
   `Emergency` — the kind is backticked, no colon after it, and honest about who/what
-  initiates. Each tagged line is an OBJECTIVE condition checkable true/false; assumptions,
+  initiates. The backticks carry the kind ALONE — a qualifier or sub-label never joins
+  it (observed live 2026-07-14: `Event — unverified destination`); the qualifier belongs
+  in the condition text, and same-kind triggers repeat as separate lines. Each tagged
+  line is an OBJECTIVE condition checkable true/false; assumptions,
   advice, and process notes never live here (a real precondition goes to Prerequisites).
 - **Steps** — role-bounded: `### Step N — (Role) <objective>`. One role owns a step, so
   each step transition is a role handoff — that handoff IS the gate; no separate gate
   lines. Each step opens with a 1–3 line narrative intro: how the work actually arrives
   and what the step accomplishes — plain, concrete, never flowery, never restating the
-  Trigger. Work-items are `- [ ]` checkboxes: a bolded action headline; the how (and the
-  why, where it isn't obvious) goes in prose on its own indented line under the headline —
-  never run-on after the bold; no citation tags. Then nested elements as required: field
-  sub-checkboxes under a record-write parent (field-per-checkbox — never several fields
-  bundled into one box), bulleted value lists (never inlined), determination arrows, and
-  `⤷ condition → En` branch pointers. Work-items carry NO example values — an `e.g.`
+  Trigger. Work-items are `- [ ]` checkboxes: a SHORT bold sentence as the headline; the
+  how goes in prose on its own indented line under it — opening with the exercised
+  capability in backticks (`Ops`, `Signer`, …) where a formal capability applies — never
+  run-on after the bold; no citation tags. Prose is plain full sentences — no arrow
+  shorthand (determination arrows inside tables are the one exception). A
+  **record-write or evidence-capture work-item** (one per record written or evidence
+  block filled) carries its fields as a page TABLE under the parent — fit-page-width,
+  with the mold's column proportions (narrow ☐ · Field · Type · Required, wide
+  Instruction, medium Why; copy the mold's table rather than rebuilding it) — columns
+  ☐ · Field · Type · Required · Instruction · Why: ☐ is a glyph (ticking happens on the
+  run or its form — the doc is a read-do script); Field is the live field name in plain
+  text (never backticks); Type is the concrete input shape (select · relation → its target · file +
+  accepted formats · text · checkbox · URL); Instruction is the plain what-to-do — one
+  lead sentence, then `• ` bullets for determinations (evidence → **Value**), value
+  lists, and `⤷ condition → En` pointers; Why is the operator-facing reason the field
+  matters — exactness dicta (verbatim, in full, never truncated) live in Why, never in
+  Instruction. A value convention is written in italics (*[Org] [Program]*), never in
+  backticks; a PREDETERMINED literal the operator enters as-is (`In Progress`,
+  `Today's date`, the linked process's own name) IS backticked, inside the Instruction.
+  A value list ends with a bare @-mention of the owning policy as its
+  terminal bullet — `(@ <policy> — add/change enum options)` — the ONE permitted inline
+  policy pointer: a locator for the option set's home, never narration (scoped exception
+  to ADR-0038's no-pointer rule). Work-items carry NO example values — an `e.g.`
   literal reads as THE input at run time; worked examples live in the subject's policy
   standard or on real records. Plain operator language only — write "add it if it is not
   on file", never harness jargon like resolve-or-create.
@@ -53,19 +73,24 @@ registry lives with the `process-inventory` target, not here.
   parameters, never as a pointer-only reference (a run needs only the process doc) and
   with no carrier-side provenance aside — the home's Used By section is the linkage
   ledger (ADR-0038 amends ADR-0032's provenance line away). A change to the home
-  updates every Used By carrier in the same change (ADR-0032). A home has no standing
-  roles: its Roles section defines capability-bound SLOTS (required capabilities per
-  slot, no @-mentions, Related Roles empty) — the calling process's Roles table binds
-  each slot to one of its own directory roles (ADR-0043).
+  updates every Used By carrier in the same change (ADR-0032). A home binds slots or
+  roles: a directory role it always needs binds like any process (entering Related
+  Roles); where the role is the caller's to choose, its Roles section defines a
+  capability-bound SLOT (required capabilities, no @-mention, never in Related Roles) —
+  the calling process's Roles table binds each slot to one of its own directory roles
+  (ADR-0043). A home starts from the live [Subprocess Template]: its Initialization
+  declares only the caller-supplied inputs (no run entry, no role assignment — the
+  calling run already exists), and evidence lands on the calling run.
 
 - **Initialization** — its own section between Roles and Steps (NOT a step: it captures
-  run metadata, not domain work), owned by whichever role receives the trigger: create
-  the run entry in [DB] Process Runs (Name · Process · Started · State as field
-  sub-checkboxes), assign the roles (`Roles` — one line per role from the Roles table,
-  each an @-mention of the person's [DB] Contacts record; external counterparties are
-  roles too), and capture the inputs (`Inputs` — one line per input; the Initialization
-  capture list IS the process's input declaration; @-mention the input's record where
-  one exists, raw value otherwise — upgraded to the mention once registered). The FINAL
+  run metadata, not domain work), owned by whichever role receives the trigger: ONE
+  record-write work-item creating the run entry in [DB] Process Runs, its fields in the
+  standard field table (Name · Process · Roles · Inputs · Started · State). The `Roles`
+  row's instruction lists one bullet per role from the Roles table, each an @-mention of
+  the person's [DB] Contacts record (external counterparties are roles too); the
+  `Inputs` row's bullets are one per input — those bullets ARE the process's input
+  declaration; @-mention the input's record where one exists, raw value otherwise,
+  upgraded to the mention once registered. The FINAL
   step closes the run (Completed · State · Outcome · the Post Run Summary Report field).
   Working detail accrues in the run's page body per the [Run Template] (Run · Inputs ·
   Outputs & Proof) — one parent bullet per artifact, one FACT per nested bullet, never
@@ -80,8 +105,10 @@ registry lives with the `process-inventory` target, not here.
 - **Roles** — two columns, Role · Responsibility: the Role cell @-mentions the [DB]
   Roles row (a new role is defined in the directory FIRST). The Responsibility cell is
   one dash-line per responsibility, keyed by the capability it exercises —
-  **Capability** — responsibility, multiple capabilities joined with `·`; a
-  responsibility exercising no formal capability stands unkeyed; process-specific
+  **Capability** — responsibility, multiple capabilities joined with `·`; EVERY
+  responsibility carries its key, external roles included (externals exercise
+  capabilities from their own side); a keyless line means the wrong role owns it
+  or a capability is missing — define it policy-first; process-specific
   constraints inline. Role-level facts — the capability LIST, definition, who holds
   it — live on the directory row: a capability appears in the table only as the key of
   a responsibility using it, never as the role's list (no Who column; ADR-0043). The
