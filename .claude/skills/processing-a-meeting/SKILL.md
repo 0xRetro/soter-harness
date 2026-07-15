@@ -1,11 +1,10 @@
 ---
 name: processing-a-meeting
 description: >-
-  Turns one recorded meeting into linked records — a templated summary doc with project
-  attributions, grounded tasks, row fills, a review digest — stale items triaged first,
-  everything written as one gated batch. Use to process, digest, or extract a meeting,
-  transcript, or action items. Not for single-record captures (the capture guides),
-  write mechanics (/pushing-to-notion, /updating-a-notion-page), or repos
+  Turns one recorded meeting into linked records — templated summary with project
+  attributions, grounded tasks, row fills, review digest — stale items triaged, one
+  gated batch. Use to process, digest, or extract a meeting, transcript, or action
+  items. Not for single-record captures, write mechanics (the bindings), or repos
   (/reviewing-a-repo).
 disable-model-invocation: true
 layer: automation
