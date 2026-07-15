@@ -105,6 +105,7 @@ table below is the banned list.
 | project | project-management | one row in the [DB] Projects database — a client or internal engagement (type, status, dates, org, contact), tracking work above the task level |
 | task | project-management | one row in the [DB] Tasks database — an actionable unit of delivery (status, assignee, next action), related to a project and/or org |
 | milestone | project-management | an objective or outcome in a project's body that takes many tasks to reach — the work-breakdown layer; carries work items that promote to [DB] Tasks rows when it goes active (grammar and roles in the Projects policy standard) |
+| update | project-management | one row in [DB] Update Feed — a dated, categorized, visibility-scoped feed item (Status · Decision · Question, plus news/event kinds) related to its project; a [DB] Projects row's Updates section is a live view of this feed, never hand-written prose |
 | process | process | a reusable definition of how repeatable work gets done — one entry in the live [DB] Process Inventory (row + shaped body), distinct from any single run of it |
 | step | process | an ordered stage within a process that groups the work-items done in that stage |
 | work-item | process | one thing to get done inside a step or milestone (a checkbox in the owning body); deliberately NOT a [DB] Tasks task |
