@@ -118,6 +118,8 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Related Policies` → relation  <!-- → [DB] Policy Standards (dual: Governs Processes); the process↔policy linkage, ADR-0038 -->
   - `Related Roles` → relation     <!-- → [DB] Roles (dual: the directory's Processes); mirrors the body Roles table, ADR-0043 -->
 - New entries start from the DB's default body template (page `cb0744051c564c4a91be9891af30b12a`);
+  a subprocess home starts from the registered [Subprocess Template] instead (page
+  `39dd79b5de3880c18a92d43fe0bb88c5`, presets Per-Event · Subprocess · Draft);
   shape the body per the `shaping-a-process` standard (steps + work-items), not free-form.
 
 ### policy-standards  *(the [DB] Policy Standards database — one rules-first policy standard per subject)*
