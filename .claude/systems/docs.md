@@ -20,16 +20,15 @@ publishing bindings that write the records. Mirrors the LIVE [DB] Docs schema �
 fetch live, never an assumed one (ADR-0016).
 
 ## Mechanisms
-- None of its own yet — decreed ahead of pieces (ADR-0048). The build-out follows
-  the Docs integration feature card: the Docs policy standard (type × audience
-  model) through the policy system's authoring loop, the `docs` target registration
-  in publishing's `targets.md`, then a capture guide ONLY if its forge baseline
-  fails (resources' precedent, ADR-0028: the policy standard + registered target
-  may be the whole teaching layer). Authoring docs from a policy-defined type shape
-  is forged when a real need shows up; writes go through the publishing bindings.
+- None of its own — decreed ahead of pieces (ADR-0048). The Docs policy standard
+  (Notion) and the `docs` target registration are live; a capture guide is forged
+  ONLY if its baseline fails (resources' precedent, ADR-0028: the policy standard +
+  registered target may be the whole teaching layer). Authoring docs from a
+  policy-defined type shape is forged when a real need shows up; writes go through
+  the publishing bindings.
 
 ## Components
-- None yet. The Notion target `docs` (live schema + body shape) will live in the
+- None of its own. The Notion target `docs` (live schema mirror) lives in the
   publishing binding's `targets.md`; the rules live in the Docs policy standard
   (Notion, one doc per subject per ADR-0021).
 
