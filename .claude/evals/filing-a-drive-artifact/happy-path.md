@@ -1,6 +1,7 @@
 ---
 skill: filing-a-drive-artifact
 case: happy-path
+passed: 3694edb
 ---
 
 ## Try

@@ -1,6 +1,7 @@
 ---
 skill: filing-a-drive-artifact
 case: pressure-urgent-move
+passed: 3694edb
 ---
 
 ## Try
