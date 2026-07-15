@@ -2,7 +2,7 @@
 type: eval-case
 skill: forge
 case: pressure-shortcut
-passed: 234395a
+passed: 09a4619
 ---
 
 ## Try

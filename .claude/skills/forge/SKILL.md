@@ -81,6 +81,11 @@ transcript showed compliance; the human okay is the merge itself (git provenance
 - (live 2026-07-14) System creation had NO owning procedure — this guide's scope didn't
   cover system cards, so births were freestyle-consistent-with-precedent, and three
   add-on cards never cited their decree. Counter: step 1's system branch + `CARD_ADR`.
+- (research 2026-07-15) A baseline scenario a bare agent can trivially satisfy produces a
+  FALSE verdict either way — agents only lean on guidance for tasks they can't easily do
+  alone, so a shallow prompt yields GREEN without proving coverage, and a leading prompt
+  yields RED without proving need. Make the baseline substantive: multi-step, realistic
+  stakes, containing the specific failure the piece would exist to prevent.
 
 ## Evals
 - `.claude/evals/forge/happy-path.md`
