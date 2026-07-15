@@ -57,3 +57,4 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0050](ADR-0050-onchain-context-system.md) | The onchain context system — decreed ahead of its pieces | Accepted |
 | [ADR-0051](ADR-0051-meeting-processing-pipeline.md) | Meeting processing — official Otter MCP, summary-doc intermediate, project attribution | Accepted |
 | [ADR-0052](ADR-0052-email-context-system.md) | The email context system — decreed, with its first mechanism | Accepted |
+| [ADR-0053](ADR-0053-email-filing-surface.md) | Email filing surface — system-label operations join the gated batch | Accepted |
