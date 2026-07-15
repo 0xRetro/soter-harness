@@ -75,7 +75,7 @@ Features"). Identify a board only by the tooling page that embeds it.
   real values.
 
 ### tasks  *(the [DB] Tasks database — actionable items)*
-- **data_source_id:** `2abd79b5-de38-80f8-9470-000b7181b18d` *(live-verified 2026-07-15)*
+- **data_source_id:** `2abd79b5-de38-80f8-9470-000b7181b18d` *(live-verified 2026-07-15, full audit — doc + mirror diffed, no drift)*
 - **policy standard:** `Tasks` in the `policy-standards` registry — rules, D1 (Context), lifecycle
 - **properties:**
   - `Name` → title
@@ -89,8 +89,11 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Related Org` → rollup     <!-- READ-ONLY: derived via Project; never written -->
   <!-- No Priority/Tag/Summary/Due — the March Standards page listed those; the live DB doesn't have them. -->
 - Registered templates: the DB default ("[Task Template]", page `36fd79b5de3880758f2fecd73df8e83b`,
-  renamed from "[Task Template - DO NOT CHANGE]" 2026-07-15) + "LEGAL TASK TEMPLATE". The default
-  template page ALSO surfaces as a queryable row — skip it when querying rows.
+  renamed from "[Task Template - DO NOT CHANGE]" 2026-07-15) + the legal template (page
+  `36ed79b5de38801db5b2f1797a350b77`; live title "LEGAL TASK TEMPLATE (insert a name) " —
+  placeholder suffix and trailing space literal; its body is legal-intake shaped, NOT the
+  Tasks policy's Context/Task Description shape). The default template page ALSO surfaces
+  as a queryable row — skip it when querying rows.
 
 ### projects  *(the [DB] Projects database — client/internal engagements)*
 - **data_source_id:** `721bfb88-e8d5-4934-ac26-cc82e1afc7a0` *(live-verified 2026-07-14, post Ongoing→Operations option rename + Opportunity/Service property removals)*
