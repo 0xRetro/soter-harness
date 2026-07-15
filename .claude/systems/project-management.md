@@ -27,6 +27,14 @@ Decreed with the first add-on wave (ADR-0017).
   project/org) · runs-when: a user invokes `/capturing-a-task` · invariants: relations
   (Project/Org/Assignee) are resolved to real page/user ids or left empty, never
   fabricated; relative dates pinned to concrete dates; status starts at To Do.
+- **updating-project-status** — reads: a [DB] Projects page, its policy standard, and
+  its promoted tasks · produces: a dated newest-first entry in the page's Updates
+  section with the milestone progress/health tags synced in the same pass · runs-when:
+  a user invokes `/updating-project-status` (recurring cadence via `/loop` or a
+  scheduled routine, never a cron prompt) · invariants: every claim derivable from
+  real data; status prose and milestone tags never contradict; the write is
+  human-confirmed. Forged 2026-07-15 on an observed RED baseline (policy fetch
+  skipped → append instead of newest-first; at-risk prose with unsynced tags).
 - Further mechanisms (creating a project, advancing a task) forged as needed — ONLY on
   an observed RED baseline. Project capture evaluated 2026-07-14: baseline GREEN — a
   fresh contained agent shaped a correct [DB] Projects row from the
@@ -34,13 +42,19 @@ Decreed with the first add-on wave (ADR-0017).
   alone (Type per the policy's D1, PM/Organization resolved to real ids, de-dup caught
   a genuine possible duplicate, write held at the confirm gate with the user away), so
   no capturing-a-project guide was authored (forge step 4). Re-propose only on an
-  observed project-capture failure. Writes go
+  observed project-capture failure. Work-item→task promotion evaluated 2026-07-15:
+  baseline GREEN — a fresh contained agent ran the full capture discipline unprompted
+  (grammar parsed, policy applied, ids resolved, de-duped, held at the gate), so no
+  promoting guide was authored; boundary noted the same day: not every work item is a
+  task — promote only what needs tracked execution, a coordination ping is done in
+  place (user correction, Projects-policy line pending). Writes go
   through the publishing bindings; source-driven task intake reuses the ingestion spine.
 
 ## Components
 - `.claude/skills/capturing-a-task/SKILL.md` — the task-capture guide. Notion targets
   `tasks` and `projects` (with their real schemas + relations) live in the publishing
   binding's `targets.md`.
+- `.claude/skills/updating-project-status/SKILL.md` — the status-update guide (staged).
 
 ## Concepts
 project · task · milestone
