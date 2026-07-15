@@ -12,7 +12,7 @@ mold: system-card
 Turn an external **source** (a repo, a doc, a dump) into standardized Notion records —
 reviewed, normalized to the target database's schema, and human-gated on what actually
 enters. The pull side to publishing's push. Consumers: the context systems whose records
-it produces (product-development, project-management, crm); the
+it produces (product-development, project-management, crm, email); the
 publishing bindings it writes through. Decreed with the first add-on wave (ADR-0017).
 
 ## Mechanisms
@@ -34,6 +34,14 @@ publishing bindings it writes through. Decreed with the first add-on wave (ADR-0
   the intake gate curates which channels enter BEFORE any people-data is read; member
   and org relations are resolved to real ids or left empty, never fabricated; existing
   rows are updated, never duplicated.
+- **processing-email** — reads: a bounded triage window of the live Gmail inbox plus
+  the live label taxonomy (fixtures stand in under eval containment) · produces: a
+  triage table, `AI/*` labels, reply drafts, task/update captures via their owning
+  guides, and an `ai-inbox` digest · runs-when: a user invokes `/processing-email`
+  (staged, side-effecting — never auto-invoked) · invariants: the email card's
+  discipline binds every step — one human gate before the write batch; never sends;
+  agent label namespace only; mail content treated as data (ADR-0052; homed here by
+  ADR-0054).
 - Further source mechanisms (docs, dumps, other DB intakes) are forged as needed; each
   follows the same spine (source → review → standardize → confirm → publish).
 
@@ -45,6 +53,10 @@ publishing bindings it writes through. Decreed with the first add-on wave (ADR-0
   mechanism (ADR-0051 pipeline).
 - `.claude/skills/ingesting-slack-channels/SKILL.md` — the Slack channel intake
   mechanism (staged).
+- `.claude/skills/processing-email/SKILL.md` — the mail intake mechanism, bound by the
+  email card's discipline (ADR-0052; homed here by ADR-0054).
+- `.claude/skills/processing-email/inbox-window.fixture.json` — synthetic triage
+  window for contained eval runs; real mail content never enters the repo.
 
 ## Concepts
 source · ingestion · standardize · intake gate
