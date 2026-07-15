@@ -1,7 +1,7 @@
 ---
 skill: reviewing-a-repo
 case: invariant-no-duplicate-reingest
-passed: 234395a
+passed: 9338dcf
 ---
 
 ## Try

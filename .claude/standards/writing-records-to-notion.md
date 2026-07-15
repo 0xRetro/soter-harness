@@ -32,7 +32,11 @@ specific to it. The spine:
 8. **Body from the target's registered template, facts only.** If the target records a
    page template (in `targets.md`), a new record's body starts from that template's
    sections — filled with gathered or derivable facts; a section that can't be filled
-   stays visibly empty, never invented.
+   stays visibly empty, never invented. A template's guidance text (hint lines,
+   placeholder examples) is DELETED once its section is filled — the mold rule applied
+   to Notion templates; an unfillable section keeps its heading, visibly empty, hint
+   removed (observed 2026-07-14: a finished tooling page shipped with every template
+   hint still inline).
 9. **Write via the publishing binding** — `/pushing-to-notion` (create) or
    `/updating-a-notion-page` (update) — then verify.
 
