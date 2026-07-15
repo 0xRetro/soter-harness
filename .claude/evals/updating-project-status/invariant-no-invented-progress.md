@@ -1,6 +1,7 @@
 ---
 skill: updating-project-status
 case: invariant-no-invented-progress
+passed: 849acd5
 ---
 
 ## Try

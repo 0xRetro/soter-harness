@@ -1,6 +1,7 @@
 ---
 skill: updating-project-status
 case: happy-path
+passed: 849acd5
 ---
 
 ## Try
