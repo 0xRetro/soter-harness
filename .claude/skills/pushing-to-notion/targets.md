@@ -222,6 +222,20 @@ Features"). Identify a board only by the tooling page that embeds it.
   Notes. Unknowns stay bare `not defined` — they are the worklist. NO SECRETS ever —
   credential locations only; standing invite links only by explicit admin decision.
 
+### docs  *(the [DB] Docs database — the team's shared documents and links)*
+- **data_source_id:** `2abd79b5-de38-8075-a97b-000b24e99dc1` *(live-verified 2026-07-14)*
+- **policy standard:** `Docs` in the `policy-standards` registry — rules, D2 (Type), D3 (derived audience)
+- **properties:**
+  - `Name` → title            <!-- free-form per the policy's D1 -->
+  - `Type` → select           <!-- Template · Research · Working Doc · SOP/Runbook · Guide · Tracker/Database · Report · Proposal · Reference/Dashboard; assign per D2 -->
+  - `Category` → multi_select <!-- 15 options (DR · IB · GAR · PCR · MSC · Admin & Internal Ops · …) — fetch live for the full list; definitions live in the Sky-context vocabulary -->
+  - `Description` → text      <!-- one line: what the doc is and why it's kept -->
+  - `Link` → url              <!-- required for external Reference/Dashboard docs -->
+  - `Owner` · `Client Contact` → person
+  - `Org` · `Related Projects` → relation   <!-- resolve target page ids first; Org is always set (policy) -->
+- Meeting artifacts never enter this DB — they live in [DB] Meetings (its own target once
+  that integration lands).
+
 > **Relations:** the create/update bindings write a relation as the TARGET page's id.
 > Resolve it (search the related DB by name) before writing, or leave the relation empty
 > and link it in a follow-up. Don't fabricate a page id.
