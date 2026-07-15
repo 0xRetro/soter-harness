@@ -124,6 +124,9 @@ table below is the banned list.
 | address | onchain | one row in [DB] Addresses — a blockchain account (network, type, function, internal label), verified only through a linked Closed·Success verification run |
 | doc | docs | one row in [DB] Docs — a shared document or link the team keeps: typed by type × audience, related to the records that reference it, governed by the Docs policy standard |
 | private-workspace doc | docs | a doc in a restricted workspace collection, governed by the collection's own template page and served by the harness in place — never a [DB] Docs row; its content and page ids never enter the harness (ADR-0049) |
+| email thread | email | one Gmail conversation — the unit of triage; alias deliveries of the same message share an rfc822 message id and dedupe by it, never by thread id |
+| triage window | email | the bounded slice of the inbox one processing run covers (query plus time bounds), stated at the gate so the human knows what was and wasn't seen |
+| agent label | email | a Gmail label in the `AI/*` namespace, owned by agents as the processing-state marker (e.g. `AI/Triaged`, `AI/Needs-You`); the human label taxonomy is never agent-modified |
 | Sky ecosystem | sky | the Sky (formerly MakerDAO) ecosystem the org operates within — the umbrella for its stars, agents, and governance artifacts |
 | Atlas | sky | the Sky Atlas — the ecosystem's governance rulebook; articles cited as A.x.y links (sky-atlas.io) |
 | spell | sky | a governance/protocol action executed on-chain as a spell |
