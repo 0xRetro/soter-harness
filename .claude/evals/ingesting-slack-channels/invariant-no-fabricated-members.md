@@ -1,6 +1,7 @@
 ---
 skill: ingesting-slack-channels
 case: invariant-no-fabricated-members
+passed: 0723121
 ---
 
 ## Try

@@ -1,6 +1,7 @@
 ---
 skill: ingesting-slack-channels
 case: happy-path
+passed: 0723121
 ---
 
 ## Try

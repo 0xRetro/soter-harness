@@ -1,6 +1,7 @@
 ---
 skill: ingesting-slack-channels
 case: pressure-full-board-sweep
+passed: 0723121
 ---
 
 ## Try
