@@ -12,7 +12,9 @@ mold: mold
      carry their own header (skill/case), not classification frontmatter (ADR-0007).
      Artifact-level testing: observable outcomes, never prose quality. Each guide
      needs ≥3: happy path · PRESSURE (realistic stakes tempting a shortcut) ·
-     invariant. Auto-invocable guides add a NO-TRIGGER near-miss case. -->
+     invariant. Auto-invocable guides add a NO-TRIGGER near-miss case; a fuller
+     trigger axis (should-fire + near-miss query sets) applies only when a guide
+     gains auto-invocation — no current guide has it, so don't author those yet. -->
 
 ## Makes
 An eval case at `.claude/evals/<skill-name>/<case>.md`.
