@@ -130,9 +130,10 @@ Features"). Identify a board only by the tooling page that embeds it.
   shape the body per the `shaping-a-process` standard (steps + work-items), not free-form.
 
 ### policy-standards  *(the [DB] Policy Standards database — one rules-first policy standard per subject)*
-- **data_source_id:** `39dd79b5-de38-8042-9d47-000b9293ab47` *(live-verified 2026-07-14)*
+- **data_source_id:** `39dd79b5-de38-8042-9d47-000b9293ab47` *(live-verified 2026-07-15)*
 - **properties:**
   - `Name` → title             <!-- the subject's name; the policy lives in the doc body -->
+  - `Governs Processes` → relation   <!-- → [DB] Process Inventory (dual of Related Policies, ADR-0038); resolve target page ids first -->
 - New entries start from the DB's registered page template ("Policy Standard Template",
   page `2243621d7eec4ceabe35342970b66644`) — the live skeleton. Shape the body per the
   `shaping-a-policy-standard` standard (rules-first); one doc per subject, so search for
@@ -149,7 +150,8 @@ Features"). Identify a board only by the tooling page that embeds it.
   <!-- emoji-prefixed property names are LITERAL — use them exactly; resolve target page ids first -->
 
 ### contacts  *(the [DB] Contacts database — people)*
-- **data_source_id:** `2b2d79b5-de38-81d0-852e-000bc3fdf8d2` *(live-verified 2026-07-14)*
+- **data_source_id:** `2b2d79b5-de38-81d0-852e-000bc3fdf8d2` *(live-verified 2026-07-15, full audit — doc + mirror diffed, no schema drift)*
+- **policy standard:** `Contacts` in the `policy-standards` registry — identity/dedup, belongs-to-an-org, Role/Disposition/Authority determination rules
 - **properties:**
   - `Name` → title
   - `Email` → email
@@ -161,6 +163,10 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Telegram` · `Signal` · `Discord ID` · `Github` · `Timezone (UTC)` · `Source` · `Sky Forum` → text
   - `Schedule appointment` → url
   - `Org` → relation       <!-- resolve to the [DB] Orgs page id -->
+- Registered template: the DB default ("New person", page `2b2d79b5de3881d68863ee833d67d3ce`) —
+  sets no property values; body is Notion's stock personal-CRM sections (Address · Family
+  members · Likes · Gift ideas · Miscellaneous notes). The Contacts policy declares no
+  body-shape rule, so a new record's body carries no required sections.
 
 ### meetings  *(the [DB] Meetings database — held or scheduled calls and sessions)*
 - **data_source_id:** `b2550e36-38d5-4d33-86db-bbd0987aeaef` *(live-verified 2026-07-14)*
