@@ -108,7 +108,8 @@ Features"). Identify a board only by the tooling page that embeds it.
 - Registered templates: the DB default "[Project Template]" (implements the policy's body
   standard and carries the template-relative filtered Project Task Board — the view API
   cannot set relation filters, so the template is the only automated path to a per-project
-  filtered view) plus "[Template] - Deal: [name]" for Deal-type entries.
+  filtered view) plus "[Deal Template]" for Deal-type entries (body standard + the deal
+  milestone set pre-filled; renamed/rebuilt 2026-07-15).
 
 ### process-inventory  *(the [DB] Process Inventory database — one entry per repeatable process)*
 - **data_source_id:** `31ad79b5-de38-8031-b789-000b661de83f` *(live-verified 2026-07-14, post Soter Involvement + Related Service property removals; Related Policies added per ADR-0038)*
