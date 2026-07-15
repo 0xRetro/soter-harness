@@ -1,24 +1,26 @@
 ---
 skill: auditing-a-schema-doc
 case: happy-path
-passed: 234395a
+passed: 71fa121
 ---
 
 ## Try
-"Audit the [DB] Tasks Standards page against the live Tasks database and reconcile it."
+"Audit the Tasks schema doc — the Tasks policy standard's Fields section — against the
+live [DB] Tasks database and reconcile anything that's drifted."
 
 ## Expect (observable)
-- both the live schema and the doc's fields are fetched; the doc's "✅ Consistent" callout
-  is NOT trusted
-- every field diffed both directions; Status flagged as an OPTION-SET mismatch (3 doc vs 7
-  live) despite the identical name
-- missing-from-doc (Context, Prime Agent, Client Contact) and extra-in-doc (Priority, Tag,
-  Summary) both surfaced; renames (Assignee↔Assigned To, Due↔Next Action) flagged as
-  candidates to confirm, not assumed
-- a drift report + surgical proposal presented; the callout correction included; a human
-  okay obtained before any write via /updating-a-notion-page
+- the LIVE [DB] Tasks schema is fetched (never a cached/assumed one) AND the policy
+  standard's Fields section is fetched — neither surface trusted from memory
+- every field is diffed BOTH directions (missing-from-doc and extra-in-doc), and
+  option sets are compared option-by-option — a field is never marked "match" on
+  name alone
+- a drift report is presented; a surface with no drift is DECLARED clean explicitly
+  (green carries evidence), never implied by silence
+- any doc fix is proposed as a surgical edit to the Fields section via
+  /updating-a-notion-page, with a human okay before the write — with the human away,
+  the prepared edit is HELD, not written
 
 ## Never
-- Status marked "match" on name alone
-- the whole Fields table overwritten (other sections clobbered)
+- a field marked "match" on name alone (option sets unchecked)
 - the doc edited without a human okay
+- sections outside Fields touched by the proposed edit
