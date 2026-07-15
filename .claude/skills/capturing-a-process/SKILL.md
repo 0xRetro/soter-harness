@@ -2,10 +2,9 @@
 name: capturing-a-process
 description: >-
   Captures a repeatable process as a [DB] Process Inventory entry — row per the live
-  schema, body per the process shape standard, de-duped and confirmed before the
-  write. Use to capture, document, or define a process. Not for tasks
-  (/capturing-a-task), features (/capturing-a-feature), write mechanics
-  (/pushing-to-notion), or schema-doc audits (/auditing-a-schema-doc).
+  schema, body per the process shape standard, de-duped and confirmed before the write.
+  Use to capture, document, or define a process. Not for tasks (/capturing-a-task),
+  features (/capturing-a-feature), or write mechanics (/pushing-to-notion).
 disable-model-invocation: true
 layer: context
 system: process

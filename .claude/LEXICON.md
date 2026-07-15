@@ -105,6 +105,7 @@ table below is the banned list.
 | project | project-management | one row in the [DB] Projects database — a client or internal engagement (type, status, dates, org, contact), tracking work above the task level |
 | task | project-management | one row in the [DB] Tasks database — an actionable unit of delivery (status, assignee, next action), related to a project and/or org |
 | milestone | project-management | an objective or outcome in a project's body that takes many tasks to reach — the work-breakdown layer; carries work items that promote to [DB] Tasks rows when it goes active (grammar and roles in the Projects policy standard) |
+| update | project-management | one row in [DB] Update Feed — a dated, categorized, visibility-scoped feed item (Status · Decision · Question, plus news/event kinds) related to its project; a [DB] Projects row's Updates section is a live view of this feed, never hand-written prose |
 | process | process | a reusable definition of how repeatable work gets done — one entry in the live [DB] Process Inventory (row + shaped body), distinct from any single run of it |
 | step | process | an ordered stage within a process that groups the work-items done in that stage |
 | work-item | process | one thing to get done inside a step or milestone (a checkbox in the owning body); deliberately NOT a [DB] Tasks task |
@@ -120,14 +121,30 @@ table below is the banned list.
 | policy standard | policy | the rules-first governance doc for ONE subject — definition, scope, classifications with overlap rules, rules, lifecycle, then representation; lives in the org's policy-standards registry in the external store, with its subject's data; exactly one per subject (ADR-0021) |
 | subject | policy | the one thing a policy standard governs — a record type, a concept, or a mechanism; named, never implied |
 | resource | resources | one row in [DB] Resources — an external account, platform, shared asset, or registry the team uses (type, access path, admin), governed by the Resources policy standard |
+| address | onchain | one row in [DB] Addresses — a blockchain account (network, type, function, internal label), verified only through a linked Closed·Success verification run |
 | doc | docs | one row in [DB] Docs — a shared document or link the team keeps: typed by type × audience, related to the records that reference it, governed by the Docs policy standard |
+| private-workspace doc | docs | a doc in a restricted workspace collection, governed by the collection's own template page and served by the harness in place — never a [DB] Docs row; its content and page ids never enter the harness (ADR-0049) |
 | Sky ecosystem | sky | the Sky (formerly MakerDAO) ecosystem the org operates within — the umbrella for its stars, agents, and governance artifacts |
 | Atlas | sky | the Sky Atlas — the ecosystem's governance rulebook; articles cited as A.x.y links (sky-atlas.io) |
 | spell | sky | a governance/protocol action executed on-chain as a spell |
-| MSC | sky | the Monthly Settlement Cycle |
+| MSC | sky | the Monthly Settlement Cycle — the Sky ecosystem's monthly financial settlement: PnL methodology, debt mint mechanics, ER calculations, settlement reporting (the Docs Category value "Monthly Settlement Cycle (MSC)" maps here) |
 | star | sky | a semi-autonomous sub-organization of the Sky ecosystem (e.g. Laniakea), onboarded via the Star Onboarding process |
 | Prime Agent | sky | an agent-organization rank in the ecosystem's agent framework — an org Type in [DB] Orgs and the Tasks `Prime Agent` select (Spark · Skybase · Grove · Keel) |
 | NFAT | sky | the NFAT product line — Beacon · Configurator · Relay |
+| Distribution Rewards | sky | (DR) Sky incentive program rewarding partners for distributing Sky products (USDS et al.) to end users — tracking, calculation, and payout material |
+| Integration Boost | sky | (IB) Sky incentive program rewarding platforms for integrating Sky assets — eligibility, tracking, payouts |
+| Governance Accessibility Rewards | sky | (GAR) Sky incentive program rewarding work that makes Sky governance accessible and participatory |
+| Pioneer Chain Rewards | sky | (PCR) Sky incentive program rewarding early deployments of Sky assets on new chains |
+| Admin & Internal Ops | sky | internal team administration and operations — accounts, workspace, signer ops, day-to-day runbooks |
+| Legal & Compliance | sky | legal entities, agreements, resolutions, trademarks, compliance material |
+| Business Development | sky | partner and client acquisition and relationships — proposals, offers, outreach, client Q&As |
+| Funding & Financials | sky | budgets, funding requests, and financial self-assessment and reporting (the money about the org; MSC is the ecosystem settlement) |
+| Settlement & Payments Ops | sky | operational execution of payments and settlements — payout runs, weekly payments, transaction operations (the doing; MSC is the methodology) |
+| DeFi Products | sky | the DeFi protocols and products the org operates on or with — Morpho, Curve, market mechanics, launches |
+| Vault Curation | sky | curating and managing DeFi vaults — parameters, allocation, risk monitoring |
+| SkyLink Bridge | sky | Sky's cross-chain bridge — deployments, checklists, freezer/pause operations, chain sanity checks |
+| Agent Systems | sky | the org's AI-agent tooling and automation — WolfsClaw, meeting intelligence, agent standards |
+| Branding Marketing & IP | sky | brand, marketing content, and intellectual property — trademarks, naming, public materials |
 
 ## Aliases (do not use → use instead)
 

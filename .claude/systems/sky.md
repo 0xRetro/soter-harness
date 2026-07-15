@@ -26,7 +26,12 @@ live, ADR-0026).
 - None yet — the concepts below are the system's substance until mechanisms arrive.
 
 ## Concepts
-Sky ecosystem · Atlas · spell · MSC · star · Prime Agent · NFAT
+Sky ecosystem · Atlas · spell · MSC · star · Prime Agent · NFAT ·
+Distribution Rewards · Integration Boost ·
+Governance Accessibility Rewards · Pioneer Chain Rewards ·
+Admin & Internal Ops · Legal & Compliance · Business Development ·
+Funding & Financials · Settlement & Payments Ops · DeFi Products ·
+Vault Curation · SkyLink Bridge · Agent Systems · Branding Marketing & IP
 
 ## Invariants
 - a Sky-ecosystem term is defined once in the LEXICON and referenced, never re-defined per piece — enforcer: (gate) + the LEXICON one-term rule

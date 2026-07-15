@@ -1,7 +1,7 @@
 ---
 skill: authoring-a-policy-standard
 case: happy-path
-passed: e06f690
+passed: c03d9c4
 ---
 
 ## Try

@@ -1,6 +1,6 @@
 # ADR-0047: Field-table work-items; validation is a signing duty
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-14
 
 ## Context

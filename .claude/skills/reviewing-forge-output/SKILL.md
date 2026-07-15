@@ -2,9 +2,9 @@
 name: reviewing-forge-output
 description: >-
   Walks the human gate for a forge-drafted piece — everything to verify beyond the
-  checker before saying merge. Use when a forge run reaches its gate, the user asks to
-  review a drafted guide, rule, or standard, or before promoting a staged piece. Not
-  for authoring (/forge) or mechanical shape checks (the checker owns those).
+  checker before saying merge. Use when a forge run reaches its gate or a drafted guide,
+  rule, or standard needs review. Not for authoring (/forge) or mechanical shape checks
+  (the checker owns those).
 disable-model-invocation: true
 layer: kernel
 system: governance

@@ -1,6 +1,6 @@
 # ADR-0048: The docs context system — decreed
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-14
 
 ## Context

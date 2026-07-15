@@ -201,6 +201,7 @@ Features"). Identify a board only by the tooling page that embeds it.
 
 ### addresses  *(the [DB] Addresses database — blockchain accounts)*
 - **data_source_id:** `39dd79b5-de38-8091-8617-000bd102afaa` *(live-verified 2026-07-14)*
+- **policy standard:** `Addresses` + `Onchain Operations` in the `policy-standards` registry — verification, COI, signing rules
 - **properties:**
   - `Address` → title          <!-- full address verbatim, never truncated -->
   - `Internal Label` → text    <!-- [Org] [Program] per Addresses policy D3 -->
@@ -245,7 +246,7 @@ Features"). Identify a board only by the tooling page that embeds it.
   credential locations only; standing invite links only by explicit admin decision.
 
 ### docs  *(the [DB] Docs database — the team's shared documents and links)*
-- **data_source_id:** `2abd79b5-de38-8075-a97b-000b24e99dc1` *(live-verified 2026-07-14)*
+- **data_source_id:** `2abd79b5-de38-8075-a97b-000b24e99dc1` *(live-verified 2026-07-15, full audit — doc + mirror reconciled)*
 - **policy standard:** `Docs` in the `policy-standards` registry — rules, D2 (Type), D3 (derived audience)
 - **properties:**
   - `Name` → title            <!-- free-form per the policy's D1 -->
@@ -255,8 +256,21 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Link` → url              <!-- required for external Reference/Dashboard docs -->
   - `Owner` · `Client Contact` → person
   - `Org` · `Related Projects` → relation   <!-- resolve target page ids first; Org is always set (policy) -->
-- Meeting artifacts never enter this DB — they live in [DB] Meetings (its own target once
-  that integration lands).
+- Meeting artifacts never enter this DB — they live in [DB] Meetings (target `meetings`).
+
+### update-feed  *(the [DB] Update Feed database — the org's typed update / decision / question feed)*
+- **data_source_id:** `fd89fc28-7aa6-4cb8-85d0-9e81741b7302` *(live-verified 2026-07-15)*
+- **properties:**
+  - `Update` → title           <!-- the headline -->
+  - `Category` → select        <!-- Milestone · News · Event · Update · Launch · Status · Decision · Question -->
+  - `Date` → date
+  - `Summary` → text           <!-- typed grammars per the Projects policy: Status = Done/In progress/At risk/Next; Decision = what - decided by - why; Question = question - owner - needed by -->
+  - `Source` → url
+  - `Processed` → checkbox     <!-- follow-ups done / question answered -->
+  - `Visibility` → select      <!-- Internal · Agent · Public -->
+  - `📁 [DB] Projects` → relation   <!-- the property name is LITERAL incl. emoji; resolve the target [DB] Projects row id first -->
+- Registered template: the DB default (page `317d79b5-de38-80aa-a6df-f5dd445ee1bb`). A
+  [DB] Projects row's Updates section is a live view of this feed filtered to that project.
 
 > **Relations:** the create/update bindings write a relation as the TARGET page's id.
 > Resolve it (search the related DB by name) before writing, or leave the relation empty

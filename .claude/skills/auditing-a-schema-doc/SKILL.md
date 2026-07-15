@@ -85,6 +85,11 @@ binding. Audit-specific:
   the whole call, so no half-writes). Caveat: it edits TEXT, not a callout's color/type —
   a green "✅" callout can be made to SAY "⚠️ Drifted" yet stays green; note the color
   caveat or use block-level ops to recolor.
+- (live run 2026-07-15, docs audit) the page fetch served a ~90-minute-old CACHED
+  snapshot — its "as of" stamp predated the audit, so a just-made edit could hide
+  behind the cache while the audit claims currency. Check the fetch's "as of"
+  timestamp and record it as the audit's evidence stamp; if it predates a known
+  recent write, re-fetch before diffing.
 
 ## Evals
 - `.claude/evals/auditing-a-schema-doc/happy-path.md`

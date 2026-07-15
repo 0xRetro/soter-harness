@@ -50,6 +50,8 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0043](ADR-0043-roles-bind-structurally.md) | Roles bind structurally — @-mentioned directory rows, dual relation | Accepted |
 | [ADR-0044](ADR-0044-enforce-adr-immutability.md) | Accepted ADRs are immutable, enforced by a guard not just convention | Accepted |
 | [ADR-0045](ADR-0045-engines-and-delegated-mechanisms.md) | Engines and delegated mechanisms — names for the owns-vs-executes split | Accepted |
-| [ADR-0046](ADR-0046-subprocess-homes-validation-checklist.md) | Subprocess homes — one-step validation checklist, marker tag, registered template | Proposed |
-| [ADR-0047](ADR-0047-field-table-work-items-signing-duty.md) | Field-table work-items; validation is a signing duty | Proposed |
-| [ADR-0048](ADR-0048-docs-context-system.md) | The docs context system — decreed ahead of its pieces | Proposed |
+| [ADR-0046](ADR-0046-subprocess-homes-validation-checklist.md) | Subprocess homes — one-step validation checklist, marker tag, registered template | Accepted |
+| [ADR-0047](ADR-0047-field-table-work-items-signing-duty.md) | Field-table work-items; validation is a signing duty | Accepted |
+| [ADR-0048](ADR-0048-docs-context-system.md) | The docs context system — decreed ahead of its pieces | Accepted |
+| [ADR-0049](ADR-0049-private-workspace-docs.md) | Private-workspace docs — the docs system's second tier, never in the library | Accepted |
+| [ADR-0050](ADR-0050-onchain-context-system.md) | The onchain context system — decreed ahead of its pieces | Accepted |

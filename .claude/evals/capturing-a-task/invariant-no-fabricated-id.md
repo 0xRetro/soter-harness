@@ -1,7 +1,7 @@
 ---
 skill: capturing-a-task
 case: invariant-no-fabricated-id
-passed: 2f5c10e
+passed: c03d9c4
 ---
 
 ## Try

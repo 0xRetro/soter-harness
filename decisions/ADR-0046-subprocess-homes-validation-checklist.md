@@ -1,6 +1,6 @@
 # ADR-0046: Subprocess homes — one-step validation checklist, marker tag, registered template
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-14
 
 ## Context
