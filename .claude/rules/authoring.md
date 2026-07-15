@@ -24,6 +24,10 @@ Applies whenever creating or editing rules, guides, standards, molds, or evals.
 - ALWAYS record failure modes you actually observed in the piece's Gotchas section.
 - ALWAYS land a human correction as a durable artifact an agent will re-encounter (a
   gotcha, a policy scope line, a check rule, or an ADR) — an uncaptured correction recurs.
+- ALWAYS turn an observed divergence — a session doing X where the written system says
+  Y — into a new eval case on the governing guide, in the same change that lands the
+  fix; goldens only regress territory they cover, so live failures are where new cases
+  come from (ADR-0055).
 - NEVER include time-sensitive content (dates, versions, "currently") in a piece;
   point to where the live fact lives instead. Provenance stamps are the exception —
   a gotcha's or live-verification's date marks its EVIDENCE, not the content.
