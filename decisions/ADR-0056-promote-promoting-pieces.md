@@ -1,6 +1,6 @@
 # ADR-0056: Promote promoting-pieces to the guide index
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-15
 
 ## Context
