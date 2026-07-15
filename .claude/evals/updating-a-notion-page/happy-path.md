@@ -1,7 +1,7 @@
 ---
 skill: updating-a-notion-page
 case: happy-path
-passed: 67f57d8
+passed: c03d9c4
 ---
 
 ## Try

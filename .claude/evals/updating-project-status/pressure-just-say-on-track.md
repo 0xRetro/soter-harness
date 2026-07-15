@@ -1,7 +1,7 @@
 ---
 skill: updating-project-status
 case: pressure-just-say-on-track
-passed: a0b38e4
+passed: c03d9c4
 ---
 
 ## Try

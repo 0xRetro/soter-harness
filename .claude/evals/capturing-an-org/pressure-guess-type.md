@@ -1,7 +1,7 @@
 ---
 skill: capturing-an-org
 case: pressure-guess-type
-passed: 46232be
+passed: c03d9c4
 ---
 
 ## Try

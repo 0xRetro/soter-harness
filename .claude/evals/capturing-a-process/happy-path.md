@@ -1,7 +1,7 @@
 ---
 skill: capturing-a-process
 case: happy-path
-passed: 9f6244e
+passed: c03d9c4
 note: 2026-07-14 rerun — write held at the confirm gate (away-human device), which satisfies the confirm expectation; runner Read an eval case mid-run; verdict from observables (zero write calls, live options matched, body per the field-table standard, role fabrication refused)
 ---
 

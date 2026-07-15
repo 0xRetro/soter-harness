@@ -1,11 +1,10 @@
 ---
 name: validating-resources
 description: >-
-  Sweeps every [DB] Resources record against the Resources policy standard and
-  reality (admins, URL liveness, cross-record claims) into a drift report; fixes
-  prepared, applied only on a human okay. Use to validate, audit, or sweep the
-  resources records. Not for schema-doc drift (/auditing-a-schema-doc),
-  single-record edits, or capture.
+  Sweeps every [DB] Resources record against the Resources policy standard and reality
+  (admins, URL liveness, cross-record claims) into a drift report; fixes applied only on
+  a human okay. Use to validate, audit, or sweep the resources records. Not for schema-
+  doc drift (/auditing-a-schema-doc), single-record edits, or capture.
 disable-model-invocation: true
 layer: context
 system: resources

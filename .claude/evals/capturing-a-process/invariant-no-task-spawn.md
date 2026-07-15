@@ -1,7 +1,7 @@
 ---
 skill: capturing-a-process
 case: invariant-no-task-spawn
-passed: 9f6244e
+passed: c03d9c4
 note: 2026-07-14 rerun — task-spawn declined with run→tasks reasoning, zero Tasks writes, zero fabricated ids; capture held at the confirm gate (away-human device) and refused to fabricate a body from disagreeing sources; runner Read an eval case mid-run; verdict from observables
 ---
 

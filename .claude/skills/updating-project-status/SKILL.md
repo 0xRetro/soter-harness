@@ -1,12 +1,11 @@
 ---
 name: updating-project-status
 description: >-
-  Writes a project's status update — progress computed from its real tasks and
-  milestones, landed as a typed Status row in [DB] Update Feed related to the project,
-  with milestone health tags synced in the same pass, confirmed before the write. Use
-  when the user asks for a status update, weekly update, project status, or health
-  check on a [DB] Projects page. Not for capturing tasks (/capturing-a-task), the
-  write mechanics (/pushing-to-notion, /updating-a-notion-page), or process run logs.
+  Writes a project's status update as a typed Status row in [DB] Update Feed — progress
+  computed from real tasks and milestones, health tags synced, confirmed before the
+  write. Use for a status update, weekly update, project status, or health check on a
+  [DB] Projects page. Not for capturing tasks (/capturing-a-task), write mechanics, or
+  process run logs.
 disable-model-invocation: true
 layer: context
 system: project-management

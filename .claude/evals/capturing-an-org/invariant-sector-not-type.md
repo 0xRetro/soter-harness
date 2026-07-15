@@ -1,7 +1,7 @@
 ---
 skill: capturing-an-org
 case: invariant-sector-not-type
-passed: 46232be
+passed: c03d9c4
 ---
 
 ## Try
