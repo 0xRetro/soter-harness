@@ -104,11 +104,12 @@ table below is the banned list.
 | schema drift | schema-audit | divergence between a schema doc and the live database's actual fields/types/options |
 | project | project-management | one row in the [DB] Projects database — a client or internal engagement (type, status, dates, org, contact), tracking work above the task level |
 | task | project-management | one row in the [DB] Tasks database — an actionable unit of delivery (status, assignee, next action), related to a project and/or org |
+| milestone | project-management | an objective or outcome in a project's body that takes many tasks to reach — the work-breakdown layer; carries work items that promote to [DB] Tasks rows when it goes active (grammar and roles in the Projects policy standard) |
 | process | process | a reusable definition of how repeatable work gets done — one entry in the live [DB] Process Inventory (row + shaped body), distinct from any single run of it |
 | step | process | an ordered stage within a process that groups the work-items done in that stage |
-| work-item | process | one thing to get done inside a step (a checkbox in the process body); the process concept, deliberately NOT a [DB] Tasks task |
+| work-item | process | one thing to get done inside a step or milestone (a checkbox in the owning body); deliberately NOT a [DB] Tasks task |
 | process run | process | one execution of a process — one row in [DB] Process Runs; its working detail lives in the run body (Run Log), deliberately NOT in [DB] Tasks rows |
-| role | process | a named responsibility bundle a process binds its steps to — one row in [DB] Roles (definition, requirements, training, held-by); a run's Roles field maps each to a contact |
+| role | process | a named responsibility bundle a process binds its steps to or a project binds its team to — one row in [DB] Roles (definition, requirements, training, held-by); a run's Roles field maps each to a contact, a project's Team section maps each to `Org - Person` lines |
 | capability | process | a tag on a [DB] Roles row naming an authorization or skill the role requires (values defined in the Processes policy); a person is matched to a role by holding every capability it requires |
 | subprocess | process | a reused executable sequence with one canonical [DB] Process Inventory home; callers carry it in full (never a pointer) and the home's Used By list is the update obligation (ADR-0032) |
 | slot | process | a role placeholder in a subprocess home naming the capabilities its filler must hold — no directory binding, never in Related Roles; the calling process's Roles table binds each slot to one of its own directory roles (ADR-0043) |

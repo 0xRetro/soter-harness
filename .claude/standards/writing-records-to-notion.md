@@ -77,6 +77,20 @@ exclusion, phrase it in the org's terms.
   property" strays), and update the `targets.md` mirror in the same change. Known edge:
   an ALTER of a select property wipes that property's description — restore it in the
   Notion UI.
+- **An ALTER that "renames" a select option DROPS and RECREATES it** — the option id
+  changes and every row holding the old value is silently stranded EMPTY (observed
+  2026-07-14: 18 rows lost Type in the Ongoing→Operations rename). Snapshot the affected
+  rows (url + value) BEFORE the ALTER, verify value counts after, restore from the
+  snapshot when they strand.
+- **The view DSL silently drops relation filters** — create/update-view returns success
+  with `filters: []` (observed 2026-07-14, three syntaxes). A per-record filtered view
+  (e.g. Tasks where Project = this page) cannot be wired by API: carry it in the DB's
+  registered template as a template-relative filter (it remaps per instantiated record);
+  anything else is a one-time manual UI step.
+- **Text after an inline mention can vanish on write** — a line written as
+  `<mention/> — suffix` landed as the mention alone, silently; an identical retry from
+  the freshly-fetched form landed fine (observed 2026-07-14). The post-write verify
+  fetch walks every edited line, not just the batch's success response.
 
 ## Use when / don't
 - Applies when: any guide creates or updates a Notion record.
