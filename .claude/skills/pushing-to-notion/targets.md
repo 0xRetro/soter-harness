@@ -245,7 +245,7 @@ Features"). Identify a board only by the tooling page that embeds it.
   credential locations only; standing invite links only by explicit admin decision.
 
 ### docs  *(the [DB] Docs database — the team's shared documents and links)*
-- **data_source_id:** `2abd79b5-de38-8075-a97b-000b24e99dc1` *(live-verified 2026-07-14)*
+- **data_source_id:** `2abd79b5-de38-8075-a97b-000b24e99dc1` *(live-verified 2026-07-15, full audit — doc + mirror reconciled)*
 - **policy standard:** `Docs` in the `policy-standards` registry — rules, D2 (Type), D3 (derived audience)
 - **properties:**
   - `Name` → title            <!-- free-form per the policy's D1 -->
@@ -255,8 +255,7 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Link` → url              <!-- required for external Reference/Dashboard docs -->
   - `Owner` · `Client Contact` → person
   - `Org` · `Related Projects` → relation   <!-- resolve target page ids first; Org is always set (policy) -->
-- Meeting artifacts never enter this DB — they live in [DB] Meetings (its own target once
-  that integration lands).
+- Meeting artifacts never enter this DB — they live in [DB] Meetings (target `meetings`).
 
 ### update-feed  *(the [DB] Update Feed database — the org's typed update / decision / question feed)*
 - **data_source_id:** `fd89fc28-7aa6-4cb8-85d0-9e81741b7302` *(live-verified 2026-07-15)*
