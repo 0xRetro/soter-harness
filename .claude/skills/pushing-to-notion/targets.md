@@ -166,7 +166,7 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Date` → date              <!-- when the meeting occurs/occurred; single date, no time -->
   - `Type` → select            <!-- Team Meeting · EDU Session · BD · Client Sync · Project Sync · Office Hours · Ops -->
   - `Org` → relation           <!-- → [DB] Orgs (two-way); the participating orgs — resolve page ids -->
-  - `Participants` · `Client Contact` → person   <!-- workspace users only — these can NOT hold [DB] Contacts rows -->
+  - `Participants` → person   <!-- workspace users only — can NOT hold [DB] Contacts rows; Client Contact (person) REMOVED 2026-07-15, ghost-valued and unusable for [DB] Contacts -->
   - `Recording` → url          <!-- the meeting owner's Otter link, added post-meeting -->
   - `Related Docs` → relation  <!-- → [DB] Docs -->
 - Rows are PRE-CREATED ahead of the meeting (the weekly Hermes generation run, and the
