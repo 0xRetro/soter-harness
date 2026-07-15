@@ -49,4 +49,4 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0042](ADR-0042-promote-capturing-a-task.md) | Promote capturing-a-task to the guide index | Accepted |
 | [ADR-0043](ADR-0043-roles-bind-structurally.md) | Roles bind structurally — @-mentioned directory rows, dual relation | Accepted |
 | [ADR-0044](ADR-0044-enforce-adr-immutability.md) | Accepted ADRs are immutable, enforced by a guard not just convention | Accepted |
-| [ADR-0045](ADR-0045-engines-and-delegated-mechanisms.md) | Engines and delegated mechanisms — names for the owns-vs-executes split | Proposed |
+| [ADR-0045](ADR-0045-engines-and-delegated-mechanisms.md) | Engines and delegated mechanisms — names for the owns-vs-executes split | Accepted |
