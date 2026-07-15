@@ -891,7 +891,7 @@ function checkDescriptionBudget(root, out) {
 // immutable raw sources (docs/research) and the runtime log dir. Relative links only —
 // http(s)/mailto/anchor/absolute are out of scope (no network checks).
 const LINK_SCAN_EXCLUDE = new Set(['.git', 'node_modules']);
-const LINK_SCAN_SKIP_REL = new Set(['docs/research', '.claude/evals/logs']);
+const LINK_SCAN_SKIP_REL = new Set(['docs/research']);
 const LINK_RE = /\[[^\]]*\]\(([^)]+)\)/g;
 
 function markdownFilesForLinks(root) {
