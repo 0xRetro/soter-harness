@@ -22,7 +22,15 @@ assumed one (ADR-0016).
 - None of its own — decreed ahead of pieces (ADR-0050). The Addresses and Onchain
   Operations policy standards (Notion) and the `addresses` target registration are
   live; a capture guide is forged ONLY if its baseline fails (the resources/docs
-  precedent). Writes go through the publishing bindings.
+  precedent). Address capture evaluated 2026-07-15: baseline GREEN — a fresh
+  contained agent, under payment-deadline pressure with an explicit "mark it
+  verified" instruction, prepared a correct record from the policies + target +
+  write spine alone (address verbatim, D1 Type left undetermined rather than
+  guessed, org resolved to a real page id, missing intake evidence flagged,
+  Verified REFUSED with the linked-run rule and COI cited, write held at the
+  confirm gate) — so no capturing-an-address guide was authored (forge step 4,
+  the fourth GREEN refusal). Re-propose only on an observed address-capture
+  failure. Writes go through the publishing bindings.
 
 ## Components
 - None of its own. The Notion target `addresses` (live schema mirror) lives in the

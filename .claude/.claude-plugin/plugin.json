@@ -4,5 +4,15 @@
   "author": {
     "name": "Soter Labs"
   },
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "dependencies": [
+    {
+      "name": "notion",
+      "marketplace": "claude-plugins-official"
+    },
+    {
+      "name": "slack",
+      "marketplace": "claude-plugins-official"
+    }
+  ]
 }

@@ -28,6 +28,12 @@ publishing bindings it writes through. Decreed with the first add-on wave (ADR-0
   batch · runs-when: a user invokes `/processing-a-meeting` · invariants: stale items
   are triaged against intervening records, never blind-created; external people are
   never task assignees; nothing writes before the batch gate.
+- **ingesting-slack-channels** — reads: Slack channels (identity first; member rosters
+  only post-gate) · produces: curated [DB] Channels rows with members resolved to
+  [DB] Contacts · runs-when: a user invokes `/ingesting-slack-channels` · invariants:
+  the intake gate curates which channels enter BEFORE any people-data is read; member
+  and org relations are resolved to real ids or left empty, never fabricated; existing
+  rows are updated, never duplicated.
 - Further source mechanisms (docs, dumps, other DB intakes) are forged as needed; each
   follows the same spine (source → review → standardize → confirm → publish).
 
@@ -37,6 +43,8 @@ publishing bindings it writes through. Decreed with the first add-on wave (ADR-0
   never a bespoke push.
 - `.claude/skills/processing-a-meeting/SKILL.md` — the meeting-transcript intake
   mechanism (ADR-0051 pipeline).
+- `.claude/skills/ingesting-slack-channels/SKILL.md` — the Slack channel intake
+  mechanism (staged).
 
 ## Concepts
 source · ingestion · standardize · intake gate

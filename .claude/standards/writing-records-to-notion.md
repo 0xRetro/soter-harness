@@ -87,11 +87,14 @@ exclusion, phrase it in the org's terms.
   2026-07-14: 18 rows lost Type in the Ongoing→Operations rename). Snapshot the affected
   rows (url + value) BEFORE the ALTER, verify value counts after, restore from the
   snapshot when they strand.
-- **The view DSL silently drops relation filters** — create/update-view returns success
-  with `filters: []` (observed 2026-07-14, three syntaxes). A per-record filtered view
-  (e.g. Tasks where Project = this page) cannot be wired by API: carry it in the DB's
-  registered template as a template-relative filter (it remaps per instantiated record);
-  anything else is a one-time manual UI step.
+- **The MCP view DSL silently drops relation filters** — create/update-view returns
+  success with `filters: []` (observed 2026-07-14, three syntaxes). The official Views
+  API (`PATCH /v1/views/{id}`, 2025-09-03) documents filters in the query-filter format,
+  which includes relations — so raw REST with `NOTION_API_KEY` likely works (untested
+  here; no token in-session). Through MCP alone: carry the filter in the DB's registered
+  template as a template-relative filter (it remaps per instantiated record); otherwise
+  it is a one-time manual UI step ("Save for everyone" required — an unsaved filter is
+  session-local).
 - **Text after an inline mention can vanish on write** — a line written as
   `<mention/> — suffix` landed as the mention alone, silently; an identical retry from
   the freshly-fetched form landed fine (observed 2026-07-14). The post-write verify
