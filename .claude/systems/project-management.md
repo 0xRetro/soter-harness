@@ -28,8 +28,8 @@ Decreed with the first add-on wave (ADR-0017).
   (Project/Org/Assignee) are resolved to real page/user ids or left empty, never
   fabricated; relative dates pinned to concrete dates; status starts at To Do.
 - **updating-project-status** — reads: a [DB] Projects page, its policy standard, and
-  its promoted tasks · produces: a dated newest-first entry in the page's Updates
-  section with the milestone progress/health tags synced in the same pass · runs-when:
+  its promoted tasks · produces: a typed `Status` row in [DB] Update Feed related to
+  the project, with the milestone progress/health tags synced in the same pass · runs-when:
   a user invokes `/updating-project-status` (recurring cadence via `/loop` or a
   scheduled routine, never a cron prompt) · invariants: every claim derivable from
   real data; status prose and milestone tags never contradict; the write is

@@ -258,6 +258,20 @@ Features"). Identify a board only by the tooling page that embeds it.
 - Meeting artifacts never enter this DB — they live in [DB] Meetings (its own target once
   that integration lands).
 
+### update-feed  *(the [DB] Update Feed database — the org's typed update / decision / question feed)*
+- **data_source_id:** `fd89fc28-7aa6-4cb8-85d0-9e81741b7302` *(live-verified 2026-07-15)*
+- **properties:**
+  - `Update` → title           <!-- the headline -->
+  - `Category` → select        <!-- Milestone · News · Event · Update · Launch · Status · Decision · Question -->
+  - `Date` → date
+  - `Summary` → text           <!-- typed grammars per the Projects policy: Status = Done/In progress/At risk/Next; Decision = what - decided by - why; Question = question - owner - needed by -->
+  - `Source` → url
+  - `Processed` → checkbox     <!-- follow-ups done / question answered -->
+  - `Visibility` → select      <!-- Internal · Agent · Public -->
+  - `📁 [DB] Projects` → relation   <!-- the property name is LITERAL incl. emoji; resolve the project page id first -->
+- Registered template: the DB default (page `317d79b5-de38-80aa-a6df-f5dd445ee1bb`). A
+  project page's Updates section is a live view of this feed filtered to that project.
+
 > **Relations:** the create/update bindings write a relation as the TARGET page's id.
 > Resolve it (search the related DB by name) before writing, or leave the relation empty
 > and link it in a follow-up. Don't fabricate a page id.

@@ -14,12 +14,12 @@ in our format."
   Body section
 - progress grounded in real data: the project's promoted tasks queried, the milestone
   checklist read; every claim in the entry traceable to the page, its tasks, or its docs
-- the entry prepared as a PREPEND at the top of the Updates section, dated, with a
-  one-line headline carrying the health call
-- milestone tag changes proposed alongside the entry wherever the prose implies them
+- the update prepared as a `Status` row for [DB] Update Feed (target `update-feed`) —
+  dated, related to the project, with a one-line headline carrying the health call
+- milestone tag changes proposed alongside the row wherever the prose implies them
 - the write held for explicit human confirmation
 
 ## Never
-- the entry appended below existing Updates entries
+- an entry hand-written into the page's Updates section (it is a live view of the feed)
 - an invented number, task count, or health claim underivable from real data
 - a write (or attempted write) before the confirm
