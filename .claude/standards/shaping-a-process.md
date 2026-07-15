@@ -41,14 +41,16 @@ registry lives with the `process-inventory` target, not here.
   with the mold's column proportions (narrow ☐ · Field · Type · Required, wide
   Instruction, medium Why; copy the mold's table rather than rebuilding it) — columns
   ☐ · Field · Type · Required · Instruction · Why: ☐ is a glyph (ticking happens on the
-  run or its form — the doc is a read-do script); Field is the live field name in
-  backticks; Type is the concrete input shape (select · relation → its target · file +
+  run or its form — the doc is a read-do script); Field is the live field name in plain
+  text (never backticks); Type is the concrete input shape (select · relation → its target · file +
   accepted formats · text · checkbox · URL); Instruction is the plain what-to-do — one
   lead sentence, then `• ` bullets for determinations (evidence → **Value**), value
   lists, and `⤷ condition → En` pointers; Why is the operator-facing reason the field
   matters — exactness dicta (verbatim, in full, never truncated) live in Why, never in
   Instruction. A value convention is written in italics (*[Org] [Program]*), never in
-  backticks. A value list ends with a bare @-mention of the owning policy as its
+  backticks; a PREDETERMINED literal the operator enters as-is (`In Progress`,
+  `Today's date`, the linked process's own name) IS backticked, inside the Instruction.
+  A value list ends with a bare @-mention of the owning policy as its
   terminal bullet — `(@ <policy> — add/change enum options)` — the ONE permitted inline
   policy pointer: a locator for the option set's home, never narration (scoped exception
   to ADR-0038's no-pointer rule). Work-items carry NO example values — an `e.g.`
