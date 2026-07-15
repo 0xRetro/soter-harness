@@ -67,6 +67,7 @@ keeps the behavior (ADR-0045).
 | **product-development** | A captured use-case is carried to a shipped feature, tracked lightly on its own tool's board. | capturing<br>defining | `capturing-a-feature`<br>`defining-a-feature` | feature record<br>tooling page<br>feature lifecycle<br>Feature Board<br>containment |
 | **process** | Repeatable work is defined once in the live Process Inventory — definitions, not a runtime. | capturing-a-process<br>red-teaming | `standards/shaping-a-process.md`<br>`capturing-a-process`<br>`red-teaming-a-process` | process · step<br>work-item<br>process run<br>role · capability |
 | **resources** | The team's external accounts and platforms are tracked with clear access and administration answers. | validating-resources | `validating-resources` | resource |
+| **docs** | The team's shared documents and links have one governed home where type, audience, and relations stay known. | None | None | doc |
 | **sky** | Sky-ecosystem vocabulary has one home, so terms don't drift per surface. | None | None | Sky ecosystem · Atlas<br>spell · MSC · star<br>Prime Agent · NFAT |
 
 ### Automation — pushing, pulling, and keeping stores honest
