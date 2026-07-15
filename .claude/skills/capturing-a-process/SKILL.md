@@ -44,11 +44,14 @@ binding. Process-specific:
    fetch the live default template body first, then follow the standard — Purpose · Trigger
    (prose intro + objective tagged conditions) · Cadence · Roles · **Initialization** (a
    section, not a step: the run entry, its Roles map, its declared Inputs) · role-bounded
-   **Steps** (narrative intro; work-items as `- [ ]` headline + prose how on its own line,
-   no example values, `⤷ condition → En` pointers) · Exception Handling · Post Run Summary
-   Report (declares the run field's line items). FLEX: which recommended sections apply —
-   but Purpose, Initialization, Steps, and their work-items are always present. A reused
-   sequence is a subprocess (ADR-0032): copy it in full, name its canonical home.
+   **Steps** (narrative intro; work-items as a short bold sentence + capability-keyed
+   prose line; record-writes and evidence captures carry their fields as the standard
+   field table — copy the mold's table; no example values; `⤷ condition → En` pointers) ·
+   Exception Handling · Post Run Summary Report (declares the run field's line items).
+   FLEX: which recommended sections apply — but Purpose, Initialization, Steps, and their
+   work-items are always present. A reused sequence is a subprocess (ADR-0032): its home
+   starts from the [Subprocess Template]; callers carry it in full, with NO provenance
+   aside (ADR-0038) — adopting it means entering the home's Used By in the same change.
 4. **De-dup:** search [DB] Process Inventory by name before creating; an existing entry is
    updated (`/updating-a-notion-page`), not duplicated.
 5. **Confirm** the resolved row (matched options, resolved-or-empty Related Service, flagged
