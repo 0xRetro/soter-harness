@@ -1,12 +1,11 @@
 ---
 name: ingesting-slack-channels
 description: >-
-  Turns Slack channels into [DB] Channels rows — the human curates which channels
-  enter at an intake gate, members resolve to real [DB] Contacts records, existing
-  rows update not duplicate. Use to ingest, sweep, or sync Slack channels into the
-  CRM. Not for message content or digests, non-Slack channel records (the publishing
-  bindings directly), capturing people (/capturing-a-contact), or the write mechanics
-  (/pushing-to-notion, /updating-a-notion-page).
+  Turns Slack channels into [DB] Channels rows — a human curates which enter at an
+  intake gate, members resolve to real [DB] Contacts, existing rows update not
+  duplicate. Use to ingest, sweep, or sync Slack channels into the CRM. Not for message
+  content, capturing people (/capturing-a-contact), or the write mechanics (/pushing-to-
+  notion).
 disable-model-invocation: true
 layer: automation
 system: ingestion

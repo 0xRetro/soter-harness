@@ -55,4 +55,4 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0048](ADR-0048-docs-context-system.md) | The docs context system — decreed ahead of its pieces | Accepted |
 | [ADR-0049](ADR-0049-private-workspace-docs.md) | Private-workspace docs — the docs system's second tier, never in the library | Accepted |
 | [ADR-0050](ADR-0050-onchain-context-system.md) | The onchain context system — decreed ahead of its pieces | Accepted |
-| [ADR-0051](ADR-0051-meeting-processing-pipeline.md) | Meeting processing — official Otter MCP, summary-doc intermediate, project attribution | Proposed |
+| [ADR-0051](ADR-0051-meeting-processing-pipeline.md) | Meeting processing — official Otter MCP, summary-doc intermediate, project attribution | Accepted |

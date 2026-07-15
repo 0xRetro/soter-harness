@@ -1,6 +1,6 @@
 # ADR-0051: Meeting processing — official Otter MCP, summary-doc intermediate, project attribution
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-15
 
 ## Context
