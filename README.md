@@ -44,7 +44,7 @@ keeps the behavior (ADR-0045).
 | System | Promise | Mechanisms | Key components | Concepts |
 |---|---|---|---|---|
 | **template** | Every piece starts as a copy of its mold, so shape is guaranteed by instantiation rather than policing. | scaffold<br>(delegated to the forge) | `templates/` (the molds) | mold<br>shape<br>hint |
-| **lexicon** | Every term is defined once and referenced everywhere, so classification is mechanical rather than a judgment call. | alias lint<br>(delegated to the checker) | `LEXICON.md` | term<br>alias<br>concept<br>engine<br>delegated mechanism |
+| **lexicon** | Every term is defined once and referenced everywhere, so classification is mechanical rather than a judgment call. | alias lint<br>(delegated to the checker) | `LEXICON.md` | term · alias<br>concept · layer<br>system · mechanism<br>component · engine<br>delegated mechanism |
 | **standards** | There is one explicit bar for quality, naming, and budgets, so review is a checklist rather than taste. | rubric review<br>(delegated to the human gate)<br>budgets/naming<br>(delegated to the checker) | `RUBRIC.md`<br>`standards/degrees-of-freedom.md` | budget<br>degree of freedom<br>flex point<br>rubric |
 | **eval** | Every piece proves it was needed (a watched baseline failure) and holds up under realistic pressure. | baseline · pressure-test<br>(delegated to the forge)<br>running-evals | `evals/` (the cases)<br>`running-evals`<br>`agents/eval-runner.md` | baseline<br>pressure case<br>golden<br>eval case<br>meta-case |
 | **enforcement** | Everything the harness declares is mechanically verified, and a green result always carries evidence. | checker (an engine) | `scripts/check.mjs` | check rule<br>green carries evidence<br>turn gate |
@@ -63,9 +63,9 @@ keeps the behavior (ADR-0045).
 | System | Promise | Mechanisms | Key components | Concepts |
 |---|---|---|---|---|
 | **crm** | Organizations, the people at them, the channels connecting us, and the meetings held with them are mirrored to the live CRM databases. | capturing-an-org<br>capturing-a-contact | `capturing-an-org`<br>`capturing-a-contact` | org<br>contact<br>channel<br>meeting |
-| **project-management** | Delivery is tracked above the feature level — projects and the tasks that execute them, per their policy standards. | capturing-a-task | `capturing-a-task` | project<br>task |
+| **project-management** | Delivery is tracked above the feature level — projects and the tasks that execute them, per their policy standards. | capturing-a-task | `capturing-a-task` | project · task<br>milestone |
 | **product-development** | A captured use-case is carried to a shipped feature, tracked lightly on its own tool's board. | capturing<br>defining | `capturing-a-feature`<br>`defining-a-feature` | feature record<br>tooling page<br>feature lifecycle<br>Feature Board<br>containment |
-| **process** | Repeatable work is defined once in the live Process Inventory — definitions, not a runtime. | capturing-a-process<br>red-teaming | `standards/shaping-a-process.md`<br>`capturing-a-process`<br>`red-teaming-a-process` | process · step<br>work-item<br>process run<br>role · capability |
+| **process** | Repeatable work is defined once in the live Process Inventory — definitions, not a runtime. | capturing-a-process<br>red-teaming | `standards/shaping-a-process.md`<br>`capturing-a-process`<br>`red-teaming-a-process` | process · step<br>work-item · subprocess<br>process run · slot<br>role · capability |
 | **resources** | The team's external accounts and platforms are tracked with clear access and administration answers. | validating-resources | `validating-resources` | resource |
 | **docs** | The team's shared documents and links have one governed home, while private-collection docs are served in place and never enter it. | None | None | doc<br>private-workspace doc |
 | **sky** | Sky-ecosystem vocabulary has one home, so terms don't drift per surface. | None | None | Sky ecosystem · Atlas<br>spell · MSC · star<br>Prime Agent · NFAT |

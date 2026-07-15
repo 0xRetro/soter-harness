@@ -43,7 +43,7 @@ runtime engine (ADR-0003, ADR-0019).
 - `.claude/skills/red-teaming-a-process/SKILL.md` — the review-gate guide (staged).
 
 ## Concepts
-process · step · work-item · process run · role · capability
+process · step · work-item · process run · role · capability · subprocess · slot
 
 ## Invariants
 - a process is shaped to the live [DB] Process Inventory schema, never an assumed one — enforcer: (gate) + publishing's live schema fetch
