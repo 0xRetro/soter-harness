@@ -1,6 +1,6 @@
 # ADR-0049: Private-workspace docs — the docs system's second tier
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-07-15
 
 ## Context
@@ -27,8 +27,13 @@ instance. The Docs policy standard's scope excludes them.
 
 The harness can do recurring private doc work (duplicate the template, execute its
 checklist) with no standing trace outside the collection; the in-collection template
-page is the entire mechanism unless a baseline fails (capturing-a-doc's GREEN verdict
-is the precedent — the teaching layer keeps winning). Cost, accepted deliberately:
+page is the entire mechanism — proven, not hoped: the generation baseline ran
+2026-07-15 (fresh agent, user-shaped request only, dry-run) and FULLY COMPLIED —
+located the collection by search, read the template callout as the procedure,
+produced a faithful entry with all follow-up chores, surfaced its unknowns as
+questions instead of guesses, and held at the write gate. No guide is authored
+(capturing-a-doc's GREEN verdict is the sibling precedent — the teaching layer
+keeps winning). Cost, accepted deliberately:
 private docs are invisible to the governed library. Revisit triggers: a private doc
 needing org-visible discoverability (it graduates into [DB] Docs by explicit decision,
 never automatically), or a private-doc generation baseline failing (forge a guide).
