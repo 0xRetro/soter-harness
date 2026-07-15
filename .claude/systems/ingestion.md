@@ -21,6 +21,13 @@ publishing bindings it writes through. Decreed with the first add-on wave (ADR-0
   `/reviewing-a-repo` · invariants: nothing is written without a human deciding what to
   ingest; records are standardized to the target schema before publish; re-review
   doesn't duplicate.
+- **processing-a-meeting** — reads: a [DB] Meetings row + its transcript (the Otter MCP
+  via the Recording URL, or the row's native meeting note) · produces: a summary doc
+  from the registered template (topics naming their Related projects), grounded
+  tasks/folds, meeting-row fills, project updates, and an AI Inbox digest — one gated
+  batch · runs-when: a user invokes `/processing-a-meeting` · invariants: stale items
+  are triaged against intervening records, never blind-created; external people are
+  never task assignees; nothing writes before the batch gate.
 - Further source mechanisms (docs, dumps, other DB intakes) are forged as needed; each
   follows the same spine (source → review → standardize → confirm → publish).
 
@@ -28,6 +35,8 @@ publishing bindings it writes through. Decreed with the first add-on wave (ADR-0
 - `.claude/skills/reviewing-a-repo/SKILL.md` — the first intake mechanism. Notion writes
   go through the publishing bindings (`pushing-to-notion` / `updating-a-notion-page`),
   never a bespoke push.
+- `.claude/skills/processing-a-meeting/SKILL.md` — the meeting-transcript intake
+  mechanism (ADR-0051 pipeline).
 
 ## Concepts
 source · ingestion · standardize · intake gate

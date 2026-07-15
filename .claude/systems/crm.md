@@ -35,6 +35,8 @@ but can lag; fetch live (ADR-0016). Decreed with the first add-on wave (ADR-0017
   the publishing bindings against the `meetings` target. A dedicated
   `capturing-a-meeting` guide is forged when meeting writes become routine (a baseline
   run 2026-07-14 showed the shared write discipline already carries the capture case).
+  Turning a meeting's transcript into records is the ingestion system's
+  `processing-a-meeting` (ADR-0051).
 - **channels** — the [DB] Channels directory + its policy are live (a channel record links
   member contacts and related orgs); processes reference channels today via the publishing
   bindings. A dedicated `capturing-a-channel` guide is forged when channel writes become
