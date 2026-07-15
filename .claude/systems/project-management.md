@@ -42,7 +42,12 @@ Decreed with the first add-on wave (ADR-0017).
   alone (Type per the policy's D1, PM/Organization resolved to real ids, de-dup caught
   a genuine possible duplicate, write held at the confirm gate with the user away), so
   no capturing-a-project guide was authored (forge step 4). Re-propose only on an
-  observed project-capture failure. Work-item→task promotion evaluated 2026-07-15:
+  observed project-capture failure. Feed-row logging (decisions/questions) evaluated
+  2026-07-15: baseline GREEN — a fresh contained agent staged the full three-surface
+  update unprompted (Decision row in grammar with the missing why refused-not-invented,
+  the matching Question row's Processed flip, the milestone work-item check, health tag
+  correctly left at-risk) and held the gate — no logging guide authored.
+  Work-item→task promotion evaluated 2026-07-15:
   baseline GREEN — a fresh contained agent ran the full capture discipline unprompted
   (grammar parsed, policy applied, ids resolved, de-duped, held at the gate), so no
   promoting guide was authored; boundary noted the same day: not every work item is a
