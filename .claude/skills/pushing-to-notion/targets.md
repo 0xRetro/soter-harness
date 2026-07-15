@@ -108,7 +108,7 @@ Features"). Identify a board only by the tooling page that embeds it.
 - Registered templates: the DB default "[Project Template]" plus "[Deal Template]" for
   Deal-type entries (deal milestone set pre-filled). Both implement the policy's body
   standard FULLY WIRED: template-relative live views for the Task Board, Docs, Meeting
-  Logs & Notes, Updates (two views), and Questions — the view API cannot set relation
+  Logs & Notes, Updates, Questions, and Decisions — the view API cannot set relation
   filters, so the templates are the only automated path to per-project filtered views.
 
 ### process-inventory  *(the [DB] Process Inventory database — one entry per repeatable process)*
