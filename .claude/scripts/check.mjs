@@ -799,6 +799,45 @@ function checkAliasTable(root, out) {
   }
 }
 
+// The reverse of CARD_CONCEPT: every Registry term must appear on its owning system
+// card's Concepts line — the registry and the card are two views of one fact and must
+// agree both directions (observed drift 2026-07-15: subprocess and slot reached the
+// registry; the process card's Concepts line never absorbed them).
+function checkRegistryCoverage(root, out) {
+  const f = path.join(root, '.claude', 'LEXICON.md');
+  if (!exists(f)) return;
+  const m = read(f).match(/## Registry[\s\S]*?\n\n([\s\S]*?)(\n## |$)/);
+  if (!m) return;
+  const cardConcepts = new Map();
+  for (const line of lines(m[1])) {
+    if (!line.includes('|')) continue;
+    const cells = line.split('|').map((c) => c.trim()).filter(Boolean);
+    if (/^[-: ]+$/.test(cells.join(''))) continue;        // the |---|---| separator
+    if (cells.length < 3 || /^term$/i.test(cells[0])) continue; // header or malformed
+    const term = cells[0].replace(/\*\*/g, '').trim();
+    const sys = cells[1].trim();
+    const card = path.join(root, '.claude', 'systems', `${sys}.md`);
+    if (!exists(card)) {
+      out.push(V(f, 'CONCEPT_UNCARDED', `registry term "${term}" is owned by "${sys}" which has no system card`,
+        'a term owned by a system without a card has no Concepts line to live on — ownership is drift until the card exists',
+        `create .claude/systems/${sys}.md or fix the row's owning system`));
+      continue;
+    }
+    if (!cardConcepts.has(sys)) {
+      const set = new Set();
+      for (const raw of cardSection(read(card), 'Concepts').split(/[·\n]/)) {
+        const t = raw.replace(/\(.*?\)/g, '').replace(/^[\s\-*]+|[\s\-*]+$/g, '').toLowerCase();
+        if (t) set.add(t);
+      }
+      cardConcepts.set(sys, set);
+    }
+    if (!cardConcepts.get(sys).has(term.toLowerCase()))
+      out.push(V(f, 'CONCEPT_UNCARDED', `registry term "${term}" is not on the ${sys} card's Concepts line`,
+        'the registry and the owning card are two views of one fact — a term only in the registry drifts silently',
+        `add "${term}" to .claude/systems/${sys}.md ## Concepts (or fix the row's owning system)`));
+  }
+}
+
 function checkAliases(root, files, out) {
   const aliases = loadAliases(root);
   if (!aliases.length) {
@@ -984,6 +1023,7 @@ function checkAll(root, census = {}) {
   checkAliases(root, contentFiles(root), out);
   census.aliasRows = loadAliases(root).length;
   checkAliasTable(root, out);
+  checkRegistryCoverage(root, out);
   checkDescriptionBudget(root, out);
   checkLinks(root, out);
   checkTargetFreshness(root, out);
@@ -1046,7 +1086,7 @@ function selftest() {
     fs.mkdirSync(path.dirname(f), { recursive: true });
     fs.writeFileSync(f, content);
   };
-  const LEX = '# L\n\n## Aliases (do not use → use instead)\n\nintro\n\n| Do not use | Use instead |\n|---|---|\n| picker | selector |\n';
+  const LEX = '# L\n\n## Registry (terms)\n\nintro\n\n| Term | System | Definition |\n|---|---|---|\n| flobnark | pathless | a planted term the pathless card never absorbed |\n\n## Aliases (do not use → use instead)\n\nintro\n\n| Do not use | Use instead |\n|---|---|\n| picker | selector |\n';
 
   // --- Stage 1: planted violations — EVERY code must fire (synthetic root)
   const tmp = mkroot('checker-selftest-');
@@ -1114,7 +1154,7 @@ function selftest() {
     'REF_DEPTH', 'PRESSURE_MISSING', 'UNEXPECTED_FILE', 'BUDGET_RULE',
     'SEC_LINT', 'DESC_XML', 'TRIGGER_EVAL_MISSING', 'LINK_BROKEN',
     'FM_CLASS', 'SYSTEM_UNKNOWN', 'MOLD_UNKNOWN', 'MOLD_SHAPE', 'CARD_OWNER', 'CARD_PATH', 'CARD_CONCEPT', 'CARD_ADR',
-    'ALIAS_ROW_MALFORMED', 'SECTION_ORDER', 'AUTOMATION_AUTOFIRE', 'SECRET_LEAK', 'SYSTEM_UNLISTED',
+    'ALIAS_ROW_MALFORMED', 'SECTION_ORDER', 'AUTOMATION_AUTOFIRE', 'SECRET_LEAK', 'SYSTEM_UNLISTED', 'CONCEPT_UNCARDED',
     'DESC_PERSON', 'DESC_VAGUE',
     'TARGET_STALE', 'GOLDEN_NONE', 'GOLDEN_PARTIAL', 'ADR_DUP', 'HOOK_PARITY', 'STAGED_MATURE', 'PLATFORM_COUPLING'];
   const missed = mustFire.filter((c) => !codes.has(c));
@@ -1139,12 +1179,15 @@ function selftest() {
   const wc = writer(clean);
   const CLASS = 'layer: kernel\nsystem: guides\nkind: component\n';
   const MOLDBODY = '\n## Makes\nx\n\n## Frontmatter\nx\n\n## Shape\nx\n\n## Check rules\nx\n';
-  wc('.claude/LEXICON.md', `---\nname: lexicon\n${CLASS}mold: singleton\n---\n\n` + LEX);
+  // The clean root gets its OWN consistent LEXICON (the planted LEX carries a
+  // deliberately-uncarded registry row; here registry and card must agree).
+  const CLEAN_LEX = '# L\n\n## Registry (terms)\n\nintro\n\n| Term | System | Definition |\n|---|---|---|\n| greeting | guides | a warm hello |\n\n## Aliases (do not use → use instead)\n\nintro\n\n| Do not use | Use instead |\n|---|---|\n| picker | selector |\n';
+  wc('.claude/LEXICON.md', `---\nname: lexicon\n${CLASS}mold: singleton\n---\n\n` + CLEAN_LEX);
   wc('CLAUDE.md', '# Harness\n\n- ALWAYS use the molds.\n');
   wc('.claude/templates/mold.md', `---\nname: mold\n${CLASS}mold: mold\n---\n\n# Mold` + MOLDBODY);
   wc('.claude/templates/system-card.md', `---\nname: system-card\n${CLASS}mold: mold\n---\n\n# Card mold` + MOLDBODY);
   wc('.claude/templates/how-to-guide.md', `---\nname: how-to-guide\n${CLASS}mold: mold\n---\n\n# Guide mold` + MOLDBODY);
-  wc('.claude/systems/guides.md', `---\nname: guides\n${CLASS}mold: system-card\n---\n\n# System: guides\n\n## Promise\nx\n\n## Mechanisms\nnone\n\n## Components\n- .claude/skills/greeting-users/SKILL.md\n\n## Concepts\nnone\n\n## Invariants\nnone\n`);
+  wc('.claude/systems/guides.md', `---\nname: guides\n${CLASS}mold: system-card\n---\n\n# System: guides\n\n## Promise\nx\n\n## Mechanisms\nnone\n\n## Components\n- .claude/skills/greeting-users/SKILL.md\n\n## Concepts\ngreeting\n\n## Invariants\nnone\n`);
   wc('.claude/skills/greeting-users/SKILL.md',
     `---\nname: greeting-users\ndescription: Greets users warmly. Use when the user asks for a greeting. Not for farewells.\n${CLASS}mold: how-to-guide\n---\n\n# Greeting users\n\n## Use when / don\'t use when\n- Use when: greeting\n- Not for: farewells\n\n## Steps\n1. Say hello.\n2. Copy the \`playbook\` column verbatim.\n`);   // backticked alias must stay silent (code-span strip)
   for (const c of ['happy', 'pressure', 'invariant', 'no-trigger'])

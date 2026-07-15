@@ -62,7 +62,7 @@ Decreed with the first add-on wave (ADR-0017).
 - `.claude/skills/updating-project-status/SKILL.md` — the status-update guide (staged).
 
 ## Concepts
-project · task · milestone
+project · task · milestone · update
 
 ## Invariants
 - tasks and projects are shaped to the live [DB] Tasks / [DB] Projects schemas, never an assumed one — enforcer: (gate) + publishing's live schema fetch
