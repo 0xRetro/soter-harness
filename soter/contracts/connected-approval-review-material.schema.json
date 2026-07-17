@@ -1,0 +1,284 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/connected-approval-review-material/v1",
+  "title": "Soter private selected-activity connected approval review material",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "fingerprint", "request",
+    "configuration", "run", "changeSet", "batch", "effects",
+    "completeness", "operations", "privacy"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/connected-approval-review-material/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "fingerprint": { "$ref": "#/$defs/fingerprint" },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fingerprint", "createdAt", "expiresAt", "reason"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^approval-request\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "createdAt": { "type": "string", "minLength": 20 },
+        "expiresAt": { "type": "string", "minLength": 20 },
+        "reason": { "type": "string", "minLength": 8, "maxLength": 5000 }
+      }
+    },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path", "lockPath", "lockFingerprint", "graphFingerprint",
+        "host", "applicability"
+      ],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "lockPath": { "type": "string", "minLength": 1 },
+        "lockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "host": { "type": "string", "minLength": 1 },
+        "applicability": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state", "expectedLockFingerprint", "observedLockFingerprint",
+            "reasonCode"
+          ],
+          "properties": {
+            "state": { "enum": ["current", "stale", "unknown"] },
+            "expectedLockFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+            "observedLockFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+            "reasonCode": {
+              "enum": ["LOCK_CURRENT", "CHECKPOINT_STALE", "LOCK_APPLICABILITY_UNKNOWN"]
+            }
+          }
+        }
+      }
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fingerprint"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^run\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "changeSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "documentFingerprint", "scopeFingerprint"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^changeset\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "documentFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "scopeFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "batch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "documentFingerprint", "scopeFingerprint"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^batch\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "documentFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "scopeFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "effects": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["write", "destructive"] }
+    },
+    "completeness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "reasonCodes"],
+      "properties": {
+        "state": { "enum": ["complete", "incomplete"] },
+        "reasonCodes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "const": "SOURCE_CONTEXT_UNAVAILABLE" }
+        }
+      }
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": { "$ref": "#/$defs/operation" }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope", "authority", "projection", "providerArgumentsIncluded",
+        "rawProviderResponsesIncluded", "credentialValuesIncluded",
+        "workspaceInspectionIncluded", "evidenceIncluded",
+        "canonicalArtifactsIncluded", "approvalAuthorityIncluded",
+        "continuationAuthorityIncluded"
+      ],
+      "properties": {
+        "scope": { "const": "private-local-approval-review" },
+        "authority": { "const": "none" },
+        "projection": { "const": "selected-activity-only" },
+        "providerArgumentsIncluded": { "const": false },
+        "rawProviderResponsesIncluded": { "const": false },
+        "credentialValuesIncluded": { "const": false },
+        "workspaceInspectionIncluded": { "const": false },
+        "evidenceIncluded": { "const": false },
+        "canonicalArtifactsIncluded": { "const": false },
+        "approvalAuthorityIncluded": { "const": false },
+        "continuationAuthorityIncluded": { "const": false }
+      }
+    }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "nullableFingerprint": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "type", "id"],
+      "properties": {
+        "kind": { "const": "portable-resource" },
+        "type": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "id": { "type": ["string", "null"], "minLength": 1, "maxLength": 2000 }
+      }
+    },
+    "unavailableBefore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "reasonCode", "fingerprint"],
+      "properties": {
+        "state": { "const": "unavailable" },
+        "reasonCode": { "const": "SOURCE_CONTEXT_UNAVAILABLE" },
+        "fingerprint": { "type": "null" }
+      }
+    },
+    "absentBefore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "reasonCode", "fingerprint"],
+      "properties": {
+        "state": { "const": "absent-required" },
+        "reasonCode": { "const": "DEDUPLICATION_ABSENCE_REQUIRED" },
+        "fingerprint": { "type": "null" }
+      }
+    },
+    "notRequiredBefore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "reasonCode", "fingerprint"],
+      "properties": {
+        "state": { "const": "not-required" },
+        "reasonCode": { "const": "PRIOR_VALUE_NOT_REQUIRED" },
+        "fingerprint": { "type": "null" }
+      }
+    },
+    "providedBefore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "reasonCode", "fingerprint", "reviewValue"],
+      "properties": {
+        "state": { "const": "provided" },
+        "reasonCode": { "const": "SOURCE_CONTEXT_BOUND" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "reviewValue": { "type": "object" }
+      }
+    },
+    "providedAfter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "fingerprint", "reviewValue"],
+      "properties": {
+        "state": { "const": "provided" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "reviewValue": { "type": "object" }
+      }
+    },
+    "privateObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fingerprint", "reviewValue"],
+      "properties": {
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "reviewValue": { "type": "object" }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "sequence", "capability", "authority", "reason",
+        "changeSetOperationFingerprint", "batchOperationFingerprint",
+        "inputFingerprint", "subject", "before", "after", "precondition",
+        "verification", "recovery", "operationFingerprint"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "capability": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$",
+          "maxLength": 200
+        },
+        "authority": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "reason": { "type": "string", "minLength": 8, "maxLength": 5000 },
+        "changeSetOperationFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "batchOperationFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "inputFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "subject": { "$ref": "#/$defs/subject" },
+        "before": {
+          "oneOf": [
+            { "$ref": "#/$defs/unavailableBefore" },
+            { "$ref": "#/$defs/absentBefore" },
+            { "$ref": "#/$defs/notRequiredBefore" },
+            { "$ref": "#/$defs/providedBefore" }
+          ]
+        },
+        "after": { "$ref": "#/$defs/providedAfter" },
+        "precondition": { "$ref": "#/$defs/privateObject" },
+        "verification": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "expectedFingerprint", "contentFingerprint"],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+              "maxLength": 200
+            },
+            "expectedFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "contentFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
+          }
+        },
+        "recovery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode", "reason"],
+          "properties": {
+            "mode": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+              "maxLength": 200
+            },
+            "reason": { "type": "string", "minLength": 8, "maxLength": 5000 }
+          }
+        },
+        "operationFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "$contract": "soter://contracts/migration/v1",
+  "contractVersion": "1.0.0",
+  "id": "project-pulse.prototype-to-v1",
+  "source": "claude-oriented-prototype",
+  "slice": "automation.project-pulse",
+  "items": [
+    {
+      "sourcePath": ".claude/skills/updating-project-status/SKILL.md",
+      "targetPath": "soter/packs/automation.project-pulse/pack.json",
+      "targetPack": "automation.project-pulse",
+      "state": "mapped",
+      "bridge": "The target implements deterministic read-only grounding and preview behavior; the legacy guide remains authoritative for connected reads, reviewed writes, and user-facing operation."
+    },
+    {
+      "sourcePath": ".claude/evals/updating-project-status/happy-path.md",
+      "targetPath": "soter/scenarios/project-pulse/happy-path.scenario.json",
+      "targetPack": "automation.project-pulse",
+      "state": "mapped",
+      "bridge": "The structured scenario has exact-lock contained execution evidence for read-only grounding and preview derivation; connected and write behavior remain with the legacy guide."
+    },
+    {
+      "sourcePath": ".claude/evals/updating-project-status/invariant-no-invented-progress.md",
+      "targetPath": "soter/scenarios/project-pulse/no-invented-progress.scenario.json",
+      "targetPack": "automation.project-pulse",
+      "state": "mapped",
+      "bridge": "The target fixture proves that milestone work-item counts do not become invented task percentages; the legacy guide still governs connected operation."
+    },
+    {
+      "sourcePath": ".claude/evals/updating-project-status/pressure-just-say-on-track.md",
+      "targetPath": "soter/scenarios/project-pulse/pressure-on-track.scenario.json",
+      "targetPack": "automation.project-pulse",
+      "state": "mapped",
+      "bridge": "The target fixture proves that requested health cannot override contradictory records; the legacy guide remains authoritative for connected operation and writes."
+    }
+  ]
+}

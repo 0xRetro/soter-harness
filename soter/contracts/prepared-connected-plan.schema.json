@@ -1,0 +1,257 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/prepared-connected-plan/v1",
+  "title": "Soter private compiled connected-operation candidate plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "id", "fingerprint", "createdAt",
+    "source", "configuration", "compiler", "state", "executable",
+    "effects", "operations", "blockers", "privacy"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/prepared-connected-plan/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^prepared-connected-plan\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "fingerprint": { "$ref": "#/$defs/fingerprint" },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "source": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "batchId", "batchFingerprint", "workId", "workFingerprint",
+        "checkpointId", "checkpointFingerprint", "automationId", "automationVersion"
+      ],
+      "properties": {
+        "batchId": { "type": "string", "pattern": "^review-batch\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "batchFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "workId": { "type": "string", "pattern": "^work\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "workFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "checkpointId": { "type": "string", "minLength": 1 },
+        "checkpointFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "automationId": { "type": "string", "pattern": "^automation\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "automationVersion": { "$ref": "#/$defs/version" }
+      }
+    },
+    "configuration": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "path", "lockPath", "lockFingerprint", "graphFingerprint", "host", "applicability"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "lockPath": { "type": "string", "minLength": 1 },
+        "lockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "host": { "type": "string", "minLength": 1 },
+        "applicability": { "enum": ["current", "stale"] }
+      }
+    },
+    "compiler": {
+      "type": "object", "additionalProperties": false,
+      "required": ["module", "moduleFingerprint", "compileExport", "evaluateExport"],
+      "properties": {
+        "module": { "type": "string", "minLength": 1 },
+        "moduleFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "compileExport": { "type": "string", "minLength": 1 },
+        "evaluateExport": { "type": "string", "minLength": 1 }
+      }
+    },
+    "state": { "const": "blocked-review-only" },
+    "executable": { "const": false },
+    "effects": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["write", "dispatch", "destructive"] } },
+    "operations": {
+      "type": "array", "minItems": 1, "maxItems": 100,
+      "items": { "$ref": "#/$defs/operation" }
+    },
+    "blockers": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {
+        "enum": [
+          "CONNECTED_PROVIDER_NOT_DECLARED",
+          "CONNECTED_TRANSACTION_RUNTIME_NOT_SUPPORTED",
+          "CONNECTED_VERIFICATION_NOT_PROVEN",
+          "SELECTED_ACTIVITY_PRIVATE_APPROVAL_REVIEW_NOT_AVAILABLE"
+        ]
+      }
+    },
+    "privacy": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "scope", "authority", "projection", "privateValuesIncluded",
+        "providerArgumentsIncluded", "rawProviderResponsesIncluded",
+        "credentialValuesIncluded", "workspaceInspectionIncluded",
+        "evidenceIncluded", "canonicalArtifactsIncluded",
+        "approvalAuthorityIncluded", "continuationAuthorityIncluded",
+        "executionAuthorityIncluded", "retryAuthorityIncluded"
+      ],
+      "properties": {
+        "scope": { "const": "private-local-prepared-connected-plan" },
+        "authority": { "const": "none" },
+        "projection": { "const": "selected-plan-only" },
+        "privateValuesIncluded": { "const": true },
+        "providerArgumentsIncluded": { "const": true },
+        "rawProviderResponsesIncluded": { "const": false },
+        "credentialValuesIncluded": { "const": false },
+        "workspaceInspectionIncluded": { "const": false },
+        "evidenceIncluded": { "const": false },
+        "canonicalArtifactsIncluded": { "const": false },
+        "approvalAuthorityIncluded": { "const": false },
+        "continuationAuthorityIncluded": { "const": false },
+        "executionAuthorityIncluded": { "const": false },
+        "retryAuthorityIncluded": { "const": false }
+      }
+    }
+  },
+  "$defs": {
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "provider": {
+      "type": "object", "additionalProperties": false,
+      "required": ["pack", "connectedImplementation"],
+      "properties": {
+        "pack": { "type": "string", "minLength": 3 },
+        "connectedImplementation": {
+          "type": ["string", "null"],
+          "pattern": "^provider\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "version": { "type": ["string", "null"], "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" }
+      }
+    },
+    "verification": {
+      "type": "object", "additionalProperties": false,
+      "required": ["capability", "provider", "input", "inputFingerprint", "expectation"],
+      "properties": {
+        "capability": { "type": "string", "minLength": 3 },
+        "provider": { "$ref": "#/$defs/provider" },
+        "input": { "type": "object" },
+        "inputFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "expectation": {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "expectedFingerprint"],
+          "properties": {
+            "kind": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+            "expectedFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        }
+      }
+    },
+    "operation": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "id", "sequence", "sourceActionId", "capability", "authority",
+        "provider", "effect", "input", "inputFingerprint", "verification",
+        "ambiguity", "recovery"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^operation\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "sourceActionId": { "type": "string", "minLength": 1 },
+        "capability": { "type": "string", "minLength": 3 },
+        "authority": { "type": "string", "minLength": 3 },
+        "provider": { "$ref": "#/$defs/provider" },
+        "effect": { "enum": ["write", "dispatch", "destructive"] },
+        "input": { "type": "object" },
+        "inputFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "precondition": {
+          "oneOf": [
+            { "$ref": "#/$defs/noPrecondition" },
+            { "$ref": "#/$defs/expectedPrecondition" }
+          ]
+        },
+        "verification": { "$ref": "#/$defs/verification" },
+        "review": { "$ref": "#/$defs/privateReview" },
+        "ambiguity": {
+          "type": "object", "additionalProperties": false,
+          "required": ["retry", "reconcileWith", "unresolvedState", "reasonCode"],
+          "properties": {
+            "retry": { "const": "prohibited" },
+            "reconcileWith": { "const": "verification" },
+            "unresolvedState": { "const": "needs-attention" },
+            "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" }
+          }
+        },
+        "recovery": {
+          "type": "object", "additionalProperties": false,
+          "required": ["mode", "reasonCode"],
+          "properties": {
+            "mode": { "const": "manual-required" },
+            "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" }
+          }
+        }
+      }
+    },
+    "expectation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "expectedFingerprint"],
+      "properties": {
+        "kind": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "expectedFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "noPrecondition": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "capability", "input", "inputFingerprint", "expectation"],
+      "properties": {
+        "kind": { "const": "none" },
+        "capability": { "type": "null" },
+        "input": { "type": "null" },
+        "inputFingerprint": { "type": "null" },
+        "expectation": { "type": "null" }
+      }
+    },
+    "expectedPrecondition": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "capability", "provider", "input", "inputFingerprint", "expectation"],
+      "properties": {
+        "kind": { "const": "expectation" },
+        "capability": { "type": "string", "minLength": 3 },
+        "provider": { "$ref": "#/$defs/provider" },
+        "input": { "type": "object" },
+        "inputFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "expectation": { "$ref": "#/$defs/expectation" }
+      }
+    },
+    "privateReview": {
+      "type": "object", "additionalProperties": false,
+      "required": ["subject", "before", "after", "precondition"],
+      "properties": {
+        "subject": {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "type", "id"],
+          "properties": {
+            "kind": { "const": "portable-resource" },
+            "type": { "type": "string", "minLength": 1 },
+            "id": { "type": ["string", "null"], "minLength": 1 }
+          }
+        },
+        "before": {
+          "type": "object", "additionalProperties": false,
+          "required": ["state", "reasonCode", "fingerprint"],
+          "properties": {
+            "state": { "enum": ["not-required", "absent-required"] },
+            "reasonCode": { "enum": ["PRIOR_VALUE_NOT_REQUIRED", "DEDUPLICATION_ABSENCE_REQUIRED"] },
+            "fingerprint": { "type": "null" }
+          }
+        },
+        "after": { "$ref": "#/$defs/privateValue" },
+        "precondition": { "$ref": "#/$defs/privateObject" }
+      }
+    },
+    "privateValue": {
+      "type": "object", "additionalProperties": false,
+      "required": ["state", "fingerprint", "reviewValue"],
+      "properties": {
+        "state": { "const": "provided" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "reviewValue": { "type": "object" }
+      }
+    },
+    "privateObject": {
+      "type": "object", "additionalProperties": false,
+      "required": ["fingerprint", "reviewValue"],
+      "properties": {
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "reviewValue": { "type": "object" }
+      }
+    }
+  }
+}

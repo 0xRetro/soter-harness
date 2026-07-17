@@ -17,10 +17,23 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - run: npm ci
       # Prove the Checker itself catches violations (plant-and-assert)…
       - run: node .claude/scripts/check.mjs --selftest
-      # …then hold the whole repo to the bar. This is the hard gate (ADR-0003).
+      # …then hold the legacy implementation to its existing hard gate during migration.
       - run: node .claude/scripts/check.mjs --all
+      # Prove and run the provider-neutral target verifier during the migration overlap.
+      - run: node soter/kernel/verify.mjs --selftest
+      - run: node soter/kernel/verify.mjs
+      # Prove Core generates contract-valid, effect-free state and that checked-in evidence is current.
+      - run: node soter/core/cli.mjs selftest
+      - run: npm run soter:mcp:selftest
+      - run: node soter/core/cli.mjs fixtures --check
+      - run: node soter/core/cli.mjs doctor --lock soter/fixtures/meeting-intake/meeting-intake.lock.json --at 2026-07-15T12:00:00.000Z
+      # Prove the read-only inspection contract, React projection, packaged local build,
+      # Electron sandbox, invalidation watcher, accessibility, and no-write boundary.
+      - run: npm run soter:studio:check
+      - run: xvfb-run -a npm run soter:studio:e2e
 
   # Plugin invariant: the plugin + marketplace manifest must validate before ship.
   # Separate job so a packaging break is distinct from a content break.

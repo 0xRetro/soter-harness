@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/automation-input/v1",
+  "title": "Soter automation operator input declaration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$contract", "contractVersion", "id", "automation", "version", "fields", "additionalInputs"],
+  "properties": {
+    "$contract": { "const": "soter://contracts/automation-input/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^input\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "automation": { "type": "string", "pattern": "^automation\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "fields": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          { "$ref": "#/$defs/referenceField" },
+          { "$ref": "#/$defs/enumField" },
+          { "$ref": "#/$defs/stringField" },
+          { "$ref": "#/$defs/booleanField" },
+          { "$ref": "#/$defs/dateField" },
+          { "$ref": "#/$defs/uriField" }
+        ]
+      }
+    },
+    "additionalInputs": { "type": "boolean" }
+  },
+  "$defs": {
+    "referenceField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "description", "type", "required", "exposure", "reference"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$" },
+        "label": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 12 },
+        "type": { "const": "reference" },
+        "required": { "type": "boolean" },
+        "exposure": { "enum": ["identifier", "private"] },
+        "reference": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["subject", "authorityRole"],
+          "properties": {
+            "subject": { "type": "string", "minLength": 3 },
+            "authorityRole": { "enum": ["definition", "instance", "provider", "projection", "evidence"] }
+          }
+        },
+        "constraints": { "$ref": "#/$defs/textConstraints" },
+        "examples": { "$ref": "#/$defs/examples" }
+      }
+    },
+    "enumField": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "label", "description", "type", "required", "exposure", "options"],
+      "properties": {
+        "id": { "$ref": "#/$defs/fieldId" }, "label": { "$ref": "#/$defs/label" },
+        "description": { "$ref": "#/$defs/description" }, "type": { "const": "enum" },
+        "required": { "type": "boolean" }, "exposure": { "$ref": "#/$defs/exposure" },
+        "options": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "examples": { "$ref": "#/$defs/examples" }
+      }
+    },
+    "stringField": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "label", "description", "type", "required", "exposure"],
+      "properties": {
+        "id": { "$ref": "#/$defs/fieldId" }, "label": { "$ref": "#/$defs/label" },
+        "description": { "$ref": "#/$defs/description" }, "type": { "const": "string" },
+        "required": { "type": "boolean" }, "exposure": { "$ref": "#/$defs/exposure" },
+        "constraints": { "$ref": "#/$defs/textConstraints" }, "examples": { "$ref": "#/$defs/examples" }
+      }
+    },
+    "booleanField": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "label", "description", "type", "required", "exposure"],
+      "properties": {
+        "id": { "$ref": "#/$defs/fieldId" }, "label": { "$ref": "#/$defs/label" },
+        "description": { "$ref": "#/$defs/description" }, "type": { "const": "boolean" },
+        "required": { "type": "boolean" }, "exposure": { "$ref": "#/$defs/exposure" }
+      }
+    },
+    "dateField": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "label", "description", "type", "required", "exposure"],
+      "properties": {
+        "id": { "$ref": "#/$defs/fieldId" }, "label": { "$ref": "#/$defs/label" },
+        "description": { "$ref": "#/$defs/description" }, "type": { "const": "date" },
+        "required": { "type": "boolean" }, "exposure": { "$ref": "#/$defs/exposure" },
+        "examples": { "$ref": "#/$defs/examples" }
+      }
+    },
+    "uriField": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "label", "description", "type", "required", "exposure"],
+      "properties": {
+        "id": { "$ref": "#/$defs/fieldId" }, "label": { "$ref": "#/$defs/label" },
+        "description": { "$ref": "#/$defs/description" }, "type": { "const": "uri" },
+        "required": { "type": "boolean" }, "exposure": { "$ref": "#/$defs/exposure" },
+        "examples": { "$ref": "#/$defs/examples" }
+      }
+    },
+    "fieldId": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$" },
+    "label": { "type": "string", "minLength": 1 },
+    "description": { "type": "string", "minLength": 12 },
+    "exposure": { "enum": ["identifier", "private"] },
+    "textConstraints": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "minLength": { "type": "integer", "minimum": 0 },
+        "maxLength": { "type": "integer", "minimum": 1 },
+        "pattern": { "type": "string", "minLength": 1 }
+      }
+    },
+    "examples": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/configuration-change-request/v1",
+  "title": "Soter expiring exact configuration change request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "id", "createdAt", "expiresAt", "plan",
+    "configuration", "scopeFingerprint", "reason", "requestFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/configuration-change-request/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^configuration-change-request\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "expiresAt": { "type": "string", "minLength": 20 },
+    "plan": { "$ref": "#/$defs/reference" },
+    "configuration": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "path", "currentLockFingerprint", "candidateLockFingerprint", "candidateGraphFingerprint"],
+      "properties": {
+        "name": { "type": "string" },
+        "path": { "type": "string" },
+        "currentLockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "candidateLockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "candidateGraphFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "scopeFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "reason": { "type": "string", "minLength": 12 },
+    "requestFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "reference": {
+      "type": "object", "additionalProperties": false, "required": ["id", "fingerprint"],
+      "properties": { "id": { "type": "string" }, "fingerprint": { "$ref": "#/$defs/fingerprint" } }
+    }
+  }
+}

@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/doctor-result/v1",
+  "title": "Soter doctor result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "createdAt",
+    "level",
+    "configuration",
+    "states",
+    "checks",
+    "diagnostics",
+    "providerProbeIds",
+    "evidenceIds"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/doctor-result/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^doctor\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "level": { "enum": ["offline", "connected", "canary"] },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "lockFingerprint"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "lockFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "states": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["valid", "ready", "verified", "healthy"],
+      "properties": {
+        "valid": { "$ref": "#/$defs/resultState" },
+        "ready": { "$ref": "#/$defs/resultState" },
+        "verified": { "$ref": "#/$defs/resultState" },
+        "healthy": { "$ref": "#/$defs/resultState" }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "claim", "state", "evidenceIds", "details"],
+        "properties": {
+          "id": { "type": "string", "minLength": 3 },
+          "claim": { "type": "string", "minLength": 12 },
+          "state": { "$ref": "#/$defs/resultState" },
+          "evidenceIds": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "details": { "type": "string", "minLength": 3 }
+        }
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "severity",
+          "claim",
+          "subject",
+          "path",
+          "expected",
+          "observed",
+          "evidenceIds",
+          "remediation"
+        ],
+        "properties": {
+          "code": { "type": "string", "minLength": 3 },
+          "severity": { "enum": ["info", "warning", "error"] },
+          "claim": { "type": "string", "minLength": 3 },
+          "subject": { "type": "string", "minLength": 1 },
+          "path": { "type": "array", "items": { "type": "string" } },
+          "expected": { "type": "string", "minLength": 1 },
+          "observed": { "type": "string", "minLength": 1 },
+          "evidenceIds": { "type": "array", "items": { "type": "string" } },
+          "remediation": { "type": "string", "minLength": 3 }
+        }
+      }
+    },
+    "providerProbeIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^probe\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+      }
+    },
+    "evidenceIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "$defs": {
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "resultState": {
+      "enum": ["passed", "failed", "stale", "unknown", "skipped", "not-applicable"]
+    }
+  }
+}

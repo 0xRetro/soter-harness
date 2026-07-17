@@ -1,0 +1,71 @@
+{
+  "$contract": "soter://contracts/automation-derived-review/v1",
+  "contractVersion": "1.0.0",
+  "automation": "automation.email-triage",
+  "kind": "email-triage-derived-review",
+  "items": [
+    {
+      "kind": "thread-detail",
+      "fields": [
+        { "id": "sender", "label": "Sender", "type": "text" },
+        { "id": "participants", "label": "Participants", "type": "string-list" },
+        { "id": "subject", "label": "Subject", "type": "text" },
+        { "id": "summary", "label": "Summary", "type": "text" },
+        { "id": "reason", "label": "Review reason", "type": "text" },
+        { "id": "waitingOn", "label": "Waiting on", "type": "text" }
+      ]
+    },
+    {
+      "kind": "label",
+      "fields": [
+        { "id": "messageIds", "label": "Exact message IDs", "type": "string-list" },
+        { "id": "labelName", "label": "Exact label name", "type": "text" }
+      ]
+    },
+    {
+      "kind": "draft",
+      "fields": [
+        { "id": "replyMessageId", "label": "Exact reply message ID", "type": "text" },
+        { "id": "recipients", "label": "Recipients", "type": "string-list" },
+        { "id": "subject", "label": "Draft subject", "type": "text" },
+        { "id": "body", "label": "Complete draft body", "type": "text" }
+      ]
+    },
+    {
+      "kind": "digest",
+      "fields": [
+        { "id": "body", "label": "Complete digest body", "type": "text" }
+      ]
+    },
+    {
+      "kind": "task-handoff",
+      "fields": [
+        { "id": "title", "label": "Task title", "type": "text" },
+        { "id": "detail", "label": "Task detail", "type": "text" },
+        { "id": "context", "label": "Task context", "type": "text" }
+      ]
+    },
+    {
+      "kind": "update-handoff",
+      "fields": [
+        { "id": "recordReference", "label": "Record reference", "type": "text" },
+        { "id": "detail", "label": "Update detail", "type": "text" }
+      ]
+    },
+    {
+      "kind": "meeting-handoff",
+      "fields": [
+        { "id": "meetingReference", "label": "Meeting reference", "type": "text" },
+        { "id": "sourceThreadReference", "label": "Source thread", "type": "text" },
+        { "id": "noteReference", "label": "Note source", "type": "text" }
+      ]
+    },
+    {
+      "kind": "calendar-handoff",
+      "fields": [
+        { "id": "calendarReference", "label": "Calendar reference", "type": "text" },
+        { "id": "sourceThreadReference", "label": "Source thread", "type": "text" }
+      ]
+    }
+  ]
+}

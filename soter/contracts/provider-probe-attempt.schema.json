@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/provider-probe-attempt/v1",
+  "title": "Soter failed connected provider probe attempt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "probeId",
+    "checkpointId",
+    "attemptedAt",
+    "failedAt",
+    "validUntil",
+    "state",
+    "configuration",
+    "host",
+    "provider",
+    "scope",
+    "failure",
+    "sourceCheckpointFingerprint",
+    "privacy"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/provider-probe-attempt/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^probeattempt\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "probeId": {
+      "type": "string",
+      "pattern": "^probe\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "checkpointId": {
+      "type": "string",
+      "pattern": "^checkpoint\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "attemptedAt": { "type": "string", "minLength": 20 },
+    "failedAt": { "type": "string", "minLength": 20 },
+    "validUntil": { "type": "string", "minLength": 20 },
+    "state": { "const": "failed" },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "lockFingerprint"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "lockFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "host": { "$ref": "#/$defs/host" },
+    "provider": { "$ref": "#/$defs/provider" },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["credentialRefs", "authorities", "capabilities"],
+      "properties": {
+        "credentialRefs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^secret-ref\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+          }
+        },
+        "authorities": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^authority\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+          }
+        },
+        "capabilities": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 3 }
+        }
+      }
+    },
+    "failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "errorFingerprint",
+        "step",
+        "callId",
+        "transport"
+      ],
+      "properties": {
+        "kind": { "$ref": "#/$defs/errorKind" },
+        "errorFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "step": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["id", "kind", "subject", "scopeFingerprint"],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^step\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+            },
+            "kind": { "enum": ["identity", "schema", "read"] },
+            "subject": { "type": "string", "minLength": 3 },
+            "scopeFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        "callId": {
+          "type": "string",
+          "pattern": "^probecall\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "transport": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["protocol", "server", "operation", "tool"],
+          "properties": {
+            "protocol": { "const": "mcp" },
+            "server": { "type": "string", "minLength": 1 },
+            "operation": { "type": ["string", "null"], "minLength": 1 },
+            "tool": { "type": ["string", "null"], "minLength": 1 }
+          }
+        }
+      }
+    },
+    "sourceCheckpointFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope",
+        "rawProviderResponsePersisted",
+        "hostCredentialValuesPersisted",
+        "providerArgumentsIncluded",
+        "providerErrorMessageIncluded"
+      ],
+      "properties": {
+        "scope": { "const": "private" },
+        "rawProviderResponsePersisted": { "const": false },
+        "hostCredentialValuesPersisted": { "const": false },
+        "providerArgumentsIncluded": { "const": false },
+        "providerErrorMessageIncluded": { "const": false }
+      }
+    }
+  },
+  "$defs": {
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "errorKind": {
+      "enum": [
+        "authentication",
+        "authorization",
+        "validation",
+        "conflict",
+        "rate-limit",
+        "unavailable",
+        "retryable",
+        "not-found",
+        "unknown"
+      ]
+    },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "adapter", "version"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "adapter": { "type": "string", "minLength": 1 },
+        "version": { "$ref": "#/$defs/version" }
+      }
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pack", "implementation", "version", "containment"],
+      "properties": {
+        "pack": { "type": "string", "minLength": 3 },
+        "implementation": {
+          "type": "string",
+          "pattern": "^provider\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "version": { "$ref": "#/$defs/version" },
+        "containment": { "const": "connected" }
+      }
+    }
+  }
+}

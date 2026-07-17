@@ -1,0 +1,114 @@
+{
+  "$contract": "soter://contracts/provider-mapping/v3",
+  "contractVersion": "3.0.0",
+  "id": "mapping.integration.notion.crm-records",
+  "pack": "integration.notion",
+  "provider": "provider.integration.notion.mcp",
+  "version": "0.1.0",
+  "contextModel": "model.context.crm.records",
+  "settingsDefinition": "settings.integration.notion",
+  "capabilities": ["crm.records.read", "crm.records.create", "crm.records.update"],
+  "recordTypes": [
+    {
+      "id": "policy",
+      "target": "policies",
+      "capabilities": ["crm.records.read"],
+      "fields": [
+        { "portable": "name", "provider": "Name", "providerType": "title", "decode": "scalar" }
+      ]
+    },
+    {
+      "id": "task-capture-policy",
+      "target": "policies",
+      "capabilities": ["crm.records.read"],
+      "fields": [
+        { "portable": "name", "provider": "Name", "providerType": "title", "decode": "scalar" }
+      ]
+    },
+    {
+      "id": "organization",
+      "target": "organizations",
+      "capabilities": ["crm.records.read"],
+      "fields": [
+        { "portable": "name", "provider": "Name", "providerType": "title", "decode": "scalar" },
+        { "portable": "organizationType", "provider": "Type", "providerType": "select", "decode": "scalar" },
+        { "portable": "tags", "provider": "Tags", "providerType": "multi_select", "decode": "json" },
+        { "portable": "projectUris", "provider": "Projects", "providerType": "relation", "decode": "json" },
+        { "portable": "contactUris", "provider": "🫂 Contacts", "providerType": "relation", "decode": "json" }
+      ]
+    },
+    {
+      "id": "person",
+      "target": "contacts",
+      "capabilities": ["crm.records.read"],
+      "fields": [
+        { "portable": "name", "provider": "Name", "providerType": "title", "decode": "scalar" },
+        { "portable": "email", "provider": "Email", "providerType": "email", "decode": "scalar" },
+        { "portable": "role", "provider": "Role", "providerType": "select", "decode": "scalar" },
+        { "portable": "status", "provider": "Status", "providerType": "select", "decode": "scalar" },
+        { "portable": "disposition", "provider": "Disposition", "providerType": "select", "decode": "scalar" },
+        { "portable": "authority", "provider": "Authority", "providerType": "multi_select", "decode": "json" },
+        { "portable": "organizationUris", "provider": "Org", "providerType": "relation", "decode": "json" }
+      ]
+    },
+    {
+      "id": "project",
+      "target": "projects",
+      "capabilities": ["crm.records.read"],
+      "fields": [
+        { "portable": "name", "provider": "Name", "providerType": "title", "decode": "scalar" },
+        { "portable": "projectType", "provider": "Type", "providerType": "select", "decode": "scalar" },
+        { "portable": "status", "provider": "Status", "providerType": "status", "decode": "scalar" },
+        { "portable": "organizationUris", "provider": "Organization", "providerType": "relation", "decode": "json" },
+        { "portable": "taskUris", "provider": "Tasks", "providerType": "relation", "decode": "json" }
+      ]
+    },
+    {
+      "id": "task",
+      "target": "tasks",
+      "capabilities": ["crm.records.read", "crm.records.create", "crm.records.update"],
+      "fields": [
+        { "portable": "title", "provider": "Name", "providerType": "title", "decode": "scalar" },
+        { "portable": "status", "provider": "Status", "providerType": "status", "decode": "scalar" },
+        { "portable": "context", "provider": "Context", "providerType": "select", "decode": "scalar" },
+        { "portable": "projectUris", "provider": "Project", "providerType": "relation", "decode": "json" },
+        { "portable": "assigneeIds", "provider": "Assigned To", "providerType": "person", "decode": "json" },
+        { "portable": "nextActionOn", "provider": "Next Action", "providerType": "date", "decode": "scalar" }
+      ]
+    },
+    {
+      "id": "meeting",
+      "target": "meetings",
+      "capabilities": ["crm.records.read"],
+      "fields": [
+        { "portable": "title", "provider": "Meeting Name", "providerType": "title", "decode": "scalar" },
+        { "portable": "meetingType", "provider": "Type", "providerType": "select", "decode": "scalar" },
+        { "portable": "recordingUri", "provider": "Recording", "providerType": "url", "decode": "scalar" },
+        { "portable": "organizationUris", "provider": "Org", "providerType": "relation", "decode": "json" },
+        { "portable": "participantIds", "provider": "Participants", "providerType": "person", "decode": "json" }
+      ]
+    },
+    {
+      "id": "meeting-summary",
+      "target": "documents",
+      "capabilities": ["crm.records.read", "crm.records.create"],
+      "fields": [
+        { "portable": "title", "provider": "Name", "providerType": "title", "decode": "scalar" },
+        { "portable": "documentType", "provider": "Type", "providerType": "select", "decode": "scalar" },
+        { "portable": "description", "provider": "Description", "providerType": "text", "decode": "scalar" },
+        { "portable": "link", "provider": "Link", "providerType": "url", "decode": "scalar" }
+      ],
+      "content": { "portable": "body", "provider": "page-content", "providerType": "markdown" }
+    }
+  ],
+  "limitations": [
+    "Record-level capability scope permits reads for every mapped type, task creates and updates, and meeting-summary creates only; other CRM writes require an explicit mapping revision and new lock.",
+    "Task create translation covers portable properties only; Task Capture must still stop before a write until an exact operation batch, approval, one-time start authorization, and connected verification are issued by Core.",
+    "The task-capture-policy mapping identifies the external policy row by name but does not normalize its document body into structured rules; connected preparation must fail closed until a trusted definition projection supplies those facts.",
+    "Policy rows identify definition documents but do not load or interpret their page bodies; domain context assembly requires a separate bounded fetch step.",
+    "The connected translator consumes one mapped record type per host call; Core must durably orchestrate several targets as explicit plan steps rather than relying on cross-data-source SQL.",
+    "Organization projects and contacts plus project tasks are exposed as provider relation URIs; meeting participant people identifiers are not assumed to be CRM contact record URIs.",
+    "The mapping normalizes provider rows only. It does not infer missing project relationships or convert provider status vocabularies into domain decisions.",
+    "Schema compatibility is not established by this declaration; an exact-lock private probe must observe current target schemas."
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "$contract": "soter://contracts/automation-input/v1",
+  "contractVersion": "1.0.0",
+  "id": "input.automation.email-triage",
+  "automation": "automation.email-triage",
+  "version": "1.0.0",
+  "fields": [
+    {
+      "id": "query",
+      "label": "Mailbox window query",
+      "description": "Private exact mailbox query defining one bounded preparation window.",
+      "type": "string",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minLength": 3, "maxLength": 1000 }
+    },
+    {
+      "id": "scope",
+      "label": "Processing scope",
+      "description": "Portable outcome selection for triage, draft, handoff, and digest review without dispatch.",
+      "type": "enum",
+      "required": true,
+      "exposure": "identifier",
+      "options": ["triage-drafts-handoffs-digest"]
+    },
+    {
+      "id": "focus",
+      "label": "Private focus notes",
+      "description": "Optional private attention notes that cannot suppress coverage or override policy.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "maxLength": 1000 }
+    }
+  ],
+  "additionalInputs": false
+}

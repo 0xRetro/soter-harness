@@ -1,0 +1,69 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "mail.messages.search",
+  "version": "1.0.0",
+  "purpose": "Searches one exact private mailbox query and returns only a bounded provider-message identity set plus explicit pagination completeness.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["query", "maximumMessages"],
+    "properties": {
+      "query": { "type": "string", "minLength": 1, "maxLength": 1000 },
+      "maximumMessages": { "type": "integer", "minimum": 1, "maximum": 100 }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "queryFingerprint", "messageIds", "returnedMessageCount", "complete",
+      "provenance", "observedAt"
+    ],
+    "properties": {
+      "queryFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+      "messageIds": {
+        "type": "array",
+        "maxItems": 100,
+        "uniqueItems": true,
+        "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+      },
+      "returnedMessageCount": { "type": "integer", "minimum": 0, "maximum": 100 },
+      "complete": { "type": "boolean" },
+      "provenance": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["provider", "authority", "sourceKind", "sourceReferenceFingerprint"],
+        "properties": {
+          "provider": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "authority": { "type": "string", "minLength": 1, "maxLength": 500 },
+          "sourceKind": { "enum": ["fixture", "connected"] },
+          "sourceReferenceFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        }
+      },
+      "observedAt": {
+        "type": "string",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z$"
+      }
+    }
+  },
+  "authentication": { "required": true, "minimumScopes": ["mail:read"] },
+  "effects": ["read", "disclosure"],
+  "idempotency": { "mode": "not-applicable", "key": null },
+  "retry": { "safe": true, "maxAttempts": 3, "checkpoint": null },
+  "errors": [
+    "authentication", "authorization", "validation", "conflict", "rate-limit",
+    "unavailable", "retryable", "not-found", "unknown"
+  ],
+  "freshness": { "returnsProvenance": true, "returnsObservedAt": true, "maxAgeSeconds": 300 },
+  "health": {
+    "check": "Search one exact bounded private mailbox query without reading or persisting message content.",
+    "fixture": "soter/scenarios/email-triage/happy-path.scenario.json",
+    "containedVerification": "Prove exact query fingerprinting, unique provider-message identities, bounded results, and explicit pagination completeness."
+  },
+  "providerLimitations": [
+    "The query is private runtime input and must not enter workspace inspection, evidence, diagnostics, canonical fixtures, or general renderer state.",
+    "A non-empty provider page token is represented only as complete=false; opaque provider cursor values must not persist."
+  ]
+}

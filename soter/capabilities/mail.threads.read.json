@@ -1,0 +1,122 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "mail.threads.read",
+  "version": "1.0.0",
+  "purpose": "Expands exact provider message IDs into bounded provider-neutral threads and private transport facts without classifying mail content.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["messageIds", "maximumThreads", "maximumMessagesPerThread"],
+    "properties": {
+      "messageIds": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 100,
+        "uniqueItems": true,
+        "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+      },
+      "maximumThreads": { "type": "integer", "minimum": 1, "maximum": 100 },
+      "maximumMessagesPerThread": { "type": "integer", "minimum": 1, "maximum": 500 }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "requestedMessageIds", "returnedThreadCount", "threads", "provenance", "observedAt"
+    ],
+    "properties": {
+      "requestedMessageIds": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 100,
+        "uniqueItems": true,
+        "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+      },
+      "returnedThreadCount": { "type": "integer", "minimum": 1, "maximum": 100 },
+      "threads": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 100,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "messages"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1, "maxLength": 500 },
+            "messages": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 500,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id", "rfc822MessageId", "from", "to", "sentAt", "labels",
+                  "subject", "body"
+                ],
+                "properties": {
+                  "id": { "type": "string", "minLength": 1, "maxLength": 500 },
+                  "rfc822MessageId": { "type": "string", "minLength": 1, "maxLength": 1000 },
+                  "from": { "type": "string", "minLength": 1, "maxLength": 1000 },
+                  "to": {
+                    "type": "array",
+                    "maxItems": 500,
+                    "items": { "type": "string", "minLength": 1, "maxLength": 1000 }
+                  },
+                  "sentAt": {
+                    "type": "string",
+                    "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z$"
+                  },
+                  "labels": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "uniqueItems": true,
+                    "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+                  },
+                  "subject": { "type": "string", "maxLength": 10000 },
+                  "body": { "type": "string", "maxLength": 1000000 }
+                }
+              }
+            }
+          }
+        }
+      },
+      "provenance": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["provider", "authority", "sourceKind", "sourceReferenceFingerprint"],
+        "properties": {
+          "provider": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "authority": { "type": "string", "minLength": 1, "maxLength": 500 },
+          "sourceKind": { "enum": ["fixture", "connected"] },
+          "sourceReferenceFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        }
+      },
+      "observedAt": {
+        "type": "string",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z$"
+      }
+    }
+  },
+  "authentication": { "required": true, "minimumScopes": ["mail:read"] },
+  "effects": ["read", "disclosure"],
+  "idempotency": { "mode": "not-applicable", "key": null },
+  "retry": { "safe": true, "maxAttempts": 3, "checkpoint": null },
+  "errors": [
+    "authentication", "authorization", "validation", "conflict", "rate-limit",
+    "unavailable", "retryable", "not-found", "unknown"
+  ],
+  "freshness": { "returnsProvenance": true, "returnsObservedAt": true, "maxAgeSeconds": 300 },
+  "health": {
+    "check": "Expand exact provider-message identities into bounded private normalized threads.",
+    "fixture": "soter/scenarios/email-triage/happy-path.scenario.json",
+    "containedVerification": "Prove exact requested-message coverage, provider thread/message/RFC822 identity separation, sibling inclusion, strict bounds, and raw response minimization."
+  },
+  "providerLimitations": [
+    "Thread content remains private connected Context data and cannot enter workspace inspection, evidence, diagnostics, canonical fixtures, or general renderer state.",
+    "Integration returns transport facts only. It must not classify importance, reply need, prompt injection, handoffs, or proposed actions."
+  ]
+}

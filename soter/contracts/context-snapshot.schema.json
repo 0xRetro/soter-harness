@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/context-snapshot/v1",
+  "title": "Soter assembled context snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "runId",
+    "createdAt",
+    "configurationLockFingerprint",
+    "graphFingerprint",
+    "containment",
+    "entries",
+    "effectIds",
+    "privacy"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/context-snapshot/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^context\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "runId": { "type": "string", "pattern": "^run\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "configurationLockFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "containment": { "enum": ["fixture", "contained", "connected", "canary", "live"] },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "subject",
+          "authority",
+          "role",
+          "capability",
+          "providerPack",
+          "providerImplementation",
+          "providerVersion",
+          "observedAt",
+          "freshness",
+          "provenance",
+          "valueFingerprint",
+          "value"
+        ],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "subject": { "type": "string", "minLength": 1 },
+          "authority": { "type": "string", "minLength": 1 },
+          "role": {
+            "enum": ["definition", "instance", "provider", "projection", "evidence"]
+          },
+          "capability": { "type": "string", "minLength": 1 },
+          "providerPack": { "type": "string", "minLength": 1 },
+          "providerImplementation": { "type": "string", "minLength": 1 },
+          "providerVersion": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+          },
+          "observedAt": { "type": "string", "minLength": 20 },
+          "freshness": { "$ref": "#/$defs/resultState" },
+          "provenance": { "type": "object" },
+          "valueFingerprint": { "$ref": "#/$defs/fingerprint" },
+          "value": { "type": "object" },
+          "applicability": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["state", "sourceId", "subjects", "reason"],
+            "properties": {
+              "state": { "const": "applicable" },
+              "sourceId": {
+                "type": "string",
+                "pattern": "^source\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+              },
+              "subjects": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 10,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+                }
+              },
+              "reason": { "type": "string", "minLength": 20 }
+            }
+          }
+        }
+      }
+    },
+    "effectIds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "redactions"],
+      "properties": {
+        "scope": { "enum": ["private", "shareable", "public"] },
+        "redactions": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  },
+  "$defs": {
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "resultState": {
+      "enum": ["passed", "failed", "stale", "unknown", "skipped", "not-applicable"]
+    }
+  }
+}

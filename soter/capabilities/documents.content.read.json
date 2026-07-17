@@ -1,0 +1,76 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "documents.content.read",
+  "version": "1.0.0",
+  "purpose": "Reads one exact document body through a configured document authority with bounded normalized content and provenance.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["uri", "expectedTitle"],
+    "properties": {
+      "uri": { "type": "string", "minLength": 3, "maxLength": 2048 },
+      "expectedTitle": { "type": "string", "minLength": 1, "maxLength": 200 }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["document", "provenance", "observedAt"],
+    "properties": {
+      "document": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["uri", "title", "format", "body", "bodyFingerprint"],
+        "properties": {
+          "uri": { "type": "string", "minLength": 3, "maxLength": 2048 },
+          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "format": { "const": "markdown" },
+          "body": { "type": "string", "minLength": 1, "maxLength": 250000 },
+          "bodyFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        }
+      },
+      "provenance": { "type": "object" },
+      "observedAt": { "type": "string", "minLength": 20 }
+    }
+  },
+  "authentication": {
+    "required": true,
+    "minimumScopes": ["documents:read"]
+  },
+  "effects": ["read", "disclosure"],
+  "idempotency": {
+    "mode": "not-applicable",
+    "key": null
+  },
+  "retry": {
+    "safe": true,
+    "maxAttempts": 3,
+    "checkpoint": null
+  },
+  "errors": [
+    "authentication",
+    "authorization",
+    "validation",
+    "conflict",
+    "rate-limit",
+    "unavailable",
+    "retryable",
+    "not-found",
+    "unknown"
+  ],
+  "freshness": {
+    "returnsProvenance": true,
+    "returnsObservedAt": true,
+    "maxAgeSeconds": 300
+  },
+  "health": {
+    "check": "Read one exact contained document fixture through the selected provider binding.",
+    "fixture": "soter/fixtures/providers/notion/crm-records.json",
+    "containedVerification": "Prove exact identity, title, bounded normalized body, provenance, and mismatch rejection."
+  },
+  "providerLimitations": [
+    "The capability returns authoritative document content but does not interpret, execute, or prove compliance with its rules."
+  ]
+}

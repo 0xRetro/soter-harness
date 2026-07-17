@@ -1,0 +1,206 @@
+{
+  "$contract": "soter://contracts/context-snapshot/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.meeting-intake.transaction-fixture",
+  "runId": "run.meeting-intake.transaction-fixture",
+  "createdAt": "2026-07-15T12:00:00.000Z",
+  "configurationLockFingerprint": "sha256:33887ea889ec3ac8f687198c7ca69d8f5861632285e85dceb9a9c11417996b9f",
+  "graphFingerprint": "sha256:2f038a74ca6661a70c308d3b991fafe4f8fed70c7ae4b4cd23b19a0e0b3ea0b7",
+  "containment": "fixture",
+  "entries": [
+    {
+      "id": "context.crm.definition",
+      "subject": "crm.records",
+      "authority": "authority.crm.definition",
+      "role": "definition",
+      "capability": "crm.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.1.0",
+      "observedAt": "2026-07-15T12:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.crm.definition",
+        "fixture": "soter/fixtures/providers/notion/crm-records.json"
+      },
+      "valueFingerprint": "sha256:4b314c57796941eccdf87bef5e60d445c4ad50506dbe0d72173a10695f194d3a",
+      "value": {
+        "records": [
+          {
+            "type": "policy",
+            "id": "policy.meeting-intake",
+            "version": "1",
+            "fields": {
+              "name": "Meeting Intake"
+            }
+          }
+        ],
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.crm.definition",
+          "fixture": "soter/fixtures/providers/notion/crm-records.json"
+        },
+        "observedAt": "2026-07-15T12:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.crm.instances",
+      "subject": "crm.records",
+      "authority": "authority.crm.instance",
+      "role": "instance",
+      "capability": "crm.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.1.0",
+      "observedAt": "2026-07-15T12:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.crm.instance",
+        "fixture": "soter/fixtures/providers/notion/crm-records.json"
+      },
+      "valueFingerprint": "sha256:c4ead63e9e250d3826ae6d9402d89f250f8045fa41b02adbb8f88d49280dca22",
+      "value": {
+        "records": [
+          {
+            "type": "organization",
+            "id": "soter-fixture://crm/organization/acme",
+            "version": "1",
+            "fields": {
+              "name": "Acme Design",
+              "status": "active",
+              "projectUris": [
+                "soter-fixture://crm/project/launch"
+              ]
+            }
+          },
+          {
+            "type": "person",
+            "id": "soter-fixture://crm/person/maya",
+            "version": "1",
+            "fields": {
+              "name": "Maya Chen",
+              "organizationUris": [
+                "soter-fixture://crm/organization/acme"
+              ]
+            }
+          },
+          {
+            "type": "project",
+            "id": "soter-fixture://crm/project/launch",
+            "version": "1",
+            "fields": {
+              "name": "Acme launch",
+              "status": "active",
+              "organizationUris": [
+                "soter-fixture://crm/organization/acme"
+              ],
+              "taskUris": [
+                "soter-fixture://crm/task/existing-deck"
+              ]
+            }
+          },
+          {
+            "type": "task",
+            "id": "soter-fixture://crm/task/existing-deck",
+            "version": "1",
+            "fields": {
+              "title": "Send launch deck",
+              "status": "To Do",
+              "context": "Project",
+              "projectUris": [
+                "soter-fixture://crm/project/launch"
+              ],
+              "assigneeIds": [
+                "provider-person.maya"
+              ],
+              "nextActionOn": "2026-07-20"
+            }
+          },
+          {
+            "type": "meeting",
+            "id": "soter-fixture://crm/meeting/fixture-001",
+            "version": "1",
+            "fields": {
+              "title": "Acme launch review",
+              "recordingUri": "otter://fixture/meeting.fixture-001",
+              "organizationUris": [
+                "soter-fixture://crm/organization/acme"
+              ],
+              "participantIds": [
+                "provider-person.maya"
+              ]
+            }
+          }
+        ],
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.crm.instance",
+          "fixture": "soter/fixtures/providers/notion/crm-records.json"
+        },
+        "observedAt": "2026-07-15T12:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.meeting.transcript",
+      "subject": "meeting.transcript",
+      "authority": "authority.otter.provider",
+      "role": "provider",
+      "capability": "meeting.transcript.read",
+      "providerPack": "integration.otter",
+      "providerImplementation": "provider.integration.otter.fixture",
+      "providerVersion": "0.1.0",
+      "observedAt": "2026-07-15T11:59:30.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "otter-fixture",
+        "authority": "authority.otter.provider",
+        "fixture": "soter/fixtures/providers/otter/transcripts.json"
+      },
+      "valueFingerprint": "sha256:4af2b54f30824f47a8e91b08eec7fd0f549b7e4c99f49d3e0805c99f3913daae",
+      "value": {
+        "meetingId": "meeting.fixture-001",
+        "speakers": [
+          {
+            "id": "speaker.retro",
+            "displayName": "Retro"
+          },
+          {
+            "id": "speaker.maya",
+            "displayName": "Maya Chen"
+          }
+        ],
+        "segments": [
+          {
+            "speakerId": "speaker.maya",
+            "text": "The launch direction is approved. Please send the updated deck Friday.",
+            "startSeconds": 12
+          },
+          {
+            "speakerId": "speaker.retro",
+            "text": "I will revise the deck and link it to the launch project.",
+            "startSeconds": 26
+          }
+        ],
+        "provenance": {
+          "provider": "otter-fixture",
+          "authority": "authority.otter.provider",
+          "fixture": "soter/fixtures/providers/otter/transcripts.json"
+        },
+        "observedAt": "2026-07-15T11:59:30.000Z"
+      }
+    }
+  ],
+  "effectIds": [
+    "effect.meeting-intake.crm-definition.fixture",
+    "effect.meeting-intake.crm-instances.fixture",
+    "effect.meeting-intake.transcript.fixture"
+  ],
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Provider credentials and secret references are excluded."
+    ]
+  }
+}

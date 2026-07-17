@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/connected-transaction-checkpoint/v1",
+  "title": "Soter private connected transaction checkpoint",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "id", "kind", "createdAt", "updatedAt",
+    "startedAt", "state", "configurationLock", "graphFingerprint", "host",
+    "run", "batch", "batchFingerprint", "changeSet", "changeSetFingerprint",
+    "approval", "approvalFingerprint", "operations", "current", "result",
+    "privacy", "checkpointFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/connected-transaction-checkpoint/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^checkpoint\\.transaction\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "kind": { "const": "connected-transaction" },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "updatedAt": { "type": "string", "minLength": 20 },
+    "startedAt": { "type": ["string", "null"], "minLength": 20 },
+    "state": { "enum": ["requested", "completed", "rolled-back", "failed", "needs-attention"] },
+    "configurationLock": {
+      "type": "object", "additionalProperties": false,
+      "required": ["path", "fingerprint"],
+      "properties": { "path": { "type": "string", "minLength": 1 }, "fingerprint": { "$ref": "#/$defs/fingerprint" } }
+    },
+    "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "host": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "adapter", "version"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "adapter": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "run": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "sourcePath", "statePath", "fingerprint"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^run\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "sourcePath": { "type": "string", "minLength": 1 },
+        "statePath": { "type": "string", "minLength": 1 },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "batch": { "type": "object" },
+    "batchFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "changeSet": { "type": "object" },
+    "changeSetFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "approval": { "type": "object" },
+    "approvalFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "operations": {
+      "type": "array", "minItems": 1, "maxItems": 50,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": [
+          "id", "sequence", "state", "priorFields", "priorVersion",
+          "appliedVersion", "createdRecordId", "compare", "write", "verification",
+          "contentVerification",
+          "compensation", "compensationVerification", "ambiguities",
+          "reconciliations", "error"
+        ],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "sequence": { "type": "integer", "minimum": 1 },
+          "state": { "enum": ["pending", "comparing", "writing", "verifying", "content-verifying", "applied", "failed", "needs-attention", "reconciling", "compensating", "compensation-verifying", "compensated"] },
+          "priorFields": { "type": ["object", "null"] },
+          "priorVersion": { "type": ["string", "null"] },
+          "appliedVersion": { "type": ["string", "null"] },
+          "createdRecordId": { "type": ["string", "null"], "minLength": 1 },
+          "compare": { "$ref": "#/$defs/phase" },
+          "write": { "$ref": "#/$defs/phase" },
+          "verification": { "$ref": "#/$defs/phase" },
+          "contentVerification": { "$ref": "#/$defs/phase" },
+          "compensation": { "$ref": "#/$defs/phase" },
+          "compensationVerification": { "$ref": "#/$defs/phase" },
+          "ambiguities": {
+            "type": "array", "maxItems": 20,
+            "items": { "$ref": "#/$defs/ambiguity" }
+          },
+          "reconciliations": {
+            "type": "array", "maxItems": 20,
+            "items": { "$ref": "#/$defs/reconciliation" }
+          },
+          "error": { "type": ["object", "null"] }
+        }
+      }
+    },
+    "current": {
+      "type": ["object", "null"], "additionalProperties": false,
+      "required": ["operationId", "stage", "callId", "reconciliationId"],
+      "properties": {
+        "operationId": { "type": "string", "minLength": 1 },
+        "stage": { "enum": ["compare", "write", "verify", "content-verify", "compensate", "compensation-verify", "reconcile"] },
+        "callId": { "type": "string", "pattern": "^toolcall\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "reconciliationId": {
+          "type": ["string", "null"],
+          "pattern": "^reconciliation\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        }
+      }
+    },
+    "result": {
+      "type": ["object", "null"], "additionalProperties": false,
+      "required": ["state", "appliedOperationIds", "compensatedOperationIds", "error"],
+      "properties": {
+        "state": { "enum": ["completed", "rolled-back", "failed", "needs-attention"] },
+        "appliedOperationIds": {
+          "type": "array", "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "compensatedOperationIds": {
+          "type": "array", "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "error": { "type": ["object", "null"] }
+      }
+    },
+    "privacy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["scope", "rawProviderResponsePersisted", "hostCredentialValuesPersisted"],
+      "properties": {
+        "scope": { "const": "private" },
+        "rawProviderResponsePersisted": { "const": false },
+        "hostCredentialValuesPersisted": { "const": false }
+      }
+    },
+    "checkpointFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "ambiguity": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "id", "stage", "callId", "createdAt", "error", "status",
+        "resolvedAt", "resolution"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^ambiguity\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "stage": { "enum": ["write", "verify", "content-verify", "compensate", "compensation-verify"] },
+        "callId": {
+          "type": ["string", "null"],
+          "pattern": "^toolcall\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "createdAt": { "type": "string", "minLength": 20 },
+        "error": { "type": "object" },
+        "status": { "enum": ["unresolved", "resolved"] },
+        "resolvedAt": { "type": ["string", "null"], "minLength": 20 },
+        "resolution": {
+          "enum": ["approved-fields", "approved-content", "prior-fields", "absent", null]
+        }
+      }
+    },
+    "reconciliation": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "id", "ambiguityId", "createdAt", "phase", "outcome", "observedVersion"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^reconciliation\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "ambiguityId": { "type": "string", "pattern": "^ambiguity\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "createdAt": { "type": "string", "minLength": 20 },
+        "phase": { "$ref": "#/$defs/requiredPhase" },
+        "outcome": {
+          "enum": [
+            "approved-fields",
+            "approved-content",
+            "prior-fields",
+            "absent",
+            "missing",
+            "diverged",
+            "diverged-content",
+            "read-failed",
+            null
+          ]
+        },
+        "observedVersion": {
+          "type": ["string", "null"],
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "phase": {
+      "type": ["object", "null"], "additionalProperties": false,
+      "required": ["call", "output", "outputFingerprint", "error"],
+      "properties": {
+        "call": { "type": "object" },
+        "output": { "type": ["object", "null"] },
+        "outputFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+        "error": { "type": ["object", "null"] }
+      }
+    },
+    "requiredPhase": {
+      "type": "object", "additionalProperties": false,
+      "required": ["call", "output", "outputFingerprint", "error"],
+      "properties": {
+        "call": { "type": "object" },
+        "output": { "type": ["object", "null"] },
+        "outputFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+        "error": { "type": ["object", "null"] }
+      }
+    }
+  }
+}

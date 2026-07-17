@@ -1,119 +1,259 @@
-# Soter Harness: a claude-code collaboration platform
+# Soter Harness
 
-*Stop teaching your agents the same thing over and over, and start distributing collective knowledge and unlock leverage.*  
+Soter is a user-owned harness for giving capable agent hosts durable context,
+repeatable automations, and safe access to external systems.
 
-The Soter Harness is a claude-code project that aims to create a standard and consistent way for users to generate durable AI context and knowledge in a collaborative way. The Soter Harness aims to create a generic harness, that self-manages and self-improves. The intention of the harness is to require concepts to be defined and implemented in a consistent way. This simple meta-mechanism then compounds into strategy for building a platform of context, knowledge, and automations, and ultimately unlocking accessible controls and distribution channels for powerful tools for users (and agents alike). 
+It keeps domain meaning, operational behavior, provider integrations, authority,
+and evidence explicit. Codex, Claude, and future runtimes are hosts of that
+system—not its source of truth.
 
-The Harness is structured in 4 layers of separation. 
-- **The Kernel Layer** - required substrate that makes the harness run and self-build. 
-- **The Core Layer** - systems and generic enhancements for the harness system itself, or global helper system for more advanced layers. 
-- **The Context Layer** - real-world context and knowledge about the world the harness is interacting with. Defines 'things' and concepts beyond the harness layers. 
-- **The Automation Layer** - the layer where pushing and pulling, and applying all systems to deliver work occurs.  
+> **Status:** experimental. The repository proves substantial local and
+> fixture-contained behavior, but connected readiness, end-to-end host behavior,
+> and live health remain unknown until the applicable evidence exists.
 
-The primitives that are used to create anything within the harness are: 
-- Layer - a tier of generality; where a thing lives based on how required/generic it is 
-- systems - a collection of mechanisms that accomplish an objective or purpose 
-- mechanisms - a way or routine of doing something 
-- components - an artifact that is read or executed; used by mechanisms and systems 
-- concepts  - a defined thing, so we don't confuse or misuse things. 
+## What is a harness?
 
-## Systems inventory
+Agent workflows often begin as useful prompts and scripts, then become difficult
+to inspect, move, or trust. This harness turns accumulated behavior into a
+versioned harness where a user can answer:
 
-One row per system, all four layers. The source of truth for every row is the
-system's card in `.claude/systems/` — this table is a hand-synced overview, so a PR
-that changes a card updates its row in the same PR. Promises drift slowest;
-mechanisms, components, and concepts change with nearly every merge — verify against
-the card when it matters. A mechanism marked "delegated" runs inside one of the
-engines — the checker, the forge loop, or the human gate — while its owning system
-keeps the behavior (ADR-0045).
+- What systems are installed, and why?
+- What context and authority does this work use?
+- Which capability is bound to which provider?
+- What effects are allowed, gated, or prohibited?
+- What has actually been proven for this exact configuration?
+- Can interrupted work resume without reconstructing it from conversation?
 
-<!-- Editing rules for these tables (aligned in PR #35):
-  - One table per layer; columns: System · Promise · Mechanisms · Key components · Concepts.
-  - Promise: one full sentence, from the card's Promise.
-  - Mechanisms & Key components: bare names, one per line (<br>). No annotations —
-    decree/deferral/verdict notes and trigger lists live on the system card.
-    Only allowed markers: "(delegated to the checker/forge/human gate)" (ADR-0045)
-    and "(an engine)".
-  - "None" only when the system truly has none.
-  - Concepts: from the card's Concepts line; group 2-3 per line with · only when a list is long.
-  - No hardcoded counts (live-lists rule) — role words instead ("the molds").
--->
+This harness is not a model, a replacement for an agent host, or unrestricted
+self-modifying software.
 
-### Kernel — required substrate: makes the harness run and self-build
+## How it fits together
 
-| System | Promise | Mechanisms | Key components | Concepts |
-|---|---|---|---|---|
-| **template** | Every piece starts as a copy of its mold, so shape is guaranteed by instantiation rather than policing. | scaffold<br>(delegated to the forge) | `templates/` (the molds) | mold<br>shape<br>hint |
-| **lexicon** | Every term is defined once and referenced everywhere, so classification is mechanical rather than a judgment call. | alias lint<br>(delegated to the checker)<br>registry-coverage lint<br>(delegated to the checker) | `LEXICON.md` | term · alias<br>concept · layer<br>system · mechanism<br>component · engine<br>delegated mechanism |
-| **standards** | There is one explicit bar for quality, naming, and budgets, so review is a checklist rather than taste. | rubric review<br>(delegated to the human gate)<br>budgets/naming<br>(delegated to the checker) | `RUBRIC.md`<br>`standards/degrees-of-freedom.md` | budget<br>degree of freedom<br>flex point<br>rubric |
-| **eval** | Every piece proves it was needed (a watched baseline failure) and holds up under realistic pressure. | baseline · pressure-test<br>(delegated to the forge)<br>running-evals | `evals/` (the cases)<br>`running-evals`<br>`agents/eval-runner.md` | baseline<br>pressure case<br>golden<br>eval case<br>meta-case |
-| **enforcement** | Everything the harness declares is mechanically verified, and a green result always carries evidence. | checker (an engine) | `scripts/check.mjs` | check rule<br>green carries evidence<br>turn gate |
-| **governance** | The harness changes only deliberately: decisions are recorded, humans gate every merge, and new pieces earn trust before autonomy. | human gate<br>decision recording<br>promotion | `decisions/`<br>`writing-adrs`<br>`reviewing-forge-output`<br>`promoting-pieces` | gate<br>ADR<br>staged<br>promoted<br>add-on<br>decree |
-| **authoring** | New pieces are born through one loop — mold, evals, checks, gate — never freehand. | forge | `skills/forge/`<br>`rules/authoring.md` | piece<br>the loop<br>exclusion clause<br>gotcha |
-| **platform** | All claude-code coupling is quarantined in one place, so every other system stays portable. | None | `settings.json`<br>`hooks/hooks.json`<br>`plugin.json`<br>`rules/parallel-sessions.md` | hook · skill · agent<br>command · script<br>worktree · subagent<br>session · guide |
+```mermaid
+flowchart LR
+    U["User or event"] --> A["Automation<br/>outcome + orchestration"]
+    X["Context<br/>meaning + authority"] --> C
+    A --> C["Core<br/>resolve + bind + enforce + checkpoint"]
+    C --> I["Integration<br/>capability translation"]
+    I --> R["Exact host-tool request"]
+    R --> H["Codex, Claude, or another host"]
+    H --> P["Provider or local resource"]
+    P --> H
+    H --> C
+    C --> E["Evidence + resumable state"]
+    K["Kernel<br/>contracts + verification"] -. validates .-> X
+    K -. validates .-> A
+    K -. validates .-> C
+    K -. validates .-> I
+```
 
-### Core — generic capability above the kernel
+The five Soter layers classify responsibility; they are not five sequential
+runtime stages.
 
-| System | Promise | Mechanisms | Key components | Concepts |
-|---|---|---|---|---|
-| **policy** | Every governed subject has exactly one rules-first policy standard; the docs live in Notion, their shape lives here. | authoring-a-policy-standard | `standards/shaping-a-policy-standard.md`<br>`authoring-a-policy-standard` | policy standard<br>subject |
+| Layer | Owns |
+|---|---|
+| **Kernel** | Authoring, validation, evaluation, packaging, and promotion contracts |
+| **Core** | Resolution, bindings, effect policy, private checkpoints, evidence, and health reporting |
+| **Context** | Domain concepts, schemas, relationships, policies, and authorities |
+| **Automation** | Outcomes, triggers, orchestration, inputs, and required capabilities |
+| **Integration** | Translation between portable capabilities and provider operations |
 
-### Context — the world the harness works in
+Host adapters project one resolved configuration into a host's native
+instructions and tools. Automations remain provider-neutral and never depend on
+host-qualified MCP tool names.
 
-| System | Promise | Mechanisms | Key components | Concepts |
-|---|---|---|---|---|
-| **crm** | Organizations, the people at them, the channels connecting us, and the meetings held with them are mirrored to the live CRM databases. | capturing-an-org<br>capturing-a-contact | `capturing-an-org`<br>`capturing-a-contact` | org<br>contact<br>channel<br>meeting |
-| **project-management** | Delivery is tracked above the feature level — projects and the tasks that execute them, per their policy standards. | capturing-a-task | `capturing-a-task` | project · task<br>milestone · update |
-| **product-development** | A captured use-case is carried to a shipped feature, tracked lightly on its own tool's board. | capturing<br>defining | `capturing-a-feature`<br>`defining-a-feature` | feature record<br>tooling page<br>feature lifecycle<br>Feature Board<br>containment |
-| **process** | Repeatable work is defined once in the live Process Inventory — definitions, not a runtime. | capturing-a-process<br>red-teaming | `standards/shaping-a-process.md`<br>`capturing-a-process`<br>`red-teaming-a-process` | process · step<br>work-item · subprocess<br>process run · slot<br>role · capability |
-| **resources** | The team's external accounts and platforms are tracked with clear access and administration answers. | validating-resources | `validating-resources` | resource |
-| **docs** | The team's shared documents and links have one governed home, while private-collection docs are served in place and never enter it. | None | None | doc<br>private-workspace doc |
-| **calendar** | Standing commitments are defined once — meaning and links in the registry, time in Google Calendar, never a mirror. | None | None | commitment |
-| **onchain** | The org's onchain footprint — addresses, wallets and safes, and the rules for operating them — is tracked in the live [DB] Addresses. | None | None | address |
-| **email** | Work arriving in the org's Gmail workspace reaches its humans triaged, filed, and ready to act on — writes human-gated, agents never send mail. | None | None | email thread<br>triage window<br>agent label |
-| **sky** | Sky-ecosystem vocabulary has one home, so terms don't drift per surface. | None | None | Sky ecosystem · Atlas<br>spell · MSC · star<br>Prime Agent · NFAT<br>the Docs subject areas:<br>Distribution Rewards · Integration Boost<br>Governance Accessibility Rewards<br>Pioneer Chain Rewards<br>Admin & Internal Ops · Legal & Compliance<br>Business Development · Funding & Financials<br>Settlement & Payments Ops · DeFi Products<br>Vault Curation · SkyLink Bridge<br>Agent Systems · Branding Marketing & IP |
+## The app
 
-### Automation — pushing, pulling, and keeping stores honest
+Soter Studio is the developer-launched desktop view of the same contracts used
+by Core and the CLI. It does not maintain a second workflow engine.
 
-| System | Promise | Mechanisms | Key components | Concepts |
-|---|---|---|---|---|
-| **publishing** | Work reaches external systems of record deliberately — typed, de-duplicated, human-confirmed; Notion is the first binding, not the system. | notion-push<br>notion-update<br>drive-place | `pushing-to-notion`<br>`updating-a-notion-page`<br>`filing-a-drive-artifact`<br>`targets.md`<br>`writing-records-to-notion.md` | publish · binding<br>external store<br>fetch-merge-write<br>relation · option set<br>resolve · page |
-| **ingestion** | External sources become standardized records, with a human gating what actually enters; the pull side. | reviewing-a-repo<br>processing-a-meeting<br>ingesting-slack-channels<br>processing-email | `reviewing-a-repo`<br>`processing-a-meeting`<br>`ingesting-slack-channels`<br>`processing-email` | source<br>ingestion<br>standardize<br>intake gate |
-| **schema-audit** | Notion's schema docs and the harness's own mirror stay true to the live databases. | auditing-a-schema-doc | `auditing-a-schema-doc` | schema doc<br>schema drift |
+| View | The question it answers |
+|---|---|
+| **Operate** | What work needs attention, and what is the exact next boundary? |
+| **Explore** | What systems are installed, and how do they connect? |
+| **Config** | What would change if I selected this host, pack, binding, or policy? |
+| **Workflow** | What does an automation promise, require, and gate? |
+| **Runs** | What happened, what evidence exists, and how can work recover? |
 
-The `rules/` folder is a delivery form (always-on), not a system — each rule declares
-its owning system in frontmatter (`authoring.md` → authoring; `parallel-sessions.md`
-→ platform), per the folder-never-implies-system rule.
+Valid, Ready, Verified, and Healthy remain separate proof dimensions across the
+workspace. A valid graph is not automatically ready to run; a ready integration
+is not automatically verified; old evidence is not current health.
 
-Deferred (not kernel): distribution system — likely core; packaging + installer, decided later.
+### Operator flow
 
-## Status
+Prepare, Review, Approval, Run, and Recovery are state-dependent views of one
+work record. They are not independent workflows.
 
-The kernel is built and sealed: the eight kernel systems in the table above (`.claude/systems/`), the molds
-(`.claude/templates/`), the registry + placement table (`.claude/LEXICON.md`), the bar
-(`.claude/RUBRIC.md`), and the one checker (`.claude/scripts/check.mjs` — validates
-classification frontmatter, card/mold shape + order, card-path/card-concept/card-listing
-existence, aliases, links, budgets, security, hook-wiring parity, golden freshness +
-coverage, platform-coupling quarantine; blocks live via the Bash guard and the turn
-gate; `--selftest` plant-and-asserts every
-violation code). Machinery ported from sky-harness (ADR-0001), classification retrofit
-and hardening per the ADR log. The seal test ran end-to-end (the forge authored a piece
-through baseline → evals → checks → fresh-agent pressure-test → gate); red-team +
-claims-vs-reality sweeps harden the checker.
+```mermaid
+flowchart LR
+    Q["Select queued work<br/>or start an automation"] --> P["Prepare<br/>validate inputs + acquire bounded context"]
+    P --> R["Review<br/>intent + facts + contradictions + preview"]
+    R --> D{"External effect?"}
+    D -- "No" --> E["Record outcome + evidence"]
+    D -- "Yes" --> A["Approve<br/>one exact fingerprinted batch"]
+    A --> X["Run<br/>one durable step at a time"]
+    X --> E
+    X -- "blocked or ambiguous" --> C["Recover<br/>checkpoint + blocker + permitted action"]
+    C --> X
+```
 
-**Add-ons built on top (ADR-0012, all four layers in one repo):** a Notion intake stack —
-**automation** systems `publishing` (create/update bindings, live-proven), `ingestion`
-(review a source → curate → publish), and `schema-audit` (keep Notion's own schema docs
-true to the live DBs), plus **context** domains `product-development`,
-`project-management`, and `crm` that each shape their records and write through the
-bindings. The shared write-discipline lives once in `.claude/standards/writing-records-to-notion.md`;
-each domain guide references it and adds only its nuance. An ops tier builds on the same
-spine: **context** system `process` defines repeatable work (Process → Step → Work-item)
-in the live Process Inventory, governed by **core** system `policy` — one rules-first
-policy standard per subject (ADR-0021/0022), whose Fields sections are what schema-audit
-now audits.
+The operator-facing order is deliberate: recognizable intent and the decision
+come first; exact locks, graph fingerprints, context provenance, and evidence
+remain available as supporting detail. The persistent proof rail reports
+system-level truth, not the selected work item's lifecycle state.
 
-Add-ons are anything not in the kernel-8 (`lexicon · template · enforcement · eval ·
-standards · governance · authoring · platform`). Live lists (never hardcode counts):
-systems `ls .claude/systems/` · guides `ls .claude/skills/` · decisions
-`decisions/README.md`. Everything is **staged** until real use earns promotion.
+## What works today
+
+- **Provider-neutral pack graph.** Configurations explicitly select packs,
+  versions, dependencies, bindings, authorities, sources, hosts, and effects.
+- **Reproducible host projections.** The same portable configuration resolves
+  into distinct, fingerprinted Codex and Claude locks and native tool routes.
+- **Transactional configuration changes.** Configuration previews, expiring
+  requests, exact confirmation, single-use start, durable checkpoints, apply,
+  verification, rollback, and recovery share one Core authority model.
+- **Deterministic host realization.** Core can preview and safely realize exact
+  local host files with path confinement, manifest-last ownership, drift checks,
+  and crash recovery. This proves local projection, not host launch or health.
+- **Deterministic local distribution.** Kernel can build and independently
+  verify content-addressed local pack releases and transparent bundles without
+  network fetch, install authority, publisher identity, license, or trust claims.
+- **Durable Core operations.** Exact host requests are checkpointed before
+  dispatch and can be recovered after restart or context compaction.
+- **Bounded context assembly.** Core loads declared sources through typed
+  capabilities and records the exact basis used for a run.
+- **Generated operator inputs.** Automation packs declare typed fields that
+  Studio renders mechanically instead of receiving workflow-specific UI rules.
+- **Private prepared work.** Studio and the CLI can validate inputs, perform
+  fixture-contained reads, and produce review material without creating write
+  authority.
+- **Exact-scope effects.** Confirmation binds one change-set fingerprint;
+  changed work requires new approval. Connected transaction machinery supports
+  verification, recovery, and bounded compensation.
+- **Honest proof states.** Local fixtures, provider probes, scenario evidence,
+  readiness, verification, and health remain distinct claims.
+- **Read-only workbenches.** Studio can inspect configuration changes, host
+  realization, local releases, bundles, diagnostics, and evidence boundaries
+  without silently obtaining execution authority.
+
+Studio reads a privacy-minimized Core projection through a sandboxed Electron
+boundary. Private review values use a separate selected-work read. Studio does
+not read workspace files directly, call providers, invent provider payloads, or
+turn displayed guidance into authority.
+
+## Reference automations
+
+| Automation | Demonstrates | Current stop boundary |
+|---|---|---|
+| **Project Pulse** | Grounded project, task, milestone, and policy inspection | Read-only; proposes no changes |
+| **Meeting Intake** | Transcript and CRM grounding, cited judgment, exact task disposition, and approval-bound transaction mechanics | Contained preparation stops before judgment and writes; connected behavior requires separate evidence |
+| **Task Capture** | Pack-owned inputs, exact project resolution, normalized policy, bounded deduplication, and a create preview | Stops before change set, approval, connected call, or provider write |
+| **Email Triage** | Bounded mailbox reduction, injection-resistant review, private drafts and handoffs, exact review subsets, and draft-only effects | No send capability; connected writes remain approval- and checkpoint-bound |
+
+These slices use the same generic Core boundary. Their fixture evidence proves
+local behavior only; it does not establish connected credentials, provider
+conformance, automation maturity, or live health.
+
+## Quick start
+
+Requirements: Node.js 20 or newer. Soter Studio's current toolchain requires
+Node.js 20.19 or newer.
+
+```bash
+npm ci
+npm run soter:verify
+npm run soter:selftest
+npm run soter:studio:dev
+```
+
+The Studio command launches an unbundled developer app against the current
+repository. It is not a packaged installer.
+
+## Verify the repository
+
+Run the applicable legacy and target checks before treating a change as proven:
+
+```bash
+node .claude/scripts/check.mjs --all
+node soter/kernel/verify.mjs --selftest
+node soter/kernel/verify.mjs
+node soter/core/cli.mjs selftest
+node soter/core/cli.mjs fixtures --check
+node soter/core/cli.mjs doctor \
+  --lock soter/fixtures/meeting-intake/meeting-intake.lock.json
+npm run soter:studio:check
+npm run soter:studio:e2e
+```
+
+The offline doctor may correctly report `ready=unknown`, `verified=unknown`, or
+`healthy=unknown`. Unknown is an honest result, not a generic failure or a green
+claim.
+
+For detailed CLI, MCP, probe, operation-plan, connected transaction, and Studio
+developer workflows, see [soter/README.md](./soter/README.md).
+
+## Repository map
+
+```text
+.claude/                 Working legacy Claude implementation
+soter/
+  kernel/                Contract graph validation and verification
+  core/                  Resolution, runtime, checkpoints, evidence, CLI, MCP
+  contexts/              Portable domain models and authority semantics
+  automations/           Outcomes, inputs, orchestration, and preparation
+  integrations/          Provider mappings and capability implementations
+  packs/                 Selectable, versioned system boundaries
+  configurations/        Desired selections, bindings, sources, and effects
+  scenarios/             Behavioral expectations and invariants
+  fixtures/              Contained examples and local proof
+  migrations/            Explicit legacy-to-target migration state
+  studio/                Electron and React operator/developer interface
+```
+
+Private resumable runtime state lives under `.soter/state`. It is ignored by
+Git and must not be copied into packs, fixtures, commits, or shared
+configurations.
+
+## Migration direction
+
+The `soter/` tree is the v2 target architecture. The `.claude/` tree remains the
+working legacy implementation until each behavior is explicitly mapped,
+reimplemented or retired, and proven against the target contracts.
+
+The next cleanup line is v2.1: inventory the remaining legacy systems, map each
+one to Kernel, Core, Context, Automation, Integration, or host responsibility,
+standardize it on the target format, and remove a fallback only after its
+replacement has equivalent or intentionally changed evidence. Legacy files are
+inputs to that migration—not additional canonical layers.
+
+## Documentation
+
+- [ARCHITECTURE.md](./ARCHITECTURE.md) — product intent, responsibility
+  boundaries, operating model, and migration direction
+- [CONTRACTS.md](./CONTRACTS.md) — normative machine and runtime contracts
+- [soter/README.md](./soter/README.md) — implementation status, detailed CLI
+  workflows, probes, connected transactions, and Studio development
+- [soter/STUDIO_ADAPTER.md](./soter/STUDIO_ADAPTER.md) — trusted desktop bridge
+  and renderer boundary
+
+The architecture and contracts are the target source of truth. Generated host
+files, CLI reports, and graphical views must project that same structured model
+rather than becoming independent definitions.
+
+## Current boundaries
+
+The target is intentionally conservative:
+
+- connected provider probes are private, exact-lock, expiring runtime state;
+- declared MCP routes do not prove authentication or availability;
+- fixture execution does not prove connected provider or host behavior;
+- prepared work is review evidence, not approval or permission to execute;
+- a changed operation batch invalidates its prior confirmation;
+- distribution inspection grants no install, publication, legal, or trust authority;
+- host realization proves deterministic local files, not host launch or health;
+- live provider writes and migrations require explicit user authority; and
+- learning produces scoped candidates that must pass their own evidence and
+  promotion gates.
+
+The next major proof is a systematic v2.1 migration of legacy behavior onto the
+same target contracts, with fallbacks retired only after explicit parity or an
+intentional behavior change is validated.

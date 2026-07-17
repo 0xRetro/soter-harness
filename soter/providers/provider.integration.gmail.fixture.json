@@ -1,0 +1,34 @@
+{
+  "$contract": "soter://contracts/capability-provider/v1",
+  "contractVersion": "1.0.0",
+  "id": "provider.integration.gmail.fixture",
+  "pack": "integration.gmail",
+  "version": "0.1.0",
+  "containment": "fixture",
+  "runtime": {
+    "engine": "node",
+    "module": "soter/integrations/gmail/fixture.mjs",
+    "export": "invoke"
+  },
+  "capabilities": [
+    { "id": "mail.messages.search", "version": "1.0.0" },
+    { "id": "mail.threads.read", "version": "1.0.0" },
+    { "id": "mail.window.read", "version": "1.0.0" },
+    { "id": "mail.labels.read", "version": "2.0.0" },
+    { "id": "mail.labels.apply", "version": "2.0.0" },
+    { "id": "mail.drafts.list", "version": "2.0.0" },
+    { "id": "mail.drafts.create", "version": "2.0.0" }
+  ],
+  "authorities": [
+    { "role": "instance", "subject": "mail.mailbox" },
+    { "role": "provider", "subject": "gmail.account" }
+  ],
+  "effects": ["read", "disclosure", "write"],
+  "mappings": [],
+  "fixtures": ["soter/fixtures/providers/gmail/inbox-window.json"],
+  "limitations": [
+    "Uses deterministic synthetic mail only and does not authenticate to, mutate, or establish the current state of a Gmail account.",
+    "Contained label and draft writes mutate only an in-memory fixture copy and are never invoked by prepared Email review.",
+    "No mail send or dispatch capability exists."
+  ]
+}

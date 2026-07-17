@@ -1,0 +1,31 @@
+{
+  "$contract": "soter://contracts/capability-provider/v1",
+  "contractVersion": "1.0.0",
+  "id": "provider.integration.notion.fixture",
+  "pack": "integration.notion",
+  "version": "0.1.0",
+  "containment": "fixture",
+  "runtime": {
+    "engine": "node",
+    "module": "soter/integrations/notion/fixture.mjs",
+    "export": "invoke"
+  },
+  "capabilities": [
+    { "id": "crm.records.read", "version": "1.0.0" },
+    { "id": "crm.records.create", "version": "1.0.0" },
+    { "id": "crm.records.update", "version": "1.0.0" },
+    { "id": "documents.content.read", "version": "1.0.0" }
+  ],
+  "authorities": [
+    { "role": "definition", "subject": "crm.records" },
+    { "role": "instance", "subject": "crm.records" }
+  ],
+  "effects": ["read", "disclosure", "write"],
+  "mappings": [],
+  "fixtures": [
+    "soter/fixtures/providers/notion/crm-records.json"
+  ],
+  "limitations": [
+    "Uses an in-memory copy of deterministic local records and policy documents only; it does not authenticate to, mutate, or represent the current state of a Notion workspace."
+  ]
+}

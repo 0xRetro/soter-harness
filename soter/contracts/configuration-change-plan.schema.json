@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/configuration-change-plan/v1",
+  "title": "Soter private exact configuration change plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "id", "createdAt", "configuration",
+    "currentConfiguration", "candidateConfiguration", "currentLock", "candidateLock",
+    "priorActiveLock", "changes", "scopeFingerprint", "planFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/configuration-change-plan/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^configuration-change-plan\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name", "path", "activeLockPath", "currentDocumentFingerprint",
+        "currentLockFingerprint", "currentGraphFingerprint", "candidateDocumentFingerprint",
+        "candidateLockFingerprint", "candidateGraphFingerprint", "projectionFingerprint"
+      ],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "path": { "type": "string", "pattern": "^soter/configurations/.+\\.config\\.json$" },
+        "activeLockPath": { "type": "string", "pattern": "^\\.soter/state/configuration-locks/.+\\.json$" },
+        "currentDocumentFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "currentLockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "currentGraphFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "candidateDocumentFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "candidateLockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "candidateGraphFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "projectionFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "currentConfiguration": { "type": "object" },
+    "candidateConfiguration": { "type": "object" },
+    "currentLock": { "type": "object" },
+    "candidateLock": { "type": "object" },
+    "priorActiveLock": {
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["state", "fingerprint", "lock"],
+          "properties": {
+            "state": { "const": "absent" },
+            "fingerprint": { "const": null },
+            "lock": { "const": null }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["state", "fingerprint", "lock"],
+          "properties": {
+            "state": { "const": "present" },
+            "fingerprint": { "$ref": "#/$defs/fingerprint" },
+            "lock": { "type": "object" }
+          }
+        }
+      ]
+    },
+    "changes": {
+      "type": "array", "minItems": 1,
+      "items": { "$ref": "#/$defs/change" }
+    },
+    "scopeFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "planFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "change": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "category", "subject", "state", "beforeDescriptor", "afterDescriptor", "beforeFingerprint", "afterFingerprint"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^configuration-change\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "category": { "enum": ["host", "pack", "binding", "source", "authority", "effect-policy", "secret-reference", "setting"] },
+        "subject": { "type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "state": { "enum": ["added", "removed", "changed"] },
+        "beforeDescriptor": { "type": ["string", "null"], "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "afterDescriptor": { "type": ["string", "null"], "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "beforeFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+        "afterFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" }
+      }
+    }
+  }
+}

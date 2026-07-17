@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/host-realization-confirmation/v1",
+  "title": "Soter exact local host realization confirmation",
+  "type": "object", "additionalProperties": false,
+  "required": ["$contract", "contractVersion", "id", "confirmedAt", "request", "plan", "scopeFingerprint", "actor", "reason", "confirmationFingerprint"],
+  "properties": {
+    "$contract": { "const": "soter://contracts/host-realization-confirmation/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^host-realization-confirmation[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "confirmedAt": { "type": "string", "minLength": 20 },
+    "request": { "$ref": "#/$defs/reference" },
+    "plan": { "$ref": "#/$defs/reference" },
+    "scopeFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "actor": {
+      "type": "object", "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": { "const": "local-operator" },
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" }
+      }
+    },
+    "reason": { "type": "string", "minLength": 12 },
+    "confirmationFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "reference": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "fingerprint"],
+      "properties": { "id": { "type": "string" }, "fingerprint": { "$ref": "#/$defs/fingerprint" } }
+    }
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/host-projection-definition/v1",
+  "title": "Soter deterministic host projection definition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "id", "host", "version", "generator",
+    "target", "ownership", "renderContext", "outputs", "limitations"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/host-projection-definition/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^host-projection[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "host": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "version": { "$ref": "#/$defs/version" },
+    "generator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "const": "core.host-projection-generator" },
+        "version": { "$ref": "#/$defs/version" }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["root", "pathPolicy", "symlinkPolicy"],
+      "properties": {
+        "root": { "const": "consumer-root" },
+        "pathPolicy": { "const": "normalized-relative" },
+        "symlinkPolicy": { "const": "reject" }
+      }
+    },
+    "ownership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "collision", "localEdit", "sharedOutput", "retirement"],
+      "properties": {
+        "mode": { "const": "whole-file" },
+        "collision": { "const": "reject-unmanaged" },
+        "localEdit": { "const": "fail-closed" },
+        "sharedOutput": { "const": "prohibited" },
+        "retirement": { "const": "remove-managed" }
+      }
+    },
+    "renderContext": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["configuration-id", "host-id", "pack-ids", "capability-ids"]
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id", "path", "role", "template", "encoding", "newline",
+          "finalNewline", "mode", "renderContext"
+        ],
+        "properties": {
+          "id": { "type": "string", "pattern": "^output[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+          "path": { "type": "string", "pattern": "^(?!/)(?!.*(?:^|/)[.][.](?:/|$))[A-Za-z0-9._/-]+$" },
+          "role": { "enum": ["instructions", "skills", "tools", "lifecycle", "configuration"] },
+          "template": { "type": "string", "pattern": "^soter/hosts/[a-z0-9-]+/templates/[A-Za-z0-9._-]+$" },
+          "encoding": { "const": "utf-8" },
+          "newline": { "const": "lf" },
+          "finalNewline": { "const": true },
+          "mode": { "const": "0644" },
+          "renderContext": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": ["configuration-id", "host-id", "pack-ids", "capability-ids"]
+            }
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 20 }
+    }
+  },
+  "$defs": {
+    "version": { "type": "string", "pattern": "^[0-9]+[.][0-9]+[.][0-9]+$" }
+  }
+}

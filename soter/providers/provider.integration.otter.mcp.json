@@ -1,0 +1,33 @@
+{
+  "$contract": "soter://contracts/capability-provider/v1",
+  "contractVersion": "1.0.0",
+  "id": "provider.integration.otter.mcp",
+  "pack": "integration.otter",
+  "version": "0.1.0",
+  "containment": "connected",
+  "runtime": {
+    "engine": "mcp",
+    "module": "soter/integrations/otter/mcp.mjs",
+    "prepareExport": "prepareMcp",
+    "completeExport": "completeMcp",
+    "probePrepareExport": "prepareProbeMcp",
+    "probeCompleteExport": "completeProbeMcp",
+    "server": "otter",
+    "tools": ["fetch", "get_user_info"],
+    "probeTools": ["get_user_info"]
+  },
+  "capabilities": [
+    { "id": "meeting.transcript.read", "version": "1.0.0" }
+  ],
+  "authorities": [
+    { "role": "provider", "subject": "meeting.transcript" }
+  ],
+  "effects": ["read", "disclosure"],
+  "mappings": [],
+  "fixtures": [],
+  "limitations": [
+    "Fetch accepts an Otter meeting ID extracted from a canonical https://otter.ai/u/MEETING_ID recording URI; it does not search the user's account or infer a meeting from a title.",
+    "Transcript response normalization remains fail-closed for unobserved response shapes until an authorized meeting response supplies private conformance evidence.",
+    "The identity-only probe can establish authentication and reachability but leaves meeting.transcript.read compatibility unknown."
+  ]
+}

@@ -1,0 +1,176 @@
+{
+  "$contract": "soter://contracts/provider-fixture/v1",
+  "contractVersion": "1.0.0",
+  "id": "fixture.integration.notion.crm-records",
+  "provider": "provider.integration.notion.fixture",
+  "observedAt": "2026-07-15T11:59:00.000Z",
+  "data": {
+    "records": [
+    {
+      "type": "policy",
+      "id": "policy.meeting-intake",
+      "version": "1",
+      "fields": {
+        "name": "Meeting Intake"
+      }
+    },
+    {
+      "type": "policy",
+      "id": "policy.project-pulse",
+      "version": "1",
+      "fields": {
+        "name": "Project Pulse",
+        "progressRequiresPromotedTasks": true,
+        "milestoneWorkItemsRemainDistinct": true,
+        "healthMustBeExplained": true,
+        "writesRequireConfirmation": true
+      }
+    },
+    {
+      "type": "task-capture-policy",
+      "id": "policy.task-capture",
+      "version": "1",
+      "fields": {
+        "name": "Tasks",
+        "createRequiresConfirmation": true,
+        "duplicateCandidateLimit": 10,
+        "duplicateKeyFields": ["title"],
+        "defaultStatus": "To Do",
+        "allowedContexts": ["Internal", "Service", "Project", "Client"],
+        "projectRequired": true
+      }
+    },
+    {
+      "type": "project",
+      "id": "project.pulse-healthy",
+      "version": "1",
+      "fields": { "name": "Healthy launch", "status": "active" }
+    },
+    {
+      "type": "task",
+      "id": "task.pulse-healthy.done",
+      "version": "1",
+      "fields": { "projectId": "project.pulse-healthy", "title": "Approve launch brief", "status": "done" }
+    },
+    {
+      "type": "task",
+      "id": "task.pulse-healthy.open",
+      "version": "1",
+      "fields": { "projectId": "project.pulse-healthy", "title": "Publish launch brief", "status": "open" }
+    },
+    {
+      "type": "milestone",
+      "id": "milestone.pulse-healthy.launch",
+      "version": "1",
+      "fields": { "projectId": "project.pulse-healthy", "workItemsCompleted": 3, "workItemsTotal": 5, "progressTag": "in-progress", "healthTag": "on-track" }
+    },
+    {
+      "type": "project",
+      "id": "project.pulse-risk",
+      "version": "1",
+      "fields": { "name": "Risk review", "status": "active" }
+    },
+    {
+      "type": "task",
+      "id": "task.pulse-risk.blocked",
+      "version": "1",
+      "fields": { "projectId": "project.pulse-risk", "title": "Resolve dependency", "status": "blocked" }
+    },
+    {
+      "type": "task",
+      "id": "task.pulse-risk.done",
+      "version": "1",
+      "fields": { "projectId": "project.pulse-risk", "title": "Confirm owner", "status": "done" }
+    },
+    {
+      "type": "milestone",
+      "id": "milestone.pulse-risk.release",
+      "version": "1",
+      "fields": { "projectId": "project.pulse-risk", "workItemsCompleted": 1, "workItemsTotal": 4, "progressTag": "behind", "healthTag": "at-risk" }
+    },
+    {
+      "type": "project",
+      "id": "project.pulse-sparse",
+      "version": "1",
+      "fields": { "name": "Sparse discovery", "status": "active" }
+    },
+    {
+      "type": "milestone",
+      "id": "milestone.pulse-sparse.discovery",
+      "version": "1",
+      "fields": { "projectId": "project.pulse-sparse", "workItemsCompleted": 2, "workItemsTotal": 7, "progressTag": "partial", "healthTag": "unknown" }
+    },
+    {
+      "type": "organization",
+      "id": "soter-fixture://crm/organization/acme",
+      "version": "1",
+      "fields": {
+        "name": "Acme Design",
+        "status": "active",
+        "projectUris": ["soter-fixture://crm/project/launch"]
+      }
+    },
+    {
+      "type": "person",
+      "id": "soter-fixture://crm/person/maya",
+      "version": "1",
+      "fields": {
+        "name": "Maya Chen",
+        "organizationUris": ["soter-fixture://crm/organization/acme"]
+      }
+    },
+    {
+      "type": "project",
+      "id": "soter-fixture://crm/project/launch",
+      "version": "1",
+      "fields": {
+        "name": "Acme launch",
+        "status": "active",
+        "organizationUris": ["soter-fixture://crm/organization/acme"],
+        "taskUris": ["soter-fixture://crm/task/existing-deck"]
+      }
+    },
+    {
+      "type": "task",
+      "id": "soter-fixture://crm/task/existing-deck",
+      "version": "1",
+      "fields": {
+        "title": "Send launch deck",
+        "status": "To Do",
+        "context": "Project",
+        "projectUris": ["soter-fixture://crm/project/launch"],
+        "assigneeIds": ["provider-person.maya"],
+        "nextActionOn": "2026-07-20"
+      }
+    },
+    {
+      "type": "meeting",
+      "id": "soter-fixture://crm/meeting/fixture-001",
+      "version": "1",
+      "fields": {
+        "title": "Acme launch review",
+        "recordingUri": "otter://fixture/meeting.fixture-001",
+        "organizationUris": ["soter-fixture://crm/organization/acme"],
+        "participantIds": ["provider-person.maya"]
+      }
+    }
+    ],
+    "documents": [
+      {
+        "uri": "https://app.notion.com/39ed79b5de3881dbb40dddf827bd6373",
+        "title": "Docs",
+        "body": "# Docs\n\nMeeting summaries are grounded documents. Preserve the source meeting link and do not present unsupported claims as decisions."
+      },
+      {
+        "uri": "https://app.notion.com/39ed79b5de388105b507f11ad35d2acd",
+        "title": "Meetings",
+        "body": "# Meetings\n\nA meeting record identifies its canonical recording. Derived outcomes must remain attributable to that source meeting."
+      },
+      {
+        "uri": "https://app.notion.com/39dd79b5de388178b804fd5cf8e9eaa3",
+        "title": "Tasks",
+        "body": "# Tasks\n\nGround tasks in an attributable source, resolve existing overlap before creation, and never assign an external participant as an internal owner."
+      }
+    ]
+  }
+}

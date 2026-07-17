@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/operator-input-summary/v1",
+  "title": "Soter sanitized operator input summary",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$contract", "contractVersion", "workId", "inputContractFingerprint", "fields", "privacy"],
+  "properties": {
+    "$contract": { "const": "soter://contracts/operator-input-summary/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "workId": { "type": "string", "minLength": 1 },
+    "inputContractFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "fields": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/$defs/identifierField" },
+          { "$ref": "#/$defs/privateField" }
+        ]
+      }
+    },
+    "privacy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["privateValuesIncluded", "identifierValuesSanitized"],
+      "properties": {
+        "privateValuesIncluded": { "const": false },
+        "identifierValuesSanitized": { "const": true }
+      }
+    }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "nullableFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+    "common": {
+      "type": "object",
+      "required": ["id", "state", "fingerprint"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "state": { "enum": ["provided", "omitted"] },
+        "fingerprint": { "$ref": "#/$defs/nullableFingerprint" }
+      }
+    },
+    "identifierField": {
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["id", "state", "fingerprint", "exposure", "value"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1 },
+            "state": { "enum": ["provided", "omitted"] },
+            "fingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+            "exposure": { "const": "identifier" },
+            "value": { "type": ["string", "boolean", "null"] }
+          }
+        }
+      ]
+    },
+    "privateField": {
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["id", "state", "fingerprint", "exposure"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1 },
+            "state": { "enum": ["provided", "omitted"] },
+            "fingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+            "exposure": { "const": "private" }
+          }
+        }
+      ]
+    }
+  }
+}

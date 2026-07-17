@@ -1,0 +1,254 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/pack/v1",
+  "title": "Soter pack manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "version",
+    "layer",
+    "releaseStage",
+    "evidenceMaturity",
+    "summary",
+    "dependencies",
+    "capabilities",
+    "authorities",
+    "effects",
+    "artifacts",
+    "compatibility",
+    "verification"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/pack/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^(kernel|core|context|automation|integration)\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "version": { "$ref": "#/$defs/version" },
+    "layer": {
+      "enum": ["kernel", "core", "context", "automation", "integration"]
+    },
+    "releaseStage": {
+      "enum": ["experimental", "preview", "stable", "deprecated"]
+    },
+    "evidenceMaturity": {
+      "enum": ["declared", "fixture-proven", "contained-proven", "live-proven"]
+    },
+    "summary": { "type": "string", "minLength": 20 },
+    "dependencies": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/dependency" }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requires", "provides"],
+      "properties": {
+        "requires": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/capabilityRequirement" }
+        },
+        "provides": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/capabilityProvision" }
+        }
+      }
+    },
+    "sourceRequirements": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/sourceRequirement" }
+    },
+    "authorities": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/authorityRequirement" }
+    },
+    "effects": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/effect" }
+    },
+    "operator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input"],
+      "properties": {
+        "input": { "type": "string", "minLength": 1 },
+        "preparation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["module", "export", "containment"],
+          "properties": {
+            "module": { "type": "string", "minLength": 1 },
+            "export": { "type": "string", "pattern": "^[A-Za-z_$][A-Za-z0-9_$]*$" },
+            "containment": { "const": "fixture" },
+            "derivedReviewContract": { "type": "string", "minLength": 1 }
+          }
+        },
+        "connection": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["module", "compileExport", "evaluateExport"],
+          "properties": {
+            "module": { "type": "string", "minLength": 1 },
+            "compileExport": { "type": "string", "pattern": "^[A-Za-z_$][A-Za-z0-9_$]*$" },
+            "evaluateExport": { "type": "string", "pattern": "^[A-Za-z_$][A-Za-z0-9_$]*$" }
+          }
+        },
+        "proposal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "module", "export", "schema", "inputSchema", "derivedReviewContract"
+          ],
+          "properties": {
+            "module": { "type": "string", "minLength": 1 },
+            "export": { "type": "string", "pattern": "^[A-Za-z_$][A-Za-z0-9_$]*$" },
+            "schema": { "type": "string", "minLength": 1 },
+            "inputSchema": { "type": "string", "minLength": 1 },
+            "derivedReviewContract": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/artifact" }
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["baseContract", "hosts"],
+      "properties": {
+        "baseContract": { "$ref": "#/$defs/versionRange" },
+        "hosts": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maxLevel", "scenarios"],
+      "properties": {
+        "maxLevel": {
+          "enum": ["static", "graph", "fixture", "agent", "contained", "canary", "monitored"]
+        },
+        "scenarios": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "versionRange": {
+      "type": "string",
+      "pattern": "^(\\^|~|>=|<=|>|<)?[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "effect": {
+      "enum": ["read", "disclosure", "write", "dispatch", "destructive"]
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pack", "version", "optional", "reason"],
+      "properties": {
+        "pack": { "type": "string", "minLength": 3 },
+        "version": { "$ref": "#/$defs/versionRange" },
+        "optional": { "type": "boolean" },
+        "reason": { "type": "string", "minLength": 12 }
+      }
+    },
+    "capabilityRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "optional", "reason"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "version": { "$ref": "#/$defs/versionRange" },
+        "optional": { "type": "boolean" },
+        "reason": { "type": "string", "minLength": 12 }
+      }
+    },
+    "capabilityProvision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "version": { "$ref": "#/$defs/version" }
+      }
+    },
+    "sourceRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "purpose",
+        "capability",
+        "authorityRole",
+        "authoritySubject",
+        "minimum",
+        "maximum",
+        "reason"
+      ],
+      "properties": {
+        "purpose": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "capability": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "authorityRole": {
+          "enum": ["definition", "instance", "provider", "projection", "evidence"]
+        },
+        "authoritySubject": { "type": "string", "minLength": 3 },
+        "minimum": { "type": "integer", "minimum": 1, "maximum": 50 },
+        "maximum": { "type": "integer", "minimum": 1, "maximum": 50 },
+        "reason": { "type": "string", "minLength": 20 }
+      }
+    },
+    "authorityRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "subject", "required"],
+      "properties": {
+        "role": {
+          "enum": ["definition", "instance", "provider", "projection", "evidence"]
+        },
+        "subject": { "type": "string", "minLength": 3 },
+        "required": { "type": "boolean" }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "role"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "role": {
+          "enum": ["definition", "implementation", "projection", "evaluation", "fixture", "migration"]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "$contract": "soter://contracts/migration/v1",
+  "contractVersion": "1.0.0",
+  "id": "meeting-intake.prototype-to-v1",
+  "source": "claude-oriented-prototype",
+  "slice": "automation.meeting-intake",
+  "items": [
+    {
+      "sourcePath": ".claude/skills/processing-a-meeting/SKILL.md",
+      "targetPath": "soter/packs/automation.meeting-intake/pack.json",
+      "targetPack": "automation.meeting-intake",
+      "state": "mapped",
+      "bridge": "The legacy guide remains the operational authority. The target now proves contained and connected orchestration mechanics, but host judgment, current provider evidence, and live write behavior remain unproven."
+    },
+    {
+      "sourcePath": ".claude/evals/processing-a-meeting/happy-path.md",
+      "targetPath": "soter/scenarios/meeting-intake/happy-path.scenario.json",
+      "targetPack": "automation.meeting-intake",
+      "state": "mapped",
+      "bridge": "The prose evaluation remains authoritative for legacy runs while the structured scenario preserves its target contract."
+    },
+    {
+      "sourcePath": ".claude/evals/processing-a-meeting/pressure-stale-meeting.md",
+      "targetPath": "soter/scenarios/meeting-intake/stale-meeting.scenario.json",
+      "targetPack": "automation.meeting-intake",
+      "state": "mapped",
+      "bridge": "The legacy pressure case continues to test the guide until a target scenario runner produces equivalent evidence."
+    },
+    {
+      "sourcePath": ".claude/evals/processing-a-meeting/invariant-grounded-and-gated.md",
+      "targetPath": "soter/scenarios/meeting-intake/grounded-and-gated.scenario.json",
+      "targetPack": "automation.meeting-intake",
+      "state": "mapped",
+      "bridge": "The legacy invariant case remains active until the target runtime proves grounding and effect gates behaviorally."
+    },
+    {
+      "sourcePath": ".claude/systems/crm.md",
+      "targetPath": "soter/packs/context.crm/pack.json",
+      "targetPack": "context.crm",
+      "state": "mapped",
+      "bridge": "The CRM system card remains the prototype definition while concepts and schemas are separated into target artifacts."
+    },
+    {
+      "sourcePath": ".claude/systems/ingestion.md",
+      "targetPath": "soter/packs/automation.meeting-intake/pack.json",
+      "targetPack": "automation.meeting-intake",
+      "state": "mapped",
+      "bridge": "The broad ingestion card continues to own the guide while the target model gives meeting intake its own selectable boundary."
+    },
+    {
+      "sourcePath": ".claude/standards/writing-records-to-notion.md",
+      "targetPath": "soter/packs/integration.notion/pack.json",
+      "targetPack": "integration.notion",
+      "state": "mapped",
+      "bridge": "Provider write discipline stays active while portable capability behavior is separated from Notion translation."
+    },
+    {
+      "sourcePath": ".claude/skills/pushing-to-notion/targets.md",
+      "targetPath": "soter/packs/context.crm/pack.json",
+      "targetPack": "context.crm",
+      "state": "mapped",
+      "bridge": "The mixed target mirror remains in use while domain schema authority and provider mapping are separated."
+    },
+    {
+      "sourcePath": ".claude/.mcp.json",
+      "targetPath": "soter/packs/integration.otter/pack.json",
+      "targetPack": "integration.otter",
+      "state": "mapped",
+      "bridge": "The Claude MCP declaration remains the transport projection while the Otter integration contract stays host-neutral."
+    }
+  ]
+}

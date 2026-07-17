@@ -1,0 +1,218 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/run-envelope/v1",
+  "title": "Soter run envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "createdAt",
+    "requestedOutcome",
+    "initiation",
+    "intent",
+    "lifecycleState",
+    "automation",
+    "configurationLock",
+    "graphFingerprint",
+    "context",
+    "bindings",
+    "host",
+    "effectPolicies",
+    "approvals",
+    "checkpoints",
+    "outputs",
+    "effects",
+    "evidenceIds"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/run-envelope/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^run\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "requestedOutcome": { "type": "string", "minLength": 12 },
+    "initiation": {
+      "enum": ["user-requested", "scheduled", "event-triggered", "evidence-triggered"]
+    },
+    "intent": { "enum": ["inspect", "operate", "configure", "develop"] },
+    "lifecycleState": {
+      "enum": [
+        "identified",
+        "resolved",
+        "context-assembled",
+        "effects-established",
+        "executing",
+        "verifying",
+        "completed",
+        "failed",
+        "paused"
+      ]
+    },
+    "automation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "version": { "$ref": "#/$defs/version" }
+      }
+    },
+    "configurationLock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "fingerprint"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "fingerprint"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "context": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "subject",
+          "authority",
+          "role",
+          "uri",
+          "declarationFingerprint",
+          "status",
+          "provenance",
+          "freshness"
+        ],
+        "properties": {
+          "subject": { "type": "string", "minLength": 1 },
+          "authority": { "type": "string", "minLength": 1 },
+          "role": {
+            "enum": ["definition", "instance", "provider", "projection", "evidence"]
+          },
+          "uri": { "type": "string", "minLength": 1 },
+          "declarationFingerprint": { "$ref": "#/$defs/fingerprint" },
+          "status": { "enum": ["declared", "loaded", "missing", "stale", "conflicted"] },
+          "provenance": { "type": "string", "minLength": 1 },
+          "freshness": { "$ref": "#/$defs/resultState" }
+        }
+      }
+    },
+    "bindings": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "object" }
+    },
+    "host": { "type": "object" },
+    "effectPolicies": { "type": "object" },
+    "approvals": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "checkpoints": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "outputs": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "effects": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/capabilityInvocation" }
+    },
+    "evidenceIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "$defs": {
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "resultState": {
+      "enum": ["passed", "failed", "stale", "unknown", "skipped", "not-applicable"]
+    },
+    "capabilityInvocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "capability",
+        "capabilityVersion",
+        "providerPack",
+        "providerImplementation",
+        "providerVersion",
+        "containment",
+        "authority",
+        "startedAt",
+        "completedAt",
+        "declaredEffects",
+        "policyDecisions",
+        "state",
+        "inputFingerprint",
+        "outputFingerprint",
+        "error"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^effect\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "capability": { "type": "string", "minLength": 1 },
+        "capabilityVersion": { "$ref": "#/$defs/version" },
+        "providerPack": { "type": "string", "minLength": 1 },
+        "providerImplementation": { "type": "string", "minLength": 1 },
+        "providerVersion": { "$ref": "#/$defs/version" },
+        "containment": { "enum": ["fixture", "contained", "connected", "canary", "live"] },
+        "authority": { "type": "string", "minLength": 1 },
+        "startedAt": { "type": "string", "minLength": 20 },
+        "completedAt": { "type": "string", "minLength": 20 },
+        "declaredEffects": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["read", "disclosure", "write", "dispatch", "destructive"] }
+        },
+        "policyDecisions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["effect", "mode", "decision", "reason"],
+            "properties": {
+              "effect": { "enum": ["read", "disclosure", "write", "dispatch", "destructive"] },
+              "mode": { "enum": ["allow", "confirm", "prohibit"] },
+              "decision": { "enum": ["allowed", "confirmed", "blocked"] },
+              "reason": { "type": "string", "minLength": 3 }
+            }
+          }
+        },
+        "state": { "enum": ["passed", "failed", "blocked"] },
+        "inputFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "outputFingerprint": {
+          "type": ["string", "null"],
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "error": {
+          "type": ["object", "null"]
+        }
+      }
+    }
+  }
+}

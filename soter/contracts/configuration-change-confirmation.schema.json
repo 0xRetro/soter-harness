@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/configuration-change-confirmation/v1",
+  "title": "Soter exact configuration change confirmation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "id", "confirmedAt", "actor", "reason",
+    "request", "plan", "scopeFingerprint", "confirmationFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/configuration-change-confirmation/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^configuration-change-confirmation\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "confirmedAt": { "type": "string", "minLength": 20 },
+    "actor": {
+      "type": "object", "additionalProperties": false, "required": ["type", "id"],
+      "properties": {
+        "type": { "const": "local-operator" },
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" }
+      }
+    },
+    "reason": { "type": "string", "minLength": 12 },
+    "request": { "$ref": "#/$defs/reference" },
+    "plan": { "$ref": "#/$defs/reference" },
+    "scopeFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "confirmationFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "reference": {
+      "type": "object", "additionalProperties": false, "required": ["id", "fingerprint"],
+      "properties": { "id": { "type": "string" }, "fingerprint": { "$ref": "#/$defs/fingerprint" } }
+    }
+  }
+}

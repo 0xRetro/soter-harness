@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/provider-fixture/v1",
+  "title": "Soter provider fixture data",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "provider",
+    "observedAt",
+    "data"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/provider-fixture/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^fixture\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "provider": { "type": "string", "pattern": "^provider\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "observedAt": { "type": "string", "minLength": 20 },
+    "data": { "type": "object" }
+  }
+}

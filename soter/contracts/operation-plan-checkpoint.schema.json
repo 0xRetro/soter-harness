@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/operation-plan-checkpoint/v1",
+  "title": "Soter durable sequential operation plan checkpoint",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "kind",
+    "createdAt",
+    "updatedAt",
+    "state",
+    "configurationLock",
+    "graphFingerprint",
+    "host",
+    "run",
+    "plan",
+    "planFingerprint",
+    "steps",
+    "currentStepId",
+    "result",
+    "privacy",
+    "checkpointFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/operation-plan-checkpoint/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^checkpoint\\.plan\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "kind": { "const": "operation-plan" },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "updatedAt": { "type": "string", "minLength": 20 },
+    "state": { "enum": ["requested", "completed", "failed", "blocked"] },
+    "configurationLock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "fingerprint"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "adapter", "version"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "adapter": { "type": "string", "minLength": 1 },
+        "version": { "$ref": "#/$defs/version" }
+      }
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sourcePath", "statePath", "fingerprint"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^run\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "sourcePath": { "type": "string", "minLength": 1 },
+        "statePath": { "type": "string", "minLength": 1 },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "plan": { "type": "object" },
+    "planFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "sequence",
+          "state",
+          "call",
+          "output",
+          "outputFingerprint",
+          "error"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^step\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+          },
+          "sequence": { "type": "integer", "minimum": 1 },
+          "state": { "enum": ["pending", "requested", "completed", "failed", "blocked"] },
+          "call": { "type": ["object", "null"] },
+          "output": { "type": ["object", "null"] },
+          "outputFingerprint": {
+            "type": ["string", "null"],
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "error": { "type": ["object", "null"] }
+        }
+      }
+    },
+    "currentStepId": {
+      "type": ["string", "null"],
+      "pattern": "^step\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "result": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["outputFingerprints"],
+      "properties": {
+        "outputFingerprints": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["stepId", "fingerprint"],
+            "properties": {
+              "stepId": {
+                "type": "string",
+                "pattern": "^step\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+              },
+              "fingerprint": { "$ref": "#/$defs/fingerprint" }
+            }
+          }
+        }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope",
+        "rawProviderResponsePersisted",
+        "hostCredentialValuesPersisted"
+      ],
+      "properties": {
+        "scope": { "const": "private" },
+        "rawProviderResponsePersisted": { "const": false },
+        "hostCredentialValuesPersisted": { "const": false }
+      }
+    },
+    "checkpointFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

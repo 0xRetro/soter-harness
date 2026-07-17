@@ -1,0 +1,137 @@
+{
+  "$contract": "soter://contracts/configuration/v1",
+  "contractVersion": "1.0.0",
+  "name": "email-triage",
+  "base": { "kernel": "kernel.soter", "core": "core.runtime" },
+  "packs": [
+    {
+      "id": "context.email",
+      "source": "dependency",
+      "reason": "Email triage depends on portable mailbox identity, reduction, buckets, handoffs, and draft-only meaning."
+    },
+    {
+      "id": "automation.email-triage",
+      "source": "user",
+      "reason": "The user selected one bounded private Email triage review outcome."
+    },
+    {
+      "id": "integration.gmail",
+      "source": "binding",
+      "reason": "The configured mailbox authority is exposed through the provider-neutral Gmail integration."
+    }
+  ],
+  "bindings": [
+    {
+      "capability": "mail.messages.search",
+      "providerPack": "integration.gmail",
+      "authorities": ["authority.mailbox.instance"],
+      "secretRef": "secret-ref.gmail",
+      "reason": "Gmail is the configured instance authority for one exact private bounded message-identity search."
+    },
+    {
+      "capability": "mail.threads.read",
+      "providerPack": "integration.gmail",
+      "authorities": ["authority.mailbox.instance"],
+      "secretRef": "secret-ref.gmail",
+      "reason": "Gmail expands exact provider-message identities into bounded private transport facts without triage judgment."
+    },
+    {
+      "capability": "mail.window.read",
+      "providerPack": "integration.gmail",
+      "authorities": ["authority.mailbox.instance"],
+      "secretRef": "secret-ref.gmail",
+      "reason": "Gmail is the configured instance authority for one bounded private mailbox read."
+    },
+    {
+      "capability": "mail.labels.apply",
+      "providerPack": "integration.gmail",
+      "authorities": ["authority.mailbox.instance"],
+      "secretRef": "secret-ref.gmail",
+      "reason": "A later exact approved batch may apply only configured existing AI-namespace label names to exact message IDs."
+    },
+    {
+      "capability": "mail.labels.read",
+      "providerPack": "integration.gmail",
+      "authorities": ["authority.mailbox.instance"],
+      "secretRef": "secret-ref.gmail",
+      "reason": "Exact label verification re-reads the approved message IDs and configured label names."
+    },
+    {
+      "capability": "mail.drafts.create",
+      "providerPack": "integration.gmail",
+      "authorities": ["authority.mailbox.instance"],
+      "secretRef": "secret-ref.gmail",
+      "reason": "A later exact approved batch may create a draft against one exact reply message but cannot send it."
+    },
+    {
+      "capability": "mail.drafts.list",
+      "providerPack": "integration.gmail",
+      "authorities": ["authority.mailbox.instance"],
+      "secretRef": "secret-ref.gmail",
+      "reason": "Exact draft verification lists minimized metadata by reply-message identity and idempotency key."
+    }
+  ],
+  "sources": [],
+  "authorities": [
+    {
+      "id": "authority.mail.definition",
+      "role": "definition",
+      "subject": "mail.processing",
+      "uri": "soter-pack://context.email/processing",
+      "reason": "The exact selected Context pack defines portable Email processing rules."
+    },
+    {
+      "id": "authority.mailbox.instance",
+      "role": "instance",
+      "subject": "mail.mailbox",
+      "uri": "gmail://configured-user/inbox",
+      "reason": "The configured mailbox is authoritative for live thread and message instances."
+    },
+    {
+      "id": "authority.gmail.provider",
+      "role": "provider",
+      "subject": "gmail.account",
+      "uri": "gmail://configured-user",
+      "reason": "The selected Gmail account supplies provider identity and permission context."
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "uri": "soter-state://runs",
+      "reason": "Local private runtime state owns Email preparation and review evidence boundaries."
+    }
+  ],
+  "effectPolicies": {
+    "read": { "mode": "allow", "reason": "The exact bounded mailbox query may be read for private preparation." },
+    "disclosure": { "mode": "allow", "reason": "Selected bounded normalized mail may enter private runtime Context with strict minimization and no workspace aggregation." },
+    "write": { "mode": "confirm", "reason": "Every exact label or draft batch requires a fresh approval and separately consumed one-time start authorization." },
+    "dispatch": { "mode": "prohibit", "reason": "Email sending is prohibited and no send capability is declared." },
+    "destructive": { "mode": "prohibit", "reason": "Email triage does not delete, archive, trash, or otherwise destructively mutate mail." }
+  },
+  "secretRefs": [
+    { "id": "secret-ref.gmail", "provider": "host", "key": "GMAIL_OAUTH" }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.1.0",
+    "reason": "This fixture configuration exercises Codex projection while preserving provider-neutral contracts."
+  },
+  "settings": {
+    "integration.gmail": {
+      "selfAddresses": ["retro@soterlabs.com", "retro+soter@soterlabs.com"],
+      "labels": {
+        "needsYou": "AI/Needs You",
+        "highStakes": "AI/High Stakes",
+        "rsvpPending": "AI/RSVP Pending",
+        "meetingNotes": "AI/Meeting Notes",
+        "notifications": "AI/Notifications",
+        "adminBilling": "AI/Admin Billing",
+        "marketing": "AI/Marketing",
+        "needsReview": "AI/Needs Review",
+        "triaged": "AI/Triaged"
+      }
+    }
+  }
+}

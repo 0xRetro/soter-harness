@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/host-realization-inspection/v1",
+  "title": "Soter sanitized host realization inspection",
+  "type": "object", "additionalProperties": false,
+  "required": ["$contract", "contractVersion", "plan", "target", "host", "configuration", "scope", "request", "confirmation", "consumption", "checkpoint", "resume", "claims", "inspectionFingerprint"],
+  "properties": {
+    "$contract": { "const": "soter://contracts/host-realization-inspection/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "plan": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "fingerprint", "createdAt", "validUntil", "applicability"],
+      "properties": {
+        "id": { "type": "string" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "createdAt": { "type": "string" },
+        "validUntil": { "type": "string" },
+        "applicability": { "enum": ["current", "stale", "expired", "applied"] }
+      }
+    },
+    "target": {
+      "type": "object", "additionalProperties": false,
+      "required": ["fingerprint"],
+      "properties": { "fingerprint": { "$ref": "#/$defs/fingerprint" } }
+    },
+    "host": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "adapter", "definition", "generator"],
+      "properties": {
+        "id": { "type": "string" },
+        "adapter": { "type": "string" },
+        "definition": { "$ref": "#/$defs/versionedReference" },
+        "generator": { "$ref": "#/$defs/versionedReference" }
+      }
+    },
+    "configuration": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "lockFingerprint", "graphFingerprint"],
+      "properties": {
+        "name": { "type": "string" },
+        "lockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "graphFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "scope": {
+      "type": "object", "additionalProperties": false,
+      "required": ["fingerprint", "outputs"],
+      "properties": {
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "outputs": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["id", "sequence", "path", "role", "action", "mode", "beforeFingerprint", "afterFingerprint"],
+            "properties": {
+              "id": { "type": "string" },
+              "sequence": { "type": "integer", "minimum": 0 },
+              "path": { "type": "string" },
+              "role": { "enum": ["instructions", "skills", "tools", "lifecycle", "configuration"] },
+              "action": { "enum": ["create", "replace", "remove"] },
+              "mode": { "type": ["string", "null"] },
+              "beforeFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+              "afterFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" }
+            }
+          }
+        }
+      }
+    },
+    "request": { "$ref": "#/$defs/lifecycleRecord" },
+    "confirmation": { "$ref": "#/$defs/confirmationRecord" },
+    "consumption": { "$ref": "#/$defs/lifecycleRecord" },
+    "checkpoint": {
+      "oneOf": [
+        { "const": null },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["id", "fingerprint", "state", "phase", "currentOutputId", "outputs", "failure"],
+          "properties": {
+            "id": { "type": "string" },
+            "fingerprint": { "$ref": "#/$defs/fingerprint" },
+            "state": { "enum": ["prepared", "applying", "verifying", "completed", "rolling-back", "rolled-back", "needs-attention"] },
+            "phase": { "enum": ["prepared", "directories", "outputs", "manifest", "verifying", "rollback", "terminal"] },
+            "currentOutputId": { "type": ["string", "null"] },
+            "outputs": {
+              "type": "array",
+              "items": {
+                "type": "object", "additionalProperties": false,
+                "required": ["id", "sequence", "state"],
+                "properties": {
+                  "id": { "type": "string" },
+                  "sequence": { "type": "integer" },
+                  "state": { "enum": ["pending", "applied", "verified", "rolled-back"] }
+                }
+              }
+            },
+            "failure": {
+              "oneOf": [
+                { "const": null },
+                {
+                  "type": "object", "additionalProperties": false,
+                  "required": ["reasonCode", "summary"],
+                  "properties": {
+                    "reasonCode": { "type": "string", "pattern": "^HOST_REALIZATION_[A-Z0-9_]+$" },
+                    "summary": { "type": "string" }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "resume": {
+      "type": "object", "additionalProperties": false,
+      "required": ["classification", "reasonCode", "reason", "permittedNextAction"],
+      "properties": {
+        "classification": { "enum": ["safe", "requires-review", "unavailable"] },
+        "reasonCode": { "type": "string", "pattern": "^HOST_REALIZATION_[A-Z0-9_]+$" },
+        "reason": { "type": "string", "minLength": 8 },
+        "permittedNextAction": { "enum": ["request-confirmation", "confirm", "start", "execute-checkpoint", "recover-checkpoint", "inspect-checkpoint", "replan", "none"] }
+      }
+    },
+    "claims": {
+      "type": "object", "additionalProperties": false,
+      "required": ["localProjection", "hostLaunch", "toolDiscovery", "authentication", "providerReachability", "connectedBehavior", "health"],
+      "properties": {
+        "localProjection": { "enum": ["unknown", "passed"] },
+        "hostLaunch": { "const": "unknown" },
+        "toolDiscovery": { "const": "unknown" },
+        "authentication": { "const": "unknown" },
+        "providerReachability": { "const": "unknown" },
+        "connectedBehavior": { "const": "unknown" },
+        "health": { "const": "unknown" }
+      }
+    },
+    "inspectionFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "version": { "type": "string", "pattern": "^[0-9]+[.][0-9]+[.][0-9]+$" },
+    "versionedReference": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "version", "fingerprint"],
+      "properties": {
+        "id": { "type": "string" },
+        "version": { "$ref": "#/$defs/version" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "lifecycleRecord": {
+      "oneOf": [
+        { "const": null },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["id", "fingerprint", "state", "at"],
+          "properties": {
+            "id": { "type": "string" },
+            "fingerprint": { "$ref": "#/$defs/fingerprint" },
+            "state": { "enum": ["pending", "current", "expired", "confirmed", "reserved", "started"] },
+            "at": { "type": ["string", "null"] }
+          }
+        }
+      ]
+    },
+    "confirmationRecord": {
+      "oneOf": [
+        { "const": null },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["id", "fingerprint", "state", "at", "actor"],
+          "properties": {
+            "id": { "type": "string" },
+            "fingerprint": { "$ref": "#/$defs/fingerprint" },
+            "state": { "const": "confirmed" },
+            "at": { "type": "string" },
+            "actor": { "type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" }
+          }
+        }
+      ]
+    }
+  }
+}

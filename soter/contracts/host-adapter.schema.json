@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/host-adapter/v1",
+  "title": "Soter host adapter manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "host",
+    "version",
+    "releaseStage",
+    "evidenceMaturity",
+    "summary",
+    "projectionDefinition",
+    "projections",
+    "mcpServers",
+    "mechanisms",
+    "conformance",
+    "limitations"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/host-adapter/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^host\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "host": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "releaseStage": {
+      "enum": ["experimental", "preview", "stable", "deprecated"]
+    },
+    "evidenceMaturity": {
+      "enum": ["declared", "fixture-proven", "contained-proven", "live-proven"]
+    },
+    "summary": { "type": "string", "minLength": 20 },
+    "projectionDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "path"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^host-projection\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "path": { "type": "string", "pattern": "^soter/hosts/[a-z0-9-]+/projection\\.json$" }
+      }
+    },
+    "projections": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "role"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "role": {
+            "enum": ["instructions", "skills", "tools", "lifecycle", "configuration"]
+          }
+        }
+      }
+    },
+    "mcpServers": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "delivery", "state", "toolMappings", "reason"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+          },
+          "delivery": {
+            "enum": ["connector", "plugin", "project"]
+          },
+          "state": {
+            "enum": ["declared", "configured"]
+          },
+          "configurationPath": { "type": "string", "minLength": 3 },
+          "toolMappings": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["logical", "native"],
+              "properties": {
+                "logical": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)*$"
+                },
+                "native": { "type": "string", "minLength": 1 }
+              }
+            }
+          },
+          "reason": { "type": "string", "minLength": 12 }
+        }
+      }
+    },
+    "mechanisms": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instructions",
+        "skills",
+        "tools",
+        "lifecycle",
+        "compactionRehydration",
+        "backgroundRuns",
+        "structuredOutput"
+      ],
+      "properties": {
+        "instructions": { "$ref": "#/$defs/mechanismState" },
+        "skills": { "$ref": "#/$defs/mechanismState" },
+        "tools": { "$ref": "#/$defs/mechanismState" },
+        "lifecycle": { "$ref": "#/$defs/mechanismState" },
+        "compactionRehydration": { "$ref": "#/$defs/mechanismState" },
+        "backgroundRuns": { "$ref": "#/$defs/mechanismState" },
+        "structuredOutput": { "$ref": "#/$defs/mechanismState" }
+      }
+    },
+    "conformance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maxLevel", "scenarios"],
+      "properties": {
+        "maxLevel": {
+          "enum": ["static", "graph", "fixture", "agent", "contained", "canary", "monitored"]
+        },
+        "scenarios": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 8 }
+    }
+  },
+  "$defs": {
+    "mechanismState": {
+      "enum": ["available", "declared", "unsupported"]
+    }
+  }
+}

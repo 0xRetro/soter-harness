@@ -1,0 +1,113 @@
+{
+  "$contract": "soter://contracts/host-adapter/v1",
+  "contractVersion": "1.0.0",
+  "id": "host.codex",
+  "host": "codex",
+  "version": "0.1.0",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Projects resolved Soter behavior into Codex instructions, skills, tools, lifecycle controls, and structured task workflows.",
+  "projectionDefinition": {
+    "id": "host-projection.codex",
+    "version": "0.1.0",
+    "path": "soter/hosts/codex/projection.json"
+  },
+  "projections": [
+    { "path": "AGENTS.md", "role": "instructions" },
+    { "path": ".codex/config.toml", "role": "tools" }
+  ],
+  "mcpServers": [
+    {
+      "id": "soter",
+      "delivery": "project",
+      "state": "configured",
+      "configurationPath": ".codex/config.toml",
+      "toolMappings": [],
+      "reason": "The trusted project config exposes the provider-neutral Core service through a local stdio MCP server."
+    },
+    {
+      "id": "notion",
+      "delivery": "connector",
+      "state": "declared",
+      "toolMappings": [
+        {
+          "logical": "fetch",
+          "native": "mcp__codex_apps__notion_fetch"
+        },
+        {
+          "logical": "query_data_sources",
+          "native": "mcp__codex_apps__notion_notion_query_data_sources"
+        },
+        {
+          "logical": "create_pages",
+          "native": "mcp__codex_apps__notion_notion_create_pages"
+        },
+        {
+          "logical": "update_page",
+          "native": "mcp__codex_apps__notion_notion_update_page"
+        }
+      ],
+      "reason": "The Notion app connector supplies authenticated workspace tools outside repository configuration."
+    },
+    {
+      "id": "otter",
+      "delivery": "project",
+      "state": "declared",
+      "toolMappings": [
+        {
+          "logical": "fetch",
+          "native": "mcp__otter__fetch"
+        },
+        {
+          "logical": "get_user_info",
+          "native": "mcp__otter__get_user_info"
+        }
+      ],
+      "reason": "The adapter maps the Otter route, but the deterministic projection does not embed provider endpoints or authentication configuration."
+    },
+    {
+      "id": "gmail",
+      "delivery": "connector",
+      "state": "declared",
+      "toolMappings": [
+        {
+          "logical": "get_profile",
+          "native": "mcp__codex_apps__gmail_get_profile"
+        },
+        {
+          "logical": "search_email_ids",
+          "native": "mcp__codex_apps__gmail_search_email_ids"
+        },
+        {
+          "logical": "batch_read_email_threads",
+          "native": "mcp__codex_apps__gmail_batch_read_email_threads"
+        },
+        {
+          "logical": "apply_labels_to_emails",
+          "native": "mcp__codex_apps__gmail_apply_labels_to_emails"
+        },
+        {
+          "logical": "batch_read_email",
+          "native": "mcp__codex_apps__gmail_batch_read_email"
+        }
+      ],
+      "reason": "The installed Gmail connector supplies authenticated message-scoped label tools outside repository configuration; declaration does not establish authentication or behavior."
+    }
+  ],
+  "mechanisms": {
+    "instructions": "available",
+    "skills": "declared",
+    "tools": "available",
+    "lifecycle": "declared",
+    "compactionRehydration": "declared",
+    "backgroundRuns": "declared",
+    "structuredOutput": "declared"
+  },
+  "conformance": {
+    "maxLevel": "static",
+    "scenarios": []
+  },
+  "limitations": [
+    "The local Core MCP service durably checkpoints calls and detects post-start governed runtime drift, Otter is configured, and current Notion plus Gmail search, thread-read, and label connector tool names are mapped, but clean Codex startup, connector authentication for another installation, real provider dispatch through Soter, Gmail response compatibility, checkpoint recovery by the host, lifecycle judgment, and end-to-end behavior conformance are not proven."
+  ]
+}

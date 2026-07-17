@@ -1,0 +1,51 @@
+{
+  "$contract": "soter://contracts/migration/v1",
+  "contractVersion": "1.0.0",
+  "id": "email-triage.prototype-to-v1",
+  "source": "claude-oriented-prototype",
+  "slice": "automation.email-triage",
+  "items": [
+    {
+      "sourcePath": ".claude/systems/email.md",
+      "targetPath": "soter/packs/context.email/pack.json",
+      "targetPack": "context.email",
+      "state": "mapped",
+      "bridge": "The target preserves portable window, provider-message/provider-thread/RFC822 identity distinctions, deterministic reduction, bucket, handoff, message-scoped label-name, draft-only, and verification semantics. The legacy system remains authoritative for connected operation and user-facing delivery."
+    },
+    {
+      "sourcePath": ".claude/skills/processing-email/SKILL.md",
+      "targetPath": "soter/packs/automation.email-triage/pack.json",
+      "targetPack": "automation.email-triage",
+      "state": "mapped",
+      "bridge": "The target proves exact-lock contained preparation, deterministic coverage, selected-work private review, exact proposal subset compilation, and the canonical approval-v2/one-time-start boundary. Codex search/thread and label apply/read translation is declared and synthetically normalized. A durable connected acquisition can store one complete bounded private transport snapshot and pauses before triage judgment. A label-only exact proposal subset can execute through the private verified-write-sequence checkpoint with synthetic read-after-write verification and no-retry reconciliation. Connected draft writes and live Gmail readiness, permission, execution, and verification remain unavailable."
+    },
+    {
+      "sourcePath": ".claude/evals/processing-email/happy-path.md",
+      "targetPath": "soter/scenarios/email-triage/happy-path.scenario.json",
+      "targetPack": "automation.email-triage",
+      "state": "mapped",
+      "bridge": "The structured scenario and synthetic provider oracle cover exact bounded reduction and complete private review without live provider access."
+    },
+    {
+      "sourcePath": ".claude/evals/processing-email/invariant-gated-writes.md",
+      "targetPath": "soter/scenarios/email-triage/happy-path.scenario.json",
+      "targetPack": "automation.email-triage",
+      "state": "mapped",
+      "bridge": "The target holds every label and draft fingerprint behind a later exact batch, declares no send capability, and proves exact label-only subset approval, one-time start consumption, synthetic message-scoped read-back, ambiguity without write retry, and read-only reconciliation. Draft or mixed subsets fail before approval because no exact connected draft provider is declared; live post-write verification remains unproven."
+    },
+    {
+      "sourcePath": ".claude/evals/processing-email/pressure-injection.md",
+      "targetPath": "soter/scenarios/email-triage/happy-path.scenario.json",
+      "targetPack": "automation.email-triage",
+      "state": "mapped",
+      "bridge": "The contained oracle proves suspected mail-content injection stays visible and cannot produce approval, forwarding, payment, external-recipient, or out-of-namespace label authority."
+    },
+    {
+      "sourcePath": ".claude/skills/processing-email/inbox-window.fixture.json",
+      "targetPath": "soter/fixtures/providers/gmail/inbox-window.json",
+      "targetPack": "integration.gmail",
+      "state": "mapped",
+      "bridge": "The target synthetic provider oracle preserves the eleven-thread legacy cases and adds triage-freshness, archived-sibling, and provider-return coverage-closure cases; no real mailbox content is included."
+    }
+  ]
+}

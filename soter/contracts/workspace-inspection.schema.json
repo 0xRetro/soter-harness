@@ -1,0 +1,518 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/workspace-inspection/v1",
+  "title": "Soter workspace inspection snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "workspace",
+    "census",
+    "proof",
+    "configurations",
+    "catalog",
+    "graph",
+    "workflows",
+    "activity",
+    "diagnostics"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/workspace-inspection/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "workspace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "root", "mode"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "root": { "const": "." },
+        "mode": { "const": "read-only" }
+      }
+    },
+    "census": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "proof": { "$ref": "#/$defs/proof" },
+    "configurations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/configuration" }
+    },
+    "catalog": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/catalogItem" }
+    },
+    "graph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodes", "edges"],
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/graphNode" }
+        },
+        "edges": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/graphEdge" }
+        }
+      }
+    },
+    "workflows": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/workflow" }
+    },
+    "activity": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/activity" }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/diagnostic" }
+    }
+  },
+  "$defs": {
+    "nullableString": { "type": ["string", "null"] },
+    "stringArray": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "observedAt", "states", "checks", "diagnostics", "evidenceIds"],
+      "properties": {
+        "source": { "enum": ["offline-doctor", "kernel-verifier"] },
+        "observedAt": { "$ref": "#/$defs/nullableString" },
+        "states": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["valid", "ready", "verified", "healthy"],
+          "properties": {
+            "valid": { "type": "string" },
+            "ready": { "type": "string" },
+            "verified": { "type": "string" },
+            "healthy": { "type": "string" }
+          }
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "claim", "state", "details", "evidenceIds"],
+            "properties": {
+              "id": { "type": "string" },
+              "claim": { "type": "string" },
+              "state": { "type": "string" },
+              "details": { "type": "string" },
+              "evidenceIds": { "$ref": "#/$defs/stringArray" }
+            }
+          }
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/diagnostic" }
+        },
+        "evidenceIds": { "$ref": "#/$defs/stringArray" }
+      }
+    },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "status", "lockState", "host", "maturity", "selections", "bindings", "authorities", "effectPolicies", "graphFingerprint", "lockFingerprint"],
+      "properties": {
+        "name": { "type": "string" },
+        "status": { "type": "string" },
+        "lockState": { "type": "string" },
+        "host": { "type": "string" },
+        "maturity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["verified", "reasonCode", "host", "selections"],
+          "properties": {
+            "verified": { "enum": ["passed", "failed", "stale", "unknown"] },
+            "reasonCode": { "type": "string", "minLength": 1 },
+            "host": { "$ref": "#/$defs/maturityEvidence" },
+            "selections": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/maturityEvidence" }
+            }
+          }
+        },
+        "selections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "version", "layer", "source", "reason"],
+            "properties": {
+              "id": { "type": "string" },
+              "version": { "$ref": "#/$defs/nullableString" },
+              "layer": { "$ref": "#/$defs/nullableString" },
+              "source": { "type": "string" },
+              "reason": { "type": "string" }
+            }
+          }
+        },
+        "bindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["capability", "providerPack", "authorities", "effects", "reason"],
+            "properties": {
+              "capability": { "type": "string" },
+              "providerPack": { "type": "string" },
+              "authorities": { "$ref": "#/$defs/stringArray" },
+              "effects": { "$ref": "#/$defs/stringArray" },
+              "reason": { "type": "string" }
+            }
+          }
+        },
+        "authorities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "role", "subject", "reason"],
+            "properties": {
+              "id": { "type": "string" },
+              "role": { "type": "string" },
+              "subject": { "type": "string" },
+              "reason": { "type": "string" }
+            }
+          }
+        },
+        "effectPolicies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["effect", "mode", "reason"],
+            "properties": {
+              "effect": { "type": "string" },
+              "mode": { "type": "string" },
+              "reason": { "type": "string" }
+            }
+          }
+        },
+        "graphFingerprint": { "$ref": "#/$defs/nullableString" },
+        "lockFingerprint": { "$ref": "#/$defs/nullableString" }
+      }
+    },
+    "catalogItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "group", "label", "summary", "version", "state", "selected", "effects", "limitations"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "type": "string" },
+        "group": { "type": "string" },
+        "label": { "type": "string" },
+        "summary": { "type": "string" },
+        "version": { "$ref": "#/$defs/nullableString" },
+        "state": { "type": "string" },
+        "selected": { "type": "boolean" },
+        "effects": { "$ref": "#/$defs/stringArray" },
+        "limitations": { "$ref": "#/$defs/stringArray" }
+      }
+    },
+    "graphNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "group", "label", "summary", "selected", "state"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "type": "string" },
+        "group": { "type": "string" },
+        "label": { "type": "string" },
+        "summary": { "type": "string" },
+        "selected": { "type": "boolean" },
+        "state": { "type": "string" }
+      }
+    },
+    "graphEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "source", "target", "label"],
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "type": "string" },
+        "source": { "type": "string" },
+        "target": { "type": "string" },
+        "label": { "type": "string" }
+      }
+    },
+    "workflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "summary", "version", "configuration", "host", "effects", "requiredCapabilities", "dependencies", "bindings", "operator", "scenarios", "migration"],
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "summary": { "type": "string" },
+        "version": { "type": "string" },
+        "configuration": { "$ref": "#/$defs/nullableString" },
+        "host": { "$ref": "#/$defs/nullableString" },
+        "effects": { "$ref": "#/$defs/stringArray" },
+        "requiredCapabilities": { "$ref": "#/$defs/stringArray" },
+        "dependencies": { "$ref": "#/$defs/stringArray" },
+        "bindings": { "$ref": "#/$defs/stringArray" },
+        "operator": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["inputContract", "preparation"],
+          "properties": {
+            "inputContract": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "version", "fields", "additionalInputs"],
+              "properties": {
+                "id": { "type": "string" },
+                "version": { "type": "string" },
+                "fields": { "type": "array", "items": { "$ref": "#/$defs/operatorInputField" } },
+                "additionalInputs": { "type": "boolean" }
+              }
+            },
+            "preparation": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["supported", "boundary", "workStates"],
+              "properties": {
+                "supported": { "type": "boolean" },
+                "boundary": { "type": "string" },
+                "workStates": { "$ref": "#/$defs/stringArray" }
+              }
+            }
+          }
+        },
+        "scenarios": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "status", "intent", "outcomes", "invariants", "evidence", "sourceCases", "migrationState", "execution"],
+            "properties": {
+              "id": { "type": "string" },
+              "status": {
+                "enum": ["declared-not-executed", "executed-passed", "executed-failed", "executed-stale", "executed-unknown", "executed-skipped", "executed-not-applicable"]
+              },
+              "intent": { "type": "string" },
+              "outcomes": { "$ref": "#/$defs/stringArray" },
+              "invariants": { "$ref": "#/$defs/stringArray" },
+              "evidence": { "$ref": "#/$defs/stringArray" },
+              "sourceCases": { "$ref": "#/$defs/stringArray" },
+              "migrationState": { "type": "string" },
+              "execution": {
+                "type": ["object", "null"],
+                "additionalProperties": false,
+                "required": ["source", "result", "observedAt", "runId", "evidenceIds", "capabilityOrder", "effectModes", "coverage", "limitations"],
+                "properties": {
+                  "source": { "const": "fixture" },
+                  "result": { "type": "string" },
+                  "observedAt": { "type": "string" },
+                  "runId": { "type": "string" },
+                  "evidenceIds": { "$ref": "#/$defs/stringArray" },
+                  "capabilityOrder": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["expected", "observed", "state"],
+                    "properties": {
+                      "expected": { "$ref": "#/$defs/stringArray" },
+                      "observed": { "$ref": "#/$defs/stringArray" },
+                      "state": { "type": "string" }
+                    }
+                  },
+                  "effectModes": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["expected", "observed", "state"],
+                    "properties": {
+                      "expected": { "type": "object", "additionalProperties": { "type": "string" } },
+                      "observed": { "type": "object", "additionalProperties": { "type": "string" } },
+                      "state": { "type": "string" }
+                    }
+                  },
+                  "coverage": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["outcome", "invariant", "evidence"],
+                    "properties": {
+                      "outcome": { "$ref": "#/$defs/coverage" },
+                      "invariant": { "$ref": "#/$defs/coverage" },
+                      "evidence": { "$ref": "#/$defs/coverage" }
+                    }
+                  },
+                  "limitations": { "$ref": "#/$defs/stringArray" }
+                }
+              }
+            }
+          }
+        },
+        "migration": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "state", "limitations"],
+          "properties": {
+            "id": { "$ref": "#/$defs/nullableString" },
+            "state": { "type": "string" },
+            "limitations": { "$ref": "#/$defs/stringArray" }
+          }
+        }
+      }
+    },
+    "activity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "source", "kind", "label", "state", "createdAt", "updatedAt", "host", "provider", "capability", "configurationLockFingerprint", "graphFingerprint", "recoveryId", "timeline", "evidence"],
+      "properties": {
+        "id": { "type": "string" },
+        "automationId": { "$ref": "#/$defs/nullableString" },
+        "source": { "enum": ["fixture", "runtime"] },
+        "kind": { "enum": ["run", "capability", "provider-probe", "operation-plan", "connected-transaction", "prepared-work"] },
+        "label": { "type": "string" },
+        "state": { "type": "string" },
+        "createdAt": { "$ref": "#/$defs/nullableString" },
+        "updatedAt": { "$ref": "#/$defs/nullableString" },
+        "host": { "$ref": "#/$defs/nullableString" },
+        "provider": { "$ref": "#/$defs/nullableString" },
+        "capability": { "$ref": "#/$defs/nullableString" },
+        "configurationLockFingerprint": { "$ref": "#/$defs/nullableString" },
+        "graphFingerprint": { "$ref": "#/$defs/nullableString" },
+        "recoveryId": { "$ref": "#/$defs/nullableString" },
+        "operatorRef": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["requestId", "approvalId", "checkpointId"],
+          "properties": {
+            "requestId": { "type": "string", "minLength": 1 },
+            "approvalId": { "$ref": "#/$defs/nullableString" },
+            "checkpointId": { "$ref": "#/$defs/nullableString" }
+          }
+        },
+        "preparedWorkRef": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["workId"],
+          "properties": {
+            "workId": { "type": "string", "minLength": 1 }
+          }
+        },
+        "timeline": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "sequence", "label", "state", "kind", "at", "capability", "provider", "authority", "inputFingerprint", "outputFingerprint", "details"],
+            "properties": {
+              "id": { "type": "string" },
+              "sequence": { "type": "integer", "minimum": 1 },
+              "label": { "type": "string" },
+              "state": { "type": "string" },
+              "kind": { "type": "string" },
+              "at": { "$ref": "#/$defs/nullableString" },
+              "capability": { "$ref": "#/$defs/nullableString" },
+              "provider": { "$ref": "#/$defs/nullableString" },
+              "authority": { "$ref": "#/$defs/nullableString" },
+              "inputFingerprint": { "$ref": "#/$defs/nullableString" },
+              "outputFingerprint": { "$ref": "#/$defs/nullableString" },
+              "details": { "type": "string" }
+            }
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "claim", "result", "level", "createdAt", "limitations"],
+            "properties": {
+              "id": { "type": "string" },
+              "claim": { "type": "string" },
+              "result": { "type": "string" },
+              "level": { "type": "string" },
+              "createdAt": { "type": "string" },
+              "limitations": { "$ref": "#/$defs/stringArray" }
+            }
+          }
+        }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["passed", "total"],
+      "properties": {
+        "passed": { "type": "integer", "minimum": 0 },
+        "total": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "maturityEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "claim", "state", "result", "reasonCode", "requiredLevel", "evidenceIds", "evidence", "basis", "limitations", "remediation"],
+      "properties": {
+        "id": { "type": "string" },
+        "claim": { "$ref": "#/$defs/nullableString" },
+        "state": { "enum": ["declared", "supported", "unsupported"] },
+        "result": { "enum": ["passed", "failed", "stale", "unknown"] },
+        "reasonCode": { "type": "string", "minLength": 1 },
+        "requiredLevel": { "$ref": "#/$defs/nullableString" },
+        "evidenceIds": { "$ref": "#/$defs/stringArray" },
+        "evidence": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/maturityEvidenceRecord" }
+        },
+        "basis": { "type": "string" },
+        "limitations": { "$ref": "#/$defs/stringArray" },
+        "remediation": { "type": "string" }
+      }
+    },
+    "maturityEvidenceRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "claimFamily", "claim", "result", "level", "createdAt", "validUntil", "limitations"],
+      "properties": {
+        "id": { "type": "string" },
+        "claimFamily": { "const": "behavior" },
+        "claim": { "type": "string" },
+        "result": { "type": "string" },
+        "level": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "validUntil": { "$ref": "#/$defs/nullableString" },
+        "limitations": { "$ref": "#/$defs/stringArray" }
+      }
+    },
+    "operatorInputField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "description", "type", "required", "exposure"],
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "description": { "type": "string" },
+        "type": { "type": "string" },
+        "required": { "type": "boolean" },
+        "exposure": { "type": "string" },
+        "reference": { "type": "object" },
+        "options": { "$ref": "#/$defs/stringArray" },
+        "constraints": { "type": "object" },
+        "examples": { "$ref": "#/$defs/stringArray" }
+      }
+    },
+    "diagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "severity", "source", "subject", "message", "remediation"],
+      "properties": {
+        "code": { "type": "string" },
+        "severity": { "enum": ["error", "warning", "info"] },
+        "source": { "type": "string" },
+        "subject": { "type": "string" },
+        "message": { "type": "string" },
+        "remediation": { "type": "string" }
+      }
+    }
+  }
+}

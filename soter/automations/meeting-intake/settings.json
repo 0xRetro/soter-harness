@@ -1,0 +1,25 @@
+{
+  "$contract": "soter://contracts/pack-settings/v1",
+  "contractVersion": "1.0.0",
+  "id": "settings.automation.meeting-intake",
+  "pack": "automation.meeting-intake",
+  "version": "0.1.0",
+  "required": true,
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["stalenessReviewAfterDays", "summaryTemplate"],
+    "properties": {
+      "stalenessReviewAfterDays": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 90
+      },
+      "summaryTemplate": {
+        "type": "string",
+        "minLength": 3
+      }
+    }
+  },
+  "reason": "Meeting-intake behavior is user-selectable pack configuration; capability sources and their consumers are wired separately by the desired configuration."
+}

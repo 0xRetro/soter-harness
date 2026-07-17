@@ -1,0 +1,55 @@
+{
+  "$contract": "soter://contracts/scenario/v1",
+  "contractVersion": "1.0.0",
+  "id": "project-pulse.happy-path",
+  "automation": "automation.project-pulse",
+  "intent": "operate",
+  "input": {
+    "project": {
+      "fixtureId": "project.pulse-healthy",
+      "referenceState": "resolvable",
+      "policyState": "available",
+      "promotedTasksState": "available",
+      "milestoneState": "available"
+    }
+  },
+  "expected": {
+    "capabilityOrder": [
+      "crm.records.read",
+      "crm.records.read",
+      "crm.records.read"
+    ],
+    "effectModes": {
+      "read": "allow",
+      "disclosure": "allow",
+      "write": "confirm",
+      "dispatch": "prohibit",
+      "destructive": "prohibit"
+    },
+    "outcomes": [
+      "project-progress.grounded",
+      "health-call.explained",
+      "status-record.previewed",
+      "milestone-diff.previewed",
+      "writes-held-for-confirmation"
+    ],
+    "invariants": [
+      "project-policy-loaded",
+      "task-and-milestone-progress-distinguished",
+      "status-and-milestone-state-consistent",
+      "no-write-before-batch-confirmation",
+      "no-write-in-grounding-phase"
+    ],
+    "evidence": [
+      "project-source-provenance",
+      "policy-source-provenance",
+      "task-query-provenance",
+      "milestone-observations",
+      "batch-preview",
+      "write-gate-state"
+    ]
+  },
+  "sourceCases": [
+    ".claude/evals/updating-project-status/happy-path.md"
+  ]
+}

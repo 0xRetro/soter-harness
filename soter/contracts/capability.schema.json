@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/capability/v1",
+  "title": "Soter integration capability",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "version",
+    "purpose",
+    "portability",
+    "inputSchema",
+    "outputSchema",
+    "authentication",
+    "effects",
+    "idempotency",
+    "retry",
+    "errors",
+    "freshness",
+    "health",
+    "providerLimitations"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/capability/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "purpose": { "type": "string", "minLength": 20 },
+    "portability": { "enum": ["portable", "provider-specific"] },
+    "inputSchema": { "type": "object" },
+    "outputSchema": { "type": "object" },
+    "authentication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "minimumScopes"],
+      "properties": {
+        "required": { "type": "boolean" },
+        "minimumScopes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "effects": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["read", "disclosure", "write", "dispatch", "destructive"] }
+    },
+    "idempotency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "key"],
+      "properties": {
+        "mode": { "enum": ["not-applicable", "idempotent", "conditional", "non-idempotent"] },
+        "key": { "type": ["string", "null"] }
+      }
+    },
+    "retry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["safe", "maxAttempts", "checkpoint"],
+      "properties": {
+        "safe": { "type": "boolean" },
+        "maxAttempts": { "type": "integer", "minimum": 0 },
+        "checkpoint": { "type": ["string", "null"] }
+      }
+    },
+    "errors": {
+      "type": "array",
+      "minItems": 9,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "authentication",
+          "authorization",
+          "validation",
+          "conflict",
+          "rate-limit",
+          "unavailable",
+          "retryable",
+          "not-found",
+          "unknown"
+        ]
+      }
+    },
+    "freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["returnsProvenance", "returnsObservedAt", "maxAgeSeconds"],
+      "properties": {
+        "returnsProvenance": { "type": "boolean" },
+        "returnsObservedAt": { "type": "boolean" },
+        "maxAgeSeconds": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "health": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["check", "fixture", "containedVerification"],
+      "properties": {
+        "check": { "type": "string", "minLength": 3 },
+        "fixture": { "type": "string", "minLength": 1 },
+        "containedVerification": { "type": "string", "minLength": 3 }
+      }
+    },
+    "providerLimitations": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 3 }
+    }
+  }
+}

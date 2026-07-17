@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/approval-consumption/v1",
+  "title": "Soter private one-time approval consumption",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "id", "createdAt", "updatedAt", "state",
+    "request", "approval", "configurationLockFingerprint", "runId",
+    "batchId", "batchFingerprint", "checkpointId", "checkpointFingerprint",
+    "consumptionFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/approval-consumption/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^approval-consumption\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "updatedAt": { "type": "string", "minLength": 20 },
+    "state": { "enum": ["reserved", "started"] },
+    "request": { "$ref": "#/$defs/reference" },
+    "approval": { "$ref": "#/$defs/reference" },
+    "configurationLockFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "runId": { "type": "string", "minLength": 1 },
+    "batchId": { "type": "string", "minLength": 1 },
+    "batchFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "checkpointId": { "type": "string", "pattern": "^checkpoint\\.transaction\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "checkpointFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+    "consumptionFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "reference": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "fingerprint"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    }
+  }
+}

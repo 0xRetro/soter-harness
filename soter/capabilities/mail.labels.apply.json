@@ -1,0 +1,61 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "mail.labels.apply",
+  "version": "2.0.0",
+  "purpose": "Applies exact existing label names to an exact non-empty set of provider-neutral mail message identities.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "messageIds", "addLabelNames", "removeLabelNames", "createMissingLabels"
+    ],
+    "properties": {
+      "messageIds": { "type": "array", "minItems": 1, "maxItems": 100, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 500 } },
+      "addLabelNames": { "type": "array", "minItems": 1, "maxItems": 10, "uniqueItems": true, "items": { "type": "string", "pattern": "^AI/", "maxLength": 500 } },
+      "removeLabelNames": { "type": "array", "maxItems": 10, "uniqueItems": true, "items": { "type": "string", "pattern": "^AI/", "maxLength": 500 } },
+      "createMissingLabels": { "const": false }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "messageIds", "addedLabelNames", "removedLabelNames", "provenance", "observedAt"
+    ],
+    "properties": {
+      "messageIds": { "type": "array", "minItems": 1, "maxItems": 100, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 500 } },
+      "addedLabelNames": { "type": "array", "minItems": 1, "maxItems": 10, "uniqueItems": true, "items": { "type": "string", "pattern": "^AI/", "maxLength": 500 } },
+      "removedLabelNames": { "type": "array", "maxItems": 10, "uniqueItems": true, "items": { "type": "string", "pattern": "^AI/", "maxLength": 500 } },
+      "provenance": {
+        "type": "object", "additionalProperties": false,
+        "required": ["provider", "authority", "sourceKind", "sourceReferenceFingerprint"],
+        "properties": {
+          "provider": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "authority": { "type": "string", "minLength": 1, "maxLength": 500 },
+          "sourceKind": { "enum": ["fixture", "connected"] },
+          "sourceReferenceFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        }
+      },
+      "observedAt": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z$" }
+    }
+  },
+  "authentication": { "required": true, "minimumScopes": ["mail:modify"] },
+  "effects": ["write"],
+  "idempotency": { "mode": "idempotent", "key": "messageIds+addLabelNames+removeLabelNames" },
+  "retry": { "safe": false, "maxAttempts": 1, "checkpoint": "Re-read the exact messages and exact label names before deciding any recovery." },
+  "errors": [
+    "authentication", "authorization", "validation", "conflict", "rate-limit",
+    "unavailable", "retryable", "not-found", "unknown"
+  ],
+  "freshness": { "returnsProvenance": true, "returnsObservedAt": true, "maxAgeSeconds": 60 },
+  "health": {
+    "check": "No write probe is permitted.",
+    "fixture": "soter/scenarios/email-triage/happy-path.scenario.json",
+    "containedVerification": "Declare exact message-scoped label write and read-back semantics without executing a write during preparation."
+  },
+  "providerLimitations": [
+    "Only existing AI/ namespace label names may be proposed by Email triage; missing labels are never created implicitly and provider IMPORTANT is never classification authority."
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/host-call-checkpoint/v1",
+  "title": "Soter durable host call checkpoint",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "kind",
+    "createdAt",
+    "updatedAt",
+    "state",
+    "configurationLock",
+    "graphFingerprint",
+    "host",
+    "run",
+    "call",
+    "input",
+    "result",
+    "privacy",
+    "checkpointFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/host-call-checkpoint/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^checkpoint\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "kind": { "enum": ["capability", "provider-probe"] },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "updatedAt": { "type": "string", "minLength": 20 },
+    "state": { "enum": ["requested", "completed", "failed", "blocked"] },
+    "configurationLock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "fingerprint"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "adapter", "version"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "adapter": { "type": "string", "minLength": 1 },
+        "version": { "$ref": "#/$defs/version" }
+      }
+    },
+    "run": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["id", "sourcePath", "statePath", "fingerprint"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^run\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "sourcePath": { "type": "string", "minLength": 1 },
+        "statePath": { "type": "string", "minLength": 1 },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "call": { "type": "object" },
+    "input": { "type": ["object", "null"] },
+    "result": { "type": ["object", "null"] },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope",
+        "rawProviderResponsePersisted",
+        "hostCredentialValuesPersisted"
+      ],
+      "properties": {
+        "scope": { "const": "private" },
+        "rawProviderResponsePersisted": { "const": false },
+        "hostCredentialValuesPersisted": { "const": false }
+      }
+    },
+    "checkpointFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

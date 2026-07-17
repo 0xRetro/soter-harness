@@ -1,0 +1,264 @@
+{
+  "$contract": "soter://contracts/run-envelope/v1",
+  "contractVersion": "1.0.0",
+  "id": "run.project-pulse.happy-path-fixture",
+  "createdAt": "2026-07-16T12:00:00.000Z",
+  "requestedOutcome": "Build a grounded project status and milestone preview without external writes.",
+  "initiation": "user-requested",
+  "intent": "operate",
+  "lifecycleState": "completed",
+  "automation": {
+    "id": "automation.project-pulse",
+    "version": "0.1.0"
+  },
+  "configurationLock": {
+    "path": "soter/fixtures/project-pulse/project-pulse.lock.json",
+    "fingerprint": "sha256:f07775c58f28ef36dec307b443a8f30007266af8be50efc61b6384b9da45d47e"
+  },
+  "graphFingerprint": "sha256:4c5995dc8f6129ca4a7563ec4896d2d1c6b1a721188fec7bdd161a049ef83a6c",
+  "context": [
+    {
+      "subject": "crm.records",
+      "authority": "authority.crm.definition",
+      "role": "definition",
+      "uri": "notion://configured/policies",
+      "declarationFingerprint": "sha256:26f0e78fc7ab04ea8d2da6fdf804f219b9439925e663513bb134a554e147be97",
+      "status": "loaded",
+      "provenance": "provider.integration.notion.fixture:sha256:2006e84ff6f2c5db4fd69ce9e2d8c5e44bf7f83d36d49aa6356809dbbbc5bbb9",
+      "freshness": "passed"
+    },
+    {
+      "subject": "crm.records",
+      "authority": "authority.crm.instance",
+      "role": "instance",
+      "uri": "notion://configured/crm",
+      "declarationFingerprint": "sha256:b6784d3267492ab0726d019ca20d7e83c7c87aa279b3f30c35e2f488f03c9885",
+      "status": "loaded",
+      "provenance": "provider.integration.notion.fixture:sha256:c399af33f362eddd1c579092fbc9c1b275d4b0cb2e613c7e51fed9e3335a30af",
+      "freshness": "passed"
+    },
+    {
+      "subject": "notion.workspace",
+      "authority": "authority.notion.provider",
+      "role": "provider",
+      "uri": "notion://configured-user",
+      "declarationFingerprint": "sha256:0567ff10843e26a53e85ffa7d609867226b00615288193983c4e6f9384050032",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:f07775c58f28ef36dec307b443a8f30007266af8be50efc61b6384b9da45d47e",
+      "freshness": "unknown"
+    },
+    {
+      "subject": "runtime.runs",
+      "authority": "authority.run.evidence",
+      "role": "evidence",
+      "uri": "soter-state://runs",
+      "declarationFingerprint": "sha256:29aefe23c870f66c4c851f271e58223059743752e2d73572e812bd7f2ef29379",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:f07775c58f28ef36dec307b443a8f30007266af8be50efc61b6384b9da45d47e",
+      "freshness": "unknown"
+    }
+  ],
+  "bindings": [
+    {
+      "capability": "crm.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.1.0",
+      "authorities": [
+        "authority.crm.definition",
+        "authority.crm.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Notion is the configured authority for reading project policies, projects, milestones, and promoted tasks."
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.1.0",
+    "manifestFingerprint": "sha256:e91f3329631a3900000796a3cd54b2ba02f4aa3d0d728f9a2da40ff06b211fd0",
+    "projectionDefinition": {
+      "id": "host-projection.codex",
+      "version": "0.1.0",
+      "path": "soter/hosts/codex/projection.json",
+      "fingerprint": "sha256:c2cb9879ce7e27d30118f9e0fb41d47879fee146714f0a01b4e629a98f78c991"
+    },
+    "projectionGenerator": {
+      "id": "core.host-projection-generator",
+      "version": "1.0.0"
+    }
+  },
+  "effectPolicies": {
+    "read": {
+      "mode": "allow",
+      "reason": "Selected project authorities may be read to assemble the requested status brief."
+    },
+    "disclosure": {
+      "mode": "allow",
+      "reason": "Selected project records may enter the configured private run envelope."
+    },
+    "write": {
+      "mode": "confirm",
+      "reason": "A later status-record or milestone update would require exact batch confirmation."
+    },
+    "dispatch": {
+      "mode": "prohibit",
+      "reason": "Project Pulse does not send messages or publish notifications."
+    },
+    "destructive": {
+      "mode": "prohibit",
+      "reason": "Project Pulse never deletes records or performs destructive changes."
+    }
+  },
+  "approvals": [],
+  "checkpoints": [
+    {
+      "id": "effects-established",
+      "state": "passed",
+      "details": "Read and disclosure policies were evaluated before every fixture provider invocation."
+    },
+    {
+      "id": "project-context-grounded",
+      "state": "passed",
+      "details": "The exact policy, project, milestones, and promoted tasks were loaded through typed fixture reads."
+    },
+    {
+      "id": "read-only-boundary",
+      "state": "passed",
+      "details": "No create, update, dispatch, or destructive capability was invoked."
+    },
+    {
+      "id": "project-pulse-previewed",
+      "state": "passed",
+      "details": "A fingerprinted status and milestone preview was derived from the contained context."
+    }
+  ],
+  "outputs": [
+    {
+      "id": "context.project-pulse.happy-path-fixture",
+      "type": "context-snapshot",
+      "fingerprint": "sha256:ed25448a37c76f7ca008bbc56f18ced5742173b17d7f68f44e3b1514b0953c9a"
+    },
+    {
+      "id": "preview.project-pulse.happy-path",
+      "type": "project-pulse-preview",
+      "fingerprint": "sha256:986c76b399b399005b4c5a52aff208d8427e2f01b3174c8fa5f9ed15a9981e2d"
+    }
+  ],
+  "effects": [
+    {
+      "id": "effect.project-pulse.policy.fixture",
+      "capability": "crm.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.1.0",
+      "containment": "fixture",
+      "authority": "authority.crm.definition",
+      "startedAt": "2026-07-16T12:00:00.000Z",
+      "completedAt": "2026-07-16T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected project authorities may be read to assemble the requested status brief."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected project records may enter the configured private run envelope."
+        }
+      ],
+      "inputFingerprint": "sha256:c2757db83dc9f8d474e4ef3de62a5e3a60bf691a1a654cbdb4d18c707e25aa85",
+      "state": "passed",
+      "outputFingerprint": "sha256:2006e84ff6f2c5db4fd69ce9e2d8c5e44bf7f83d36d49aa6356809dbbbc5bbb9",
+      "error": null
+    },
+    {
+      "id": "effect.project-pulse.project.fixture",
+      "capability": "crm.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.1.0",
+      "containment": "fixture",
+      "authority": "authority.crm.instance",
+      "startedAt": "2026-07-16T12:00:00.000Z",
+      "completedAt": "2026-07-16T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected project authorities may be read to assemble the requested status brief."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected project records may enter the configured private run envelope."
+        }
+      ],
+      "inputFingerprint": "sha256:00c8847a4d3275e0148012028f44bb96f2907514894352f59f405c9580641c00",
+      "state": "passed",
+      "outputFingerprint": "sha256:f18798dd40df7ba794c32c543723f2610c486b839c670a8efa653acbd07bfa31",
+      "error": null
+    },
+    {
+      "id": "effect.project-pulse.work.fixture",
+      "capability": "crm.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.1.0",
+      "containment": "fixture",
+      "authority": "authority.crm.instance",
+      "startedAt": "2026-07-16T12:00:00.000Z",
+      "completedAt": "2026-07-16T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected project authorities may be read to assemble the requested status brief."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected project records may enter the configured private run envelope."
+        }
+      ],
+      "inputFingerprint": "sha256:9e3e8cc0b074aa7ccdcd2a71dc07cdf1d375010a50aea49b45613c3ed00962b6",
+      "state": "passed",
+      "outputFingerprint": "sha256:c399af33f362eddd1c579092fbc9c1b275d4b0cb2e613c7e51fed9e3335a30af",
+      "error": null
+    }
+  ],
+  "evidenceIds": [
+    "evidence.project-pulse.resolution.fixture",
+    "evidence.project-pulse.happy-path.fixture"
+  ],
+  "scenario": {
+    "id": "project-pulse.happy-path",
+    "path": "soter/scenarios/project-pulse/happy-path.scenario.json",
+    "fingerprint": "sha256:ddb728a157fd064db6a812c5cd75ac0bf23038ae18a1b62253697d053e656335"
+  }
+}

@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://automations/email-triage/decision/v1",
+  "title": "Email triage grounded decision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "id", "automation", "runId", "createdAt",
+    "configurationLockFingerprint", "graphFingerprint", "context", "producer",
+    "state", "decisionType", "payload", "issues", "privacy", "decisionFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/automation-decision/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^decision\\.email-triage\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "automation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "const": "automation.email-triage" },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" }
+      }
+    },
+    "runId": { "type": "string", "pattern": "^run\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "configurationLockFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["snapshotId", "snapshotFingerprint"],
+      "properties": {
+        "snapshotId": { "type": "string", "pattern": "^context\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "snapshotFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "host"],
+      "properties": {
+        "kind": { "enum": ["host", "user", "fixture"] },
+        "id": { "type": "string", "minLength": 1 },
+        "host": { "type": ["string", "null"], "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+      },
+      "allOf": [{
+        "if": { "properties": { "kind": { "const": "host" } } },
+        "then": { "properties": { "host": { "type": "string" } } },
+        "else": { "properties": { "host": { "type": "null" } } }
+      }]
+    },
+    "state": { "enum": ["ready", "needs-input"] },
+    "decisionType": { "const": "email-triage.grounded-classification" },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["window", "candidates", "limitations"],
+      "properties": {
+        "window": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "searchEntryId", "searchEntryFingerprint", "threadsEntryId",
+            "threadsEntryFingerprint", "queryFingerprint", "searchedMessageCount",
+            "observedThreadCount", "includedCount", "excludedCount", "exclusions"
+          ],
+          "properties": {
+            "searchEntryId": { "type": "string", "minLength": 1 },
+            "searchEntryFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "threadsEntryId": { "type": ["string", "null"], "minLength": 1 },
+            "threadsEntryFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+            "queryFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "searchedMessageCount": { "type": "integer", "minimum": 0, "maximum": 100 },
+            "observedThreadCount": { "type": "integer", "minimum": 0, "maximum": 50 },
+            "includedCount": { "type": "integer", "minimum": 0, "maximum": 50 },
+            "excludedCount": { "type": "integer", "minimum": 0, "maximum": 50 },
+            "exclusions": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "uniqueItems": true,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["reasonCode", "count"],
+                "properties": {
+                  "reasonCode": {
+                    "enum": [
+                      "NO_ACTIVE_INBOX_MESSAGE_REMOVED",
+                      "RFC822_ALIAS_DUPLICATE_REMOVED",
+                      "SELF_SENT_ONLY_REMOVED",
+                      "ALREADY_TRIAGED_NO_NEWER_REMOVED"
+                    ]
+                  },
+                  "count": { "type": "integer", "minimum": 0, "maximum": 50 }
+                }
+              }
+            }
+          }
+        },
+        "candidates": {
+          "type": "array",
+          "maxItems": 50,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/candidate" }
+        },
+        "limitations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 12 }
+        }
+      }
+    },
+    "issues": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 12 }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "redactions"],
+      "properties": {
+        "scope": { "const": "private" },
+        "redactions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 12 }
+        }
+      }
+    },
+    "decisionFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "candidateFingerprint", "threadId", "threadFingerprint",
+        "activeMessageIds", "activeMessageFingerprints", "newestMessageId",
+        "newestMessageFingerprint", "providerImportantObserved",
+        "archivedSiblingIgnored", "group", "attention", "suspectedInjection",
+        "providerImportantIgnored", "summary", "reason", "replyDisposition",
+        "handoffIntent", "evidence"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^candidate\\.email\\.[a-f0-9]{24}$" },
+        "candidateFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "threadId": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "threadFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "activeMessageIds": {
+          "type": "array", "minItems": 1, "maxItems": 500, "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+        },
+        "activeMessageFingerprints": {
+          "type": "array", "minItems": 1, "maxItems": 500, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/fingerprint" }
+        },
+        "newestMessageId": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "newestMessageFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "providerImportantObserved": { "type": "boolean" },
+        "archivedSiblingIgnored": { "type": "boolean" },
+        "group": {
+          "enum": [
+            "unresolved", "needs-you", "high-stakes", "rsvp-pending",
+            "meeting-notes", "notifications", "admin-billing", "marketing"
+          ]
+        },
+        "attention": { "enum": ["operator", "no-one", "unknown"] },
+        "suspectedInjection": { "type": ["boolean", "null"] },
+        "providerImportantIgnored": { "type": ["boolean", "null"] },
+        "summary": { "type": ["string", "null"], "minLength": 3, "maxLength": 10000 },
+        "reason": { "type": "string", "minLength": 20, "maxLength": 10000 },
+        "replyDisposition": {
+          "enum": ["unresolved", "none", "draft-review", "research-review", "human-review"]
+        },
+        "handoffIntent": {
+          "enum": [
+            "unresolved", "none", "meeting-notes-intake", "calendar-rsvp-review",
+            "task-review", "record-update-review"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "maxItems": 20,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "messageId", "messageFingerprint", "field", "quote", "quoteFingerprint"
+            ],
+            "properties": {
+              "messageId": { "type": "string", "minLength": 1, "maxLength": 500 },
+              "messageFingerprint": { "$ref": "#/$defs/fingerprint" },
+              "field": { "enum": ["subject", "body"] },
+              "quote": { "type": "string", "minLength": 3, "maxLength": 10000 },
+              "quoteFingerprint": { "$ref": "#/$defs/fingerprint" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

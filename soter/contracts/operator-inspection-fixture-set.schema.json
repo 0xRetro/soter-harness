@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/operator-inspection-fixture-set/v1",
+  "title": "Sanitized operator inspection adapter fixture set",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$contract", "contractVersion", "fixtureVersion", "sanitized", "authority", "scope", "states"],
+  "properties": {
+    "$contract": { "const": "soter://contracts/operator-inspection-fixture-set/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "fixtureVersion": { "const": "1.0.0" },
+    "sanitized": { "const": true },
+    "authority": { "const": "none-example-only" },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["automationId", "workId", "runId", "configurationLockFingerprint", "changeSetId", "changeSetFingerprint", "batchId", "batchFingerprint", "approvalRequestId", "approvalRequestFingerprint", "effects", "authorities", "recordIds", "changes", "verificationCriterionIds", "compensationPlan"],
+      "properties": {
+        "automationId": { "type": "string", "minLength": 1 },
+        "workId": { "type": "string", "minLength": 1 },
+        "runId": { "type": "string", "minLength": 1 },
+        "configurationLockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "changeSetId": { "type": "string", "minLength": 1 },
+        "changeSetFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "batchId": { "type": "string", "minLength": 1 },
+        "batchFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "approvalRequestId": { "type": "string", "minLength": 1 },
+        "approvalRequestFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "effects": { "$ref": "#/$defs/stringSet" },
+        "authorities": { "$ref": "#/$defs/stringSet" },
+        "recordIds": { "$ref": "#/$defs/stringSet" },
+        "changes": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["id", "recordId", "beforeFingerprint", "afterFingerprint"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "recordId": { "type": "string", "minLength": 1 },
+              "beforeFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+              "afterFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
+            }
+          }
+        },
+        "verificationCriterionIds": { "$ref": "#/$defs/stringSet" },
+        "compensationPlan": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["stepId", "mode"],
+            "properties": {
+              "stepId": { "type": "string", "minLength": 1 },
+              "mode": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    },
+    "states": {
+      "type": "array", "minItems": 8,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "workState", "phase", "approvalState", "checkpointState", "verificationState", "compensationState", "resume"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "workState": { "type": "string", "minLength": 1 },
+          "phase": { "type": "string", "minLength": 1 },
+          "approvalState": { "type": "string", "minLength": 1 },
+          "checkpointState": { "type": ["string", "null"], "minLength": 1 },
+          "verificationState": { "type": "string", "minLength": 1 },
+          "compensationState": { "type": "string", "minLength": 1 },
+          "resume": {
+            "type": "object", "additionalProperties": false,
+            "required": ["classification", "reasonCode", "reason", "permittedNextAction"],
+            "properties": {
+              "classification": { "enum": ["safe", "requires-review", "unavailable"] },
+              "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" },
+              "reason": { "type": "string", "minLength": 1 },
+              "permittedNextAction": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "nullableFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+    "stringSet": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+  }
+}

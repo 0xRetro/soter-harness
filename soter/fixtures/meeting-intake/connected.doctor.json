@@ -1,0 +1,187 @@
+{
+  "$contract": "soter://contracts/doctor-result/v1",
+  "contractVersion": "1.0.0",
+  "id": "doctor.meeting-intake.connected-fixture",
+  "createdAt": "2026-07-15T12:00:00.000Z",
+  "level": "connected",
+  "configuration": {
+    "name": "meeting-intake",
+    "lockFingerprint": "sha256:33887ea889ec3ac8f687198c7ca69d8f5861632285e85dceb9a9c11417996b9f"
+  },
+  "states": {
+    "valid": "passed",
+    "ready": "unknown",
+    "verified": "unknown",
+    "healthy": "unknown"
+  },
+  "checks": [
+    {
+      "id": "kernel.graph-valid",
+      "claim": "Machine contracts and the selected dependency graph are internally valid.",
+      "state": "passed",
+      "evidenceIds": [],
+      "details": "The dependency-free Kernel verifier reported no graph errors."
+    },
+    {
+      "id": "core.lock-current",
+      "claim": "The supplied lock exactly matches a fresh deterministic resolution.",
+      "state": "passed",
+      "evidenceIds": [
+        "evidence.meeting-intake.resolution.fixture"
+      ],
+      "details": "The observed and freshly resolved lock fingerprints match."
+    },
+    {
+      "id": "connections.runtime-state-valid",
+      "claim": "Connected checks use the exact desired configuration and contract-valid provider observations.",
+      "state": "passed",
+      "evidenceIds": [],
+      "details": "The desired configuration matches the lock and every supplied probe or failed-attempt summary is uniquely typed."
+    },
+    {
+      "id": "integrations.implementations-ready",
+      "claim": "Every required capability resolves to exactly one connected provider implementation.",
+      "state": "passed",
+      "evidenceIds": [],
+      "details": "All 5 required connected implementation checks passed."
+    },
+    {
+      "id": "integrations.probes-complete",
+      "claim": "Every selected connected capability binding has current exact-lock provider-probe coverage through the active host route.",
+      "state": "unknown",
+      "evidenceIds": [],
+      "details": "0 of 5 required capability-binding probe execution checks passed; inspect diagnostics and probe details."
+    },
+    {
+      "id": "connections.credentials-ready",
+      "claim": "Configured secret references authenticate with sufficient provider permissions.",
+      "state": "unknown",
+      "evidenceIds": [],
+      "details": "0 of 2 required credential checks passed; inspect diagnostics and probe details."
+    },
+    {
+      "id": "integrations.reachable",
+      "claim": "Selected connected provider endpoints are currently reachable.",
+      "state": "unknown",
+      "evidenceIds": [],
+      "details": "0 of 2 required reachability checks passed; inspect diagnostics and probe details."
+    },
+    {
+      "id": "authorities.current",
+      "claim": "Every configured external authority is visible to its selected provider identity.",
+      "state": "unknown",
+      "evidenceIds": [],
+      "details": "0 of 3 required authority checks passed; inspect diagnostics and probe details."
+    },
+    {
+      "id": "integrations.capability-compatible",
+      "claim": "Required capabilities pass safe connected compatibility checks.",
+      "state": "unknown",
+      "evidenceIds": [],
+      "details": "0 of 5 required capability checks passed; inspect diagnostics and probe details."
+    },
+    {
+      "id": "behavior.evidence-current",
+      "claim": "Applicable fixture or stronger behavior evidence is current for every selected component.",
+      "state": "unknown",
+      "evidenceIds": [],
+      "details": "Static declarations, test capacity, and run-scoped evidence do not establish complete behavior verification."
+    },
+    {
+      "id": "runtime.health-current",
+      "claim": "Recent real outcomes establish current end-to-end health for this configuration.",
+      "state": "unknown",
+      "evidenceIds": [],
+      "details": "Connected probes establish start readiness only; outcome health requires canary or monitored run evidence."
+    }
+  ],
+  "diagnostics": [
+    {
+      "code": "SOTER_PROVIDER_PROBE_MISSING",
+      "severity": "warning",
+      "claim": "Each selected connected provider has one current probe for the supplied lock.",
+      "subject": "provider.integration.notion.mcp",
+      "path": [
+        "providerProbes",
+        "provider.integration.notion.mcp"
+      ],
+      "expected": "One current probe bound to sha256:33887ea889ec3ac8f687198c7ca69d8f5861632285e85dceb9a9c11417996b9f.",
+      "observed": "Found no completed probe or failed attempt.",
+      "evidenceIds": [],
+      "remediation": "Run the provider adapter read-only probe and pass its durable checkpoint to the connected doctor."
+    },
+    {
+      "code": "SOTER_PROVIDER_PROBE_MISSING",
+      "severity": "warning",
+      "claim": "Each selected connected provider has one current probe for the supplied lock.",
+      "subject": "provider.integration.notion.mcp",
+      "path": [
+        "providerProbes",
+        "provider.integration.notion.mcp"
+      ],
+      "expected": "One current probe bound to sha256:33887ea889ec3ac8f687198c7ca69d8f5861632285e85dceb9a9c11417996b9f.",
+      "observed": "Found no completed probe or failed attempt.",
+      "evidenceIds": [],
+      "remediation": "Run the provider adapter read-only probe and pass its durable checkpoint to the connected doctor."
+    },
+    {
+      "code": "SOTER_PROVIDER_PROBE_MISSING",
+      "severity": "warning",
+      "claim": "Each selected connected provider has one current probe for the supplied lock.",
+      "subject": "provider.integration.notion.mcp",
+      "path": [
+        "providerProbes",
+        "provider.integration.notion.mcp"
+      ],
+      "expected": "One current probe bound to sha256:33887ea889ec3ac8f687198c7ca69d8f5861632285e85dceb9a9c11417996b9f.",
+      "observed": "Found no completed probe or failed attempt.",
+      "evidenceIds": [],
+      "remediation": "Run the provider adapter read-only probe and pass its durable checkpoint to the connected doctor."
+    },
+    {
+      "code": "SOTER_PROVIDER_PROBE_MISSING",
+      "severity": "warning",
+      "claim": "Each selected connected provider has one current probe for the supplied lock.",
+      "subject": "provider.integration.notion.mcp",
+      "path": [
+        "providerProbes",
+        "provider.integration.notion.mcp"
+      ],
+      "expected": "One current probe bound to sha256:33887ea889ec3ac8f687198c7ca69d8f5861632285e85dceb9a9c11417996b9f.",
+      "observed": "Found no completed probe or failed attempt.",
+      "evidenceIds": [],
+      "remediation": "Run the provider adapter read-only probe and pass its durable checkpoint to the connected doctor."
+    },
+    {
+      "code": "SOTER_PROVIDER_PROBE_MISSING",
+      "severity": "warning",
+      "claim": "Each selected connected provider has one current probe for the supplied lock.",
+      "subject": "provider.integration.otter.mcp",
+      "path": [
+        "providerProbes",
+        "provider.integration.otter.mcp"
+      ],
+      "expected": "One current probe bound to sha256:33887ea889ec3ac8f687198c7ca69d8f5861632285e85dceb9a9c11417996b9f.",
+      "observed": "Found no completed probe or failed attempt.",
+      "evidenceIds": [],
+      "remediation": "Run the provider adapter read-only probe and pass its durable checkpoint to the connected doctor."
+    },
+    {
+      "code": "SOTER_CONNECTED_SCOPE",
+      "severity": "info",
+      "claim": "Connected doctor derives readiness from exact, short-lived, read-only provider probes.",
+      "subject": "meeting-intake",
+      "path": [],
+      "expected": "No provider mutation, dispatch, destructive effect, or secret value enters the report.",
+      "observed": "Connected readiness was evaluated from 0 completed probe(s) and 0 failed-attempt summary record(s).",
+      "evidenceIds": [
+        "evidence.meeting-intake.resolution.fixture"
+      ],
+      "remediation": "Use a separately authorized canary when write or dispatch behavior must be established."
+    }
+  ],
+  "providerProbeIds": [],
+  "evidenceIds": [
+    "evidence.meeting-intake.resolution.fixture"
+  ]
+}

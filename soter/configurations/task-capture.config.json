@@ -1,0 +1,145 @@
+{
+  "$contract": "soter://contracts/configuration/v1",
+  "contractVersion": "1.0.0",
+  "name": "task-capture",
+  "base": {
+    "kernel": "kernel.soter",
+    "core": "core.runtime"
+  },
+  "packs": [
+    {
+      "id": "context.crm",
+      "source": "dependency",
+      "reason": "Task Capture depends on portable task, project, assignee, date, and policy meaning."
+    },
+    {
+      "id": "automation.task-capture",
+      "source": "user",
+      "reason": "The user selected private, deduplicated task-create preparation for this configuration."
+    },
+    {
+      "id": "integration.notion",
+      "source": "binding",
+      "reason": "The configured policy, project, task, and eventual task-create authority live in Notion."
+    }
+  ],
+  "bindings": [
+    {
+      "capability": "crm.records.read",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.crm.definition", "authority.crm.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "Notion is the configured authority for the normalized task policy, exact project, and bounded duplicate candidates."
+    },
+    {
+      "capability": "crm.records.create",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.crm.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "A separately approved exact operation may later create one mapped task through the configured CRM authority."
+    }
+  ],
+  "sources": [
+    {
+      "id": "source.policy.task-capture",
+      "capability": "crm.records.read",
+      "authority": "authority.crm.definition",
+      "input": {
+        "recordTypes": ["task-capture-policy"],
+        "ids": ["policy.task-capture"],
+        "limit": 2
+      },
+      "readiness": {
+        "mode": "probe-read",
+        "reason": "Connected readiness must prove a trusted normalized task-capture policy can be read without retaining private values."
+      },
+      "consumers": [
+        {
+          "pack": "automation.task-capture",
+          "purpose": "task-capture-policy",
+          "subjects": ["task-capture"],
+          "reason": "Task Capture must ground confirmation, deduplication, status, context, and project requirements in one selected definition source."
+        }
+      ],
+      "reason": "Task creation rules are a configured definition source rather than Automation-owned constants."
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.crm.definition",
+      "role": "definition",
+      "subject": "crm.records",
+      "uri": "notion://configured/policies",
+      "reason": "The selected normalized Tasks policy defines valid task-create semantics."
+    },
+    {
+      "id": "authority.crm.instance",
+      "role": "instance",
+      "subject": "crm.records",
+      "uri": "notion://configured/crm",
+      "reason": "The configured project and task records are authoritative for relation resolution and duplicate review."
+    },
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "uri": "notion://configured-user",
+      "reason": "The selected Notion account supplies provider identity and permission context."
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "uri": "soter-state://runs",
+      "reason": "Local private runtime state owns prepared work, review material, and contained evidence."
+    }
+  ],
+  "effectPolicies": {
+    "read": {
+      "mode": "allow",
+      "reason": "Selected policy, project, and bounded task candidates may be read for private preparation."
+    },
+    "disclosure": {
+      "mode": "allow",
+      "reason": "Selected records may enter the configured private run envelope with explicit minimization."
+    },
+    "write": {
+      "mode": "confirm",
+      "reason": "Every exact task-create batch requires a fresh confirmation and separately consumed one-time start authorization."
+    },
+    "dispatch": {
+      "mode": "prohibit",
+      "reason": "Task Capture does not send messages or publish notifications."
+    },
+    "destructive": {
+      "mode": "prohibit",
+      "reason": "Task Capture never deletes records or performs destructive changes."
+    }
+  },
+  "secretRefs": [
+    {
+      "id": "secret-ref.notion",
+      "provider": "host",
+      "key": "NOTION_OAUTH"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.1.0",
+    "reason": "This fixture configuration exercises Codex projection while preserving provider-neutral contracts."
+  },
+  "settings": {
+    "integration.notion": {
+      "targets": {
+        "policies": "collection://39dd79b5-de38-8042-9d47-000b9293ab47",
+        "organizations": "collection://2b2d79b5-de38-817a-981e-000b27e5575b",
+        "contacts": "collection://2b2d79b5-de38-81d0-852e-000bc3fdf8d2",
+        "projects": "collection://721bfb88-e8d5-4934-ac26-cc82e1afc7a0",
+        "tasks": "collection://2abd79b5-de38-80f8-9470-000b7181b18d",
+        "meetings": "collection://b2550e36-38d5-4d33-86db-bbd0987aeaef",
+        "documents": "collection://2abd79b5-de38-8075-a97b-000b24e99dc1"
+      }
+    }
+  }
+}

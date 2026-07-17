@@ -1,0 +1,237 @@
+{
+  "$contract": "soter://contracts/operator-inspection-fixture-set/v1",
+  "contractVersion": "1.0.0",
+  "fixtureVersion": "1.0.0",
+  "sanitized": true,
+  "authority": "none-example-only",
+  "scope": {
+    "automationId": "automation.example",
+    "workId": "work.example.connected-transaction",
+    "runId": "run.example.connected-transaction",
+    "configurationLockFingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "changeSetId": "changeset.example.connected-transaction",
+    "changeSetFingerprint": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "batchId": "batch.example.connected-transaction",
+    "batchFingerprint": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "approvalRequestId": "approval-request.example.connected-transaction",
+    "approvalRequestFingerprint": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "effects": ["write"],
+    "authorities": ["authority.example.instance"],
+    "recordIds": ["record.example.1", "record.example.2"],
+    "changes": [
+      {
+        "id": "operation.example.update",
+        "recordId": "record.example.1",
+        "beforeFingerprint": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+        "afterFingerprint": "sha256:6666666666666666666666666666666666666666666666666666666666666666"
+      },
+      {
+        "id": "operation.example.unavailable-preview",
+        "recordId": "record.example.2",
+        "beforeFingerprint": null,
+        "afterFingerprint": null
+      }
+    ],
+    "verificationCriterionIds": ["verification.operation.example.update.record"],
+    "compensationPlan": [
+      { "stepId": "operation.example.update", "mode": "restore-prior-fields" }
+    ]
+  },
+  "states": [
+    {
+      "id": "prepared-work-unavailable",
+      "workState": "ready-for-review",
+      "phase": "preparation",
+      "approvalState": "not-issued",
+      "checkpointState": null,
+      "verificationState": "not-started",
+      "compensationState": "not-required",
+      "resume": {
+        "classification": "unavailable",
+        "reasonCode": "RESUME_DECISION_UNAVAILABLE",
+        "reason": "Prepared work has no canonical connected transaction decision.",
+        "permittedNextAction": "inspect-checkpoint"
+      }
+    },
+    {
+      "id": "awaiting-approval",
+      "workState": "awaiting-approval",
+      "phase": "approval",
+      "approvalState": "awaiting",
+      "checkpointState": null,
+      "verificationState": "not-started",
+      "compensationState": "not-required",
+      "resume": {
+        "classification": "unavailable",
+        "reasonCode": "APPROVAL_REQUEST_PENDING",
+        "reason": "The exact request has not been confirmed.",
+        "permittedNextAction": "confirm-approval"
+      }
+    },
+    {
+      "id": "approval-expired",
+      "workState": "approval-expired",
+      "phase": "approval",
+      "approvalState": "expired",
+      "checkpointState": null,
+      "verificationState": "not-started",
+      "compensationState": "not-required",
+      "resume": {
+        "classification": "requires-review",
+        "reasonCode": "APPROVAL_REQUEST_EXPIRED",
+        "reason": "The exact request expired before one-time start.",
+        "permittedNextAction": "renew-approval-request"
+      }
+    },
+    {
+      "id": "approved-not-started",
+      "workState": "approved-not-started",
+      "phase": "approval",
+      "approvalState": "confirmed",
+      "checkpointState": null,
+      "verificationState": "not-started",
+      "compensationState": "not-required",
+      "resume": {
+        "classification": "safe",
+        "reasonCode": "APPROVAL_CONFIRMED_NOT_STARTED",
+        "reason": "The current exact approval may be consumed once to create its bound checkpoint.",
+        "permittedNextAction": "start-transaction"
+      }
+    },
+    {
+      "id": "running",
+      "workState": "running",
+      "phase": "execution",
+      "approvalState": "consumed",
+      "checkpointState": "requested",
+      "verificationState": "unknown",
+      "compensationState": "not-required",
+      "resume": {
+        "classification": "safe",
+        "reasonCode": "CURRENT_CALL_PENDING",
+        "reason": "Only the exact current checkpoint call is authorized to continue.",
+        "permittedNextAction": "execute-current-call"
+      }
+    },
+    {
+      "id": "blocked-needs-attention",
+      "workState": "blocked",
+      "phase": "execution",
+      "approvalState": "consumed",
+      "checkpointState": "needs-attention",
+      "verificationState": "unknown",
+      "compensationState": "not-required",
+      "resume": {
+        "classification": "safe",
+        "reasonCode": "RECONCILIATION_AVAILABLE",
+        "reason": "Core authorizes preparation of one read-only reconciliation for the unresolved ambiguity.",
+        "permittedNextAction": "prepare-reconciliation"
+      }
+    },
+    {
+      "id": "reconciliation-in-progress",
+      "workState": "blocked",
+      "phase": "reconciliation",
+      "approvalState": "consumed",
+      "checkpointState": "requested",
+      "verificationState": "unknown",
+      "compensationState": "not-required",
+      "resume": {
+        "classification": "safe",
+        "reasonCode": "RECONCILIATION_IN_PROGRESS",
+        "reason": "Only the exact current checkpoint reconciliation read is authorized to continue.",
+        "permittedNextAction": "execute-current-call"
+      }
+    },
+    {
+      "id": "verification-failed",
+      "workState": "verification-failed",
+      "phase": "verification",
+      "approvalState": "consumed",
+      "checkpointState": "needs-attention",
+      "verificationState": "failed",
+      "compensationState": "not-required",
+      "resume": {
+        "classification": "safe",
+        "reasonCode": "RECONCILIATION_AVAILABLE",
+        "reason": "Core authorizes preparation of one read-only reconciliation for the unresolved ambiguity.",
+        "permittedNextAction": "prepare-reconciliation"
+      }
+    },
+    {
+      "id": "rolling-back",
+      "workState": "rolling-back",
+      "phase": "compensation",
+      "approvalState": "consumed",
+      "checkpointState": "requested",
+      "verificationState": "failed",
+      "compensationState": "running",
+      "resume": {
+        "classification": "safe",
+        "reasonCode": "CURRENT_CALL_PENDING",
+        "reason": "Only the exact current checkpoint call is authorized to continue.",
+        "permittedNextAction": "execute-current-call"
+      }
+    },
+    {
+      "id": "rolled-back",
+      "workState": "rolled-back",
+      "phase": "compensation",
+      "approvalState": "consumed",
+      "checkpointState": "rolled-back",
+      "verificationState": "failed",
+      "compensationState": "verified",
+      "resume": {
+        "classification": "unavailable",
+        "reasonCode": "TRANSACTION_ROLLED_BACK",
+        "reason": "The checkpoint has no authorized execution continuation.",
+        "permittedNextAction": "none"
+      }
+    },
+    {
+      "id": "compensation-failed",
+      "workState": "blocked",
+      "phase": "compensation",
+      "approvalState": "consumed",
+      "checkpointState": "needs-attention",
+      "verificationState": "failed",
+      "compensationState": "failed",
+      "resume": {
+        "classification": "safe",
+        "reasonCode": "RECONCILIATION_AVAILABLE",
+        "reason": "Core authorizes preparation of one read-only reconciliation for the unresolved ambiguity.",
+        "permittedNextAction": "prepare-reconciliation"
+      }
+    },
+    {
+      "id": "checkpoint-stale",
+      "workState": "blocked",
+      "phase": "execution",
+      "approvalState": "consumed",
+      "checkpointState": "requested",
+      "verificationState": "unknown",
+      "compensationState": "not-required",
+      "resume": {
+        "classification": "unavailable",
+        "reasonCode": "CHECKPOINT_STALE",
+        "reason": "The exact lock is not currently applicable; no execution continuation is authorized.",
+        "permittedNextAction": "rebuild-work"
+      }
+    },
+    {
+      "id": "completed",
+      "workState": "completed",
+      "phase": "complete",
+      "approvalState": "consumed",
+      "checkpointState": "completed",
+      "verificationState": "verified",
+      "compensationState": "not-required",
+      "resume": {
+        "classification": "unavailable",
+        "reasonCode": "TRANSACTION_COMPLETED",
+        "reason": "The checkpoint has no authorized execution continuation.",
+        "permittedNextAction": "none"
+      }
+    }
+  ]
+}

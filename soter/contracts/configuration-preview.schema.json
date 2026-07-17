@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/configuration-preview/v1",
+  "title": "Soter configuration preview",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "configuration", "draft", "changes",
+    "options", "evidenceImpact", "diagnostics", "apply"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/configuration-preview/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "sourcePath", "host", "lockFingerprint", "graphFingerprint"],
+      "properties": {
+        "name": { "type": "string" },
+        "sourcePath": { "type": "string" },
+        "host": { "type": "string" },
+        "lockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "graphFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "draft": {
+      "type": "object",
+      "additionalProperties": false,
+        "required": ["valid", "changed", "host", "addedPacks", "lockFingerprint", "graphFingerprint"],
+      "properties": {
+        "valid": { "type": "boolean" },
+          "changed": { "type": "boolean" },
+          "host": { "type": "string" },
+          "addedPacks": { "$ref": "#/$defs/stringArray" },
+        "lockFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+        "graphFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" }
+      }
+    },
+    "changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["category", "subject", "state", "before", "after", "impact"],
+        "properties": {
+          "category": { "enum": ["host", "effect-policy", "pack"] },
+          "subject": { "type": "string" },
+          "state": { "enum": ["unchanged", "changed"] },
+          "before": { "type": "string" },
+          "after": { "type": "string" },
+          "impact": { "type": "string" }
+        }
+      }
+    },
+    "options": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hosts", "effectModes", "packs"],
+      "properties": {
+        "hosts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "adapter", "version", "current", "compatible", "limitations"],
+            "properties": {
+              "id": { "type": "string" },
+              "adapter": { "type": "string" },
+              "version": { "type": "string" },
+              "current": { "type": "boolean" },
+              "compatible": { "type": "boolean" },
+              "limitations": { "$ref": "#/$defs/stringArray" }
+            }
+          }
+        },
+        "effectModes": {
+          "type": "array",
+          "items": { "enum": ["allow", "confirm", "prohibit"] },
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true
+        },
+        "packs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "version", "layer", "selected", "base", "selectable", "summary", "effects", "dependencies", "requiredCapabilities", "scenarioCount"],
+            "properties": {
+              "id": { "type": "string" },
+              "version": { "type": "string" },
+              "layer": { "type": "string" },
+              "selected": { "type": "boolean" },
+              "base": { "type": "boolean" },
+              "selectable": { "type": "boolean" },
+              "summary": { "type": "string" },
+              "effects": { "$ref": "#/$defs/stringArray" },
+              "dependencies": { "$ref": "#/$defs/stringArray" },
+              "requiredCapabilities": { "$ref": "#/$defs/stringArray" },
+              "scenarioCount": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
+      }
+    },
+    "evidenceImpact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "reason"],
+      "properties": {
+        "state": { "enum": ["preserved", "invalidated", "unknown"] },
+        "reason": { "type": "string" }
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "severity", "subject", "message", "remediation"],
+        "properties": {
+          "code": { "type": "string" },
+          "severity": { "enum": ["error", "warning", "info"] },
+          "subject": { "type": "string" },
+          "message": { "type": "string" },
+          "remediation": { "type": "string" }
+        }
+      }
+    },
+    "apply": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["supported", "reason"],
+      "properties": {
+        "supported": { "const": false },
+        "reason": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "stringArray": { "type": "array", "items": { "type": "string" } }
+  }
+}

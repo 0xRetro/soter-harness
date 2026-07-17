@@ -1,0 +1,121 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "automation.email-triage",
+  "version": "0.1.0",
+  "layer": "automation",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Prepares one bounded Email triage review and compiles selected label or draft actions into a private, non-executable connected candidate plan.",
+  "dependencies": [
+    {
+      "pack": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Email preparation requires exact locks, sanitized collections, private derived review, and transaction authority boundaries."
+    },
+    {
+      "pack": "context.email",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Mailbox identity, reduction, buckets, handoffs, labels, and draft-only invariants belong to Email context."
+    }
+  ],
+  "capabilities": {
+    "requires": [
+      {
+        "id": "mail.messages.search",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Connected acquisition must bind one exact private mailbox query to a bounded provider-message identity set with explicit pagination completeness."
+      },
+      {
+        "id": "mail.threads.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Connected acquisition must expand exact message identities into bounded private transport facts before any Automation-owned triage judgment."
+      },
+      {
+        "id": "mail.window.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation must read exactly one bounded mailbox window through the selected instance authority."
+      },
+      {
+        "id": "mail.labels.apply",
+        "version": "^2.0.0",
+        "optional": false,
+        "reason": "The complete private review may propose exact existing AI-namespace label names over exact message IDs for later approval."
+      },
+      {
+        "id": "mail.labels.read",
+        "version": "^2.0.0",
+        "optional": false,
+        "reason": "Exact label writes must be re-read by message identity and label name before completion or ambiguity resolution."
+      },
+      {
+        "id": "mail.drafts.create",
+        "version": "^2.0.0",
+        "optional": false,
+        "reason": "The complete private review may propose exact reply-message draft creation for later approval, never sending."
+      },
+      {
+        "id": "mail.drafts.list",
+        "version": "^2.0.0",
+        "optional": false,
+        "reason": "Exact draft creation must be verified by reply-message identity, idempotency key, minimized metadata, and content fingerprint before completion or ambiguity resolution."
+      }
+    ],
+    "provides": []
+  },
+  "authorities": [
+    { "role": "definition", "subject": "mail.processing", "required": true },
+    { "role": "instance", "subject": "mail.mailbox", "required": true },
+    { "role": "evidence", "subject": "runtime.runs", "required": true }
+  ],
+  "effects": ["read", "disclosure", "write"],
+  "operator": {
+    "input": "soter/automations/email-triage/operator-input.json",
+    "preparation": {
+      "module": "soter/automations/email-triage/prepare.mjs",
+      "export": "prepareEmailTriageRun",
+      "containment": "fixture",
+      "derivedReviewContract": "soter/automations/email-triage/derived-review.json"
+    },
+    "connection": {
+      "module": "soter/automations/email-triage/connected.mjs",
+      "compileExport": "compileEmailConnectedOperations",
+      "evaluateExport": "evaluateEmailConnectedVerification"
+    },
+    "proposal": {
+      "module": "soter/automations/email-triage/proposal.mjs",
+      "export": "createEmailTriageProposal",
+      "schema": "soter/automations/email-triage/proposal.schema.json",
+      "inputSchema": "soter/automations/email-triage/proposal-input.schema.json",
+      "derivedReviewContract": "soter/automations/email-triage/derived-review.json"
+    }
+  },
+  "artifacts": [
+    { "path": "soter/automations/email-triage/operator-input.json", "role": "definition" },
+    { "path": "soter/automations/email-triage/derived-review.json", "role": "definition" },
+    { "path": "soter/automations/email-triage/decision.schema.json", "role": "definition" },
+    { "path": "soter/automations/email-triage/proposal-input.schema.json", "role": "definition" },
+    { "path": "soter/automations/email-triage/proposal.schema.json", "role": "definition" },
+    { "path": "soter/automations/email-triage/prepare.mjs", "role": "implementation" },
+    { "path": "soter/automations/email-triage/context.mjs", "role": "implementation" },
+    { "path": "soter/automations/email-triage/decision.mjs", "role": "implementation" },
+    { "path": "soter/automations/email-triage/proposal.mjs", "role": "implementation" },
+    { "path": "soter/automations/email-triage/connected.mjs", "role": "implementation" },
+    { "path": "soter/automations/email-triage/email-triage.selftest.mjs", "role": "evaluation" },
+    { "path": "soter/automations/email-triage/connected-context.selftest.mjs", "role": "evaluation" },
+    { "path": "soter/scenarios/email-triage/happy-path.scenario.json", "role": "evaluation" }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": ["codex", "claude"]
+  },
+  "verification": {
+    "maxLevel": "fixture",
+    "scenarios": ["soter/scenarios/email-triage/happy-path.scenario.json"]
+  }
+}

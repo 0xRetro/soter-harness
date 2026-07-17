@@ -1,0 +1,31 @@
+{
+  "$contract": "soter://contracts/provider-fixture/v1",
+  "contractVersion": "1.0.0",
+  "id": "fixture.integration.otter.transcripts",
+  "provider": "provider.integration.otter.fixture",
+  "observedAt": "2026-07-15T11:59:30.000Z",
+  "data": {
+    "transcripts": [
+    {
+      "meetingId": "meeting.fixture-001",
+      "recordingUri": "otter://fixture/meeting.fixture-001",
+      "speakers": [
+        { "id": "speaker.retro", "displayName": "Retro" },
+        { "id": "speaker.maya", "displayName": "Maya Chen" }
+      ],
+      "segments": [
+        {
+          "speakerId": "speaker.maya",
+          "text": "The launch direction is approved. Please send the updated deck Friday.",
+          "startSeconds": 12
+        },
+        {
+          "speakerId": "speaker.retro",
+          "text": "I will revise the deck and link it to the launch project.",
+          "startSeconds": 26
+        }
+      ]
+    }
+    ]
+  }
+}

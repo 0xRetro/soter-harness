@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/operation-plan/v2",
+  "title": "Soter sequential capability operation plan with typed output bindings",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "runId",
+    "createdAt",
+    "mode",
+    "failurePolicy",
+    "reason",
+    "steps"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/operation-plan/v2" },
+    "contractVersion": { "const": "2.0.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^plan\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "runId": {
+      "type": "string",
+      "pattern": "^run\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "mode": { "const": "sequential" },
+    "failurePolicy": { "const": "stop" },
+    "reason": { "type": "string", "minLength": 12 },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "capability",
+          "authority",
+          "providerImplementation",
+          "input",
+          "inputBindings",
+          "reason"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^step\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+          },
+          "capability": { "type": "string", "minLength": 3 },
+          "authority": {
+            "type": "string",
+            "pattern": "^authority\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+          },
+          "providerImplementation": {
+            "type": "string",
+            "pattern": "^provider\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+          },
+          "input": { "type": "object" },
+          "inputBindings": {
+            "type": "array",
+            "maxItems": 10,
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "sourceStepId",
+                "sourcePath",
+                "targetPath",
+                "transform",
+                "onEmpty"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^binding\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+                },
+                "sourceStepId": {
+                  "type": "string",
+                  "pattern": "^step\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+                },
+                "sourcePath": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 16,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^(?:\\*|[A-Za-z][A-Za-z0-9]*)$"
+                  }
+                },
+                "targetPath": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 16,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z][A-Za-z0-9]*$"
+                  }
+                },
+                "transform": { "const": "unique-string-list" },
+                "onEmpty": { "enum": ["skip-step", "fail-plan"] }
+              }
+            }
+          },
+          "reason": { "type": "string", "minLength": 8 }
+        }
+      }
+    }
+  }
+}

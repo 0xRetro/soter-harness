@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/pack-settings/v1",
+  "title": "Soter pack-owned settings definition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "pack",
+    "version",
+    "required",
+    "schema",
+    "reason"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/pack-settings/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^settings\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "pack": {
+      "type": "string",
+      "pattern": "^(kernel|core|context|automation|integration)\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "required": { "type": "boolean" },
+    "schema": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "object" }
+      },
+      "additionalProperties": true
+    },
+    "reason": { "type": "string", "minLength": 12 }
+  }
+}

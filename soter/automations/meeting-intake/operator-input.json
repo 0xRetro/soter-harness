@@ -1,0 +1,39 @@
+{
+  "$contract": "soter://contracts/automation-input/v1",
+  "contractVersion": "1.0.0",
+  "id": "input.automation.meeting-intake",
+  "automation": "automation.meeting-intake",
+  "version": "1.0.0",
+  "fields": [
+    {
+      "id": "meeting",
+      "label": "Transcript meeting reference",
+      "description": "Provider meeting identifier used with the private recording reference to select one exact transcript.",
+      "type": "reference",
+      "required": true,
+      "exposure": "identifier",
+      "reference": { "subject": "meeting.transcript", "authorityRole": "provider" },
+      "constraints": { "minLength": 3, "maxLength": 120, "pattern": "^meeting\\.[a-z0-9]+(?:-[a-z0-9]+)*$" },
+      "examples": ["meeting.fixture-001"]
+    },
+    {
+      "id": "recordingUri",
+      "label": "Recording reference",
+      "description": "Private canonical recording URI used to identify the exact transcript source; preparation and later execution remain separately bounded.",
+      "type": "uri",
+      "required": true,
+      "exposure": "private",
+      "examples": ["otter://fixture/meeting.fixture-001"]
+    },
+    {
+      "id": "operatorGoal",
+      "label": "Desired outcome",
+      "description": "Optional private note reserved for later cited judgment; this contained preparation binds its fingerprint but does not interpret the raw value.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "maxLength": 500 }
+    }
+  ],
+  "additionalInputs": false
+}

@@ -1,0 +1,46 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "integration.otter",
+  "version": "0.1.0",
+  "layer": "integration",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Implements transcript-reading capability through a configured Otter provider without exposing transport details to automations.",
+  "dependencies": [
+    {
+      "pack": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Integration binding, effect policy, evidence, and health are supplied by Core."
+    }
+  ],
+  "capabilities": {
+    "requires": [],
+    "provides": [
+      { "id": "meeting.transcript.read", "version": "1.0.0" }
+    ]
+  },
+  "authorities": [
+    { "role": "provider", "subject": "meeting.transcript", "required": true }
+  ],
+  "effects": ["read", "disclosure"],
+  "artifacts": [
+    { "path": "soter/capabilities/meeting.transcript.read.json", "role": "definition" },
+    { "path": "soter/providers/provider.integration.otter.fixture.json", "role": "implementation" },
+    { "path": "soter/providers/provider.integration.otter.mcp.json", "role": "implementation" },
+    { "path": "soter/integrations/otter/fixture.mjs", "role": "implementation" },
+    { "path": "soter/integrations/otter/mcp.mjs", "role": "implementation" },
+    { "path": "soter/fixtures/providers/otter/transcripts.json", "role": "fixture" }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": ["codex", "claude"]
+  },
+  "verification": {
+    "maxLevel": "static",
+    "scenarios": [
+      "soter/scenarios/meeting-intake/happy-path.scenario.json"
+    ]
+  }
+}

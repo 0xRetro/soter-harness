@@ -1,0 +1,75 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "crm.records.update",
+  "version": "1.0.0",
+  "purpose": "Updates named fields on one typed CRM record through an expected-version precondition and explicit effect evidence.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "required": ["recordType", "id", "expectedVersion", "patch"],
+    "properties": {
+      "recordType": { "type": "string" },
+      "id": { "type": "string" },
+      "expectedVersion": { "type": "string" },
+      "patch": { "type": "object" }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "required": ["record", "changedFields", "provenance", "observedAt"],
+    "properties": {
+      "record": {
+        "type": "object",
+        "required": ["type", "id", "fields"],
+        "properties": {
+          "type": { "type": "string" },
+          "id": { "type": "string" },
+          "fields": { "type": "object" }
+        }
+      },
+      "changedFields": {
+        "type": "array",
+        "items": { "type": "string" }
+      },
+      "provenance": { "type": "object" },
+      "observedAt": { "type": "string" }
+    }
+  },
+  "authentication": {
+    "required": true,
+    "minimumScopes": ["records:write"]
+  },
+  "effects": ["write"],
+  "idempotency": {
+    "mode": "conditional",
+    "key": "recordType + id + expectedVersion + patch"
+  },
+  "retry": {
+    "safe": true,
+    "maxAttempts": 2,
+    "checkpoint": "Re-fetch the record and re-evaluate the patch after a version conflict."
+  },
+  "errors": [
+    "authentication",
+    "authorization",
+    "validation",
+    "conflict",
+    "rate-limit",
+    "unavailable",
+    "retryable",
+    "not-found",
+    "unknown"
+  ],
+  "freshness": {
+    "returnsProvenance": true,
+    "returnsObservedAt": true,
+    "maxAgeSeconds": null
+  },
+  "health": {
+    "check": "Validate a contained expected-version update against a fixture store.",
+    "fixture": "soter/scenarios/meeting-intake/happy-path.scenario.json",
+    "containedVerification": "Prove named-field preservation, version conflicts, retries, and returned effect evidence."
+  },
+  "providerLimitations": []
+}

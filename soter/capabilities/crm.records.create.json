@@ -1,0 +1,81 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "crm.records.create",
+  "version": "1.0.0",
+  "purpose": "Creates one typed CRM record through the selected provider using a required deduplication key and explicit effect evidence.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "required": ["recordType", "deduplicationKey", "fields"],
+    "properties": {
+      "recordType": { "type": "string" },
+      "deduplicationKey": { "type": "string" },
+      "deduplicationFilter": {
+        "type": "object",
+        "required": ["field", "value"],
+        "properties": {
+          "field": { "type": "string" },
+          "value": { "type": "string" }
+        }
+      },
+      "fields": { "type": "object" },
+      "body": { "type": ["string", "object", "null"] }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "required": ["record", "created", "provenance", "observedAt"],
+    "properties": {
+      "record": {
+        "type": "object",
+        "required": ["type", "id", "fields"],
+        "properties": {
+          "type": { "type": "string" },
+          "id": { "type": "string" },
+          "fields": { "type": "object" },
+          "body": { "type": ["string", "object", "null"] }
+        }
+      },
+      "created": { "type": "boolean" },
+      "provenance": { "type": "object" },
+      "observedAt": { "type": "string" }
+    }
+  },
+  "authentication": {
+    "required": true,
+    "minimumScopes": ["records:write"]
+  },
+  "effects": ["write"],
+  "idempotency": {
+    "mode": "conditional",
+    "key": "deduplicationKey"
+  },
+  "retry": {
+    "safe": true,
+    "maxAttempts": 2,
+    "checkpoint": "Persist the deduplication key and provider result before retry."
+  },
+  "errors": [
+    "authentication",
+    "authorization",
+    "validation",
+    "conflict",
+    "rate-limit",
+    "unavailable",
+    "retryable",
+    "not-found",
+    "unknown"
+  ],
+  "freshness": {
+    "returnsProvenance": true,
+    "returnsObservedAt": true,
+    "maxAgeSeconds": null
+  },
+  "health": {
+    "check": "Validate a contained create and deduplicated replay against a fixture store.",
+    "fixture": "soter/scenarios/meeting-intake/happy-path.scenario.json",
+    "containedVerification": "Prove one create, replay safety, normalized conflicts, and returned effect evidence."
+  },
+  "providerLimitations": []
+}

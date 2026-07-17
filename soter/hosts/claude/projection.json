@@ -1,0 +1,51 @@
+{
+  "$contract": "soter://contracts/host-projection-definition/v1",
+  "contractVersion": "1.0.0",
+  "id": "host-projection.claude",
+  "host": "claude",
+  "version": "0.1.0",
+  "generator": {
+    "id": "core.host-projection-generator",
+    "version": "1.0.0"
+  },
+  "target": {
+    "root": "consumer-root",
+    "pathPolicy": "normalized-relative",
+    "symlinkPolicy": "reject"
+  },
+  "ownership": {
+    "mode": "whole-file",
+    "collision": "reject-unmanaged",
+    "localEdit": "fail-closed",
+    "sharedOutput": "prohibited",
+    "retirement": "remove-managed"
+  },
+  "renderContext": ["configuration-id", "host-id", "pack-ids", "capability-ids"],
+  "outputs": [
+    {
+      "id": "output.claude.instructions",
+      "path": "CLAUDE.md",
+      "role": "instructions",
+      "template": "soter/hosts/claude/templates/CLAUDE.md.tmpl",
+      "encoding": "utf-8",
+      "newline": "lf",
+      "finalNewline": true,
+      "mode": "0644",
+      "renderContext": ["configuration-id", "host-id", "pack-ids", "capability-ids"]
+    },
+    {
+      "id": "output.claude.tools",
+      "path": ".claude/.mcp.json",
+      "role": "tools",
+      "template": "soter/hosts/claude/templates/mcp.json.tmpl",
+      "encoding": "utf-8",
+      "newline": "lf",
+      "finalNewline": true,
+      "mode": "0644",
+      "renderContext": ["host-id"]
+    }
+  ],
+  "limitations": [
+    "This definition projects local deterministic guidance and the Soter Core route only; legacy Claude skills, hooks, settings, and plugin files remain mapped migration inputs and are not silently adopted as generated outputs."
+  ]
+}

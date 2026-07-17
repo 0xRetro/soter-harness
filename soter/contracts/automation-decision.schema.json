@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/automation-decision/v1",
+  "title": "Soter durable automation decision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "automation",
+    "runId",
+    "createdAt",
+    "configurationLockFingerprint",
+    "graphFingerprint",
+    "context",
+    "producer",
+    "state",
+    "decisionType",
+    "payload",
+    "issues",
+    "privacy",
+    "decisionFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/automation-decision/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^decision\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "automation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^automation\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" }
+      }
+    },
+    "runId": { "type": "string", "pattern": "^run\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "configurationLockFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["snapshotId", "snapshotFingerprint"],
+      "properties": {
+        "snapshotId": {
+          "type": "string",
+          "pattern": "^context\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "snapshotFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "host"],
+      "properties": {
+        "kind": { "enum": ["host", "user", "fixture"] },
+        "id": { "type": "string", "minLength": 1 },
+        "host": {
+          "type": ["string", "null"],
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "host" } } },
+          "then": { "properties": { "host": { "type": "string" } } },
+          "else": { "properties": { "host": { "type": "null" } } }
+        }
+      ]
+    },
+    "state": { "enum": ["ready", "needs-input"] },
+    "decisionType": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "payload": { "type": "object", "minProperties": 1 },
+    "issues": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 12 }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "redactions"],
+      "properties": {
+        "scope": { "const": "private" },
+        "redactions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 12 }
+        }
+      }
+    },
+    "decisionFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "state": { "const": "ready" } } },
+      "then": { "properties": { "issues": { "maxItems": 0 } } },
+      "else": { "properties": { "issues": { "minItems": 1 } } }
+    }
+  ],
+  "$defs": {
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "$contract": "soter://contracts/evidence/v2",
+  "contractVersion": "2.0.0",
+  "id": "evidence.email-triage.resolution.fixture",
+  "createdAt": "2026-07-16T16:00:00.000Z",
+  "claimFamily": "graph",
+  "claim": "The desired configuration resolves to this exact, internally valid artifact graph.",
+  "subject": {
+    "type": "configuration",
+    "id": "email-triage",
+    "version": null
+  },
+  "configurationLockFingerprint": "sha256:add4d07ce6c1da89824146afdc1ee8edfde726932a145832b04bfb5d5199996e",
+  "graphFingerprint": "sha256:c4793e893280340abef043b6d01ed2b2a1621298be489b3634f20702def1434f",
+  "dependencies": [
+    {
+      "id": "kernel.soter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:7dd914aec75b2f0ca2c41acccfdca91e80fec1adbb38a1f89f661369f2375773"
+    },
+    {
+      "id": "core.runtime",
+      "version": "0.1.0",
+      "fingerprint": "sha256:a15e2ac2a1ac6f8af08c3353f8a675b2c94131abd60ddbdd168f8dac521f2d04"
+    },
+    {
+      "id": "context.email",
+      "version": "0.1.0",
+      "fingerprint": "sha256:2520d63057787b0d5887407ea6e48f82225c0e49d47509074c7610877f0af647"
+    },
+    {
+      "id": "automation.email-triage",
+      "version": "0.1.0",
+      "fingerprint": "sha256:bf1c8e58e86356a04443e84a3308aef7e88cf9da51e0ff8b4e2b14298b524a26"
+    },
+    {
+      "id": "integration.gmail",
+      "version": "0.1.0",
+      "fingerprint": "sha256:ee4a8da441382963fd5435c0b2d0112eba00a98c00ed81c2f8d6bed9df37299d"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.1.0",
+    "manifestFingerprint": "sha256:e91f3329631a3900000796a3cd54b2ba02f4aa3d0d728f9a2da40ff06b211fd0"
+  },
+  "integrations": [
+    {
+      "id": "integration.gmail",
+      "version": "0.1.0",
+      "manifestFingerprint": "sha256:ee4a8da441382963fd5435c0b2d0112eba00a98c00ed81c2f8d6bed9df37299d",
+      "evidenceMaturity": "declared"
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.gmail.provider",
+      "role": "provider",
+      "subject": "gmail.account",
+      "declarationFingerprint": "sha256:5142aaa4b006cdb65b90b40f2fcca7939e8ff5c68674d9d349ce017c103b4d4f"
+    },
+    {
+      "id": "authority.mail.definition",
+      "role": "definition",
+      "subject": "mail.processing",
+      "declarationFingerprint": "sha256:6ad65b455c19f6c64fb13d12d0b7d9fbae4de3a1f09661696acd4f8c8c411273"
+    },
+    {
+      "id": "authority.mailbox.instance",
+      "role": "instance",
+      "subject": "mail.mailbox",
+      "declarationFingerprint": "sha256:42f8015a7be1af3e04580ca475e91e9cbfa113bf1b782b6e0f33376a61b12d33"
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "declarationFingerprint": "sha256:dedfa34444ef6f06fdf8796e903f8c085009564339efce087f663abdd91d299b"
+    }
+  ],
+  "evaluator": {
+    "id": "core.resolver",
+    "version": "0.5.0",
+    "level": "graph"
+  },
+  "environment": {
+    "containment": "offline",
+    "runtime": "node"
+  },
+  "acceptanceCriteria": [
+    "Kernel validation reports no graph errors.",
+    "Every selected pack, capability, host projection, authority, and policy is fingerprinted.",
+    "Resolving unchanged inputs produces the same configuration lock fingerprint.",
+    "Credential references and values are absent from the lock."
+  ],
+  "result": "passed",
+  "outcomes": [
+    {
+      "id": "configuration.graph-resolved",
+      "state": "passed"
+    },
+    {
+      "id": "configuration.lock-deterministic",
+      "state": "passed"
+    },
+    {
+      "id": "configuration.lock-secret-free",
+      "state": "passed"
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "configuration",
+      "path": "soter/configurations/email-triage.config.json",
+      "fingerprint": "sha256:1fd66c49bbb4c4db00eaa70db68f00b55e670af5d3d8f8c002f3e0abaaee7d39"
+    },
+    {
+      "role": "configuration-lock",
+      "fingerprint": "sha256:add4d07ce6c1da89824146afdc1ee8edfde726932a145832b04bfb5d5199996e"
+    }
+  ],
+  "effects": [],
+  "failures": [],
+  "warnings": [],
+  "skipped": [
+    "Host authentication and reachability were not checked offline.",
+    "Integration capabilities were not invoked.",
+    "Automation outcomes and external effects were not evaluated."
+  ],
+  "limitations": [
+    "This evidence establishes graph validity and reproducibility only; it does not establish readiness, behavior verification, or live health."
+  ],
+  "freshness": {
+    "policy": "Valid only while every configuration-lock fingerprint remains unchanged.",
+    "validUntil": null
+  },
+  "supersedes": null,
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Credential references and credential values are excluded."
+    ]
+  }
+}

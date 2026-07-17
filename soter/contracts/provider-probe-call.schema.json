@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/provider-probe-call/v1",
+  "title": "Soter host-dispatched provider probe call",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "probeId",
+    "createdAt",
+    "completedAt",
+    "state",
+    "configurationLockFingerprint",
+    "graphFingerprint",
+    "host",
+    "provider",
+    "plan",
+    "validForSeconds",
+    "transport",
+    "arguments",
+    "argumentsFingerprint",
+    "responseFingerprint",
+    "probeFingerprint",
+    "error",
+    "secretValuesExcluded"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/provider-probe-call/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^probecall\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "probeId": {
+      "type": "string",
+      "pattern": "^probe\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "completedAt": { "type": ["string", "null"], "minLength": 20 },
+    "state": { "enum": ["requested", "completed", "failed"] },
+    "configurationLockFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "adapter", "version"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "adapter": { "type": "string", "minLength": 1 },
+        "version": { "$ref": "#/$defs/version" }
+      }
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pack", "implementation", "version", "containment"],
+      "properties": {
+        "pack": { "type": "string", "minLength": 3 },
+        "implementation": {
+          "type": "string",
+          "pattern": "^provider\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "version": { "$ref": "#/$defs/version" },
+        "containment": { "const": "connected" }
+      }
+    },
+    "plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["credentialRefs", "authorities", "capabilities"],
+      "properties": {
+        "credentialRefs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^secret-ref\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+          }
+        },
+        "authorities": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^authority\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+          }
+        },
+        "capabilities": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 3 }
+        }
+      }
+    },
+    "validForSeconds": { "type": "integer", "minimum": 60, "maximum": 900 },
+    "transport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protocol", "server", "operation", "tool"],
+      "properties": {
+        "protocol": { "const": "mcp" },
+        "server": { "type": "string", "minLength": 1 },
+        "operation": { "type": ["string", "null"], "minLength": 1 },
+        "tool": { "type": ["string", "null"], "minLength": 1 }
+      }
+    },
+    "arguments": { "type": ["object", "null"] },
+    "argumentsFingerprint": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "responseFingerprint": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "probeFingerprint": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "error": { "type": ["object", "null"] },
+    "secretValuesExcluded": { "const": true }
+  },
+  "$defs": {
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

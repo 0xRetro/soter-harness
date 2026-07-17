@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/automation-proposal-material/v1",
+  "title": "Soter selected private Automation proposal material",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "createdAt", "proposal", "decision",
+    "automation", "configuration", "reviewContractId", "reviewContractFingerprint",
+    "applicability", "kind", "contentFingerprint", "items", "authority",
+    "privacy", "fingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/automation-proposal-material/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "proposal": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "fingerprint"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^proposal\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "decision": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "fingerprint"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^decision\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "automation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^automation\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" }
+      }
+    },
+    "configuration": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "lockFingerprint", "graphFingerprint"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "lockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "graphFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "reviewContractId": { "const": "soter://contracts/automation-derived-review/v1" },
+    "reviewContractFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "applicability": { "enum": ["current", "stale"] },
+    "kind": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "contentFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "items": {
+      "type": "array", "maxItems": 500, "uniqueItems": true,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "kind", "sources", "fields", "fingerprint"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^review-item\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+          "kind": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+          "sources": {
+            "type": "array", "minItems": 1, "uniqueItems": true,
+            "items": {
+              "type": "object", "additionalProperties": false,
+              "required": ["collectionId", "rowId", "rowFingerprint"],
+              "properties": {
+                "collectionId": { "type": "string", "pattern": "^collection\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+                "rowId": { "type": "string", "pattern": "^row\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+                "rowFingerprint": { "$ref": "#/$defs/fingerprint" }
+              }
+            }
+          },
+          "fields": {
+            "type": "array", "minItems": 1, "uniqueItems": true,
+            "items": {
+              "type": "object", "additionalProperties": false,
+              "required": ["id", "label", "type", "reviewValue", "fingerprint"],
+              "properties": {
+                "id": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$" },
+                "label": { "type": "string", "minLength": 1, "maxLength": 160 },
+                "type": { "enum": ["text", "string-list", "boolean"] },
+                "reviewValue": {
+                  "oneOf": [
+                    { "type": "string", "minLength": 1, "maxLength": 50000 },
+                    { "type": "boolean" },
+                    {
+                      "type": "array", "minItems": 1, "maxItems": 500,
+                      "uniqueItems": true,
+                      "items": { "type": "string", "minLength": 1, "maxLength": 2000 }
+                    }
+                  ]
+                },
+                "fingerprint": { "$ref": "#/$defs/fingerprint" }
+              }
+            }
+          },
+          "fingerprint": { "$ref": "#/$defs/fingerprint" }
+        }
+      }
+    },
+    "authority": {
+      "type": "object", "additionalProperties": false,
+      "required": ["state", "reasonCode"],
+      "properties": {
+        "state": { "const": "none" },
+        "reasonCode": { "const": "AUTOMATION_PROPOSAL_MATERIAL_REVIEW_ONLY" }
+      }
+    },
+    "privacy": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "scope", "projection", "rawProviderResponsesIncluded",
+        "credentialValuesIncluded", "workspaceInspectionIncluded",
+        "evidenceIncluded", "canonicalArtifactsIncluded"
+      ],
+      "properties": {
+        "scope": { "const": "private-local-automation-proposal" },
+        "projection": { "const": "selected-proposal-only" },
+        "rawProviderResponsesIncluded": { "const": false },
+        "credentialValuesIncluded": { "const": false },
+        "workspaceInspectionIncluded": { "const": false },
+        "evidenceIncluded": { "const": false },
+        "canonicalArtifactsIncluded": { "const": false }
+      }
+    },
+    "fingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+  }
+}

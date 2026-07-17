@@ -1,0 +1,27 @@
+{
+  "$contract": "soter://contracts/capability-provider/v1",
+  "contractVersion": "1.0.0",
+  "id": "provider.integration.otter.fixture",
+  "pack": "integration.otter",
+  "version": "0.1.0",
+  "containment": "fixture",
+  "runtime": {
+    "engine": "node",
+    "module": "soter/integrations/otter/fixture.mjs",
+    "export": "invoke"
+  },
+  "capabilities": [
+    { "id": "meeting.transcript.read", "version": "1.0.0" }
+  ],
+  "authorities": [
+    { "role": "provider", "subject": "meeting.transcript" }
+  ],
+  "effects": ["read", "disclosure"],
+  "mappings": [],
+  "fixtures": [
+    "soter/fixtures/providers/otter/transcripts.json"
+  ],
+  "limitations": [
+    "Reads deterministic local transcripts only; it does not authenticate to or represent the current state of an Otter account."
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "integration.notion",
+  "version": "0.1.0",
+  "layer": "integration",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Implements portable CRM record capabilities through a configured Notion workspace and explicit schema mappings.",
+  "dependencies": [
+    {
+      "pack": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Integration binding, effect policy, evidence, and health are supplied by Core."
+    },
+    {
+      "pack": "context.crm",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Notion maps provider fields into the canonical portable CRM record model owned by Context."
+    }
+  ],
+  "capabilities": {
+    "requires": [],
+    "provides": [
+      { "id": "crm.records.read", "version": "1.0.0" },
+      { "id": "crm.records.create", "version": "1.0.0" },
+      { "id": "crm.records.update", "version": "1.0.0" },
+      { "id": "documents.content.read", "version": "1.0.0" }
+    ]
+  },
+  "authorities": [
+    { "role": "provider", "subject": "notion.workspace", "required": true },
+    { "role": "instance", "subject": "crm.records", "required": true }
+  ],
+  "effects": ["read", "disclosure", "write"],
+  "artifacts": [
+    { "path": "soter/capabilities/crm.records.read.json", "role": "definition" },
+    { "path": "soter/capabilities/crm.records.create.json", "role": "definition" },
+    { "path": "soter/capabilities/crm.records.update.json", "role": "definition" },
+    { "path": "soter/capabilities/documents.content.read.json", "role": "definition" },
+    { "path": "soter/providers/provider.integration.notion.fixture.json", "role": "implementation" },
+    { "path": "soter/integrations/notion/fixture.mjs", "role": "implementation" },
+    { "path": "soter/integrations/notion/settings.json", "role": "definition" },
+    { "path": "soter/integrations/notion/crm-records.mapping.json", "role": "definition" },
+    { "path": "soter/providers/provider.integration.notion.mcp.json", "role": "implementation" },
+    { "path": "soter/integrations/notion/mcp.mjs", "role": "implementation" },
+    { "path": "soter/fixtures/providers/notion/crm-records.json", "role": "fixture" }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": ["codex", "claude"]
+  },
+  "verification": {
+    "maxLevel": "static",
+    "scenarios": [
+      "soter/scenarios/meeting-intake/happy-path.scenario.json"
+    ]
+  }
+}

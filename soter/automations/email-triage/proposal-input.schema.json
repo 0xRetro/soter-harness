@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://automations/email-triage/proposal-input/v1",
+  "title": "Email triage private proposal input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["candidates", "digestBody"],
+  "properties": {
+    "candidates": {
+      "type": "array",
+      "maxItems": 50,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["candidateId", "draftBody", "taskHandoff", "updateHandoff"],
+        "properties": {
+          "candidateId": {
+            "type": "string",
+            "pattern": "^candidate\\.email\\.[a-f0-9]{24}$"
+          },
+          "draftBody": { "type": ["string", "null"], "minLength": 1, "maxLength": 50000 },
+          "taskHandoff": {
+            "oneOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["title", "detail", "context"],
+                "properties": {
+                  "title": { "type": "string", "minLength": 1, "maxLength": 500 },
+                  "detail": { "type": "string", "minLength": 1, "maxLength": 10000 },
+                  "context": { "enum": ["Internal", "Service", "Project", "Client"] }
+                }
+              }
+            ]
+          },
+          "updateHandoff": {
+            "oneOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["recordReference", "detail"],
+                "properties": {
+                  "recordReference": { "type": "string", "minLength": 1, "maxLength": 2000 },
+                  "detail": { "type": "string", "minLength": 1, "maxLength": 10000 }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "digestBody": { "type": "string", "minLength": 1, "maxLength": 50000 }
+  }
+}

@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://automations/meeting-intake/decision/v1",
+  "title": "Meeting-intake grounded decision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "automation",
+    "runId",
+    "createdAt",
+    "configurationLockFingerprint",
+    "graphFingerprint",
+    "context",
+    "producer",
+    "state",
+    "decisionType",
+    "payload",
+    "issues",
+    "privacy",
+    "decisionFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/automation-decision/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^decision\\.meeting-intake\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "automation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "const": "automation.meeting-intake" },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" }
+      }
+    },
+    "runId": { "type": "string", "pattern": "^run\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "configurationLockFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["snapshotId", "snapshotFingerprint"],
+      "properties": {
+        "snapshotId": {
+          "type": "string",
+          "pattern": "^context\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "snapshotFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "host"],
+      "properties": {
+        "kind": { "enum": ["host", "user", "fixture"] },
+        "id": { "type": "string", "minLength": 1 },
+        "host": {
+          "type": ["string", "null"],
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "host" } } },
+          "then": { "properties": { "host": { "type": "string" } } },
+          "else": { "properties": { "host": { "type": "null" } } }
+        }
+      ]
+    },
+    "state": { "enum": ["ready", "needs-input"] },
+    "decisionType": { "const": "meeting-intake.grounded-outcome" },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["meeting", "transcript", "summary", "tasks", "policies", "limitations"],
+      "properties": {
+        "meeting": { "$ref": "#/$defs/recordReference" },
+        "transcript": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["contextEntryId", "entryFingerprint"],
+          "properties": {
+            "contextEntryId": { "type": "string", "minLength": 1 },
+            "entryFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        "summary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["title", "segmentReferences"],
+          "properties": {
+            "title": { "type": "string", "minLength": 3 },
+            "segmentReferences": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/segmentReference" }
+            }
+          }
+        },
+        "tasks": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "recordId",
+              "recordFingerprint",
+              "disposition",
+              "reason",
+              "segmentReferences"
+            ],
+            "properties": {
+              "recordId": { "type": "string", "minLength": 1 },
+              "recordFingerprint": { "$ref": "#/$defs/fingerprint" },
+              "disposition": { "enum": ["fold", "ignore", "review"] },
+              "reason": { "type": "string", "minLength": 20 },
+              "segmentReferences": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": { "$ref": "#/$defs/segmentReference" }
+              }
+            }
+          }
+        },
+        "policies": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "contextEntryId",
+              "entryFingerprint",
+              "sourceId",
+              "outcome",
+              "reason",
+              "citations"
+            ],
+            "properties": {
+              "contextEntryId": { "type": "string", "minLength": 1 },
+              "entryFingerprint": { "$ref": "#/$defs/fingerprint" },
+              "sourceId": {
+                "type": "string",
+                "pattern": "^source\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+              },
+              "outcome": { "enum": ["allow", "block", "review"] },
+              "reason": { "type": "string", "minLength": 20 },
+              "citations": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["quote", "quoteFingerprint"],
+                  "properties": {
+                    "quote": { "type": "string", "minLength": 3 },
+                    "quoteFingerprint": { "$ref": "#/$defs/fingerprint" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 12 }
+        }
+      }
+    },
+    "issues": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 12 }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "redactions"],
+      "properties": {
+        "scope": { "const": "private" },
+        "redactions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 12 }
+        }
+      }
+    },
+    "decisionFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "state": { "const": "ready" } } },
+      "then": { "properties": { "issues": { "maxItems": 0 } } },
+      "else": { "properties": { "issues": { "minItems": 1 } } }
+    }
+  ],
+  "$defs": {
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "recordReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["recordId", "recordFingerprint"],
+      "properties": {
+        "recordId": { "type": "string", "minLength": 1 },
+        "recordFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "segmentReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["index", "segmentFingerprint"],
+      "properties": {
+        "index": { "type": "integer", "minimum": 0 },
+        "segmentFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    }
+  }
+}

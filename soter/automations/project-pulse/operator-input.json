@@ -1,0 +1,30 @@
+{
+  "$contract": "soter://contracts/automation-input/v1",
+  "contractVersion": "1.0.0",
+  "id": "input.automation.project-pulse",
+  "automation": "automation.project-pulse",
+  "version": "1.0.0",
+  "fields": [
+    {
+      "id": "project",
+      "label": "Project reference",
+      "description": "Identifier of the authoritative project to ground in the contained record fixture.",
+      "type": "reference",
+      "required": true,
+      "exposure": "identifier",
+      "reference": { "subject": "crm.records.project", "authorityRole": "instance" },
+      "constraints": { "minLength": 3, "maxLength": 120, "pattern": "^project\\.[a-z0-9]+(?:-[a-z0-9]+)*$" },
+      "examples": ["project.pulse-healthy", "project.pulse-risk", "project.pulse-sparse"]
+    },
+    {
+      "id": "operatorGoal",
+      "label": "Operator note",
+      "description": "Optional private operator intent; Core fingerprints it for the receipt and never stores or projects the raw value.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "maxLength": 500 }
+    }
+  ],
+  "additionalInputs": false
+}

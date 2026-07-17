@@ -1,0 +1,48 @@
+{
+  "$contract": "soter://contracts/capability-provider/v1",
+  "contractVersion": "1.0.0",
+  "id": "provider.integration.notion.mcp",
+  "pack": "integration.notion",
+  "version": "0.1.0",
+  "containment": "connected",
+  "runtime": {
+    "engine": "mcp",
+    "module": "soter/integrations/notion/mcp.mjs",
+    "prepareExport": "prepareMcp",
+    "completeExport": "completeMcp",
+    "probePrepareExport": "prepareProbeMcp",
+    "probeCompleteExport": "completeProbeMcp",
+    "probePlanExport": "prepareProbePlanMcp",
+    "probeStepCompleteExport": "completeProbePlanStepMcp",
+    "probeFinalizeExport": "finalizeProbePlanMcp",
+    "server": "notion",
+    "tools": ["fetch", "query_data_sources", "create_pages", "update_page"],
+    "probeTools": ["fetch", "query_data_sources"]
+  },
+  "capabilities": [
+    { "id": "crm.records.read", "version": "1.0.0" },
+    { "id": "crm.records.create", "version": "1.0.0" },
+    { "id": "crm.records.update", "version": "1.0.0" },
+    { "id": "documents.content.read", "version": "1.0.0" }
+  ],
+  "authorities": [
+    { "role": "definition", "subject": "crm.records" },
+    { "role": "instance", "subject": "crm.records" },
+    { "role": "provider", "subject": "notion.workspace" }
+  ],
+  "effects": ["read", "disclosure", "write"],
+  "mappings": [
+    "soter/integrations/notion/crm-records.mapping.json"
+  ],
+  "fixtures": [],
+  "limitations": [
+    "Create and update translation is limited to explicitly mapped fields and record-level capability scopes. Generic capability preparation still blocks writes; an approval-bound operation batch must establish deduplication or expected-version preconditions, verification, and recovery before Core may emit either tool.",
+    "The connector exposes no delete compensation for a newly created page. Core therefore permits at most one deduplicated create as the final batch effect, verifies its exact record fields and content through reads, and pauses ambiguous outcomes without retrying or deleting.",
+    "Each connected record read accepts exactly one portable record type so it uses one Notion data source per host call. Cross-data-source SQL is plan-gated and is not a portable execution assumption.",
+    "Connected readiness uses an explicit private sequence: authenticated identity, exact schema metadata and one bounded mapped query for each configured target, plus one exact read for every portable document source marked probe-read. A zero-row result establishes query and empty-envelope compatibility but not non-null value decoding; document bodies are discarded before minimized observations persist.",
+    "Meeting-intake context can follow only mapped organization, project, and task page URIs observed in prior normalized records. Empty relations skip without a provider call, and related results outside the exact requested type, IDs, filters, or limit fail closed.",
+    "Meeting participant values are provider People IDs and are not assumed to identify CRM contact pages; participant expansion requires a separate identity contract.",
+    "Document bodies are fetched only by exact configured page identity and expected title; the adapter returns bounded normalized content but does not interpret policy rules or establish that a write behaved correctly without transaction-bound read-back evidence.",
+    "Native provider responses and connected identity values must remain private and are never persisted by Core."
+  ]
+}

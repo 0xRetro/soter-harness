@@ -1,0 +1,132 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "mail.window.read",
+  "version": "1.0.0",
+  "purpose": "Reads one explicit bounded mailbox query and returns provider-neutral thread and message identities for private reduction.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["query", "maximumThreads"],
+    "properties": {
+      "query": { "type": "string", "minLength": 1, "maxLength": 1000 },
+      "maximumThreads": { "type": "integer", "minimum": 1, "maximum": 100 }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["queryFingerprint", "returnedThreadCount", "threads", "provenance", "observedAt"],
+    "properties": {
+      "queryFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+      "returnedThreadCount": { "type": "integer", "minimum": 0, "maximum": 100 },
+      "threads": {
+        "type": "array",
+        "maxItems": 100,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "labels", "triagedAt", "messages"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1, "maxLength": 500 },
+            "labels": {
+              "type": "array", "maxItems": 100, "uniqueItems": true,
+              "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+            },
+            "triagedAt": {
+              "type": ["string", "null"],
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z$"
+            },
+            "messages": {
+              "type": "array", "maxItems": 500,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id", "rfc822MessageId", "from", "to", "sentAt", "labels",
+                  "subject", "body", "signals"
+                ],
+                "properties": {
+                  "id": { "type": "string", "minLength": 1, "maxLength": 500 },
+                  "rfc822MessageId": { "type": "string", "minLength": 1, "maxLength": 1000 },
+                  "from": { "type": "string", "minLength": 1, "maxLength": 1000 },
+                  "to": {
+                    "type": "array", "maxItems": 500,
+                    "items": { "type": "string", "minLength": 1, "maxLength": 1000 }
+                  },
+                  "sentAt": {
+                    "type": "string",
+                    "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z$"
+                  },
+                  "labels": {
+                    "type": "array", "maxItems": 100, "uniqueItems": true,
+                    "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+                  },
+                  "subject": { "type": "string", "maxLength": 10000 },
+                  "body": { "type": "string", "maxLength": 1000000 },
+                  "signals": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "replyRequested", "money", "legalOrCompliance",
+                      "calendarResponse", "meetingNotes", "machineNotification",
+                      "actionableFailure", "marketing", "adminBilling",
+                      "suspectedInjection", "summaryCode"
+                    ],
+                    "properties": {
+                      "replyRequested": { "type": "boolean" },
+                      "money": { "type": "boolean" },
+                      "legalOrCompliance": { "type": "boolean" },
+                      "calendarResponse": { "enum": ["none", "accepted", "invitation"] },
+                      "meetingNotes": { "type": "boolean" },
+                      "machineNotification": { "type": "boolean" },
+                      "actionableFailure": { "type": "boolean" },
+                      "marketing": { "type": "boolean" },
+                      "adminBilling": { "type": "boolean" },
+                      "suspectedInjection": { "type": "boolean" },
+                      "summaryCode": {
+                        "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$", "maxLength": 120
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "provenance": {
+        "type": "object", "additionalProperties": false,
+        "required": ["provider", "authority", "sourceKind", "sourceReferenceFingerprint"],
+        "properties": {
+          "provider": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "authority": { "type": "string", "minLength": 1, "maxLength": 500 },
+          "sourceKind": { "enum": ["fixture", "connected"] },
+          "sourceReferenceFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        }
+      },
+      "observedAt": {
+        "type": "string",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z$"
+      }
+    }
+  },
+  "authentication": { "required": true, "minimumScopes": ["mail:read"] },
+  "effects": ["read", "disclosure"],
+  "idempotency": { "mode": "not-applicable", "key": null },
+  "retry": { "safe": true, "maxAttempts": 3, "checkpoint": null },
+  "errors": [
+    "authentication", "authorization", "validation", "conflict", "rate-limit",
+    "unavailable", "retryable", "not-found", "unknown"
+  ],
+  "freshness": { "returnsProvenance": true, "returnsObservedAt": true, "maxAgeSeconds": 300 },
+  "health": {
+    "check": "Read one deterministic contained mailbox window through the selected provider binding.",
+    "fixture": "soter/scenarios/email-triage/happy-path.scenario.json",
+    "containedVerification": "Prove bounded query reduction, identity deduplication, sibling filtering, triage freshness, and zero writes."
+  },
+  "providerLimitations": [
+    "Raw thread content is private transient input to the Automation and must not enter prepared-work, context snapshots, evidence, diagnostics, or workspace inspection."
+  ]
+}

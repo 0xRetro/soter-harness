@@ -1,0 +1,38 @@
+{
+  "$contract": "soter://contracts/pack-settings/v1",
+  "contractVersion": "1.0.0",
+  "id": "settings.integration.gmail",
+  "pack": "integration.gmail",
+  "version": "0.1.0",
+  "required": true,
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["selfAddresses", "labels"],
+    "properties": {
+      "selfAddresses": {
+        "type": "array", "minItems": 1, "maxItems": 20, "uniqueItems": true,
+        "items": { "type": "string", "minLength": 3, "maxLength": 320 }
+      },
+      "labels": {
+        "type": "object", "additionalProperties": false,
+        "required": [
+          "needsYou", "highStakes", "rsvpPending", "meetingNotes",
+          "notifications", "adminBilling", "marketing", "needsReview", "triaged"
+        ],
+        "properties": {
+          "needsYou": { "type": "string", "pattern": "^AI/" },
+          "highStakes": { "type": "string", "pattern": "^AI/" },
+          "rsvpPending": { "type": "string", "pattern": "^AI/" },
+          "meetingNotes": { "type": "string", "pattern": "^AI/" },
+          "notifications": { "type": "string", "pattern": "^AI/" },
+          "adminBilling": { "type": "string", "pattern": "^AI/" },
+          "marketing": { "type": "string", "pattern": "^AI/" },
+          "needsReview": { "type": "string", "pattern": "^AI/" },
+          "triaged": { "const": "AI/Triaged" }
+        }
+      }
+    }
+  },
+  "reason": "Email reduction requires exact self identities and a configured AI-only label namespace without treating provider flags as policy."
+}

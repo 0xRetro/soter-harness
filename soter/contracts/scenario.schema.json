@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/scenario/v1",
+  "title": "Soter behavior scenario",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "automation",
+    "intent",
+    "input",
+    "expected",
+    "sourceCases"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/scenario/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "automation": { "type": "string", "pattern": "^automation\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "intent": { "enum": ["inspect", "operate", "configure", "develop"] },
+    "input": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "expected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "capabilityOrder",
+        "effectModes",
+        "outcomes",
+        "invariants",
+        "evidence"
+      ],
+      "properties": {
+        "capabilityOrder": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 3 }
+        },
+        "effectModes": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "read": { "enum": ["allow", "confirm", "prohibit"] },
+            "disclosure": { "enum": ["allow", "confirm", "prohibit"] },
+            "write": { "enum": ["allow", "confirm", "prohibit"] },
+            "dispatch": { "enum": ["allow", "confirm", "prohibit"] },
+            "destructive": { "enum": ["allow", "confirm", "prohibit"] }
+          }
+        },
+        "outcomes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 3 }
+        },
+        "invariants": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 3 }
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 3 }
+        }
+      }
+    },
+    "sourceCases": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

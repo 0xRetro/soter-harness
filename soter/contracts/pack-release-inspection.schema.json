@@ -1,0 +1,315 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/pack-release-inspection/v1",
+  "title": "Soter sanitized pack release inspection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "kind", "release", "integrity",
+    "sourceComparison", "provenance", "packageIntent", "legal", "trust",
+    "inventory", "constraints", "evidenceReferences", "claims", "authority",
+    "privacy", "limitations", "inspectionFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/pack-release-inspection/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "kind": { "const": "pack-release" },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "version", "layer", "releaseStage", "evidenceMaturity",
+        "summary", "capsuleDigest", "createdAt", "generator",
+        "manifestFingerprint", "sourceInputFingerprint"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/packId" },
+        "version": { "$ref": "#/$defs/version" },
+        "layer": { "enum": ["kernel", "core", "context", "automation", "integration"] },
+        "releaseStage": { "enum": ["experimental", "preview", "stable", "deprecated"] },
+        "evidenceMaturity": { "enum": ["declared", "fixture-proven", "contained-proven", "live-proven"] },
+        "summary": { "type": "string", "minLength": 20 },
+        "capsuleDigest": { "$ref": "#/$defs/fingerprint" },
+        "createdAt": { "type": "string", "minLength": 20 },
+        "generator": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "version", "fingerprint"],
+          "properties": {
+            "id": { "const": "kernel.soter.pack-release" },
+            "version": { "const": "1.0.0" },
+            "fingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        "manifestFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "sourceInputFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "reasonCode", "inventoryFingerprint"],
+      "properties": {
+        "state": { "const": "passed" },
+        "reasonCode": { "const": "PACK_RELEASE_BYTES_VERIFIED" },
+        "inventoryFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "sourceComparison": {
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["state", "reasonCode"],
+          "properties": { "state": { "const": "passed" }, "reasonCode": { "const": "PACK_RELEASE_SOURCE_MATCH" } }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["state", "reasonCode"],
+          "properties": { "state": { "const": "failed" }, "reasonCode": { "const": "PACK_RELEASE_SOURCE_MISMATCH" } }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["state", "reasonCode"],
+          "properties": { "state": { "const": "unknown" }, "reasonCode": { "const": "PACK_RELEASE_SOURCE_NOT_EVALUATED" } }
+        }
+      ]
+    },
+    "provenance": { "$ref": "#/$defs/provenance" },
+    "packageIntent": { "$ref": "#/$defs/packageIntent" },
+    "legal": { "$ref": "#/$defs/legal" },
+    "trust": { "$ref": "#/$defs/trust" },
+    "inventory": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/inventoryEntry" }
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dependencies", "capabilities", "authorities", "effects", "compatibility"],
+      "properties": {
+        "dependencies": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/dependency" } },
+        "capabilities": { "$ref": "#/$defs/capabilities" },
+        "authorities": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/authorityRequirement" } },
+        "effects": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/effect" } },
+        "compatibility": { "$ref": "#/$defs/compatibility" }
+      }
+    },
+    "evidenceReferences": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/evidenceReference" }
+    },
+    "claims": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "localReleaseBytes", "dependencyResolution", "installed", "configured",
+        "ready", "verified", "healthy", "networkAvailability",
+        "publisherIdentity", "publicationAuthority", "redistributionAuthority",
+        "marketplaceEligibility", "trust"
+      ],
+      "properties": {
+        "localReleaseBytes": { "const": "passed" },
+        "dependencyResolution": { "const": "not-evaluated" },
+        "installed": { "const": "unknown" },
+        "configured": { "const": "unknown" },
+        "ready": { "const": "unknown" },
+        "verified": { "const": "unknown" },
+        "healthy": { "const": "unknown" },
+        "networkAvailability": { "const": "unknown" },
+        "publisherIdentity": { "const": "not-evaluated" },
+        "publicationAuthority": { "const": "not-evaluated" },
+        "redistributionAuthority": { "const": "not-evaluated" },
+        "marketplaceEligibility": { "const": "not-evaluated" },
+        "trust": { "const": "not-evaluated" }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["install", "configure", "realizeHost", "publish", "redistribute", "marketplace", "trust"],
+      "properties": {
+        "install": { "const": false },
+        "configure": { "const": false },
+        "realizeHost": { "const": false },
+        "publish": { "const": false },
+        "redistribute": { "const": false },
+        "marketplace": { "const": false },
+        "trust": { "const": false }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "capsuleBytesIncluded", "sourceRootIncluded", "privateStateIncluded",
+        "credentialValuesIncluded", "rawProviderResponsesIncluded",
+        "activeConfigurationIncluded"
+      ],
+      "properties": {
+        "capsuleBytesIncluded": { "const": false },
+        "sourceRootIncluded": { "const": false },
+        "privateStateIncluded": { "const": false },
+        "credentialValuesIncluded": { "const": false },
+        "rawProviderResponsesIncluded": { "const": false },
+        "activeConfigurationIncluded": { "const": false }
+      }
+    },
+    "limitations": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/limitation" } },
+    "inspectionFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "nullableFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+    "version": { "type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$" },
+    "versionRange": { "type": "string", "pattern": "^(\\^|~|>=|<=|>|<)?(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$" },
+    "packId": { "type": "string", "pattern": "^(kernel|core|context|automation|integration)\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "effect": { "enum": ["read", "disclosure", "write", "dispatch", "destructive"] },
+    "provenance": {
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "revision", "remoteLocatorFingerprint", "exactInputState", "inputFingerprint", "reproducibilityClaim"],
+          "properties": {
+            "kind": { "const": "git" },
+            "revision": { "type": "string", "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$" },
+            "remoteLocatorFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+            "exactInputState": { "enum": ["clean", "dirty", "unknown"] },
+            "inputFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "reproducibilityClaim": { "const": "contained-determinism-only" }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "revision", "remoteLocatorFingerprint", "exactInputState", "inputFingerprint", "reproducibilityClaim"],
+          "properties": {
+            "kind": { "const": "filesystem" }, "revision": { "const": null },
+            "remoteLocatorFingerprint": { "const": null }, "exactInputState": { "const": "unknown" },
+            "inputFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "reproducibilityClaim": { "const": "contained-determinism-only" }
+          }
+        }
+      ]
+    },
+    "packageIntent": {
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["state", "private", "sourceFingerprint", "interpretation"],
+          "properties": {
+            "state": { "const": "present" }, "private": { "type": "boolean" },
+            "sourceFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "interpretation": { "const": "packaging-intent-only" }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["state", "private", "sourceFingerprint", "interpretation"],
+          "properties": {
+            "state": { "const": "absent" }, "private": { "const": null },
+            "sourceFingerprint": { "const": null }, "interpretation": { "const": "packaging-intent-only" }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["state", "private", "sourceFingerprint", "interpretation"],
+          "properties": {
+            "state": { "const": "unavailable" }, "private": { "const": null },
+            "sourceFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+            "interpretation": { "const": "packaging-intent-only" }
+          }
+        }
+      ]
+    },
+    "legal": {
+      "type": "object", "additionalProperties": false,
+      "required": ["publisher", "license", "publicationEligibility", "redistributionEligibility", "marketplaceEligibility", "legalSufficiency"],
+      "properties": {
+        "publisher": { "type": "object", "additionalProperties": false, "required": ["state"], "properties": { "state": { "const": "unasserted" } } },
+        "license": { "type": "object", "additionalProperties": false, "required": ["state"], "properties": { "state": { "const": "no-assertion" } } },
+        "publicationEligibility": { "const": "not-evaluated" },
+        "redistributionEligibility": { "const": "not-evaluated" },
+        "marketplaceEligibility": { "const": "not-evaluated" },
+        "legalSufficiency": { "const": "not-evaluated" }
+      }
+    },
+    "trust": {
+      "type": "object", "additionalProperties": false,
+      "required": ["state", "signature"],
+      "properties": { "state": { "const": "unsigned-untrusted" }, "signature": { "const": "absent" } }
+    },
+    "inventoryEntry": {
+      "type": "object", "additionalProperties": false,
+      "required": ["path", "role", "mode", "bytes", "contentFingerprint"],
+      "properties": {
+        "path": { "type": "string", "pattern": "^[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$" },
+        "role": { "enum": ["manifest", "definition", "implementation", "projection", "evaluation", "fixture", "migration"] },
+        "mode": { "enum": ["0644", "0755"] },
+        "bytes": { "type": "integer", "minimum": 1 },
+        "contentFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "dependency": {
+      "type": "object", "additionalProperties": false,
+      "required": ["pack", "version", "optional", "reason"],
+      "properties": {
+        "pack": { "type": "string", "minLength": 3 }, "version": { "$ref": "#/$defs/versionRange" },
+        "optional": { "type": "boolean" }, "reason": { "type": "string", "minLength": 12 }
+      }
+    },
+    "capabilityRequirement": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "version", "optional", "reason"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 }, "version": { "$ref": "#/$defs/versionRange" },
+        "optional": { "type": "boolean" }, "reason": { "type": "string", "minLength": 12 }
+      }
+    },
+    "capabilityProvision": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": { "id": { "type": "string", "minLength": 1 }, "version": { "$ref": "#/$defs/version" } }
+    },
+    "capabilities": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requires", "provides"],
+      "properties": {
+        "requires": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/capabilityRequirement" } },
+        "provides": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/capabilityProvision" } }
+      }
+    },
+    "authorityRequirement": {
+      "type": "object", "additionalProperties": false,
+      "required": ["role", "subject", "required"],
+      "properties": {
+        "role": { "enum": ["definition", "instance", "provider", "projection", "evidence"] },
+        "subject": { "type": "string", "minLength": 3 }, "required": { "type": "boolean" }
+      }
+    },
+    "compatibility": {
+      "type": "object", "additionalProperties": false,
+      "required": ["baseContract", "hosts"],
+      "properties": {
+        "baseContract": { "$ref": "#/$defs/versionRange" },
+        "hosts": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "evidenceReference": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "fingerprint", "graphFingerprint", "result", "privacyScope", "validUntil", "applicableManifestFingerprint", "limitations"],
+      "properties": {
+        "id": { "type": "string", "minLength": 3 }, "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "graphFingerprint": { "$ref": "#/$defs/fingerprint" }, "result": { "const": "passed" },
+        "privacyScope": { "enum": ["shareable", "public"] }, "validUntil": { "type": ["string", "null"], "minLength": 20 },
+        "applicableManifestFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "limitations": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 3 } }
+      }
+    },
+    "limitation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["code", "summary"],
+      "properties": { "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" }, "summary": { "type": "string", "minLength": 20 } }
+    }
+  }
+}

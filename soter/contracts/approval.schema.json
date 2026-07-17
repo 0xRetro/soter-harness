@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/approval/v1",
+  "title": "Soter scoped approval record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$contract", "contractVersion", "id", "runId", "createdAt", "actor", "decision", "scope", "reason"],
+  "properties": {
+    "$contract": { "const": "soter://contracts/approval/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^approval\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "runId": { "type": "string", "pattern": "^run\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "actor": { "type": "string", "minLength": 1 },
+    "decision": { "enum": ["approved", "rejected"] },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["changeSetId", "fingerprint", "effects"],
+      "properties": {
+        "changeSetId": { "type": "string", "minLength": 1 },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "effects": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["read", "disclosure", "write", "dispatch", "destructive"] }
+        }
+      }
+    },
+    "reason": { "type": "string", "minLength": 8 }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+  }
+}

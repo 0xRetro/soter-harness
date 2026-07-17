@@ -1,0 +1,64 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "integration.gmail",
+  "version": "0.1.0",
+  "layer": "integration",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Maps granular provider-neutral mail search and thread expansion, bounded contained review reads, exact message-scoped AI-label writes, draft creation, and minimized verification reads, with declared Codex connector routes that remain unproven until exact-lock connected evidence exists.",
+  "dependencies": [
+    {
+      "pack": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Integration binding, exact effect policy, private state, and evidence are supplied by Core."
+    },
+    {
+      "pack": "context.email",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Mailbox identity, reduction, label, handoff, and draft-only meaning belong to Email context."
+    }
+  ],
+  "capabilities": {
+    "requires": [],
+    "provides": [
+      { "id": "mail.messages.search", "version": "1.0.0" },
+      { "id": "mail.threads.read", "version": "1.0.0" },
+      { "id": "mail.window.read", "version": "1.0.0" },
+      { "id": "mail.labels.read", "version": "2.0.0" },
+      { "id": "mail.labels.apply", "version": "2.0.0" },
+      { "id": "mail.drafts.list", "version": "2.0.0" },
+      { "id": "mail.drafts.create", "version": "2.0.0" }
+    ]
+  },
+  "authorities": [
+    { "role": "provider", "subject": "gmail.account", "required": true },
+    { "role": "instance", "subject": "mail.mailbox", "required": true }
+  ],
+  "effects": ["read", "disclosure", "write"],
+  "artifacts": [
+    { "path": "soter/capabilities/mail.messages.search.json", "role": "definition" },
+    { "path": "soter/capabilities/mail.threads.read.json", "role": "definition" },
+    { "path": "soter/capabilities/mail.window.read.json", "role": "definition" },
+    { "path": "soter/capabilities/mail.labels.read.json", "role": "definition" },
+    { "path": "soter/capabilities/mail.labels.apply.json", "role": "definition" },
+    { "path": "soter/capabilities/mail.drafts.list.json", "role": "definition" },
+    { "path": "soter/capabilities/mail.drafts.create.json", "role": "definition" },
+    { "path": "soter/providers/provider.integration.gmail.fixture.json", "role": "implementation" },
+    { "path": "soter/providers/provider.integration.gmail.mcp.json", "role": "implementation" },
+    { "path": "soter/integrations/gmail/fixture.mjs", "role": "implementation" },
+    { "path": "soter/integrations/gmail/mcp.mjs", "role": "implementation" },
+    { "path": "soter/integrations/gmail/settings.json", "role": "definition" },
+    { "path": "soter/fixtures/providers/gmail/inbox-window.json", "role": "fixture" }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": ["codex"]
+  },
+  "verification": {
+    "maxLevel": "fixture",
+    "scenarios": ["soter/scenarios/email-triage/happy-path.scenario.json"]
+  }
+}

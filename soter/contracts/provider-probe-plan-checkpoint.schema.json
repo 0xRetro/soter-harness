@@ -1,0 +1,268 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/provider-probe-plan-checkpoint/v1",
+  "title": "Soter durable sequential provider probe checkpoint",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "kind",
+    "createdAt",
+    "updatedAt",
+    "state",
+    "configurationLock",
+    "graphFingerprint",
+    "host",
+    "provider",
+    "plan",
+    "planFingerprint",
+    "steps",
+    "currentStepId",
+    "result",
+    "privacy",
+    "checkpointFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/provider-probe-plan-checkpoint/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^checkpoint\\.probeplan\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "kind": { "const": "provider-probe" },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "updatedAt": { "type": "string", "minLength": 20 },
+    "state": { "enum": ["requested", "completed", "failed"] },
+    "configurationLock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "fingerprint"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "host": { "$ref": "#/$defs/host" },
+    "provider": { "$ref": "#/$defs/provider" },
+    "plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "probeId",
+        "scope",
+        "validForSeconds",
+        "steps"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^probeplan\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "probeId": {
+          "type": "string",
+          "pattern": "^probe\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["credentialRefs", "authorities", "capabilities"],
+          "properties": {
+            "credentialRefs": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^secret-ref\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+              }
+            },
+            "authorities": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^authority\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+              }
+            },
+            "capabilities": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "type": "string", "minLength": 3 }
+            }
+          }
+        },
+        "validForSeconds": { "type": "integer", "minimum": 60, "maximum": 900 },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "items": { "$ref": "#/$defs/planStep" }
+        }
+      }
+    },
+    "planFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": { "$ref": "#/$defs/runtimeStep" }
+    },
+    "currentStepId": {
+      "type": ["string", "null"],
+      "pattern": "^step\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "result": { "type": ["object", "null"] },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope",
+        "rawProviderResponsePersisted",
+        "hostCredentialValuesPersisted"
+      ],
+      "properties": {
+        "scope": { "const": "private" },
+        "rawProviderResponsePersisted": { "const": false },
+        "hostCredentialValuesPersisted": { "const": false }
+      }
+    },
+    "checkpointFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "adapter", "version"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "adapter": { "type": "string", "minLength": 1 },
+        "version": { "$ref": "#/$defs/version" }
+      }
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pack", "implementation", "version", "containment"],
+      "properties": {
+        "pack": { "type": "string", "minLength": 3 },
+        "implementation": {
+          "type": "string",
+          "pattern": "^provider\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "version": { "$ref": "#/$defs/version" },
+        "containment": { "const": "connected" }
+      }
+    },
+    "transport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protocol", "server", "operation", "tool"],
+      "properties": {
+        "protocol": { "const": "mcp" },
+        "server": { "type": "string", "minLength": 1 },
+        "operation": { "type": "string", "minLength": 1 },
+        "tool": { "type": "string", "minLength": 1 }
+      }
+    },
+    "planStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "subject",
+        "scope",
+        "scopeFingerprint",
+        "transport",
+        "arguments",
+        "argumentsFingerprint"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^step\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "kind": { "enum": ["identity", "schema", "read", "document"] },
+        "subject": { "type": "string", "minLength": 3 },
+        "scope": { "type": "object" },
+        "scopeFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "transport": { "$ref": "#/$defs/transport" },
+        "arguments": { "type": "object" },
+        "argumentsFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "call": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "createdAt",
+        "completedAt",
+        "state",
+        "transport",
+        "arguments",
+        "argumentsFingerprint",
+        "responseFingerprint",
+        "error"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^probecall\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "createdAt": { "type": "string", "minLength": 20 },
+        "completedAt": { "type": ["string", "null"], "minLength": 20 },
+        "state": { "enum": ["requested", "completed", "failed"] },
+        "transport": { "$ref": "#/$defs/transport" },
+        "arguments": { "type": "object" },
+        "argumentsFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "responseFingerprint": {
+          "type": ["string", "null"],
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "error": { "type": ["object", "null"] }
+      }
+    },
+    "runtimeStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "sequence",
+        "state",
+        "call",
+        "result",
+        "resultFingerprint",
+        "error"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^step\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "state": { "enum": ["pending", "requested", "completed", "failed"] },
+        "call": { "type": ["object", "null"] },
+        "result": { "type": ["object", "null"] },
+        "resultFingerprint": {
+          "type": ["string", "null"],
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "error": { "type": ["object", "null"] }
+      }
+    }
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "$contract": "soter://contracts/host-adapter/v1",
+  "contractVersion": "1.0.0",
+  "id": "host.claude",
+  "host": "claude",
+  "version": "0.1.0",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Maps the working Claude-oriented prototype into the target host-adapter boundary for later behavior-level conformance.",
+  "projectionDefinition": {
+    "id": "host-projection.claude",
+    "version": "0.1.0",
+    "path": "soter/hosts/claude/projection.json"
+  },
+  "projections": [
+    { "path": "CLAUDE.md", "role": "instructions" },
+    { "path": ".claude/.mcp.json", "role": "tools" }
+  ],
+  "mcpServers": [
+    {
+      "id": "soter",
+      "delivery": "project",
+      "state": "configured",
+      "configurationPath": ".claude/.mcp.json",
+      "toolMappings": [],
+      "reason": "The project config exposes the provider-neutral Core service through a local stdio MCP server."
+    },
+    {
+      "id": "notion",
+      "delivery": "plugin",
+      "state": "declared",
+      "toolMappings": [
+        {
+          "logical": "fetch",
+          "native": "Notion:notion-fetch"
+        },
+        {
+          "logical": "query_data_sources",
+          "native": "Notion:notion-query-data-sources"
+        },
+        {
+          "logical": "create_pages",
+          "native": "Notion:notion-create-pages"
+        },
+        {
+          "logical": "update_page",
+          "native": "Notion:notion-update-page"
+        }
+      ],
+      "reason": "The legacy plugin maps Notion, but it is not silently adopted by the deterministic host projection."
+    },
+    {
+      "id": "otter",
+      "delivery": "project",
+      "state": "declared",
+      "toolMappings": [
+        {
+          "logical": "fetch",
+          "native": "mcp__otter__fetch"
+        },
+        {
+          "logical": "get_user_info",
+          "native": "mcp__otter__get_user_info"
+        }
+      ],
+      "reason": "The adapter maps the Otter route, but the deterministic projection does not embed provider endpoints or authentication configuration."
+    }
+  ],
+  "mechanisms": {
+    "instructions": "available",
+    "skills": "declared",
+    "tools": "available",
+    "lifecycle": "declared",
+    "compactionRehydration": "declared",
+    "backgroundRuns": "declared",
+    "structuredOutput": "declared"
+  },
+  "conformance": {
+    "maxLevel": "static",
+    "scenarios": []
+  },
+  "limitations": [
+    "The deterministic projection owns only CLAUDE.md and .claude/.mcp.json. Legacy skills, settings, hooks, and plugin files remain mapped migration inputs rather than generated authority; host launch, discovery, authentication, connected behavior, and health are not proven."
+  ]
+}

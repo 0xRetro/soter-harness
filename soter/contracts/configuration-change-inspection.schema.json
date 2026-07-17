@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/configuration-change-inspection/v1",
+  "title": "Soter sanitized configuration change inspection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "plan", "configuration", "scope", "request",
+    "confirmation", "consumption", "checkpoint", "resume", "authority"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/configuration-change-inspection/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "plan": { "$ref": "#/$defs/reference" },
+    "configuration": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "path", "baselineLockFingerprint", "candidateLockFingerprint", "candidateGraphFingerprint", "observedLockFingerprint", "applicability"],
+      "properties": {
+        "name": { "type": "string" },
+        "path": { "type": "string" },
+        "baselineLockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "candidateLockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "candidateGraphFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "observedLockFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+        "applicability": { "enum": ["current", "stale", "applied"] }
+      }
+    },
+    "scope": {
+      "type": "object", "additionalProperties": false,
+      "required": ["fingerprint", "changes"],
+      "properties": {
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "changes": {
+          "type": "array", "minItems": 1,
+          "items": { "$ref": "#/$defs/change" }
+        }
+      }
+    },
+    "request": { "oneOf": [{ "const": null }, { "$ref": "#/$defs/timedReference" }] },
+    "confirmation": { "oneOf": [{ "const": null }, { "$ref": "#/$defs/confirmedReference" }] },
+    "consumption": { "oneOf": [{ "const": null }, { "$ref": "#/$defs/consumptionReference" }] },
+    "checkpoint": { "oneOf": [{ "const": null }, { "$ref": "#/$defs/checkpoint" }] },
+    "resume": {
+      "type": "object", "additionalProperties": false,
+      "required": ["classification", "reasonCode", "reason", "permittedNextAction"],
+      "properties": {
+        "classification": { "enum": ["safe", "requires-review", "unavailable"] },
+        "reasonCode": { "type": "string", "pattern": "^CONFIGURATION_[A-Z0-9_]+$" },
+        "reason": { "type": "string", "minLength": 8 },
+        "permittedNextAction": { "enum": ["request-confirmation", "confirm", "apply", "inspect-checkpoint", "none"] }
+      }
+    },
+    "authority": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "grantsExecution", "grantsProviderWrite"],
+      "properties": {
+        "kind": { "const": "inspection-only" },
+        "grantsExecution": { "const": false },
+        "grantsProviderWrite": { "const": false }
+      }
+    }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "reference": {
+      "type": "object", "additionalProperties": false, "required": ["id", "fingerprint"],
+      "properties": { "id": { "type": "string" }, "fingerprint": { "$ref": "#/$defs/fingerprint" } }
+    },
+    "timedReference": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "fingerprint", "createdAt", "expiresAt", "state"],
+      "properties": {
+        "id": { "type": "string" }, "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "createdAt": { "type": "string" }, "expiresAt": { "type": "string" },
+        "state": { "enum": ["awaiting", "expired", "confirmed"] }
+      }
+    },
+    "confirmedReference": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "fingerprint", "confirmedAt", "actor"],
+      "properties": {
+        "id": { "type": "string" }, "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "confirmedAt": { "type": "string" }, "actor": { "type": "string" }
+      }
+    },
+    "consumptionReference": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "fingerprint", "state"],
+      "properties": {
+        "id": { "type": "string" }, "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "state": { "enum": ["reserved", "started"] }
+      }
+    },
+    "checkpoint": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "fingerprint", "state", "phase", "updatedAt", "reasonCode"],
+      "properties": {
+        "id": { "type": "string" }, "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "state": { "enum": ["prepared", "applying", "verifying", "completed", "rolling-back", "rolled-back", "needs-attention"] },
+        "phase": { "type": "string" }, "updatedAt": { "type": "string" },
+        "reasonCode": { "type": ["string", "null"], "pattern": "^CONFIGURATION_[A-Z0-9_]+$" }
+      }
+    },
+    "change": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "category", "subject", "state", "beforeDescriptor", "afterDescriptor", "beforeFingerprint", "afterFingerprint"],
+      "properties": {
+        "id": { "type": "string" },
+        "category": { "enum": ["host", "pack", "binding", "source", "authority", "effect-policy", "secret-reference", "setting"] },
+        "subject": { "type": "string" },
+        "state": { "enum": ["added", "removed", "changed"] },
+        "beforeDescriptor": { "type": ["string", "null"], "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "afterDescriptor": { "type": ["string", "null"], "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "beforeFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+        "afterFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" }
+      }
+    }
+  }
+}

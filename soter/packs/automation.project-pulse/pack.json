@@ -1,0 +1,106 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "automation.project-pulse",
+  "version": "0.1.0",
+  "layer": "automation",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Builds an evidence-grounded project status brief from authoritative project, milestone, and task records before any reviewed update.",
+  "dependencies": [
+    {
+      "pack": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Project status inspection requires exact resolution, effect policy, evidence, and health reporting."
+    },
+    {
+      "pack": "context.crm",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Projects, milestones, tasks, update records, and their authorities belong to shared CRM context."
+    }
+  ],
+  "capabilities": {
+    "requires": [
+      {
+        "id": "crm.records.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Every progress and health statement must be derived from authoritative project, milestone, and task records."
+      }
+    ],
+    "provides": []
+  },
+  "sourceRequirements": [
+    {
+      "purpose": "project-status-policy",
+      "capability": "crm.records.read",
+      "authorityRole": "definition",
+      "authoritySubject": "crm.records",
+      "minimum": 1,
+      "maximum": 1,
+      "reason": "Project Pulse requires one configured policy source that defines supported progress, milestone separation, explained health, and confirmation-gated writes."
+    }
+  ],
+  "authorities": [
+    { "role": "definition", "subject": "crm.records", "required": true },
+    { "role": "instance", "subject": "crm.records", "required": true },
+    { "role": "evidence", "subject": "runtime.runs", "required": true }
+  ],
+  "effects": ["read", "disclosure"],
+  "operator": {
+    "input": "soter/automations/project-pulse/operator-input.json",
+    "preparation": {
+      "module": "soter/automations/project-pulse/prepare.mjs",
+      "export": "prepareProjectPulseRun",
+      "containment": "fixture"
+    }
+  },
+  "artifacts": [
+    {
+      "path": "soter/automations/project-pulse/operator-input.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/project-pulse/context.mjs",
+      "role": "implementation"
+    },
+    {
+      "path": "soter/automations/project-pulse/prepare.mjs",
+      "role": "implementation"
+    },
+    {
+      "path": "soter/automations/project-pulse/scenario.mjs",
+      "role": "implementation"
+    },
+    {
+      "path": "soter/automations/project-pulse/project-pulse.selftest.mjs",
+      "role": "evaluation"
+    },
+    {
+      "path": "soter/scenarios/project-pulse/happy-path.scenario.json",
+      "role": "evaluation"
+    },
+    {
+      "path": "soter/scenarios/project-pulse/no-invented-progress.scenario.json",
+      "role": "evaluation"
+    },
+    {
+      "path": "soter/scenarios/project-pulse/pressure-on-track.scenario.json",
+      "role": "evaluation"
+    }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": ["codex", "claude"]
+  },
+  "verification": {
+    "maxLevel": "fixture",
+    "scenarios": [
+      "soter/scenarios/project-pulse/happy-path.scenario.json",
+      "soter/scenarios/project-pulse/no-invented-progress.scenario.json",
+      "soter/scenarios/project-pulse/pressure-on-track.scenario.json"
+    ]
+  }
+}

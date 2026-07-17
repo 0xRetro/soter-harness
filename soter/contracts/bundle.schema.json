@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/bundle/v1",
+  "title": "Soter transparent pack bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "id", "version", "summary",
+    "releaseStage", "evidenceMaturity", "createdAt", "generator",
+    "target", "references", "legal", "trust", "limitations"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/bundle/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^bundle\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "version": { "$ref": "#/$defs/version" },
+    "summary": { "type": "string", "minLength": 20 },
+    "releaseStage": { "enum": ["experimental", "preview", "stable", "deprecated"] },
+    "evidenceMaturity": { "const": "declared" },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "generator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "fingerprint"],
+      "properties": {
+        "id": { "const": "kernel.soter.bundle" },
+        "version": { "const": "1.0.0" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["baseContract", "hosts"],
+      "properties": {
+        "baseContract": { "$ref": "#/$defs/version" },
+        "hosts": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        }
+      }
+    },
+    "references": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/reference" }
+    },
+    "legal": { "$ref": "#/$defs/legal" },
+    "trust": { "$ref": "#/$defs/trust" },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/limitation" }
+    }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "version": { "type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$" },
+    "versionRange": { "type": "string", "pattern": "^(\\^|~|>=|<=|>|<)?(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$" },
+    "packId": { "type": "string", "pattern": "^(kernel|core|context|automation|integration)\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "pack", "selection", "reason", "compatibilityLimitations"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^bundle-ref\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "pack": { "$ref": "#/$defs/packId" },
+        "selection": {
+          "oneOf": [
+            { "$ref": "#/$defs/exactSelection" },
+            { "$ref": "#/$defs/compatibleSelection" }
+          ]
+        },
+        "reason": { "type": "string", "minLength": 20 },
+        "compatibilityLimitations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 12 }
+        }
+      }
+    },
+    "exactSelection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "version", "capsuleDigest"],
+      "properties": {
+        "kind": { "const": "exact" },
+        "version": { "$ref": "#/$defs/version" },
+        "capsuleDigest": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "compatibleSelection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "version"],
+      "properties": {
+        "kind": { "const": "compatible" },
+        "version": { "$ref": "#/$defs/versionRange" }
+      }
+    },
+    "legal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "publisher", "license", "publicationEligibility",
+        "redistributionEligibility", "marketplaceEligibility", "legalSufficiency"
+      ],
+      "properties": {
+        "publisher": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state"],
+          "properties": { "state": { "const": "unasserted" } }
+        },
+        "license": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state"],
+          "properties": { "state": { "const": "no-assertion" } }
+        },
+        "publicationEligibility": { "const": "not-evaluated" },
+        "redistributionEligibility": { "const": "not-evaluated" },
+        "marketplaceEligibility": { "const": "not-evaluated" },
+        "legalSufficiency": { "const": "not-evaluated" }
+      }
+    },
+    "trust": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "signature"],
+      "properties": {
+        "state": { "const": "unsigned-untrusted" },
+        "signature": { "const": "absent" }
+      }
+    },
+    "limitation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "summary"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" },
+        "summary": { "type": "string", "minLength": 20 }
+      }
+    }
+  }
+}

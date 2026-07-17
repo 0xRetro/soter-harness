@@ -1,0 +1,79 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "automation.task-capture",
+  "version": "0.1.0",
+  "layer": "automation",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Prepares one policy-grounded, deduplicated task-create scope for private review and stops before authority is issued.",
+  "dependencies": [
+    {
+      "pack": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Task preparation requires exact locks, private review material, effect policy, and evidence boundaries."
+    },
+    {
+      "pack": "context.crm",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Task, project, assignee, date, and policy meaning belong to shared CRM context."
+    }
+  ],
+  "capabilities": {
+    "requires": [
+      {
+        "id": "crm.records.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation must load one exact policy, resolve the project, and inspect bounded duplicate candidates."
+      },
+      {
+        "id": "crm.records.create",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "The reviewed outcome may later become one exact task-create operation through Core's separate transaction authority."
+      }
+    ],
+    "provides": []
+  },
+  "sourceRequirements": [
+    {
+      "purpose": "task-capture-policy",
+      "capability": "crm.records.read",
+      "authorityRole": "definition",
+      "authoritySubject": "crm.records",
+      "minimum": 1,
+      "maximum": 1,
+      "reason": "Task Capture requires one configured normalized policy source for confirmation, deduplication, default status, allowed contexts, and project requirements."
+    }
+  ],
+  "authorities": [
+    { "role": "definition", "subject": "crm.records", "required": true },
+    { "role": "instance", "subject": "crm.records", "required": true },
+    { "role": "evidence", "subject": "runtime.runs", "required": true }
+  ],
+  "effects": ["read", "disclosure", "write"],
+  "operator": {
+    "input": "soter/automations/task-capture/operator-input.json",
+    "preparation": {
+      "module": "soter/automations/task-capture/prepare.mjs",
+      "export": "prepareTaskCaptureRun",
+      "containment": "fixture"
+    }
+  },
+  "artifacts": [
+    { "path": "soter/automations/task-capture/operator-input.json", "role": "definition" },
+    { "path": "soter/automations/task-capture/prepare.mjs", "role": "implementation" },
+    { "path": "soter/scenarios/task-capture/happy-path.scenario.json", "role": "evaluation" }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": ["codex", "claude"]
+  },
+  "verification": {
+    "maxLevel": "fixture",
+    "scenarios": ["soter/scenarios/task-capture/happy-path.scenario.json"]
+  }
+}

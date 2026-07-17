@@ -1,0 +1,230 @@
+{
+  "$contract": "soter://contracts/configuration/v1",
+  "contractVersion": "1.0.0",
+  "name": "meeting-intake",
+  "base": {
+    "kernel": "kernel.soter",
+    "core": "core.runtime"
+  },
+  "packs": [
+    {
+      "id": "context.crm",
+      "source": "dependency",
+      "reason": "Meeting intake depends on CRM concepts, relationships, policies, and authorities."
+    },
+    {
+      "id": "automation.meeting-intake",
+      "source": "user",
+      "reason": "The user selected the meeting-intake outcome for this named harness configuration."
+    },
+    {
+      "id": "integration.notion",
+      "source": "binding",
+      "reason": "The configured CRM authorities live in Notion and require a record capability provider."
+    },
+    {
+      "id": "integration.otter",
+      "source": "binding",
+      "reason": "The configured meeting authority exposes transcripts through Otter."
+    }
+  ],
+  "bindings": [
+    {
+      "capability": "meeting.transcript.read",
+      "providerPack": "integration.otter",
+      "authorities": ["authority.otter.provider"],
+      "secretRef": "secret-ref.otter",
+      "reason": "Otter implements transcript reading for the configured meeting provider authority."
+    },
+    {
+      "capability": "crm.records.read",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.crm.definition", "authority.crm.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "Notion is the configured instance authority for reading CRM records."
+    },
+    {
+      "capability": "documents.content.read",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.crm.definition", "authority.crm.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "Notion supplies exact configured policy bodies under definition authority and exact post-create summary bodies under instance authority."
+    },
+    {
+      "capability": "crm.records.create",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.crm.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "Notion is the configured instance authority for creating approved CRM records."
+    },
+    {
+      "capability": "crm.records.update",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.crm.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "Notion is the configured instance authority for bounded CRM record updates."
+    }
+  ],
+  "sources": [
+    {
+      "id": "source.policy.docs",
+      "capability": "documents.content.read",
+      "authority": "authority.crm.definition",
+      "input": {
+        "uri": "https://app.notion.com/39ed79b5de3881dbb40dddf827bd6373",
+        "expectedTitle": "Docs"
+      },
+      "readiness": {
+        "mode": "probe-read",
+        "reason": "Connected readiness must prove the exact policy page can be read and normalized without retaining its body."
+      },
+      "consumers": [
+        {
+          "pack": "automation.meeting-intake",
+          "purpose": "applicable-policy",
+          "subjects": ["meeting-summary"],
+          "reason": "Meeting intake creates a governed meeting-summary document."
+        }
+      ],
+      "reason": "The external Docs policy page is an explicit portable source, not an Integration-owned setting."
+    },
+    {
+      "id": "source.policy.meetings",
+      "capability": "documents.content.read",
+      "authority": "authority.crm.definition",
+      "input": {
+        "uri": "https://app.notion.com/39ed79b5de388105b507f11ad35d2acd",
+        "expectedTitle": "Meetings"
+      },
+      "readiness": {
+        "mode": "probe-read",
+        "reason": "Connected readiness must prove the exact policy page can be read and normalized without retaining its body."
+      },
+      "consumers": [
+        {
+          "pack": "automation.meeting-intake",
+          "purpose": "applicable-policy",
+          "subjects": ["meeting"],
+          "reason": "Meeting intake reads the source meeting record and preserves its canonical recording attribution."
+        }
+      ],
+      "reason": "The external Meetings policy page is an explicit portable source, not an Integration-owned setting."
+    },
+    {
+      "id": "source.policy.tasks",
+      "capability": "documents.content.read",
+      "authority": "authority.crm.definition",
+      "input": {
+        "uri": "https://app.notion.com/39dd79b5de388178b804fd5cf8e9eaa3",
+        "expectedTitle": "Tasks"
+      },
+      "readiness": {
+        "mode": "probe-read",
+        "reason": "Connected readiness must prove the exact policy page can be read and normalized without retaining its body."
+      },
+      "consumers": [
+        {
+          "pack": "automation.meeting-intake",
+          "purpose": "applicable-policy",
+          "subjects": ["task"],
+          "reason": "Meeting intake deduplicates and updates grounded task records."
+        }
+      ],
+      "reason": "The external Tasks policy page is an explicit portable source, not an Integration-owned setting."
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.crm.definition",
+      "role": "definition",
+      "subject": "crm.records",
+      "uri": "notion://configured/policies",
+      "reason": "The user's live CRM policies are the definition authority for record rules."
+    },
+    {
+      "id": "authority.crm.instance",
+      "role": "instance",
+      "subject": "crm.records",
+      "uri": "notion://configured/crm",
+      "reason": "The user's configured CRM databases are authoritative for live record instances."
+    },
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "uri": "notion://configured-user",
+      "reason": "The selected Notion account supplies provider identity and permission context."
+    },
+    {
+      "id": "authority.otter.provider",
+      "role": "provider",
+      "subject": "meeting.transcript",
+      "uri": "otter://configured-user",
+      "reason": "The selected Otter account is authoritative for transcript retrieval."
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "uri": "soter-state://runs",
+      "reason": "The local Soter runtime state will own reproducible run envelopes and evidence."
+    }
+  ],
+  "effectPolicies": {
+    "read": {
+      "mode": "allow",
+      "reason": "Selected authorities may be read to perform the requested automation."
+    },
+    "disclosure": {
+      "mode": "allow",
+      "reason": "Selected records may enter the configured private run envelope."
+    },
+    "write": {
+      "mode": "confirm",
+      "reason": "The complete external record batch requires one explicit user confirmation."
+    },
+    "dispatch": {
+      "mode": "prohibit",
+      "reason": "Meeting intake does not send messages or publish notifications."
+    },
+    "destructive": {
+      "mode": "prohibit",
+      "reason": "Meeting intake never deletes records or performs destructive changes."
+    }
+  },
+  "secretRefs": [
+    {
+      "id": "secret-ref.notion",
+      "provider": "host",
+      "key": "NOTION_OAUTH"
+    },
+    {
+      "id": "secret-ref.otter",
+      "provider": "host",
+      "key": "OTTER_OAUTH"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.1.0",
+    "reason": "This example exercises the Codex host projection while preserving provider-neutral contracts."
+  },
+  "settings": {
+    "integration.notion": {
+      "targets": {
+        "policies": "collection://39dd79b5-de38-8042-9d47-000b9293ab47",
+        "organizations": "collection://2b2d79b5-de38-817a-981e-000b27e5575b",
+        "contacts": "collection://2b2d79b5-de38-81d0-852e-000bc3fdf8d2",
+        "projects": "collection://721bfb88-e8d5-4934-ac26-cc82e1afc7a0",
+        "tasks": "collection://2abd79b5-de38-80f8-9470-000b7181b18d",
+        "meetings": "collection://b2550e36-38d5-4d33-86db-bbd0987aeaef",
+        "documents": "collection://2abd79b5-de38-8075-a97b-000b24e99dc1"
+      }
+    },
+    "automation.meeting-intake": {
+      "stalenessReviewAfterDays": 7,
+      "summaryTemplate": "authority.crm.definition"
+    }
+  }
+}

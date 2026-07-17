@@ -1,0 +1,350 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/pack-release/v1",
+  "title": "Soter immutable pack release capsule",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "format",
+    "createdAt",
+    "generator",
+    "pack",
+    "source",
+    "packageIntent",
+    "legal",
+    "trust",
+    "evidenceReferences",
+    "inventory",
+    "inventoryFingerprint",
+    "sourceInputFingerprint",
+    "limitations"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/pack-release/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "format": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "version", "encoding", "newline", "objectKeyOrder",
+        "inventoryOrder", "timestamps", "ownershipMetadata", "allowedModes"
+      ],
+      "properties": {
+        "id": { "const": "soter-canonical-json-capsule" },
+        "version": { "const": "1.0.0" },
+        "encoding": { "const": "utf-8" },
+        "newline": { "const": "lf-final" },
+        "objectKeyOrder": { "const": "unicode-codepoint" },
+        "inventoryOrder": { "const": "path-ascending" },
+        "timestamps": { "const": "explicit-created-at-only" },
+        "ownershipMetadata": { "const": "absent" },
+        "allowedModes": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": { "enum": ["0644", "0755"] }
+        }
+      }
+    },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "generator": { "$ref": "#/$defs/generator" },
+    "pack": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "version", "layer", "releaseStage", "evidenceMaturity",
+        "summary", "manifestPath", "manifestFingerprint",
+        "manifestBytesFingerprint", "dependencies", "capabilities",
+        "authorities", "effects", "compatibility"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/packId" },
+        "version": { "$ref": "#/$defs/version" },
+        "layer": { "enum": ["kernel", "core", "context", "automation", "integration"] },
+        "releaseStage": { "enum": ["experimental", "preview", "stable", "deprecated"] },
+        "evidenceMaturity": { "enum": ["declared", "fixture-proven", "contained-proven", "live-proven"] },
+        "summary": { "type": "string", "minLength": 20 },
+        "manifestPath": { "$ref": "#/$defs/path" },
+        "manifestFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "manifestBytesFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "dependencies": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/dependency" }
+        },
+        "capabilities": { "$ref": "#/$defs/capabilities" },
+        "authorities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/authority" }
+        },
+        "effects": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/effect" }
+        },
+        "compatibility": { "$ref": "#/$defs/compatibility" }
+      }
+    },
+    "source": { "$ref": "#/$defs/provenance" },
+    "packageIntent": { "$ref": "#/$defs/packageIntent" },
+    "legal": { "$ref": "#/$defs/legal" },
+    "trust": { "$ref": "#/$defs/trust" },
+    "evidenceReferences": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/evidenceReference" }
+    },
+    "inventory": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/inventoryEntry" }
+    },
+    "inventoryFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "sourceInputFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/limitation" }
+    }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "nullableFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+    "path": { "type": "string", "pattern": "^[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$" },
+    "version": { "type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$" },
+    "versionRange": { "type": "string", "pattern": "^(\\^|~|>=|<=|>|<)?(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$" },
+    "packId": { "type": "string", "pattern": "^(kernel|core|context|automation|integration)\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "effect": { "enum": ["read", "disclosure", "write", "dispatch", "destructive"] },
+    "provenance": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "revision", "remoteLocatorFingerprint", "exactInputState", "inputFingerprint", "reproducibilityClaim"],
+          "properties": {
+            "kind": { "const": "git" },
+            "revision": { "type": "string", "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$" },
+            "remoteLocatorFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+            "exactInputState": { "enum": ["clean", "dirty", "unknown"] },
+            "inputFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "reproducibilityClaim": { "const": "contained-determinism-only" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "revision", "remoteLocatorFingerprint", "exactInputState", "inputFingerprint", "reproducibilityClaim"],
+          "properties": {
+            "kind": { "const": "filesystem" },
+            "revision": { "const": null },
+            "remoteLocatorFingerprint": { "const": null },
+            "exactInputState": { "const": "unknown" },
+            "inputFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "reproducibilityClaim": { "const": "contained-determinism-only" }
+          }
+        }
+      ]
+    },
+    "packageIntent": {
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["state", "private", "sourceFingerprint", "interpretation"],
+          "properties": {
+            "state": { "const": "present" }, "private": { "type": "boolean" },
+            "sourceFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "interpretation": { "const": "packaging-intent-only" }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["state", "private", "sourceFingerprint", "interpretation"],
+          "properties": {
+            "state": { "const": "absent" }, "private": { "const": null },
+            "sourceFingerprint": { "const": null },
+            "interpretation": { "const": "packaging-intent-only" }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["state", "private", "sourceFingerprint", "interpretation"],
+          "properties": {
+            "state": { "const": "unavailable" }, "private": { "const": null },
+            "sourceFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+            "interpretation": { "const": "packaging-intent-only" }
+          }
+        }
+      ]
+    },
+    "generator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "fingerprint"],
+      "properties": {
+        "id": { "const": "kernel.soter.pack-release" },
+        "version": { "const": "1.0.0" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pack", "version", "optional", "reason"],
+      "properties": {
+        "pack": { "type": "string", "minLength": 3 },
+        "version": { "$ref": "#/$defs/versionRange" },
+        "optional": { "type": "boolean" },
+        "reason": { "type": "string", "minLength": 12 }
+      }
+    },
+    "capabilityRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "optional", "reason"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "version": { "$ref": "#/$defs/versionRange" },
+        "optional": { "type": "boolean" },
+        "reason": { "type": "string", "minLength": 12 }
+      }
+    },
+    "capabilityProvision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "version": { "$ref": "#/$defs/version" }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requires", "provides"],
+      "properties": {
+        "requires": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/capabilityRequirement" }
+        },
+        "provides": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/capabilityProvision" }
+        }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "subject", "required"],
+      "properties": {
+        "role": { "enum": ["definition", "instance", "provider", "projection", "evidence"] },
+        "subject": { "type": "string", "minLength": 3 },
+        "required": { "type": "boolean" }
+      }
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["baseContract", "hosts"],
+      "properties": {
+        "baseContract": { "$ref": "#/$defs/versionRange" },
+        "hosts": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        }
+      }
+    },
+    "legal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "publisher", "license", "publicationEligibility",
+        "redistributionEligibility", "marketplaceEligibility", "legalSufficiency"
+      ],
+      "properties": {
+        "publisher": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state"],
+          "properties": { "state": { "const": "unasserted" } }
+        },
+        "license": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state"],
+          "properties": { "state": { "const": "no-assertion" } }
+        },
+        "publicationEligibility": { "const": "not-evaluated" },
+        "redistributionEligibility": { "const": "not-evaluated" },
+        "marketplaceEligibility": { "const": "not-evaluated" },
+        "legalSufficiency": { "const": "not-evaluated" }
+      }
+    },
+    "trust": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "signature"],
+      "properties": {
+        "state": { "const": "unsigned-untrusted" },
+        "signature": { "const": "absent" }
+      }
+    },
+    "evidenceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "fingerprint", "graphFingerprint", "result", "privacyScope",
+        "validUntil", "applicableManifestFingerprint", "limitations"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 3 },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "result": { "const": "passed" },
+        "privacyScope": { "enum": ["shareable", "public"] },
+        "validUntil": { "type": ["string", "null"], "minLength": 20 },
+        "applicableManifestFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "limitations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 3 }
+        }
+      }
+    },
+    "inventoryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path", "role", "mode", "bytes", "contentFingerprint",
+        "contentEncoding", "content"
+      ],
+      "properties": {
+        "path": { "$ref": "#/$defs/path" },
+        "role": { "enum": ["manifest", "definition", "implementation", "projection", "evaluation", "fixture", "migration"] },
+        "mode": { "enum": ["0644", "0755"] },
+        "bytes": { "type": "integer", "minimum": 1 },
+        "contentFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "contentEncoding": { "const": "base64" },
+        "content": { "type": "string", "pattern": "^[A-Za-z0-9+/]*={0,2}$" }
+      }
+    },
+    "limitation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "summary"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" },
+        "summary": { "type": "string", "minLength": 20 }
+      }
+    }
+  }
+}

@@ -1,0 +1,209 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/configuration/v1",
+  "title": "Soter desired configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "name",
+    "base",
+    "packs",
+    "bindings",
+    "sources",
+    "authorities",
+    "effectPolicies",
+    "secretRefs",
+    "host",
+    "settings"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/configuration/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "name": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "base": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kernel", "core"],
+      "properties": {
+        "kernel": { "type": "string", "minLength": 3 },
+        "core": { "type": "string", "minLength": 3 }
+      }
+    },
+    "packs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "source", "reason"],
+        "properties": {
+          "id": { "type": "string", "minLength": 3 },
+          "source": {
+            "enum": ["user", "bundle", "recommendation", "dependency", "binding"]
+          },
+          "reason": { "type": "string", "minLength": 12 }
+        }
+      }
+    },
+    "bindings": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["capability", "providerPack", "authorities", "reason"],
+        "properties": {
+          "capability": { "type": "string", "minLength": 3 },
+          "providerPack": { "type": "string", "minLength": 3 },
+          "authorities": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 3 }
+          },
+          "secretRef": { "type": "string", "minLength": 3 },
+          "reason": { "type": "string", "minLength": 12 }
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "capability",
+          "authority",
+          "input",
+          "readiness",
+          "consumers",
+          "reason"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^source\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+          },
+          "capability": { "type": "string", "minLength": 3 },
+          "authority": {
+            "type": "string",
+            "pattern": "^authority\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+          },
+          "input": { "type": "object" },
+          "readiness": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["mode", "reason"],
+            "properties": {
+              "mode": { "enum": ["probe-read", "runtime-only"] },
+              "reason": { "type": "string", "minLength": 20 }
+            }
+          },
+          "consumers": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["pack", "purpose", "subjects", "reason"],
+              "properties": {
+                "pack": { "type": "string", "minLength": 3 },
+                "purpose": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                },
+                "subjects": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 10,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+                  }
+                },
+                "reason": { "type": "string", "minLength": 20 }
+              }
+            }
+          },
+          "reason": { "type": "string", "minLength": 20 }
+        }
+      }
+    },
+    "authorities": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "role", "subject", "uri", "reason"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^authority\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+          "role": {
+            "enum": ["definition", "instance", "provider", "projection", "evidence"]
+          },
+          "subject": { "type": "string", "minLength": 3 },
+          "uri": { "type": "string", "minLength": 3 },
+          "reason": { "type": "string", "minLength": 12 }
+        }
+      }
+    },
+    "effectPolicies": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["read", "disclosure", "write", "dispatch", "destructive"],
+      "properties": {
+        "read": { "$ref": "#/$defs/effectPolicy" },
+        "disclosure": { "$ref": "#/$defs/effectPolicy" },
+        "write": { "$ref": "#/$defs/effectPolicy" },
+        "dispatch": { "$ref": "#/$defs/effectPolicy" },
+        "destructive": { "$ref": "#/$defs/effectPolicy" }
+      }
+    },
+    "secretRefs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "provider", "key"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^secret-ref\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+          "provider": { "type": "string", "minLength": 2 },
+          "key": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" }
+        }
+      }
+    },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "adapter", "version", "reason"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "adapter": { "type": "string", "pattern": "^host\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "reason": { "type": "string", "minLength": 12 }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "effectPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "reason"],
+      "properties": {
+        "mode": { "enum": ["allow", "confirm", "prohibit"] },
+        "reason": { "type": "string", "minLength": 8 }
+      }
+    }
+  }
+}

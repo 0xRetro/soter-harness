@@ -1,0 +1,64 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "mail.drafts.list",
+  "version": "2.0.0",
+  "purpose": "Lists exact draft metadata by reply-message identity and idempotency key for post-create verification and ambiguity reconciliation.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["replyMessageIds", "idempotencyKeys", "maximumDrafts"],
+    "properties": {
+      "replyMessageIds": { "type": "array", "minItems": 1, "maxItems": 50, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 500 } },
+      "idempotencyKeys": { "type": "array", "minItems": 1, "maxItems": 50, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 1000 } },
+      "maximumDrafts": { "type": "integer", "minimum": 1, "maximum": 50 }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["drafts", "provenance", "observedAt"],
+    "properties": {
+      "drafts": {
+        "type": "array", "maxItems": 50,
+        "items": {
+          "type": "object", "additionalProperties": false,
+          "required": ["draftId", "replyMessageId", "idempotencyKey", "contentFingerprint"],
+          "properties": {
+            "draftId": { "type": "string", "minLength": 1, "maxLength": 1000 },
+            "replyMessageId": { "type": "string", "minLength": 1, "maxLength": 500 },
+            "idempotencyKey": { "type": "string", "minLength": 1, "maxLength": 1000 },
+            "contentFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+          }
+        }
+      },
+      "provenance": {
+        "type": "object", "additionalProperties": false,
+        "required": ["provider", "authority", "sourceKind", "sourceReferenceFingerprint"],
+        "properties": {
+          "provider": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "authority": { "type": "string", "minLength": 1, "maxLength": 500 },
+          "sourceKind": { "enum": ["fixture", "connected"] },
+          "sourceReferenceFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        }
+      },
+      "observedAt": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z$" }
+    }
+  },
+  "authentication": { "required": true, "minimumScopes": ["mail:read"] },
+  "effects": ["read", "disclosure"],
+  "idempotency": { "mode": "idempotent", "key": "replyMessageIds+idempotencyKeys" },
+  "retry": { "safe": true, "maxAttempts": 2, "checkpoint": "The exact reply-message and draft idempotency identifiers remain unchanged." },
+  "errors": ["authentication", "authorization", "validation", "conflict", "rate-limit", "unavailable", "retryable", "not-found", "unknown"],
+  "freshness": { "returnsProvenance": true, "returnsObservedAt": true, "maxAgeSeconds": 60 },
+  "health": {
+    "check": "Read-only exact draft listing may be probed only under an authorized connected mailbox.",
+    "fixture": "soter/scenarios/email-triage/happy-path.scenario.json",
+    "containedVerification": "Fixture verification proves exact reply-message, idempotency-key, and content-fingerprint matching only."
+  },
+  "providerLimitations": [
+    "Draft listing returns minimized metadata and content fingerprints, never draft bodies; creating a draft never grants send authority.",
+    "The installed Codex Gmail draft list cannot select an exact idempotency key, so no connected provider is declared for this portable interface."
+  ]
+}

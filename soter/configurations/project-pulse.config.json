@@ -1,0 +1,140 @@
+{
+  "$contract": "soter://contracts/configuration/v1",
+  "contractVersion": "1.0.0",
+  "name": "project-pulse",
+  "base": {
+    "kernel": "kernel.soter",
+    "core": "core.runtime"
+  },
+  "packs": [
+    {
+      "id": "context.crm",
+      "source": "dependency",
+      "reason": "Project Pulse depends on shared project, milestone, task, policy, and authority concepts."
+    },
+    {
+      "id": "automation.project-pulse",
+      "source": "user",
+      "reason": "The user selected the read-only Project Pulse grounding outcome for this configuration."
+    },
+    {
+      "id": "integration.notion",
+      "source": "binding",
+      "reason": "The configured project and task authorities live in Notion and require a record read provider."
+    }
+  ],
+  "bindings": [
+    {
+      "capability": "crm.records.read",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.crm.definition", "authority.crm.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "Notion is the configured authority for reading project policies, projects, milestones, and promoted tasks."
+    }
+  ],
+  "sources": [
+    {
+      "id": "source.policy.project-pulse",
+      "capability": "crm.records.read",
+      "authority": "authority.crm.definition",
+      "input": {
+        "recordTypes": ["policy"],
+        "ids": ["policy.project-pulse"]
+      },
+      "readiness": {
+        "mode": "probe-read",
+        "reason": "Connected readiness must prove the configured project-status policy can be read and normalized without retaining private values."
+      },
+      "consumers": [
+        {
+          "pack": "automation.project-pulse",
+          "purpose": "project-status-policy",
+          "subjects": ["project-status"],
+          "reason": "Project Pulse must ground progress, milestone, health, and write-gate rules in one configured definition-authority source."
+        }
+      ],
+      "reason": "The project-status policy is a portable configured source rather than an Automation-owned provider record identity."
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.crm.definition",
+      "role": "definition",
+      "subject": "crm.records",
+      "uri": "notion://configured/policies",
+      "reason": "The user's live project policies define valid status and milestone interpretation."
+    },
+    {
+      "id": "authority.crm.instance",
+      "role": "instance",
+      "subject": "crm.records",
+      "uri": "notion://configured/crm",
+      "reason": "The user's configured project, milestone, and task records are authoritative for observed progress."
+    },
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "uri": "notion://configured-user",
+      "reason": "The selected Notion account supplies provider identity and permission context."
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "uri": "soter-state://runs",
+      "reason": "Local Soter runtime state owns reproducible Project Pulse runs and evidence."
+    }
+  ],
+  "effectPolicies": {
+    "read": {
+      "mode": "allow",
+      "reason": "Selected project authorities may be read to assemble the requested status brief."
+    },
+    "disclosure": {
+      "mode": "allow",
+      "reason": "Selected project records may enter the configured private run envelope."
+    },
+    "write": {
+      "mode": "confirm",
+      "reason": "A later status-record or milestone update would require exact batch confirmation."
+    },
+    "dispatch": {
+      "mode": "prohibit",
+      "reason": "Project Pulse does not send messages or publish notifications."
+    },
+    "destructive": {
+      "mode": "prohibit",
+      "reason": "Project Pulse never deletes records or performs destructive changes."
+    }
+  },
+  "secretRefs": [
+    {
+      "id": "secret-ref.notion",
+      "provider": "host",
+      "key": "NOTION_OAUTH"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.1.0",
+    "reason": "This fixture configuration exercises the Codex projection while preserving provider-neutral contracts."
+  },
+  "settings": {
+    "integration.notion": {
+      "targets": {
+        "policies": "collection://39dd79b5-de38-8042-9d47-000b9293ab47",
+        "organizations": "collection://2b2d79b5-de38-817a-981e-000b27e5575b",
+        "contacts": "collection://2b2d79b5-de38-81d0-852e-000bc3fdf8d2",
+        "projects": "collection://721bfb88-e8d5-4934-ac26-cc82e1afc7a0",
+        "tasks": "collection://2abd79b5-de38-80f8-9470-000b7181b18d",
+        "meetings": "collection://b2550e36-38d5-4d33-86db-bbd0987aeaef",
+        "documents": "collection://2abd79b5-de38-8075-a97b-000b24e99dc1"
+      }
+    },
+    "automation.project-pulse": {
+      "policySource": "source.policy.project-pulse"
+    }
+  }
+}

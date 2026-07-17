@@ -1,0 +1,51 @@
+{
+  "$contract": "soter://contracts/host-projection-definition/v1",
+  "contractVersion": "1.0.0",
+  "id": "host-projection.codex",
+  "host": "codex",
+  "version": "0.1.0",
+  "generator": {
+    "id": "core.host-projection-generator",
+    "version": "1.0.0"
+  },
+  "target": {
+    "root": "consumer-root",
+    "pathPolicy": "normalized-relative",
+    "symlinkPolicy": "reject"
+  },
+  "ownership": {
+    "mode": "whole-file",
+    "collision": "reject-unmanaged",
+    "localEdit": "fail-closed",
+    "sharedOutput": "prohibited",
+    "retirement": "remove-managed"
+  },
+  "renderContext": ["configuration-id", "host-id", "pack-ids", "capability-ids"],
+  "outputs": [
+    {
+      "id": "output.codex.instructions",
+      "path": "AGENTS.md",
+      "role": "instructions",
+      "template": "soter/hosts/codex/templates/AGENTS.md.tmpl",
+      "encoding": "utf-8",
+      "newline": "lf",
+      "finalNewline": true,
+      "mode": "0644",
+      "renderContext": ["configuration-id", "host-id", "pack-ids", "capability-ids"]
+    },
+    {
+      "id": "output.codex.tools",
+      "path": ".codex/config.toml",
+      "role": "tools",
+      "template": "soter/hosts/codex/templates/config.toml.tmpl",
+      "encoding": "utf-8",
+      "newline": "lf",
+      "finalNewline": true,
+      "mode": "0644",
+      "renderContext": ["host-id"]
+    }
+  ],
+  "limitations": [
+    "This definition projects local deterministic guidance and the Soter Core route only; it does not install Codex or prove launch, tool discovery, authentication, provider reachability, connected behavior, or health."
+  ]
+}

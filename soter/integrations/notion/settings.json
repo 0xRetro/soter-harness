@@ -1,0 +1,59 @@
+{
+  "$contract": "soter://contracts/pack-settings/v1",
+  "contractVersion": "1.0.0",
+  "id": "settings.integration.notion",
+  "pack": "integration.notion",
+  "version": "0.1.0",
+  "required": true,
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["targets"],
+    "properties": {
+      "targets": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "policies",
+          "organizations",
+          "contacts",
+          "projects",
+          "tasks",
+          "meetings",
+          "documents"
+        ],
+        "properties": {
+          "policies": {
+            "type": "string",
+            "pattern": "^collection://[a-f0-9-]{32,36}$"
+          },
+          "organizations": {
+            "type": "string",
+            "pattern": "^collection://[a-f0-9-]{32,36}$"
+          },
+          "contacts": {
+            "type": "string",
+            "pattern": "^collection://[a-f0-9-]{32,36}$"
+          },
+          "projects": {
+            "type": "string",
+            "pattern": "^collection://[a-f0-9-]{32,36}$"
+          },
+          "tasks": {
+            "type": "string",
+            "pattern": "^collection://[a-f0-9-]{32,36}$"
+          },
+          "meetings": {
+            "type": "string",
+            "pattern": "^collection://[a-f0-9-]{32,36}$"
+          },
+          "documents": {
+            "type": "string",
+            "pattern": "^collection://[a-f0-9-]{32,36}$"
+          }
+        }
+      }
+    }
+  },
+  "reason": "Notion target identities are user-specific configuration, while field semantics remain owned by the integration mapping."
+}

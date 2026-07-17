@@ -1,0 +1,61 @@
+{
+  "$contract": "soter://contracts/scenario/v1",
+  "contractVersion": "1.0.0",
+  "id": "meeting-intake.happy-path",
+  "automation": "automation.meeting-intake",
+  "intent": "operate",
+  "input": {
+    "meeting": {
+      "ageClass": "recent",
+      "recordState": "existing",
+      "transcriptSource": "configured-provider"
+    },
+    "existingRecords": {
+      "openTaskOverlap": true,
+      "relatedProjectsResolvable": true
+    }
+  },
+  "expected": {
+    "capabilityOrder": [
+      "crm.records.read",
+      "crm.records.read",
+      "meeting.transcript.read",
+      "crm.records.update",
+      "crm.records.create",
+      "crm.records.read"
+    ],
+    "effectModes": {
+      "read": "allow",
+      "disclosure": "allow",
+      "write": "confirm",
+      "dispatch": "prohibit",
+      "destructive": "prohibit"
+    },
+    "outcomes": [
+      "meeting-summary.created",
+      "grounded-tasks.created-or-folded",
+      "source-meeting.attributed",
+      "landed-records.verified"
+    ],
+    "invariants": [
+      "transcript-grounded",
+      "deduplicate-before-create",
+      "external-commitments-remain-in-summary",
+      "one-batch-confirmation-before-writes",
+      "dependency-ordered-writes",
+      "refetch-after-write"
+    ],
+    "evidence": [
+      "resolved-configuration",
+      "authority-fingerprints",
+      "capability-bindings",
+      "source-provenance",
+      "confirmation-record",
+      "effect-results",
+      "verification-results"
+    ]
+  },
+  "sourceCases": [
+    ".claude/evals/processing-a-meeting/happy-path.md"
+  ]
+}

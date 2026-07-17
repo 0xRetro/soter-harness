@@ -1,0 +1,249 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/operator-inspection/v1",
+  "title": "Soter sanitized operator inspection projection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "generatedAt", "activity",
+    "configuration", "scope", "approval", "capabilities", "blockers",
+    "checkpoint", "resume", "continuationRequest", "verification", "compensation", "families",
+    "privacy", "inspectionFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/operator-inspection/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "generatedAt": { "type": "string", "minLength": 20 },
+    "activity": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "automationId", "workId", "workState", "phase", "runId"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^activity\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "automationId": { "type": ["string", "null"], "minLength": 1 },
+        "workId": { "type": "string", "pattern": "^work\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "workState": { "enum": ["awaiting-approval", "approval-expired", "approved-not-started", "running", "blocked", "verification-failed", "rolling-back", "rolled-back", "completed", "failed"] },
+        "phase": { "enum": ["approval", "execution", "verification", "compensation", "complete"] },
+        "runId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "configuration": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "path", "lockPath", "lockFingerprint", "graphFingerprint", "host", "applicability"],
+      "properties": {
+        "name": { "type": ["string", "null"], "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "lockPath": { "type": "string", "minLength": 1 },
+        "lockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "host": { "type": "string", "minLength": 1 },
+        "applicability": {
+          "type": "object", "additionalProperties": false,
+          "required": ["state", "expectedLockFingerprint", "observedLockFingerprint", "reasonCode"],
+          "properties": {
+            "state": { "enum": ["current", "stale", "unknown"] },
+            "expectedLockFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+            "observedLockFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+            "reasonCode": { "$ref": "#/$defs/reasonCode" }
+          }
+        }
+      }
+    },
+    "scope": {
+      "type": "object", "additionalProperties": false,
+      "required": ["changeSet", "batch", "effects", "authorities", "recordIds", "changes"],
+      "properties": {
+        "changeSet": { "$ref": "#/$defs/reference" },
+        "batch": { "$ref": "#/$defs/reference" },
+        "effects": { "$ref": "#/$defs/stringSet" },
+        "authorities": { "$ref": "#/$defs/stringSet" },
+        "recordIds": { "$ref": "#/$defs/stringSet" },
+        "changes": { "type": "array", "items": { "$ref": "#/$defs/change" } }
+      }
+    },
+    "approval": {
+      "type": "object", "additionalProperties": false,
+      "required": ["state", "request", "confirmation", "consumption", "reasonCode"],
+      "properties": {
+        "state": { "enum": ["awaiting", "expired", "confirmed", "consumed", "stale"] },
+        "request": { "$ref": "#/$defs/approvalRequest" },
+        "confirmation": { "$ref": "#/$defs/confirmation" },
+        "consumption": { "$ref": "#/$defs/consumption" },
+        "reasonCode": { "$ref": "#/$defs/reasonCode" }
+      }
+    },
+    "capabilities": {
+      "type": "object", "additionalProperties": false,
+      "required": ["steps", "completedPrefix", "current", "pending"],
+      "properties": {
+        "steps": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/capabilityStep" } },
+        "completedPrefix": { "$ref": "#/$defs/stringList" },
+        "current": { "$ref": "#/$defs/currentStep" },
+        "pending": { "$ref": "#/$defs/stringList" }
+      }
+    },
+    "blockers": { "type": "array", "items": { "$ref": "#/$defs/blocker" } },
+    "checkpoint": { "$ref": "#/$defs/checkpoint" },
+    "resume": {
+      "type": "object", "additionalProperties": false,
+      "required": ["classification", "reasonCode", "reason", "permittedNextAction"],
+      "properties": {
+        "classification": { "enum": ["safe", "requires-review", "unavailable"] },
+        "reasonCode": { "$ref": "#/$defs/reasonCode" },
+        "reason": { "type": "string", "minLength": 1 },
+        "permittedNextAction": { "enum": ["confirm-approval", "renew-approval-request", "start-transaction", "execute-current-call", "prepare-reconciliation", "inspect-checkpoint", "rebuild-work", "none"] }
+      }
+    },
+    "continuationRequest": { "$ref": "#/$defs/continuationRequest" },
+    "verification": {
+      "type": "object", "additionalProperties": false,
+      "required": ["state", "criteria", "observedFingerprint"],
+      "properties": {
+        "state": { "enum": ["not-started", "running", "verified", "failed", "unknown"] },
+        "criteria": { "type": "array", "items": { "$ref": "#/$defs/criterion" } },
+        "observedFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
+      }
+    },
+    "compensation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["state", "plan", "completedStepIds", "remainingStepIds", "restoredFingerprint"],
+      "properties": {
+        "state": { "enum": ["not-required", "pending", "running", "verified", "failed", "unknown"] },
+        "plan": { "type": "array", "items": { "$ref": "#/$defs/compensationStep" } },
+        "completedStepIds": { "$ref": "#/$defs/stringList" },
+        "remainingStepIds": { "$ref": "#/$defs/stringList" },
+        "restoredFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
+      }
+    },
+    "families": {
+      "type": "object", "additionalProperties": false,
+      "required": ["proof", "maturity", "migration"],
+      "properties": {
+        "proof": { "$ref": "#/$defs/unprojectedFamily" },
+        "maturity": { "$ref": "#/$defs/unprojectedFamily" },
+        "migration": { "$ref": "#/$defs/unprojectedFamily" }
+      }
+    },
+    "privacy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["scope", "rawProviderResponseIncluded", "credentialValuesIncluded"],
+      "properties": {
+        "scope": { "const": "private-derived" },
+        "rawProviderResponseIncluded": { "const": false },
+        "credentialValuesIncluded": { "const": false }
+      }
+    },
+    "inspectionFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "nullableFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+    "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" },
+    "stringList": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "stringSet": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+    "reference": {
+      "type": "object", "additionalProperties": false, "required": ["id", "fingerprint"],
+      "properties": { "id": { "type": "string", "minLength": 1 }, "fingerprint": { "$ref": "#/$defs/fingerprint" } }
+    },
+    "change": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "recordId", "effect", "beforeFingerprint", "afterFingerprint"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "recordId": { "type": ["string", "null"], "minLength": 1 },
+        "effect": { "type": "string", "minLength": 1 },
+        "beforeFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+        "afterFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
+      }
+    },
+    "approvalRequest": {
+      "type": "object", "additionalProperties": false, "required": ["id", "fingerprint", "requestedAt", "expiresAt"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 }, "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "requestedAt": { "type": "string", "minLength": 20 }, "expiresAt": { "type": "string", "minLength": 20 }
+      }
+    },
+    "confirmation": {
+      "type": ["object", "null"], "additionalProperties": false, "required": ["id", "fingerprint", "confirmedAt", "actor"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 }, "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "confirmedAt": { "type": "string", "minLength": 20 }, "actor": { "type": "string", "minLength": 1 }
+      }
+    },
+    "consumption": {
+      "type": ["object", "null"], "additionalProperties": false,
+      "required": ["id", "state", "startedAt", "checkpointId", "checkpointFingerprint"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 }, "state": { "enum": ["reserved", "started"] },
+        "startedAt": { "type": "string", "minLength": 20 }, "checkpointId": { "type": "string", "minLength": 1 },
+        "checkpointFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
+      }
+    },
+    "capabilityStep": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "sequence", "capability", "authority", "effects", "state"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 }, "sequence": { "type": "integer", "minimum": 1 },
+        "capability": { "type": "string", "minLength": 1 }, "authority": { "type": "string", "minLength": 1 },
+        "effects": { "$ref": "#/$defs/stringSet" },
+        "state": { "enum": ["pending", "current", "applied", "failed", "needs-attention", "compensating", "compensated"] }
+      }
+    },
+    "currentStep": {
+      "type": ["object", "null"], "additionalProperties": false,
+      "required": ["stepId", "stage", "callId", "reconciliationId"],
+      "properties": {
+        "stepId": { "type": "string", "minLength": 1 }, "stage": { "type": "string", "minLength": 1 },
+        "callId": { "type": "string", "minLength": 1 }, "reconciliationId": { "type": ["string", "null"], "minLength": 1 }
+      }
+    },
+    "fact": {
+      "type": "object", "additionalProperties": false, "required": ["key", "value"],
+      "properties": { "key": { "type": "string", "minLength": 1 }, "value": { "type": ["string", "number", "boolean", "null"] } }
+    },
+    "blocker": {
+      "type": "object", "additionalProperties": false,
+      "required": ["reasonCode", "summary", "details", "requiredInputs", "requiredPermissions"],
+      "properties": {
+        "reasonCode": { "$ref": "#/$defs/reasonCode" }, "summary": { "type": "string", "minLength": 1 },
+        "details": { "type": "array", "items": { "$ref": "#/$defs/fact" } },
+        "requiredInputs": { "$ref": "#/$defs/stringSet" }, "requiredPermissions": { "$ref": "#/$defs/stringSet" }
+      }
+    },
+    "checkpoint": {
+      "type": ["object", "null"], "additionalProperties": false, "required": ["id", "fingerprint", "state", "updatedAt"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 }, "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "state": { "type": "string", "minLength": 1 }, "updatedAt": { "type": "string", "minLength": 20 }
+      }
+    },
+    "continuationRequest": {
+      "type": ["object", "null"], "additionalProperties": false,
+      "required": ["kind", "checkpointId", "checkpointFingerprint", "callId", "requestFingerprint"],
+      "properties": {
+        "kind": { "enum": ["execute-current-call", "prepare-reconciliation"] },
+        "checkpointId": { "type": "string", "minLength": 1 },
+        "checkpointFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "callId": { "type": ["string", "null"], "minLength": 1 },
+        "requestFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "criterion": {
+      "type": "object", "additionalProperties": false, "required": ["id", "state", "reasonCode", "observedFingerprint"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 }, "state": { "enum": ["pending", "running", "passed", "failed", "unknown"] },
+        "reasonCode": { "$ref": "#/$defs/reasonCode" }, "observedFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
+      }
+    },
+    "compensationStep": {
+      "type": "object", "additionalProperties": false, "required": ["stepId", "mode"],
+      "properties": {
+        "stepId": { "type": "string", "minLength": 1 },
+        "mode": { "enum": ["restore-prior-fields", "terminal-idempotent-create", "manual-required"] }
+      }
+    },
+    "unprojectedFamily": {
+      "type": "object", "additionalProperties": false, "required": ["state", "reasonCode"],
+      "properties": { "state": { "const": "not-evaluated" }, "reasonCode": { "const": "FAMILY_NOT_EVALUATED_BY_OPERATOR_INSPECTION" } }
+    }
+  }
+}

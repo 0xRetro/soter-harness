@@ -1,0 +1,41 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.crm",
+  "version": "0.1.0",
+  "layer": "context",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Defines CRM organizations, contacts, channels, meetings, relationships, policies, and authority boundaries.",
+  "dependencies": [
+    {
+      "pack": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "CRM definitions and instances require portable context assembly and authority resolution."
+    }
+  ],
+  "capabilities": {
+    "requires": [],
+    "provides": []
+  },
+  "authorities": [
+    { "role": "definition", "subject": "crm.records", "required": true },
+    { "role": "instance", "subject": "crm.records", "required": true }
+  ],
+  "effects": [],
+  "artifacts": [
+    {
+      "path": "soter/contexts/crm/records.model.json",
+      "role": "definition"
+    }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": ["codex", "claude"]
+  },
+  "verification": {
+    "maxLevel": "static",
+    "scenarios": []
+  }
+}

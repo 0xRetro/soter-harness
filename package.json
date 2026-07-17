@@ -1,0 +1,51 @@
+{
+  "name": "soter-harness",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "soter/studio/electron/main.mjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "soter:verify": "node soter/kernel/verify.mjs",
+    "soter:distribution:selftest": "node soter/kernel/distribution.selftest.mjs",
+    "soter:selftest": "node soter/core/cli.mjs selftest",
+    "soter:mcp:codex": "node soter/core/mcp/server.mjs --host codex",
+    "soter:mcp:claude": "node soter/core/mcp/server.mjs --host claude",
+    "soter:mcp:selftest": "node soter/core/mcp/selftest.mjs",
+    "soter:studio:dev": "concurrently -k -s first \"vite --config soter/studio/vite.config.ts\" \"wait-on http://127.0.0.1:5173 && cross-env SOTER_STUDIO_DEV_URL=http://127.0.0.1:5173 electron .\"",
+    "soter:studio:build": "vite build --config soter/studio/vite.config.ts",
+    "soter:studio:test": "vitest run --config soter/studio/vitest.config.ts",
+    "soter:studio:e2e": "npm run soter:studio:build && playwright test --config soter/studio/playwright.config.ts",
+    "soter:studio:check": "node soter/core/automation-input.selftest.mjs && node soter/automations/project-pulse/project-pulse.selftest.mjs && node soter/core/configuration-preview.selftest.mjs && node soter/core/inspection.selftest.mjs && node soter/core/prepared-work.selftest.mjs && tsc --noEmit -p tsconfig.studio.json && npm run soter:studio:test && npm run soter:studio:build"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "5.2.7",
+    "@fontsource/ibm-plex-sans": "5.2.8",
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "@xyflow/react": "12.11.2",
+    "electron": "43.1.1",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.61.1",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.2",
+    "@testing-library/user-event": "14.6.1",
+    "@types/node": "26.1.1",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.3",
+    "axe-core": "4.12.1",
+    "concurrently": "10.0.3",
+    "cross-env": "10.1.0",
+    "jsdom": "27.0.1",
+    "typescript": "7.0.2",
+    "vite": "8.1.4",
+    "vitest": "3.2.7",
+    "wait-on": "9.0.10"
+  }
+}

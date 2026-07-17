@@ -1,0 +1,59 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "mail.drafts.create",
+  "version": "2.0.0",
+  "purpose": "Creates one exact approved draft as a reply to one exact mail message without sending or dispatching it.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["replyMessageId", "recipients", "subject", "body", "idempotencyKey"],
+    "properties": {
+      "replyMessageId": { "type": "string", "minLength": 1, "maxLength": 500 },
+      "recipients": { "type": "array", "minItems": 1, "maxItems": 20, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 1000 } },
+      "subject": { "type": "string", "maxLength": 10000 },
+      "body": { "type": "string", "minLength": 1, "maxLength": 1000000 },
+      "idempotencyKey": { "type": "string", "minLength": 1, "maxLength": 1000 }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["draftId", "replyMessageId", "contentFingerprint", "provenance", "observedAt"],
+    "properties": {
+      "draftId": { "type": "string", "minLength": 1, "maxLength": 1000 },
+      "replyMessageId": { "type": "string", "minLength": 1, "maxLength": 500 },
+      "contentFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+      "provenance": {
+        "type": "object", "additionalProperties": false,
+        "required": ["provider", "authority", "sourceKind", "sourceReferenceFingerprint"],
+        "properties": {
+          "provider": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "authority": { "type": "string", "minLength": 1, "maxLength": 500 },
+          "sourceKind": { "enum": ["fixture", "connected"] },
+          "sourceReferenceFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        }
+      },
+      "observedAt": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z$" }
+    }
+  },
+  "authentication": { "required": true, "minimumScopes": ["mail:compose"] },
+  "effects": ["write"],
+  "idempotency": { "mode": "conditional", "key": "idempotencyKey" },
+  "retry": { "safe": false, "maxAttempts": 1, "checkpoint": "List drafts and compare the exact reply message, idempotency key, and content fingerprint before recovery." },
+  "errors": [
+    "authentication", "authorization", "validation", "conflict", "rate-limit",
+    "unavailable", "retryable", "not-found", "unknown"
+  ],
+  "freshness": { "returnsProvenance": true, "returnsObservedAt": true, "maxAgeSeconds": 60 },
+  "health": {
+    "check": "No write probe is permitted.",
+    "fixture": "soter/scenarios/email-triage/happy-path.scenario.json",
+    "containedVerification": "Declare exact reply-draft create and list verification semantics without sending or writing during preparation."
+  },
+  "providerLimitations": [
+    "This capability creates drafts only. Soter declares no mail send or dispatch capability in this milestone.",
+    "The Codex Gmail connector is not declared for this capability because it cannot reconcile an ambiguous create through an exact idempotency-key lookup."
+  ]
+}

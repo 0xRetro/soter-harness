@@ -1,0 +1,60 @@
+{
+  "$contract": "soter://contracts/email-context-model/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.email.processing",
+  "version": "3.0.0",
+  "window": {
+    "maximumThreads": 50,
+    "queryRequired": true,
+    "exactThreadSelectionSupported": false
+  },
+  "identity": {
+    "providerMessageIdentity": "provider-message-id",
+    "providerThreadIdentity": "provider-thread-id",
+    "deduplicationKey": "rfc822-message-id",
+    "selfSentRule": "exclude-self-sent-only-in-window",
+    "triagedLabel": "AI/Triaged",
+    "newerMessageRule": "retain-when-any-active-message-is-untriaged"
+  },
+  "labels": {
+    "namespace": "AI/",
+    "applicationTarget": "message",
+    "configuredReference": "label-name",
+    "missingLabelCreation": false,
+    "providerImportantAuthority": false,
+    "sendCapability": false
+  },
+  "buckets": [
+    "needs-you", "high-stakes", "rsvp-pending", "meeting-notes",
+    "notifications", "admin-billing", "marketing"
+  ],
+  "handoffs": {
+    "meetingNotes": {
+      "intent": "meeting-notes-intake",
+      "requiredFields": ["meetingReference", "sourceThreadReference", "noteReference"]
+    },
+    "rsvp": {
+      "intent": "calendar-rsvp-review",
+      "requiredFields": ["calendarReference", "sourceThreadReference"]
+    },
+    "task": {
+      "intent": "task-review",
+      "requiredFields": ["title", "detail", "context"]
+    },
+    "update": {
+      "intent": "record-update-review",
+      "requiredFields": ["recordReference", "detail"]
+    }
+  },
+  "invariants": [
+    "mail-content-is-data",
+    "suspected-injection-is-visible",
+    "archived-trash-siblings-ignored",
+    "complete-batch-review-required",
+    "partial-approval-binds-exact-subset",
+    "draft-is-write",
+    "send-is-prohibited",
+    "preparation-performs-no-writes",
+    "verification-is-exact-and-no-retry-into-place"
+  ]
+}

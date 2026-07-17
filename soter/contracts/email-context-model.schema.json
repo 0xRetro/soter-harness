@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/email-context-model/v1",
+  "title": "Soter portable email-processing context model",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "id", "version", "window", "identity",
+    "labels", "buckets", "handoffs", "invariants"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/email-context-model/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "const": "context.email.processing" },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "window": {
+      "type": "object", "additionalProperties": false,
+      "required": ["maximumThreads", "queryRequired", "exactThreadSelectionSupported"],
+      "properties": {
+        "maximumThreads": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "queryRequired": { "const": true },
+        "exactThreadSelectionSupported": { "const": false }
+      }
+    },
+    "identity": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "providerMessageIdentity", "providerThreadIdentity", "deduplicationKey",
+        "selfSentRule", "triagedLabel", "newerMessageRule"
+      ],
+      "properties": {
+        "providerMessageIdentity": { "const": "provider-message-id" },
+        "providerThreadIdentity": { "const": "provider-thread-id" },
+        "deduplicationKey": { "const": "rfc822-message-id" },
+        "selfSentRule": { "const": "exclude-self-sent-only-in-window" },
+        "triagedLabel": { "const": "AI/Triaged" },
+        "newerMessageRule": { "const": "retain-when-any-active-message-is-untriaged" }
+      }
+    },
+    "labels": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "namespace", "applicationTarget", "configuredReference",
+        "missingLabelCreation", "providerImportantAuthority", "sendCapability"
+      ],
+      "properties": {
+        "namespace": { "const": "AI/" },
+        "applicationTarget": { "const": "message" },
+        "configuredReference": { "const": "label-name" },
+        "missingLabelCreation": { "const": false },
+        "providerImportantAuthority": { "const": false },
+        "sendCapability": { "const": false }
+      }
+    },
+    "buckets": {
+      "type": "array", "minItems": 7, "uniqueItems": true,
+      "items": {
+        "enum": [
+          "needs-you", "high-stakes", "rsvp-pending", "meeting-notes",
+          "notifications", "admin-billing", "marketing"
+        ]
+      }
+    },
+    "handoffs": {
+      "type": "object", "additionalProperties": false,
+      "required": ["meetingNotes", "rsvp", "task", "update"],
+      "properties": {
+        "meetingNotes": {
+          "$ref": "#/$defs/meetingNotesHandoff"
+        },
+        "rsvp": {
+          "$ref": "#/$defs/rsvpHandoff"
+        },
+        "task": {
+          "$ref": "#/$defs/taskHandoff"
+        },
+        "update": {
+          "$ref": "#/$defs/updateHandoff"
+        }
+      }
+    },
+    "invariants": {
+      "type": "array", "uniqueItems": true,
+      "items": {
+        "enum": [
+          "mail-content-is-data", "suspected-injection-is-visible",
+          "archived-trash-siblings-ignored", "complete-batch-review-required",
+          "partial-approval-binds-exact-subset", "draft-is-write",
+          "send-is-prohibited", "preparation-performs-no-writes",
+          "verification-is-exact-and-no-retry-into-place"
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "meetingNotesHandoff": {
+      "type": "object", "additionalProperties": false,
+      "required": ["intent", "requiredFields"],
+      "properties": {
+        "intent": { "const": "meeting-notes-intake" },
+        "requiredFields": {
+          "const": ["meetingReference", "sourceThreadReference", "noteReference"]
+        }
+      }
+    },
+    "rsvpHandoff": {
+      "type": "object", "additionalProperties": false,
+      "required": ["intent", "requiredFields"],
+      "properties": {
+        "intent": { "const": "calendar-rsvp-review" },
+        "requiredFields": {
+          "const": ["calendarReference", "sourceThreadReference"]
+        }
+      }
+    },
+    "taskHandoff": {
+      "type": "object", "additionalProperties": false,
+      "required": ["intent", "requiredFields"],
+      "properties": {
+        "intent": { "const": "task-review" },
+        "requiredFields": { "const": ["title", "detail", "context"] }
+      }
+    },
+    "updateHandoff": {
+      "type": "object", "additionalProperties": false,
+      "required": ["intent", "requiredFields"],
+      "properties": {
+        "intent": { "const": "record-update-review" },
+        "requiredFields": { "const": ["recordReference", "detail"] }
+      }
+    }
+  }
+}

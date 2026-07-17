@@ -1,0 +1,296 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { verifyConfigurationCandidate, verifySoter } from '../kernel/verify.mjs';
+import {
+  fingerprintJson,
+  fingerprintPath,
+  readJson,
+  repoRelativePath,
+  resolveRepoPath
+} from './lib/canonical-json.mjs';
+import { renderHostProjectionCandidates } from './host-projections.mjs';
+
+export const RESOLVER_ID = 'core.resolver';
+export const RESOLVER_VERSION = '0.5.0';
+
+const layerOrder = new Map([
+  ['kernel', 0],
+  ['core', 1],
+  ['context', 2],
+  ['automation', 3],
+  ['integration', 4]
+]);
+
+function compareText(left, right) {
+  return left.localeCompare(right, 'en');
+}
+
+function findDefaultConfiguration(root) {
+  const directory = path.join(root, 'soter', 'configurations');
+  const candidates = fs.readdirSync(directory)
+    .filter((name) => name.endsWith('.config.json'))
+    .sort()
+    .map((name) => path.join(directory, name));
+  if (candidates.length !== 1) {
+    throw new Error('Expected exactly one default configuration; pass --config explicitly.');
+  }
+  return candidates[0];
+}
+
+function configurationFile(root, requestedPath) {
+  if (!requestedPath) {
+    return findDefaultConfiguration(root);
+  }
+  return resolveRepoPath(root, requestedPath);
+}
+
+function requireCleanGraph(verification) {
+  if (verification.health.valid !== 'passed') {
+    const codes = verification.violations
+      .filter((item) => item.level !== 'warn')
+      .map((item) => item.code)
+      .join(', ');
+    throw new Error('Cannot resolve an invalid Soter graph' + (codes ? ': ' + codes : '.'));
+  }
+}
+
+function selectedResolution(verification, name) {
+  const matches = verification.resolvedConfigurations.filter((item) => item.name === name);
+  if (matches.length !== 1) {
+    throw new Error('Expected one resolved configuration named ' + name + '; found ' + matches.length + '.');
+  }
+  return matches[0];
+}
+
+function packManifestPath(root, id) {
+  return path.join(root, 'soter', 'packs', id, 'pack.json');
+}
+
+function capabilityContractPath(root, id) {
+  return path.join(root, 'soter', 'capabilities', id + '.json');
+}
+
+function hostManifestPath(root, host) {
+  return path.join(root, 'soter', 'hosts', host, 'adapter.json');
+}
+
+function graphFingerprint(lock) {
+  const unsigned = { ...lock };
+  delete unsigned.graphFingerprint;
+  return fingerprintJson(unsigned);
+}
+
+export function fingerprintLock(lock) {
+  return fingerprintJson(lock);
+}
+
+function resolveConfigurationValue({ resolvedRoot, file, configuration, verification, host }) {
+  const resolution = selectedResolution(verification, configuration.name);
+
+  const selectedHost = host || configuration.host.id;
+  if (typeof selectedHost !== 'string'
+    || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(selectedHost)) {
+    throw new Error('Selected Soter host has an invalid identifier.');
+  }
+  const selectedHostPath = hostManifestPath(resolvedRoot, selectedHost);
+  if (!fs.existsSync(selectedHostPath)) {
+    throw new Error('Unknown Soter host ' + selectedHost + '.');
+  }
+  const hostAdapter = readJson(selectedHostPath);
+  if (hostAdapter.$contract !== 'soter://contracts/host-adapter/v1'
+    || hostAdapter.host !== selectedHost) {
+    throw new Error('Host adapter does not match selected host ' + selectedHost + '.');
+  }
+
+  const manifests = new Map(resolution.selections.map((selection) => {
+    const manifestPath = packManifestPath(resolvedRoot, selection.id);
+    return [selection.id, { path: manifestPath, doc: readJson(manifestPath) }];
+  }));
+
+  const packs = resolution.selections.map((selection) => {
+    const manifest = manifests.get(selection.id);
+    return {
+      id: selection.id,
+      version: manifest.doc.version,
+      layer: manifest.doc.layer,
+      releaseStage: manifest.doc.releaseStage,
+      evidenceMaturity: manifest.doc.evidenceMaturity,
+      source: selection.source,
+      reason: selection.reason,
+      manifestFingerprint: fingerprintJson(manifest.doc),
+      artifacts: manifest.doc.artifacts.map((artifact) => ({
+        path: artifact.path,
+        role: artifact.role,
+        fingerprint: fingerprintPath(resolveRepoPath(resolvedRoot, artifact.path))
+      })).sort((left, right) => compareText(left.path, right.path))
+    };
+  }).sort((left, right) => {
+    return layerOrder.get(left.layer) - layerOrder.get(right.layer) || compareText(left.id, right.id);
+  });
+
+  const dependencies = resolution.dependencies.map((dependency) => ({ ...dependency }))
+    .sort((left, right) => compareText(left.from, right.from) || compareText(left.to, right.to));
+
+  const capabilities = [...new Set(resolution.bindings.map((binding) => binding.capability))]
+    .sort(compareText)
+    .map((id) => {
+      const contract = readJson(capabilityContractPath(resolvedRoot, id));
+      return {
+        id,
+        version: contract.version,
+        contractFingerprint: fingerprintJson(contract)
+      };
+    });
+
+  const bindings = resolution.bindings.map((binding) => ({
+    capability: binding.capability,
+    capabilityVersion: binding.capabilityVersion,
+    providerPack: binding.providerPack,
+    providerVersion: binding.providerVersion,
+    authorities: [...binding.authorities].sort(compareText),
+    effects: [...binding.effects].sort(compareText),
+    reason: binding.reason
+  })).sort((left, right) => compareText(left.capability, right.capability));
+
+  const sources = configuration.sources.map((source) => {
+    const capability = readJson(capabilityContractPath(resolvedRoot, source.capability));
+    return {
+      id: source.id,
+      capability: source.capability,
+      capabilityVersion: capability.version,
+      authority: source.authority,
+      input: structuredClone(source.input),
+      inputFingerprint: fingerprintJson(source.input),
+      readiness: structuredClone(source.readiness),
+      consumers: source.consumers.map((consumer) => ({
+        ...structuredClone(consumer),
+        subjects: [...consumer.subjects].sort(compareText)
+      })).sort((left, right) => {
+        return compareText(left.pack, right.pack) || compareText(left.purpose, right.purpose);
+      }),
+      reason: source.reason
+    };
+  }).sort((left, right) => compareText(left.id, right.id));
+
+  const authorities = resolution.authorities.map((authority) => ({
+    ...authority,
+    declarationFingerprint: fingerprintJson(authority)
+  })).sort((left, right) => compareText(left.id, right.id));
+
+  const incompatiblePacks = [...manifests.values()]
+    .filter((manifest) => !manifest.doc.compatibility.hosts.includes(selectedHost))
+    .map((manifest) => manifest.doc.id)
+    .sort(compareText);
+  if (incompatiblePacks.length) {
+    throw new Error(
+      'Selected host ' + selectedHost + ' is incompatible with pack(s): '
+        + incompatiblePacks.join(', ') + '.'
+    );
+  }
+  const renderedProjections = renderHostProjectionCandidates({
+    root: resolvedRoot,
+    adapter: hostAdapter,
+    configurationId: configuration.name,
+    packIds: packs.map((pack) => pack.id),
+    capabilityIds: capabilities.map((capability) => capability.id)
+  });
+  const projections = renderedProjections.outputs.map((projection) => ({
+    id: projection.id,
+    path: projection.path,
+    role: projection.role,
+    mode: projection.mode,
+    templatePath: projection.templatePath,
+    templateFingerprint: projection.templateFingerprint,
+    contentFingerprint: projection.contentFingerprint,
+    fingerprint: projection.fingerprint
+  }));
+
+  const lock = {
+    $contract: 'soter://contracts/lock/v1',
+    contractVersion: '1.0.0',
+    configuration: {
+      name: configuration.name,
+      path: repoRelativePath(resolvedRoot, file),
+      fingerprint: fingerprintJson(configuration),
+      hostSelection: {
+        id: selectedHost,
+        source: selectedHost === configuration.host.id ? 'configuration' : 'override'
+      }
+    },
+    resolver: {
+      id: RESOLVER_ID,
+      version: RESOLVER_VERSION
+    },
+    host: {
+      id: hostAdapter.host,
+      adapter: hostAdapter.id,
+      version: hostAdapter.version,
+      manifestFingerprint: fingerprintJson(hostAdapter),
+      projectionDefinition: renderedProjections.definition,
+      projectionGenerator: renderedProjections.generator
+    },
+    packs,
+    dependencies,
+    capabilities,
+    bindings,
+    sources,
+    authorities,
+    effectPolicies: configuration.effectPolicies,
+    settings: configuration.settings,
+    projections
+  };
+  lock.graphFingerprint = graphFingerprint(lock);
+  return lock;
+}
+
+export function resolveConfiguration({ root, configPath, host } = {}) {
+  const resolvedRoot = path.resolve(root || path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..'));
+  const file = configurationFile(resolvedRoot, configPath);
+  const configuration = readJson(file);
+  if (configuration.$contract !== 'soter://contracts/configuration/v1') {
+    throw new Error('Not a Soter configuration: ' + repoRelativePath(resolvedRoot, file));
+  }
+  const verification = verifySoter(resolvedRoot, { includeRuntimeArtifacts: false });
+  requireCleanGraph(verification);
+  return resolveConfigurationValue({ resolvedRoot, file, configuration, verification, host });
+}
+
+export function resolveConfigurationDocument({ root, configPath, configuration, host } = {}) {
+  const evaluated = evaluateConfigurationDocument({ root, configPath, configuration, host });
+  requireCleanGraph(evaluated.verification);
+  return evaluated.lock;
+}
+
+export function evaluateConfigurationDocument({ root, configPath, configuration, host } = {}) {
+  const resolvedRoot = path.resolve(root || path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..'));
+  const file = configurationFile(resolvedRoot, configPath);
+  const currentVerification = verifySoter(resolvedRoot, { includeRuntimeArtifacts: false });
+  requireCleanGraph(currentVerification);
+  const verification = verifyConfigurationCandidate(resolvedRoot, {
+    configPath: file,
+    configuration
+  });
+  const valid = verification.health.valid === 'passed';
+  return {
+    verification,
+    lock: valid
+      ? resolveConfigurationValue({ resolvedRoot, file, configuration, verification, host })
+      : null
+  };
+}
+
+export function lockMatchesResolution({ lock, ...options }) {
+  const expected = resolveConfiguration({
+    ...options,
+    configPath: options.configPath || lock.configuration.path,
+    host: options.host || lock.configuration.hostSelection?.id || lock.host.id
+  });
+  return {
+    matches: fingerprintLock(lock) === fingerprintLock(expected),
+    expected,
+    expectedFingerprint: fingerprintLock(expected),
+    observedFingerprint: fingerprintLock(lock)
+  };
+}

@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/host-runtime-inspection/v1",
+  "title": "Soter host runtime inspection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "inspectedAt",
+    "host",
+    "server",
+    "runtime",
+    "authority",
+    "privacy",
+    "inspectionFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/host-runtime-inspection/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "inspectedAt": { "type": "string", "minLength": 20 },
+    "host": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "server": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "startedAt"],
+      "properties": {
+        "name": { "const": "soter-core" },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "startedAt": { "type": "string", "minLength": 20 }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "startupFingerprint",
+        "currentFingerprint",
+        "reasonCode",
+        "restartRequired",
+        "permittedNextAction"
+      ],
+      "properties": {
+        "state": { "enum": ["current", "stale"] },
+        "startupFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "currentFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+        "reasonCode": {
+          "enum": ["SOTER_HOST_RUNTIME_CURRENT", "SOTER_HOST_RUNTIME_STALE"]
+        },
+        "restartRequired": { "type": "boolean" },
+        "permittedNextAction": { "enum": ["continue", "restart-host-runtime"] }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["grants", "providerCallsPermitted", "writesPermitted"],
+      "properties": {
+        "grants": { "const": "none" },
+        "providerCallsPermitted": { "const": false },
+        "writesPermitted": { "const": false }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["credentialValuesIncluded", "providerResponsesIncluded", "privateStateIncluded"],
+      "properties": {
+        "credentialValuesIncluded": { "const": false },
+        "providerResponsesIncluded": { "const": false },
+        "privateStateIncluded": { "const": false }
+      }
+    },
+    "inspectionFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "nullableFingerprint": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

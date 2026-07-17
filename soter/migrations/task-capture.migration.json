@@ -1,0 +1,37 @@
+{
+  "$contract": "soter://contracts/migration/v1",
+  "contractVersion": "1.0.0",
+  "id": "task-capture.prototype-to-v1",
+  "source": "claude-oriented-prototype",
+  "slice": "automation.task-capture",
+  "items": [
+    {
+      "sourcePath": ".claude/skills/capturing-a-task/SKILL.md",
+      "targetPath": "soter/packs/automation.task-capture/pack.json",
+      "targetPack": "automation.task-capture",
+      "state": "mapped",
+      "bridge": "The target now proves exact-lock fixture preparation, private review confinement, bounded duplicate inspection, and stop-before-authority behavior. The legacy guide remains authoritative for connected user resolution, task body shaping, and live writes."
+    },
+    {
+      "sourcePath": ".claude/evals/capturing-a-task/happy-path.md",
+      "targetPath": "soter/scenarios/task-capture/happy-path.scenario.json",
+      "targetPack": "automation.task-capture",
+      "state": "mapped",
+      "bridge": "The structured scenario covers provider-neutral preparation and exact review facts; no connected create or post-write verification is claimed."
+    },
+    {
+      "sourcePath": ".claude/evals/capturing-a-task/pressure-skip-resolve.md",
+      "targetPath": "soter/scenarios/task-capture/happy-path.scenario.json",
+      "targetPack": "automation.task-capture",
+      "state": "mapped",
+      "bridge": "The target refuses preparation unless one exact project record resolves and never treats an unverified assignee label as provider authority."
+    },
+    {
+      "sourcePath": ".claude/evals/capturing-a-task/invariant-no-fabricated-id.md",
+      "targetPath": "soter/scenarios/task-capture/happy-path.scenario.json",
+      "targetPack": "automation.task-capture",
+      "state": "mapped",
+      "bridge": "The target binds exact identifiers and fingerprint-only create scope without fabricating provider record identities."
+    }
+  ]
+}

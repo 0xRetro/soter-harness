@@ -1,0 +1,160 @@
+{
+  "$contract": "soter://contracts/context-snapshot/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.project-pulse.pressure-on-track-fixture",
+  "runId": "run.project-pulse.pressure-on-track-fixture",
+  "createdAt": "2026-07-16T12:00:00.000Z",
+  "configurationLockFingerprint": "sha256:f07775c58f28ef36dec307b443a8f30007266af8be50efc61b6384b9da45d47e",
+  "graphFingerprint": "sha256:4c5995dc8f6129ca4a7563ec4896d2d1c6b1a721188fec7bdd161a049ef83a6c",
+  "containment": "fixture",
+  "entries": [
+    {
+      "id": "context.project-pulse.policy",
+      "subject": "crm.records.project-policy",
+      "authority": "authority.crm.definition",
+      "role": "definition",
+      "capability": "crm.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.1.0",
+      "observedAt": "2026-07-16T12:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.crm.definition",
+        "fixture": "soter/fixtures/providers/notion/crm-records.json"
+      },
+      "valueFingerprint": "sha256:2006e84ff6f2c5db4fd69ce9e2d8c5e44bf7f83d36d49aa6356809dbbbc5bbb9",
+      "value": {
+        "records": [
+          {
+            "type": "policy",
+            "id": "policy.project-pulse",
+            "version": "1",
+            "fields": {
+              "name": "Project Pulse",
+              "progressRequiresPromotedTasks": true,
+              "milestoneWorkItemsRemainDistinct": true,
+              "healthMustBeExplained": true,
+              "writesRequireConfirmation": true
+            }
+          }
+        ],
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.crm.definition",
+          "fixture": "soter/fixtures/providers/notion/crm-records.json"
+        },
+        "observedAt": "2026-07-16T12:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.project-pulse.project",
+      "subject": "crm.records.project",
+      "authority": "authority.crm.instance",
+      "role": "instance",
+      "capability": "crm.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.1.0",
+      "observedAt": "2026-07-16T12:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.crm.instance",
+        "fixture": "soter/fixtures/providers/notion/crm-records.json"
+      },
+      "valueFingerprint": "sha256:8decdea14b744912b07fe195cb5e967b67597f3871408088ec73bb9913db0a31",
+      "value": {
+        "records": [
+          {
+            "type": "project",
+            "id": "project.pulse-risk",
+            "version": "1",
+            "fields": {
+              "name": "Risk review",
+              "status": "active"
+            }
+          }
+        ],
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.crm.instance",
+          "fixture": "soter/fixtures/providers/notion/crm-records.json"
+        },
+        "observedAt": "2026-07-16T12:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.project-pulse.work",
+      "subject": "crm.records.project-work",
+      "authority": "authority.crm.instance",
+      "role": "instance",
+      "capability": "crm.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.1.0",
+      "observedAt": "2026-07-16T12:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.crm.instance",
+        "fixture": "soter/fixtures/providers/notion/crm-records.json"
+      },
+      "valueFingerprint": "sha256:15cd2a5153137753981ac4c0185e601892103f94f8e1959eb1705448fcd0039c",
+      "value": {
+        "records": [
+          {
+            "type": "task",
+            "id": "task.pulse-risk.blocked",
+            "version": "1",
+            "fields": {
+              "projectId": "project.pulse-risk",
+              "title": "Resolve dependency",
+              "status": "blocked"
+            }
+          },
+          {
+            "type": "task",
+            "id": "task.pulse-risk.done",
+            "version": "1",
+            "fields": {
+              "projectId": "project.pulse-risk",
+              "title": "Confirm owner",
+              "status": "done"
+            }
+          },
+          {
+            "type": "milestone",
+            "id": "milestone.pulse-risk.release",
+            "version": "1",
+            "fields": {
+              "projectId": "project.pulse-risk",
+              "workItemsCompleted": 1,
+              "workItemsTotal": 4,
+              "progressTag": "behind",
+              "healthTag": "at-risk"
+            }
+          }
+        ],
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.crm.instance",
+          "fixture": "soter/fixtures/providers/notion/crm-records.json"
+        },
+        "observedAt": "2026-07-16T12:00:00.000Z"
+      }
+    }
+  ],
+  "effectIds": [
+    "effect.project-pulse.policy.fixture",
+    "effect.project-pulse.project.fixture",
+    "effect.project-pulse.work.fixture"
+  ],
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Provider credentials and secret references are excluded."
+    ]
+  }
+}

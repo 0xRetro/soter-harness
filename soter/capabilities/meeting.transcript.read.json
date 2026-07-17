@@ -1,0 +1,84 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "meeting.transcript.read",
+  "version": "1.0.0",
+  "purpose": "Reads one meeting transcript from its configured provider and returns normalized speakers, segments, provenance, and freshness.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "required": ["meetingId", "recordingUri"],
+    "properties": {
+      "meetingId": { "type": "string" },
+      "recordingUri": { "type": "string" }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "required": ["meetingId", "speakers", "segments", "provenance", "observedAt"],
+    "properties": {
+      "meetingId": { "type": "string" },
+      "speakers": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["id", "displayName"],
+          "properties": {
+            "id": { "type": "string" },
+            "displayName": { "type": "string" }
+          }
+        }
+      },
+      "segments": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["speakerId", "text", "startSeconds"],
+          "properties": {
+            "speakerId": { "type": "string" },
+            "text": { "type": "string" },
+            "startSeconds": { "type": "number" }
+          }
+        }
+      },
+      "provenance": { "type": "object" },
+      "observedAt": { "type": "string" }
+    }
+  },
+  "authentication": {
+    "required": true,
+    "minimumScopes": ["transcripts:read"]
+  },
+  "effects": ["read", "disclosure"],
+  "idempotency": {
+    "mode": "not-applicable",
+    "key": null
+  },
+  "retry": {
+    "safe": true,
+    "maxAttempts": 3,
+    "checkpoint": null
+  },
+  "errors": [
+    "authentication",
+    "authorization",
+    "validation",
+    "conflict",
+    "rate-limit",
+    "unavailable",
+    "retryable",
+    "not-found",
+    "unknown"
+  ],
+  "freshness": {
+    "returnsProvenance": true,
+    "returnsObservedAt": true,
+    "maxAgeSeconds": 300
+  },
+  "health": {
+    "check": "Read a contained transcript fixture through the selected provider binding.",
+    "fixture": "soter/scenarios/meeting-intake/happy-path.scenario.json",
+    "containedVerification": "Prove speaker and segment normalization, provenance, missing-transcript behavior, and typed errors."
+  },
+  "providerLimitations": []
+}

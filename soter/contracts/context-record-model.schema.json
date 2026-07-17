@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/context-record-model/v1",
+  "title": "Soter context-owned portable record model",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "pack",
+    "version",
+    "subject",
+    "recordTypes",
+    "limitations"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/context-record-model/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^model\\.context\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "pack": {
+      "type": "string",
+      "pattern": "^context\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "version": { "$ref": "#/$defs/version" },
+    "subject": { "type": "string", "minLength": 3 },
+    "recordTypes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/recordType" }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 12 }
+    }
+  },
+  "$defs": {
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "recordType": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "summary",
+        "fields",
+        "content",
+        "deduplicationFields"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "summary": { "type": "string", "minLength": 12 },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/field" }
+        },
+        "content": { "$ref": "#/$defs/content" },
+        "deduplicationFields": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9]*$"
+          }
+        }
+      }
+    },
+    "field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "requiredOnCreate",
+        "nullable",
+        "mutable",
+        "summary"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9]*$"
+        },
+        "type": {
+          "enum": ["string", "boolean", "number", "string-list"]
+        },
+        "format": { "enum": ["resource-uri", "email", "date"] },
+        "requiredOnCreate": { "type": "boolean" },
+        "nullable": { "type": "boolean" },
+        "mutable": { "type": "boolean" },
+        "summary": { "type": "string", "minLength": 12 },
+        "reference": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["subject", "identity"],
+          "properties": {
+            "subject": { "type": "string", "minLength": 3 },
+            "identity": {
+              "enum": ["record-id", "resource-uri", "provider-person-id"]
+            }
+          }
+        }
+      }
+    },
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "requiredOnCreate", "summary"],
+      "properties": {
+        "kind": { "enum": ["none", "markdown"] },
+        "requiredOnCreate": { "type": "boolean" },
+        "summary": { "type": "string", "minLength": 12 }
+      }
+    }
+  }
+}

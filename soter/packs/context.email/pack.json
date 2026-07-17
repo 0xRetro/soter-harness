@@ -1,0 +1,33 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.email",
+  "version": "0.1.0",
+  "layer": "context",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Defines portable mailbox windows, message identity, deterministic triage buckets, handoffs, and draft-only processing invariants.",
+  "dependencies": [
+    {
+      "pack": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Email context requires exact configuration resolution, private runtime state, and governed capability bindings."
+    }
+  ],
+  "capabilities": { "requires": [], "provides": [] },
+  "authorities": [
+    { "role": "definition", "subject": "mail.processing", "required": true },
+    { "role": "instance", "subject": "mail.mailbox", "required": true }
+  ],
+  "effects": [],
+  "artifacts": [
+    { "path": "soter/contexts/email/processing.model.json", "role": "definition" },
+    { "path": "soter/contexts/email/reduction.mjs", "role": "implementation" }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": ["codex", "claude"]
+  },
+  "verification": { "maxLevel": "static", "scenarios": [] }
+}
