@@ -26,12 +26,23 @@ the system.) Decreed with the first add-on wave (ADR-0017).
   page updated in place · runs-when: a user invokes `/updating-a-notion-page` (never
   auto) · invariants: fetch-merge-write (never blind-write — Notion replaces a whole
   property value); only the named properties sent; a human confirms before the write.
+- **drive-place** — reads: an artifact (file or shortcut) + the Storage policy standard
+  (Notion) + the `drive` section of `targets.md` · produces: a filing plan (home per
+  the policy's D1/D2), confirmed placements, human-move instructions, and the
+  [DB] Docs index row via the notion bindings · runs-when: a user invokes
+  `/filing-a-drive-artifact` (never auto) · invariants: place-only — automation
+  creates/copies/shortcuts into a home, humans move/rename/delete; every kept artifact
+  gets one index row; shortcuts are never deleted. The second store binding, proving
+  the vendor-neutral promise. Landed STAGED on a GREEN baseline by explicit user
+  decision (2026-07-15, the email precedent) — the promotion decision must weigh that.
 
 ## Components
 - `.claude/skills/pushing-to-notion/SKILL.md` — the notion-push (create) binding
 - `.claude/skills/updating-a-notion-page/SKILL.md` — the notion-update binding
 - `.claude/skills/pushing-to-notion/targets.md` — the target registry (live-verified
-  database ids + schemas) both bindings and every domain guide resolve against
+  database ids + schemas, plus the `drive` store's drive/folder ids) all bindings and
+  every domain guide resolve against
+- `.claude/skills/filing-a-drive-artifact/SKILL.md` — the drive-place binding (staged)
 - `.claude/standards/writing-records-to-notion.md` — the shared write-discipline every
   domain guide references (fetch schema · resolve · match options · dedup · confirm)
 

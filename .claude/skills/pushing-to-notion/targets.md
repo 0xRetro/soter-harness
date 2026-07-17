@@ -320,3 +320,37 @@ Features"). Identify a board only by the tooling page that embeds it.
   an @-mention plus disposition (`new (owner)` / `updated: <what>`), a `Not created:`
   line for deliberately skipped items, and a `Source:` line @-mentioning the source
   record. Never edit or remove existing inbox content; the user clears it after review.
+
+### drive  *(the org's shared Google Drives — a different store: the place-only drive binding, governed by the Storage policy standard)*
+- **binding:** place-only — create, copy, or shortcut into a registered home, each
+  write human-confirmed; moves, renames, and deletes are HUMAN acts (the Storage
+  policy's operating rules). `/filing-a-drive-artifact` resolves homes here.
+- **drive_id:** `0AGJtmqW6FUcLUk9PVA` — Sky Ecosystem Drive *(live-verified 2026-07-15)*
+  - numbered taxonomy per the Storage policy's Home values; structure guide = Notion
+    page `397d79b5de3880fb89f7e8381fcf147c`
+  - `00 Internal Ops` → `1X6p43-KFbZ0SAJaR2ueA3xI1PaSir2X7`
+    - `00.4 _Inbox` → `10IaqZ8SwNYemrtr7M55Iu1sC0u5iLLhi`  <!-- the unclear-case landing (D1) — the one subfolder the binding needs directly -->
+  - `01 Governance Ops` → `1uePsygMpkkj22AukQeZa_bUPZtezUi87`
+  - `02 Settlement & Payments` → `15wpQZnaPzb1dZENQGgL3PcSvnlrU3v_F`
+  - `03 Rewards Primitives` → `1KOuIYRpTPDfW4atjhPE5FErKfQGtgz2t`
+  - `04 Prime Agents` → `1DABXvgno75RcZJ34ZnJY9tgX4iclWN3d`
+  - `05 Halos & Incubation` → `1h0JmEbPpi9c1JglwXMIO4rzW5ixCXd_T`
+  - `06 Risk & Security` → `1vgpgxN8NhENPIB5plYdMYSSEDWFIvEIx`
+  - `07 Products & Liquidity` → `1lkt2iVrXgPLVNfIZu3THlQajAmS1zomt`
+  - `08 Ecosystem Entities & Vendors` → `1vbVLvQ7C2a7igftzXjZGnYm3haLOxXJq`
+  - `09 Legal & Compliance` → `1TBIYoMsF_8rGTUzgI0bf_rQnC2bOMUVu`
+  - `99 Archive` → `1XYtMV5IseVlY5nMpsTBylBtDoQjtY6qw`
+- **drive_id:** `0AFnjsQZOSHcrUk9PVA` — Soter team internal drive *(live-verified 2026-07-15)*
+  - top-level folders are live-listed (SOPs · Templates · Tooling · R&D · Branding ·
+    Workshops · Audits · Forum Comms · Sky Coordination · Call Recordings); a
+    numbered taxonomy for this drive is not defined (the Storage policy's worklist)
+- **drive_id:** `0AAjt-Ie57CAqUk9PVA` — back office drive *(live-verified 2026-07-15)*
+  - Invoices (YYYY/Month) · Legal & Agreements (NDAs · Proposals · Legal Templates) ·
+    Job Descriptions; numbered taxonomy not defined
+- Only top-level folders (plus `00.4 _Inbox`, the binding's direct landing) are
+  mirrored here — `NN.N` workstream and Prime subfolder ids are resolved LIVE at
+  filing time (a listing of the top-level folder), deliberately not mirrored: the
+  subfolder set changes with the work and would rot here.
+- The Home ↔ [DB] Docs `Category` correspondence is the D1 placement key — it lives in
+  the Storage policy standard; a `Category` option change checks the policy and this
+  section in the same change.
