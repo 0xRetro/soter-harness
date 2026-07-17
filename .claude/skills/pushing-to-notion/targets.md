@@ -103,8 +103,8 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Type` → select            <!-- Project · Operations · Deal; assign per the policy's D1 -->
   - `Status` → status          <!-- Not Started · Active · On Hold · Complete · Cancelled -->
   - `Start Date` · `Target End Date` → date
-  - `PM` · `Client Contact` → person
-  - `Organization` · `Tasks` · `Docs` → relation   <!-- resolve target page ids first -->
+  - `PM` · `Client Contact` → person   <!-- workspace users only; same person-type limit as Tasks/Meetings -->
+  - `Organization` · `Tasks` · `Docs` · `Channels` → relation   <!-- resolve target page ids first; Channels → [DB] Channels (39dd79b5-de38-806e-995f-000b75fc3ed7) -->
 - Registered templates: the DB default "[Project Template]" plus "[Deal Template]" for
   Deal-type entries (deal milestone set pre-filled). Both implement the policy's body
   standard FULLY WIRED: template-relative live views for the Task Board, Docs, Meeting
