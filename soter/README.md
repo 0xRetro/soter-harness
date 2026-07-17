@@ -202,6 +202,36 @@ publication, redistribution, marketplace, readiness, verification, and health
 remain unavailable, not evaluated, or unknown as their individual contracts
 specify.
 
+## Local pack installation
+
+Core can install or upgrade one exact set of already-local, independently
+verified release capsules. It never fetches releases and never invokes a package
+manager. The CLI exposes the complete private ceremony:
+
+    node soter/core/cli.mjs pack-install-plan --target /absolute/private/target --capsule /absolute/local/release.soter-pack.json --valid-until 2026-07-16T01:00:00.000Z --json
+    node soter/core/cli.mjs pack-install-request --target /absolute/private/target --plan-id PLAN_ID --reason "Install this exact local plan" --expires-at 2026-07-16T00:15:00.000Z --json
+    node soter/core/cli.mjs pack-install-confirm --target /absolute/private/target --request-id REQUEST_ID --actor local-user --reason "Reviewed exact fingerprints" --json
+    node soter/core/cli.mjs pack-install-start --target /absolute/private/target --confirmation-id CONFIRMATION_ID --json
+    node soter/core/cli.mjs pack-install-execute --target /absolute/private/target --checkpoint-id CHECKPOINT_ID --json
+    node soter/core/cli.mjs pack-install-recover --target /absolute/private/target --checkpoint-id CHECKPOINT_ID --json
+    node soter/core/cli.mjs pack-install-inspect --target /absolute/private/target --checkpoint-id CHECKPOINT_ID --json
+
+`plan` performs no target write. `request` expires, `confirm` does not start,
+and `start` consumes that exact confirmation once into one durable checkpoint.
+Only `execute` changes managed pack files; it applies exact create/replace/remove
+effects, verifies them, and writes the private managed manifest last. `recover`
+continues or restores only the exact checkpoint. Collisions, target or manifest
+drift, dependency mismatch, downgrade, path escape, symlinks, hardlinks,
+special modes, expiry, and confirmation reuse fail closed.
+
+`pack-install-inspection/v1` is the safe CLI and Studio projection. It contains
+release, dependency, fingerprint, effect, lifecycle, blocker, and resume facts,
+but no target path, capsule path or bytes, file bytes, or raw private state.
+Completion proves only exact local materialization and managed-manifest
+integrity. Configuration, host realization, migration execution, uninstall,
+network acquisition, package-manager effects, publication, trust, readiness,
+verification, and health remain separate and unevaluated or unknown.
+
 ## Verify
 
 Run the target verifier:

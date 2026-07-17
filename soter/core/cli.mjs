@@ -113,6 +113,15 @@ import {
   prepareHostRealizationExecution,
   recoverHostRealization
 } from './host-realizations.mjs';
+import {
+  beginPackInstallRequest,
+  confirmPackInstallRequest,
+  executePackInstall,
+  inspectPackInstall,
+  preparePackInstall,
+  preparePackInstallExecution,
+  recoverPackInstall
+} from './pack-installs.mjs';
 
 const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -504,6 +513,133 @@ async function main() {
     if (json) print(inspection);
     else process.stdout.write(
       'Host realization plan ' + inspection.plan.id + ' is ' + inspection.plan.applicability + '.\n'
+        + 'Next action: ' + inspection.resume.permittedNextAction + '\n'
+        + 'Inspection authority: none\n'
+    );
+    return;
+  }
+
+  if (command === 'pack-install-plan') {
+    const targetRoot = requiredOption(args, '--target');
+    const planId = option(args, '--plan-id', 'pack-install-plan.' + idPart);
+    const inspection = preparePackInstall({
+      sourceRoot: root,
+      targetRoot,
+      capsulePaths: options(args, '--capsule'),
+      bundlePath: option(args, '--bundle'),
+      baseContract: option(args, '--base-contract', '1.0.0'),
+      planId,
+      createdAt,
+      validUntil: requiredOption(args, '--valid-until')
+    });
+    if (json) print(inspection);
+    else process.stdout.write(
+      'Prepared exact private local pack install plan ' + planId + '.\n'
+        + 'Target fingerprint: ' + inspection.plan.targetFingerprint + '\n'
+        + 'Verified releases: ' + inspection.plan.releases.length + '\n'
+        + 'Managed file effects: ' + inspection.plan.effects.length + '\n'
+        + 'Execution authority created: no\n'
+    );
+    return;
+  }
+
+  if (command === 'pack-install-request') {
+    const targetRoot = requiredOption(args, '--target');
+    const planId = requiredOption(args, '--plan-id');
+    const requestId = option(args, '--request-id', 'pack-install-request.' + idPart);
+    const inspection = beginPackInstallRequest({
+      sourceRoot: root,
+      targetRoot,
+      planId,
+      requestId,
+      reason: requiredOption(args, '--reason'),
+      createdAt,
+      expiresAt: requiredOption(args, '--expires-at')
+    });
+    if (json) print(inspection);
+    else process.stdout.write(
+      'Requested exact local pack install confirmation ' + requestId + '.\n'
+        + 'One-time start consumed: no\n'
+    );
+    return;
+  }
+
+  if (command === 'pack-install-confirm') {
+    const targetRoot = requiredOption(args, '--target');
+    const confirmationId = option(args, '--confirmation-id', 'pack-install-confirmation.' + idPart);
+    const inspection = confirmPackInstallRequest({
+      sourceRoot: root,
+      targetRoot,
+      requestId: requiredOption(args, '--request-id'),
+      confirmationId,
+      actor: requiredOption(args, '--actor'),
+      reason: requiredOption(args, '--reason'),
+      confirmedAt: createdAt
+    });
+    if (json) print(inspection);
+    else process.stdout.write(
+      'Confirmed exact local pack install request as ' + confirmationId + '.\n'
+        + 'Next action: ' + inspection.resume.permittedNextAction + '\n'
+        + 'Managed files changed: no\n'
+    );
+    return;
+  }
+
+  if (command === 'pack-install-start') {
+    const checkpointId = option(args, '--checkpoint-id', 'checkpoint.pack-install.' + idPart);
+    const inspection = preparePackInstallExecution({
+      sourceRoot: root,
+      targetRoot: requiredOption(args, '--target'),
+      confirmationId: requiredOption(args, '--confirmation-id'),
+      checkpointId,
+      at: createdAt
+    });
+    if (json) print(inspection);
+    else process.stdout.write(
+      'Consumed exact pack install confirmation into checkpoint ' + checkpointId + '.\n'
+        + 'Next action: ' + inspection.resume.permittedNextAction + '\n'
+        + 'Managed files changed: no\n'
+    );
+    return;
+  }
+
+  if (command === 'pack-install-execute' || command === 'pack-install-recover') {
+    const targetRoot = requiredOption(args, '--target');
+    const checkpointId = requiredOption(args, '--checkpoint-id');
+    const inspection = command === 'pack-install-execute'
+      ? executePackInstall({ sourceRoot: root, targetRoot, checkpointId, at: createdAt })
+      : recoverPackInstall({ sourceRoot: root, targetRoot, checkpointId, at: createdAt });
+    if (json) print(inspection);
+    else process.stdout.write(
+      'Local pack install checkpoint ' + checkpointId + ' is ' + inspection.checkpoint.state + '.\n'
+        + 'Local materialization claim: ' + inspection.claims.localMaterialization + '\n'
+        + 'Installed registry claim: ' + inspection.claims.installedRegistry + '\n'
+        + 'Network and package-manager effects executed: 0\n'
+    );
+    if (inspection.checkpoint.state === 'needs-attention') process.exitCode = 1;
+    return;
+  }
+
+  if (command === 'pack-install-inspect') {
+    const references = {
+      planId: option(args, '--plan-id'),
+      requestId: option(args, '--request-id'),
+      confirmationId: option(args, '--confirmation-id'),
+      consumptionId: option(args, '--consumption-id'),
+      checkpointId: option(args, '--checkpoint-id')
+    };
+    if (!Object.values(references).some(Boolean)) {
+      throw new Error('pack-install-inspect requires at least one exact transaction identifier.');
+    }
+    const inspection = inspectPackInstall({
+      sourceRoot: root,
+      targetRoot: requiredOption(args, '--target'),
+      ...references,
+      at: createdAt
+    });
+    if (json) print(inspection);
+    else process.stdout.write(
+      'Local pack install plan ' + inspection.plan.id + '.\n'
         + 'Next action: ' + inspection.resume.permittedNextAction + '\n'
         + 'Inspection authority: none\n'
     );
@@ -1683,6 +1819,7 @@ async function main() {
     const { selftestAutomationProposals } = await import('./automation-proposals.selftest.mjs');
     const { selftestConfigurationTransactions } = await import('./configuration-transactions.selftest.mjs');
     const { selftestHostRealizations } = await import('./host-realizations.selftest.mjs');
+    const { selftestPackInstalls } = await import('./pack-installs.selftest.mjs');
     const { selftestEmailConnectedContext } = await import(
       '../automations/email-triage/connected-context.selftest.mjs'
     );
@@ -1693,6 +1830,7 @@ async function main() {
       && await selftestAutomationProposals(root)
       && await selftestConfigurationTransactions(root)
       && await selftestHostRealizations(root)
+      && await selftestPackInstalls(root)
       && await selftestEmailConnectedContext(root) ? 0 : 1;
     return;
   }
@@ -1721,7 +1859,7 @@ async function main() {
   }
 
   throw new Error(
-    'Usage: node soter/core/cli.mjs <resolve|config-inspect|configuration-change-plan|configuration-change-request|configuration-change-confirm|configuration-change-start|configuration-change-execute|configuration-change-recover|configuration-change-inspect|host-realization-plan|host-realization-request|host-realization-confirm|host-realization-start|host-realization-execute|host-realization-recover|host-realization-inspect|operator-prepare|operator-prepared-inspect|operator-prepared-review|operator-prepared-derived-review|operator-review-batch-create|operator-review-batch|operator-connected-plan-create|operator-connected-plan|operator-inspect|operator-approval-review|prepare|context|context-connected-prepare|context-connected-finalize|meeting-intake-decision-inspect|meeting-intake-decision-commit|email-triage-decision-inspect|email-triage-decision-commit|email-triage-proposal-inspect|email-triage-proposal-commit|email-triage-proposal-material|meeting-intake-proposal|transaction|connected-batch-preview|proposal-connected-batch-preview|connected-approval-request|connected-approval-confirm|connected-transaction-prepare|connected-transaction-complete|connected-transaction-reconcile|doctor|probe-prepare|probe-complete|capability-prepare|capability-complete|plan-prepare|plan-complete|host-fail|host-get|host-list|fixtures|selftest> [options]\n'
+    'Usage: node soter/core/cli.mjs <resolve|config-inspect|configuration-change-plan|configuration-change-request|configuration-change-confirm|configuration-change-start|configuration-change-execute|configuration-change-recover|configuration-change-inspect|host-realization-plan|host-realization-request|host-realization-confirm|host-realization-start|host-realization-execute|host-realization-recover|host-realization-inspect|pack-install-plan|pack-install-request|pack-install-confirm|pack-install-start|pack-install-execute|pack-install-recover|pack-install-inspect|operator-prepare|operator-prepared-inspect|operator-prepared-review|operator-prepared-derived-review|operator-review-batch-create|operator-review-batch|operator-connected-plan-create|operator-connected-plan|operator-inspect|operator-approval-review|prepare|context|context-connected-prepare|context-connected-finalize|meeting-intake-decision-inspect|meeting-intake-decision-commit|email-triage-decision-inspect|email-triage-decision-commit|email-triage-proposal-inspect|email-triage-proposal-commit|email-triage-proposal-material|meeting-intake-proposal|transaction|connected-batch-preview|proposal-connected-batch-preview|connected-approval-request|connected-approval-confirm|connected-transaction-prepare|connected-transaction-complete|connected-transaction-reconcile|doctor|probe-prepare|probe-complete|capability-prepare|capability-complete|plan-prepare|plan-complete|host-fail|host-get|host-list|fixtures|selftest> [options]\n'
       + '  resolve [--config PATH] [--host ID] [--output PATH] [--json]\n'
       + '  config-inspect [--config PATH] [--host ID | --lock PATH] [--output PATH] [--json]\n'
       + '  configuration-change-plan --configuration NAME --candidate ABSOLUTE_PRIVATE_PATH [--plan-id ID] [--at TIME] [--json]\n'
@@ -1738,6 +1876,13 @@ async function main() {
       + '  host-realization-execute --checkpoint-id ID [--at TIME] [--json]\n'
       + '  host-realization-recover --checkpoint-id ID [--at TIME] [--json]\n'
       + '  host-realization-inspect --plan-id ID [--request-id ID] [--confirmation-id ID] [--consumption-id ID] [--checkpoint-id ID] [--at TIME] [--json]\n'
+      + '  pack-install-plan --target ABSOLUTE_PRIVATE_TARGET --capsule ABSOLUTE_LOCAL_CAPSULE [--capsule PATH ...] --valid-until TIME [--bundle PATH] [--base-contract VERSION] [--plan-id ID] [--at TIME] [--json]\n'
+      + '  pack-install-request --target ABSOLUTE_PRIVATE_TARGET --plan-id ID --reason TEXT --expires-at TIME [--request-id ID] [--at TIME] [--json]\n'
+      + '  pack-install-confirm --target ABSOLUTE_PRIVATE_TARGET --request-id ID --actor ID --reason TEXT [--confirmation-id ID] [--at TIME] [--json]\n'
+      + '  pack-install-start --target ABSOLUTE_PRIVATE_TARGET --confirmation-id ID [--checkpoint-id ID] [--at TIME] [--json]\n'
+      + '  pack-install-execute --target ABSOLUTE_PRIVATE_TARGET --checkpoint-id ID [--at TIME] [--json]\n'
+      + '  pack-install-recover --target ABSOLUTE_PRIVATE_TARGET --checkpoint-id ID [--at TIME] [--json]\n'
+      + '  pack-install-inspect --target ABSOLUTE_PRIVATE_TARGET [--plan-id ID] [--request-id ID] [--confirmation-id ID] [--consumption-id ID] [--checkpoint-id ID] [--at TIME] [--json]\n'
       + '  operator-prepare --configuration NAME --automation ID --input ABSOLUTE_PRIVATE_PATH [--at TIME] [--json]\n'
       + '  operator-prepared-inspect --work-id ID [--json]\n'
       + '  operator-prepared-review --work-id ID [--json]\n'

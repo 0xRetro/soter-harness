@@ -1865,6 +1865,93 @@ h1, h2, h3, p { margin-top: 0; }
 .distribution-catalog-boundary > code { display: block; margin: 3px 8px; color: var(--signal); font-size: 7px; }
 .distribution-foot strong { font-size: 8px; text-transform: uppercase; }
 
+/* Local pack installation */
+.pack-install-desk { margin-top: 22px; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--paper); }
+.pack-install-header { min-height: 126px; padding: 20px 22px; display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; border-bottom: 1px solid var(--line); background: #f8fafa; box-shadow: inset 4px 0 0 var(--copper); }
+.pack-install-header > div:first-child { max-width: 760px; }
+.pack-install-header h2 { margin: 6px 0 7px; font-size: 20px; font-weight: 500; }
+.pack-install-header p { margin: 0; color: var(--muted); font-size: 9px; line-height: 1.55; }
+.pack-install-boundaries { max-width: 330px; display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 6px; }
+.pack-install-boundaries span { padding: 6px 8px; border: 1px solid #c9b5a9; border-radius: 999px; color: var(--copper-aa); font-family: 'IBM Plex Mono', monospace; font-size: 6px; text-transform: uppercase; }
+.pack-install-spine { margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); list-style: none; border-bottom: 1px solid var(--line); }
+.pack-install-stage { min-height: 70px; padding: 10px 11px; display: grid; grid-template-columns: 25px minmax(0, 1fr); gap: 2px 8px; border-right: 1px solid var(--soft-line); }
+.pack-install-stage:last-child { border-right: 0; }
+.pack-install-stage > span { grid-row: 1 / 3; width: 24px; height: 24px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 6px; }
+.pack-install-stage strong { font-size: 8px; font-weight: 500; }
+.pack-install-stage small, .pack-install-stage code { color: var(--muted); font-size: 6px; }
+.pack-install-stage code { grid-column: 2; text-transform: uppercase; }
+.pack-install-entry { min-height: 270px; padding: 30px clamp(24px, 5vw, 70px); display: grid; grid-template-columns: minmax(320px, 1.35fr) minmax(220px, .65fr); align-items: center; gap: 45px; }
+.pack-install-entry h3 { margin: 7px 0 8px; font-size: 18px; font-weight: 500; }
+.pack-install-entry p { max-width: 650px; margin: 0 0 16px; color: var(--muted); font-size: 9px; line-height: 1.6; }
+.pack-install-entry button, .pack-install-ceremony button, .pack-install-existing button, .pack-install-reset { min-height: 34px; padding: 0 12px; border: 1px solid var(--signal); border-radius: 4px; background: var(--signal); color: white; font-family: 'IBM Plex Mono', monospace; font-size: 7px; cursor: pointer; }
+.pack-install-entry button:disabled, .pack-install-ceremony button:disabled, .pack-install-existing button:disabled { opacity: .45; cursor: not-allowed; }
+.pack-install-entry dl { margin: 0; border: 1px solid var(--line); }
+.pack-install-entry dl > div { min-height: 42px; padding: 8px 10px; display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--soft-line); }
+.pack-install-entry dl > div:last-child { border-bottom: 0; }
+.pack-install-entry dt { color: var(--muted); font-size: 7px; text-transform: uppercase; }
+.pack-install-entry dd { margin: 0; color: var(--signal); font-family: 'IBM Plex Mono', monospace; font-size: 7px; }
+.pack-install-identity { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; align-items: stretch; border-bottom: 1px solid var(--line); background: var(--ink); color: white; }
+.pack-install-identity > div { min-width: 0; min-height: 64px; padding: 10px 12px; display: grid; align-content: center; gap: 5px; border-right: 1px solid #3c484d; }
+.pack-install-identity span { color: #aeb9bd; font-size: 6px; text-transform: uppercase; }
+.pack-install-identity code, .pack-install-identity time { overflow: hidden; color: white; font-size: 6px; text-overflow: ellipsis; white-space: nowrap; }
+.pack-install-identity > .state-mark { align-self: center; margin: 0 12px; }
+.pack-install-workbench { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(270px, .65fr); }
+.pack-install-scope { min-width: 0; border-right: 1px solid var(--line); }
+.pack-install-scope > header { min-height: 62px; padding: 11px 13px; display: flex; justify-content: space-between; align-items: center; gap: 16px; border-bottom: 1px solid var(--soft-line); }
+.pack-install-scope h3 { margin: 5px 0 0; font-size: 12px; font-weight: 500; }
+.pack-install-scope > header > code { color: var(--signal); font-size: 6px; }
+.pack-install-releases { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); border-bottom: 1px solid var(--line); }
+.pack-install-releases article { min-width: 0; min-height: 104px; padding: 11px 12px; display: grid; gap: 5px; border-right: 1px solid var(--soft-line); }
+.pack-install-releases span, .pack-install-releases small, .pack-install-releases em { color: var(--muted); font-size: 6px; font-style: normal; }
+.pack-install-releases strong { font-size: 9px; font-weight: 500; }
+.pack-install-releases code { overflow: hidden; color: var(--signal); font-size: 6px; text-overflow: ellipsis; white-space: nowrap; }
+.pack-install-dependencies > div { min-height: 46px; padding: 7px 11px; display: grid; grid-template-columns: minmax(150px, 1fr) minmax(180px, 1.1fr) auto minmax(190px, .9fr); align-items: center; gap: 9px; border-bottom: 1px solid var(--soft-line); }
+.pack-install-dependencies strong, .pack-install-dependencies span, .pack-install-dependencies code { font-size: 6px; }
+.pack-install-dependencies code { color: var(--muted); }
+.pack-install-effect-head, .pack-install-effects > div[role='row'] { min-height: 49px; padding: 7px 11px; display: grid; grid-template-columns: 35px minmax(160px, 1fr) 82px minmax(105px, .8fr) minmax(105px, .8fr); align-items: center; gap: 9px; border-bottom: 1px solid var(--soft-line); }
+.pack-install-effect-head { min-height: 28px; color: var(--muted); background: #fbfcfc; font-size: 6px; text-transform: uppercase; }
+.pack-install-effects > div.is-current { box-shadow: inset 3px 0 0 var(--copper); background: #fffaf7; }
+.pack-install-effects > div.is-complete { background: #f5faf8; }
+.pack-install-effects span { min-width: 0; display: grid; gap: 3px; }
+.pack-install-effects strong { overflow: hidden; font-size: 7px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.pack-install-effects small, .pack-install-effects code { overflow: hidden; color: var(--muted); font-size: 6px; text-overflow: ellipsis; white-space: nowrap; }
+.pack-install-scope > footer { min-height: 51px; padding: 9px 12px; display: flex; justify-content: space-between; align-items: center; gap: 15px; color: #6b5548; background: #fffaf7; box-shadow: inset 3px 0 0 var(--copper); }
+.pack-install-scope > footer strong { color: var(--copper-aa); font-size: 7px; }
+.pack-install-scope > footer span { font-size: 7px; line-height: 1.45; text-align: right; }
+.pack-install-ceremony { background: #f8fafa; }
+.pack-install-ceremony > header, .pack-install-ceremony > div { padding: 13px 14px; border-bottom: 1px solid var(--line); }
+.pack-install-ceremony h3 { margin: 5px 0 0; font-size: 12px; font-weight: 500; }
+.pack-install-ceremony > div > span { color: var(--signal); font-family: 'IBM Plex Mono', monospace; font-size: 7px; text-transform: uppercase; }
+.pack-install-ceremony p { margin: 7px 0 10px; color: var(--muted); font-size: 7px; line-height: 1.5; }
+.pack-install-ceremony label { margin: 8px 0 10px; display: flex; align-items: flex-start; gap: 7px; color: var(--ink); font-size: 7px; line-height: 1.45; }
+.pack-install-ceremony input { margin: 1px 0 0; accent-color: var(--signal); }
+.pack-install-progress { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.pack-install-progress > div { min-width: 0; min-height: 82px; padding: 11px 12px; display: grid; align-content: center; gap: 5px; border-right: 1px solid var(--soft-line); }
+.pack-install-progress > div:last-child { border-right: 0; }
+.pack-install-progress span, .pack-install-progress code { overflow: hidden; color: var(--muted); font-size: 6px; text-overflow: ellipsis; white-space: nowrap; }
+.pack-install-progress strong { font-size: 10px; font-weight: 500; }
+.pack-install-resume { min-height: 88px; padding: 13px 15px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 20px; border-bottom: 1px solid var(--line); box-shadow: inset 3px 0 0 var(--signal); }
+.pack-install-resume strong, .pack-install-resume code { display: block; margin-top: 5px; font-size: 7px; }
+.pack-install-resume p { margin: 5px 0; color: var(--muted); font-size: 8px; line-height: 1.45; }
+.pack-install-claims { background: #fcfaf8; border-bottom: 1px solid #decfc4; }
+.pack-install-claims > header { padding: 14px 15px; border-bottom: 1px solid #decfc4; }
+.pack-install-claims h3 { margin: 5px 0 0; font-size: 14px; font-weight: 500; }
+.pack-install-claims > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.pack-install-claims article { min-height: 54px; padding: 9px 10px; display: grid; gap: 5px; border-right: 1px solid #e9ddd5; border-bottom: 1px solid #e9ddd5; }
+.pack-install-claims article span { color: #6b5548; font-size: 6px; text-transform: uppercase; }
+.pack-install-claims > p { margin: 0; padding: 11px 14px; color: #6b5548; font-size: 7px; line-height: 1.5; }
+.pack-install-error { margin: 12px; padding: 10px 12px; display: flex; gap: 12px; border: 1px solid #d9aaa6; background: #fff9f8; }
+.pack-install-error code { color: var(--failed); font-size: 7px; }
+.pack-install-error p { margin: 0; font-size: 8px; }
+.pack-install-reset { margin: 13px; background: var(--paper); color: var(--signal); }
+.pack-install-existing { border-top: 1px solid var(--line); }
+.pack-install-existing summary { min-height: 42px; padding: 0 14px; display: flex; align-items: center; color: var(--signal); font-family: 'IBM Plex Mono', monospace; font-size: 7px; cursor: pointer; }
+.pack-install-existing > p { margin: 0; padding: 0 14px 10px; color: var(--muted); font-size: 7px; }
+.pack-install-existing > div { padding: 0 14px 10px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; }
+.pack-install-existing label { display: grid; gap: 4px; color: var(--muted); font-size: 6px; }
+.pack-install-existing input { min-width: 0; height: 30px; padding: 0 7px; border: 1px solid var(--line); background: var(--paper); font-family: 'IBM Plex Mono', monospace; font-size: 6px; }
+.pack-install-existing > button { margin: 0 14px 14px; }
+
 /* Empty and loading states */
 .loading-screen, .fatal-screen, .empty-view { height: 100%; display: grid; place-content: center; justify-items: center; padding: 30px; background: var(--frost); text-align: center; }
 .loading-screen h1, .fatal-screen h1, .empty-view h1 { margin: 20px 0 7px; font-size: 20px; font-weight: 500; }
@@ -2031,6 +2118,24 @@ h1, h2, h3, p { margin-top: 0; }
   .distribution-limitations > article { grid-template-columns: 1fr; gap: 6px; }
   .distribution-footer-boundary { grid-template-columns: 32px minmax(0, 1fr); }
   .distribution-footer-boundary code { grid-column: 2; }
+  .pack-install-header { flex-direction: column; }
+  .pack-install-boundaries { max-width: none; justify-content: flex-start; }
+  .pack-install-spine { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pack-install-stage:nth-child(3) { border-right: 0; }
+  .pack-install-stage:nth-child(n+4) { border-top: 1px solid var(--soft-line); }
+  .pack-install-entry, .pack-install-workbench { grid-template-columns: 1fr; }
+  .pack-install-entry { gap: 24px; }
+  .pack-install-scope { border-right: 0; border-bottom: 1px solid var(--line); }
+  .pack-install-identity { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pack-install-dependencies > div { grid-template-columns: minmax(140px, 1fr) minmax(170px, 1fr) auto; }
+  .pack-install-dependencies > div > code { grid-column: 1 / -1; }
+  .pack-install-effect-head, .pack-install-effects > div[role='row'] { grid-template-columns: 32px minmax(150px, 1fr) 78px minmax(100px, .7fr); }
+  .pack-install-effect-head > :last-child, .pack-install-effects > div[role='row'] > :last-child { display: none; }
+  .pack-install-progress { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pack-install-progress > div:nth-child(2) { border-right: 0; }
+  .pack-install-progress > div:nth-child(n+3) { border-top: 1px solid var(--soft-line); }
+  .pack-install-claims > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pack-install-existing > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .workflow-availability { grid-template-columns: 1fr auto; }
   .workflow-availability p { grid-column: 1 / -1; grid-row: 2; }
   .work-ledger-flow { grid-template-columns: 1fr; }

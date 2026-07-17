@@ -1,0 +1,324 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/pack-install-plan/v1",
+  "title": "Soter private exact local pack install plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "id", "createdAt", "validUntil", "target",
+    "baseContract", "runtimeFingerprint", "releases", "bundle", "priorManifest", "candidate",
+    "dependencyCheck", "directoryEffects", "fileEffects", "scopeFingerprint",
+    "limitations", "planFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/pack-install-plan/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^pack-install-plan[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "validUntil": { "type": "string", "minLength": 20 },
+    "target": { "$ref": "#/$defs/target" },
+    "baseContract": { "$ref": "#/$defs/version" },
+    "runtimeFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "releases": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/release" }
+    },
+    "bundle": { "$ref": "#/$defs/bundle" },
+    "priorManifest": { "$ref": "#/$defs/privateDocument" },
+    "candidate": { "$ref": "#/$defs/candidate" },
+    "dependencyCheck": { "$ref": "#/$defs/dependencyCheck" },
+    "directoryEffects": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/directoryEffect" }
+    },
+    "fileEffects": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/fileEffect" }
+    },
+    "scopeFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 12 }
+    },
+    "planFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "nullableFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+    "version": { "type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$" },
+    "versionRange": { "type": "string", "pattern": "^(\\^|~|>=|<=|>|<)?(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$" },
+    "packId": { "type": "string", "pattern": "^(kernel|core|context|automation|integration)\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "relativePath": { "type": "string", "pattern": "^[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$" },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requestedPath", "realPath", "device", "inode", "fingerprint"],
+      "properties": {
+        "requestedPath": { "type": "string", "minLength": 1 },
+        "realPath": { "type": "string", "minLength": 1 },
+        "device": { "type": "integer", "minimum": 0 },
+        "inode": { "type": "integer", "minimum": 0 },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pack", "version", "optional", "reason"],
+      "properties": {
+        "pack": { "$ref": "#/$defs/packId" },
+        "version": { "$ref": "#/$defs/versionRange" },
+        "optional": { "type": "boolean" },
+        "reason": { "type": "string", "minLength": 12 }
+      }
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["baseContract", "hosts"],
+      "properties": {
+        "baseContract": { "$ref": "#/$defs/versionRange" },
+        "hosts": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        }
+      }
+    },
+    "legal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["publisher", "license", "legalSufficiency"],
+      "properties": {
+        "publisher": { "const": "unasserted" },
+        "license": { "const": "no-assertion" },
+        "legalSufficiency": { "const": "not-evaluated" }
+      }
+    },
+    "trust": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "signature"],
+      "properties": {
+        "state": { "const": "unsigned-untrusted" },
+        "signature": { "const": "absent" }
+      }
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pack", "version", "layer", "capsulePath", "capsuleDigest",
+        "manifestFingerprint", "sourceInputFingerprint", "inventoryFingerprint",
+        "releaseStage", "evidenceMaturity", "dependencies", "compatibility",
+        "legal", "trust"
+      ],
+      "properties": {
+        "pack": { "$ref": "#/$defs/packId" },
+        "version": { "$ref": "#/$defs/version" },
+        "layer": { "enum": ["kernel", "core", "context", "automation", "integration"] },
+        "capsulePath": { "type": "string", "minLength": 1 },
+        "capsuleDigest": { "$ref": "#/$defs/fingerprint" },
+        "manifestFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "sourceInputFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "inventoryFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "releaseStage": { "enum": ["experimental", "preview", "stable", "deprecated"] },
+        "evidenceMaturity": { "enum": ["declared", "fixture-proven", "contained-proven", "live-proven"] },
+        "dependencies": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/dependency" } },
+        "compatibility": { "$ref": "#/$defs/compatibility" },
+        "legal": { "$ref": "#/$defs/legal" },
+        "trust": { "$ref": "#/$defs/trust" }
+      }
+    },
+    "bundle": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "path", "id", "version", "digest", "resolutionFingerprint"],
+          "properties": {
+            "state": { "const": "absent" },
+            "path": { "const": null },
+            "id": { "const": null },
+            "version": { "const": null },
+            "digest": { "const": null },
+            "resolutionFingerprint": { "const": null }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "path", "id", "version", "digest", "resolutionFingerprint"],
+          "properties": {
+            "state": { "const": "present" },
+            "path": { "type": "string", "minLength": 1 },
+            "id": { "type": "string", "pattern": "^bundle[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+            "version": { "$ref": "#/$defs/version" },
+            "digest": { "$ref": "#/$defs/fingerprint" },
+            "resolutionFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        }
+      ]
+    },
+    "privateDocument": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "content", "fingerprint"],
+          "properties": {
+            "state": { "const": "absent" },
+            "content": { "const": null },
+            "fingerprint": { "const": null }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "content", "fingerprint"],
+          "properties": {
+            "state": { "const": "present" },
+            "content": { "type": "string", "minLength": 2 },
+            "fingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        }
+      ]
+    },
+    "installedRelease": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pack", "version", "layer", "capsuleDigest", "manifestFingerprint",
+        "sourceInputFingerprint", "inventoryFingerprint", "dependencies",
+        "compatibility", "legal", "trust"
+      ],
+      "properties": {
+        "pack": { "$ref": "#/$defs/packId" },
+        "version": { "$ref": "#/$defs/version" },
+        "layer": { "enum": ["kernel", "core", "context", "automation", "integration"] },
+        "capsuleDigest": { "$ref": "#/$defs/fingerprint" },
+        "manifestFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "sourceInputFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "inventoryFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "dependencies": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/dependency" } },
+        "compatibility": { "$ref": "#/$defs/compatibility" },
+        "legal": { "$ref": "#/$defs/legal" },
+        "trust": { "$ref": "#/$defs/trust" }
+      }
+    },
+    "managedOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pack", "path", "role", "mode", "contentFingerprint", "fingerprint"],
+      "properties": {
+        "pack": { "$ref": "#/$defs/packId" },
+        "path": { "$ref": "#/$defs/relativePath" },
+        "role": { "enum": ["manifest", "definition", "implementation", "projection", "evaluation", "fixture", "migration"] },
+        "mode": { "enum": ["0644", "0755"] },
+        "contentFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["releases", "outputs", "fingerprint"],
+      "properties": {
+        "releases": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/installedRelease" } },
+        "outputs": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/managedOutput" } },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "dependencyRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["consumer", "dependency", "requiredRange", "optional", "selectedVersion", "state", "reasonCode"],
+      "properties": {
+        "consumer": { "$ref": "#/$defs/packId" },
+        "dependency": { "$ref": "#/$defs/packId" },
+        "requiredRange": { "$ref": "#/$defs/versionRange" },
+        "optional": { "type": "boolean" },
+        "selectedVersion": { "type": ["string", "null"], "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$" },
+        "state": { "enum": ["satisfied", "degraded"] },
+        "reasonCode": { "enum": ["PACK_INSTALL_DEPENDENCY_SATISFIED", "PACK_INSTALL_OPTIONAL_DEPENDENCY_ABSENT"] }
+      }
+    },
+    "dependencyCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "reasonCode", "rows", "fingerprint"],
+      "properties": {
+        "state": { "const": "passed" },
+        "reasonCode": { "const": "PACK_INSTALL_DEPENDENCIES_RESOLVED" },
+        "rows": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/dependencyRow" } },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "directoryEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence", "path", "fingerprint"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 0 },
+        "path": { "$ref": "#/$defs/relativePath" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "snapshot": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "content", "mode", "contentFingerprint", "fingerprint"],
+          "properties": {
+            "state": { "const": "absent" },
+            "content": { "const": null },
+            "mode": { "const": null },
+            "contentFingerprint": { "const": null },
+            "fingerprint": { "const": null }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "content", "mode", "contentFingerprint", "fingerprint"],
+          "properties": {
+            "state": { "const": "present" },
+            "content": { "type": "string", "minLength": 1 },
+            "mode": { "enum": ["0644", "0755"] },
+            "contentFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "fingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        }
+      ]
+    },
+    "fileEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "sequence", "action", "pack", "path", "role", "migrationRole",
+        "prior", "candidate", "reasonCode", "effectFingerprint"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^pack-install-effect[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "sequence": { "type": "integer", "minimum": 0 },
+        "action": { "enum": ["create", "replace", "remove"] },
+        "pack": { "$ref": "#/$defs/packId" },
+        "path": { "$ref": "#/$defs/relativePath" },
+        "role": { "enum": ["manifest", "definition", "implementation", "projection", "evaluation", "fixture", "migration"] },
+        "migrationRole": { "type": "boolean" },
+        "prior": { "$ref": "#/$defs/snapshot" },
+        "candidate": { "$ref": "#/$defs/snapshot" },
+        "reasonCode": { "enum": ["PACK_INSTALL_FILE_CREATE", "PACK_INSTALL_FILE_REPLACE", "PACK_INSTALL_FILE_REMOVE"] },
+        "effectFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    }
+  }
+}

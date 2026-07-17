@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/pack-install-inspection/v1",
+  "title": "Soter sanitized local pack install inspection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "kind", "plan", "request", "confirmation",
+    "consumption", "checkpoint", "resume", "claims", "authority", "privacy",
+    "limitations", "inspectionFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/pack-install-inspection/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "kind": { "const": "pack-install" },
+    "plan": { "$ref": "#/$defs/nullablePlan" },
+    "request": { "$ref": "#/$defs/nullableRequest" },
+    "confirmation": { "$ref": "#/$defs/nullableConfirmation" },
+    "consumption": { "$ref": "#/$defs/nullableConsumption" },
+    "checkpoint": { "$ref": "#/$defs/nullableCheckpoint" },
+    "resume": { "$ref": "#/$defs/resume" },
+    "claims": { "$ref": "#/$defs/claims" },
+    "authority": { "$ref": "#/$defs/authority" },
+    "privacy": { "$ref": "#/$defs/privacy" },
+    "limitations": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 12 } },
+    "inspectionFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "nullableFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fingerprint"],
+      "properties": { "id": { "type": "string" }, "fingerprint": { "$ref": "#/$defs/fingerprint" } }
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pack", "version", "layer", "capsuleDigest", "manifestFingerprint", "releaseStage", "evidenceMaturity", "legal", "trust"],
+      "properties": {
+        "pack": { "type": "string", "pattern": "^(kernel|core|context|automation|integration)\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "version": { "type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$" },
+        "layer": { "enum": ["kernel", "core", "context", "automation", "integration"] },
+        "capsuleDigest": { "$ref": "#/$defs/fingerprint" },
+        "manifestFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "releaseStage": { "enum": ["experimental", "preview", "stable", "deprecated"] },
+        "evidenceMaturity": { "enum": ["declared", "fixture-proven", "contained-proven", "live-proven"] },
+        "legal": { "type": "object", "additionalProperties": false, "required": ["publisher", "license", "legalSufficiency"], "properties": { "publisher": { "const": "unasserted" }, "license": { "const": "no-assertion" }, "legalSufficiency": { "const": "not-evaluated" } } },
+        "trust": { "type": "object", "additionalProperties": false, "required": ["state", "signature"], "properties": { "state": { "const": "unsigned-untrusted" }, "signature": { "const": "absent" } } }
+      }
+    },
+    "bundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "id", "version", "digest", "resolutionFingerprint"],
+      "properties": {
+        "state": { "enum": ["absent", "present"] },
+        "id": { "type": ["string", "null"] },
+        "version": { "type": ["string", "null"] },
+        "digest": { "$ref": "#/$defs/nullableFingerprint" },
+        "resolutionFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
+      }
+    },
+    "dependencyRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["consumer", "dependency", "requiredRange", "optional", "selectedVersion", "state", "reasonCode"],
+      "properties": {
+        "consumer": { "type": "string" },
+        "dependency": { "type": "string" },
+        "requiredRange": { "type": "string" },
+        "optional": { "type": "boolean" },
+        "selectedVersion": { "type": ["string", "null"] },
+        "state": { "enum": ["satisfied", "degraded"] },
+        "reasonCode": { "enum": ["PACK_INSTALL_DEPENDENCY_SATISFIED", "PACK_INSTALL_OPTIONAL_DEPENDENCY_ABSENT"] }
+      }
+    },
+    "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sequence", "action", "pack", "role", "migrationRole", "beforeFingerprint", "afterFingerprint", "reasonCode", "effectFingerprint"],
+      "properties": {
+        "id": { "type": "string" },
+        "sequence": { "type": "integer", "minimum": 0 },
+        "action": { "enum": ["create", "replace", "remove"] },
+        "pack": { "type": "string" },
+        "role": { "enum": ["manifest", "definition", "implementation", "projection", "evaluation", "fixture", "migration"] },
+        "migrationRole": { "type": "boolean" },
+        "beforeFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+        "afterFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+        "reasonCode": { "enum": ["PACK_INSTALL_FILE_CREATE", "PACK_INSTALL_FILE_REPLACE", "PACK_INSTALL_FILE_REMOVE"] },
+        "effectFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fingerprint", "createdAt", "validUntil", "targetFingerprint", "baseContract", "runtimeFingerprint", "releases", "bundle", "dependencyCheck", "effects", "scopeFingerprint"],
+      "properties": {
+        "id": { "type": "string" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "createdAt": { "type": "string" },
+        "validUntil": { "type": "string" },
+        "targetFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "baseContract": { "type": "string" },
+        "runtimeFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "releases": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/release" } },
+        "bundle": { "$ref": "#/$defs/bundle" },
+        "dependencyCheck": { "type": "object", "additionalProperties": false, "required": ["state", "reasonCode", "rows", "fingerprint"], "properties": { "state": { "const": "passed" }, "reasonCode": { "const": "PACK_INSTALL_DEPENDENCIES_RESOLVED" }, "rows": { "type": "array", "items": { "$ref": "#/$defs/dependencyRow" } }, "fingerprint": { "$ref": "#/$defs/fingerprint" } } },
+        "effects": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/effect" } },
+        "scopeFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "nullablePlan": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/plan" }] },
+    "request": { "type": "object", "additionalProperties": false, "required": ["id", "fingerprint", "createdAt", "expiresAt", "reason", "state"], "properties": { "id": { "type": "string" }, "fingerprint": { "$ref": "#/$defs/fingerprint" }, "createdAt": { "type": "string" }, "expiresAt": { "type": "string" }, "reason": { "type": "string" }, "state": { "enum": ["current", "expired"] } } },
+    "nullableRequest": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/request" }] },
+    "confirmation": { "type": "object", "additionalProperties": false, "required": ["id", "fingerprint", "confirmedAt", "actor"], "properties": { "id": { "type": "string" }, "fingerprint": { "$ref": "#/$defs/fingerprint" }, "confirmedAt": { "type": "string" }, "actor": { "type": "string" } } },
+    "nullableConfirmation": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/confirmation" }] },
+    "consumption": { "type": "object", "additionalProperties": false, "required": ["id", "fingerprint", "state", "checkpointId"], "properties": { "id": { "type": "string" }, "fingerprint": { "$ref": "#/$defs/fingerprint" }, "state": { "enum": ["reserved", "started"] }, "checkpointId": { "type": "string" } } },
+    "nullableConsumption": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/consumption" }] },
+    "checkpoint": { "type": "object", "additionalProperties": false, "required": ["id", "fingerprint", "state", "reasonCode", "currentStep", "completedPrefix", "pendingSteps", "manifestState", "blocker"], "properties": { "id": { "type": "string" }, "fingerprint": { "$ref": "#/$defs/fingerprint" }, "state": { "enum": ["prepared", "applying", "committing", "completed", "rolling-back", "rolled-back", "failed", "needs-attention"] }, "reasonCode": { "type": "string" }, "currentStep": { "type": ["string", "null"] }, "completedPrefix": { "type": "array", "uniqueItems": true, "items": { "type": "string" } }, "pendingSteps": { "type": "array", "uniqueItems": true, "items": { "type": "string" } }, "manifestState": { "enum": ["pending", "written", "verified", "rolled-back"] }, "blocker": { "type": ["string", "null"] } } },
+    "nullableCheckpoint": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/checkpoint" }] },
+    "resume": { "type": "object", "additionalProperties": false, "required": ["classification", "reasonCode", "reason", "permittedNextAction"], "properties": { "classification": { "enum": ["safe", "requires-review", "unavailable"] }, "reasonCode": { "type": "string", "pattern": "^PACK_INSTALL_[A-Z0-9_]+$" }, "reason": { "type": "string", "minLength": 12 }, "permittedNextAction": { "enum": ["create-request", "renew-request", "confirm-request", "start-install", "execute-checkpoint", "recover-checkpoint", "inspect-install", "none"] } } },
+    "claims": { "type": "object", "additionalProperties": false, "required": ["localReleaseBytes", "dependencyConstraints", "localMaterialization", "installedRegistry", "configured", "hostRealization", "npmDependencies", "ready", "verified", "healthy", "networkAvailability", "publisherIdentity", "legalSufficiency", "trust"], "properties": { "localReleaseBytes": { "const": "passed" }, "dependencyConstraints": { "const": "passed" }, "localMaterialization": { "enum": ["unknown", "passed", "failed"] }, "installedRegistry": { "enum": ["unknown", "passed", "failed"] }, "configured": { "const": "unknown" }, "hostRealization": { "const": "unknown" }, "npmDependencies": { "const": "not-evaluated" }, "ready": { "const": "unknown" }, "verified": { "const": "unknown" }, "healthy": { "const": "unknown" }, "networkAvailability": { "const": "unknown" }, "publisherIdentity": { "const": "not-evaluated" }, "legalSufficiency": { "const": "not-evaluated" }, "trust": { "const": "not-evaluated" } } },
+    "authority": { "type": "object", "additionalProperties": false, "required": ["fetch", "install", "upgrade", "uninstall", "configure", "realizeHost", "executeMigration", "runPackageManager", "network", "publish", "trust"], "properties": { "fetch": { "const": false }, "install": { "const": false }, "upgrade": { "const": false }, "uninstall": { "const": false }, "configure": { "const": false }, "realizeHost": { "const": false }, "executeMigration": { "const": false }, "runPackageManager": { "const": false }, "network": { "const": false }, "publish": { "const": false }, "trust": { "const": false } } },
+    "privacy": { "type": "object", "additionalProperties": false, "required": ["targetRootIncluded", "capsulePathsIncluded", "capsuleBytesIncluded", "priorBytesIncluded", "candidateBytesIncluded", "rawManagedManifestIncluded", "privateStateIncluded", "credentialValuesIncluded", "rawProviderResponsesIncluded"], "properties": { "targetRootIncluded": { "const": false }, "capsulePathsIncluded": { "const": false }, "capsuleBytesIncluded": { "const": false }, "priorBytesIncluded": { "const": false }, "candidateBytesIncluded": { "const": false }, "rawManagedManifestIncluded": { "const": false }, "privateStateIncluded": { "const": false }, "credentialValuesIncluded": { "const": false }, "rawProviderResponsesIncluded": { "const": false } } }
+  }
+}

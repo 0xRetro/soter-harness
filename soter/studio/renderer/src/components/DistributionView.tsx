@@ -9,6 +9,7 @@ import type {
   PackReleaseInspectionResult
 } from '../types';
 import { StateMark } from './StateMark';
+import { PackInstallDesk } from './PackInstallDesk';
 
 const adapterUnavailable: DistributionInspectionError = {
   code: 'DISTRIBUTION_ADAPTER_UNAVAILABLE',
@@ -94,9 +95,11 @@ export function DistributionView() {
         </div>
       )}
 
+      <PackInstallDesk />
+
       <footer className="distribution-footer-boundary">
         <span aria-hidden="true">◇</span>
-        <div><strong>Inspection stops here.</strong><p>No build, fetch, install, configure, realize, sign, trust, publish, redistribute, marketplace, or auto-update operation is exposed.</p></div>
+        <div><strong>Artifact inspection grants no authority.</strong><p>Local installation, when explicitly started above, is a separate checkpoint-bound transaction. Build, fetch, configure, realize, sign, trust, publish, redistribute, marketplace, and auto-update remain unavailable.</p></div>
         <code>authority:none</code>
       </footer>
     </div>

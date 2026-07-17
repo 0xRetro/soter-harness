@@ -28,6 +28,15 @@ import {
   prepareHostRealizationExecution,
   recoverHostRealization
 } from '../../core/host-realizations.mjs';
+import {
+  beginPackInstallRequest,
+  confirmPackInstallRequest,
+  executePackInstall,
+  inspectPackInstall,
+  preparePackInstall,
+  preparePackInstallExecution,
+  recoverPackInstall
+} from '../../core/pack-installs.mjs';
 import { readJson, repoRelativePath } from '../../core/lib/canonical-json.mjs';
 import {
   beginProposalConnectedApprovalRequest,
@@ -145,6 +154,7 @@ const proposalConnectedBatchErrorCodes = new Set([
 const configurationChangeCode = /^CONFIGURATION_[A-Z0-9_]+$/;
 const hostRealizationCode = /^HOST_REALIZATION_[A-Z0-9_]+$/;
 const distributionCode = /^(PACK_RELEASE|BUNDLE|DISTRIBUTION)_[A-Z0-9_]+$/;
+const packInstallCode = /^PACK_INSTALL_[A-Z0-9_]+$/;
 
 protocol.registerSchemesAsPrivileged([{
   scheme: 'soter-studio',
@@ -233,6 +243,18 @@ function distributionCancelled(artifact) {
       message: artifact === 'release'
         ? 'No local pack release was selected.'
         : 'No local bundle was selected.'
+    }
+  };
+}
+
+function packInstallFailure(error, message = 'The exact local pack install operation is unavailable.') {
+  return {
+    ok: false,
+    error: {
+      code: typeof error?.code === 'string' && packInstallCode.test(error.code)
+        ? error.code
+        : 'PACK_INSTALL_ADAPTER_UNAVAILABLE',
+      message
     }
   };
 }
@@ -390,6 +412,7 @@ function automationProposalLock(root, request) {
 
 async function createWindow() {
   const root = workspaceRoot();
+  const packInstallTargets = new Map();
   const window = new BrowserWindow({
     title: 'Soter Studio',
     width: 1480,
@@ -470,6 +493,215 @@ async function createWindow() {
       };
     } catch (error) {
       return distributionFailure(error, 'bundle');
+    }
+  });
+  const bindPackInstallTarget = (targetRoot, inspection) => {
+    for (const reference of [
+      inspection.plan?.id,
+      inspection.request?.id,
+      inspection.confirmation?.id,
+      inspection.consumption?.id,
+      inspection.checkpoint?.id
+    ]) {
+      if (reference) packInstallTargets.set(reference, targetRoot);
+    }
+    return inspection;
+  };
+  const knownPackInstallTarget = (request) => {
+    for (const value of Object.values(request || {})) {
+      if (typeof value === 'string' && packInstallTargets.has(value)) return packInstallTargets.get(value);
+    }
+    return null;
+  };
+  ipcMain.handle('pack-install:plan', async (event) => {
+    assertSender(event);
+    try {
+      const targetSelection = await dialog.showOpenDialog(window, {
+        title: 'Select the private local pack install target',
+        buttonLabel: 'Use this target',
+        properties: ['openDirectory']
+      });
+      if (targetSelection.canceled || targetSelection.filePaths.length !== 1) {
+        return packInstallFailure(
+          { code: 'PACK_INSTALL_SELECTION_CANCELLED' },
+          'No local pack install target was selected.'
+        );
+      }
+      const releaseSelection = await dialog.showOpenDialog(window, {
+        title: 'Select exact local Soter pack releases',
+        buttonLabel: 'Prepare exact install plan',
+        properties: ['openFile', 'multiSelections'],
+        filters: [{ name: 'Soter canonical JSON capsules', extensions: ['json'] }]
+      });
+      if (releaseSelection.canceled || releaseSelection.filePaths.length < 1) {
+        return packInstallFailure(
+          { code: 'PACK_INSTALL_SELECTION_CANCELLED' },
+          'No local pack release was selected.'
+        );
+      }
+      const at = new Date().toISOString();
+      const inspection = preparePackInstall({
+        sourceRoot: root,
+        targetRoot: targetSelection.filePaths[0],
+        capsulePaths: releaseSelection.filePaths,
+        baseContract: '1.0.0',
+        planId: `pack-install-plan.${randomUUID()}`,
+        createdAt: at,
+        validUntil: new Date(Date.parse(at) + 15 * 60 * 1000).toISOString()
+      });
+      return {
+        ok: true,
+        inspection: bindPackInstallTarget(targetSelection.filePaths[0], inspection)
+      };
+    } catch (error) {
+      return packInstallFailure(error, 'The exact private local pack install plan is unavailable.');
+    }
+  });
+  ipcMain.handle('pack-install:request', async (event, request) => {
+    assertSender(event);
+    try {
+      if (!exactObject(request, ['planId']) || typeof request.planId !== 'string') {
+        throw new TypeError('Pack install request requires one exact plan id.');
+      }
+      const targetRoot = knownPackInstallTarget(request);
+      if (!targetRoot) throw new Error('Pack install target is unavailable in this private Studio session.');
+      const at = new Date().toISOString();
+      const inspection = beginPackInstallRequest({
+        sourceRoot: root,
+        targetRoot,
+        planId: request.planId,
+        requestId: `pack-install-request.${randomUUID()}`,
+        reason: 'Review and confirm this exact local pack install plan.',
+        createdAt: at,
+        expiresAt: new Date(Date.parse(at) + 5 * 60 * 1000).toISOString()
+      });
+      return { ok: true, inspection: bindPackInstallTarget(targetRoot, inspection) };
+    } catch (error) {
+      return packInstallFailure(error);
+    }
+  });
+  ipcMain.handle('pack-install:confirm', async (event, request) => {
+    assertSender(event);
+    try {
+      if (!exactObject(request, ['requestId', 'confirmed'])
+        || typeof request.requestId !== 'string'
+        || request.confirmed !== true) {
+        throw new TypeError('Pack install confirmation requires one acknowledged exact request id.');
+      }
+      const targetRoot = knownPackInstallTarget(request);
+      if (!targetRoot) throw new Error('Pack install target is unavailable in this private Studio session.');
+      const inspection = confirmPackInstallRequest({
+        sourceRoot: root,
+        targetRoot,
+        requestId: request.requestId,
+        confirmationId: `pack-install-confirmation.${randomUUID()}`,
+        actor: 'studio.local-operator',
+        reason: 'Start only this exact reviewed local pack install plan.',
+        confirmedAt: new Date().toISOString()
+      });
+      return { ok: true, inspection: bindPackInstallTarget(targetRoot, inspection) };
+    } catch (error) {
+      return packInstallFailure(error);
+    }
+  });
+  ipcMain.handle('pack-install:start', async (event, request) => {
+    assertSender(event);
+    try {
+      if (!exactObject(request, ['confirmationId']) || typeof request.confirmationId !== 'string') {
+        throw new TypeError('Pack install start requires one exact confirmation id.');
+      }
+      const targetRoot = knownPackInstallTarget(request);
+      if (!targetRoot) throw new Error('Pack install target is unavailable in this private Studio session.');
+      const inspection = preparePackInstallExecution({
+        sourceRoot: root,
+        targetRoot,
+        confirmationId: request.confirmationId,
+        checkpointId: `checkpoint.pack-install.${randomUUID()}`,
+        at: new Date().toISOString()
+      });
+      return { ok: true, inspection: bindPackInstallTarget(targetRoot, inspection) };
+    } catch (error) {
+      return packInstallFailure(error);
+    }
+  });
+  ipcMain.handle('pack-install:execute', async (event, request) => {
+    assertSender(event);
+    try {
+      if (!exactObject(request, ['checkpointId', 'confirmed'])
+        || typeof request.checkpointId !== 'string'
+        || request.confirmed !== true) {
+        throw new TypeError('Pack install execution requires one acknowledged exact checkpoint id.');
+      }
+      const targetRoot = knownPackInstallTarget(request);
+      if (!targetRoot) throw new Error('Pack install target is unavailable in this private Studio session.');
+      const inspection = executePackInstall({
+        sourceRoot: root,
+        targetRoot,
+        checkpointId: request.checkpointId,
+        at: new Date().toISOString()
+      });
+      snapshotPromise = null;
+      return { ok: true, inspection: bindPackInstallTarget(targetRoot, inspection) };
+    } catch (error) {
+      return packInstallFailure(error, 'The exact local pack install checkpoint stopped safely.');
+    }
+  });
+  ipcMain.handle('pack-install:recover', async (event, request) => {
+    assertSender(event);
+    try {
+      if (!exactObject(request, ['checkpointId', 'confirmed'])
+        || typeof request.checkpointId !== 'string'
+        || request.confirmed !== true) {
+        throw new TypeError('Pack install recovery requires one acknowledged exact checkpoint id.');
+      }
+      const targetRoot = knownPackInstallTarget(request);
+      if (!targetRoot) throw new Error('Pack install target is unavailable in this private Studio session.');
+      const inspection = recoverPackInstall({
+        sourceRoot: root,
+        targetRoot,
+        checkpointId: request.checkpointId,
+        at: new Date().toISOString()
+      });
+      snapshotPromise = null;
+      return { ok: true, inspection: bindPackInstallTarget(targetRoot, inspection) };
+    } catch (error) {
+      return packInstallFailure(error, 'The exact local pack install checkpoint requires attention.');
+    }
+  });
+  ipcMain.handle('pack-install:inspect', async (event, request) => {
+    assertSender(event);
+    try {
+      const allowed = new Set(['planId', 'requestId', 'confirmationId', 'consumptionId', 'checkpointId']);
+      if (!request || typeof request !== 'object' || Array.isArray(request)
+        || !Object.keys(request).length
+        || Object.keys(request).some((key) => !allowed.has(key))
+        || Object.values(request).some((value) => value !== null && typeof value !== 'string')) {
+        throw new TypeError('Pack install inspection requires exact transaction identifiers only.');
+      }
+      let targetRoot = knownPackInstallTarget(request);
+      if (!targetRoot) {
+        const selection = await dialog.showOpenDialog(window, {
+          title: 'Locate the private local pack install target',
+          buttonLabel: 'Inspect this target',
+          properties: ['openDirectory']
+        });
+        if (selection.canceled || selection.filePaths.length !== 1) {
+          return packInstallFailure(
+            { code: 'PACK_INSTALL_SELECTION_CANCELLED' },
+            'No local pack install target was selected.'
+          );
+        }
+        [targetRoot] = selection.filePaths;
+      }
+      const inspection = inspectPackInstall({
+        sourceRoot: root,
+        targetRoot,
+        ...request,
+        at: new Date().toISOString()
+      });
+      return { ok: true, inspection: bindPackInstallTarget(targetRoot, inspection) };
+    } catch (error) {
+      return packInstallFailure(error, 'The exact local pack install inspection is unavailable.');
     }
   });
   ipcMain.handle('configuration:preview', async (event, request) => {

@@ -10,18 +10,18 @@
     "id": "project-pulse",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:f07775c58f28ef36dec307b443a8f30007266af8be50efc61b6384b9da45d47e",
-  "graphFingerprint": "sha256:4c5995dc8f6129ca4a7563ec4896d2d1c6b1a721188fec7bdd161a049ef83a6c",
+  "configurationLockFingerprint": "sha256:a6e439948cc14fa683e4bd0b2202d213d072ecf3b8b6a7252f2cf2017969a221",
+  "graphFingerprint": "sha256:406a385fedf2c0c9f547ab803b375532106cab959fd6144607efd9007c79fbf3",
   "dependencies": [
     {
       "id": "kernel.soter",
       "version": "0.1.0",
-      "fingerprint": "sha256:7dd914aec75b2f0ca2c41acccfdca91e80fec1adbb38a1f89f661369f2375773"
+      "fingerprint": "sha256:e5b85b4419f12478ce332c2a9aeb0293401836182f1857180a6366cdb5f8d3bf"
     },
     {
       "id": "core.runtime",
       "version": "0.1.0",
-      "fingerprint": "sha256:a15e2ac2a1ac6f8af08c3353f8a675b2c94131abd60ddbdd168f8dac521f2d04"
+      "fingerprint": "sha256:d8778d78eaa3120cdb412b49e3cfe331bb2b83b09ec216acf472133003e25e5f"
     },
     {
       "id": "context.crm",
@@ -117,7 +117,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:f07775c58f28ef36dec307b443a8f30007266af8be50efc61b6384b9da45d47e"
+      "fingerprint": "sha256:a6e439948cc14fa683e4bd0b2202d213d072ecf3b8b6a7252f2cf2017969a221"
     }
   ],
   "effects": [],

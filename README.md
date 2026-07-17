@@ -117,6 +117,11 @@ system-level truth, not the selected work item's lifecycle state.
 - **Deterministic local distribution.** Kernel can build and independently
   verify content-addressed local pack releases and transparent bundles without
   network fetch, install authority, publisher identity, license, or trust claims.
+- **Reviewed local pack installation.** Core can materialize already-local,
+  independently verified pack releases through an expiring exact plan,
+  single-use start, durable checkpoint, manifest-last ownership, verification,
+  rollback, and recovery. It performs no fetch, package-manager, configuration,
+  migration, host-realization, publication, or trust action.
 - **Durable Core operations.** Exact host requests are checkpointed before
   dispatch and can be recovered after restart or context compaction.
 - **Bounded context assembly.** Core loads declared sources through typed

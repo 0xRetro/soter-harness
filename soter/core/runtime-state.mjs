@@ -209,6 +209,42 @@ export function hostManagedManifestStatePath(root, hostId) {
   return stateFile(root, 'host-projections', safeId(hostId, 'host projection id'));
 }
 
+export function packInstallPlanStatePath(root, planId) {
+  return stateFile(root, 'pack-install-plans', safeId(planId, 'pack install plan id'));
+}
+
+export function packInstallRequestStatePath(root, requestId) {
+  return stateFile(root, 'pack-install-requests', safeId(requestId, 'pack install request id'));
+}
+
+export function packInstallConfirmationStatePath(root, confirmationId) {
+  return stateFile(
+    root,
+    'pack-install-confirmations',
+    safeId(confirmationId, 'pack install confirmation id')
+  );
+}
+
+export function packInstallConsumptionStatePath(root, consumptionId) {
+  return stateFile(
+    root,
+    'pack-install-consumptions',
+    safeId(consumptionId, 'pack install consumption id')
+  );
+}
+
+export function packInstallCheckpointStatePath(root, checkpointId) {
+  return stateFile(
+    root,
+    'pack-install-checkpoints',
+    safeId(checkpointId, 'pack install checkpoint id')
+  );
+}
+
+export function packInstallManagedManifestStatePath(root) {
+  return stateFile(root, 'pack-install-manifests', 'managed');
+}
+
 export function activeConfigurationLockStatePath(root, configurationName) {
   return stateFile(
     root,
@@ -315,6 +351,30 @@ export function hasHostRealizationCheckpointState(root, checkpointId) {
 
 export function hasHostManagedManifestState(root, hostId) {
   return fs.existsSync(hostManagedManifestStatePath(root, hostId));
+}
+
+export function hasPackInstallPlanState(root, planId) {
+  return fs.existsSync(packInstallPlanStatePath(root, planId));
+}
+
+export function hasPackInstallRequestState(root, requestId) {
+  return fs.existsSync(packInstallRequestStatePath(root, requestId));
+}
+
+export function hasPackInstallConfirmationState(root, confirmationId) {
+  return fs.existsSync(packInstallConfirmationStatePath(root, confirmationId));
+}
+
+export function hasPackInstallConsumptionState(root, consumptionId) {
+  return fs.existsSync(packInstallConsumptionStatePath(root, consumptionId));
+}
+
+export function hasPackInstallCheckpointState(root, checkpointId) {
+  return fs.existsSync(packInstallCheckpointStatePath(root, checkpointId));
+}
+
+export function hasPackInstallManagedManifestState(root) {
+  return fs.existsSync(packInstallManagedManifestStatePath(root));
 }
 
 export function hasActiveConfigurationLockState(root, configurationName) {
@@ -695,6 +755,90 @@ export function writeHostManagedManifestState(root, manifest) {
 
 export function removeHostManagedManifestState(root, hostId) {
   const file = hostManagedManifestStatePath(root, hostId);
+  if (fs.existsSync(file)) fs.rmSync(file);
+  return { file, path: repoRelativePath(root, file) };
+}
+
+export function readPackInstallPlanState(root, planId) {
+  const file = packInstallPlanStatePath(root, planId);
+  return readRequiredState(file, 'Durable pack install plan', planId, 'plan');
+}
+
+export function createPackInstallPlanState(root, plan) {
+  const file = packInstallPlanStatePath(root, plan.id);
+  atomicCreateJson(file, plan);
+  return { file, path: repoRelativePath(root, file) };
+}
+
+export function readPackInstallRequestState(root, requestId) {
+  const file = packInstallRequestStatePath(root, requestId);
+  return readRequiredState(file, 'Durable pack install request', requestId, 'request');
+}
+
+export function createPackInstallRequestState(root, request) {
+  const file = packInstallRequestStatePath(root, request.id);
+  atomicCreateJson(file, request);
+  return { file, path: repoRelativePath(root, file) };
+}
+
+export function readPackInstallConfirmationState(root, confirmationId) {
+  const file = packInstallConfirmationStatePath(root, confirmationId);
+  return readRequiredState(file, 'Durable pack install confirmation', confirmationId, 'confirmation');
+}
+
+export function createPackInstallConfirmationState(root, confirmation) {
+  const file = packInstallConfirmationStatePath(root, confirmation.id);
+  atomicCreateJson(file, confirmation);
+  return { file, path: repoRelativePath(root, file) };
+}
+
+export function readPackInstallConsumptionState(root, consumptionId) {
+  const file = packInstallConsumptionStatePath(root, consumptionId);
+  return readRequiredState(file, 'Durable pack install consumption', consumptionId, 'consumption');
+}
+
+export function createPackInstallConsumptionState(root, consumption) {
+  const file = packInstallConsumptionStatePath(root, consumption.id);
+  atomicCreateJson(file, consumption);
+  return { file, path: repoRelativePath(root, file) };
+}
+
+export function writePackInstallConsumptionState(root, consumption) {
+  const file = packInstallConsumptionStatePath(root, consumption.id);
+  atomicWriteJson(file, consumption);
+  return { file, path: repoRelativePath(root, file) };
+}
+
+export function readPackInstallCheckpointState(root, checkpointId) {
+  const file = packInstallCheckpointStatePath(root, checkpointId);
+  return readRequiredState(file, 'Durable pack install checkpoint', checkpointId, 'checkpoint');
+}
+
+export function createPackInstallCheckpointState(root, checkpoint) {
+  const file = packInstallCheckpointStatePath(root, checkpoint.id);
+  atomicCreateJson(file, checkpoint);
+  return { file, path: repoRelativePath(root, file) };
+}
+
+export function writePackInstallCheckpointState(root, checkpoint) {
+  const file = packInstallCheckpointStatePath(root, checkpoint.id);
+  atomicWriteJson(file, checkpoint);
+  return { file, path: repoRelativePath(root, file) };
+}
+
+export function readPackInstallManagedManifestState(root) {
+  const file = packInstallManagedManifestStatePath(root);
+  return readRequiredState(file, 'Managed pack install manifest', 'managed', 'manifest');
+}
+
+export function writePackInstallManagedManifestState(root, manifest) {
+  const file = packInstallManagedManifestStatePath(root);
+  atomicWriteJson(file, manifest);
+  return { file, path: repoRelativePath(root, file) };
+}
+
+export function removePackInstallManagedManifestState(root) {
+  const file = packInstallManagedManifestStatePath(root);
   if (fs.existsSync(file)) fs.rmSync(file);
   return { file, path: repoRelativePath(root, file) };
 }

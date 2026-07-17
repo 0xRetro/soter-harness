@@ -13,6 +13,7 @@ import connectedOperationBatchV2Schema from '../../contracts/connected-operation
 import configurationChangeInspectionSchema from '../../contracts/configuration-change-inspection.schema.json';
 import bundleInspectionSchema from '../../contracts/bundle-inspection.schema.json';
 import hostRealizationInspectionSchema from '../../contracts/host-realization-inspection.schema.json';
+import packInstallInspectionSchema from '../../contracts/pack-install-inspection.schema.json';
 import packReleaseInspectionSchema from '../../contracts/pack-release-inspection.schema.json';
 import operatorInspectionSchema from '../../contracts/operator-inspection.schema.json';
 import preparedConnectedPlanSchema from '../../contracts/prepared-connected-plan.schema.json';
@@ -30,12 +31,13 @@ import { App } from '../renderer/src/App';
 import { ConfigView } from '../renderer/src/components/ConfigView';
 import { DistributionView } from '../renderer/src/components/DistributionView';
 import { HostRealizationDesk } from '../renderer/src/components/HostRealizationDesk';
+import { PackInstallDesk } from '../renderer/src/components/PackInstallDesk';
 import { OperatorInputControl } from '../renderer/src/components/OperatorInputControl';
 import { OperatorView } from '../renderer/src/components/OperatorView';
 import { previewTitle } from '../renderer/src/components/PreparedWorkDossier';
 import { RunsView } from '../renderer/src/components/RunsView';
 import type { ConnectedApprovalReviewMaterial, OperatorInputField, OperatorInspection } from '../renderer/src/types';
-import { bundleInspectionFixture, configurationChangeInspectionFixture, configurationPreviewFixture, connectedActivityFixture, emailConnectedAcquisitionActivityFixture, emailTriageAutomationProposalFixture, emailTriageAutomationProposalMaterialFixture, emailTriageConfigurationFixture, emailTriageConnectedPlanFixture, emailTriageDerivedReviewFixture, emailTriagePreparedWorkFixture, emailTriageProposalConnectedPreviewFixture, emailTriageReviewBatchFixture, emailTriageReviewBatchMaterialFixture, emailTriageReviewFixture, emailTriageWorkflowFixture, hostRealizationInspectionFixture, meetingIntakePreparedWorkFixture, operatorInspectionFixture, operatorRecoveryInspectionFixture, packReleaseInspectionFixture, preparedWorkFixture, preparedWorkReviewFixture, studioFixture, taskCaptureConfigurationFixture, taskCapturePreparedWorkFixture, taskCaptureReviewFixture, taskCaptureWorkflowFixture } from './fixture';
+import { bundleInspectionFixture, configurationChangeInspectionFixture, configurationPreviewFixture, connectedActivityFixture, emailConnectedAcquisitionActivityFixture, emailTriageAutomationProposalFixture, emailTriageAutomationProposalMaterialFixture, emailTriageConfigurationFixture, emailTriageConnectedPlanFixture, emailTriageDerivedReviewFixture, emailTriagePreparedWorkFixture, emailTriageProposalConnectedPreviewFixture, emailTriageReviewBatchFixture, emailTriageReviewBatchMaterialFixture, emailTriageReviewFixture, emailTriageWorkflowFixture, hostRealizationInspectionFixture, meetingIntakePreparedWorkFixture, operatorInspectionFixture, operatorRecoveryInspectionFixture, packInstallInspectionFixture, packReleaseInspectionFixture, preparedWorkFixture, preparedWorkReviewFixture, studioFixture, taskCaptureConfigurationFixture, taskCapturePreparedWorkFixture, taskCaptureReviewFixture, taskCaptureWorkflowFixture } from './fixture';
 
 beforeEach(() => {
   const snapshot = studioFixture();
@@ -45,6 +47,13 @@ beforeEach(() => {
     refreshWorkspaceSnapshot: vi.fn().mockResolvedValue(snapshot),
     inspectLocalPackRelease: vi.fn().mockResolvedValue({ ok: true as const, inspection: packReleaseInspectionFixture() }),
     inspectLocalBundle: vi.fn().mockResolvedValue({ ok: true as const, inspection: bundleInspectionFixture() }),
+    preparePackInstall: vi.fn().mockResolvedValue({ ok: true as const, inspection: packInstallInspectionFixture('plan') }),
+    beginPackInstallRequest: vi.fn().mockResolvedValue({ ok: true as const, inspection: packInstallInspectionFixture('request') }),
+    confirmPackInstallRequest: vi.fn().mockResolvedValue({ ok: true as const, inspection: packInstallInspectionFixture('confirmed') }),
+    startPackInstall: vi.fn().mockResolvedValue({ ok: true as const, inspection: packInstallInspectionFixture('started') }),
+    executePackInstall: vi.fn().mockResolvedValue({ ok: true as const, inspection: packInstallInspectionFixture('completed') }),
+    recoverPackInstall: vi.fn().mockResolvedValue({ ok: true as const, inspection: packInstallInspectionFixture('completed') }),
+    inspectPackInstall: vi.fn().mockResolvedValue({ ok: true as const, inspection: packInstallInspectionFixture('recoverable') }),
     previewConfiguration: vi.fn().mockImplementation((request) => Promise.resolve(configurationPreviewFixture(request))),
     prepareConfigurationChange: vi.fn().mockResolvedValue({ ok: true as const, inspection: configurationChangeInspectionFixture('plan') }),
     beginConfigurationChangeRequest: vi.fn().mockResolvedValue({ ok: true as const, inspection: configurationChangeInspectionFixture('request') }),
@@ -109,7 +118,8 @@ describe('Soter Studio canonical operator projection', () => {
     expect(screen.getByText('Byte facts stop before trust and runtime claims.')).toBeVisible();
     expect(screen.getByText('unsigned-untrusted')).toBeVisible();
     expect(screen.getAllByText('unknown').length).toBeGreaterThan(3);
-    expect(screen.queryByRole('button', { name: /install|configure|publish|trust|marketplace|auto-update/i })).not.toBeInTheDocument();
+    const releaseLedger = screen.getByRole('article', { name: 'Pack release kernel.soter' });
+    expect(within(releaseLedger).queryByRole('button', { name: /install|configure|publish|trust|marketplace|auto-update/i })).not.toBeInTheDocument();
     expect(document.body).not.toHaveTextContent('SOURCE_ROOT_SENTINEL');
     expect(document.body).not.toHaveTextContent('CAPSULE_BYTES_SENTINEL');
     expect((await axe.run(container, { rules: { 'color-contrast': { enabled: false } } })).violations).toEqual([]);
@@ -169,8 +179,70 @@ describe('Soter Studio canonical operator projection', () => {
     expect(screen.getByText('BUNDLE_BLOCKED')).toBeVisible();
     expect(screen.getByText('BUNDLE_RELEASE_MISSING')).toBeVisible();
     expect(screen.getByText('No local release was selected for this reference.')).toBeVisible();
-    expect(screen.getByText('Inspection stops here.')).toBeVisible();
-    expect(screen.queryByRole('button', { name: /install|resolve|retry|fetch/i })).not.toBeInTheDocument();
+    expect(screen.getByText('Artifact inspection grants no authority.')).toBeVisible();
+    const bundleLedger = screen.getByRole('article', { name: 'Bundle bundle.soter-studio' });
+    expect(within(bundleLedger).queryByRole('button', { name: /install|resolve|retry|fetch/i })).not.toBeInTheDocument();
+  });
+
+  it('renders and executes only the canonical checkpoint-bound local install ceremony', async () => {
+    const user = userEvent.setup();
+    const plan = packInstallInspectionFixture('plan');
+    expect(validateJsonSchema(plan, packInstallInspectionSchema)).toEqual([]);
+    const hostile = structuredClone(plan) as typeof plan & { targetRoot?: string };
+    hostile.targetRoot = '/private/target/PACK_INSTALL_TARGET_SENTINEL';
+    (hostile.plan!.effects[0] as unknown as Record<string, unknown>).path = 'private/PACK_INSTALL_OUTPUT_SENTINEL.json';
+    expect(validateJsonSchema(hostile, packInstallInspectionSchema).length).toBeGreaterThan(0);
+    window.soterStudio.preparePackInstall = vi.fn().mockResolvedValue({ ok: true, inspection: hostile });
+    const { container } = render(<PackInstallDesk />);
+
+    await user.click(screen.getByRole('button', { name: 'Select target and local releases' }));
+    expect(await screen.findByText('PACK_INSTALL_DEPENDENCIES_RESOLVED')).toBeVisible();
+    expect(screen.getByText('PACK_INSTALL_OPTIONAL_DEPENDENCY_ABSENT')).toBeVisible();
+    expect(screen.getByText('Paths and bytes withheld')).toBeVisible();
+    expect(document.body).not.toHaveTextContent('PACK_INSTALL_TARGET_SENTINEL');
+    expect(document.body).not.toHaveTextContent('PACK_INSTALL_OUTPUT_SENTINEL');
+
+    await user.click(screen.getByRole('button', { name: 'Request confirmation' }));
+    expect(window.soterStudio.beginPackInstallRequest).toHaveBeenCalledWith({ planId: 'pack-install-plan.ui-test' });
+    await user.click(screen.getByLabelText('I reviewed this exact fingerprint-bound install plan.'));
+    await user.click(screen.getByRole('button', { name: 'Confirm exact install request' }));
+    expect(window.soterStudio.confirmPackInstallRequest).toHaveBeenCalledWith({ requestId: 'pack-install-request.ui-test', confirmed: true });
+    await user.click(screen.getByRole('button', { name: 'Start this exact install plan' }));
+    expect(window.soterStudio.startPackInstall).toHaveBeenCalledWith({ confirmationId: 'pack-install-confirmation.ui-test' });
+
+    const execute = screen.getByRole('button', { name: 'Install exact checkpoint' });
+    expect(execute).toBeDisabled();
+    await user.click(screen.getByLabelText("I understand this changes only the selected target's managed pack files."));
+    expect(execute).toBeEnabled();
+    await user.click(execute);
+    expect(window.soterStudio.executePackInstall).toHaveBeenCalledWith({ checkpointId: 'checkpoint.pack-install.ui-test', confirmed: true });
+    expect((await screen.findAllByText('PACK_INSTALL_COMPLETED')).length).toBeGreaterThan(0);
+    expect(screen.getByText('Materialized locally does not mean configured or working.')).toBeVisible();
+    expect(screen.getAllByText('unknown').length).toBeGreaterThan(3);
+    expect((await axe.run(container, { rules: { 'color-contrast': { enabled: false } } })).violations).toEqual([]);
+  });
+
+  it('keeps checkpoint recovery reason-coded and discards hostile adapter prose', async () => {
+    const user = userEvent.setup();
+    window.soterStudio.preparePackInstall = vi.fn()
+      .mockResolvedValueOnce({ ok: true, inspection: packInstallInspectionFixture('recoverable') })
+      .mockRejectedValueOnce(new Error('PRIVATE_PACK_INSTALL_PATH_SENTINEL /private/target/root'));
+    const view = render(<PackInstallDesk />);
+    await user.click(screen.getByRole('button', { name: 'Select target and local releases' }));
+    expect((await screen.findAllByText('PACK_INSTALL_RECOVERY_REQUIRED')).length).toBeGreaterThan(0);
+    const recover = screen.getByRole('button', { name: 'Recover exact checkpoint' });
+    expect(recover).toBeDisabled();
+    await user.click(screen.getByLabelText("I understand this changes only the selected target's managed pack files."));
+    expect(recover).toBeEnabled();
+    expect(screen.getByText('Exact current step')).toBeVisible();
+    view.unmount();
+
+    render(<PackInstallDesk />);
+    await user.click(screen.getByRole('button', { name: 'Select target and local releases' }));
+    expect(await screen.findByText('PACK_INSTALL_ADAPTER_UNAVAILABLE')).toBeVisible();
+    expect(screen.getByText('The exact local pack install adapter is unavailable.')).toBeVisible();
+    expect(document.body).not.toHaveTextContent('PRIVATE_PACK_INSTALL_PATH_SENTINEL');
+    expect(document.body).not.toHaveTextContent('/private/target/root');
   });
 
   it('discards hostile local inspection adapter rejection prose', async () => {

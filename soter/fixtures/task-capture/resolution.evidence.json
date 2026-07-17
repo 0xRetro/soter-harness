@@ -10,18 +10,18 @@
     "id": "task-capture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:91426668041d8534006057e8f412ab041bd3e0f4247e0388b7a4a0eb283b348a",
-  "graphFingerprint": "sha256:14928adc5301f1a11f029a741e163a5987350dce7c4ed71339795f52b0d9e4e9",
+  "configurationLockFingerprint": "sha256:5dba1c9572b34b98b58fffddb65ef2265145f4dfcf245ecbbccaa704c8440d4d",
+  "graphFingerprint": "sha256:a9577b8276c36e5c689b8b0f2939efb2fa9680d00675a9c8f1f6c9d3461361a0",
   "dependencies": [
     {
       "id": "kernel.soter",
       "version": "0.1.0",
-      "fingerprint": "sha256:7dd914aec75b2f0ca2c41acccfdca91e80fec1adbb38a1f89f661369f2375773"
+      "fingerprint": "sha256:e5b85b4419f12478ce332c2a9aeb0293401836182f1857180a6366cdb5f8d3bf"
     },
     {
       "id": "core.runtime",
       "version": "0.1.0",
-      "fingerprint": "sha256:a15e2ac2a1ac6f8af08c3353f8a675b2c94131abd60ddbdd168f8dac521f2d04"
+      "fingerprint": "sha256:d8778d78eaa3120cdb412b49e3cfe331bb2b83b09ec216acf472133003e25e5f"
     },
     {
       "id": "context.crm",
@@ -117,7 +117,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:91426668041d8534006057e8f412ab041bd3e0f4247e0388b7a4a0eb283b348a"
+      "fingerprint": "sha256:5dba1c9572b34b98b58fffddb65ef2265145f4dfcf245ecbbccaa704c8440d4d"
     }
   ],
   "effects": [],

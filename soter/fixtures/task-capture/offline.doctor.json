@@ -6,7 +6,7 @@
   "level": "offline",
   "configuration": {
     "name": "task-capture",
-    "lockFingerprint": "sha256:91426668041d8534006057e8f412ab041bd3e0f4247e0388b7a4a0eb283b348a"
+    "lockFingerprint": "sha256:5dba1c9572b34b98b58fffddb65ef2265145f4dfcf245ecbbccaa704c8440d4d"
   },
   "states": {
     "valid": "passed",

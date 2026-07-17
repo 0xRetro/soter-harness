@@ -206,6 +206,74 @@ inspection is reusable authority. No provisional Studio distribution schema,
 release resolver, legal inference, or hidden starter-setting model should be
 retained.
 
+## Pack installation
+
+Pack installation is a separate Core transaction over already-local,
+independently verified releases. It does not turn either Distribution inspection
+into authority. The lifecycle is:
+
+`pack-install-plan/v1` -> `pack-install-request/v1` ->
+`pack-install-confirmation/v1` -> one-time
+`pack-install-consumption/v1` -> `pack-install-checkpoint/v1`.
+
+Studio consumes only `pack-install-inspection/v1`. It may render:
+
+- plan ID/fingerprint, creation and expiry, target fingerprint, base/runtime
+  fingerprints, scope fingerprint, and exact release identifiers, versions,
+  capsule/manifest digests, stage, maturity, legal, and trust boundaries;
+- optional bundle identity/digest/resolution fingerprint;
+- dependency rows with consumer, dependency, constraint, optionality, selected
+  version, `satisfied|degraded`, and stable reason code;
+- ordered create/replace/remove effects with pack, artifact role, migration-role
+  flag, nullable before/after fingerprints, reason code, and effect fingerprint;
+- request window, confirmation actor/time, single-use consumption, checkpoint
+  completed/current/pending steps, manifest state, blocker, and the derived
+  `resume` object; and
+- exact local-materialization/registry claims plus all unavailable authority,
+  privacy, and proof limitations.
+
+The schema cannot represent the target root, capsule or bundle path, capsule or
+file bytes, raw managed manifest, private plan/checkpoint state, credentials, or
+provider responses. Do not reconstruct them from error prose. Electron owns the
+selected target and capsule paths in its trusted main-process call only; the
+renderer submits and retains exact IDs and booleans. Use a fixed coded envelope:
+
+`{ ok: true, inspection } | { ok: false, error: { code, message } }`
+
+Map controls directly to Core:
+
+- select private target/local capsules and call `preparePackInstall`;
+- `beginPackInstallRequest` with the exact plan ID and expiry;
+- `confirmPackInstallRequest` with the exact request ID and local actor;
+- `preparePackInstallExecution` with the exact confirmation ID;
+- `executePackInstall` with the exact checkpoint ID; and
+- `recoverPackInstall` or `inspectPackInstall` with that same checkpoint.
+
+Confirmation is not start authority. Start consumes it once, and display of
+`resume.permittedNextAction` is not a continuation token. Keep Execute disabled
+until Core returns the exact checkpoint. Keep recovery bound to that checkpoint;
+never infer retry from state or prose. Stable failures use `PACK_INSTALL_*`,
+including dependency missing/mismatch, downgrade, unmanaged/cross-pack
+collision, managed/target drift, symlink/path/hardlink/mode rejection, plan or
+request expiry, consumed confirmation, verification failure, rollback failure,
+and recovery ambiguity.
+
+Studio may retain its generic exact-scope, ceremony, checkpoint, blocker,
+recovery, and claim-boundary components. Delete or reject any UI-owned install
+plan, dependency resolver, confirmation store, reusable permission, path-based
+renderer state, force/adopt switch, generic retry, fetch, uninstall, migration,
+configure, host-realize, package-manager, network, publication, or trust action.
+Fixture reconciliation order is: finalize Kernel/Core/pack declarations,
+regenerate canonical fixtures once, map the typed inspection fixture, then run
+Core, freshness, doctor, MCP, Studio, privacy, and packaged Electron gates.
+
+Intentionally unsupported in v1: network acquisition, registry lookup,
+uninstall, package-manager dependencies, configuration mutation, host
+realization, migration execution, publication/signature/trust, and any action
+derived solely from a bundle/release inspection. Completion proves local bytes
+and managed ownership only; configured, ready, verified, and healthy remain
+`unknown`.
+
 ## Canonical authority path
 
 Use this lifecycle and no parallel confirmation store:

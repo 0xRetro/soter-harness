@@ -4,16 +4,16 @@
   "id": "changeset.meeting-intake.transaction-fixture",
   "runId": "run.meeting-intake.transaction-fixture",
   "createdAt": "2026-07-15T12:00:00.000Z",
-  "configurationLockFingerprint": "sha256:33887ea889ec3ac8f687198c7ca69d8f5861632285e85dceb9a9c11417996b9f",
+  "configurationLockFingerprint": "sha256:b9b3024a94333576a7ac111445e05eeb286bc67e822b5dd745b40353b489c2ee",
   "basis": {
     "kind": "automation-decision",
     "id": "decision.meeting-intake.transaction-fixture",
-    "fingerprint": "sha256:f5894918e3f5840cc95aac18269786d4e832c9bb703c40e9fcfed3eb4ad4c38e",
+    "fingerprint": "sha256:b7965e736ec797a3e1c4ef289e159fa6255df68018340ca1aaa29ed2c5777b2d",
     "contextSnapshotId": "context.meeting-intake.transaction-fixture",
-    "contextSnapshotFingerprint": "sha256:5cbe26050346abb1eafb6b36d9d8e88e5a6c74f6392622c872b78deb963c7208"
+    "contextSnapshotFingerprint": "sha256:5bdb026c473b03e10eb478fc40b5b940a2883d4d13651f4efc440f3606c70e20"
   },
   "state": "committed",
-  "scopeFingerprint": "sha256:73dfd3186e6acf0092b7891dc1c8a3616df886157ff432d15a51edb210e6db3e",
+  "scopeFingerprint": "sha256:053a26d559847747b24774dc7f8988bbdfcbacab7288e1973506b5c22712da20",
   "operations": [
     {
       "id": "operation.task.update",

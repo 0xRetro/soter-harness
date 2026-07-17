@@ -1488,6 +1488,147 @@ export type BundleInspectionResult =
   | { ok: true; inspection: BundleInspection }
   | { ok: false; error: DistributionInspectionError };
 
+export interface PackInstallInspection {
+  $contract: 'soter://contracts/pack-install-inspection/v1';
+  contractVersion: '1.0.0';
+  kind: 'pack-install';
+  plan: null | {
+    id: string;
+    fingerprint: string;
+    createdAt: string;
+    validUntil: string;
+    targetFingerprint: string;
+    baseContract: string;
+    runtimeFingerprint: string;
+    releases: Array<{
+      pack: string;
+      version: string;
+      layer: 'kernel' | 'core' | 'context' | 'automation' | 'integration';
+      capsuleDigest: string;
+      manifestFingerprint: string;
+      releaseStage: 'experimental' | 'preview' | 'stable' | 'deprecated';
+      evidenceMaturity: 'declared' | 'fixture-proven' | 'contained-proven' | 'live-proven';
+      legal: { publisher: 'unasserted'; license: 'no-assertion'; legalSufficiency: 'not-evaluated' };
+      trust: { state: 'unsigned-untrusted'; signature: 'absent' };
+    }>;
+    bundle: {
+      state: 'absent' | 'present';
+      id: string | null;
+      version: string | null;
+      digest: string | null;
+      resolutionFingerprint: string | null;
+    };
+    dependencyCheck: {
+      state: 'passed';
+      reasonCode: 'PACK_INSTALL_DEPENDENCIES_RESOLVED';
+      rows: Array<{
+        consumer: string;
+        dependency: string;
+        requiredRange: string;
+        optional: boolean;
+        selectedVersion: string | null;
+        state: 'satisfied' | 'degraded';
+        reasonCode: 'PACK_INSTALL_DEPENDENCY_SATISFIED' | 'PACK_INSTALL_OPTIONAL_DEPENDENCY_ABSENT';
+      }>;
+      fingerprint: string;
+    };
+    effects: Array<{
+      id: string;
+      sequence: number;
+      action: 'create' | 'replace' | 'remove';
+      pack: string;
+      role: 'manifest' | 'definition' | 'implementation' | 'projection' | 'evaluation' | 'fixture' | 'migration';
+      migrationRole: boolean;
+      beforeFingerprint: string | null;
+      afterFingerprint: string | null;
+      reasonCode: 'PACK_INSTALL_FILE_CREATE' | 'PACK_INSTALL_FILE_REPLACE' | 'PACK_INSTALL_FILE_REMOVE';
+      effectFingerprint: string;
+    }>;
+    scopeFingerprint: string;
+  };
+  request: null | {
+    id: string;
+    fingerprint: string;
+    createdAt: string;
+    expiresAt: string;
+    reason: string;
+    state: 'current' | 'expired';
+  };
+  confirmation: null | { id: string; fingerprint: string; confirmedAt: string; actor: string };
+  consumption: null | { id: string; fingerprint: string; state: 'reserved' | 'started'; checkpointId: string };
+  checkpoint: null | {
+    id: string;
+    fingerprint: string;
+    state: 'prepared' | 'applying' | 'committing' | 'completed' | 'rolling-back' | 'rolled-back' | 'failed' | 'needs-attention';
+    reasonCode: string;
+    currentStep: string | null;
+    completedPrefix: string[];
+    pendingSteps: string[];
+    manifestState: 'pending' | 'written' | 'verified' | 'rolled-back';
+    blocker: string | null;
+  };
+  resume: {
+    classification: 'safe' | 'requires-review' | 'unavailable';
+    reasonCode: string;
+    reason: string;
+    permittedNextAction: 'create-request' | 'renew-request' | 'confirm-request' | 'start-install' | 'execute-checkpoint' | 'recover-checkpoint' | 'inspect-install' | 'none';
+  };
+  claims: {
+    localReleaseBytes: 'passed';
+    dependencyConstraints: 'passed';
+    localMaterialization: 'unknown' | 'passed' | 'failed';
+    installedRegistry: 'unknown' | 'passed' | 'failed';
+    configured: 'unknown';
+    hostRealization: 'unknown';
+    npmDependencies: 'not-evaluated';
+    ready: 'unknown';
+    verified: 'unknown';
+    healthy: 'unknown';
+    networkAvailability: 'unknown';
+    publisherIdentity: 'not-evaluated';
+    legalSufficiency: 'not-evaluated';
+    trust: 'not-evaluated';
+  };
+  authority: {
+    fetch: false;
+    install: false;
+    upgrade: false;
+    uninstall: false;
+    configure: false;
+    realizeHost: false;
+    executeMigration: false;
+    runPackageManager: false;
+    network: false;
+    publish: false;
+    trust: false;
+  };
+  privacy: {
+    targetRootIncluded: false;
+    capsulePathsIncluded: false;
+    capsuleBytesIncluded: false;
+    priorBytesIncluded: false;
+    candidateBytesIncluded: false;
+    rawManagedManifestIncluded: false;
+    privateStateIncluded: false;
+    credentialValuesIncluded: false;
+    rawProviderResponsesIncluded: false;
+  };
+  limitations: string[];
+  inspectionFingerprint: string;
+}
+
+export type PackInstallResult =
+  | { ok: true; inspection: PackInstallInspection }
+  | { ok: false; error: { code: string; message: string } };
+
+export interface PackInstallReferences {
+  planId?: string;
+  requestId?: string;
+  confirmationId?: string;
+  consumptionId?: string;
+  checkpointId?: string;
+}
+
 declare global {
   interface Window {
     soterStudio: {
@@ -1495,6 +1636,13 @@ declare global {
       refreshWorkspaceSnapshot(): Promise<InspectionSnapshot>;
       inspectLocalPackRelease(): Promise<PackReleaseInspectionResult>;
       inspectLocalBundle(): Promise<BundleInspectionResult>;
+      preparePackInstall(): Promise<PackInstallResult>;
+      beginPackInstallRequest(request: { planId: string }): Promise<PackInstallResult>;
+      confirmPackInstallRequest(request: { requestId: string; confirmed: true }): Promise<PackInstallResult>;
+      startPackInstall(request: { confirmationId: string }): Promise<PackInstallResult>;
+      executePackInstall(request: { checkpointId: string; confirmed: true }): Promise<PackInstallResult>;
+      recoverPackInstall(request: { checkpointId: string; confirmed: true }): Promise<PackInstallResult>;
+      inspectPackInstall(request: PackInstallReferences): Promise<PackInstallResult>;
       previewConfiguration(request: ConfigurationPreviewRequest): Promise<ConfigurationPreview>;
       prepareConfigurationChange(request: { name: string; candidateConfiguration: Record<string, unknown> }): Promise<ConfigurationChangeResult>;
       beginConfigurationChangeRequest(request: { planId: string; reason: string }): Promise<ConfigurationChangeResult>;

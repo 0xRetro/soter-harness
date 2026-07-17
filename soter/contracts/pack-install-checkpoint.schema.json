@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/pack-install-checkpoint/v1",
+  "title": "Soter durable local pack install checkpoint",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "id", "createdAt", "updatedAt", "state",
+    "plan", "request", "confirmation", "consumption", "targetFingerprint",
+    "scopeFingerprint", "directorySteps", "fileSteps", "currentStep",
+    "manifest", "reasonCode", "blocker", "claims", "checkpointFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/pack-install-checkpoint/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^checkpoint[.]pack-install[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "updatedAt": { "type": "string", "minLength": 20 },
+    "state": { "enum": ["prepared", "applying", "committing", "completed", "rolling-back", "rolled-back", "failed", "needs-attention"] },
+    "plan": { "$ref": "#/$defs/reference" },
+    "request": { "$ref": "#/$defs/reference" },
+    "confirmation": { "$ref": "#/$defs/reference" },
+    "consumption": { "$ref": "#/$defs/reference" },
+    "targetFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "scopeFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "directorySteps": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/directoryStep" } },
+    "fileSteps": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/fileStep" } },
+    "currentStep": { "type": ["integer", "null"], "minimum": 0 },
+    "manifest": { "$ref": "#/$defs/manifestStep" },
+    "reasonCode": { "type": "string", "pattern": "^PACK_INSTALL_[A-Z0-9_]+$" },
+    "blocker": { "$ref": "#/$defs/blocker" },
+    "claims": { "$ref": "#/$defs/claims" },
+    "checkpointFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "nullableFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fingerprint"],
+      "properties": {
+        "id": { "type": "string" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "directoryStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence", "path", "state", "fingerprint"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 0 },
+        "path": { "type": "string", "pattern": "^[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$" },
+        "state": { "enum": ["pending", "created", "retained", "removed"] },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "fileStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence", "effect", "state", "observedFingerprint"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 0 },
+        "effect": { "$ref": "#/$defs/reference" },
+        "state": { "enum": ["pending", "applied", "verified", "rolled-back"] },
+        "observedFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
+      }
+    },
+    "manifestStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "priorFingerprint", "candidateFingerprint", "observedFingerprint"],
+      "properties": {
+        "state": { "enum": ["pending", "written", "verified", "rolled-back"] },
+        "priorFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+        "candidateFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "observedFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
+      }
+    },
+    "blocker": {
+      "oneOf": [
+        { "type": "object", "additionalProperties": false, "required": ["state", "reasonCode"], "properties": { "state": { "const": "none" }, "reasonCode": { "const": null } } },
+        { "type": "object", "additionalProperties": false, "required": ["state", "reasonCode"], "properties": { "state": { "const": "present" }, "reasonCode": { "type": "string", "pattern": "^PACK_INSTALL_[A-Z0-9_]+$" } } }
+      ]
+    },
+    "claims": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["localMaterialization", "installedRegistry", "dependencyConstraints"],
+      "properties": {
+        "localMaterialization": { "enum": ["unknown", "passed", "failed"] },
+        "installedRegistry": { "enum": ["unknown", "passed", "failed"] },
+        "dependencyConstraints": { "const": "passed" }
+      }
+    }
+  }
+}

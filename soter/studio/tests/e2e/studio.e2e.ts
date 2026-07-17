@@ -127,7 +127,7 @@ test('launches with a sandboxed canonical adapter and performs zero workspace wr
     }));
     expect(boundary).toEqual({
       require: 'undefined', process: 'undefined', ipcRenderer: 'undefined',
-      api: ['beginConfigurationChangeRequest', 'beginHostRealizationRequest', 'beginProposalConnectedApproval', 'confirmConfigurationChangeRequest', 'confirmConnectedApproval', 'confirmHostRealizationRequest', 'createPreparedConnectedPlan', 'createPreparedReviewBatch', 'executeConfigurationChange', 'executeHostRealization', 'getAutomationProposal', 'getAutomationProposalMaterial', 'getConnectedApprovalReview', 'getOperatorActivity', 'getPreparedConnectedPlan', 'getPreparedReviewBatchMaterial', 'getPreparedWork', 'getPreparedWorkDerivedReview', 'getPreparedWorkReview', 'getWorkspaceSnapshot', 'inspectConfigurationChange', 'inspectHostRealization', 'inspectLocalBundle', 'inspectLocalPackRelease', 'onWorkspaceInvalidated', 'prepareAutomationRun', 'prepareConfigurationChange', 'prepareConnectedReconciliation', 'prepareHostRealization', 'previewConfiguration', 'previewProposalConnectedBatch', 'recoverConfigurationChange', 'recoverHostRealization', 'refreshWorkspaceSnapshot', 'startConfigurationChange', 'startConnectedTransaction', 'startHostRealization']
+      api: ['beginConfigurationChangeRequest', 'beginHostRealizationRequest', 'beginPackInstallRequest', 'beginProposalConnectedApproval', 'confirmConfigurationChangeRequest', 'confirmConnectedApproval', 'confirmHostRealizationRequest', 'confirmPackInstallRequest', 'createPreparedConnectedPlan', 'createPreparedReviewBatch', 'executeConfigurationChange', 'executeHostRealization', 'executePackInstall', 'getAutomationProposal', 'getAutomationProposalMaterial', 'getConnectedApprovalReview', 'getOperatorActivity', 'getPreparedConnectedPlan', 'getPreparedReviewBatchMaterial', 'getPreparedWork', 'getPreparedWorkDerivedReview', 'getPreparedWorkReview', 'getWorkspaceSnapshot', 'inspectConfigurationChange', 'inspectHostRealization', 'inspectLocalBundle', 'inspectLocalPackRelease', 'inspectPackInstall', 'onWorkspaceInvalidated', 'prepareAutomationRun', 'prepareConfigurationChange', 'prepareConnectedReconciliation', 'prepareHostRealization', 'preparePackInstall', 'previewConfiguration', 'previewProposalConnectedBatch', 'recoverConfigurationChange', 'recoverHostRealization', 'recoverPackInstall', 'refreshWorkspaceSnapshot', 'startConfigurationChange', 'startConnectedTransaction', 'startHostRealization', 'startPackInstall']
     });
     const productionCsp = await page.evaluate(async () => {
       const response = await fetch(window.location.href);
@@ -499,7 +499,8 @@ test('inspects exact local release and bundle bytes without exposing paths or ex
     await expect(page.getByRole('heading', { name: 'bundle.studio-contained' })).toBeVisible();
     await expect(page.getByText('BUNDLE_RESOLVED')).toBeVisible();
     await expect(page.getByText('unsigned-untrusted').first()).toBeVisible();
-    await expect(page.getByRole('button', { name: /install|configure|realize|publish|redistribute|marketplace|auto-update/i })).toHaveCount(0);
+    const bundleLedger = page.getByRole('article', { name: 'Bundle bundle.studio-contained' });
+    await expect(bundleLedger.getByRole('button', { name: /install|configure|realize|publish|redistribute|marketplace|auto-update/i })).toHaveCount(0);
 
     const rendered = await page.locator('body').innerText();
     expect(rendered).not.toContain(root);
@@ -514,6 +515,74 @@ test('inspects exact local release and bundle bytes without exposing paths or ex
     await app.close();
     expect(workspaceFingerprint(root)).toBe(before);
     fs.rmSync(root, { recursive: true, force: true });
+    fs.rmSync(artifacts.outputRoot, { recursive: true, force: true });
+  }
+});
+
+test('installs one exact local release only through the canonical checkpoint transaction', async () => {
+  const root = containedWorkspace();
+  const before = workspaceFingerprint(root);
+  const artifacts = containedDistributionArtifacts(root);
+  const target = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'soter-studio-install-target-'));
+  const { app, page } = await launch(root);
+  try {
+    await app.evaluate(({ dialog }, selections) => {
+      const queue = [...selections];
+      (dialog as unknown as { showOpenDialog: () => Promise<{ canceled: boolean; filePaths: string[] }> }).showOpenDialog = async () => ({
+        canceled: false,
+        filePaths: queue.shift() || []
+      });
+    }, [[target], [artifacts.releasePath]]);
+
+    await page.getByRole('link', { name: /Releases/ }).click();
+    const hostile = await page.evaluate(async () => {
+      const request = window.soterStudio.beginPackInstallRequest as unknown as (value: Record<string, unknown>) => Promise<unknown>;
+      return request({ planId: 'pack-install-plan.missing', targetRoot: '/private/PACK_INSTALL_TARGET_SENTINEL' });
+    });
+    expect(hostile).toEqual({
+      ok: false,
+      error: { code: 'PACK_INSTALL_ADAPTER_UNAVAILABLE', message: 'The exact local pack install operation is unavailable.' }
+    });
+
+    await page.getByRole('button', { name: 'Select target and local releases' }).click();
+    await expect(page.getByText('PACK_INSTALL_DEPENDENCIES_RESOLVED')).toBeVisible();
+    await expect(page.getByText('Paths and bytes withheld')).toBeVisible();
+    let rendered = await page.locator('body').innerText();
+    expect(rendered).not.toContain(target);
+    expect(rendered).not.toContain(artifacts.outputRoot);
+    expect(rendered).not.toContain(artifacts.releasePath);
+    expect(rendered).not.toContain('PACK_INSTALL_TARGET_SENTINEL');
+    expect(fs.existsSync(path.join(target, 'soter/packs/kernel.soter/pack.json'))).toBe(false);
+
+    await page.getByRole('button', { name: 'Request confirmation' }).click();
+    await page.getByLabel('I reviewed this exact fingerprint-bound install plan.').check();
+    await page.getByRole('button', { name: 'Confirm exact install request' }).click();
+    await page.getByRole('button', { name: 'Start this exact install plan' }).click();
+    const execute = page.getByRole('button', { name: 'Install exact checkpoint' });
+    await expect(execute).toBeDisabled();
+    await page.getByLabel("I understand this changes only the selected target's managed pack files.").check();
+    await expect(execute).toBeEnabled();
+    await execute.click();
+    await expect(page.getByText('PACK_INSTALL_COMPLETED').first()).toBeVisible();
+    await expect(page.getByText('Materialized locally does not mean configured or working.')).toBeVisible();
+
+    expect(fs.existsSync(path.join(target, 'soter/packs/kernel.soter/pack.json'))).toBe(true);
+    const manifest = path.join(target, '.soter/state/pack-install-manifests/managed.json');
+    expect(fs.existsSync(manifest)).toBe(true);
+    expect((fs.statSync(manifest).mode & 0o777).toString(8).padStart(4, '0')).toBe('0600');
+    expect(JSON.parse(fs.readFileSync(manifest, 'utf8')).lastSuccessfulCheckpoint.id).toMatch(/^checkpoint\.pack-install\./);
+    rendered = await page.locator('body').innerText();
+    expect(rendered).not.toContain(target);
+    expect(rendered).not.toContain(artifacts.releasePath);
+    expect(rendered).not.toContain('contentEncoding');
+    expect(workspaceFingerprint(root)).toBe(before);
+    await app.evaluate(async ({ BrowserWindow }, source) => BrowserWindow.getAllWindows()[0].webContents.executeJavaScript(source), axeSource);
+    await expectAccessible(page);
+  } finally {
+    await app.close();
+    expect(workspaceFingerprint(root)).toBe(before);
+    fs.rmSync(root, { recursive: true, force: true });
+    fs.rmSync(target, { recursive: true, force: true });
     fs.rmSync(artifacts.outputRoot, { recursive: true, force: true });
   }
 });

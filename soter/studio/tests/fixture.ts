@@ -1,4 +1,4 @@
-import type { Activity, AutomationProposal, AutomationProposalMaterial, BundleInspection, Configuration, ConfigurationChangeInspection, ConfigurationPreview, ConfigurationPreviewRequest, HostRealizationInspection, InspectionSnapshot, OperatorInspection, PackReleaseInspection, PreparedConnectedPlan, PreparedReviewBatch, PreparedReviewBatchMaterial, PreparedReviewRow, PreparedWork, PreparedWorkDerivedReviewMaterial, PreparedWorkReviewMaterial, ProposalConnectedBatchPreview, Workflow } from '../renderer/src/types';
+import type { Activity, AutomationProposal, AutomationProposalMaterial, BundleInspection, Configuration, ConfigurationChangeInspection, ConfigurationPreview, ConfigurationPreviewRequest, HostRealizationInspection, InspectionSnapshot, OperatorInspection, PackInstallInspection, PackReleaseInspection, PreparedConnectedPlan, PreparedReviewBatch, PreparedReviewBatchMaterial, PreparedReviewRow, PreparedWork, PreparedWorkDerivedReviewMaterial, PreparedWorkReviewMaterial, ProposalConnectedBatchPreview, Workflow } from '../renderer/src/types';
 // @ts-expect-error Canonical Core helper is a checked JavaScript module without declarations.
 import { fingerprintJson } from '../../core/lib/canonical-json.mjs';
 import emailDerivedReviewDefinition from '../../automations/email-triage/derived-review.json';
@@ -2004,6 +2004,84 @@ export function bundleInspectionFixture(state: 'resolved' | 'blocked' = 'resolve
       { code: 'BUNDLE_RUNTIME_UNEVALUATED', summary: 'Bundle resolution does not establish installation, configuration, readiness, or health.' }
     ],
     inspectionFingerprint: fp('0')
+  };
+}
+
+export function packInstallInspectionFixture(stage: 'plan' | 'request' | 'confirmed' | 'started' | 'recoverable' | 'completed' | 'needs-attention' = 'plan'): PackInstallInspection {
+  const requested = stage !== 'plan';
+  const confirmed = ['confirmed', 'started', 'recoverable', 'completed', 'needs-attention'].includes(stage);
+  const started = ['started', 'recoverable', 'completed', 'needs-attention'].includes(stage);
+  const completed = stage === 'completed';
+  const recoverable = stage === 'recoverable';
+  const needsAttention = stage === 'needs-attention';
+  const resume: PackInstallInspection['resume'] = completed
+    ? { classification: 'unavailable', reasonCode: 'PACK_INSTALL_COMPLETED', reason: 'This local pack install checkpoint is terminal and grants no further execution authority.', permittedNextAction: 'none' }
+    : needsAttention || recoverable
+      ? { classification: 'requires-review', reasonCode: needsAttention ? 'PACK_INSTALL_ROLLBACK_OUTPUT_DRIFT' : 'PACK_INSTALL_RECOVERY_REQUIRED', reason: 'The durable checkpoint must be inspected and recovered from its exact observed state.', permittedNextAction: 'recover-checkpoint' }
+      : started
+        ? { classification: 'safe', reasonCode: 'PACK_INSTALL_CHECKPOINT_EXECUTABLE', reason: 'The durable checkpoint holds the consumed exact start and may execute once.', permittedNextAction: 'execute-checkpoint' }
+        : confirmed
+          ? { classification: 'safe', reasonCode: 'PACK_INSTALL_START_AVAILABLE', reason: 'The exact confirmation may be consumed once to create one durable install checkpoint.', permittedNextAction: 'start-install' }
+          : requested
+            ? { classification: 'safe', reasonCode: 'PACK_INSTALL_CONFIRMATION_AVAILABLE', reason: 'The current request may be confirmed for this exact local install plan.', permittedNextAction: 'confirm-request' }
+            : { classification: 'safe', reasonCode: 'PACK_INSTALL_REQUEST_AVAILABLE', reason: 'The current exact plan may be submitted for an expiring operator confirmation.', permittedNextAction: 'create-request' };
+  const effects: NonNullable<PackInstallInspection['plan']>['effects'] = [
+    { id: 'pack-install-effect.0', sequence: 0, action: 'create', pack: 'kernel.soter', role: 'manifest', migrationRole: false, beforeFingerprint: null, afterFingerprint: fp('4'), reasonCode: 'PACK_INSTALL_FILE_CREATE', effectFingerprint: fp('5') },
+    { id: 'pack-install-effect.1', sequence: 1, action: 'replace', pack: 'kernel.soter', role: 'implementation', migrationRole: false, beforeFingerprint: fp('6'), afterFingerprint: fp('7'), reasonCode: 'PACK_INSTALL_FILE_REPLACE', effectFingerprint: fp('8') },
+    { id: 'pack-install-effect.2', sequence: 2, action: 'remove', pack: 'kernel.soter', role: 'projection', migrationRole: false, beforeFingerprint: fp('9'), afterFingerprint: null, reasonCode: 'PACK_INSTALL_FILE_REMOVE', effectFingerprint: fp('a') }
+  ];
+  return {
+    $contract: 'soter://contracts/pack-install-inspection/v1',
+    contractVersion: '1.0.0',
+    kind: 'pack-install',
+    plan: {
+      id: 'pack-install-plan.ui-test', fingerprint: fp('1'),
+      createdAt: '2026-07-16T18:00:00.000Z', validUntil: '2026-07-16T18:15:00.000Z',
+      targetFingerprint: fp('2'), baseContract: '1.0.0', runtimeFingerprint: fp('3'),
+      releases: [{
+        pack: 'kernel.soter', version: '0.1.0', layer: 'kernel', capsuleDigest: fp('b'), manifestFingerprint: fp('c'),
+        releaseStage: 'experimental', evidenceMaturity: 'declared',
+        legal: { publisher: 'unasserted', license: 'no-assertion', legalSufficiency: 'not-evaluated' },
+        trust: { state: 'unsigned-untrusted', signature: 'absent' }
+      }],
+      bundle: { state: 'absent', id: null, version: null, digest: null, resolutionFingerprint: null },
+      dependencyCheck: {
+        state: 'passed', reasonCode: 'PACK_INSTALL_DEPENDENCIES_RESOLVED', fingerprint: fp('d'),
+        rows: [{ consumer: 'kernel.soter', dependency: 'context.optional', requiredRange: '^1.0.0', optional: true, selectedVersion: null, state: 'degraded', reasonCode: 'PACK_INSTALL_OPTIONAL_DEPENDENCY_ABSENT' }]
+      },
+      effects,
+      scopeFingerprint: fp('e')
+    },
+    request: requested ? {
+      id: 'pack-install-request.ui-test', fingerprint: fp('f'), createdAt: '2026-07-16T18:01:00.000Z',
+      expiresAt: '2026-07-16T18:06:00.000Z', reason: 'Review and confirm this exact local pack install plan.', state: 'current'
+    } : null,
+    confirmation: confirmed ? { id: 'pack-install-confirmation.ui-test', fingerprint: fp('0'), confirmedAt: '2026-07-16T18:02:00.000Z', actor: 'studio.local-operator' } : null,
+    consumption: started ? { id: 'pack-install-consumption.ui-test', fingerprint: fp('1'), state: 'started', checkpointId: 'checkpoint.pack-install.ui-test' } : null,
+    checkpoint: started ? {
+      id: 'checkpoint.pack-install.ui-test', fingerprint: fp('2'),
+      state: completed ? 'completed' : needsAttention ? 'needs-attention' : recoverable ? 'applying' : 'prepared',
+      reasonCode: completed ? 'PACK_INSTALL_COMPLETED' : needsAttention ? 'PACK_INSTALL_ROLLBACK_OUTPUT_DRIFT' : recoverable ? 'PACK_INSTALL_RECOVERY_REQUIRED' : 'PACK_INSTALL_CHECKPOINT_PREPARED',
+      currentStep: recoverable ? effects[1].id : null,
+      completedPrefix: completed ? effects.map((effect) => effect.id) : recoverable ? [effects[0].id] : [],
+      pendingSteps: completed ? [] : recoverable ? [effects[2].id, 'pack-install-manifest'] : [...effects.map((effect) => effect.id), 'pack-install-manifest'],
+      manifestState: completed ? 'verified' : 'pending',
+      blocker: needsAttention ? 'PACK_INSTALL_ROLLBACK_OUTPUT_DRIFT' : recoverable ? 'PACK_INSTALL_RECOVERY_REQUIRED' : null
+    } : null,
+    resume,
+    claims: {
+      localReleaseBytes: 'passed', dependencyConstraints: 'passed', localMaterialization: completed ? 'passed' : needsAttention ? 'failed' : 'unknown',
+      installedRegistry: completed ? 'passed' : needsAttention ? 'failed' : 'unknown', configured: 'unknown', hostRealization: 'unknown',
+      npmDependencies: 'not-evaluated', ready: 'unknown', verified: 'unknown', healthy: 'unknown', networkAvailability: 'unknown',
+      publisherIdentity: 'not-evaluated', legalSufficiency: 'not-evaluated', trust: 'not-evaluated'
+    },
+    authority: { fetch: false, install: false, upgrade: false, uninstall: false, configure: false, realizeHost: false, executeMigration: false, runPackageManager: false, network: false, publish: false, trust: false },
+    privacy: { targetRootIncluded: false, capsulePathsIncluded: false, capsuleBytesIncluded: false, priorBytesIncluded: false, candidateBytesIncluded: false, rawManagedManifestIncluded: false, privateStateIncluded: false, credentialValuesIncluded: false, rawProviderResponsesIncluded: false },
+    limitations: [
+      'This inspection reports deterministic local materialization only and carries no executable authority.',
+      'Publisher identity, legal sufficiency, trust, readiness, verification, health, and connected behavior remain unevaluated.'
+    ],
+    inspectionFingerprint: fp('3')
   };
 }
 

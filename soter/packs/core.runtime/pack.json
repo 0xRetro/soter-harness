@@ -38,6 +38,8 @@
     { "path": "soter/core/host-projections.mjs", "role": "implementation" },
     { "path": "soter/core/host-realizations.mjs", "role": "implementation" },
     { "path": "soter/core/host-realizations.selftest.mjs", "role": "evaluation" },
+    { "path": "soter/core/pack-installs.mjs", "role": "implementation" },
+    { "path": "soter/core/pack-installs.selftest.mjs", "role": "evaluation" },
     { "path": "soter/core/host-runtime-inspection.mjs", "role": "implementation" },
     { "path": "soter/core/host-tools.mjs", "role": "implementation" },
     { "path": "soter/core/operation-plans.mjs", "role": "implementation" },

@@ -728,7 +728,7 @@ The repository also exposes the gaps this architecture is meant to close:
 | **Hosts** | Claude project and plugin structures are the effective delivery model. | Make provider-neutral definitions canonical and realize them through tested Claude and Codex adapters. |
 | **Evaluation** | Static checks are strong; scenario cases and golden freshness are mostly manual and direct-dependency based. | Add executable scenarios, multiple trials, durable evidence, and transitive invalidation. |
 | **Configuration** | Installed behavior is inferred from repository contents and host-specific files. | Add explicit desired configuration, resolution, locks, bindings, and generated projections. |
-| **Distribution** | Kernel can build and independently verify deterministic, content-addressed local pack capsules and transparent bundles without private state, legal assertions, or effect authority. No fetch, install, upgrade, registry, signature, or publication path exists. | Add a separate reviewed install/upgrade transaction, then parameterized shareable configuration templates and later trust/publication mechanisms only through explicit governed decisions. |
+| **Distribution** | Kernel can build and independently verify deterministic, content-addressed local pack capsules and transparent bundles without private state, legal assertions, or effect authority. Core separately installs or upgrades already-local verified releases through an exact checkpointed transaction. | Add parameterized shareable configuration templates and later network acquisition, uninstall, trust, or publication only through separate governed decisions. |
 
 “Built” or “sealed” is not an architectural status. Existing systems may be
 useful and green under current checks while still lacking target contracts,
@@ -811,10 +811,10 @@ The implementation sequence is:
 7. **Make verification executable.** Add contract fixtures, headless scenario
    trials, transitive invalidation, connected smoke checks, doctor operations,
    and CI evidence for the vertical slice.
-8. **Add user configuration and distribution flows.** The contained pack-release
-   and transparent-bundle foundation is implemented. Next add explainable local
-   install and upgrade previews and transactions; parameterized shareable
-   templates and any public/trust mechanism remain separate later milestones.
+8. **Add user configuration and distribution flows.** The contained pack-release,
+   transparent-bundle, and exact already-local install/upgrade transactions are
+   implemented. Parameterized shareable templates, network acquisition,
+   uninstall, and any public/trust mechanism remain separate later milestones.
 9. **Expose the shared interfaces.** Build CLI and graphical experiences over
    the same core model, beginning with configuration, graph, run, evidence, and
    health views.

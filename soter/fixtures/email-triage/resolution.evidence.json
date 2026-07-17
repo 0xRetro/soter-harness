@@ -10,18 +10,18 @@
     "id": "email-triage",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:add4d07ce6c1da89824146afdc1ee8edfde726932a145832b04bfb5d5199996e",
-  "graphFingerprint": "sha256:c4793e893280340abef043b6d01ed2b2a1621298be489b3634f20702def1434f",
+  "configurationLockFingerprint": "sha256:5bf06aa57cf74c2ad08b8f72415e41eed981a38776f0510655b2b4c3b8454dc3",
+  "graphFingerprint": "sha256:dafaad8ee2c0b1bda0ea3d6e8f17e3892b93e332f43f59531b12ec9f7e8346c3",
   "dependencies": [
     {
       "id": "kernel.soter",
       "version": "0.1.0",
-      "fingerprint": "sha256:7dd914aec75b2f0ca2c41acccfdca91e80fec1adbb38a1f89f661369f2375773"
+      "fingerprint": "sha256:e5b85b4419f12478ce332c2a9aeb0293401836182f1857180a6366cdb5f8d3bf"
     },
     {
       "id": "core.runtime",
       "version": "0.1.0",
-      "fingerprint": "sha256:a15e2ac2a1ac6f8af08c3353f8a675b2c94131abd60ddbdd168f8dac521f2d04"
+      "fingerprint": "sha256:d8778d78eaa3120cdb412b49e3cfe331bb2b83b09ec216acf472133003e25e5f"
     },
     {
       "id": "context.email",
@@ -117,7 +117,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:add4d07ce6c1da89824146afdc1ee8edfde726932a145832b04bfb5d5199996e"
+      "fingerprint": "sha256:5bf06aa57cf74c2ad08b8f72415e41eed981a38776f0510655b2b4c3b8454dc3"
     }
   ],
   "effects": [],

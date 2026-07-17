@@ -811,28 +811,56 @@ or evidence drift.
 
 ### Install and upgrade lifecycle
 
-Installing a pack or bundle follows a visible lifecycle:
+Installation and upgrade are separate from release verification,
+configuration apply, and host realization. Core accepts only already-local
+capsules that pass Kernel's independent verifier. Its exact private transaction
+family is:
 
-1. Discover the candidate and its source.
-2. Inspect its purpose, dependencies, authorities, effects, maturity, and
-   requested permissions.
-3. Preview the desired configuration and resolved graph changes.
-4. Accept the configuration change under the user's policy.
-5. Fetch and verify the selected versions and integrity information.
-6. Configure bindings, authorities, and secret references.
-7. Realize the configuration for the selected host.
-8. Run the required checks and report valid, ready, verified, and healthy
-   states separately.
+- `pack-install-plan/v1`: target identity, current managed-manifest binding,
+  exact release and optional bundle digests, dependency resolution, ordered
+  create/replace/remove files, directory effects, prior/candidate bytes, and a
+  separate plan expiry;
+- `pack-install-request/v1`: exact plan binding and a shorter confirmation
+  window;
+- `pack-install-confirmation/v1`: exact request and local actor decision, with
+  no file effect;
+- `pack-install-consumption/v1`: single-use reservation and deterministic
+  checkpoint binding;
+- `pack-install-checkpoint/v1`: directory/file/manifest phases, contiguous
+  completed prefix, exact prior/candidate observations, rollback, recovery, and
+  needs-attention facts;
+- `pack-install-managed-manifest/v1`: target-private ownership of exact pack
+  versions, release digests, artifact roles, modes, and content fingerprints;
+  and
+- `pack-install-inspection/v1`: the only general UI/CLI projection.
 
-Upgrades are never silent. Soter previews changed contracts, migrations,
-permissions, effects, projections, and invalidated evidence before applying an
-upgrade. The current local transaction atomically applies the desired
-configuration and its private active lock while validating already-declared
-host projections. Generating or replacing host projections uses the separate
-host-realization transaction above and must not be inferred from a successful local
-configuration apply. The prior configuration and active lock remain available
-for rollback, subject to declared data migrations and external effects that
-cannot be reversed.
+The plan verifies every selected release and, when supplied, the transparent
+bundle against the exact local catalog. Required dependencies must be selected
+at compatible versions. A missing optional dependency is an explicit degraded
+row; if selected, it must be compatible. A lower selected version cannot replace
+a higher installed version. Each managed output is owned by exactly one pack,
+and create, replace, and remove are all explicit. Existing unmanaged files,
+cross-pack ownership, manifest/output drift, path traversal, symlinks,
+hardlinks, and modes outside complete `0644`/`0755` words fail closed.
+
+Start consumes confirmation once before any target effect and creates the
+durable checkpoint. Exact re-entry repairs only a reserved consumption whose
+deterministic checkpoint was not yet persisted; it does not mint another start.
+Execution revalidates current target identity, plan expiry, release bytes,
+dependencies, ownership, current output fingerprints, and checkpoint binding
+before each effect. It uses atomic file replacement, verifies each candidate,
+and commits the private `0600` managed manifest last. Recovery may continue or
+restore only the checkpoint's exact fingerprints; observed ambiguity or
+rollback drift becomes `needs-attention` rather than adoption or retry.
+
+The sanitized inspection cannot represent the target root, release or bundle
+paths, capsule/file bytes, raw managed manifest, private transaction documents,
+credentials, or provider responses. `resume.permittedNextAction` is guidance,
+not authority; execute and recover still require the exact separately held
+checkpoint ID. Successful completion establishes only local materialization and
+managed-registry integrity. It grants no fetch, network, package-manager,
+configuration, host-realization, migration, uninstall, publication, legal, or
+trust authority and cannot promote readiness, verification, or health.
 
 ### Sharing and collaborative evolution
 

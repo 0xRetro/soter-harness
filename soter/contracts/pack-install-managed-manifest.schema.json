@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/pack-install-managed-manifest/v1",
+  "title": "Soter private global managed pack install manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "targetFingerprint", "baseContract",
+    "createdAt", "updatedAt", "releases", "outputs", "lastSuccessfulCheckpoint",
+    "manifestFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/pack-install-managed-manifest/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "targetFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "baseContract": { "$ref": "#/$defs/version" },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "updatedAt": { "type": "string", "minLength": 20 },
+    "releases": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/release" }
+    },
+    "outputs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/output" }
+    },
+    "lastSuccessfulCheckpoint": { "$ref": "#/$defs/checkpointReference" },
+    "manifestFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "version": { "type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$" },
+    "versionRange": { "type": "string", "pattern": "^(\\^|~|>=|<=|>|<)?(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$" },
+    "packId": { "type": "string", "pattern": "^(kernel|core|context|automation|integration)\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "relativePath": { "type": "string", "pattern": "^[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$" },
+    "checkpointReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "scopeFingerprint"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^checkpoint[.]pack-install[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "scopeFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pack", "version", "optional", "reason"],
+      "properties": {
+        "pack": { "$ref": "#/$defs/packId" },
+        "version": { "$ref": "#/$defs/versionRange" },
+        "optional": { "type": "boolean" },
+        "reason": { "type": "string", "minLength": 12 }
+      }
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["baseContract", "hosts"],
+      "properties": {
+        "baseContract": { "$ref": "#/$defs/versionRange" },
+        "hosts": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+        }
+      }
+    },
+    "legal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["publisher", "license", "legalSufficiency"],
+      "properties": {
+        "publisher": { "const": "unasserted" },
+        "license": { "const": "no-assertion" },
+        "legalSufficiency": { "const": "not-evaluated" }
+      }
+    },
+    "trust": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "signature"],
+      "properties": {
+        "state": { "const": "unsigned-untrusted" },
+        "signature": { "const": "absent" }
+      }
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pack", "version", "layer", "capsuleDigest", "manifestFingerprint",
+        "sourceInputFingerprint", "inventoryFingerprint", "dependencies",
+        "compatibility", "legal", "trust"
+      ],
+      "properties": {
+        "pack": { "$ref": "#/$defs/packId" },
+        "version": { "$ref": "#/$defs/version" },
+        "layer": { "enum": ["kernel", "core", "context", "automation", "integration"] },
+        "capsuleDigest": { "$ref": "#/$defs/fingerprint" },
+        "manifestFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "sourceInputFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "inventoryFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "dependencies": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/dependency" } },
+        "compatibility": { "$ref": "#/$defs/compatibility" },
+        "legal": { "$ref": "#/$defs/legal" },
+        "trust": { "$ref": "#/$defs/trust" }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pack", "path", "role", "mode", "contentFingerprint", "fingerprint"],
+      "properties": {
+        "pack": { "$ref": "#/$defs/packId" },
+        "path": { "$ref": "#/$defs/relativePath" },
+        "role": { "enum": ["manifest", "definition", "implementation", "projection", "evaluation", "fixture", "migration"] },
+        "mode": { "enum": ["0644", "0755"] },
+        "contentFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    }
+  }
+}

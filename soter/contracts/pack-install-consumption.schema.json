@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/pack-install-consumption/v1",
+  "title": "Soter one-time pack install confirmation consumption",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "id", "createdAt", "updatedAt", "state",
+    "confirmation", "request", "plan", "checkpointId", "reservationFingerprint",
+    "checkpointFingerprint", "consumptionFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/pack-install-consumption/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^pack-install-consumption[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "updatedAt": { "type": "string", "minLength": 20 },
+    "state": { "enum": ["reserved", "started"] },
+    "confirmation": { "$ref": "#/$defs/reference" },
+    "request": { "$ref": "#/$defs/reference" },
+    "plan": { "$ref": "#/$defs/reference" },
+    "checkpointId": { "type": "string", "pattern": "^checkpoint[.]pack-install[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "reservationFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "checkpointFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+    "consumptionFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "nullableFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fingerprint"],
+      "properties": {
+        "id": { "type": "string" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    }
+  }
+}
