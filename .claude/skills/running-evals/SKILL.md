@@ -96,6 +96,15 @@ as a fix to the piece.
   Counter: after judging, remove each run's worktree and branch
   (`git worktree remove --force <path>` · `git branch -D <branch>`) — the evidence
   is the report, transcript, and golden, not the scaffolding.
+- (observed 2026-07-15, live) Eval worktrees were created with `git worktree add`
+  run from INSIDE another worktree, so a relative path nested them one level deeper
+  than the dispatch prompt named. Two runners, given a non-existent path, silently
+  fell back to the ROOT checkout (on main) and tested the un-amended guide plus read
+  their own answer-key eval files — a false verdict against the wrong version.
+  Counter: create eval worktrees with an ABSOLUTE path; verify the dispatch path
+  resolves to amended content before dispatch; tell runners to fail-not-fallback if
+  an expected file is missing. A runner reading files outside its stated working dir
+  is a red flag in the transcript, not a convenience.
 
 ## Evals
 - `.claude/evals/running-evals/happy-path.md`

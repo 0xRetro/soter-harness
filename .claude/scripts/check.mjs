@@ -482,11 +482,12 @@ function checkGoldenFresh(root, file, fm, out) {
   } catch { /* fail-open: no git — the gate still reads the rule */ }
 }
 
-// TARGET_STALE (warn): targets.md mirrors live Notion schemas with dated `live-verified`
-// stamps (ADR-0016). The checker can't fetch Notion (ADR-0010) — but it CAN read the
-// stamps offline: a stamp older than TARGET_STALE_DAYS, or a registered target with no
-// stamp at all, is the audit cadence firing (ADR-0029). The nag clears only when
-// /auditing-a-schema-doc re-verifies against live and re-stamps the entry.
+// TARGET_STALE (warn): targets.md mirrors live external stores with dated `live-verified`
+// stamps (ADR-0016) — Notion data sources (data_source_id) and Drive drives (drive_id)
+// alike. The checker can't fetch live (ADR-0010) — but it CAN read the stamps offline:
+// a stamp older than TARGET_STALE_DAYS, or a registered target with no stamp at all,
+// is the audit cadence firing (ADR-0029). The nag clears only when a live re-verify
+// re-stamps the entry (/auditing-a-schema-doc for Notion; a live drive listing for Drive).
 const TARGET_STALE_DAYS = 30;
 function checkTargetFreshness(root, out) {
   const p = path.join(root, '.claude', 'skills', 'pushing-to-notion', 'targets.md');
@@ -495,7 +496,7 @@ function checkTargetFreshness(root, out) {
   const flush = () => {
     if (!target || !hasId) return;
     if (!stamp)
-      out.push(V(p, 'TARGET_STALE', `target "${target}" has a data_source_id but no live-verified stamp`,
+      out.push(V(p, 'TARGET_STALE', `target "${target}" has a data_source_id/drive_id but no live-verified stamp`,
         'an unstamped mirror has unverifiable freshness — its schema may be anyone\'s guess (ADR-0029)',
         `run /auditing-a-schema-doc for the DB and stamp the entry (live-verified YYYY-MM-DD)`, 'warn'));
     else if ((Date.now() - Date.parse(stamp)) / 86400000 > TARGET_STALE_DAYS)
@@ -506,7 +507,7 @@ function checkTargetFreshness(root, out) {
   for (const line of read(p).split('\n')) {
     const h = line.match(/^###\s+(\S+)/);
     if (h) { flush(); target = h[1]; hasId = false; stamp = null; continue; }
-    if (/\*\*data_source_id:\*\*/.test(line)) hasId = true;
+    if (/\*\*(data_source_id|drive_id):\*\*/.test(line)) hasId = true;
     const s = line.match(/live-verified (\d{4}-\d{2}-\d{2})/);
     if (s && target && !stamp) stamp = s[1];
   }
@@ -1272,8 +1273,8 @@ function selftest() {
   w('.claude/skills/orphan-skill/SKILL.md', '---\nname: orphan-skill\ndescription: Does x. Use when asked. Not for y.\nlayer: kernel\nsystem: lonely\nkind: component\nmold: how-to-guide\ndisable-model-invocation: true\n---\n\nNot for y.\n'); // SYSTEM_UNLISTED (lonely card doesn't list it)
   w('.claude/settings.json', JSON.stringify({ hooks: { PreToolUse: [{ matcher: 'Bash', hooks: [{ type: 'command', command: 'node "$CLAUDE_PROJECT_DIR/.claude/scripts/check.mjs" --guard-bash' }] }] } })); // HOOK_PARITY (guard not shipped by plugin)
   w('.claude/hooks/hooks.json', JSON.stringify({ hooks: { PostToolUse: [{ matcher: 'Write|Edit', hooks: [{ type: 'command', command: 'node "${CLAUDE_PLUGIN_ROOT}/scripts/check.mjs" --hook' }] }] } })); // HOOK_PARITY (plugin-only lint not wired in-repo)
-  w('.claude/skills/pushing-to-notion/targets.md',                          // TARGET_STALE ×2 (stale stamp + unstamped)
-    '---\nname: targets\nlayer: automation\nsystem: publishing\nkind: component\nmold: singleton\n---\n\n# T\n\n### old-target\n- **data_source_id:** `abc` *(live-verified 2020-01-01)*\n\n### unstamped-target\n- **data_source_id:** `def`\n');
+  w('.claude/skills/pushing-to-notion/targets.md',                          // TARGET_STALE ×3 (stale stamp + unstamped + stale drive)
+    '---\nname: targets\nlayer: automation\nsystem: publishing\nkind: component\nmold: singleton\n---\n\n# T\n\n### old-target\n- **data_source_id:** `abc` *(live-verified 2020-01-01)*\n\n### unstamped-target\n- **data_source_id:** `def`\n\n### stale-drive\n- **drive_id:** `0Axyz` *(live-verified 2020-01-01)*\n');
   const planted = checkAll(tmp);
   const codes = new Set(planted.map((v) => v.code));
   const mustFire = ['BUDGET_CLAUDEMD', 'NAME_LINT', 'FM_MISSING', 'PLACEHOLDER', 'EXCLUSION_MISSING',
@@ -1292,7 +1293,7 @@ function selftest() {
   const autofire = planted.filter((v) => v.code === 'AUTOMATION_AUTOFIRE').length;
   if (autofire < 2) fails.push(`AUTOMATION_AUTOFIRE fired ${autofire}x — both plants (flag missing, flag: false) must be caught`);
   const staleTargets = planted.filter((v) => v.code === 'TARGET_STALE').length;
-  if (staleTargets < 2) fails.push(`TARGET_STALE fired ${staleTargets}x — both plants (stale stamp, no stamp) must be caught`);
+  if (staleTargets < 3) fails.push(`TARGET_STALE fired ${staleTargets}x — all three plants (stale stamp, no stamp, stale drive_id) must be caught`);
   const parity = planted.filter((v) => v.code === 'HOOK_PARITY').length;
   if (parity < 2) fails.push(`HOOK_PARITY fired ${parity}x — both directions (repo-only hook, plugin-only hook) must be caught`);
   if (planted.some((v) => v.code === 'STAGED_MATURE' && v.file.includes('held-staged')))

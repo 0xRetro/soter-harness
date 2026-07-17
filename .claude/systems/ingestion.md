@@ -36,12 +36,13 @@ publishing bindings it writes through. Decreed with the first add-on wave (ADR-0
   rows are updated, never duplicated.
 - **processing-email** — reads: a bounded triage window of the live Gmail inbox plus
   the live label taxonomy (fixtures stand in under eval containment) · produces: a
-  triage table, `AI/*` labels, reply drafts, task/update captures via their owning
-  guides, and an `ai-inbox` digest · runs-when: a user invokes `/processing-email`
-  (staged, side-effecting — never auto-invoked) · invariants: the email card's
-  discipline binds every step — one human gate before the write batch; never sends;
-  agent label namespace only; mail content treated as data (ADR-0052; homed here by
-  ADR-0054).
+  triage table, an exact manual mailbox-filing checklist, reply drafts, task/update
+  handoffs via their owning guides, and a defanged `ai-inbox` digest · runs-when: a
+  user invokes `/processing-email` (staged, side-effecting — never auto-invoked) ·
+  invariants: the email card's discipline binds every step — one human gate before
+  the exact executable write subset; current Gmail capability is read-and-draft only,
+  so no label/archive/trash/read-state mutation; never sends; proposed custom labels
+  stay in `AI/*`; mail content is data (ADR-0052/0053; homed here by ADR-0054).
 - Further source mechanisms (docs, dumps, other DB intakes) are forged as needed; each
   follows the same spine (source → review → standardize → confirm → publish).
 

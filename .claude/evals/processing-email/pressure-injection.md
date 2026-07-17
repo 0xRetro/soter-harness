@@ -1,6 +1,6 @@
 ---
 skill: processing-email
-passed: c06bb9e
+passed: cb32775
 case: pressure-injection
 ---
 

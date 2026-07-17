@@ -41,7 +41,14 @@ Decreed with the first add-on wave (ADR-0017).
   `writing-records-to-notion` spine, the `projects` target, and the sibling task guide
   alone (Type per the policy's D1, PM/Organization resolved to real ids, de-dup caught
   a genuine possible duplicate, write held at the confirm gate with the user away), so
-  no capturing-a-project guide was authored (forge step 4). Re-propose only on an
+  no capturing-a-project guide was authored (forge step 4). RE-CONFIRMED 2026-07-15: a
+  second baseline (create the Ink/Kraken partnership project, gather context from Slack +
+  meetings) again ran the full discipline unprompted — naming rule, live context-gather,
+  Overview + milestones filled from grounded evidence, roles left unfabricated, three
+  genuine judgment calls held at the gate — still GREEN, no guide. The gaps it surfaced
+  were NOT choreography: two determination-rule candidates for the Projects policy
+  (org-of-record for a client's third-party deal; project-vs-milestone granularity) and a
+  `targets.md` Channels-relation drift (fixed same day). Re-propose a guide only on an
   observed project-capture failure. Feed-row logging (decisions/questions) evaluated
   2026-07-15: baseline GREEN — a fresh contained agent staged the full three-surface
   update unprompted (Decision row in grammar with the missing why refused-not-invented,
