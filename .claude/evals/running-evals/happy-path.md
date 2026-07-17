@@ -1,7 +1,7 @@
 ---
 skill: running-evals
 case: happy-path
-passed: 3e06bb2
+passed: 9438042
 ---
 
 ## Try
