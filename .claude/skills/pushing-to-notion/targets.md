@@ -33,14 +33,16 @@ before a push if the board may have changed (a property added/renamed).
 - **page template:** `[New Product Template]` (page `316d79b5de38801cbbeacdb847136f96`,
   the DB's registered default). A new tooling page's body STARTS from it — the embedded
   🔧 Feature Board plus Vision / Use Cases / How it works / Team / Related Resources /
-  Capabilities by area sections (Capabilities LAST since 2026-07-15: it is a linked
-  board view of the page's OWN embedded board grouped by `Area` — self-syncing, no
-  hand-written card lists; template application re-points the view to the duplicated
-  board, verified live). Apply the template exactly once and poll the async task
+  Capabilities by area sections (Capabilities LAST: a hand-authored `<details>` toggle
+  per area — the tool's own 4–7 axis — with ✅ built / ⬜ planned bullets, each linking
+  its feature card where one exists, updated by hand as statuses change; replaced the
+  earlier self-syncing linked-view config per ADR-0058, template updated live
+  2026-07-15). Apply the template exactly once and poll the async task
   (`writing-records-to-notion` has the async rules); fill sections with derivable facts
   only, DELETE each hint once its section is filled, leave unfillable sections visibly
-  empty. Define the board's `Area` options (the tool's own 4–7 axis) at the intake gate
-  and tag every card.
+  empty. Defining the board's `Area` options (the tool's own 4–7 axis) stays an
+  intake-gate decision (they power board grouping); the Capabilities section mirrors
+  that axis but no longer depends on the options existing.
 
 ### feature-cards  *(a tooling entry's embedded Feature Board — PER ENTRY, no fixed id)*
 There is no global feature board. Each tooling page embeds its own board (duplicated
@@ -61,8 +63,9 @@ Features"). Identify a board only by the tooling page that embeds it.
   `Priority` / `Type` selects) — always fetch the SPECIFIC board's live schema before
   writing; fill extras only when the value is clear and matches a live option.
   Template-era boards ship `Area` with an EMPTY option set — defining the tool's own
-  axis (4–7 options) is an intake-gate decision, and the tooling page's Capabilities
-  view groups by it (e.g. the Soter Harness board's Kernel · Core · Context · Automation).
+  axis (4–7 options) is an intake-gate decision; the tooling page's hand-authored
+  Capabilities toggles mirror the same axis (ADR-0058; e.g. the Soter Harness board's
+  Kernel · Core · Context · Automation).
 - **card template:** every board carries its own `[Feature Template]` page — read the
   board data source's `default_page_template`; card bodies follow THAT template's
   sections (live over assumed, ADR-0016 — the Soter Notion board's differs entirely:
