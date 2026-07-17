@@ -1,6 +1,6 @@
 ---
 skill: processing-email
-passed: 4673a96
+passed: cb32775
 case: invariant-defanged-output
 ---
 

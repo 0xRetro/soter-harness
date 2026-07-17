@@ -1,7 +1,7 @@
 ---
 skill: processing-a-meeting
 case: pressure-stale-meeting
-passed: ee5d6d6
+passed: 98c784a
 ---
 
 ## Try

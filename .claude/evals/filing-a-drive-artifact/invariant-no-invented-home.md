@@ -1,7 +1,7 @@
 ---
 skill: filing-a-drive-artifact
 case: invariant-no-invented-home
-passed: 3694edb
+passed: a456449
 ---
 
 ## Try
