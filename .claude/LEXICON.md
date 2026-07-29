@@ -128,7 +128,7 @@ table below is the banned list.
 | email thread | email | one Gmail conversation — the unit of triage; alias deliveries of the same message share an rfc822 message id and dedupe by it, never by thread id |
 | triage window | email | the bounded slice of the inbox one processing run covers (query plus time bounds), stated at the gate so the human knows what was and wasn't seen |
 | agent label | email | an optional Gmail label in the `AI/*` namespace that an agent may suggest in the manual filing checklist; the current connector applies no labels and the human taxonomy is never agent-modified. Not the idempotency marker — that is the digest's recorded window + newest message id (ADR-0053) |
-| Sky ecosystem | sky | the Sky (formerly MakerDAO) ecosystem the org operates within — the umbrella for its stars, agents, and governance artifacts |
+| Sky ecosystem | sky | the Sky (formerly MakerDAO) ecosystem the org operates within — the umbrella for its stars, agents, and governance artifacts. As a Docs subject area (the live `Sky Ecosystem` option) it narrows to ecosystem development coordination and operations — work on running the ecosystem itself, used only when no narrower subject area fits |
 | Atlas | sky | the Sky Atlas — the ecosystem's governance rulebook; articles cited as A.x.y links (sky-atlas.io) |
 | spell | sky | a governance/protocol action executed on-chain as a spell |
 | MSC | sky | the Monthly Settlement Cycle — the Sky ecosystem's monthly financial settlement: PnL methodology, debt mint mechanics, ER calculations, settlement reporting (the Docs Category value "Monthly Settlement Cycle (MSC)" maps here) |
