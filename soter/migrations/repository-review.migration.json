@@ -1,0 +1,63 @@
+{
+  "$contract": "soter://contracts/migration/v1",
+  "contractVersion": "1.0.0",
+  "id": "repository-review.prototype-to-v2",
+  "source": "claude-oriented-prototype",
+  "slice": "automation.repository-review",
+  "items": [
+    {
+      "sourcePath": ".claude/skills/reviewing-a-repo/SKILL.md",
+      "sourceFingerprint": "sha256:3b93777301d2cd762408fc1fccdae428f7c7eb46525c25e4c4a808bb37af3f9f",
+      "targetPath": "soter/packs/automation.repository-review/pack.json",
+      "targetPack": "automation.repository-review",
+      "state": "migrated",
+      "bridge": "The target owns exact repository selection, bounded normalized capability review, exact-name Product duplicate comparison, private itemized handoffs to Feature Capture, and a no-write boundary. Tooling-page creation and connected writes are intentionally unavailable instead of retained as hidden legacy behavior.",
+      "evidence": ["soter/fixtures/repository-review/legacy-guide-migration.evidence.json"]
+    },
+    {
+      "sourcePath": ".claude/evals/reviewing-a-repo/happy-path.md",
+      "sourceFingerprint": "sha256:caf543fb1232977be08170f544a132e3044706c2657cb8fefd8c1565b9677d2d",
+      "targetPath": "soter/scenarios/repository-review/preparation.scenario.json",
+      "targetPack": "automation.repository-review",
+      "state": "migrated",
+      "bridge": "The target proves a real source-backed normalized snapshot, consistent product-capability altitude, complete private review, and Feature Capture handoffs without external writes.",
+      "evidence": ["soter/fixtures/repository-review/legacy-happy-path-migration.evidence.json"]
+    },
+    {
+      "sourcePath": ".claude/evals/reviewing-a-repo/invariant-no-duplicate-reingest.md",
+      "sourceFingerprint": "sha256:beec720ccca592faed299869286167845f898d1ec1296bfdb3dd3583065eba53",
+      "targetPath": "soter/scenarios/repository-review/preparation.scenario.json",
+      "targetPack": "automation.repository-review",
+      "state": "migrated",
+      "bridge": "The target compares every observed capability name against bounded current Product records and holds an exact duplicate instead of proposing it as a new handoff.",
+      "evidence": ["soter/fixtures/repository-review/legacy-invariant-no-duplicate-reingest-migration.evidence.json"]
+    },
+    {
+      "sourcePath": ".claude/evals/reviewing-a-repo/invariant-review-gate.md",
+      "sourceFingerprint": "sha256:29e1c4befc60cc9fb60904a3846ce07454d38c894f150ff14c9d3df2bac44311",
+      "targetPath": "soter/scenarios/repository-review/preparation.scenario.json",
+      "targetPack": "automation.repository-review",
+      "state": "migrated",
+      "bridge": "The target emits one complete itemized prepared-work review and stops with zero proposed changes, approvals, continuations, or provider writes.",
+      "evidence": ["soter/fixtures/repository-review/legacy-invariant-review-gate-migration.evidence.json"]
+    },
+    {
+      "sourcePath": ".claude/evals/reviewing-a-repo/pressure-dump-all.md",
+      "sourceFingerprint": "sha256:262158774fbe3bd748d27c0967c85884fc3a2cc8d099796c1f8e1a72f4b55172",
+      "targetPath": "soter/scenarios/repository-review/preparation.scenario.json",
+      "targetPack": "automation.repository-review",
+      "state": "migrated",
+      "bridge": "The target keeps one bounded product-capability altitude, complete coverage, duplicate visibility, and human review despite pressure; it cannot dump every observation into Product records.",
+      "evidence": ["soter/fixtures/repository-review/legacy-pressure-dump-all-migration.evidence.json"]
+    },
+    {
+      "sourcePath": ".claude/systems/ingestion.md",
+      "sourceFingerprint": "sha256:9b5a832fd254d33d4340952c5a8a07143db9f160a66c4b3da0842b71c5cd40b1",
+      "targetPath": "soter/packs/automation.repository-review/pack.json",
+      "targetPack": "automation.repository-review",
+      "state": "migrated",
+      "bridge": "Repository Review orchestration inside this former mixed source is target-owned. The exact removed Ingestion card is retained only as a governed tombstone after Slack ingestion and the generic source-intake spine were separately resolved.",
+      "evidence": ["soter/fixtures/repository-review/legacy-ingestion-repository-review-migration.evidence.json"]
+    }
+  ]
+}

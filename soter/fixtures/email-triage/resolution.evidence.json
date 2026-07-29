@@ -10,28 +10,33 @@
     "id": "email-triage",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:5bf06aa57cf74c2ad08b8f72415e41eed981a38776f0510655b2b4c3b8454dc3",
-  "graphFingerprint": "sha256:dafaad8ee2c0b1bda0ea3d6e8f17e3892b93e332f43f59531b12ec9f7e8346c3",
+  "configurationLockFingerprint": "sha256:c1ecb4cb946b2f30808dc881ebf30261bb4e4c238d41ceced0f41e975cf81502",
+  "graphFingerprint": "sha256:7423c8496b0aea010a986cdc98341692785b78850ad1c1aef2680e7bbd9f256f",
   "dependencies": [
     {
       "id": "kernel.soter",
       "version": "0.1.0",
-      "fingerprint": "sha256:e5b85b4419f12478ce332c2a9aeb0293401836182f1857180a6366cdb5f8d3bf"
+      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
     },
     {
       "id": "core.runtime",
       "version": "0.1.0",
-      "fingerprint": "sha256:d8778d78eaa3120cdb412b49e3cfe331bb2b83b09ec216acf472133003e25e5f"
+      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+    },
+    {
+      "id": "context.communications",
+      "version": "0.1.0",
+      "fingerprint": "sha256:47a6b6d2e824effaa4dcefa386529642c9425d8cae6249f0fca478de4597bdf8"
     },
     {
       "id": "context.email",
       "version": "0.1.0",
-      "fingerprint": "sha256:2520d63057787b0d5887407ea6e48f82225c0e49d47509074c7610877f0af647"
+      "fingerprint": "sha256:d0718fd02652fcf86c147a57b7f8ce3789ab223ef0402ffcc3f0a79d66de2a0a"
     },
     {
       "id": "automation.email-triage",
       "version": "0.1.0",
-      "fingerprint": "sha256:bf1c8e58e86356a04443e84a3308aef7e88cf9da51e0ff8b4e2b14298b524a26"
+      "fingerprint": "sha256:3dc69e3e467e8ca73eaff381b719e3e40c58d0be800ab357d87552955e9b745a"
     },
     {
       "id": "integration.gmail",
@@ -42,8 +47,8 @@
   "host": {
     "id": "codex",
     "adapter": "host.codex",
-    "version": "0.1.0",
-    "manifestFingerprint": "sha256:e91f3329631a3900000796a3cd54b2ba02f4aa3d0d728f9a2da40ff06b211fd0"
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
   },
   "integrations": [
     {
@@ -55,10 +60,16 @@
   ],
   "authorities": [
     {
+      "id": "authority.communications.semantics.definition",
+      "role": "definition",
+      "subject": "communications.semantics.records",
+      "declarationFingerprint": "sha256:0b465d80100b2ccb7a4a6486fe2b4a6844b1f43eb18dad379d82b8af79ac93c9"
+    },
+    {
       "id": "authority.gmail.provider",
       "role": "provider",
       "subject": "gmail.account",
-      "declarationFingerprint": "sha256:5142aaa4b006cdb65b90b40f2fcca7939e8ff5c68674d9d349ce017c103b4d4f"
+      "declarationFingerprint": "sha256:b786e80d1e624e4e70559562497b367e3855d508fcdffc50832ee40f55fa68c9"
     },
     {
       "id": "authority.mail.definition",
@@ -70,7 +81,7 @@
       "id": "authority.mailbox.instance",
       "role": "instance",
       "subject": "mail.mailbox",
-      "declarationFingerprint": "sha256:42f8015a7be1af3e04580ca475e91e9cbfa113bf1b782b6e0f33376a61b12d33"
+      "declarationFingerprint": "sha256:7b8a4f8545ab853895f8f6af26793ba470b9dce5eda17c351b08f37c7969e4e6"
     },
     {
       "id": "authority.run.evidence",
@@ -113,11 +124,11 @@
     {
       "role": "configuration",
       "path": "soter/configurations/email-triage.config.json",
-      "fingerprint": "sha256:1fd66c49bbb4c4db00eaa70db68f00b55e670af5d3d8f8c002f3e0abaaee7d39"
+      "fingerprint": "sha256:30260cf801cdb1673db025c0053e4ff1c8ccea7e77abffa5830ec25c496df67e"
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:5bf06aa57cf74c2ad08b8f72415e41eed981a38776f0510655b2b4c3b8454dc3"
+      "fingerprint": "sha256:c1ecb4cb946b2f30808dc881ebf30261bb4e4c238d41ceced0f41e975cf81502"
     }
   ],
   "effects": [],

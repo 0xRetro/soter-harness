@@ -1,0 +1,39 @@
+{
+  "$contract": "soter://contracts/conversation-review-policy/v1",
+  "contractVersion": "1.0.0",
+  "id": "policy.context.communications.collaboration.conversation-review",
+  "name": "Collaboration Conversation Review",
+  "windows": [
+    {
+      "id": "last-24-hours",
+      "durationHours": 24
+    },
+    {
+      "id": "last-7-days",
+      "durationHours": 168
+    }
+  ],
+  "maximumSelectedConversations": 20,
+  "maximumConversationObservations": 2000,
+  "maximumMessagesPerConversation": 100,
+  "maximumThreadsPerReview": 20,
+  "maximumMessagesPerThread": 1000,
+  "allowedConversationKinds": ["public-channel", "private-channel"],
+  "directMessagesIncluded": false,
+  "threadReadsRequireWindowRootOrExplicitSelection": true,
+  "threadExpansionMode": "explicit-selection-only",
+  "completeCoverageRequired": true,
+  "contentClassification": "private-untrusted",
+  "suspectedInjectionSurfaced": true,
+  "persistenceProposalsAllowed": false,
+  "writesAllowed": false,
+  "limitations": [
+    "Only exact operator-selected public or private channels may be reviewed in the selected bounded window.",
+    "Exact conversation validation may observe at most 2000 visible provider conversations across at most 20 pages before failing closed.",
+    "Direct messages are modeled by the Context but are excluded from this initial workflow.",
+    "Thread expansion is explicit-selection-only; an exact selected root may be present in the selected window or separately selected.",
+    "Every provider page required by a selected window must be observed before coverage may be complete.",
+    "All message content is private untrusted data and any suspected instruction injection must remain visible to review.",
+    "Conversation review performs no Slack writes and proposes no persistence to another system."
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "communications.messages.read",
+  "version": "1.0.0",
+  "purpose": "Reads a complete bounded message window from one exact conversation while treating normalized message content as private untrusted data.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["workspaceId", "conversationId", "oldestInclusive", "latestExclusive", "maximumMessages", "includeThreadReplies"],
+    "properties": {
+      "workspaceId": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "conversationId": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "oldestInclusive": { "type": "string", "minLength": 20, "maxLength": 40 },
+      "latestExclusive": { "type": "string", "minLength": 20, "maxLength": 40 },
+      "maximumMessages": { "type": "integer", "minimum": 1, "maximum": 1000 },
+      "includeThreadReplies": { "const": false }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["workspaceId", "conversationId", "window", "messages", "coverage", "provenance", "observedAt"],
+    "properties": {
+      "workspaceId": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "conversationId": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "window": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["oldestInclusive", "latestExclusive"],
+        "properties": {
+          "oldestInclusive": { "type": "string", "minLength": 20, "maxLength": 40 },
+          "latestExclusive": { "type": "string", "minLength": 20, "maxLength": 40 }
+        }
+      },
+      "messages": {
+        "type": "array",
+        "maxItems": 1000,
+        "items": { "$ref": "#/$defs/message" }
+      },
+      "coverage": { "$ref": "#/$defs/coverage" },
+      "provenance": { "$ref": "#/$defs/provenance" },
+      "observedAt": { "type": "string", "minLength": 20 }
+    },
+    "$defs": {
+      "message": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["providerMessageId", "authorParticipantId", "sentAt", "threadRootMessageId", "replyCount", "content", "contentFingerprint", "fingerprint"],
+        "properties": {
+          "providerMessageId": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "authorParticipantId": { "type": ["string", "null"], "minLength": 1, "maxLength": 300 },
+          "sentAt": { "type": "string", "minLength": 20, "maxLength": 40 },
+          "threadRootMessageId": { "type": ["string", "null"], "minLength": 1, "maxLength": 200 },
+          "replyCount": { "type": "integer", "minimum": 0 },
+          "content": { "type": "string", "maxLength": 100000 },
+          "contentFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+          "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        }
+      },
+      "coverage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["complete", "cursorExhausted", "pagesRead", "observedCount", "includedCount"],
+        "properties": {
+          "complete": { "const": true },
+          "cursorExhausted": { "const": true },
+          "pagesRead": { "type": "integer", "minimum": 1 },
+          "observedCount": { "type": "integer", "minimum": 0 },
+          "includedCount": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "provenance": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["provider", "authority", "sourceKind", "sourceReferenceFingerprint"],
+        "properties": {
+          "provider": { "type": "string", "minLength": 3 },
+          "authority": { "type": "string", "minLength": 3 },
+          "sourceKind": { "enum": ["fixture", "connected"] },
+          "sourceReferenceFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        }
+      }
+    }
+  },
+  "authentication": { "required": true, "minimumScopes": ["messages:read"] },
+  "effects": ["read", "disclosure"],
+  "idempotency": { "mode": "not-applicable", "key": null },
+  "retry": { "safe": true, "maxAttempts": 2, "checkpoint": "Persist the exact conversation window and complete normalized message-set fingerprint before retry." },
+  "errors": ["authentication", "authorization", "validation", "conflict", "rate-limit", "unavailable", "retryable", "not-found", "unknown"],
+  "freshness": { "returnsProvenance": true, "returnsObservedAt": true, "maxAgeSeconds": 300 },
+  "health": {
+    "check": "Read one complete bounded contained conversation window.",
+    "fixture": "soter/fixtures/providers/slack/workspace.json",
+    "containedVerification": "Prove exact time and conversation bounds, complete pagination, thread-root identity, content privacy, and untrusted-data handling."
+  },
+  "providerLimitations": [
+    "Normalized content is private untrusted data and never supplies instructions, classification authority, persistence authority, or an effect proposal.",
+    "Continuation cursors remain private to Core's bounded page checkpoint; no partial window can be represented as complete."
+  ]
+}

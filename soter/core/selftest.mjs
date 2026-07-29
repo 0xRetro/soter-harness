@@ -7,7 +7,6 @@ import {
   evaluateEffectPolicy,
   invokeCapability
 } from './capabilities.mjs';
-import { assembleMeetingIntakeContext } from './context.mjs';
 import {
   buildConfigurationView,
   formatConfigurationView
@@ -17,39 +16,12 @@ import {
   prepareMeetingIntakeConnectedContext
 } from '../automations/meeting-intake/context.mjs';
 import { runConnectedDoctor, runOfflineDoctor } from './doctor.mjs';
-import {
-  approveConnectedOperationBatch as approveExactConnectedOperationBatch,
-  assertConnectedOperationBatchApproval,
-  createConnectedOperationBatchApprovalRequest,
-  compileConnectedOperationBatch
-} from './connected-transactions.mjs';
-import {
-  beginConnectedApprovalRequest,
-  confirmConnectedApprovalRequest
-} from './operator-authority.mjs';
-import {
-  assertConnectedApprovalReviewMaterial,
-  inspectConnectedApprovalReviewMaterial
-} from './connected-approval-review.mjs';
-import {
-  assertOperatorInspection,
-  inspectConnectedOperatorActivity
-} from './operator-inspection.mjs';
 import { inspectWorkspace } from './inspection.mjs';
 import {
-  assertConnectedTransactionCheckpoint,
-  completeConnectedTransactionCall,
-  connectedTransactionCurrentCall,
-  createConnectedTransactionCheckpoint,
-  failConnectedTransactionCall,
-  prepareConnectedTransactionReconciliation
-} from './connected-transaction-runtime.mjs';
-import {
-  createContextAssemblyEvidence,
-  createContainedTransactionEvidence,
+  createMigrationBridgeEvidence,
+  createMigrationCompletionEvidence,
   createResolutionEvidence,
-  createRunPreparationEvidence,
-  createScenarioExecutionEvidence
+  createRunPreparationEvidence
 } from './evidence.mjs';
 import { evaluateConfigurationMaturity } from './maturity.mjs';
 import {
@@ -57,17 +29,26 @@ import {
   lockMatchesResolution,
   resolveConfiguration
 } from './resolve.mjs';
+import {
+  privateConfigurationStatePath,
+  removePrivateConfigurationState,
+  writePrivateConfigurationState
+} from './private-configurations.mjs';
 import { prepareRunEnvelope } from './run.mjs';
+import { prepareAutomationRun } from './prepared-work.mjs';
+import { materializeContainedPrivateConfiguration } from './contained-private-configurations.mjs';
+import {
+  ConnectedConfigurationError,
+  selectExactConnectedConfiguration
+} from './connected-configuration.mjs';
 import { assertOperationPlanDocument } from './operation-plans.mjs';
 import {
   commitDurableContextSnapshot,
   completeDurableProviderProbeExecution,
   completeDurableOperationPlanExecution,
-  completeDurableConnectedTransactionExecution,
   failDurableHostExecution,
   getDurableHostExecution,
-  prepareDurableConnectedTransactionExecution,
-  prepareDurableConnectedTransactionReconciliation,
+  listDurableHostExecutions,
   prepareDurableProviderProbeExecution,
   prepareDurableOperationPlanExecution
 } from './service.mjs';
@@ -76,66 +57,30 @@ import {
   failHostToolCall,
   prepareHostToolCall
 } from './host-tools.mjs';
-import { fingerprintJson, readJson, writeJson } from './lib/canonical-json.mjs';
-import {
-  completeProviderProbeCall,
-  failProviderProbeCall,
-  prepareProviderProbeCall
-} from './provider-probes.mjs';
+import { fingerprintJson, readJson, repoRelativePath, writeJson } from './lib/canonical-json.mjs';
 import { validateJsonSchema, verifySoter } from '../kernel/verify.mjs';
 import {
-  approveChangeSet,
-  changeSetScopeFingerprint
-} from './transaction.mjs';
+  activeConfigurationLockStatePath,
+  writeActiveConfigurationLockState,
+  writeContextSnapshotState,
+  writeRunState
+} from './runtime-state.mjs';
+import { selftestFixtureMaterialization } from './fixtures-materialization.selftest.mjs';
 import {
-  executeContainedMeetingIntakeChangeSet,
-  proposeMeetingIntakeChangeSet,
-  runContainedMeetingIntakeTransaction
-} from '../automations/meeting-intake/transaction.mjs';
-import { createMeetingIntakeDecision } from '../automations/meeting-intake/decision.mjs';
-import { writeContextSnapshotState } from './runtime-state.mjs';
+  selftestDevelopmentHostEvidenceFinalizationPublication
+} from './development-host-evidence-finalization.mjs';
+import {
+  selftestDevelopmentHistoricalEvidenceBatchPublication
+} from './development-historical-evidence-batch.mjs';
 
 const FIXTURE_TIME = '2026-07-15T12:00:00.000Z';
 
-function approveSelftestConnectedBatch({
-  root,
-  lock,
-  lockPath,
-  run = null,
-  runPath = 'private/selftest.run.json',
-  batch,
-  changeSet,
-  id,
-  actor,
-  reason,
-  createdAt,
-  expiresAt
-}) {
-  const sourceRun = run || { id: batch.runId };
-  const request = createConnectedOperationBatchApprovalRequest({
-    root,
-    lock,
-    lockPath,
-    run: sourceRun,
-    runPath,
-    batch,
-    changeSet,
-    id: 'approval-request.' + id.slice('approval.'.length),
-    reason: 'Request confirmation for ' + reason,
-    createdAt,
-    expiresAt
-  });
-  return approveExactConnectedOperationBatch({
-    root,
-    request,
-    id,
-    actor,
-    reason,
-    createdAt
-  });
-}
-
-function notionProbeStepResponse(checkpoint, identityMarker, driftStepId = null) {
+function notionProbeStepResponse(
+  checkpoint,
+  identityMarker,
+  driftStepId = null,
+  optionMappings = []
+) {
   const source = checkpoint.plan.steps.find((step) => step.id === checkpoint.currentStepId);
   if (source.kind === 'identity') {
     return {
@@ -154,7 +99,24 @@ function notionProbeStepResponse(checkpoint, identityMarker, driftStepId = null)
   }
   if (source.kind === 'schema') {
     const schema = Object.fromEntries(source.scope.expectedFields.map((field) => {
-      return [field.provider, { name: field.provider, type: field.providerType }];
+      const property = { name: field.provider, type: field.providerType };
+      if (['status', 'select', 'multi_select'].includes(field.providerType)) {
+        const declaration = optionMappings.find((item) => {
+          return item.mapping === source.scope.mappingId
+            && item.recordType === source.scope.recordType
+            && item.field === field.portable;
+        });
+        if (!declaration) {
+          throw new Error(
+            'Core selftest has no private option mapping for '
+              + source.scope.recordType + '.' + field.portable + '.'
+          );
+        }
+        property.options = declaration.entries.map((entry) => ({
+          name: entry.provider
+        }));
+      }
+      return [field.provider, property];
     }));
     if (source.id === driftStepId) {
       const field = source.scope.expectedFields[0];
@@ -205,10 +167,10 @@ function notionTaskReadResponse(id, fields, privateMarker = null) {
             projectUris: JSON.stringify(fields.projectUris)
           })
         }],
-        has_more: false
+        has_more: false,
+        ...(privateMarker ? { privateMarker } : {})
       }
-    },
-    ...(privateMarker ? { privateMarker } : {})
+    }
   };
 }
 
@@ -221,10 +183,10 @@ function notionSummaryReadResponse(id, fields, privateMarker = null) {
           __soterId: id,
           __soterFields: JSON.stringify(fields)
         }],
-        has_more: false
+        has_more: false,
+        ...(privateMarker ? { privateMarker } : {})
       }
-    },
-    ...(privateMarker ? { privateMarker } : {})
+    }
   };
 }
 
@@ -234,16 +196,55 @@ function notionTaskVersion(id, fields) {
 
 function notionUpdateResponse(id, privateMarker = null) {
   return {
-    structuredContent: { result: { id } },
-    ...(privateMarker ? { privateMarker } : {})
+    structuredContent: {
+      result: { id, ...(privateMarker ? { privateMarker } : {}) }
+    }
   };
 }
 
 function notionCreateResponse(id, privateMarker = null) {
   return {
-    structuredContent: { result: { url: id } },
-    ...(privateMarker ? { privateMarker } : {})
+    structuredContent: {
+      result: { url: id, ...(privateMarker ? { privateMarker } : {}) }
+    }
   };
+}
+
+function notionOptionMapping(mapping, recordType, field, entries) {
+  return {
+    mapping,
+    recordType,
+    field,
+    mode: 'exact-bijection',
+    entries
+  };
+}
+
+function materializePrivateNotionTargetLock(root, configurationName, host = 'codex') {
+  const configuration = structuredClone(readJson(path.join(
+    root,
+    'soter/configurations',
+    configurationName + '.config.json'
+  )));
+  const targets = configuration.settings?.['integration.notion']?.targets || {};
+  if (Object.keys(targets).length === 0) {
+    throw new Error('Core selftest private Notion target configuration is empty.');
+  }
+  for (const [key, value] of Object.entries(targets)) {
+    if (!value.startsWith('soter-fixture://configuration-template/notion/collection/')) {
+      throw new Error('Core selftest private Notion target did not begin from a portable template.');
+    }
+    targets[key] = 'collection://' + fingerprintJson({
+      kind: 'core-selftest-notion-target',
+      name: configurationName + ':' + key
+    }).slice('sha256:'.length, 'sha256:'.length + 32);
+  }
+  writePrivateConfigurationState(root, configurationName, configuration);
+  return resolveConfiguration({
+    root,
+    configPath: privateConfigurationStatePath(root, configurationName),
+    host
+  });
 }
 
 function notionPageResponse({ uri, title, body, privateMarker = null }) {
@@ -259,11 +260,11 @@ function notionPageResponse({ uri, title, body, privateMarker = null }) {
           + '<ancestor-path></ancestor-path>\n'
           + '<properties>{"title":' + JSON.stringify(title) + '}</properties>\n'
           + body + '\n'
-          + '</page>'
+          + '</page>',
+        ...(privateMarker ? { privateMarker } : {})
       })
     }],
-    isError: false,
-    ...(privateMarker ? { privateMarker } : {})
+    isError: false
   };
 }
 
@@ -277,6 +278,7 @@ function applicablePolicySources(lock) {
     return [{
       id: source.id.slice('source.'.length),
       sourceId: source.id,
+      authority: source.authority,
       subjects: consumer.subjects,
       title: source.input.expectedTitle,
       documentUri: source.input.uri,
@@ -340,8 +342,8 @@ function copyExternalPackArtifacts(sourceRoot, targetRoot) {
 
 function selftestProviderProbes(lock, providers) {
   const base = {
-    $contract: 'soter://contracts/provider-probe/v1',
-    contractVersion: '1.0.0',
+    $contract: 'soter://contracts/provider-probe/v2',
+    contractVersion: '2.0.0',
     probedAt: '2026-07-15T11:55:00.000Z',
     validUntil: '2026-07-15T12:05:00.000Z',
     configuration: {
@@ -385,6 +387,36 @@ function selftestProviderProbes(lock, providers) {
           id: 'authority.crm.instance',
           state: 'passed',
           details: 'The configured CRM instance authority was visible.'
+        },
+        {
+          id: 'authority.projects.definition',
+          state: 'passed',
+          details: 'The configured Projects definition authority was visible.'
+        },
+        {
+          id: 'authority.projects.instance',
+          state: 'passed',
+          details: 'The configured Projects instance authority was visible.'
+        },
+        {
+          id: 'authority.tasks.definition',
+          state: 'passed',
+          details: 'The configured Tasks definition authority was visible.'
+        },
+        {
+          id: 'authority.tasks.instance',
+          state: 'passed',
+          details: 'The configured Tasks instance authority was visible.'
+        },
+        {
+          id: 'authority.meetings.definition',
+          state: 'passed',
+          details: 'The configured Meetings definition authority was visible.'
+        },
+        {
+          id: 'authority.meetings.instance',
+          state: 'passed',
+          details: 'The configured Meetings instance authority was visible.'
         }
       ],
       capabilities: [
@@ -395,22 +427,54 @@ function selftestProviderProbes(lock, providers) {
           details: 'A schema-compatible read-only response was observed.'
         },
         {
+          id: 'projects.records.read',
+          state: 'passed',
+          method: 'read-only',
+          details: 'A schema-compatible Projects read-only response was observed.'
+        },
+        {
+          id: 'tasks.records.read',
+          state: 'passed',
+          method: 'read-only',
+          details: 'A schema-compatible Tasks read-only response was observed.'
+        },
+        {
+          id: 'meetings.records.read',
+          state: 'passed',
+          method: 'read-only',
+          details: 'A schema-compatible Meetings read-only response was observed.'
+        },
+        {
           id: 'documents.content.read',
           state: 'passed',
           method: 'read-only',
           details: 'Every exact configured title-bound document source normalized successfully.'
         },
         {
-          id: 'crm.records.create',
+          id: 'meetings.records.create',
           state: 'passed',
           method: 'permission-introspection',
-          details: 'Required create permissions were reported without creating a record.'
+          details: 'Required Meeting create permissions were reported without creating a record.'
         },
         {
-          id: 'crm.records.update',
+          id: 'tasks.records.update',
           state: 'passed',
           method: 'permission-introspection',
-          details: 'Required update permissions were reported without updating a record.'
+          details: 'Required Task update permissions were reported without updating a record.'
+        }
+      ],
+      checks: [
+        {
+          id: 'check.identity',
+          stepId: 'step.identity',
+          kind: 'identity',
+          subject: 'provider.identity',
+          scopeFingerprint: fingerprintJson({ provider: providers.notion.id }),
+          state: 'passed',
+          method: 'metadata',
+          expectedFingerprint: null,
+          observedFingerprint: fingerprintJson({ authenticated: true }),
+          details: 'The contained selftest observed the exact minimized provider identity check.'
         }
       ]
     },
@@ -444,6 +508,20 @@ function selftestProviderProbes(lock, providers) {
           method: 'read-only',
           details: 'A schema-compatible read-only transcript response was observed.'
         }
+      ],
+      checks: [
+        {
+          id: 'check.identity',
+          stepId: 'step.identity',
+          kind: 'identity',
+          subject: 'provider.identity',
+          scopeFingerprint: fingerprintJson({ provider: providers.otter.id }),
+          state: 'passed',
+          method: 'metadata',
+          expectedFingerprint: null,
+          observedFingerprint: fingerprintJson({ authenticated: true }),
+          details: 'The contained selftest observed the exact minimized provider identity check.'
+        }
       ]
     }
   ];
@@ -451,6 +529,21 @@ function selftestProviderProbes(lock, providers) {
 
 export async function selftest(root) {
   const failures = [];
+  try {
+    selftestDevelopmentHostEvidenceFinalizationPublication();
+  } catch (error) {
+    failures.push('development host evidence finalization publication failed: ' + error.message);
+  }
+  try {
+    selftestDevelopmentHistoricalEvidenceBatchPublication();
+  } catch (error) {
+    failures.push('development historical evidence batch publication failed: ' + error.message);
+  }
+  try {
+    await selftestFixtureMaterialization();
+  } catch (error) {
+    failures.push('generated fixture exact-set materialization failed: ' + error.message);
+  }
   const meetingIntakeConfigPath = 'soter/configurations/meeting-intake.config.json';
   const inputSummary = readJson(path.join(
     root,
@@ -465,6 +558,22 @@ export async function selftest(root) {
   );
   if (!hostileInputFailures.length) {
     failures.push('private operator input summary represented a raw private value');
+  }
+  const providerSchema = readJson(path.join(
+    root,
+    'soter/contracts/capability-provider.schema.json'
+  ));
+  const planProvider = readJson(path.join(
+    root,
+    'soter/providers/provider.integration.otter.mcp.json'
+  ));
+  const legacyProbeProvider = structuredClone(planProvider);
+  legacyProbeProvider.runtime.probePrepareExport = 'prepareProbeMcp';
+  const incompletePlanProvider = structuredClone(planProvider);
+  delete incompletePlanProvider.runtime.probeFinalizeExport;
+  if (!validateJsonSchema(legacyProbeProvider, providerSchema).length
+    || !validateJsonSchema(incompletePlanProvider, providerSchema).length) {
+    failures.push('MCP provider contract accepted legacy or incomplete provider probe runtime fields');
   }
   let ambiguousDefaultRejected = false;
   try {
@@ -488,6 +597,114 @@ export async function selftest(root) {
   const claudeView = buildConfigurationView({ root, lock: claude });
   const lockedView = buildConfigurationView({ root, lock: first, basis: 'lock' });
   const formattedView = formatConfigurationView(defaultView);
+  const migrationEvidenceInput = {
+    lock: first,
+    createdAt: FIXTURE_TIME,
+    subject: { type: 'configuration', id: 'configuration.meeting-intake', version: null },
+    source: {
+      role: 'migration-source',
+      path: '.claude/skills/example.md',
+      fingerprint: fingerprintJson({ source: 'configuration-migration-selftest' })
+    },
+    target: {
+      role: 'migration-target',
+      path: meetingIntakeConfigPath,
+      fingerprint: first.configuration.fingerprint
+    },
+    supportingArtifacts: [{
+      role: 'supporting-evidence',
+      path: 'soter/fixtures/example.evidence.json',
+      fingerprint: fingerprintJson({ support: 'configuration-migration-selftest' })
+    }, {
+      role: 'supporting-artifact',
+      path: 'soter/fixtures/example.connected.evidence.json',
+      fingerprint: fingerprintJson({ support: 'separate-private-configuration-selftest' })
+    }],
+    limitations: ['This synthetic record proves only configuration-subject validation.']
+  };
+  const configurationBridgeEvidence = createMigrationBridgeEvidence({
+    ...migrationEvidenceInput,
+    id: 'evidence.configuration-migration-bridge.selftest',
+    checks: [{
+      id: 'configuration-subject-supported',
+      description: 'The exact configuration subject is accepted without pretending it is a versioned pack.',
+      state: 'passed'
+    }]
+  });
+  const configurationCompletionEvidence = createMigrationCompletionEvidence({
+    ...migrationEvidenceInput,
+    id: 'evidence.configuration-migration-completion.selftest',
+    disposition: 'migrated',
+    parity: 'intentional-change',
+    checks: [
+      {
+        id: 'target-selected-in-exact-lock',
+        description: 'The exact configuration target is selected by the lock.',
+        state: 'passed'
+      },
+      {
+        id: 'supporting-evidence-current',
+        description: 'The supporting fixture evidence is current.',
+        state: 'passed'
+      },
+      {
+        id: 'legacy-dependencies-cleared',
+        description: 'The legacy dependency is cleared for this synthetic responsibility.',
+        state: 'passed'
+      },
+      {
+        id: 'authority-transition-explicit',
+        description: 'The configuration authority transition is explicit.',
+        state: 'passed'
+      }
+    ]
+  });
+  const evidenceSchema = readJson(path.join(root, 'soter/contracts/evidence-v2.schema.json'));
+  if (validateJsonSchema(configurationBridgeEvidence, evidenceSchema).length
+    || validateJsonSchema(configurationCompletionEvidence, evidenceSchema).length
+    || configurationCompletionEvidence.subject.version !== null) {
+    failures.push('migration evidence could not represent an exact configuration subject');
+  }
+  let versionedConfigurationSubjectRejected = false;
+  try {
+    createMigrationBridgeEvidence({
+      ...migrationEvidenceInput,
+      id: 'evidence.configuration-migration-invalid.selftest',
+      subject: { type: 'configuration', id: 'configuration.meeting-intake', version: '1.0.0' },
+      checks: [{
+        id: 'configuration-subject-invalid',
+        description: 'A configuration subject cannot invent a package version.',
+        state: 'passed'
+      }]
+    });
+  } catch (error) {
+    versionedConfigurationSubjectRejected = error.message.includes('configuration subject');
+  }
+  if (!versionedConfigurationSubjectRejected) {
+    failures.push('migration evidence accepted a versioned configuration subject');
+  }
+  let invalidBridgeSupportingRoleRejected = false;
+  try {
+    createMigrationBridgeEvidence({
+      ...migrationEvidenceInput,
+      id: 'evidence.configuration-migration-invalid-support.selftest',
+      supportingArtifacts: [{
+        role: 'connected-evidence',
+        path: 'soter/fixtures/example.connected.evidence.json',
+        fingerprint: fingerprintJson({ support: 'invalid-role-selftest' })
+      }],
+      checks: [{
+        id: 'configuration-support-invalid',
+        description: 'A migration bridge accepts only closed supporting record roles.',
+        state: 'passed'
+      }]
+    });
+  } catch (error) {
+    invalidBridgeSupportingRoleRejected = error.message.includes('supporting evidence or governed artifacts');
+  }
+  if (!invalidBridgeSupportingRoleRejected) {
+    failures.push('migration bridge evidence accepted an undeclared supporting artifact role');
+  }
   if (fingerprintLock(first) !== fingerprintLock(second)) {
     failures.push('unchanged inputs did not produce a deterministic lock');
   }
@@ -661,7 +878,9 @@ export async function selftest(root) {
     || first.sources.some((source) => {
       return source.inputFingerprint !== fingerprintJson(source.input)
         || source.capability !== 'documents.content.read'
-        || source.authority !== 'authority.crm.definition'
+        || source.authority !== (source.id === 'source.policy.tasks'
+          ? 'authority.tasks.definition'
+          : 'authority.meetings.definition')
         || source.readiness.mode !== 'probe-read'
         || source.consumers.length !== 1;
     })) {
@@ -672,10 +891,10 @@ export async function selftest(root) {
   try {
     fs.cpSync(path.join(root, 'soter'), path.join(temp, 'soter'), { recursive: true });
     copyExternalPackArtifacts(root, temp);
-    fs.copyFileSync(path.join(root, 'AGENTS.md'), path.join(temp, 'AGENTS.md'));
-    fs.copyFileSync(path.join(root, 'CLAUDE.md'), path.join(temp, 'CLAUDE.md'));
-    fs.cpSync(path.join(root, '.codex'), path.join(temp, '.codex'), { recursive: true });
-    fs.cpSync(path.join(root, '.claude'), path.join(temp, '.claude'), { recursive: true });
+    fs.writeFileSync(
+      path.join(temp, 'AGENTS.md'),
+      '# Unmanaged developer output used only by the contained Core selftest\n'
+    );
     const connectedNotion = readJson(path.join(
       temp,
       'soter/providers/provider.integration.notion.mcp.json'
@@ -688,24 +907,423 @@ export async function selftest(root) {
         'soter/providers/provider.integration.otter.mcp.json'
       ))
     };
-    const lock = resolveConfiguration({ root: temp, configPath: meetingIntakeConfigPath });
-    const claudeLock = resolveConfiguration({ root: temp, configPath: meetingIntakeConfigPath, host: 'claude' });
-    const lockPath = 'soter/fixtures/meeting-intake/meeting-intake.lock.json';
-    writeJson(path.join(temp, lockPath), lock);
-
-    const preparedOtterProbe = await prepareProviderProbeCall({
+    const containedNotion = readJson(path.join(
+      temp,
+      'soter/providers/provider.integration.notion.fixture.json'
+    ));
+    const trackedConfiguration = readJson(path.join(temp, meetingIntakeConfigPath));
+    const trackedLock = resolveConfiguration({
       root: temp,
-      lock,
+      configPath: meetingIntakeConfigPath
+    });
+    const trackedLockPath = 'soter/fixtures/meeting-intake/meeting-intake.lock.json';
+    writeJson(path.join(temp, trackedLockPath), trackedLock);
+    const trackedSelection = selectExactConnectedConfiguration({
+      root: temp,
+      configurationBasis: 'tracked-contained',
+      lockPath: trackedLockPath,
+      expectedHost: 'codex',
+      providerImplementations: [containedNotion.id]
+    });
+    const trackedResolutionEvidence = createResolutionEvidence({
+      lock: trackedLock,
+      id: 'evidence.meeting-intake.resolution.fixture',
+      createdAt: FIXTURE_TIME
+    });
+    const trackedEnvelope = prepareRunEnvelope({
+      root: temp,
+      lock: trackedLock,
+      lockPath: trackedLockPath,
+      scenarioPath: 'soter/scenarios/meeting-intake/happy-path.scenario.json',
+      runId: 'run.meeting-intake.fixture',
+      createdAt: FIXTURE_TIME,
+      evidenceIds: [
+        trackedResolutionEvidence.id,
+        'evidence.meeting-intake.preparation.fixture'
+      ]
+    });
+    const trackedPreparationEvidence = createRunPreparationEvidence({
+      lock: trackedLock,
+      envelope: trackedEnvelope,
+      id: 'evidence.meeting-intake.preparation.fixture',
+      createdAt: FIXTURE_TIME
+    });
+    const trackedDoctor = runOfflineDoctor({
+      root: temp,
+      lock: trackedLock,
+      doctorId: 'doctor.meeting-intake.fixture',
+      evidenceId: 'evidence.meeting-intake.doctor.fixture',
+      createdAt: FIXTURE_TIME
+    });
+    const trackedConnectedWithoutProbes = runConnectedDoctor({
+      root: temp,
+      lock: trackedLock,
+      doctorId: 'doctor.meeting-intake.connected-fixture',
+      evidenceId: 'evidence.meeting-intake.doctor.fixture',
+      createdAt: FIXTURE_TIME,
+      providerProbes: []
+    });
+    writeJson(
+      path.join(temp, 'soter/fixtures/meeting-intake/preflight.run.json'),
+      trackedEnvelope
+    );
+    writeJson(
+      path.join(temp, 'soter/fixtures/meeting-intake/resolution.evidence.json'),
+      trackedResolutionEvidence
+    );
+    writeJson(
+      path.join(temp, 'soter/fixtures/meeting-intake/preparation.evidence.json'),
+      trackedPreparationEvidence
+    );
+    writeJson(
+      path.join(temp, 'soter/fixtures/meeting-intake/offline.doctor.json'),
+      trackedDoctor.report
+    );
+    writeJson(
+      path.join(temp, 'soter/fixtures/meeting-intake/connected.doctor.json'),
+      trackedConnectedWithoutProbes.report
+    );
+    trackedDoctor.evidence.forEach((record) => {
+      writeJson(path.join(temp, 'soter/fixtures/meeting-intake/' + record.id + '.json'), record);
+    });
+    const verifiedFixtures = verifySoter(temp);
+    if (verifiedFixtures.health.valid !== 'passed') {
+      failures.push(
+        'generated Core artifacts failed contracts: '
+          + verifiedFixtures.violations.map((item) => {
+            return item.code + ':' + path.relative(temp, item.file) + ':' + item.what;
+          }).join(', ')
+      );
+    }
+    let trackedMcpRejected = false;
+    try {
+      selectExactConnectedConfiguration({
+        root: temp,
+        configurationBasis: 'tracked-contained',
+        lockPath: trackedLockPath,
+        expectedHost: 'codex',
+        providerImplementations: [connectedNotion.id]
+      });
+    } catch (error) {
+      trackedMcpRejected = error instanceof ConnectedConfigurationError
+        && error.code === 'CONNECTED_CONFIGURATION_BASIS_PROHIBITED';
+    }
+    writePrivateConfigurationState(temp, trackedConfiguration.name, trackedConfiguration);
+    let halfStateRejected = false;
+    try {
+      selectExactConnectedConfiguration({
+        root: temp,
+        configurationBasis: 'private-active',
+        lockPath: repoRelativePath(
+          temp,
+          activeConfigurationLockStatePath(temp, trackedConfiguration.name)
+        ),
+        expectedHost: 'codex',
+        providerImplementations: [connectedNotion.id]
+      });
+    } catch (error) {
+      halfStateRejected = error instanceof ConnectedConfigurationError
+        && error.code === 'CONNECTED_CONFIGURATION_HALF_STATE';
+    }
+    removePrivateConfigurationState(temp, trackedConfiguration.name);
+    const privateTaskStatus = 'PRIVATE_PROVIDER_TASK_STATUS_CORE_SENTINEL';
+    const privateTaskContext = 'PRIVATE_PROVIDER_TASK_CONTEXT_CORE_SENTINEL';
+    const meetingOptionMappings = [
+      notionOptionMapping(
+        'mapping.integration.notion.crm-records',
+        'organization',
+        'organizationType',
+        [{ portable: 'Client', provider: 'Client' }]
+      ),
+      notionOptionMapping(
+        'mapping.integration.notion.crm-records',
+        'organization',
+        'tags',
+        [{ portable: 'Important', provider: 'Important' }]
+      ),
+      notionOptionMapping(
+        'mapping.integration.notion.projects-records',
+        'project',
+        'projectType',
+        [{ portable: 'Client Project', provider: 'Client Project' }]
+      ),
+      notionOptionMapping(
+        'mapping.integration.notion.projects-records',
+        'project',
+        'status',
+        [{ portable: 'Active', provider: 'Active' }]
+      ),
+      notionOptionMapping(
+        'mapping.integration.notion.tasks-records',
+        'task',
+        'status',
+        [{ portable: 'Open', provider: 'Open' }]
+      ),
+      notionOptionMapping(
+        'mapping.integration.notion.tasks-records',
+        'task',
+        'context',
+        [{
+          portable: 'Bound from the selected project only.',
+          provider: 'Bound from the selected project only.'
+        }, {
+          portable: 'Derived only from the selected project relation.',
+          provider: 'Derived only from the selected project relation.'
+        }]
+      ),
+      notionOptionMapping(
+        'mapping.integration.notion.meetings-records',
+        'meeting',
+        'meetingType',
+        [
+          { portable: 'Project Sync', provider: 'Project Sync' },
+          { portable: 'General', provider: 'General' }
+        ]
+      ),
+      notionOptionMapping(
+        'mapping.integration.notion.meetings-records',
+        'meeting-summary',
+        'documentType',
+        [{ portable: 'Meeting Summary', provider: 'Meeting Summary' }]
+      )
+    ];
+    const containedMeetingConfiguration = materializeContainedPrivateConfiguration({
+      root: temp,
+      configurationName: trackedConfiguration.name,
+      host: 'codex',
+      notionOptionMappings: meetingOptionMappings
+    });
+    const lock = containedMeetingConfiguration.lock;
+    const claudeLock = resolveConfiguration({
+      root: temp,
+      configPath: privateConfigurationStatePath(temp, trackedConfiguration.name),
+      host: 'claude'
+    });
+    const projectPulseLock = materializeContainedPrivateConfiguration({
+      root: temp,
+      configurationName: 'project-pulse',
+      host: 'codex',
+      notionOptionMappings: [
+        notionOptionMapping(
+          'mapping.integration.notion.projects-records',
+          'project',
+          'projectType',
+          [{ portable: 'Project', provider: 'Private Project Type' }]
+        ),
+        notionOptionMapping(
+          'mapping.integration.notion.projects-records',
+          'project',
+          'status',
+          [{ portable: 'active', provider: 'Private Active Project' }]
+        ),
+        notionOptionMapping(
+          'mapping.integration.notion.tasks-records',
+          'task',
+          'status',
+          [
+            { portable: 'done', provider: 'Private Done Task' },
+            { portable: 'open', provider: 'Private Open Task' }
+          ]
+        ),
+        notionOptionMapping(
+          'mapping.integration.notion.tasks-records',
+          'task',
+          'context',
+          [{ portable: 'Project', provider: 'Private Project Task Context' }]
+        ),
+        notionOptionMapping(
+          'mapping.integration.notion.projects-records',
+          'project-feed-entry',
+          'category',
+          [{ portable: 'Status', provider: 'Private Status' }]
+        ),
+        notionOptionMapping(
+          'mapping.integration.notion.projects-records',
+          'project-feed-entry',
+          'visibility',
+          [{ portable: 'Internal', provider: 'Private Internal' }]
+        )
+      ]
+    }).lock;
+    const containedTaskConfiguration = materializeContainedPrivateConfiguration({
+      root: temp,
+      configurationName: 'task-capture',
+      host: 'codex',
+      notionOptionMappings: [
+        notionOptionMapping(
+          'mapping.integration.notion.tasks-records',
+          'task',
+          'status',
+          [{ portable: 'To Do', provider: privateTaskStatus }]
+        ),
+        notionOptionMapping(
+          'mapping.integration.notion.tasks-records',
+          'task',
+          'context',
+          [{ portable: 'Project', provider: privateTaskContext }]
+        ),
+        notionOptionMapping(
+          'mapping.integration.notion.projects-records',
+          'project',
+          'projectType',
+          [{
+            portable: 'Internal Project',
+            provider: 'PRIVATE_PROVIDER_PROJECT_TYPE_CORE_SENTINEL'
+          }]
+        ),
+        notionOptionMapping(
+          'mapping.integration.notion.projects-records',
+          'project',
+          'status',
+          [{
+            portable: 'Active',
+            provider: 'PRIVATE_PROVIDER_PROJECT_STATUS_CORE_SENTINEL'
+          }]
+        )
+      ]
+    });
+    const taskCaptureLock = containedTaskConfiguration.lock;
+    const slackConversationReviewLock = materializePrivateNotionTargetLock(
+      temp,
+      'slack-conversation-review'
+    );
+    writeActiveConfigurationLockState(
+      temp,
+      'slack-conversation-review',
+      slackConversationReviewLock
+    );
+    const expectedTaskDataSourceId = taskCaptureLock.settings['integration.notion']
+      .targets.tasks.slice('collection://'.length);
+    const expectedUpdateDataSourceId = projectPulseLock.settings['integration.notion']
+      .targets.updates.slice('collection://'.length);
+    const lockPath = repoRelativePath(
+      temp,
+      activeConfigurationLockStatePath(temp, trackedConfiguration.name)
+    );
+    const privateSelection = selectExactConnectedConfiguration({
+      root: temp,
+      configurationBasis: 'private-active',
+      lockPath,
+      expectedHost: 'codex',
+      providerImplementations: [connectedNotion.id]
+    });
+    let sourceSwitchRejected = false;
+    try {
+      selectExactConnectedConfiguration({
+        root: temp,
+        configurationBasis: 'tracked-contained',
+        lockPath: trackedLockPath,
+        expectedHost: 'codex',
+        providerImplementations: [containedNotion.id]
+      });
+    } catch (error) {
+      sourceSwitchRejected = error instanceof ConnectedConfigurationError
+        && error.code === 'CONNECTED_CONFIGURATION_SOURCE_SWITCH';
+    }
+    if (trackedSelection.selection.configurationBasis !== 'tracked-contained'
+      || privateSelection.selection.configurationBasis !== 'private-active'
+      || !trackedMcpRejected
+      || !halfStateRejected
+      || !sourceSwitchRejected) {
+      failures.push(
+        'connected configuration guard did not enforce tracked fixture-only, private paired-state, and source-switch boundaries'
+      );
+    }
+
+    const identityMarker = 'private-identity-selftest-marker';
+    const preparedOtterProbe = await prepareDurableProviderProbeExecution({
+      root: temp,
+      lockPath,
+      configurationBasis: 'private-active',
       providerImplementation: connectedProviders.otter.id,
-      callId: 'probecall.selftest.otter-identity',
       probeId: 'probe.integration.otter.identity-selftest',
       at: FIXTURE_TIME
     });
-    const identityMarker = 'private-identity-selftest-marker';
-    const completedOtterProbe = await completeProviderProbeCall({
+    const otterCall = preparedOtterProbe.currentCall;
+    const currentOtterProbe = getDurableHostExecution({
       root: temp,
-      lock,
-      call: preparedOtterProbe.call,
+      checkpointId: preparedOtterProbe.checkpoint.id,
+      expectedHost: 'codex'
+    });
+    const desiredConfigurationFile = privateConfigurationStatePath(
+      temp,
+      trackedConfiguration.name
+    );
+    const heldDesiredConfigurationFile = desiredConfigurationFile + '.selftest-held';
+    fs.renameSync(desiredConfigurationFile, heldDesiredConfigurationFile);
+    let deletedDesiredRejected = false;
+    let deletedDesiredList = null;
+    try {
+      getDurableHostExecution({
+        root: temp,
+        checkpointId: preparedOtterProbe.checkpoint.id,
+        expectedHost: 'codex'
+      });
+    } catch (error) {
+      deletedDesiredRejected = error instanceof ConnectedConfigurationError
+        && error.code === 'CONNECTED_CONFIGURATION_HALF_STATE';
+    } finally {
+      deletedDesiredList = listDurableHostExecutions({
+        root: temp,
+        expectedHost: 'codex'
+      }).checkpoints.find((item) => item.id === preparedOtterProbe.checkpoint.id);
+      fs.renameSync(heldDesiredConfigurationFile, desiredConfigurationFile);
+    }
+    const activeLockFile = activeConfigurationLockStatePath(
+      temp,
+      trackedConfiguration.name
+    );
+    const exactActiveLock = readJson(activeLockFile);
+    const tamperedActiveLock = structuredClone(exactActiveLock);
+    tamperedActiveLock.graphFingerprint = fingerprintJson({
+      tampered: 'connected-configuration-lock-selftest'
+    });
+    writeActiveConfigurationLockState(
+      temp,
+      trackedConfiguration.name,
+      tamperedActiveLock
+    );
+    let tamperedLockRejected = false;
+    let tamperedLockList = null;
+    try {
+      getDurableHostExecution({
+        root: temp,
+        checkpointId: preparedOtterProbe.checkpoint.id,
+        expectedHost: 'codex'
+      });
+    } catch (error) {
+      tamperedLockRejected = error instanceof ConnectedConfigurationError
+        && error.code === 'CONNECTED_CONFIGURATION_LOCK_STALE';
+    } finally {
+      tamperedLockList = listDurableHostExecutions({
+        root: temp,
+        expectedHost: 'codex'
+      }).checkpoints.find((item) => item.id === preparedOtterProbe.checkpoint.id);
+      writeActiveConfigurationLockState(
+        temp,
+        trackedConfiguration.name,
+        exactActiveLock
+      );
+    }
+    if (currentOtterProbe.currentCall?.id !== otterCall.id
+      || !deletedDesiredRejected
+      || deletedDesiredList?.availability !== 'unavailable'
+      || deletedDesiredList?.reasonCode !== 'CONNECTED_CONFIGURATION_HALF_STATE'
+      || deletedDesiredList?.callId !== null
+      || deletedDesiredList?.provider !== null
+      || !tamperedLockRejected
+      || tamperedLockList?.availability !== 'unavailable'
+      || tamperedLockList?.reasonCode !== 'CONNECTED_CONFIGURATION_LOCK_STALE'
+      || tamperedLockList?.callId !== null
+      || tamperedLockList?.provider !== null) {
+      failures.push(
+        'durable connected execution exposed a call or lost stable unavailable facts after configuration deletion or lock tamper'
+      );
+    }
+    const completedOtterProbe = await completeDurableProviderProbeExecution({
+      root: temp,
+      checkpointId: preparedOtterProbe.checkpoint.id,
+      callId: otterCall.id,
       response: {
         structuredContent: {
           result: identityMarker
@@ -713,122 +1331,68 @@ export async function selftest(root) {
       },
       at: FIXTURE_TIME
     });
-    if (preparedOtterProbe.call.state !== 'requested'
-      || preparedOtterProbe.call.transport.operation !== 'get_user_info'
-      || preparedOtterProbe.call.transport.tool !== 'mcp__otter__get_user_info'
-      || Object.keys(preparedOtterProbe.call.arguments).length !== 0
-      || completedOtterProbe.call.state !== 'completed'
-      || completedOtterProbe.probe?.reachability.state !== 'passed'
-      || completedOtterProbe.probe?.capabilities[0]?.state !== 'unknown'
-      || JSON.stringify(completedOtterProbe).includes(identityMarker)) {
-      failures.push('Otter identity probe did not preserve safe request scope and honest capability state');
-    }
-    const widenedOtterProbe = await completeProviderProbeCall({
+    const repeatedOtterProbe = await completeDurableProviderProbeExecution({
       root: temp,
-      lock,
-      call: preparedOtterProbe.call,
-      response: { structuredContent: { result: 'synthetic identity' } },
-      at: FIXTURE_TIME,
-      translator: {
-        completeProbeMcp({ plan }) {
-          return {
-            credentials: plan.credentialRefs.map((secretRefId) => ({
-              secretRefId,
-              state: 'passed',
-              details: 'Synthetic credential observation.'
-            })),
-            reachability: {
-              state: 'passed',
-              details: 'Synthetic reachability observation.'
-            },
-            authorities: plan.authorities.map((id) => ({
-              id,
-              state: 'passed',
-              details: 'Synthetic authority observation.'
-            })),
-            capabilities: [
-              ...plan.capabilities.map((id) => ({
-                id,
-                state: 'unknown',
-                method: 'metadata',
-                details: 'Synthetic capability observation.'
-              })),
-              {
-                id: 'crm.records.read',
-                state: 'passed',
-                method: 'metadata',
-                details: 'This observation is deliberately outside the probe plan.'
-              }
-            ],
-            limitations: ['Synthetic widened-scope probe must fail.']
-          };
-        }
-      }
-    });
-    if (widenedOtterProbe.call.state !== 'failed'
-      || widenedOtterProbe.call.error.kind !== 'validation') {
-      failures.push('provider probe translator widened the exact locked observation plan');
-    }
-    const failedOtterProbe = failProviderProbeCall({
-      root: temp,
-      lock,
-      call: preparedOtterProbe.call,
-      error: Object.assign(new Error('Injected probe transport failure.'), {
-        kind: 'unavailable'
-      }),
-      at: FIXTURE_TIME
-    });
-    if (failedOtterProbe.state !== 'failed'
-      || failedOtterProbe.error.kind !== 'unavailable') {
-      failures.push('provider probe host failure was not normalized into the portable error vocabulary');
-    }
-
-    const preparedNotionProbe = await prepareProviderProbeCall({
-      root: temp,
-      lock,
-      providerImplementation: connectedProviders.notion.id,
-      callId: 'probecall.selftest.notion-identity',
-      probeId: 'probe.integration.notion.identity-selftest',
-      at: FIXTURE_TIME
-    });
-    const notionIdentityMarker = 'private-notion-identity-selftest-marker';
-    const completedNotionProbe = await completeProviderProbeCall({
-      root: temp,
-      lock,
-      call: preparedNotionProbe.call,
+      checkpointId: preparedOtterProbe.checkpoint.id,
+      callId: otterCall.id,
       response: {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              metadata: { type: 'self' },
-              self: {
-                workspace: { id: 'workspace.selftest', name: notionIdentityMarker },
-                user: { id: 'user.selftest', name: notionIdentityMarker }
-              }
-            })
-          }
-        ],
-        isError: false
+        structuredContent: {
+          result: identityMarker
+        }
       },
       at: FIXTURE_TIME
     });
-    if (preparedNotionProbe.call.state !== 'requested'
-      || preparedNotionProbe.call.transport.operation !== 'fetch'
-      || preparedNotionProbe.call.transport.tool !== 'mcp__codex_apps__notion_fetch'
-      || preparedNotionProbe.call.arguments.id !== 'self'
-      || completedNotionProbe.call.state !== 'completed'
-      || completedNotionProbe.probe?.reachability.state !== 'passed'
-      || completedNotionProbe.probe?.authorities.some((item) => item.state !== 'unknown')
-      || completedNotionProbe.probe?.capabilities.some((item) => item.state !== 'unknown')
-      || JSON.stringify(completedNotionProbe).includes(notionIdentityMarker)) {
-      failures.push('Notion identity probe did not preserve native routing, minimization, and honest unknown states');
+    const durableOtterState = fs.readFileSync(
+      path.join(temp, completedOtterProbe.checkpointPath),
+      'utf8'
+    );
+    if (preparedOtterProbe.checkpoint.$contract
+        !== 'soter://contracts/provider-probe-plan-checkpoint/v1'
+      || preparedOtterProbe.checkpoint.state !== 'requested'
+      || otterCall.transport.operation !== 'get_user_info'
+      || otterCall.transport.tool !== 'mcp__otter__get_user_info'
+      || Object.keys(otterCall.arguments).length !== 0
+      || completedOtterProbe.checkpoint.state !== 'completed'
+      || completedOtterProbe.checkpoint.result?.$contract
+        !== 'soter://contracts/provider-probe/v2'
+      || completedOtterProbe.checkpoint.result?.reachability.state !== 'passed'
+      || completedOtterProbe.checkpoint.result?.capabilities[0]?.state !== 'unknown'
+      || completedOtterProbe.currentCall !== null
+      || repeatedOtterProbe.checkpoint.checkpointFingerprint
+        !== completedOtterProbe.checkpoint.checkpointFingerprint
+      || JSON.stringify(completedOtterProbe).includes(identityMarker)
+      || durableOtterState.includes(identityMarker)) {
+      failures.push('Otter identity probe did not preserve safe request scope and honest capability state');
+    }
+    let wrongOtterCallRejected = false;
+    const wrongOtterProbe = await prepareDurableProviderProbeExecution({
+      root: temp,
+      lockPath,
+      configurationBasis: 'private-active',
+      providerImplementation: connectedProviders.otter.id,
+      probeId: 'probe.integration.otter.wrong-call-selftest',
+      at: FIXTURE_TIME
+    });
+    try {
+      await completeDurableProviderProbeExecution({
+        root: temp,
+        checkpointId: wrongOtterProbe.checkpoint.id,
+        callId: 'probecall.wrong.identity',
+        response: { structuredContent: { result: 'synthetic identity' } },
+        at: FIXTURE_TIME
+      });
+    } catch (error) {
+      wrongOtterCallRejected = /exact current call/i.test(error.message);
+    }
+    if (!wrongOtterCallRejected) {
+      failures.push('provider probe plan accepted a response without the exact current call');
     }
 
     const notionPlanMarker = 'private-notion-plan-selftest-marker';
     let notionPlan = await prepareDurableProviderProbeExecution({
       root: temp,
       lockPath,
+      configurationBasis: 'private-active',
       providerImplementation: connectedProviders.notion.id,
       probeId: 'probe.integration.notion.plan-selftest',
       at: FIXTURE_TIME,
@@ -837,7 +1401,9 @@ export async function selftest(root) {
     const firstNotionPlanCall = notionPlan.currentCall;
     const firstNotionPlanResponse = notionProbeStepResponse(
       notionPlan.checkpoint,
-      notionPlanMarker
+      notionPlanMarker,
+      null,
+      meetingOptionMappings
     );
     notionPlan = await completeDurableProviderProbeExecution({
       root: temp,
@@ -863,7 +1429,9 @@ export async function selftest(root) {
       const currentCall = notionPlan.currentCall;
       const response = notionProbeStepResponse(
         notionPlan.checkpoint,
-        notionPlanMarker
+        notionPlanMarker,
+        null,
+        meetingOptionMappings
       );
       notionPlan = await completeDurableProviderProbeExecution({
         root: temp,
@@ -878,22 +1446,39 @@ export async function selftest(root) {
       path.join(temp, notionPlan.checkpointPath),
       'utf8'
     );
+    const notionMappingStep = (mapping, recordType, kind) => {
+      return 'step.mapping.integration.notion.' + mapping + '-records.record.'
+        + recordType + '.' + kind;
+    };
     const taskSchemaStep = notionPlan.checkpoint.plan.steps.find((step) => {
-      return step.id === 'step.record.task.schema';
+      return step.id === notionMappingStep('tasks', 'task', 'schema');
     });
     const taskReadStep = notionPlan.checkpoint.plan.steps.find((step) => {
-      return step.id === 'step.record.task.read';
+      return step.id === notionMappingStep('tasks', 'task', 'read');
     });
     const taskPolicyReadStep = notionPlan.checkpoint.plan.steps.find((step) => {
-      return step.id === 'step.record.task-capture-policy.read';
+      return step.id === notionMappingStep('tasks', 'task-work-policy', 'read');
     });
-    const policyReadStep = notionPlan.checkpoint.plan.steps.find((step) => {
-      return step.id === 'step.record.policy.read';
+    const organizationSchemaStep = notionPlan.checkpoint.plan.steps.find((step) => {
+      return step.id === notionMappingStep('crm', 'organization', 'schema');
     });
-    if (notionPlanCalls !== 20
+    const organizationPolicyReadStep = notionPlan.checkpoint.plan.steps.find((step) => {
+      return step.id === notionMappingStep('crm', 'organization-capture-policy', 'read');
+    });
+    const contactPolicyReadStep = notionPlan.checkpoint.plan.steps.find((step) => {
+      return step.id === notionMappingStep('crm', 'contact-capture-policy', 'read');
+    });
+    const personSchemaStep = notionPlan.checkpoint.plan.steps.find((step) => {
+      return step.id === notionMappingStep('crm', 'person', 'schema');
+    });
+    const notionPlanRecordTypes = new Set(notionPlan.checkpoint.plan.steps.flatMap((step) => {
+      return step.scope?.recordType ? [step.scope.recordType] : [];
+    }));
+    const expectedNotionPlanSteps = notionPlan.checkpoint.plan.steps.length;
+    if (notionPlanCalls !== expectedNotionPlanSteps
       || notionPlan.checkpoint.state !== 'completed'
       || notionPlan.checkpoint.result?.$contract !== 'soter://contracts/provider-probe/v2'
-      || notionPlan.checkpoint.result?.checks.length !== 20
+      || notionPlan.checkpoint.result?.checks.length !== expectedNotionPlanSteps
       || notionPlan.checkpoint.result?.checks.some((check) => check.state !== 'passed')
       || notionPlan.checkpoint.result?.checks.filter((check) => {
         return check.kind === 'document' && check.method === 'read-only';
@@ -904,14 +1489,40 @@ export async function selftest(root) {
       || notionPlan.checkpoint.result?.capabilities.find((item) => {
         return item.id === 'documents.content.read';
       })?.state !== 'passed'
+      || ['projects.records.read', 'tasks.records.read', 'meetings.records.read'].some((id) => {
+        return notionPlan.checkpoint.result?.capabilities.find((item) => {
+          return item.id === id;
+        })?.state !== 'passed';
+      })
       || notionPlan.checkpoint.result?.capabilities.filter((item) => {
-        return item.id === 'crm.records.create' || item.id === 'crm.records.update';
+        return item.id === 'meetings.records.create' || item.id === 'tasks.records.update';
       }).some((item) => item.state !== 'unknown')
       || taskSchemaStep?.scope.expectedFields.find((field) => {
         return field.portable === 'nextActionOn';
       })?.providerType !== 'date'
       || !taskReadStep?.arguments?.data?.query?.includes('date:Next Action:start')
-      || taskPolicyReadStep?.scope.targetUri !== policyReadStep?.scope.targetUri
+      || taskPolicyReadStep !== undefined
+      || organizationPolicyReadStep !== undefined
+      || contactPolicyReadStep !== undefined
+      || personSchemaStep !== undefined
+      || JSON.stringify([...notionPlanRecordTypes].sort()) !== JSON.stringify([
+        'meeting',
+        'organization',
+        'project',
+        'task'
+      ])
+      || organizationSchemaStep?.scope.expectedFields.find((field) => {
+        return field.portable === 'organizationType';
+      })?.providerType !== 'select'
+      || organizationSchemaStep?.scope.expectedFields.find((field) => {
+        return field.portable === 'tags';
+      })?.providerType !== 'multi_select'
+      || organizationSchemaStep?.scope.expectedFields.find((field) => {
+        return field.portable === 'website';
+      })?.providerType !== 'url'
+      || organizationSchemaStep?.scope.expectedFields.find((field) => {
+        return field.portable === 'twitter';
+      })?.providerType !== 'url'
       || notionPlan.currentCall !== null
       || JSON.stringify(notionPlan).includes(notionPlanMarker)
       || notionPlanState.includes(notionPlanMarker)
@@ -936,21 +1547,74 @@ export async function selftest(root) {
       );
     }
 
+    const taskScopedNotionPlan = await prepareDurableProviderProbeExecution({
+      root: temp,
+      lockPath: repoRelativePath(
+        temp,
+        activeConfigurationLockStatePath(temp, 'task-capture')
+      ),
+      configurationBasis: 'private-active',
+      providerImplementation: connectedProviders.notion.id,
+      probeId: 'probe.integration.notion.task-scope-selftest',
+      at: FIXTURE_TIME,
+      validForSeconds: 300
+    });
+    const taskScopedRecordTypes = new Set(
+      taskScopedNotionPlan.checkpoint.plan.steps.flatMap((step) => {
+        return step.scope?.recordType ? [step.scope.recordType] : [];
+      })
+    );
+    const conversationScopedNotionPlan = await prepareDurableProviderProbeExecution({
+      root: temp,
+      lockPath: repoRelativePath(
+        temp,
+        activeConfigurationLockStatePath(temp, 'slack-conversation-review')
+      ),
+      configurationBasis: 'private-active',
+      providerImplementation: connectedProviders.notion.id,
+      probeId: 'probe.integration.notion.conversation-scope-selftest',
+      at: FIXTURE_TIME,
+      validForSeconds: 300
+    });
+    const conversationScopedRecordTypes = new Set(
+      conversationScopedNotionPlan.checkpoint.plan.steps.flatMap((step) => {
+        return step.scope?.recordType ? [step.scope.recordType] : [];
+      })
+    );
+    if (JSON.stringify([...taskScopedRecordTypes].sort()) !== JSON.stringify([
+      'project',
+      'task',
+      'task-work-policy'
+    ])
+      || JSON.stringify([...conversationScopedRecordTypes]) !== JSON.stringify([
+        'conversation-review-policy'
+      ])
+      || JSON.stringify(taskScopedNotionPlan.checkpoint)
+        .includes('operatorRecordRequirements')
+      || JSON.stringify(conversationScopedNotionPlan.checkpoint)
+        .includes('operatorRecordRequirements')) {
+      failures.push(
+        'Core did not privately narrow Notion probe planning to exact selected Automation record requirements'
+      );
+    }
+
     let driftedNotionPlan = await prepareDurableProviderProbeExecution({
       root: temp,
       lockPath,
+      configurationBasis: 'private-active',
       providerImplementation: connectedProviders.notion.id,
       probeId: 'probe.integration.notion.schema-drift-selftest',
       at: FIXTURE_TIME,
       validForSeconds: 300
     });
-    const driftStepId = 'step.record.organization.schema';
+    const driftStepId = notionMappingStep('crm', 'organization', 'schema');
     while (driftedNotionPlan.checkpoint.state === 'requested') {
       const currentCall = driftedNotionPlan.currentCall;
       const response = notionProbeStepResponse(
         driftedNotionPlan.checkpoint,
         notionPlanMarker,
-        driftStepId
+        driftStepId,
+        meetingOptionMappings
       );
       driftedNotionPlan = await completeDurableProviderProbeExecution({
         root: temp,
@@ -972,6 +1636,7 @@ export async function selftest(root) {
     let mismatchedDocumentPlan = await prepareDurableProviderProbeExecution({
       root: temp,
       lockPath,
+      configurationBasis: 'private-active',
       providerImplementation: connectedProviders.notion.id,
       probeId: 'probe.integration.notion.document-mismatch-selftest',
       at: FIXTURE_TIME,
@@ -987,7 +1652,8 @@ export async function selftest(root) {
         response: notionProbeStepResponse(
           mismatchedDocumentPlan.checkpoint,
           notionPlanMarker,
-          mismatchedDocumentStepId
+          mismatchedDocumentStepId,
+          meetingOptionMappings
         ),
         at: FIXTURE_TIME
       });
@@ -1123,1796 +1789,7 @@ export async function selftest(root) {
       }),
       providerProbeAttempts: [expiredOtterAttempt]
     });
-    const contained = await assembleMeetingIntakeContext({
-      root: temp,
-      lock,
-      lockPath,
-      scenarioPath: 'soter/scenarios/meeting-intake/happy-path.scenario.json',
-      runId: 'run.meeting-intake.contained-fixture',
-      snapshotId: 'context.meeting-intake.contained-fixture',
-      createdAt: FIXTURE_TIME,
-      meetingId: 'meeting.fixture-001',
-      recordingUri: 'otter://fixture/meeting.fixture-001',
-      evidenceIds: [
-        resolutionEvidence.id,
-        'evidence.meeting-intake.context.fixture'
-      ]
-    });
-    const contextEvidence = createContextAssemblyEvidence({
-      lock,
-      envelope: contained.envelope,
-      snapshot: contained.snapshot,
-      id: 'evidence.meeting-intake.context.fixture',
-      createdAt: FIXTURE_TIME
-    });
-    const transaction = await runContainedMeetingIntakeTransaction({
-      root: temp,
-      lock,
-      lockPath,
-      scenarioPath: 'soter/scenarios/meeting-intake/happy-path.scenario.json',
-      runId: 'run.meeting-intake.transaction-fixture',
-      snapshotId: 'context.meeting-intake.transaction-fixture',
-      decisionId: 'decision.meeting-intake.transaction-fixture',
-      changeSetId: 'changeset.meeting-intake.transaction-fixture',
-      approvalId: 'approval.meeting-intake.transaction-fixture',
-      createdAt: FIXTURE_TIME,
-      actor: 'fixture.user',
-      approved: true,
-      evidenceIds: [
-        resolutionEvidence.id,
-        'evidence.meeting-intake.transaction.fixture'
-      ]
-    });
-    const scenario = readJson(path.join(temp, 'soter/scenarios/meeting-intake/happy-path.scenario.json'));
-    const scenarioChecks = [
-      ...scenario.expected.outcomes.map((id) => ({ id, category: 'outcome', state: 'passed' })),
-      ...scenario.expected.invariants.map((id) => ({ id, category: 'invariant', state: 'passed' })),
-      ...scenario.expected.evidence.map((id) => ({ id, category: 'evidence', state: 'passed' }))
-    ];
-    const scenarioAssessment = {
-      result: 'passed',
-      checks: scenarioChecks,
-      capabilityOrder: {
-        expected: [...scenario.expected.capabilityOrder],
-        observed: transaction.envelope.effects.map((effect) => effect.capability),
-        state: 'passed'
-      },
-      effectModes: {
-        expected: { ...scenario.expected.effectModes },
-        observed: Object.fromEntries(Object.keys(scenario.expected.effectModes).sort().map((effect) => [
-          effect,
-          transaction.envelope.effectPolicies[effect].mode
-        ])),
-        state: 'passed'
-      },
-      observationFingerprint: fingerprintJson({ scenario: scenario.id, state: 'passed' }),
-      artifacts: []
-    };
-    const scenarioEvidenceArguments = {
-      lock,
-      envelope: transaction.envelope,
-      scenario,
-      scenarioPath: 'soter/scenarios/meeting-intake/happy-path.scenario.json',
-      assessment: scenarioAssessment,
-      evaluatorId: 'core.scenario-evidence-selftest',
-      id: 'evidence.meeting-intake.scenario-builder-selftest',
-      createdAt: FIXTURE_TIME
-    };
-    const scenarioEvidence = createScenarioExecutionEvidence(scenarioEvidenceArguments);
-    const scenarioEvidenceFailures = validateJsonSchema(
-      scenarioEvidence,
-      readJson(path.join(temp, 'soter/contracts/evidence-v2.schema.json'))
-    );
-    if (scenarioEvidenceFailures.length) {
-      failures.push('scenario evidence builder failed evidence/v1: '
-        + scenarioEvidenceFailures.map((item) => item.path + ' ' + item.message).join('; '));
-    }
-    const hostileScenarioEvidence = [
-      {
-        label: 'scenario fingerprint drift',
-        envelope: { ...transaction.envelope, scenario: { ...transaction.envelope.scenario, fingerprint: fingerprintJson({ drift: true }) } },
-        assessment: scenarioAssessment
-      },
-      {
-        label: 'connected containment',
-        envelope: {
-          ...transaction.envelope,
-          effects: transaction.envelope.effects.map((effect, index) => index === 0 ? { ...effect, containment: 'connected' } : effect)
-        },
-        assessment: scenarioAssessment
-      },
-      {
-        label: 'missing declared check',
-        envelope: transaction.envelope,
-        assessment: { ...scenarioAssessment, checks: scenarioAssessment.checks.slice(1) }
-      }
-    ];
-    for (const hostile of hostileScenarioEvidence) {
-      try {
-        createScenarioExecutionEvidence({
-          ...scenarioEvidenceArguments,
-          envelope: hostile.envelope,
-          assessment: hostile.assessment
-        });
-        failures.push('scenario evidence builder accepted ' + hostile.label);
-      } catch {
-        // Expected: scenario evidence is an independently validated trust boundary.
-      }
-    }
-    const transactionEvidence = createContainedTransactionEvidence({
-      lock,
-      envelope: transaction.envelope,
-      decision: transaction.decision,
-      changeSet: transaction.changeSet,
-      approval: transaction.approval,
-      id: 'evidence.meeting-intake.transaction.fixture',
-      createdAt: FIXTURE_TIME
-    });
-    const tamperedDecision = structuredClone(transaction.decision);
-    tamperedDecision.payload.summary.segmentReferences[0].segmentFingerprint
-      = fingerprintJson({ planted: 'tamper' });
-    let tamperedDecisionRejected = false;
-    try {
-      proposeMeetingIntakeChangeSet({
-        root: temp,
-        lock,
-        snapshot: transaction.snapshot,
-        decision: tamperedDecision,
-        id: 'changeset.meeting-intake.tampered-decision',
-        runId: transaction.envelope.id,
-        createdAt: FIXTURE_TIME
-      });
-    } catch (error) {
-      tamperedDecisionRejected = error.message.includes('exact context records')
-        || error.message.includes('decision fingerprint');
-    }
-    const ambiguousSnapshot = structuredClone(transaction.snapshot);
-    const instanceEntry = ambiguousSnapshot.entries.find((entry) => {
-      return entry.id === 'context.crm.instances';
-    });
-    instanceEntry.value.records.push({
-      type: 'task',
-      id: 'soter-fixture://crm/task/secondary-deck',
-      version: '1',
-      fields: {
-        title: 'Archive prior launch deck',
-        status: 'open',
-        projectUris: ['soter-fixture://crm/project/launch']
-      }
-    });
-    instanceEntry.valueFingerprint = fingerprintJson(instanceEntry.value);
-    const ambiguousDecision = createMeetingIntakeDecision({
-      root: temp,
-      lock,
-      snapshot: ambiguousSnapshot,
-      id: 'decision.meeting-intake.ambiguous-selftest',
-      createdAt: FIXTURE_TIME,
-      producer: { kind: 'fixture', id: 'fixture.ambiguous-selftest', host: null },
-      input: {
-        state: 'ready',
-        meetingRecordId: transaction.decision.payload.meeting.recordId,
-        summarySegmentIndexes: [0, 1],
-        tasks: [
-          {
-            recordId: transaction.decision.payload.tasks[0].recordId,
-            disposition: 'fold',
-            reason: 'The cited request is the existing launch-deck delivery task, so it should be folded.',
-            segmentIndexes: [0]
-          },
-          {
-            recordId: 'soter-fixture://crm/task/secondary-deck',
-            disposition: 'ignore',
-            reason: 'The cited request concerns sending the updated deck, not archiving a prior deck.',
-            segmentIndexes: [0]
-          }
-        ],
-        policies: [],
-        issues: [],
-        limitations: [
-          'This contained ambiguity trial proves explicit candidate disposition, not connected host judgment quality.'
-        ]
-      }
-    });
-    const ambiguousProposal = proposeMeetingIntakeChangeSet({
-      root: temp,
-      lock,
-      snapshot: ambiguousSnapshot,
-      decision: ambiguousDecision,
-      id: 'changeset.meeting-intake.ambiguous-selftest',
-      runId: ambiguousSnapshot.runId,
-      createdAt: FIXTURE_TIME
-    });
-    const abstainingDecision = createMeetingIntakeDecision({
-      root: temp,
-      lock,
-      snapshot: ambiguousSnapshot,
-      id: 'decision.meeting-intake.abstaining-selftest',
-      createdAt: FIXTURE_TIME,
-      producer: { kind: 'fixture', id: 'fixture.abstaining-selftest', host: null },
-      input: {
-        state: 'needs-input',
-        meetingRecordId: transaction.decision.payload.meeting.recordId,
-        summarySegmentIndexes: [0],
-        tasks: ambiguousDecision.payload.tasks.map((task) => ({
-          recordId: task.recordId,
-          disposition: 'review',
-          reason: 'The bounded candidates remain ambiguous and require an explicit user choice before writes.',
-          segmentIndexes: [0]
-        })),
-        policies: [],
-        issues: ['Two bounded task candidates remain plausible and require user selection.'],
-        limitations: [
-          'No task selection or write proposal is valid until the ambiguity is resolved.'
-        ]
-      }
-    });
-    let abstentionProposalRejected = false;
-    try {
-      proposeMeetingIntakeChangeSet({
-        root: temp,
-        lock,
-        snapshot: ambiguousSnapshot,
-        decision: abstainingDecision,
-        id: 'changeset.meeting-intake.abstaining-selftest',
-        runId: ambiguousSnapshot.runId,
-        createdAt: FIXTURE_TIME
-      });
-    } catch (error) {
-      abstentionProposalRejected = error.message.includes('requires a ready');
-    }
-    if (!tamperedDecisionRejected
-      || ambiguousProposal.operations.length !== 2
-      || ambiguousProposal.operations[0].input.id
-        !== transaction.decision.payload.tasks[0].recordId
-      || ambiguousProposal.basis.fingerprint !== ambiguousDecision.decisionFingerprint
-      || !abstentionProposalRejected) {
-      failures.push('Automation decision boundary did not bind exact grounding, explicit ambiguity resolution, and abstention');
-    }
-    const connectedProposal = proposeMeetingIntakeChangeSet({
-      root: temp,
-      lock,
-      snapshot: transaction.snapshot,
-      decision: transaction.decision,
-      id: 'changeset.meeting-intake.connected-compile-selftest',
-      runId: transaction.decision.runId,
-      createdAt: FIXTURE_TIME
-    });
-    const connectedMeetingIntakeBatch = compileConnectedOperationBatch({
-      root: temp,
-      lock,
-      changeSet: connectedProposal,
-      id: 'batch.meeting-intake.connected-compile-selftest',
-      createdAt: FIXTURE_TIME
-    });
-    if (connectedMeetingIntakeBatch.state !== 'proposed'
-      || !connectedMeetingIntakeBatch.executable
-      || connectedMeetingIntakeBatch.blockers.length
-      || connectedMeetingIntakeBatch.operations.at(-1).id !== 'operation.summary.create'
-      || connectedMeetingIntakeBatch.operations.at(-1).recovery.mode
-        !== 'terminal-idempotent-create'
-      || connectedMeetingIntakeBatch.operations.at(-1).contentVerification?.capability
-        !== 'documents.content.read') {
-      failures.push('connected compiler did not make the deduplicated, content-verifiable create an executable terminal effect');
-    }
-    writeContextSnapshotState(temp, transaction.snapshot);
-    const approvalReviewRunPath = '.soter/state/review-inputs/approval-review-selftest.run.json';
-    fs.mkdirSync(path.dirname(path.join(temp, approvalReviewRunPath)), {
-      recursive: true,
-      mode: 0o700
-    });
-    writeJson(path.join(temp, approvalReviewRunPath), transaction.envelope);
-    const handBuiltBatch = structuredClone(connectedMeetingIntakeBatch);
-    handBuiltBatch.operations[0].recovery.reason
-      = 'A hand-built recovery explanation must not pass as compiler output.';
-    const unsignedHandBuiltBatch = structuredClone(handBuiltBatch);
-    delete unsignedHandBuiltBatch.batchFingerprint;
-    handBuiltBatch.batchFingerprint = fingerprintJson(unsignedHandBuiltBatch);
-    let handBuiltBatchRejected = false;
-    try {
-      beginConnectedApprovalRequest({
-        root: temp,
-        lockPath,
-        runPath: approvalReviewRunPath,
-        batch: handBuiltBatch,
-        changeSet: connectedProposal,
-        id: 'approval-request.meeting-intake.hand-built-batch-selftest',
-        reason: 'A hand-built batch must fail before private review or confirmation.',
-        createdAt: FIXTURE_TIME,
-        expiresAt: '2026-07-15T12:05:00.000Z'
-      });
-    } catch (error) {
-      handBuiltBatchRejected = error.message.includes('one exact lock, run, batch, and change set');
-    }
-    const approvalReviewRequestId = 'approval-request.meeting-intake.private-review-selftest';
-    beginConnectedApprovalRequest({
-      root: temp,
-      lockPath,
-      runPath: approvalReviewRunPath,
-      batch: connectedMeetingIntakeBatch,
-      changeSet: connectedProposal,
-      id: approvalReviewRequestId,
-      reason: 'Request private review of the exact connected batch without granting authority.',
-      createdAt: FIXTURE_TIME,
-      expiresAt: '2026-07-15T12:05:00.000Z'
-    });
-    const approvalReview = inspectConnectedApprovalReviewMaterial({
-      root: temp,
-      requestId: approvalReviewRequestId
-    });
-    const approvalReviewInspection = inspectConnectedOperatorActivity({
-      root: temp,
-      requestId: approvalReviewRequestId,
-      observedAt: FIXTURE_TIME
-    });
-    const approvalReviewWorkspaceInspection = inspectWorkspace({ root: temp });
-    const updateReview = approvalReview.operations.find((operation) => {
-      return operation.capability === 'crm.records.update';
-    });
-    const createReview = approvalReview.operations.find((operation) => {
-      return operation.capability === 'crm.records.create';
-    });
-    const privateApprovalReviewSentinel = createReview?.after.reviewValue.body;
-    let privateReviewBoundariesPassed = handBuiltBatchRejected
-      && approvalReview.$contract
-        === 'soter://contracts/connected-approval-review-material/v1'
-      && approvalReview.configuration.applicability.state === 'current'
-      && approvalReview.completeness.state === 'complete'
-      && updateReview?.before.reviewValue.fields.context === 'Project'
-      && updateReview?.after.reviewValue.fields.context === 'Meeting'
-      && createReview?.before.state === 'absent-required'
-      && typeof privateApprovalReviewSentinel === 'string'
-      && privateApprovalReviewSentinel.length > 0
-      && !JSON.stringify(approvalReviewInspection).includes(privateApprovalReviewSentinel)
-      && !JSON.stringify(approvalReviewWorkspaceInspection).includes(privateApprovalReviewSentinel)
-      && approvalReview.privacy.authority === 'none'
-      && !Object.hasOwn(approvalReview, 'approval')
-      && !Object.hasOwn(approvalReview, 'continuationRequest')
-      && !Object.hasOwn(approvalReview, 'permittedNextAction')
-      && !fs.existsSync(path.join(temp, '.soter/state/connected-approval-review'));
-    const resignApprovalReview = (material) => {
-      for (const operation of material.operations) {
-        const unsignedOperation = structuredClone(operation);
-        delete unsignedOperation.operationFingerprint;
-        operation.operationFingerprint = fingerprintJson(unsignedOperation);
-      }
-      const unsignedMaterial = structuredClone(material);
-      delete unsignedMaterial.fingerprint;
-      delete unsignedMaterial.configuration.applicability;
-      material.fingerprint = fingerprintJson(unsignedMaterial);
-      return material;
-    };
-    const rawProviderReview = structuredClone(approvalReview);
-    rawProviderReview.operations[0].after.rawProviderResponse = 'HOSTILE_RAW_PROVIDER_RESPONSE';
-    try {
-      assertConnectedApprovalReviewMaterial(
-        temp,
-        rawProviderReview,
-        readJson(path.join(
-          temp,
-          '.soter/state/approval-requests/' + approvalReviewRequestId + '.json'
-        ))
-      );
-      privateReviewBoundariesPassed = false;
-    } catch (error) {
-      privateReviewBoundariesPassed &&=
-        error.code === 'CONNECTED_APPROVAL_REVIEW_MATERIAL_MALFORMED';
-    }
-    const reboundReview = structuredClone(approvalReview);
-    reboundReview.operations[0].after.reviewValue.fields.context = 'HOSTILE_REBOUND_VALUE';
-    reboundReview.operations[0].after.fingerprint = fingerprintJson(
-      reboundReview.operations[0].after.reviewValue
-    );
-    resignApprovalReview(reboundReview);
-    try {
-      assertConnectedApprovalReviewMaterial(
-        temp,
-        reboundReview,
-        readJson(path.join(
-          temp,
-          '.soter/state/approval-requests/' + approvalReviewRequestId + '.json'
-        ))
-      );
-      privateReviewBoundariesPassed = false;
-    } catch (error) {
-      privateReviewBoundariesPassed &&=
-        error.code === 'CONNECTED_APPROVAL_REVIEW_MATERIAL_BINDING_INVALID';
-    }
-    const credentialReview = structuredClone(approvalReview);
-    credentialReview.operations[0].after.reviewValue.secret = 'private-credential-sentinel';
-    credentialReview.operations[0].after.fingerprint = fingerprintJson(
-      credentialReview.operations[0].after.reviewValue
-    );
-    resignApprovalReview(credentialReview);
-    try {
-      assertConnectedApprovalReviewMaterial(
-        temp,
-        credentialReview,
-        readJson(path.join(
-          temp,
-          '.soter/state/approval-requests/' + approvalReviewRequestId + '.json'
-        ))
-      );
-      privateReviewBoundariesPassed = false;
-    } catch (error) {
-      privateReviewBoundariesPassed &&=
-        error.code === 'CONNECTED_APPROVAL_REVIEW_MATERIAL_CREDENTIAL_REJECTED';
-    }
-    try {
-      inspectConnectedApprovalReviewMaterial({
-        root: temp,
-        requestId: 'approval-request.meeting-intake.missing-private-review'
-      });
-      privateReviewBoundariesPassed = false;
-    } catch (error) {
-      privateReviewBoundariesPassed &&=
-        error.code === 'CONNECTED_APPROVAL_REVIEW_MATERIAL_MISSING';
-    }
-    const governedCapabilityPath = path.join(temp, 'soter/capabilities/crm.records.read.json');
-    const governedCapabilitySource = fs.readFileSync(governedCapabilityPath, 'utf8');
-    const driftedCapability = JSON.parse(governedCapabilitySource);
-    driftedCapability.purpose += ' Planted private-review applicability drift.';
-    writeJson(governedCapabilityPath, driftedCapability);
-    const staleApprovalReview = inspectConnectedApprovalReviewMaterial({
-      root: temp,
-      requestId: approvalReviewRequestId
-    });
-    privateReviewBoundariesPassed &&=
-      staleApprovalReview.configuration.applicability.state === 'stale'
-      && staleApprovalReview.fingerprint === approvalReview.fingerprint;
-    try {
-      confirmConnectedApprovalRequest({
-        root: temp,
-        requestId: approvalReviewRequestId,
-        approvalId: 'approval.meeting-intake.stale-private-review-selftest',
-        actor: 'fixture.user',
-        reason: 'A stale exact request must not become an approval.',
-        confirmedAt: FIXTURE_TIME
-      });
-      privateReviewBoundariesPassed = false;
-    } catch (error) {
-      privateReviewBoundariesPassed &&=
-        error.message.includes('request exact lock to remain current');
-    }
-    fs.writeFileSync(governedCapabilityPath, governedCapabilitySource);
-    if (!privateReviewBoundariesPassed) {
-      failures.push('selected-activity private approval review did not preserve exact bindings, privacy, applicability, and no-authority semantics');
-    }
-    const updateProposal = structuredClone(connectedProposal);
-    updateProposal.runId = 'run.meeting-intake.connected-update-selftest';
-    delete updateProposal.basis;
-    const updateRecordId = 'https://www.notion.so/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-    const updatePriorFields = {
-      title: 'Connected transaction selftest task',
-      status: 'Backlog',
-      context: null,
-      projectUris: [],
-      assigneeIds: null,
-      nextActionOn: null
-    };
-    updateProposal.id = 'changeset.meeting-intake.connected-update-selftest';
-    updateProposal.operations = [{
-      ...structuredClone(connectedProposal.operations[0]),
-      id: 'operation.task.status-update',
-      input: {
-        recordType: 'task',
-        id: updateRecordId,
-        expectedVersion: notionTaskVersion(updateRecordId, updatePriorFields),
-        patch: { status: 'Open' }
-      }
-    }];
-    updateProposal.operations[0].inputFingerprint = fingerprintJson(updateProposal.operations[0].input);
-    updateProposal.scopeFingerprint = changeSetScopeFingerprint(updateProposal);
-    const updateBatch = compileConnectedOperationBatch({
-      root: temp,
-      lock,
-      changeSet: updateProposal,
-      id: 'batch.meeting-intake.connected-update-selftest',
-      createdAt: FIXTURE_TIME
-    });
-    const connectedApproval = approveSelftestConnectedBatch({
-      root: temp,
-      lock,
-      lockPath,
-      batch: updateBatch,
-      changeSet: updateProposal,
-      id: 'approval.meeting-intake.connected-update-selftest',
-      actor: 'fixture.user',
-      reason: 'Approve the exact mapped update batch for compiler verification only.',
-      createdAt: FIXTURE_TIME,
-      expiresAt: '2026-07-15T12:05:00.000Z'
-    });
-    const tamperedConnectedApproval = structuredClone(connectedApproval);
-    tamperedConnectedApproval.actor = 'different.fixture.user';
-    let tamperedConnectedApprovalRejected = false;
-    try {
-      assertConnectedOperationBatchApproval({
-        root: temp,
-        batch: updateBatch,
-        changeSet: updateProposal,
-        approval: tamperedConnectedApproval,
-        at: FIXTURE_TIME
-      });
-    } catch (error) {
-      tamperedConnectedApprovalRejected = error.message.includes('does not match');
-    }
-    if (!tamperedConnectedApprovalRejected) {
-      failures.push('connected approval accepted a tampered confirmation identity');
-    }
-    const transactionRun = { id: updateProposal.runId };
-    let connectedCheckpoint = await createConnectedTransactionCheckpoint({
-      root: temp,
-      lock,
-      lockPath,
-      run: transactionRun,
-      runSourcePath: 'soter/fixtures/meeting-intake/connected-transaction-selftest.run.json',
-      runStatePath: '.soter/state/runs/' + transactionRun.id + '.json',
-      batch: updateBatch,
-      changeSet: updateProposal,
-      approval: connectedApproval,
-      at: FIXTURE_TIME
-    });
-    const compareCall = connectedTransactionCurrentCall(connectedCheckpoint);
-    if (!compareCall) {
-      throw new Error(
-        'Connected transaction did not issue its initial compare call: '
-          + JSON.stringify({ state: connectedCheckpoint.state, result: connectedCheckpoint.result })
-      );
-    }
-    const compareResponse = notionTaskReadResponse(
-      updateRecordId,
-      updatePriorFields,
-      'private-connected-compare-marker'
-    );
-    connectedCheckpoint = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: connectedCheckpoint,
-      callId: compareCall.id,
-      response: compareResponse,
-      at: '2026-07-15T12:00:01.000Z'
-    })).checkpoint;
-    const updateCall = connectedTransactionCurrentCall(connectedCheckpoint);
-    if (!updateCall) {
-      throw new Error(
-        'Connected transaction compare did not issue its write call: '
-          + JSON.stringify({ state: connectedCheckpoint.state, result: connectedCheckpoint.result })
-      );
-    }
-    connectedCheckpoint = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: connectedCheckpoint,
-      callId: updateCall.id,
-      response: notionUpdateResponse(updateRecordId, 'private-connected-write-marker'),
-      at: '2026-07-15T12:00:02.000Z'
-    })).checkpoint;
-    const verifyCall = connectedTransactionCurrentCall(connectedCheckpoint);
-    connectedCheckpoint = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: connectedCheckpoint,
-      callId: verifyCall.id,
-      response: notionTaskReadResponse(updateRecordId, {
-        ...updatePriorFields,
-        status: 'Open'
-      }),
-      at: '2026-07-15T12:00:03.000Z'
-    })).checkpoint;
-    const replayedCompare = await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: connectedCheckpoint,
-      callId: compareCall.id,
-      response: compareResponse,
-      at: '2026-07-15T12:00:04.000Z'
-    });
-    let alteredReplayRejected = false;
-    try {
-      await completeConnectedTransactionCall({
-        root: temp,
-        lock,
-        checkpoint: connectedCheckpoint,
-        callId: compareCall.id,
-        response: notionTaskReadResponse(updateRecordId, {
-          ...updatePriorFields,
-          title: 'Altered replay'
-        }),
-        at: '2026-07-15T12:00:04.000Z'
-      });
-    } catch (error) {
-      alteredReplayRejected = error.message.includes('replay does not match');
-    }
-    const tamperedCheckpoint = structuredClone(connectedCheckpoint);
-    tamperedCheckpoint.operations[0].priorFields.status = 'Tampered';
-    let tamperedCheckpointRejected = false;
-    try {
-      assertConnectedTransactionCheckpoint(temp, tamperedCheckpoint);
-    } catch (error) {
-      tamperedCheckpointRejected = error.message.includes('stale');
-    }
-    if (connectedCheckpoint.state !== 'completed'
-      || connectedCheckpoint.result?.appliedOperationIds[0] !== 'operation.task.status-update'
-      || connectedCheckpoint.operations[0].priorFields.status !== 'Backlog'
-      || connectedCheckpoint.operations[0].appliedVersion
-        !== notionTaskVersion(updateRecordId, { ...updatePriorFields, status: 'Open' })
-      || replayedCompare.idempotent !== true
-      || !alteredReplayRejected
-      || !tamperedCheckpointRejected
-      || JSON.stringify(connectedCheckpoint).includes('private-connected')) {
-      failures.push('connected transaction did not compare, write, verify, minimize, seal, and replay exactly');
-    }
-
-    let expiredCheckpoint = await createConnectedTransactionCheckpoint({
-      root: temp,
-      lock,
-      lockPath,
-      run: transactionRun,
-      runSourcePath: 'soter/fixtures/meeting-intake/connected-expiry-selftest.run.json',
-      runStatePath: '.soter/state/runs/' + transactionRun.id + '.json',
-      batch: updateBatch,
-      changeSet: updateProposal,
-      approval: connectedApproval,
-      at: '2026-07-15T12:04:59.000Z'
-    });
-    expiredCheckpoint = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: expiredCheckpoint,
-      callId: connectedTransactionCurrentCall(expiredCheckpoint).id,
-      response: notionTaskReadResponse(updateRecordId, updatePriorFields),
-      at: '2026-07-15T12:05:01.000Z'
-    })).checkpoint;
-    if (expiredCheckpoint.state !== 'requested'
-      || expiredCheckpoint.startedAt !== '2026-07-15T12:04:59.000Z'
-      || expiredCheckpoint.current?.stage !== 'write') {
-      failures.push('connected transaction did not preserve its one-time start across later approval expiry');
-    }
-
-    const ambiguousCheckpointStart = await createConnectedTransactionCheckpoint({
-      root: temp,
-      lock,
-      lockPath,
-      run: transactionRun,
-      runSourcePath: 'soter/fixtures/meeting-intake/connected-ambiguous-selftest.run.json',
-      runStatePath: '.soter/state/runs/' + transactionRun.id + '.json',
-      batch: updateBatch,
-      changeSet: updateProposal,
-      approval: connectedApproval,
-      at: FIXTURE_TIME
-    });
-    const ambiguousWriteCheckpoint = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: ambiguousCheckpointStart,
-      callId: connectedTransactionCurrentCall(ambiguousCheckpointStart).id,
-      response: notionTaskReadResponse(updateRecordId, updatePriorFields),
-      at: '2026-07-15T12:00:01.000Z'
-    })).checkpoint;
-    const ambiguousCheckpoint = await failConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: ambiguousWriteCheckpoint,
-      callId: connectedTransactionCurrentCall(ambiguousWriteCheckpoint).id,
-      error: { kind: 'unavailable', message: 'Injected write transport ambiguity.' },
-      at: '2026-07-15T12:00:02.000Z'
-    });
-    const replayedAmbiguousFailure = await failConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: ambiguousCheckpoint,
-      callId: connectedTransactionCurrentCall(ambiguousWriteCheckpoint).id,
-      error: { kind: 'unavailable', message: 'Injected write transport ambiguity.' },
-      at: '2026-07-15T12:00:03.000Z'
-    });
-    if (ambiguousCheckpoint.state !== 'needs-attention'
-      || ambiguousCheckpoint.operations[0].state !== 'needs-attention'
-      || replayedAmbiguousFailure.checkpointFingerprint
-        !== ambiguousCheckpoint.checkpointFingerprint) {
-      failures.push('connected transaction overstated a failed write transport as safely rolled back');
-    }
-    let reconciledApproved = await prepareConnectedTransactionReconciliation({
-      root: temp,
-      lock,
-      checkpoint: ambiguousCheckpoint,
-      at: '2026-07-15T12:00:03.000Z'
-    });
-    const approvedReconciliationCall = connectedTransactionCurrentCall(reconciledApproved);
-    const approvedReconciliationResponse = notionTaskReadResponse(updateRecordId, {
-      ...updatePriorFields,
-      status: 'Open'
-    }, 'private-connected-reconciliation-marker');
-    reconciledApproved = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: reconciledApproved,
-      callId: approvedReconciliationCall.id,
-      response: approvedReconciliationResponse,
-      at: '2026-07-15T12:00:04.000Z'
-    })).checkpoint;
-    const replayedReconciliation = await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: reconciledApproved,
-      callId: approvedReconciliationCall.id,
-      response: approvedReconciliationResponse,
-      at: '2026-07-15T12:00:05.000Z'
-    });
-    const tamperedReconciliation = structuredClone(reconciledApproved);
-    tamperedReconciliation.operations[0].reconciliations[0].outcome = 'diverged';
-    delete tamperedReconciliation.checkpointFingerprint;
-    tamperedReconciliation.checkpointFingerprint = fingerprintJson(tamperedReconciliation);
-    let tamperedReconciliationRejected = false;
-    try {
-      assertConnectedTransactionCheckpoint(temp, tamperedReconciliation);
-    } catch (error) {
-      tamperedReconciliationRejected = error.message.includes('reconciliation');
-    }
-    if (reconciledApproved.state !== 'completed'
-      || reconciledApproved.operations[0].ambiguities[0].resolution !== 'approved-fields'
-      || reconciledApproved.operations[0].reconciliations[0].outcome !== 'approved-fields'
-      || reconciledApproved.operations[0].appliedVersion
-        !== notionTaskVersion(updateRecordId, { ...updatePriorFields, status: 'Open' })
-      || replayedReconciliation.idempotent !== true
-      || !tamperedReconciliationRejected
-      || JSON.stringify(reconciledApproved).includes('private-connected-reconciliation-marker')) {
-      failures.push('connected reconciliation did not prove and resume an ambiguous approved update exactly');
-    }
-
-    let reconciledPrior = await prepareConnectedTransactionReconciliation({
-      root: temp,
-      lock,
-      checkpoint: ambiguousCheckpoint,
-      at: '2026-07-15T12:00:03.000Z'
-    });
-    reconciledPrior = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: reconciledPrior,
-      callId: connectedTransactionCurrentCall(reconciledPrior).id,
-      response: notionTaskReadResponse(updateRecordId, updatePriorFields),
-      at: '2026-07-15T12:00:04.000Z'
-    })).checkpoint;
-    if (reconciledPrior.state !== 'failed'
-      || reconciledPrior.operations[0].ambiguities[0].resolution !== 'prior-fields') {
-      failures.push('connected reconciliation did not close a proved no-change ambiguity without retrying the write');
-    }
-
-    let reconciledDiverged = await prepareConnectedTransactionReconciliation({
-      root: temp,
-      lock,
-      checkpoint: ambiguousCheckpoint,
-      at: '2026-07-15T12:00:03.000Z'
-    });
-    reconciledDiverged = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: reconciledDiverged,
-      callId: connectedTransactionCurrentCall(reconciledDiverged).id,
-      response: notionTaskReadResponse(updateRecordId, {
-        ...updatePriorFields,
-        status: 'Unexpected concurrent value'
-      }),
-      at: '2026-07-15T12:00:04.000Z'
-    })).checkpoint;
-    reconciledDiverged = await prepareConnectedTransactionReconciliation({
-      root: temp,
-      lock,
-      checkpoint: reconciledDiverged,
-      at: '2026-07-15T12:00:05.000Z'
-    });
-    reconciledDiverged = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: reconciledDiverged,
-      callId: connectedTransactionCurrentCall(reconciledDiverged).id,
-      response: notionTaskReadResponse(updateRecordId, updatePriorFields),
-      at: '2026-07-15T12:00:06.000Z'
-    })).checkpoint;
-    if (reconciledDiverged.state !== 'failed'
-      || reconciledDiverged.operations[0].reconciliations.length !== 2
-      || reconciledDiverged.operations[0].reconciliations[0].outcome !== 'diverged'
-      || reconciledDiverged.operations[0].reconciliations[1].outcome !== 'prior-fields') {
-      failures.push('connected reconciliation guessed at divergent state or could not retry its read safely');
-    }
-    let reconciledMissing = await prepareConnectedTransactionReconciliation({
-      root: temp,
-      lock,
-      checkpoint: ambiguousCheckpoint,
-      at: '2026-07-15T12:00:03.000Z'
-    });
-    reconciledMissing = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: reconciledMissing,
-      callId: connectedTransactionCurrentCall(reconciledMissing).id,
-      response: { structuredContent: { result: { results: [], has_more: false } } },
-      at: '2026-07-15T12:00:04.000Z'
-    })).checkpoint;
-    let failedReconciliationRead = await prepareConnectedTransactionReconciliation({
-      root: temp,
-      lock,
-      checkpoint: ambiguousCheckpoint,
-      at: '2026-07-15T12:00:03.000Z'
-    });
-    const failedReconciliationCall = connectedTransactionCurrentCall(failedReconciliationRead);
-    failedReconciliationRead = await failConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: failedReconciliationRead,
-      callId: failedReconciliationCall.id,
-      error: { kind: 'unavailable', message: 'Injected reconciliation read failure.' },
-      at: '2026-07-15T12:00:04.000Z'
-    });
-    const replayedReconciliationFailure = await failConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: failedReconciliationRead,
-      callId: failedReconciliationCall.id,
-      error: { kind: 'unavailable', message: 'Injected reconciliation read failure.' },
-      at: '2026-07-15T12:00:05.000Z'
-    });
-    if (reconciledMissing.state !== 'needs-attention'
-      || reconciledMissing.operations[0].reconciliations[0].outcome !== 'missing'
-      || failedReconciliationRead.state !== 'needs-attention'
-      || failedReconciliationRead.operations[0].reconciliations[0].outcome !== 'read-failed'
-      || replayedReconciliationFailure.checkpointFingerprint
-        !== failedReconciliationRead.checkpointFingerprint) {
-      failures.push('connected reconciliation did not preserve missing or failed read ambiguity for safe retry');
-    }
-
-    const rollbackProposal = structuredClone(updateProposal);
-    const rollbackRecordId = 'https://www.notion.so/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
-    const rollbackPriorFields = {
-      title: 'Connected rollback selftest task',
-      status: 'Backlog',
-      context: null,
-      projectUris: [],
-      assigneeIds: null,
-      nextActionOn: null
-    };
-    rollbackProposal.id = 'changeset.meeting-intake.connected-rollback-selftest';
-    rollbackProposal.operations = [
-      structuredClone(updateProposal.operations[0]),
-      structuredClone(updateProposal.operations[0])
-    ];
-    rollbackProposal.operations[0].id = 'operation.task.first-status-update';
-    rollbackProposal.operations[1].id = 'operation.task.second-status-update';
-    rollbackProposal.operations[1].input.id = rollbackRecordId;
-    rollbackProposal.operations[1].input.expectedVersion = notionTaskVersion(
-      rollbackRecordId,
-      rollbackPriorFields
-    );
-    rollbackProposal.operations.forEach((operation) => {
-      operation.inputFingerprint = fingerprintJson(operation.input);
-    });
-    rollbackProposal.scopeFingerprint = changeSetScopeFingerprint(rollbackProposal);
-    const rollbackBatch = compileConnectedOperationBatch({
-      root: temp,
-      lock,
-      changeSet: rollbackProposal,
-      id: 'batch.meeting-intake.connected-rollback-selftest',
-      createdAt: FIXTURE_TIME
-    });
-    const connectedRollbackApproval = approveSelftestConnectedBatch({
-      root: temp,
-      lock,
-      lockPath,
-      batch: rollbackBatch,
-      changeSet: rollbackProposal,
-      id: 'approval.meeting-intake.connected-rollback-selftest',
-      actor: 'fixture.user',
-      reason: 'Approve two exact mapped updates to prove reverse compensation.',
-      createdAt: FIXTURE_TIME,
-      expiresAt: '2026-07-15T12:05:00.000Z'
-    });
-    const invalidTailProposal = structuredClone(rollbackProposal);
-    invalidTailProposal.id = 'changeset.meeting-intake.connected-invalid-tail-selftest';
-    invalidTailProposal.operations[1].input.id = 'not-a-provider-record-id';
-    invalidTailProposal.operations[1].inputFingerprint = fingerprintJson(
-      invalidTailProposal.operations[1].input
-    );
-    invalidTailProposal.scopeFingerprint = changeSetScopeFingerprint(invalidTailProposal);
-    const invalidTailBatch = compileConnectedOperationBatch({
-      root: temp,
-      lock,
-      changeSet: invalidTailProposal,
-      id: 'batch.meeting-intake.connected-invalid-tail-selftest',
-      createdAt: FIXTURE_TIME
-    });
-    const invalidTailApproval = approveSelftestConnectedBatch({
-      root: temp,
-      lock,
-      lockPath,
-      batch: invalidTailBatch,
-      changeSet: invalidTailProposal,
-      id: 'approval.meeting-intake.connected-invalid-tail-selftest',
-      actor: 'fixture.user',
-      reason: 'This invalid provider target must fail complete preflight before the first effect.',
-      createdAt: FIXTURE_TIME,
-      expiresAt: '2026-07-15T12:05:00.000Z'
-    });
-    let connectedInvalidTailRejected = false;
-    try {
-      await createConnectedTransactionCheckpoint({
-        root: temp,
-        lock,
-        lockPath,
-        run: { id: invalidTailProposal.runId },
-        runSourcePath: 'soter/fixtures/meeting-intake/connected-invalid-tail-selftest.run.json',
-        runStatePath: '.soter/state/runs/' + invalidTailProposal.runId + '.json',
-        batch: invalidTailBatch,
-        changeSet: invalidTailProposal,
-        approval: invalidTailApproval,
-        at: FIXTURE_TIME
-      });
-    } catch (error) {
-      connectedInvalidTailRejected = error.message.includes(
-        'operation.task.second-status-update/write'
-      );
-    }
-    if (!connectedInvalidTailRejected) {
-      failures.push('connected transaction did not preflight every provider route before the first effect');
-    }
-    let rollbackCheckpoint = await createConnectedTransactionCheckpoint({
-      root: temp,
-      lock,
-      lockPath,
-      run: { id: rollbackProposal.runId },
-      runSourcePath: 'soter/fixtures/meeting-intake/connected-rollback-selftest.run.json',
-      runStatePath: '.soter/state/runs/' + rollbackProposal.runId + '.json',
-      batch: rollbackBatch,
-      changeSet: rollbackProposal,
-      approval: connectedRollbackApproval,
-      at: FIXTURE_TIME
-    });
-    rollbackCheckpoint = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: rollbackCheckpoint,
-      callId: connectedTransactionCurrentCall(rollbackCheckpoint).id,
-      response: notionTaskReadResponse(updateRecordId, updatePriorFields),
-      at: '2026-07-15T12:00:01.000Z'
-    })).checkpoint;
-    rollbackCheckpoint = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: rollbackCheckpoint,
-      callId: connectedTransactionCurrentCall(rollbackCheckpoint).id,
-      response: notionUpdateResponse(updateRecordId),
-      at: '2026-07-15T12:00:02.000Z'
-    })).checkpoint;
-    rollbackCheckpoint = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: rollbackCheckpoint,
-      callId: connectedTransactionCurrentCall(rollbackCheckpoint).id,
-      response: notionTaskReadResponse(updateRecordId, {
-        ...updatePriorFields,
-        status: 'Open'
-      }),
-      at: '2026-07-15T12:00:03.000Z'
-    })).checkpoint;
-    rollbackCheckpoint = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: rollbackCheckpoint,
-      callId: connectedTransactionCurrentCall(rollbackCheckpoint).id,
-      response: notionTaskReadResponse(rollbackRecordId, {
-        ...rollbackPriorFields,
-        status: 'Unexpected concurrent value'
-      }),
-      at: '2026-07-15T12:00:04.000Z'
-    })).checkpoint;
-    const compensationCall = connectedTransactionCurrentCall(rollbackCheckpoint);
-    const compensationAmbiguityStart = structuredClone(rollbackCheckpoint);
-    rollbackCheckpoint = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: rollbackCheckpoint,
-      callId: compensationCall.id,
-      response: notionUpdateResponse(updateRecordId),
-      at: '2026-07-15T12:00:05.000Z'
-    })).checkpoint;
-    rollbackCheckpoint = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: rollbackCheckpoint,
-      callId: connectedTransactionCurrentCall(rollbackCheckpoint).id,
-      response: notionTaskReadResponse(updateRecordId, updatePriorFields),
-      at: '2026-07-15T12:00:06.000Z'
-    })).checkpoint;
-    if (compensationCall.capability.id !== 'crm.records.update'
-      || compensationCall.arguments.properties.Status !== 'Backlog'
-      || rollbackCheckpoint.state !== 'rolled-back'
-      || rollbackCheckpoint.operations[0].state !== 'compensated'
-      || rollbackCheckpoint.operations[1].state !== 'failed'
-      || rollbackCheckpoint.result?.compensatedOperationIds[0]
-        !== 'operation.task.first-status-update'
-      || rollbackCheckpoint.result?.error?.kind !== 'conflict') {
-      failures.push('connected transaction did not compensate verified updates in reverse after a later conflict');
-    }
-    let reconciledCompensation = await failConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: compensationAmbiguityStart,
-      callId: compensationCall.id,
-      error: { kind: 'unavailable', message: 'Injected compensation transport ambiguity.' },
-      at: '2026-07-15T12:00:05.000Z'
-    });
-    const unresolvedCompensation = structuredClone(reconciledCompensation);
-    reconciledCompensation = await prepareConnectedTransactionReconciliation({
-      root: temp,
-      lock,
-      checkpoint: reconciledCompensation,
-      at: '2026-07-15T12:00:06.000Z'
-    });
-    reconciledCompensation = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: reconciledCompensation,
-      callId: connectedTransactionCurrentCall(reconciledCompensation).id,
-      response: notionTaskReadResponse(updateRecordId, updatePriorFields),
-      at: '2026-07-15T12:00:07.000Z'
-    })).checkpoint;
-    let compensationStillApplied = await prepareConnectedTransactionReconciliation({
-      root: temp,
-      lock,
-      checkpoint: unresolvedCompensation,
-      at: '2026-07-15T12:00:06.000Z'
-    });
-    compensationStillApplied = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: compensationStillApplied,
-      callId: connectedTransactionCurrentCall(compensationStillApplied).id,
-      response: notionTaskReadResponse(updateRecordId, {
-        ...updatePriorFields,
-        status: 'Open'
-      }),
-      at: '2026-07-15T12:00:07.000Z'
-    })).checkpoint;
-    if (reconciledCompensation.state !== 'rolled-back'
-      || reconciledCompensation.operations[0].ambiguities[0].resolution !== 'prior-fields'
-      || compensationStillApplied.state !== 'needs-attention'
-      || compensationStillApplied.operations[0].reconciliations[0].outcome
-        !== 'approved-fields') {
-      failures.push('connected reconciliation overstated or failed to prove an ambiguous compensation');
-    }
-
-    const durableConnectedRun = structuredClone(envelope);
-    durableConnectedRun.id = updateProposal.runId;
-    const durableConnectedRunPath = 'soter/fixtures/meeting-intake/connected-transaction-selftest.run.json';
-    writeJson(path.join(temp, durableConnectedRunPath), durableConnectedRun);
-    beginConnectedApprovalRequest({
-      root: temp,
-      lockPath,
-      runPath: durableConnectedRunPath,
-      batch: updateBatch,
-      changeSet: updateProposal,
-      id: 'approval-request.meeting-intake.durable-connected-selftest',
-      reason: 'Request confirmation for the exact durable connected selftest update.',
-      createdAt: FIXTURE_TIME,
-      expiresAt: '2026-07-15T12:05:00.000Z'
-    });
-    const incompleteDurableReview = inspectConnectedApprovalReviewMaterial({
-      root: temp,
-      requestId: 'approval-request.meeting-intake.durable-connected-selftest'
-    });
-    if (incompleteDurableReview.completeness.state !== 'incomplete'
-      || incompleteDurableReview.completeness.reasonCodes[0]
-        !== 'SOURCE_CONTEXT_UNAVAILABLE'
-      || incompleteDurableReview.operations[0].before.state !== 'unavailable') {
-      failures.push('selected-activity private review did not report missing bound prior context honestly');
-    }
-    const durableConnectedApproval = confirmConnectedApprovalRequest({
-      root: temp,
-      requestId: 'approval-request.meeting-intake.durable-connected-selftest',
-      approvalId: 'approval.meeting-intake.durable-connected-selftest',
-      actor: 'fixture.user',
-      reason: 'Confirm the exact durable connected selftest update.',
-      confirmedAt: FIXTURE_TIME
-    }).approval;
-    const approvedOperatorInspection = inspectConnectedOperatorActivity({
-      root: temp,
-      approvalId: durableConnectedApproval.id,
-      observedAt: FIXTURE_TIME
-    });
-    const expiredOperatorInspection = inspectConnectedOperatorActivity({
-      root: temp,
-      approvalId: durableConnectedApproval.id,
-      observedAt: '2026-07-15T12:06:00.000Z'
-    });
-    let durableConnected = await prepareDurableConnectedTransactionExecution({
-      root: temp,
-      approvalId: durableConnectedApproval.id,
-      at: FIXTURE_TIME,
-      expectedHost: 'codex'
-    });
-    const runningOperatorInspection = inspectConnectedOperatorActivity({
-      root: temp,
-      checkpointId: durableConnected.checkpoint.id,
-      observedAt: FIXTURE_TIME
-    });
-    const duplicateDurableConnected = await prepareDurableConnectedTransactionExecution({
-      root: temp,
-      approvalId: durableConnectedApproval.id,
-      at: FIXTURE_TIME,
-      expectedHost: 'codex'
-    });
-    durableConnected = await completeDurableConnectedTransactionExecution({
-      root: temp,
-      checkpointId: durableConnected.checkpoint.id,
-      callId: durableConnected.currentCall.id,
-      response: notionTaskReadResponse(
-        updateRecordId,
-        updatePriorFields,
-        'private-durable-connected-compare-marker'
-      ),
-      at: '2026-07-15T12:00:01.000Z',
-      expectedHost: 'codex'
-    });
-    const rehydratedConnected = getDurableHostExecution({
-      root: temp,
-      checkpointId: durableConnected.checkpoint.id,
-      expectedHost: 'codex'
-    });
-    durableConnected = await completeDurableConnectedTransactionExecution({
-      root: temp,
-      checkpointId: durableConnected.checkpoint.id,
-      callId: rehydratedConnected.currentCall.id,
-      response: notionUpdateResponse(
-        updateRecordId,
-        'private-durable-connected-write-marker'
-      ),
-      at: '2026-07-15T12:00:02.000Z',
-      expectedHost: 'codex'
-    });
-    durableConnected = await completeDurableConnectedTransactionExecution({
-      root: temp,
-      checkpointId: durableConnected.checkpoint.id,
-      callId: durableConnected.currentCall.id,
-      response: notionTaskReadResponse(updateRecordId, {
-        ...updatePriorFields,
-        status: 'Open'
-      }, 'private-durable-connected-verify-marker'),
-      at: '2026-07-15T12:00:03.000Z',
-      expectedHost: 'codex'
-    });
-    const durableConnectedCheckpointText = fs.readFileSync(
-      path.join(temp, durableConnected.checkpointPath),
-      'utf8'
-    );
-    const durableConnectedRunText = fs.readFileSync(
-      path.join(temp, durableConnected.runPath),
-      'utf8'
-    );
-    const durableTransactionEntry = durableConnected.run.checkpoints.find((item) => {
-      return item.id === 'connected-transaction.' + updateBatch.id;
-    });
-    const completedOperatorInspection = inspectConnectedOperatorActivity({
-      root: temp,
-      checkpointId: durableConnected.checkpoint.id,
-      observedAt: '2026-07-15T12:00:03.000Z'
-    });
-    const forbiddenOperatorFields = [
-      ['rawProviderResponse', { private: 'raw-provider-response-sentinel' }],
-      ['privateInput', 'private-input-sentinel'],
-      ['secret', 'secret-value-sentinel']
-    ];
-    let forbiddenOperatorFieldsRejected = true;
-    for (const [field, value] of forbiddenOperatorFields) {
-      const tampered = structuredClone(completedOperatorInspection);
-      tampered[field] = value;
-      try {
-        assertOperatorInspection(temp, tampered);
-        forbiddenOperatorFieldsRejected = false;
-      } catch (error) {
-        forbiddenOperatorFieldsRejected &&= error.message.includes('contract');
-      }
-    }
-    const rawChangeInspection = structuredClone(completedOperatorInspection);
-    rawChangeInspection.scope.changes[0].before = 'private-before-value-sentinel';
-    rawChangeInspection.scope.changes[0].after = 'private-after-value-sentinel';
-    try {
-      assertOperatorInspection(temp, rawChangeInspection);
-      forbiddenOperatorFieldsRejected = false;
-    } catch (error) {
-      forbiddenOperatorFieldsRejected &&= error.message.includes('contract');
-    }
-    if (approvedOperatorInspection.activity.workState !== 'approved-not-started'
-      || approvedOperatorInspection.resume.permittedNextAction !== 'start-transaction'
-      || approvedOperatorInspection.continuationRequest !== null
-      || expiredOperatorInspection.approval.state !== 'expired'
-      || expiredOperatorInspection.resume.reasonCode !== 'APPROVAL_REQUEST_EXPIRED'
-      || runningOperatorInspection.activity.workState !== 'running'
-      || runningOperatorInspection.resume.permittedNextAction !== 'execute-current-call'
-      || runningOperatorInspection.continuationRequest?.kind !== 'execute-current-call'
-      || runningOperatorInspection.continuationRequest?.callId
-        !== runningOperatorInspection.capabilities.current?.callId
-      || completedOperatorInspection.activity.workState !== 'completed'
-      || completedOperatorInspection.resume.classification !== 'unavailable'
-      || completedOperatorInspection.continuationRequest !== null
-      || completedOperatorInspection.verification.state !== 'verified'
-      || completedOperatorInspection.families.proof.state !== 'not-evaluated'
-      || completedOperatorInspection.families.maturity.state !== 'not-evaluated'
-      || completedOperatorInspection.families.migration.state !== 'not-evaluated'
-      || !forbiddenOperatorFieldsRejected
-      || JSON.stringify(completedOperatorInspection).includes('private-durable-connected')
-      || duplicateDurableConnected.checkpoint.id !== durableConnected.checkpoint.id
-      || duplicateDurableConnected.approvalConsumption.state !== 'started'
-      || rehydratedConnected.currentCall?.transport.operation !== 'update_page'
-      || durableConnected.checkpoint.state !== 'completed'
-      || durableConnected.run.approvals.length !== 1
-      || durableConnected.run.approvals[0].id !== durableConnectedApproval.id
-      || durableConnected.run.effects.length !== 3
-      || durableTransactionEntry?.state !== 'completed'
-      || durableConnectedCheckpointText.includes('private-durable-connected')
-      || durableConnectedRunText.includes('private-durable-connected')) {
-      failures.push('durable connected transaction did not persist, recover, minimize, and synchronize its exact run');
-    }
-
-    const durableReconciliationProposal = structuredClone(updateProposal);
-    durableReconciliationProposal.id = 'changeset.meeting-intake.durable-reconciliation-selftest';
-    durableReconciliationProposal.runId = 'run.meeting-intake.durable-reconciliation-selftest';
-    durableReconciliationProposal.scopeFingerprint = changeSetScopeFingerprint(
-      durableReconciliationProposal
-    );
-    const durableReconciliationBatch = compileConnectedOperationBatch({
-      root: temp,
-      lock,
-      changeSet: durableReconciliationProposal,
-      id: 'batch.meeting-intake.durable-reconciliation-selftest',
-      createdAt: FIXTURE_TIME
-    });
-    const durableReconciliationRun = structuredClone(envelope);
-    durableReconciliationRun.id = durableReconciliationProposal.runId;
-    const durableReconciliationRunPath = 'soter/fixtures/meeting-intake/durable-reconciliation-selftest.run.json';
-    writeJson(path.join(temp, durableReconciliationRunPath), durableReconciliationRun);
-    beginConnectedApprovalRequest({
-      root: temp,
-      lockPath,
-      runPath: durableReconciliationRunPath,
-      batch: durableReconciliationBatch,
-      changeSet: durableReconciliationProposal,
-      id: 'approval-request.meeting-intake.durable-reconciliation-selftest',
-      reason: 'Request confirmation for one exact durable reconciliation update.',
-      createdAt: FIXTURE_TIME,
-      expiresAt: '2026-07-15T12:05:00.000Z'
-    });
-    const durableReconciliationApproval = confirmConnectedApprovalRequest({
-      root: temp,
-      requestId: 'approval-request.meeting-intake.durable-reconciliation-selftest',
-      approvalId: 'approval.meeting-intake.durable-reconciliation-selftest',
-      actor: 'fixture.user',
-      reason: 'Confirm one exact update for durable reconciliation proof.',
-      confirmedAt: FIXTURE_TIME
-    }).approval;
-    let durableReconciliation = await prepareDurableConnectedTransactionExecution({
-      root: temp,
-      approvalId: durableReconciliationApproval.id,
-      at: FIXTURE_TIME,
-      expectedHost: 'codex'
-    });
-    durableReconciliation = await completeDurableConnectedTransactionExecution({
-      root: temp,
-      checkpointId: durableReconciliation.checkpoint.id,
-      callId: durableReconciliation.currentCall.id,
-      response: notionTaskReadResponse(updateRecordId, updatePriorFields),
-      at: '2026-07-15T12:00:01.000Z',
-      expectedHost: 'codex'
-    });
-    durableReconciliation = await failDurableHostExecution({
-      root: temp,
-      checkpointId: durableReconciliation.checkpoint.id,
-      callId: durableReconciliation.currentCall.id,
-      errorKind: 'unavailable',
-      message: 'Injected durable write ambiguity.',
-      at: '2026-07-15T12:00:02.000Z',
-      expectedHost: 'codex'
-    });
-    durableReconciliation = await prepareDurableConnectedTransactionReconciliation({
-      root: temp,
-      checkpointId: durableReconciliation.checkpoint.id,
-      at: '2026-07-15T12:00:03.000Z',
-      expectedHost: 'codex'
-    });
-    const duplicateDurableReconciliation = await prepareDurableConnectedTransactionReconciliation({
-      root: temp,
-      checkpointId: durableReconciliation.checkpoint.id,
-      at: '2026-07-15T12:00:03.500Z',
-      expectedHost: 'codex'
-    });
-    const rehydratedDurableReconciliation = getDurableHostExecution({
-      root: temp,
-      checkpointId: durableReconciliation.checkpoint.id,
-      expectedHost: 'codex'
-    });
-    durableReconciliation = await completeDurableConnectedTransactionExecution({
-      root: temp,
-      checkpointId: durableReconciliation.checkpoint.id,
-      callId: rehydratedDurableReconciliation.currentCall.id,
-      response: notionTaskReadResponse(updateRecordId, {
-        ...updatePriorFields,
-        status: 'Open'
-      }, 'private-durable-reconciliation-marker'),
-      at: '2026-07-15T12:00:04.000Z',
-      expectedHost: 'codex'
-    });
-    const durableReconciliationText = [
-      durableReconciliation.checkpointPath,
-      durableReconciliation.runPath
-    ].map((file) => fs.readFileSync(path.join(temp, file), 'utf8')).join('\n');
-    if (duplicateDurableReconciliation.checkpoint.checkpointFingerprint
-        !== rehydratedDurableReconciliation.checkpoint.checkpointFingerprint
-      || rehydratedDurableReconciliation.currentCall?.transport.operation
-        !== 'query_data_sources'
-      || durableReconciliation.checkpoint.state !== 'completed'
-      || durableReconciliation.run.effects.length !== 3
-      || durableReconciliation.run.lifecycleState !== 'executing'
-      || durableReconciliationText.includes('private-durable-reconciliation-marker')) {
-      failures.push('durable connected reconciliation did not recover, resume, minimize, and synchronize its exact run');
-    }
-    const createProposal = structuredClone(connectedProposal);
-    createProposal.id = 'changeset.meeting-intake.connected-create-selftest';
-    createProposal.operations = [{
-      ...structuredClone(connectedProposal.operations[1]),
-      id: 'operation.summary.mapped-create',
-      input: {
-        recordType: 'meeting-summary',
-        deduplicationKey: 'https://otter.ai/u/fixture-summary',
-        deduplicationFilter: {
-          field: 'link',
-          value: 'https://otter.ai/u/fixture-summary'
-        },
-        fields: {
-          title: 'Mapped fixture summary',
-          documentType: 'Meeting Summary',
-          description: 'Grounded fixture summary.',
-          link: 'https://otter.ai/u/fixture-summary'
-        },
-        body: 'Grounded fixture summary.'
-      }
-    }];
-    createProposal.operations[0].inputFingerprint = fingerprintJson(createProposal.operations[0].input);
-    createProposal.scopeFingerprint = changeSetScopeFingerprint(createProposal);
-    const createBatch = compileConnectedOperationBatch({
-      root: temp,
-      lock,
-      changeSet: createProposal,
-      id: 'batch.meeting-intake.connected-create-selftest',
-      createdAt: FIXTURE_TIME
-    });
-    if (!updateBatch.executable || updateBatch.state !== 'proposed'
-      || connectedApproval.scope.operationBatchFingerprint !== updateBatch.batchFingerprint
-      || connectedApproval.scope.changeSetFingerprint !== updateProposal.scopeFingerprint
-      || !createBatch.executable || createBatch.state !== 'proposed'
-      || createBatch.operations[0].recovery.mode !== 'terminal-idempotent-create'
-      || createBatch.operations[0].contentVerification?.expectedBodyFingerprint
-        !== fingerprintJson(createProposal.operations[0].input.body)) {
-      failures.push('connected operation-batch compilation did not bind exact approval or terminal create verification');
-    }
-    const createApproval = approveSelftestConnectedBatch({
-      root: temp,
-      lock,
-      lockPath,
-      batch: createBatch,
-      changeSet: createProposal,
-      id: 'approval.meeting-intake.connected-create-selftest',
-      actor: 'fixture.user',
-      reason: 'Approve one exact deduplicated terminal create with record and content verification.',
-      createdAt: FIXTURE_TIME,
-      expiresAt: '2026-07-15T12:05:00.000Z'
-    });
-    if (createApproval.scope.operationBatchFingerprint !== createBatch.batchFingerprint) {
-      failures.push('connected approval did not bind the exact executable terminal create');
-    }
-
-    const mixedProposal = structuredClone(updateProposal);
-    mixedProposal.id = 'changeset.meeting-intake.connected-terminal-create-selftest';
-    mixedProposal.runId = 'run.meeting-intake.connected-terminal-create-selftest';
-    mixedProposal.operations = [
-      structuredClone(updateProposal.operations[0]),
-      structuredClone(createProposal.operations[0])
-    ];
-    mixedProposal.scopeFingerprint = changeSetScopeFingerprint(mixedProposal);
-    const mixedBatch = compileConnectedOperationBatch({
-      root: temp,
-      lock,
-      changeSet: mixedProposal,
-      id: 'batch.meeting-intake.connected-terminal-create-selftest',
-      createdAt: FIXTURE_TIME
-    });
-    const nonterminalCreateProposal = structuredClone(mixedProposal);
-    nonterminalCreateProposal.id = 'changeset.meeting-intake.connected-nonterminal-create-selftest';
-    nonterminalCreateProposal.operations.reverse();
-    nonterminalCreateProposal.scopeFingerprint = changeSetScopeFingerprint(
-      nonterminalCreateProposal
-    );
-    const nonterminalCreateBatch = compileConnectedOperationBatch({
-      root: temp,
-      lock,
-      changeSet: nonterminalCreateProposal,
-      id: 'batch.meeting-intake.connected-nonterminal-create-selftest',
-      createdAt: FIXTURE_TIME
-    });
-    if (nonterminalCreateBatch.executable
-      || nonterminalCreateBatch.state !== 'blocked'
-      || !nonterminalCreateBatch.blockers.some((item) => item.includes('final operation'))) {
-      failures.push('connected compiler did not prohibit effects after an uncompensated create');
-    }
-    const mixedApproval = approveSelftestConnectedBatch({
-      root: temp,
-      lock,
-      lockPath,
-      batch: mixedBatch,
-      changeSet: mixedProposal,
-      id: 'approval.meeting-intake.connected-terminal-create-selftest',
-      actor: 'fixture.user',
-      reason: 'Approve one reversible task update followed by one exact deduplicated terminal summary create.',
-      createdAt: FIXTURE_TIME,
-      expiresAt: '2026-07-15T12:05:00.000Z'
-    });
-    const mismatchedSourceBatch = structuredClone(mixedBatch);
-    mismatchedSourceBatch.operations[0].input.patch.status = 'Different approved value';
-    mismatchedSourceBatch.operations[0].inputFingerprint = fingerprintJson(
-      mismatchedSourceBatch.operations[0].input
-    );
-    delete mismatchedSourceBatch.batchFingerprint;
-    mismatchedSourceBatch.batchFingerprint = fingerprintJson(mismatchedSourceBatch);
-    let mismatchedSourceBatchRejected = false;
-    try {
-      approveSelftestConnectedBatch({
-        root: temp,
-        lock,
-        lockPath,
-        batch: mismatchedSourceBatch,
-        changeSet: mixedProposal,
-        id: 'approval.meeting-intake.connected-source-mismatch-selftest',
-        actor: 'fixture.user',
-        reason: 'This batch no longer corresponds to its claimed source change set.',
-        createdAt: FIXTURE_TIME,
-        expiresAt: '2026-07-15T12:05:00.000Z'
-      });
-    } catch (error) {
-      mismatchedSourceBatchRejected = error.message.includes('does not match');
-    }
-    if (!mismatchedSourceBatchRejected) {
-      failures.push('connected approval did not mechanically link compiled operations to the exact source change set');
-    }
-    const staleDerivedBatch = structuredClone(mixedBatch);
-    staleDerivedBatch.operations[1].precondition.readInput.filters.link = 'different-key';
-    delete staleDerivedBatch.batchFingerprint;
-    staleDerivedBatch.batchFingerprint = fingerprintJson(staleDerivedBatch);
-    let staleDerivedBatchRejected = false;
-    try {
-      approveSelftestConnectedBatch({
-        root: temp,
-        lock,
-        lockPath,
-        batch: staleDerivedBatch,
-        changeSet: mixedProposal,
-        id: 'approval.meeting-intake.connected-derived-mismatch-selftest',
-        actor: 'fixture.user',
-        reason: 'This batch no longer derives its precondition from its approved input.',
-        createdAt: FIXTURE_TIME,
-        expiresAt: '2026-07-15T12:05:00.000Z'
-      });
-    } catch (error) {
-      staleDerivedBatchRejected = error.message.includes('does not match');
-    }
-    if (!staleDerivedBatchRejected) {
-      failures.push('connected approval accepted a stale derived precondition');
-    }
-    const mixedRun = { id: mixedProposal.runId };
-    const summaryRecordId = 'https://www.notion.so/cccccccccccccccccccccccccccccccc';
-    const summaryFields = mixedProposal.operations[1].input.fields;
-    const summaryBody = mixedProposal.operations[1].input.body;
-    const emptyReadResponse = {
-      structuredContent: { result: { results: [], has_more: false } }
-    };
-    let mixedCheckpoint = await createConnectedTransactionCheckpoint({
-      root: temp,
-      lock,
-      lockPath,
-      run: mixedRun,
-      runSourcePath: 'soter/fixtures/meeting-intake/connected-terminal-create-selftest.run.json',
-      runStatePath: '.soter/state/runs/' + mixedRun.id + '.json',
-      batch: mixedBatch,
-      changeSet: mixedProposal,
-      approval: mixedApproval,
-      at: FIXTURE_TIME
-    });
-    const mixedResponses = [
-      notionTaskReadResponse(updateRecordId, updatePriorFields),
-      notionUpdateResponse(updateRecordId),
-      notionTaskReadResponse(updateRecordId, { ...updatePriorFields, status: 'Open' }),
-      emptyReadResponse,
-      notionCreateResponse(summaryRecordId, 'private-terminal-create-write-marker'),
-      notionSummaryReadResponse(summaryRecordId, summaryFields),
-      notionPageResponse({
-        uri: summaryRecordId,
-        title: summaryFields.title,
-        body: summaryBody,
-        privateMarker: 'private-terminal-create-content-marker'
-      })
-    ];
-    const expectedMixedStages = [
-      'compare', 'write', 'verify', 'compare', 'write', 'verify', 'content-verify'
-    ];
-    const observedMixedStages = [];
-    let terminalContentCall;
-    let terminalContentResponse;
-    for (const [index, response] of mixedResponses.entries()) {
-      observedMixedStages.push(mixedCheckpoint.current?.stage);
-      const call = connectedTransactionCurrentCall(mixedCheckpoint);
-      if (mixedCheckpoint.current?.stage === 'content-verify') {
-        terminalContentCall = call;
-        terminalContentResponse = response;
-      }
-      mixedCheckpoint = (await completeConnectedTransactionCall({
-        root: temp,
-        lock,
-        checkpoint: mixedCheckpoint,
-        callId: call.id,
-        response,
-        at: '2026-07-15T12:00:0' + (index + 1) + '.000Z'
-      })).checkpoint;
-    }
-    const replayedTerminalContent = await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: mixedCheckpoint,
-      callId: terminalContentCall.id,
-      response: terminalContentResponse,
-      at: '2026-07-15T12:00:08.000Z'
-    });
-    const mixedCreateRuntime = mixedCheckpoint.operations[1];
-    if (fingerprintJson(observedMixedStages) !== fingerprintJson(expectedMixedStages)
-      || mixedCheckpoint.state !== 'completed'
-      || mixedCheckpoint.operations.some((operation) => operation.state !== 'applied')
-      || mixedCreateRuntime.createdRecordId !== summaryRecordId
-      || mixedCreateRuntime.contentVerification?.output?.document?.bodyFingerprint
-        !== fingerprintJson(summaryBody)
-      || replayedTerminalContent.idempotent !== true
-      || JSON.stringify(mixedCheckpoint).includes('private-terminal-create')) {
-      failures.push('connected terminal create did not execute and verify exact record fields and page content after reversible updates');
-    }
-
-    let absentCreateCheckpoint = await createConnectedTransactionCheckpoint({
-      root: temp,
-      lock,
-      lockPath,
-      run: mixedRun,
-      runSourcePath: 'soter/fixtures/meeting-intake/connected-terminal-create-absent-selftest.run.json',
-      runStatePath: '.soter/state/runs/' + mixedRun.id + '.json',
-      batch: mixedBatch,
-      changeSet: mixedProposal,
-      approval: mixedApproval,
-      at: FIXTURE_TIME
-    });
-    for (const [index, response] of mixedResponses.slice(0, 4).entries()) {
-      const call = connectedTransactionCurrentCall(absentCreateCheckpoint);
-      absentCreateCheckpoint = (await completeConnectedTransactionCall({
-        root: temp,
-        lock,
-        checkpoint: absentCreateCheckpoint,
-        callId: call.id,
-        response,
-        at: '2026-07-15T12:01:0' + (index + 1) + '.000Z'
-      })).checkpoint;
-    }
-    const ambiguousCreateCall = connectedTransactionCurrentCall(absentCreateCheckpoint);
-    absentCreateCheckpoint = await failConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: absentCreateCheckpoint,
-      callId: ambiguousCreateCall.id,
-      error: { kind: 'unavailable', message: 'Injected terminal create transport ambiguity.' },
-      at: '2026-07-15T12:01:05.000Z'
-    });
-    absentCreateCheckpoint = await prepareConnectedTransactionReconciliation({
-      root: temp,
-      lock,
-      checkpoint: absentCreateCheckpoint,
-      at: '2026-07-15T12:01:06.000Z'
-    });
-    absentCreateCheckpoint = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: absentCreateCheckpoint,
-      callId: connectedTransactionCurrentCall(absentCreateCheckpoint).id,
-      response: emptyReadResponse,
-      at: '2026-07-15T12:01:07.000Z'
-    })).checkpoint;
-    const rollbackAfterAbsentCreate = connectedTransactionCurrentCall(absentCreateCheckpoint);
-    absentCreateCheckpoint = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: absentCreateCheckpoint,
-      callId: rollbackAfterAbsentCreate.id,
-      response: notionUpdateResponse(updateRecordId),
-      at: '2026-07-15T12:01:08.000Z'
-    })).checkpoint;
-    absentCreateCheckpoint = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: absentCreateCheckpoint,
-      callId: connectedTransactionCurrentCall(absentCreateCheckpoint).id,
-      response: notionTaskReadResponse(updateRecordId, updatePriorFields),
-      at: '2026-07-15T12:01:09.000Z'
-    })).checkpoint;
-    if (ambiguousCreateCall.capability.id !== 'crm.records.create'
-      || absentCreateCheckpoint.state !== 'rolled-back'
-      || absentCreateCheckpoint.operations[0].state !== 'compensated'
-      || absentCreateCheckpoint.operations[1].state !== 'failed'
-      || absentCreateCheckpoint.operations[1].ambiguities[0].resolution !== 'absent'
-      || absentCreateCheckpoint.operations[1].reconciliations[0].outcome !== 'absent'
-      || rollbackAfterAbsentCreate.capability.id !== 'crm.records.update') {
-      failures.push('ambiguous terminal create did not reconcile absence and compensate prior updates without replay or deletion');
-    }
-
-    let foundCreateCheckpoint = await createConnectedTransactionCheckpoint({
-      root: temp,
-      lock,
-      lockPath,
-      run: mixedRun,
-      runSourcePath: 'soter/fixtures/meeting-intake/connected-terminal-create-found-selftest.run.json',
-      runStatePath: '.soter/state/runs/' + mixedRun.id + '.json',
-      batch: mixedBatch,
-      changeSet: mixedProposal,
-      approval: mixedApproval,
-      at: FIXTURE_TIME
-    });
-    for (const [index, response] of mixedResponses.slice(0, 4).entries()) {
-      const call = connectedTransactionCurrentCall(foundCreateCheckpoint);
-      foundCreateCheckpoint = (await completeConnectedTransactionCall({
-        root: temp,
-        lock,
-        checkpoint: foundCreateCheckpoint,
-        callId: call.id,
-        response,
-        at: '2026-07-15T12:02:0' + (index + 1) + '.000Z'
-      })).checkpoint;
-    }
-    const foundAmbiguousCreateCall = connectedTransactionCurrentCall(foundCreateCheckpoint);
-    foundCreateCheckpoint = await failConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: foundCreateCheckpoint,
-      callId: foundAmbiguousCreateCall.id,
-      error: { kind: 'unavailable', message: 'Injected terminal create result loss.' },
-      at: '2026-07-15T12:02:05.000Z'
-    });
-    foundCreateCheckpoint = await prepareConnectedTransactionReconciliation({
-      root: temp,
-      lock,
-      checkpoint: foundCreateCheckpoint,
-      at: '2026-07-15T12:02:06.000Z'
-    });
-    foundCreateCheckpoint = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: foundCreateCheckpoint,
-      callId: connectedTransactionCurrentCall(foundCreateCheckpoint).id,
-      response: notionSummaryReadResponse(summaryRecordId, summaryFields),
-      at: '2026-07-15T12:02:07.000Z'
-    })).checkpoint;
-    const foundCreateContentCall = connectedTransactionCurrentCall(foundCreateCheckpoint);
-    foundCreateCheckpoint = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: foundCreateCheckpoint,
-      callId: foundCreateContentCall.id,
-      response: notionPageResponse({
-        uri: summaryRecordId,
-        title: summaryFields.title,
-        body: summaryBody
-      }),
-      at: '2026-07-15T12:02:08.000Z'
-    })).checkpoint;
-    if (foundCreateCheckpoint.state !== 'completed'
-      || foundCreateCheckpoint.operations[1].ambiguities[0].resolution !== 'approved-fields'
-      || foundCreateCheckpoint.operations[1].createdRecordId !== summaryRecordId
-      || foundCreateContentCall.capability.id !== 'documents.content.read'
-      || foundCreateCheckpoint.operations[1].write.call.id !== foundAmbiguousCreateCall.id) {
-      failures.push('ambiguous terminal create did not resume from exact record and content proof without retrying the write');
-    }
-
-    let contentMismatchCheckpoint = await createConnectedTransactionCheckpoint({
-      root: temp,
-      lock,
-      lockPath,
-      run: mixedRun,
-      runSourcePath: 'soter/fixtures/meeting-intake/connected-terminal-create-content-selftest.run.json',
-      runStatePath: '.soter/state/runs/' + mixedRun.id + '.json',
-      batch: mixedBatch,
-      changeSet: mixedProposal,
-      approval: mixedApproval,
-      at: FIXTURE_TIME
-    });
-    for (const [index, response] of mixedResponses.slice(0, 6).entries()) {
-      const call = connectedTransactionCurrentCall(contentMismatchCheckpoint);
-      contentMismatchCheckpoint = (await completeConnectedTransactionCall({
-        root: temp,
-        lock,
-        checkpoint: contentMismatchCheckpoint,
-        callId: call.id,
-        response,
-        at: '2026-07-15T12:03:0' + (index + 1) + '.000Z'
-      })).checkpoint;
-    }
-    const mismatchedContentCall = connectedTransactionCurrentCall(contentMismatchCheckpoint);
-    contentMismatchCheckpoint = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: contentMismatchCheckpoint,
-      callId: mismatchedContentCall.id,
-      response: notionPageResponse({
-        uri: summaryRecordId,
-        title: summaryFields.title,
-        body: 'Unexpected provider body.'
-      }),
-      at: '2026-07-15T12:03:07.000Z'
-    })).checkpoint;
-    contentMismatchCheckpoint = await prepareConnectedTransactionReconciliation({
-      root: temp,
-      lock,
-      checkpoint: contentMismatchCheckpoint,
-      at: '2026-07-15T12:03:08.000Z'
-    });
-    const contentReconciliationCall = connectedTransactionCurrentCall(contentMismatchCheckpoint);
-    contentMismatchCheckpoint = (await completeConnectedTransactionCall({
-      root: temp,
-      lock,
-      checkpoint: contentMismatchCheckpoint,
-      callId: contentReconciliationCall.id,
-      response: notionPageResponse({
-        uri: summaryRecordId,
-        title: summaryFields.title,
-        body: summaryBody
-      }),
-      at: '2026-07-15T12:03:09.000Z'
-    })).checkpoint;
-    if (mismatchedContentCall.capability.id !== 'documents.content.read'
-      || contentReconciliationCall.capability.id !== 'documents.content.read'
-      || contentMismatchCheckpoint.state !== 'completed'
-      || contentMismatchCheckpoint.operations[1].ambiguities[0].resolution
-        !== 'approved-content'
-      || contentMismatchCheckpoint.operations[1].reconciliations[0].outcome
-        !== 'approved-content') {
-      failures.push('terminal create content mismatch did not stay ambiguous until exact body reconciliation succeeded');
-    }
-
-    writeJson(path.join(temp, 'soter/fixtures/meeting-intake/preflight.run.json'), envelope);
-    writeJson(path.join(temp, 'soter/fixtures/meeting-intake/resolution.evidence.json'), resolutionEvidence);
-    writeJson(path.join(temp, 'soter/fixtures/meeting-intake/preparation.evidence.json'), preparationEvidence);
-    writeJson(path.join(temp, 'soter/fixtures/meeting-intake/offline.doctor.json'), doctor.report);
-    writeJson(
-      path.join(temp, 'soter/fixtures/meeting-intake/connected.doctor.json'),
-      connectedWithoutProbes.report
-    );
-    writeJson(path.join(temp, 'soter/fixtures/meeting-intake/contained.run.json'), contained.envelope);
-    writeJson(path.join(temp, 'soter/fixtures/meeting-intake/contained.context.json'), contained.snapshot);
-    writeJson(path.join(temp, 'soter/fixtures/meeting-intake/contained.evidence.json'), contextEvidence);
-    writeJson(path.join(temp, 'soter/fixtures/meeting-intake/transaction.run.json'), transaction.envelope);
-    writeJson(path.join(temp, 'soter/fixtures/meeting-intake/transaction.context.json'), transaction.snapshot);
-    writeJson(path.join(temp, 'soter/fixtures/meeting-intake/transaction.decision.json'), transaction.decision);
-    writeJson(path.join(temp, 'soter/fixtures/meeting-intake/transaction.changeset.json'), transaction.changeSet);
-    writeJson(path.join(temp, 'soter/fixtures/meeting-intake/transaction.approval.json'), transaction.approval);
-    writeJson(path.join(temp, 'soter/fixtures/meeting-intake/transaction.evidence.json'), transactionEvidence);
-    doctor.evidence.forEach((record) => {
-      writeJson(path.join(temp, 'soter/fixtures/meeting-intake/' + record.id + '.json'), record);
-    });
-
-    const verifiedFixtures = verifySoter(temp);
-    if (verifiedFixtures.health.valid !== 'passed') {
-      failures.push(
-        'generated Core artifacts failed contracts: '
-          + verifiedFixtures.violations.map((item) => {
-            return item.code + ':' + path.relative(temp, item.file) + ':' + item.what;
-          }).join(', ')
-      );
-    }
+    const privateEnvelopeRunPath = writeRunState(temp, envelope).path;
     if (doctor.report.states.valid !== 'passed'
       || doctor.report.states.ready !== 'unknown'
       || doctor.report.states.verified !== 'unknown'
@@ -2987,24 +1864,9 @@ export async function selftest(root) {
     if (envelope.context.some((item) => item.status !== 'declared' || item.freshness !== 'unknown')) {
       failures.push('fixture envelope represented unloaded context as loaded or fresh');
     }
-    if (contained.envelope.lifecycleState !== 'paused'
-      || contained.envelope.effects.length !== 3
-      || contained.envelope.effects.some((item) => item.state !== 'passed')) {
-      failures.push('contained context run did not record three successful typed read invocations and pause');
-    }
-    if (contained.snapshot.entries.length !== 3
-      || contained.snapshot.entries.some((item) => item.freshness !== 'passed')) {
-      failures.push('contained context snapshot omitted a source or overstated fixture freshness');
-    }
-    if (transaction.envelope.lifecycleState !== 'completed'
-      || transaction.changeSet.state !== 'committed'
-      || transaction.changeSet.verification.state !== 'passed'
-      || transaction.changeSet.operations.some((item) => item.state !== 'passed')) {
-      failures.push('approved contained transaction did not commit and verify every operation');
-    }
     const operationPlan = {
-      $contract: 'soter://contracts/operation-plan/v1',
-      contractVersion: '1.0.0',
+      $contract: 'soter://contracts/operation-plan/v2',
+      contractVersion: '2.0.0',
       id: 'plan.meeting-intake.multi-target-selftest',
       runId: envelope.id,
       createdAt: FIXTURE_TIME,
@@ -3014,18 +1876,20 @@ export async function selftest(root) {
       steps: [
         {
           id: 'step.read-meeting',
-          capability: 'crm.records.read',
-          authority: 'authority.crm.instance',
+          capability: 'meetings.records.read',
+          authority: 'authority.meetings.instance',
           providerImplementation: connectedProviders.notion.id,
           input: { recordTypes: ['meeting'], limit: 1 },
+          inputBindings: [],
           reason: 'Read one meeting target through its portable capability.'
         },
         {
           id: 'step.read-task',
-          capability: 'crm.records.read',
-          authority: 'authority.crm.instance',
+          capability: 'tasks.records.read',
+          authority: 'authority.tasks.instance',
           providerImplementation: connectedProviders.notion.id,
           input: { recordTypes: ['task'], limit: 1 },
+          inputBindings: [],
           reason: 'Read one task target after the meeting step completes.'
         }
       ]
@@ -3038,13 +1902,10 @@ export async function selftest(root) {
     } catch (error) {
       duplicatePlanStepRejected = error.message.includes('identifiers must be unique');
     }
-    const wrongAutomationRunPath = 'soter/fixtures/meeting-intake/wrong-automation-selftest.run.json';
-    const wrongAutomationRun = readJson(
-      path.join(temp, 'soter/fixtures/meeting-intake/preflight.run.json')
-    );
+    const wrongAutomationRun = structuredClone(envelope);
     wrongAutomationRun.id = 'run.meeting-intake.wrong-automation-selftest';
     wrongAutomationRun.automation.id = 'automation.not-selected';
-    writeJson(path.join(temp, wrongAutomationRunPath), wrongAutomationRun);
+    const privateWrongAutomationRunPath = writeRunState(temp, wrongAutomationRun).path;
     const wrongAutomationPlan = structuredClone(operationPlan);
     wrongAutomationPlan.id = 'plan.meeting-intake.wrong-automation-selftest';
     wrongAutomationPlan.runId = wrongAutomationRun.id;
@@ -3053,7 +1914,8 @@ export async function selftest(root) {
       await prepareDurableOperationPlanExecution({
         root: temp,
         lockPath,
-        runPath: wrongAutomationRunPath,
+        configurationBasis: 'private-active',
+        runPath: privateWrongAutomationRunPath,
         plan: wrongAutomationPlan,
         at: FIXTURE_TIME,
         expectedHost: 'codex'
@@ -3071,49 +1933,239 @@ export async function selftest(root) {
       await prepareDurableOperationPlanExecution({
         root: temp,
         lockPath,
-        runPath: 'soter/fixtures/meeting-intake/preflight.run.json',
+        configurationBasis: 'private-active',
+        runPath: privateEnvelopeRunPath,
         plan: invalidTailPlan,
         at: FIXTURE_TIME,
         expectedHost: 'codex'
       });
     } catch (error) {
-      invalidTailRejectedBeforeDispatch = error.message.includes(
-        'step.read-task cannot be prepared'
-      );
+      invalidTailRejectedBeforeDispatch = error instanceof ConnectedConfigurationError
+        && error.code === 'CONNECTED_CONFIGURATION_PROVIDER_SCOPE_INVALID';
     }
     const invalidTailCheckpoint = path.join(
       temp,
       '.soter/state/host-calls/checkpoint.plan.meeting-intake.invalid-tail-selftest.json'
     );
+    let publicRunAdoptionRejected = false;
+    try {
+      await prepareDurableOperationPlanExecution({
+        root: temp,
+        lockPath,
+        configurationBasis: 'private-active',
+        runPath: 'soter/fixtures/meeting-intake/preflight.run.json',
+        plan: operationPlan,
+        at: FIXTURE_TIME,
+        expectedHost: 'codex'
+      });
+    } catch (error) {
+      publicRunAdoptionRejected = error.message.includes(
+        'existing exact Core-owned private state file'
+      );
+    }
+    const publicRunAdoptionCreatedCheckpoint = fs.existsSync(path.join(
+      temp,
+      '.soter/state/host-calls/checkpoint.plan.meeting-intake.multi-target-selftest.json'
+    ));
     const preparedPlan = await prepareDurableOperationPlanExecution({
       root: temp,
       lockPath,
-      runPath: 'soter/fixtures/meeting-intake/preflight.run.json',
+      configurationBasis: 'private-active',
+      runPath: privateEnvelopeRunPath,
       plan: operationPlan,
       at: FIXTURE_TIME,
       expectedHost: 'codex'
     });
     const firstPlanCall = preparedPlan.currentCall;
+    const durablePlanRunFile = path.join(temp, preparedPlan.runPath);
+    const exactDurablePlanRun = readJson(durablePlanRunFile);
+    const tamperedDurablePlanRun = structuredClone(exactDurablePlanRun);
+    tamperedDurablePlanRun.lifecycleState = 'completed';
+    writeJson(durablePlanRunFile, tamperedDurablePlanRun);
+    let tamperedRunRejected = false;
+    let tamperedRunList = null;
+    try {
+      getDurableHostExecution({
+        root: temp,
+        checkpointId: preparedPlan.checkpoint.id,
+        expectedHost: 'codex'
+      });
+    } catch {
+      tamperedRunRejected = true;
+    } finally {
+      tamperedRunList = listDurableHostExecutions({
+        root: temp,
+        expectedHost: 'codex'
+      }).checkpoints.find((item) => item.id === preparedPlan.checkpoint.id);
+      writeJson(durablePlanRunFile, exactDurablePlanRun);
+    }
+    if (!tamperedRunRejected
+      || tamperedRunList?.availability !== 'unavailable'
+      || tamperedRunList?.reasonCode !== 'CONNECTED_EXECUTION_STATE_STALE'
+      || tamperedRunList?.callId !== null
+      || tamperedRunList?.runId !== null) {
+      failures.push(
+        'durable run tamper did not fail closed or list as sanitized unavailable work'
+      );
+    }
+    if (process.platform !== 'win32') {
+      fs.chmodSync(durablePlanRunFile, 0o644);
+      let unsafeRunModeRejected = false;
+      let unsafeRunModeList = null;
+      try {
+        getDurableHostExecution({
+          root: temp,
+          checkpointId: preparedPlan.checkpoint.id,
+          expectedHost: 'codex'
+        });
+      } catch {
+        unsafeRunModeRejected = true;
+      } finally {
+        unsafeRunModeList = listDurableHostExecutions({
+          root: temp,
+          expectedHost: 'codex'
+        }).checkpoints.find((item) => item.id === preparedPlan.checkpoint.id);
+        fs.chmodSync(durablePlanRunFile, 0o600);
+      }
+      if (!unsafeRunModeRejected
+        || unsafeRunModeList?.availability !== 'unavailable'
+        || unsafeRunModeList?.callId !== null
+        || unsafeRunModeList?.runId !== null) {
+        failures.push(
+          'unsafe durable run permissions did not fail get and sanitize list authority'
+        );
+      }
+
+      const durablePlanCheckpointFile = path.join(temp, preparedPlan.checkpointPath);
+      fs.chmodSync(durablePlanCheckpointFile, 0o644);
+      let unsafeCheckpointModeRejected = false;
+      let unsafeCheckpointModeList = null;
+      try {
+        getDurableHostExecution({
+          root: temp,
+          checkpointId: preparedPlan.checkpoint.id,
+          expectedHost: 'codex'
+        });
+      } catch {
+        unsafeCheckpointModeRejected = true;
+      } finally {
+        unsafeCheckpointModeList = listDurableHostExecutions({
+          root: temp,
+          expectedHost: 'codex'
+        }).checkpoints.find((item) => item.id === preparedPlan.checkpoint.id);
+        fs.chmodSync(durablePlanCheckpointFile, 0o600);
+      }
+      if (!unsafeCheckpointModeRejected
+        || unsafeCheckpointModeList?.availability !== 'unavailable'
+        || unsafeCheckpointModeList?.callId !== null
+        || unsafeCheckpointModeList?.runId !== null) {
+        failures.push(
+          'unsafe host checkpoint permissions did not fail get and sanitize list authority'
+        );
+      }
+    }
+    const malformedCheckpointFile = path.join(
+      temp,
+      '.soter/state/host-calls/checkpoint.malformed-selftest.json'
+    );
+    fs.writeFileSync(malformedCheckpointFile, '{"id":', { mode: 0o600 });
+    if (process.platform !== 'win32') fs.chmodSync(malformedCheckpointFile, 0o600);
+    const malformedCheckpointList = listDurableHostExecutions({
+      root: temp,
+      expectedHost: 'codex'
+    }).checkpoints;
+    const malformedCheckpointRow = malformedCheckpointList.find((item) => {
+      return item.id === 'checkpoint.malformed-selftest';
+    });
+    const currentCheckpointBesideMalformed = malformedCheckpointList.find((item) => {
+      return item.id === preparedPlan.checkpoint.id;
+    });
+    fs.rmSync(malformedCheckpointFile);
+    if (malformedCheckpointRow?.availability !== 'unavailable'
+      || malformedCheckpointRow?.reasonCode !== 'CONNECTED_EXECUTION_STATE_INVALID'
+      || malformedCheckpointRow?.callId !== null
+      || malformedCheckpointRow?.runId !== null
+      || currentCheckpointBesideMalformed?.availability !== 'current') {
+      failures.push(
+        'one malformed host checkpoint crashed or contaminated the sanitized execution list'
+      );
+    }
     const firstPlanResponse = {
       content: [{
         type: 'text',
         text: JSON.stringify({
           results: [{
             __soterType: 'meeting',
-            __soterId: 'https://app.notion.com/plan-meeting-selftest',
+            __soterId: 'https://app.notion.com/p/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
             __soterFields: JSON.stringify({
               title: 'Plan selftest meeting',
               meetingType: 'Project Sync',
               recordingUri: 'https://otter.ai/u/plan-selftest-meeting',
-              organizationUris: '[]',
-              participantIds: '[]'
+              organizationUris: '[]'
             })
           }],
-          has_more: false
+          has_more: false,
+          privateMarker: 'raw-plan-meeting-response-marker'
         })
       }],
-      privateMarker: 'raw-plan-meeting-response-marker'
+      isError: false
     };
+    const aliasCheckpointId = 'checkpoint.alias-selftest';
+    const aliasCheckpointFile = path.join(
+      temp,
+      '.soter/state/host-calls/' + aliasCheckpointId + '.json'
+    );
+    fs.copyFileSync(path.join(temp, preparedPlan.checkpointPath), aliasCheckpointFile);
+    if (process.platform !== 'win32') fs.chmodSync(aliasCheckpointFile, 0o600);
+    let aliasCheckpointGetRejected = false;
+    let aliasCheckpointContinuationRejected = false;
+    try {
+      getDurableHostExecution({
+        root: temp,
+        checkpointId: aliasCheckpointId,
+        expectedHost: 'codex'
+      });
+    } catch (error) {
+      aliasCheckpointGetRejected = error.message.includes(
+        'identity does not match its exact private state path'
+      );
+    }
+    try {
+      await completeDurableOperationPlanExecution({
+        root: temp,
+        checkpointId: aliasCheckpointId,
+        callId: firstPlanCall.id,
+        response: firstPlanResponse,
+        at: '2026-07-15T12:00:00.500Z',
+        expectedHost: 'codex'
+      });
+    } catch (error) {
+      aliasCheckpointContinuationRejected = error.message.includes(
+        'identity does not match its exact private state path'
+      );
+    }
+    const aliasCheckpointList = listDurableHostExecutions({
+      root: temp,
+      expectedHost: 'codex'
+    }).checkpoints;
+    const aliasCheckpointRow = aliasCheckpointList.find((item) => {
+      return item.id === aliasCheckpointId;
+    });
+    const exactCheckpointRows = aliasCheckpointList.filter((item) => {
+      return item.id === preparedPlan.checkpoint.id && item.availability === 'current';
+    });
+    fs.rmSync(aliasCheckpointFile);
+    if (!aliasCheckpointGetRejected
+      || !aliasCheckpointContinuationRejected
+      || aliasCheckpointRow?.availability !== 'unavailable'
+      || aliasCheckpointRow?.reasonCode !== 'CONNECTED_EXECUTION_STATE_INVALID'
+      || aliasCheckpointRow?.callId !== null
+      || aliasCheckpointRow?.runId !== null
+      || exactCheckpointRows.length !== 1) {
+      failures.push(
+        'copied checkpoint alias bypassed exact identity or duplicated current execution state'
+      );
+    }
     const advancedPlan = await completeDurableOperationPlanExecution({
       root: temp,
       checkpointId: preparedPlan.checkpoint.id,
@@ -3146,7 +2198,7 @@ export async function selftest(root) {
         result: {
           results: [{
             __soterType: 'task',
-            __soterId: 'https://app.notion.com/plan-task-selftest',
+            __soterId: 'https://app.notion.com/p/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
             __soterFields: JSON.stringify({
               title: 'Plan selftest task',
               status: 'Open',
@@ -3154,10 +2206,10 @@ export async function selftest(root) {
               projectUris: '[]'
             })
           }],
-          has_more: false
+          has_more: false,
+          privateMarker: 'raw-plan-task-response-marker'
         }
-      },
-      privateMarker: 'raw-plan-task-response-marker'
+      }
     };
     const completedPlan = await completeDurableOperationPlanExecution({
       root: temp,
@@ -3179,8 +2231,10 @@ export async function selftest(root) {
       || !wrongAutomationRejected
       || !invalidTailRejectedBeforeDispatch
       || fs.existsSync(invalidTailCheckpoint)
+      || !publicRunAdoptionRejected
+      || publicRunAdoptionCreatedCheckpoint
       || preparedPlan.checkpoint.state !== 'requested'
-      || firstPlanCall?.capability.id !== 'crm.records.read'
+      || firstPlanCall?.capability.id !== 'meetings.records.read'
       || firstPlanCall?.arguments?.data?.data_source_urls?.length !== 1
       || advancedPlan.checkpoint.state !== 'requested'
       || advancedPlan.checkpoint.currentStepId !== 'step.read-task'
@@ -3191,18 +2245,15 @@ export async function selftest(root) {
       || completedPlan.checkpoint.state !== 'completed'
       || completedPlan.checkpoint.currentStepId !== null
       || completedPlan.checkpoint.steps.some((step) => step.state !== 'completed')
-      || completedPlan.checkpoint.result?.outputFingerprints.length !== 2
+      || completedPlan.checkpoint.result?.stepResults.length !== 2
       || replayedFirstPlanStep.checkpoint.checkpointFingerprint
         !== completedPlan.checkpoint.checkpointFingerprint
       || JSON.stringify(completedPlan).includes('raw-plan-')) {
       failures.push('durable operation plan did not preserve exact sequential dispatch, recovery, idempotency, and response minimization');
     }
-    const failedBindingRunPath = 'soter/fixtures/meeting-intake/failed-binding-selftest.run.json';
-    const failedBindingRun = readJson(
-      path.join(temp, 'soter/fixtures/meeting-intake/preflight.run.json')
-    );
+    const failedBindingRun = structuredClone(envelope);
     failedBindingRun.id = 'run.meeting-intake.failed-binding-selftest';
-    writeJson(path.join(temp, failedBindingRunPath), failedBindingRun);
+    const privateFailedBindingRunPath = writeRunState(temp, failedBindingRun).path;
     const failedBindingPlan = {
       $contract: 'soter://contracts/operation-plan/v2',
       contractVersion: '2.0.0',
@@ -3215,8 +2266,8 @@ export async function selftest(root) {
       steps: [
         {
           id: 'step.binding-source-meeting',
-          capability: 'crm.records.read',
-          authority: 'authority.crm.instance',
+          capability: 'meetings.records.read',
+          authority: 'authority.meetings.instance',
           providerImplementation: connectedProviders.notion.id,
           input: { recordTypes: ['meeting'], limit: 1 },
           inputBindings: [],
@@ -3248,20 +2299,21 @@ export async function selftest(root) {
       await prepareDurableOperationPlanExecution({
         root: temp,
         lockPath,
-        runPath: failedBindingRunPath,
+        configurationBasis: 'private-active',
+        runPath: privateFailedBindingRunPath,
         plan: invalidBoundTailPlan,
         at: FIXTURE_TIME,
         expectedHost: 'codex'
       });
     } catch (error) {
-      invalidBoundTailRejected = error.message.includes(
-        'step.binding-required-organizations cannot be prepared'
-      );
+      invalidBoundTailRejected = error instanceof ConnectedConfigurationError
+        && error.code === 'CONNECTED_CONFIGURATION_PROVIDER_SCOPE_INVALID';
     }
     const preparedFailedBinding = await prepareDurableOperationPlanExecution({
       root: temp,
       lockPath,
-      runPath: failedBindingRunPath,
+      configurationBasis: 'private-active',
+      runPath: privateFailedBindingRunPath,
       plan: failedBindingPlan,
       at: FIXTURE_TIME,
       expectedHost: 'codex'
@@ -3287,20 +2339,316 @@ export async function selftest(root) {
       || completedFailedBinding.checkpoint.steps[1]?.bindingResolutions[0]?.state !== 'empty') {
       failures.push('bound plan preflight or empty fail-plan semantics allowed unsafe provider work');
     }
-    const connectedContextRecording = 'https://otter.ai/u/context-selftest';
-    const connectedContextRunPath = 'soter/fixtures/meeting-intake/connected-context-selftest.run.json';
-    const connectedContextRun = readJson(
-      path.join(temp, 'soter/fixtures/meeting-intake/preflight.run.json')
-    );
-    connectedContextRun.id = 'run.meeting-intake.connected-context-selftest';
-    writeJson(path.join(temp, connectedContextRunPath), connectedContextRun);
-    const preparedConnectedContext = await prepareMeetingIntakeConnectedContext({
+    const exactStringRun = structuredClone(envelope);
+    exactStringRun.id = 'run.meeting-intake.exact-string-binding-selftest';
+    const privateExactStringRunPath = writeRunState(temp, exactStringRun).path;
+    const exactStringDocumentUri = 'https://www.notion.so/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+    const exactStringDocumentTitle = 'Exact bound meeting';
+    const exactStringPlan = {
+      $contract: 'soter://contracts/operation-plan/v2',
+      contractVersion: '2.0.0',
+      id: 'plan.meeting-intake.exact-string-binding-selftest',
+      runId: exactStringRun.id,
+      createdAt: FIXTURE_TIME,
+      mode: 'sequential',
+      failurePolicy: 'stop',
+      reason: 'Prove one exact observed record identity and title bind a later document read without repeated operator input.',
+      steps: [
+        {
+          id: 'step.exact-string-source',
+          capability: 'meetings.records.read',
+          authority: 'authority.meetings.instance',
+          providerImplementation: connectedProviders.notion.id,
+          input: {
+            recordTypes: ['meeting'],
+            filters: { title: exactStringDocumentTitle },
+            limit: 2
+          },
+          inputBindings: [],
+          reason: 'Resolve the exact meeting record and its provider resource identity.'
+        },
+        {
+          id: 'step.exact-string-document',
+          capability: 'documents.content.read',
+          authority: 'authority.meetings.instance',
+          providerImplementation: connectedProviders.notion.id,
+          input: {},
+          inputBindings: [
+            {
+              id: 'binding.exact-string-uri',
+              sourceStepId: 'step.exact-string-source',
+              sourcePath: ['records', '*', 'id'],
+              targetPath: ['uri'],
+              transform: 'exact-string',
+              onEmpty: 'fail-plan'
+            },
+            {
+              id: 'binding.exact-string-title',
+              sourceStepId: 'step.exact-string-source',
+              sourcePath: ['records', '*', 'fields', 'title'],
+              targetPath: ['expectedTitle'],
+              transform: 'exact-string',
+              onEmpty: 'fail-plan'
+            }
+          ],
+          reason: 'Read only the exact document identity and title observed in the prior Meeting result.'
+        }
+      ]
+    };
+    const preparedExactStringPlan = await prepareDurableOperationPlanExecution({
       root: temp,
       lockPath,
-      runPath: connectedContextRunPath,
-      snapshotId: 'context.meeting-intake.connected.selftest',
-      meetingId: 'meeting.context-selftest',
-      recordingUri: connectedContextRecording,
+      configurationBasis: 'private-active',
+      runPath: privateExactStringRunPath,
+      plan: exactStringPlan,
+      at: FIXTURE_TIME,
+      expectedHost: 'codex'
+    });
+    const exactStringSourceResponse = {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          results: [{
+            __soterType: 'meeting',
+            __soterId: exactStringDocumentUri,
+            __soterFields: JSON.stringify({
+              title: exactStringDocumentTitle,
+              meetingType: 'Project Sync',
+              occurredOn: '2026-07-15',
+              recordingUri: 'https://otter.ai/u/exact-string-selftest',
+              organizationUris: null,
+              participantUris: null
+            })
+          }],
+          has_more: false
+        })
+      }]
+    };
+    const advancedExactStringPlan = await completeDurableOperationPlanExecution({
+      root: temp,
+      checkpointId: preparedExactStringPlan.checkpoint.id,
+      callId: preparedExactStringPlan.currentCall.id,
+      response: exactStringSourceResponse,
+      at: '2026-07-15T12:00:03.600Z',
+      expectedHost: 'codex'
+    });
+    const completedExactStringPlan = await completeDurableOperationPlanExecution({
+      root: temp,
+      checkpointId: advancedExactStringPlan.checkpoint.id,
+      callId: advancedExactStringPlan.currentCall.id,
+      response: notionPageResponse({
+        uri: exactStringDocumentUri,
+        title: exactStringDocumentTitle,
+        body: '# Exact bound meeting\n\nOne exact bound document.'
+      }),
+      at: '2026-07-15T12:00:03.700Z',
+      expectedHost: 'codex'
+    });
+    const exactStringRuntime = advancedExactStringPlan.checkpoint.steps[1];
+    if (advancedExactStringPlan.currentCall?.capability?.id !== 'documents.content.read'
+      || advancedExactStringPlan.currentCall?.arguments?.id !== 'b'.repeat(32)
+      || exactStringRuntime.resolvedInput?.uri !== exactStringDocumentUri
+      || exactStringRuntime.resolvedInput?.expectedTitle !== exactStringDocumentTitle
+      || exactStringRuntime.bindingResolutions.length !== 2
+      || exactStringRuntime.bindingResolutions.some((binding) => {
+        return binding.transform !== 'exact-string'
+          || binding.state !== 'bound'
+          || binding.valueCount !== 1;
+      })
+      || completedExactStringPlan.checkpoint.state !== 'completed') {
+      failures.push('exact-string operation-plan bindings did not preserve one exact observed identity and title');
+    }
+    const ambiguousExactStringRunPath = 'soter/fixtures/meeting-intake/ambiguous-exact-string-selftest.run.json';
+    const ambiguousExactStringRun = structuredClone(exactStringRun);
+    ambiguousExactStringRun.id = 'run.meeting-intake.ambiguous-exact-string-selftest';
+    writeJson(path.join(temp, ambiguousExactStringRunPath), ambiguousExactStringRun);
+    const privateAmbiguousExactStringRunPath = writeRunState(
+      temp,
+      ambiguousExactStringRun
+    ).path;
+    const ambiguousExactStringPlan = structuredClone(exactStringPlan);
+    ambiguousExactStringPlan.id = 'plan.meeting-intake.ambiguous-exact-string-selftest';
+    ambiguousExactStringPlan.runId = ambiguousExactStringRun.id;
+    const preparedAmbiguousExactString = await prepareDurableOperationPlanExecution({
+      root: temp,
+      lockPath,
+      configurationBasis: 'private-active',
+      runPath: privateAmbiguousExactStringRunPath,
+      plan: ambiguousExactStringPlan,
+      at: FIXTURE_TIME,
+      expectedHost: 'codex'
+    });
+    const ambiguousExactStringResponse = structuredClone(exactStringSourceResponse);
+    const ambiguousPayload = JSON.parse(ambiguousExactStringResponse.content[0].text);
+    ambiguousPayload.results.push({
+      ...structuredClone(ambiguousPayload.results[0]),
+      __soterId: 'https://www.notion.so/cccccccccccccccccccccccccccccccc'
+    });
+    ambiguousExactStringResponse.content[0].text = JSON.stringify(ambiguousPayload);
+    const failedAmbiguousExactString = await completeDurableOperationPlanExecution({
+      root: temp,
+      checkpointId: preparedAmbiguousExactString.checkpoint.id,
+      callId: preparedAmbiguousExactString.currentCall.id,
+      response: ambiguousExactStringResponse,
+      at: '2026-07-15T12:00:03.800Z',
+      expectedHost: 'codex'
+    });
+    if (failedAmbiguousExactString.checkpoint.state !== 'failed'
+      || failedAmbiguousExactString.currentCall !== null
+      || failedAmbiguousExactString.checkpoint.steps[1]?.call !== null
+      || failedAmbiguousExactString.checkpoint.steps[1]?.error?.kind !== 'validation'
+      || failedAmbiguousExactString.checkpoint.steps[1]?.error?.code
+        !== 'OPERATION_PLAN_BINDING_INVALID') {
+      failures.push('ambiguous exact-string operation-plan binding emitted provider work');
+    }
+    const connectedContextRecording = 'https://otter.ai/u/meeting_fixture_001';
+    const {
+      lock: connectedContextLock,
+      templateLock: connectedContextTemplateLock,
+      privateContainedBasis: connectedContextBasis
+    } = containedMeetingConfiguration;
+    const serializedConnectedContextBasis = JSON.stringify(connectedContextBasis);
+    const serializedTaskBasis = JSON.stringify(
+      containedTaskConfiguration.privateContainedBasis
+    );
+    if (connectedContextBasis.privateLockFingerprint !== fingerprintJson(connectedContextLock)
+      || connectedContextBasis.privateConfigurationFingerprint
+        !== connectedContextLock.configuration.fingerprint
+      || connectedContextBasis.privateGraphFingerprint !== connectedContextLock.graphFingerprint
+      || connectedContextBasis.trackedTemplateLockFingerprint
+        !== fingerprintJson(connectedContextTemplateLock)
+      || connectedContextBasis.trackedTemplateGraphFingerprint
+        !== connectedContextTemplateLock.graphFingerprint
+      || connectedContextBasis.privateLockFingerprint
+        === connectedContextBasis.trackedTemplateLockFingerprint
+      || connectedContextBasis.substitutions.notionDocumentSourceCount < 1
+      || connectedContextBasis.substitutions.notionOptionMappingScopeCount !== 8
+      || connectedContextBasis.substitutions.notionOptionMappingEntryCount !== 10
+      || connectedContextBasis.privacy.providerOptionValuesIncluded !== false
+      || containedTaskConfiguration.privateContainedBasis.substitutions
+        .notionOptionMappingScopeCount !== 4
+      || containedTaskConfiguration.privateContainedBasis.substitutions
+        .notionOptionMappingEntryCount !== 4
+      || serializedTaskBasis.includes(privateTaskStatus)
+      || serializedTaskBasis.includes(privateTaskContext)
+      || serializedTaskBasis.includes('PRIVATE_PROVIDER_PROJECT_TYPE_CORE_SENTINEL')
+      || serializedTaskBasis.includes('PRIVATE_PROVIDER_PROJECT_STATUS_CORE_SENTINEL')
+      || serializedConnectedContextBasis.includes('collection://')
+      || serializedConnectedContextBasis.includes('https://www.notion.so/')
+      || serializedConnectedContextBasis.includes('.soter/state')) {
+      failures.push(
+        'contained private configuration did not produce one sanitized exact template derivation'
+      );
+    }
+    const wrongTemplateLock = structuredClone(connectedContextTemplateLock);
+    wrongTemplateLock.graphFingerprint = 'sha256:' + '0'.repeat(64);
+    let wrongTemplateRejected = false;
+    try {
+      materializeContainedPrivateConfiguration({
+        root: temp,
+        configurationName: 'meeting-intake',
+        host: 'codex',
+        expectedTemplateLock: wrongTemplateLock
+      });
+    } catch (error) {
+      wrongTemplateRejected = /expected tracked template lock/.test(error.message);
+    }
+    if (!wrongTemplateRejected) {
+      failures.push('contained private configuration accepted a substituted template lock');
+    }
+    let duplicateOptionMappingRejected = false;
+    try {
+      materializeContainedPrivateConfiguration({
+        root: temp,
+        configurationName: 'task-capture',
+        host: 'codex',
+        notionOptionMappings: [
+          notionOptionMapping(
+            'mapping.integration.notion.tasks-records',
+            'task',
+            'status',
+            [
+              { portable: 'To Do', provider: 'Duplicate Provider Value' },
+              { portable: 'Done', provider: 'Duplicate Provider Value' }
+            ]
+          )
+        ]
+      });
+    } catch (error) {
+      duplicateOptionMappingRejected = /exact private bijection/.test(error.message);
+    }
+    if (!duplicateOptionMappingRejected) {
+      failures.push('contained private configuration accepted a non-bijective option mapping');
+    }
+    const currentDesiredConfiguration = readJson(desiredConfigurationFile);
+    const replacementDesiredConfiguration = structuredClone(currentDesiredConfiguration);
+    replacementDesiredConfiguration.host.reason +=
+      ' Replaced only to prove durable binding invalidation.';
+    writePrivateConfigurationState(
+      temp,
+      trackedConfiguration.name,
+      replacementDesiredConfiguration
+    );
+    const replacementActiveLock = resolveConfiguration({
+      root: temp,
+      configPath: desiredConfigurationFile,
+      host: 'codex'
+    });
+    writeActiveConfigurationLockState(
+      temp,
+      trackedConfiguration.name,
+      replacementActiveLock
+    );
+    let replacedSelectionRejected = false;
+    try {
+      getDurableHostExecution({
+        root: temp,
+        checkpointId: preparedOtterProbe.checkpoint.id,
+        expectedHost: 'codex'
+      });
+    } catch (error) {
+      replacedSelectionRejected = error instanceof ConnectedConfigurationError
+        && error.code === 'CONNECTED_CONFIGURATION_BINDING_STALE';
+    }
+    const replacedSelectionList = listDurableHostExecutions({
+      root: temp,
+      expectedHost: 'codex'
+    }).checkpoints.find((item) => item.id === preparedOtterProbe.checkpoint.id);
+    writePrivateConfigurationState(
+      temp,
+      trackedConfiguration.name,
+      currentDesiredConfiguration
+    );
+    writeActiveConfigurationLockState(
+      temp,
+      trackedConfiguration.name,
+      exactActiveLock
+    );
+    if (!replacedSelectionRejected
+      || replacedSelectionList?.availability !== 'unavailable'
+      || replacedSelectionList?.reasonCode !== 'CONNECTED_CONFIGURATION_BINDING_STALE'
+      || replacedSelectionList?.callId !== null
+      || replacedSelectionList?.provider !== null) {
+      failures.push(
+        'durable execution did not become sanitized unavailable work after exact configuration source replacement'
+      );
+    }
+    const preparedConnectedWork = await prepareAutomationRun({
+      root: temp,
+      automationId: 'automation.meeting-intake',
+      configurationName: 'meeting-intake',
+      configurationBasis: 'private-active',
+      preparationMode: 'connected-acquisition',
+      input: {
+        meeting: 'meeting.fixture-001',
+        recordingUri: connectedContextRecording,
+        operatorGoal: 'Exercise the primary connected-context Core integration path.'
+      },
+      createdAt: '2026-07-15T12:00:03.900Z'
+    });
+    const preparedConnectedContext = await prepareMeetingIntakeConnectedContext({
+      root: temp,
+      workId: preparedConnectedWork.id,
       at: '2026-07-15T12:00:04.000Z',
       expectedHost: 'codex'
     });
@@ -3318,7 +2666,7 @@ export async function selftest(root) {
     }
     const overwritingBoundPlan = structuredClone(preparedConnectedContext.checkpoint.plan);
     overwritingBoundPlan.steps[connectedOrganizationsIndex]
-      .input.ids = ['https://app.notion.com/fixed-broad-id'];
+      .input.ids = ['https://app.notion.com/p/cccccccccccccccccccccccccccccccc'];
     let bindingOverwriteRejected = false;
     try {
       assertOperationPlanDocument(temp, overwritingBoundPlan);
@@ -3350,50 +2698,16 @@ export async function selftest(root) {
     } catch (error) {
       incompleteContextRejected = error.message.includes('completed operation plan');
     }
-    const contextPolicyMarker = 'raw-connected-context-policy-marker';
-    const contextPolicyBindings = applicablePolicySources(lock);
-    const contextPolicyResponse = {
-      content: [{
-        type: 'text',
-        text: JSON.stringify({
-          results: contextPolicyBindings.map((binding) => ({
-            __soterType: 'policy',
-            __soterId: binding.documentUri,
-            __soterFields: JSON.stringify({ name: binding.title })
-          })),
-          has_more: false
-        })
-      }],
-      privateMarker: contextPolicyMarker
-    };
-    let connectedContextPolicy = await completeDurableOperationPlanExecution({
+    const contextPolicyBindings = applicablePolicySources(connectedContextLock);
+    const completedContextPolicies = await completeContextPolicyBodies({
       root: temp,
-      checkpointId: preparedConnectedContext.checkpoint.id,
-      callId: preparedConnectedContext.currentCall.id,
-      response: contextPolicyResponse,
-      at: '2026-07-15T12:00:05.000Z',
-      expectedHost: 'codex'
+      execution: preparedConnectedContext,
+      bindings: contextPolicyBindings,
+      atSecond: '2026-07-15T12:00:05',
+      markerPrefix: 'raw-connected-context-policy-body-marker-'
     });
-    const contextPolicyBodyMarkers = [];
-    for (const [index, binding] of [...contextPolicyBindings]
-      .sort((left, right) => left.id.localeCompare(right.id, 'en')).entries()) {
-      const marker = 'raw-connected-context-policy-body-marker-' + index;
-      contextPolicyBodyMarkers.push(marker);
-      connectedContextPolicy = await completeDurableOperationPlanExecution({
-        root: temp,
-        checkpointId: preparedConnectedContext.checkpoint.id,
-        callId: connectedContextPolicy.currentCall.id,
-        response: notionPageResponse({
-          uri: binding.documentUri,
-          title: binding.title,
-          body: '# ' + binding.title + '\n\nSynthetic applicable policy body ' + index + '.',
-          privateMarker: marker
-        }),
-        at: '2026-07-15T12:00:05.' + String(index + 1).padStart(3, '0') + 'Z',
-        expectedHost: 'codex'
-      });
-    }
-    const connectedContextTranscript = connectedContextPolicy;
+    const connectedContextTranscript = completedContextPolicies.execution;
+    const contextPolicyBodyMarkers = completedContextPolicies.markers;
     const contextTranscriptMarker = 'raw-connected-context-transcript-marker';
     const contextTranscriptResponse = {
       structuredContent: {
@@ -3423,27 +2737,29 @@ export async function selftest(root) {
     const contextOrganizationMarker = 'raw-connected-context-organization-marker';
     const contextProjectMarker = 'raw-connected-context-project-marker';
     const contextTaskMarker = 'raw-connected-context-task-marker';
-    const contextOrganizationUri = 'https://app.notion.com/context-organization-selftest';
-    const contextProjectUri = 'https://app.notion.com/context-project-selftest';
-    const contextTaskUri = 'https://app.notion.com/context-task-selftest';
+    const contextOrganizationUri
+      = 'https://www.notion.so/Organization-11111111111111111111111111111111';
+    const contextProjectUri
+      = 'https://www.notion.so/Project-22222222222222222222222222222222';
+    const contextTaskUri
+      = 'https://www.notion.so/Task-33333333333333333333333333333333';
     const contextMeetingResponse = {
       structuredContent: {
         result: {
           results: [{
             __soterType: 'meeting',
-            __soterId: 'https://app.notion.com/context-meeting-selftest',
+            __soterId: 'https://app.notion.com/p/dddddddddddddddddddddddddddddddd',
             __soterFields: JSON.stringify({
               title: 'Connected context selftest',
               meetingType: 'Project Sync',
               recordingUri: connectedContextRecording,
-              organizationUris: JSON.stringify([contextOrganizationUri]),
-              participantIds: JSON.stringify(['person.retro'])
+              organizationUris: JSON.stringify([contextOrganizationUri])
             })
           }],
-          has_more: false
+          has_more: false,
+          privateMarker: contextMeetingMarker
         }
-      },
-      privateMarker: contextMeetingMarker
+      }
     };
     const connectedContextOrganization = await completeDurableOperationPlanExecution({
       root: temp,
@@ -3471,10 +2787,10 @@ export async function selftest(root) {
                 contactUris: '[]'
               })
             }],
-            has_more: false
+            has_more: false,
+            privateMarker: contextOrganizationMarker
           }
-        },
-        privateMarker: contextOrganizationMarker
+        }
       },
       at: '2026-07-15T12:00:08.000Z',
       expectedHost: 'codex'
@@ -3497,10 +2813,10 @@ export async function selftest(root) {
                 taskUris: JSON.stringify([contextTaskUri])
               })
             }],
-            has_more: false
+            has_more: false,
+            privateMarker: contextProjectMarker
           }
-        },
-        privateMarker: contextProjectMarker
+        }
       },
       at: '2026-07-15T12:00:09.000Z',
       expectedHost: 'codex'
@@ -3522,10 +2838,10 @@ export async function selftest(root) {
                 projectUris: JSON.stringify([contextProjectUri])
               })
             }],
-            has_more: false
+            has_more: false,
+            privateMarker: contextTaskMarker
           }
-        },
-        privateMarker: contextTaskMarker
+        }
       },
       at: '2026-07-15T12:00:10.000Z',
       expectedHost: 'codex'
@@ -3564,33 +2880,33 @@ export async function selftest(root) {
       || !bindingOverlapRejected
       || preparedConnectedContext.checkpoint.$contract
         !== 'soter://contracts/operation-plan-checkpoint/v2'
-      || preparedConnectedContext.currentCall?.capability.id !== 'crm.records.read'
-      || preparedConnectedContext.currentCall?.arguments?.data?.data_source_urls?.length !== 1
+      || preparedConnectedContext.currentCall?.capability.id !== 'documents.content.read'
+      || preparedConnectedContext.currentCall?.arguments?.id?.length !== 32
       || connectedContextTranscript.currentCall?.capability.id !== 'meeting.transcript.read'
-      || connectedContextTranscript.currentCall?.arguments?.id !== 'context-selftest'
+      || connectedContextTranscript.currentCall?.arguments?.id !== 'meeting_fixture_001'
       || connectedContextTranscript.checkpoint.steps
         .filter((step) => step.id.startsWith('step.context-policy.'))
         .some((step) => step.state !== 'completed'
           || step.call?.capability.id !== 'documents.content.read')
-      || connectedContextMeeting.currentCall?.capability.id !== 'crm.records.read'
+      || connectedContextMeeting.currentCall?.capability.id !== 'meetings.records.read'
       || connectedContextMeeting.currentCall?.arguments?.data?.params?.[0]
         !== connectedContextRecording
       || connectedContextOrganization.checkpoint.currentStepId
         !== 'step.context-organizations'
       || connectedContextOrganization.currentCall?.arguments?.data?.params?.[0]
-        !== contextOrganizationUri
+        !== contextOrganizationUri.slice(-32)
       || organizationRuntimeStep?.bindingResolutions[0]?.sourceOutputFingerprint
         !== meetingRuntimeStep?.outputFingerprint
       || connectedContextProject.checkpoint.currentStepId !== 'step.context-projects'
       || connectedContextProject.currentCall?.arguments?.data?.params?.[0]
-        !== contextProjectUri
+        !== contextProjectUri.slice(-32)
       || connectedContextTask.checkpoint.currentStepId !== 'step.context-tasks'
       || connectedContextTask.currentCall?.arguments?.data?.params?.[0]
-        !== contextTaskUri
+        !== contextTaskUri.slice(-32)
       || completedConnectedContext.checkpoint.state !== 'completed'
-      || completedConnectedContext.checkpoint.result?.stepResults?.length !== 9
+      || completedConnectedContext.checkpoint.result?.stepResults?.length !== 8
       || finalizedConnectedContext.snapshot.containment !== 'connected'
-      || finalizedConnectedContext.snapshot.entries.length !== 9
+      || finalizedConnectedContext.snapshot.entries.length !== 8
       || connectedPolicyEntries.length !== 3
       || connectedPolicyEntries.some((entry) => {
         return entry.role !== 'definition'
@@ -3600,8 +2916,11 @@ export async function selftest(root) {
           || !entry.value.document.bodyFingerprint.startsWith('sha256:');
       })
       || finalizedConnectedContext.run.lifecycleState !== 'paused'
-      || connectedAuthorities.get('authority.crm.definition') !== 'loaded'
       || connectedAuthorities.get('authority.crm.instance') !== 'loaded'
+      || connectedAuthorities.get('authority.meetings.definition') !== 'loaded'
+      || connectedAuthorities.get('authority.meetings.instance') !== 'loaded'
+      || connectedAuthorities.get('authority.tasks.definition') !== 'loaded'
+      || connectedAuthorities.get('authority.tasks.instance') !== 'loaded'
       || connectedAuthorities.get('authority.otter.provider') !== 'loaded'
       || connectedAuthorities.get('authority.notion.provider') !== 'declared'
       || replayedConnectedContext.snapshotPath !== finalizedConnectedContext.snapshotPath
@@ -3610,7 +2929,6 @@ export async function selftest(root) {
       || (process.platform !== 'win32'
         && (fs.statSync(connectedSnapshotFile).mode & 0o777) !== 0o600)
       || [
-        contextPolicyMarker,
         contextTranscriptMarker,
         contextMeetingMarker,
         contextOrganizationMarker,
@@ -3657,31 +2975,28 @@ export async function selftest(root) {
       ))) {
       failures.push('Core accepted context that was not mechanically bound to normalized plan output');
     }
-    const mismatchContextRunPath = 'soter/fixtures/meeting-intake/mismatch-context-selftest.run.json';
-    const mismatchContextRun = structuredClone(connectedContextRun);
-    mismatchContextRun.id = 'run.meeting-intake.mismatch-context-selftest';
-    writeJson(path.join(temp, mismatchContextRunPath), mismatchContextRun);
+    const preparedMismatchWork = await prepareAutomationRun({
+      root: temp,
+      automationId: 'automation.meeting-intake',
+      configurationName: 'meeting-intake',
+      configurationBasis: 'private-active',
+      preparationMode: 'connected-acquisition',
+      input: {
+        meeting: 'meeting.fixture-001',
+        recordingUri: connectedContextRecording,
+        operatorGoal: 'Exercise the mismatched connected meeting failure path.'
+      },
+      createdAt: '2026-07-15T12:00:07.900Z'
+    });
     const preparedMismatchContext = await prepareMeetingIntakeConnectedContext({
       root: temp,
-      lockPath,
-      runPath: mismatchContextRunPath,
-      snapshotId: 'context.meeting-intake.connected.mismatch-selftest',
-      meetingId: 'meeting.mismatch-context-selftest',
-      recordingUri: connectedContextRecording,
+      workId: preparedMismatchWork.id,
       at: '2026-07-15T12:00:08.000Z',
       expectedHost: 'codex'
     });
-    let mismatchTranscriptCall = await completeDurableOperationPlanExecution({
+    const mismatchTranscriptCall = (await completeContextPolicyBodies({
       root: temp,
-      checkpointId: preparedMismatchContext.checkpoint.id,
-      callId: preparedMismatchContext.currentCall.id,
-      response: contextPolicyResponse,
-      at: '2026-07-15T12:00:09.000Z',
-      expectedHost: 'codex'
-    });
-    mismatchTranscriptCall = (await completeContextPolicyBodies({
-      root: temp,
-      execution: mismatchTranscriptCall,
+      execution: preparedMismatchContext,
       bindings: contextPolicyBindings,
       atSecond: '2026-07-15T12:00:09'
     })).execution;
@@ -3702,13 +3017,12 @@ export async function selftest(root) {
           result: {
             results: [{
               __soterType: 'meeting',
-              __soterId: 'https://app.notion.com/mismatch-context-meeting',
+              __soterId: 'https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
               __soterFields: JSON.stringify({
                 title: 'Mismatched connected context',
                 meetingType: 'Project Sync',
                 recordingUri: 'https://otter.ai/u/a-different-meeting',
-                organizationUris: '[]',
-                participantIds: '[]'
+                organizationUris: '[]'
               })
             }],
             has_more: false
@@ -3747,31 +3061,28 @@ export async function selftest(root) {
       ))) {
       failures.push('connected context accepted a CRM meeting that did not match the selected recording identity');
     }
-    const emptyContextRunPath = 'soter/fixtures/meeting-intake/empty-context-selftest.run.json';
-    const emptyContextRun = structuredClone(connectedContextRun);
-    emptyContextRun.id = 'run.meeting-intake.empty-context-selftest';
-    writeJson(path.join(temp, emptyContextRunPath), emptyContextRun);
+    const preparedEmptyWork = await prepareAutomationRun({
+      root: temp,
+      automationId: 'automation.meeting-intake',
+      configurationName: 'meeting-intake',
+      configurationBasis: 'private-active',
+      preparationMode: 'connected-acquisition',
+      input: {
+        meeting: 'meeting.fixture-001',
+        recordingUri: connectedContextRecording,
+        operatorGoal: 'Exercise the empty related-record connected-context path.'
+      },
+      createdAt: '2026-07-15T12:00:11.900Z'
+    });
     const preparedEmptyContext = await prepareMeetingIntakeConnectedContext({
       root: temp,
-      lockPath,
-      runPath: emptyContextRunPath,
-      snapshotId: 'context.meeting-intake.connected.empty-selftest',
-      meetingId: 'meeting.empty-context-selftest',
-      recordingUri: connectedContextRecording,
+      workId: preparedEmptyWork.id,
       at: '2026-07-15T12:00:12.000Z',
       expectedHost: 'codex'
     });
-    let emptyContextTranscript = await completeDurableOperationPlanExecution({
+    const emptyContextTranscript = (await completeContextPolicyBodies({
       root: temp,
-      checkpointId: preparedEmptyContext.checkpoint.id,
-      callId: preparedEmptyContext.currentCall.id,
-      response: contextPolicyResponse,
-      at: '2026-07-15T12:00:13.000Z',
-      expectedHost: 'codex'
-    });
-    emptyContextTranscript = (await completeContextPolicyBodies({
-      root: temp,
-      execution: emptyContextTranscript,
+      execution: preparedEmptyContext,
       bindings: contextPolicyBindings,
       atSecond: '2026-07-15T12:00:13'
     })).execution;
@@ -3792,13 +3103,12 @@ export async function selftest(root) {
           result: {
             results: [{
               __soterType: 'meeting',
-              __soterId: 'https://app.notion.com/empty-context-meeting',
+              __soterId: 'https://app.notion.com/p/ffffffffffffffffffffffffffffffff',
               __soterFields: JSON.stringify({
                 title: 'Meeting without related CRM records',
                 meetingType: 'General',
                 recordingUri: connectedContextRecording,
-                organizationUris: '[]',
-                participantIds: '[]'
+                organizationUris: '[]'
               })
             }],
             has_more: false
@@ -3823,36 +3133,34 @@ export async function selftest(root) {
         .some((step) => step.state !== 'skipped'
           || step.call !== null
           || step.bindingResolutions[0]?.state !== 'empty')
-      || finalizedEmptyContext.snapshot.entries.length !== 6
-      || finalizedEmptyContext.snapshot.effectIds.length !== 6) {
+      || finalizedEmptyContext.snapshot.entries.length !== 5
+      || finalizedEmptyContext.snapshot.effectIds.length !== 5) {
       failures.push('empty output bindings emitted a broad provider read or produced false related context');
     }
-    const missingRelationRunPath = 'soter/fixtures/meeting-intake/missing-relation-selftest.run.json';
-    const missingRelationRun = structuredClone(connectedContextRun);
-    missingRelationRun.id = 'run.meeting-intake.missing-relation-selftest';
-    writeJson(path.join(temp, missingRelationRunPath), missingRelationRun);
-    const missingOrganizationUri = 'https://app.notion.com/missing-bound-organization';
+    const missingOrganizationUri
+      = 'https://www.notion.so/Missing-organization-44444444444444444444444444444444';
+    const preparedMissingRelationWork = await prepareAutomationRun({
+      root: temp,
+      automationId: 'automation.meeting-intake',
+      configurationName: 'meeting-intake',
+      configurationBasis: 'private-active',
+      preparationMode: 'connected-acquisition',
+      input: {
+        meeting: 'meeting.fixture-001',
+        recordingUri: connectedContextRecording,
+        operatorGoal: 'Exercise the missing exact relation connected-context path.'
+      },
+      createdAt: '2026-07-15T12:00:15.900Z'
+    });
     const preparedMissingRelation = await prepareMeetingIntakeConnectedContext({
       root: temp,
-      lockPath,
-      runPath: missingRelationRunPath,
-      snapshotId: 'context.meeting-intake.connected.missing-relation-selftest',
-      meetingId: 'meeting.missing-relation-selftest',
-      recordingUri: connectedContextRecording,
+      workId: preparedMissingRelationWork.id,
       at: '2026-07-15T12:00:16.000Z',
       expectedHost: 'codex'
     });
-    let missingRelationTranscript = await completeDurableOperationPlanExecution({
+    const missingRelationTranscript = (await completeContextPolicyBodies({
       root: temp,
-      checkpointId: preparedMissingRelation.checkpoint.id,
-      callId: preparedMissingRelation.currentCall.id,
-      response: contextPolicyResponse,
-      at: '2026-07-15T12:00:17.000Z',
-      expectedHost: 'codex'
-    });
-    missingRelationTranscript = (await completeContextPolicyBodies({
-      root: temp,
-      execution: missingRelationTranscript,
+      execution: preparedMissingRelation,
       bindings: contextPolicyBindings,
       atSecond: '2026-07-15T12:00:17'
     })).execution;
@@ -3873,13 +3181,12 @@ export async function selftest(root) {
           result: {
             results: [{
               __soterType: 'meeting',
-              __soterId: 'https://app.notion.com/missing-relation-meeting',
+              __soterId: 'https://app.notion.com/p/11111111111111111111111111111111',
               __soterFields: JSON.stringify({
                 title: 'Meeting with a missing organization relation',
                 meetingType: 'Project Sync',
                 recordingUri: connectedContextRecording,
-                organizationUris: JSON.stringify([missingOrganizationUri]),
-                participantIds: '[]'
+                organizationUris: JSON.stringify([missingOrganizationUri])
               })
             }],
             has_more: false
@@ -3914,7 +3221,7 @@ export async function selftest(root) {
     });
     if (!missingRelationRejected
       || missingRelationOrganization.currentCall?.arguments?.data?.params?.[0]
-        !== missingOrganizationUri
+        !== missingOrganizationUri.slice(-32)
       || completedMissingRelation.checkpoint.state !== 'completed'
       || missingTailSteps
         .some((step) => step.state !== 'skipped' || step.call !== null)
@@ -3924,72 +3231,45 @@ export async function selftest(root) {
       ))) {
       failures.push('missing bound records were accepted as complete related context');
     }
-    const blockedWritePlan = await prepareDurableOperationPlanExecution({
-      root: temp,
-      lockPath,
-      runPath: 'soter/fixtures/meeting-intake/preflight.run.json',
-      plan: {
-        $contract: 'soter://contracts/operation-plan/v1',
-        contractVersion: '1.0.0',
+    let blockedWritePlanRejected = false;
+    try {
+      await prepareDurableOperationPlanExecution({
+        root: temp,
+        lockPath,
+        configurationBasis: 'private-active',
+        runPath: privateEnvelopeRunPath,
+        plan: {
+        $contract: 'soter://contracts/operation-plan/v2',
+        contractVersion: '2.0.0',
         id: 'plan.meeting-intake.blocked-write-selftest',
         runId: envelope.id,
         createdAt: '2026-07-15T12:00:04.000Z',
         mode: 'sequential',
         failurePolicy: 'stop',
-        reason: 'Prove that a sequential plan cannot grant itself confirmation-gated write authority.',
+        reason: 'Prove that a sequential plan cannot invent the removed Meeting-summary write binding.',
         steps: [{
           id: 'step.create-summary',
-          capability: 'crm.records.create',
-          authority: 'authority.crm.instance',
+          capability: 'meetings.records.create',
+          authority: 'authority.meetings.instance',
           providerImplementation: connectedProviders.notionWrites.id,
           input: {
             recordType: 'meeting-summary',
             deduplicationKey: 'selftest:operation-plan-blocked',
             fields: { title: 'Blocked plan summary' }
           },
-          reason: 'Attempt one confirmation-gated write without an approval binding.'
+          inputBindings: [],
+          reason: 'Attempt one unavailable Meeting-summary write without a selected capability binding.'
         }]
       },
       at: '2026-07-15T12:00:04.000Z',
       expectedHost: 'codex'
-    });
-    if (blockedWritePlan.checkpoint.state !== 'blocked'
-      || blockedWritePlan.currentCall !== null
-      || blockedWritePlan.checkpoint.steps[0]?.call?.arguments !== null) {
-      failures.push('operation plan widened authorization or emitted a blocked write request');
+      });
+    } catch (error) {
+      blockedWritePlanRejected = error.message.includes('cannot be prepared')
+        && error.message.includes('No resolved binding for meetings.records.create.');
     }
-    const conflicting = proposeMeetingIntakeChangeSet({
-      root: temp,
-      lock,
-      snapshot: transaction.snapshot,
-      decision: transaction.decision,
-      id: 'changeset.meeting-intake.rollback-fixture',
-      runId: transaction.envelope.id,
-      createdAt: FIXTURE_TIME
-    });
-    conflicting.operations[0].input.expectedVersion = '999';
-    conflicting.operations[0].inputFingerprint = fingerprintJson(conflicting.operations[0].input);
-    conflicting.scopeFingerprint = changeSetScopeFingerprint(conflicting);
-    const rollbackApproval = approveChangeSet({
-      changeSet: conflicting,
-      id: 'approval.meeting-intake.rollback-fixture',
-      runId: conflicting.runId,
-      createdAt: FIXTURE_TIME,
-      actor: 'fixture.user',
-      reason: 'Approve the planted-conflict batch to prove contained rollback behavior.'
-    });
-    const rolledBack = await executeContainedMeetingIntakeChangeSet({
-      root: temp,
-      lock,
-      changeSet: conflicting,
-      approval: rollbackApproval,
-      at: FIXTURE_TIME
-    });
-    if (rolledBack.changeSet.state !== 'rolled-back'
-      || rolledBack.changeSet.transaction.rollbackState !== 'passed'
-      || rolledBack.changeSet.transaction.restoredFingerprint
-        !== rolledBack.changeSet.transaction.checkpointFingerprint) {
-      failures.push('planted expected-version conflict did not restore the fixture checkpoint');
+    if (!blockedWritePlanRejected) {
+      failures.push('operation plan invented a removed Meeting write binding or emitted a provider request');
     }
     const writeDecision = evaluateEffectPolicy(lock, ['write']);
     if (writeDecision[0].decision !== 'blocked') {
@@ -4001,7 +3281,7 @@ export async function selftest(root) {
     }
     const hostReadInput = {
       recordTypes: ['meeting'],
-      ids: ['https://app.notion.com/meeting-selftest'],
+      ids: ['https://www.notion.so/Meeting-selftest-55555555555555555555555555555555'],
       limit: 1
     };
     const preparedHostRead = await prepareHostToolCall({
@@ -4009,8 +3289,8 @@ export async function selftest(root) {
       lock,
       runId: 'run.meeting-intake.fixture',
       callId: 'toolcall.selftest.notion-read',
-      capability: 'crm.records.read',
-      authority: 'authority.crm.instance',
+      capability: 'meetings.records.read',
+      authority: 'authority.meetings.instance',
       providerImplementation: connectedProviders.notion.id,
       input: hostReadInput,
       at: FIXTURE_TIME
@@ -4020,8 +3300,8 @@ export async function selftest(root) {
       lock: claudeLock,
       runId: 'run.meeting-intake.fixture',
       callId: 'toolcall.selftest.claude-notion-read',
-      capability: 'crm.records.read',
-      authority: 'authority.crm.instance',
+      capability: 'meetings.records.read',
+      authority: 'authority.meetings.instance',
       providerImplementation: connectedProviders.notion.id,
       input: hostReadInput,
       at: FIXTURE_TIME
@@ -4031,37 +3311,37 @@ export async function selftest(root) {
       lock,
       runId: 'run.meeting-intake.fixture',
       callId: 'toolcall.selftest.notion-multi-target-read',
-      capability: 'crm.records.read',
-      authority: 'authority.crm.instance',
+      capability: 'meetings.records.read',
+      authority: 'authority.meetings.instance',
       providerImplementation: connectedProviders.notion.id,
       input: { recordTypes: ['meeting', 'task'], limit: 1 },
       at: FIXTURE_TIME
     });
-    const hostReadResponse = {
-      content: [
+    const hostReadPayload = {
+      results: [
         {
-          type: 'text',
-          text: JSON.stringify({
-            results: [
-              {
-                __soterType: 'meeting',
-                __soterId: 'https://app.notion.com/meeting-selftest',
-                __soterFields: JSON.stringify({
-                  title: 'Selftest meeting',
-                  meetingType: 'Project Sync',
-                  recordingUri: 'https://otter.ai/u/host-read-selftest',
-                  organizationUris: JSON.stringify(['https://app.notion.com/org-selftest']),
-                  participantIds: JSON.stringify(['user.selftest'])
-                })
-              }
-            ],
-            has_more: false,
-            data_source_ids: ['selftest']
+          __soterType: 'meeting',
+          __soterId: 'https://www.notion.so/Provider-slug-55555555-5555-5555-5555-555555555555',
+          __soterFields: JSON.stringify({
+            title: 'Selftest meeting',
+            meetingType: 'Project Sync',
+            recordingUri: 'https://otter.ai/u/host-read-selftest',
+            organizationUris: JSON.stringify([
+              'https://app.notion.com/p/22222222222222222222222222222222'
+            ]),
+            privateProviderField: 'response-only-marker'
           })
         }
       ],
-      isError: false,
-      providerSecretMaterial: 'response-only-marker'
+      has_more: false,
+      data_source_ids: [
+        lock.settings['integration.notion'].targets.meetings
+          .slice('collection://'.length)
+      ]
+    };
+    const hostReadResponse = {
+      content: [{ type: 'text', text: JSON.stringify(hostReadPayload) }],
+      isError: false
     };
     const completedHostRead = await completeHostToolCall({
       root: temp,
@@ -4071,25 +3351,33 @@ export async function selftest(root) {
       response: hostReadResponse,
       at: FIXTURE_TIME
     });
+    if (preparedClaudeHostRead.call.state !== 'requested') {
+      throw new Error(
+        'Claude Notion read preparation did not produce one exact requested host call.'
+      );
+    }
     const completedClaudeHostRead = await completeHostToolCall({
       root: temp,
       lock: claudeLock,
       call: preparedClaudeHostRead.call,
       input: hostReadInput,
-      response: hostReadResponse,
+      response: hostReadPayload,
       at: FIXTURE_TIME
     });
     if (preparedHostRead.call.state !== 'requested'
       || preparedHostRead.call.transport.server !== 'notion'
       || preparedHostRead.call.transport.operation !== 'query_data_sources'
       || preparedHostRead.call.transport.tool
-        !== 'mcp__codex_apps__notion_notion_query_data_sources'
+        !== 'mcp__codex_apps__notion_query_data_sources'
       || completedHostRead.call.state !== 'completed'
       || completedHostRead.output?.records[0]?.id
-        !== 'https://app.notion.com/meeting-selftest'
+        !== 'https://www.notion.so/55555555555555555555555555555555'
+      || completedHostRead.output?.records[0]?.identityBinding?.state !== 'exact-request'
+      || completedHostRead.output?.records[0]?.identityBinding?.requestedIdFingerprint
+        !== fingerprintJson(hostReadInput.ids[0])
       || !completedHostRead.output?.records[0]?.version?.startsWith('sha256:')
       || completedHostRead.output?.records[0]?.fields?.organizationUris?.[0]
-        !== 'https://app.notion.com/org-selftest'
+        !== 'https://www.notion.so/22222222222222222222222222222222'
       || JSON.stringify(completedHostRead.call).includes('response-only-marker')) {
       failures.push('Notion read bridge did not preserve mapped native dispatch, typed normalization, and response minimization');
     }
@@ -4109,7 +3397,7 @@ export async function selftest(root) {
       || rejectedMultiTargetRead.call.error?.kind !== 'validation') {
       failures.push('Notion read bridge silently relied on plan-gated cross-data-source SQL');
     }
-    const definitionBinding = contextPolicyBindings[0];
+    const definitionBinding = applicablePolicySources(lock)[0];
     const definitionInput = {
       uri: definitionBinding.documentUri,
       expectedTitle: definitionBinding.title
@@ -4120,7 +3408,7 @@ export async function selftest(root) {
       runId: 'run.meeting-intake.fixture',
       callId: 'toolcall.selftest.notion-definition-read',
       capability: 'documents.content.read',
-      authority: 'authority.crm.definition',
+      authority: definitionBinding.authority,
       providerImplementation: connectedProviders.notion.id,
       input: definitionInput,
       at: FIXTURE_TIME
@@ -4145,7 +3433,7 @@ export async function selftest(root) {
       runId: 'run.meeting-intake.fixture',
       callId: 'toolcall.selftest.notion-definition-mismatch',
       capability: 'documents.content.read',
-      authority: 'authority.crm.definition',
+      authority: definitionBinding.authority,
       providerImplementation: connectedProviders.notion.id,
       input: definitionInput,
       at: FIXTURE_TIME
@@ -4166,7 +3454,7 @@ export async function selftest(root) {
       root: temp,
       lock,
       capability: 'documents.content.read',
-      authority: 'authority.crm.definition',
+      authority: definitionBinding.authority,
       containment: 'fixture',
       input: definitionInput,
       effectId: 'effect.meeting-intake.definition-read.fixture',
@@ -4186,18 +3474,121 @@ export async function selftest(root) {
       || fixtureDefinitionRead.output?.document.title !== definitionBinding.title) {
       failures.push('document definition read did not preserve exact identity, bounded normalization, fixture parity, and mismatch rejection');
     }
+    const documentUpdateUri = 'https://www.notion.so/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const documentUpdateTitle = 'Document update selftest';
+    const documentBefore = '# Document update selftest\n\nKeep this prefix.\n\n'
+      + 'Milestone: progress=pending health=unknown\n\nKeep this suffix.';
+    const documentAfter = '# Document update selftest\n\nKeep this prefix.\n\n'
+      + 'Milestone: progress=in-progress health=on-track\n\nKeep this suffix.';
+    const documentUpdateInput = {
+      uri: documentUpdateUri,
+      expectedTitle: documentUpdateTitle,
+      expectedBodyFingerprint: fingerprintJson(documentBefore),
+      updates: [{
+        id: 'milestone-state',
+        oldText: 'Milestone: progress=pending health=unknown',
+        newText: 'Milestone: progress=in-progress health=on-track',
+        replaceAllMatches: false
+      }]
+    };
+    const preparedDocumentUpdate = await prepareHostToolCall({
+      root: temp,
+      lock: projectPulseLock,
+      runId: 'run.project-pulse.document-update-selftest',
+      callId: 'toolcall.selftest.notion-document-update',
+      capability: 'documents.content.update',
+      authority: 'authority.projects.instance',
+      providerImplementation: connectedProviders.notion.id,
+      input: documentUpdateInput,
+      at: FIXTURE_TIME,
+      approvedEffects: ['write']
+    });
+    const completedDocumentUpdate = await completeHostToolCall({
+      root: temp,
+      lock: projectPulseLock,
+      call: preparedDocumentUpdate.call,
+      input: documentUpdateInput,
+      response: {
+        structuredContent: {
+          result: { id: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }
+        }
+      },
+      at: FIXTURE_TIME
+    });
+    const documentRuntimeState = createFixtureRuntimeState(temp);
+    const fixtureDocumentUpdate = await invokeCapability({
+      root: temp,
+      lock: projectPulseLock,
+      capability: 'documents.content.update',
+      authority: 'authority.projects.instance',
+      containment: 'fixture',
+      input: documentUpdateInput,
+      effectId: 'effect.project-pulse.document-update.fixture',
+      at: FIXTURE_TIME,
+      approvedEffects: ['write'],
+      runtimeState: documentRuntimeState
+    });
+    const fixtureDocumentReadAfter = await invokeCapability({
+      root: temp,
+      lock: projectPulseLock,
+      capability: 'documents.content.read',
+      authority: 'authority.projects.instance',
+      containment: 'fixture',
+      input: { uri: documentUpdateUri, expectedTitle: documentUpdateTitle },
+      effectId: 'effect.project-pulse.document-read-after.fixture',
+      at: FIXTURE_TIME,
+      runtimeState: documentRuntimeState
+    });
+    const fixtureDocumentReplay = await invokeCapability({
+      root: temp,
+      lock: projectPulseLock,
+      capability: 'documents.content.update',
+      authority: 'authority.projects.instance',
+      containment: 'fixture',
+      input: documentUpdateInput,
+      effectId: 'effect.project-pulse.document-update-replay.fixture',
+      at: FIXTURE_TIME,
+      approvedEffects: ['write'],
+      runtimeState: documentRuntimeState
+    });
+    if (preparedDocumentUpdate.call.transport.operation !== 'update_page'
+      || preparedDocumentUpdate.call.transport.tool
+        !== 'mcp__codex_apps__notion_notion_update_page'
+      || preparedDocumentUpdate.call.arguments.command !== 'update_content'
+      || preparedDocumentUpdate.call.arguments.content_updates?.length !== 1
+      || preparedDocumentUpdate.call.arguments.content_updates[0].replace_all_matches !== false
+      || completedDocumentUpdate.call.state !== 'completed'
+      || completedDocumentUpdate.output?.accepted !== true
+      || completedDocumentUpdate.output?.changeFingerprint !== fingerprintJson(documentUpdateInput)
+      || fixtureDocumentUpdate.invocation.state !== 'passed'
+      || fixtureDocumentReadAfter.invocation.state !== 'passed'
+      || fixtureDocumentReadAfter.output?.document.body !== documentAfter
+      || fixtureDocumentReadAfter.output?.document.bodyFingerprint !== fingerprintJson(documentAfter)
+      || fixtureDocumentReplay.invocation.state !== 'failed'
+      || fixtureDocumentReplay.invocation.error?.kind !== 'conflict') {
+      failures.push('targeted document update did not preserve exact reviewed replacement, host translation, fixture mutation, read-back, and no-retry conflict semantics');
+    }
     const blockedHostWrite = await prepareHostToolCall({
       root: temp,
-      lock,
-      runId: 'run.meeting-intake.fixture',
+      lock: taskCaptureLock,
+      runId: 'run.task-capture.fixture',
       callId: 'toolcall.selftest.notion-write-blocked',
-      capability: 'crm.records.create',
-      authority: 'authority.crm.instance',
+      capability: 'tasks.records.create',
+      authority: 'authority.tasks.instance',
       providerImplementation: connectedProviders.notionWrites.id,
       input: {
-        recordType: 'meeting-summary',
+        recordType: 'task',
         deduplicationKey: 'selftest:mcp-blocked',
-        fields: { title: 'Blocked host write' }
+        deduplicationFilter: {
+          field: 'title',
+          value: 'Blocked host write'
+        },
+        fields: {
+          title: 'Blocked host write',
+          status: 'To Do',
+          context: 'Project',
+          projectUris: ['https://www.notion.so/cccccccccccccccccccccccccccccccc']
+        }
       },
       at: FIXTURE_TIME
     });
@@ -4206,31 +3597,7 @@ export async function selftest(root) {
       || blockedHostWrite.call.arguments !== null) {
       failures.push('confirmation-required write emitted an MCP tool request before approval');
     }
-    const mappedCreateInput = createProposal.operations[0].input;
-    const preparedMappedCreate = await prepareHostToolCall({
-      root: temp,
-      lock,
-      runId: createProposal.runId,
-      callId: 'toolcall.selftest.notion-mapped-create',
-      capability: 'crm.records.create',
-      authority: 'authority.crm.instance',
-      providerImplementation: connectedProviders.notion.id,
-      input: mappedCreateInput,
-      at: FIXTURE_TIME,
-      approvedEffects: ['write']
-    });
-    const completedMappedCreate = await completeHostToolCall({
-      root: temp,
-      lock,
-      call: preparedMappedCreate.call,
-      input: mappedCreateInput,
-      response: {
-        structuredContent: {
-          result: { pages: [{ id: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' }] }
-        }
-      },
-      at: FIXTURE_TIME
-    });
+    const mappedHostRunId = 'run.meeting-intake.fixture';
     const mappedTaskCreateInput = {
       recordType: 'task',
       deduplicationKey: 'Prepare mapped task create',
@@ -4249,11 +3616,11 @@ export async function selftest(root) {
     };
     const preparedMappedTaskCreate = await prepareHostToolCall({
       root: temp,
-      lock,
-      runId: createProposal.runId,
+      lock: taskCaptureLock,
+      runId: mappedHostRunId,
       callId: 'toolcall.selftest.notion-mapped-task-create',
-      capability: 'crm.records.create',
-      authority: 'authority.crm.instance',
+      capability: 'tasks.records.create',
+      authority: 'authority.tasks.instance',
       providerImplementation: connectedProviders.notion.id,
       input: mappedTaskCreateInput,
       at: FIXTURE_TIME,
@@ -4261,7 +3628,7 @@ export async function selftest(root) {
     });
     const completedMappedTaskCreate = await completeHostToolCall({
       root: temp,
-      lock,
+      lock: taskCaptureLock,
       call: preparedMappedTaskCreate.call,
       input: mappedTaskCreateInput,
       response: {
@@ -4272,71 +3639,97 @@ export async function selftest(root) {
       at: FIXTURE_TIME
     });
     const mappedTaskProperties = preparedMappedTaskCreate.call.arguments?.pages?.[0]?.properties;
+    const mappedStatusCreateInput = {
+      recordType: 'project-feed-entry',
+      deduplicationKey: 'project.pulse-healthy:2026-07-20:Healthy launch is on track',
+      deduplicationFilter: {
+        field: 'headline',
+        value: 'Healthy launch is on track'
+      },
+      fields: {
+        headline: 'Healthy launch is on track',
+        category: 'Status',
+        date: '2026-07-20',
+        summary: 'Done: launch brief approved.\nIn progress: publish the launch brief.',
+        processed: false,
+        visibility: 'Internal',
+        projectIds: ['https://www.notion.so/cccccccccccccccccccccccccccccccc']
+      }
+    };
+    const preparedMappedStatusCreate = await prepareHostToolCall({
+      root: temp,
+      lock: projectPulseLock,
+      runId: mappedHostRunId,
+      callId: 'toolcall.selftest.notion-mapped-status-create',
+      capability: 'projects.records.create',
+      authority: 'authority.projects.instance',
+      providerImplementation: connectedProviders.notion.id,
+      input: mappedStatusCreateInput,
+      at: FIXTURE_TIME,
+      approvedEffects: ['write']
+    });
+    const completedMappedStatusCreate = await completeHostToolCall({
+      root: temp,
+      lock: projectPulseLock,
+      call: preparedMappedStatusCreate.call,
+      input: mappedStatusCreateInput,
+      response: {
+        structuredContent: {
+          result: { pages: [{ id: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' }] }
+        }
+      },
+      at: FIXTURE_TIME
+    });
+    const mappedStatusProperties = preparedMappedStatusCreate.call.arguments?.pages?.[0]?.properties;
     const invalidMappedTaskDate = structuredClone(mappedTaskCreateInput);
     invalidMappedTaskDate.fields.nextActionOn = '2026-02-30';
     const rejectedMappedTaskDate = await prepareHostToolCall({
       root: temp,
-      lock,
-      runId: createProposal.runId,
+      lock: taskCaptureLock,
+      runId: mappedHostRunId,
       callId: 'toolcall.selftest.notion-invalid-task-date',
-      capability: 'crm.records.create',
-      authority: 'authority.crm.instance',
+      capability: 'tasks.records.create',
+      authority: 'authority.tasks.instance',
       providerImplementation: connectedProviders.notion.id,
       input: invalidMappedTaskDate,
       at: FIXTURE_TIME,
       approvedEffects: ['write']
     });
-    const mappedUpdateInput = updateProposal.operations[0].input;
-    const preparedMappedUpdate = await prepareHostToolCall({
-      root: temp,
-      lock,
-      runId: updateProposal.runId,
-      callId: 'toolcall.selftest.notion-mapped-update',
-      capability: 'crm.records.update',
-      authority: 'authority.crm.instance',
-      providerImplementation: connectedProviders.notion.id,
-      input: mappedUpdateInput,
-      at: FIXTURE_TIME,
-      approvedEffects: ['write']
-    });
-    const completedMappedUpdate = await completeHostToolCall({
-      root: temp,
-      lock,
-      call: preparedMappedUpdate.call,
-      input: mappedUpdateInput,
-      response: {
-        structuredContent: { result: { id: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' } }
-      },
-      at: FIXTURE_TIME
-    });
-    if (preparedMappedCreate.call.transport.operation !== 'create_pages'
-      || preparedMappedCreate.call.transport.tool
-        !== 'mcp__codex_apps__notion_notion_create_pages'
-      || preparedMappedCreate.call.arguments.pages.length !== 1
-      || completedMappedCreate.call.state !== 'completed'
-      || completedMappedCreate.output?.created !== true
-      || preparedMappedTaskCreate.call.transport.operation !== 'create_pages'
+    if (preparedMappedTaskCreate.call.transport.operation !== 'create_pages'
       || preparedMappedTaskCreate.call.arguments.parent.data_source_id
-        !== '2abd79b5-de38-80f8-9470-000b7181b18d'
+        !== expectedTaskDataSourceId
       || mappedTaskProperties?.Name !== 'Prepare mapped task create'
-      || mappedTaskProperties?.Status !== 'To Do'
-      || mappedTaskProperties?.Context !== 'Project'
-      || mappedTaskProperties?.Project
+      || mappedTaskProperties?.Status !== privateTaskStatus
+      || mappedTaskProperties?.Context !== privateTaskContext
+      || JSON.stringify(mappedTaskProperties?.Project)
         !== JSON.stringify(['https://www.notion.so/cccccccccccccccccccccccccccccccc'])
-      || mappedTaskProperties?.['Assigned To'] !== JSON.stringify(['provider-person-selftest'])
+      || JSON.stringify(mappedTaskProperties?.['Assigned To'])
+        !== JSON.stringify(['provider-person-selftest'])
       || mappedTaskProperties?.['date:Next Action:start'] !== '2026-07-24'
       || mappedTaskProperties?.['date:Next Action:is_datetime'] !== 0
       || completedMappedTaskCreate.call.state !== 'completed'
+      || completedMappedTaskCreate.output?.record?.fields?.status !== 'To Do'
+      || completedMappedTaskCreate.output?.record?.fields?.context !== 'Project'
       || completedMappedTaskCreate.output?.record?.fields?.nextActionOn !== '2026-07-24'
+      || preparedMappedStatusCreate.call.transport.operation !== 'create_pages'
+      || preparedMappedStatusCreate.call.arguments.parent.data_source_id
+        !== expectedUpdateDataSourceId
+      || mappedStatusProperties?.Update !== 'Healthy launch is on track'
+      || mappedStatusProperties?.Category !== 'Private Status'
+      || mappedStatusProperties?.['date:Date:start'] !== '2026-07-20'
+      || mappedStatusProperties?.['date:Date:is_datetime'] !== 0
+      || mappedStatusProperties?.Summary
+        !== 'Done: launch brief approved.\nIn progress: publish the launch brief.'
+      || mappedStatusProperties?.Processed !== '__NO__'
+      || mappedStatusProperties?.Visibility !== 'Private Internal'
+      || JSON.stringify(mappedStatusProperties?.['📁 [DB] Projects'])
+        !== JSON.stringify(['https://www.notion.so/cccccccccccccccccccccccccccccccc'])
+      || completedMappedStatusCreate.call.state !== 'completed'
+      || completedMappedStatusCreate.output?.record?.type !== 'project-feed-entry'
       || rejectedMappedTaskDate.call.state !== 'failed'
       || rejectedMappedTaskDate.call.transport.tool !== null
-      || preparedMappedUpdate.call.transport.operation !== 'update_page'
-      || preparedMappedUpdate.call.transport.tool
-        !== 'mcp__codex_apps__notion_notion_update_page'
-      || preparedMappedUpdate.call.arguments.command !== 'update_properties'
-      || completedMappedUpdate.call.state !== 'completed'
-      || completedMappedUpdate.output?.changedFields?.[0] !== 'status') {
-      failures.push('mapped Notion writes did not translate and normalize through exact native host routes');
+      ) {
+      failures.push('mapped supported Notion creates did not translate and normalize through exact native host routes');
     }
     const failedHostRead = failHostToolCall({
       root: temp,
@@ -4353,8 +3746,8 @@ export async function selftest(root) {
       lock,
       runId: 'run.meeting-intake.fixture',
       callId: 'toolcall.selftest.credential-leak',
-      capability: 'crm.records.read',
-      authority: 'authority.crm.instance',
+      capability: 'meetings.records.read',
+      authority: 'authority.meetings.instance',
       providerImplementation: connectedProviders.notion.id,
       input: hostReadInput,
       at: FIXTURE_TIME,
@@ -4459,25 +3852,24 @@ export async function selftest(root) {
     }
     const replayState = createFixtureRuntimeState(temp);
     const createInput = {
-      recordType: 'meeting-summary',
-      deduplicationKey: 'https://otter.ai/u/selftest-deduplication',
+      recordType: 'task',
+      deduplicationKey: 'Selftest replay task',
       deduplicationFilter: {
-        field: 'link',
-        value: 'https://otter.ai/u/selftest-deduplication'
+        field: 'title',
+        value: 'Selftest replay task'
       },
       fields: {
-        title: 'Selftest summary',
-        documentType: 'Meeting Summary',
-        description: 'A grounded summary used to prove fixture replay safety.',
-        link: 'https://otter.ai/u/selftest-deduplication'
-      },
-      body: 'A grounded summary used to prove fixture replay safety.'
+        title: 'Selftest replay task',
+        status: 'To Do',
+        context: 'Project',
+        projectUris: ['https://www.notion.so/cccccccccccccccccccccccccccccccc']
+      }
     };
     const firstCreate = await invokeCapability({
       root: temp,
-      lock,
-      capability: 'crm.records.create',
-      authority: 'authority.crm.instance',
+      lock: taskCaptureLock,
+      capability: 'tasks.records.create',
+      authority: 'authority.tasks.instance',
       containment: 'fixture',
       input: createInput,
       effectId: 'effect.selftest.create-first',
@@ -4487,9 +3879,9 @@ export async function selftest(root) {
     });
     const replayCreate = await invokeCapability({
       root: temp,
-      lock,
-      capability: 'crm.records.create',
-      authority: 'authority.crm.instance',
+      lock: taskCaptureLock,
+      capability: 'tasks.records.create',
+      authority: 'authority.tasks.instance',
       containment: 'fixture',
       input: createInput,
       effectId: 'effect.selftest.create-replay',
@@ -4504,15 +3896,15 @@ export async function selftest(root) {
     }
     const beforeInvalidContextWrite = fingerprintJson(replayState);
     const invalidContextCreateInput = structuredClone(createInput);
-    invalidContextCreateInput.deduplicationKey = 'https://otter.ai/u/invalid-context-field';
+    invalidContextCreateInput.deduplicationKey = 'Invalid task context field';
     invalidContextCreateInput.deduplicationFilter.value = invalidContextCreateInput.deduplicationKey;
-    invalidContextCreateInput.fields.link = invalidContextCreateInput.deduplicationKey;
+    invalidContextCreateInput.fields.title = invalidContextCreateInput.deduplicationKey;
     invalidContextCreateInput.fields.transcriptGrounded = true;
     const invalidContextCreate = await invokeCapability({
       root: temp,
-      lock,
-      capability: 'crm.records.create',
-      authority: 'authority.crm.instance',
+      lock: taskCaptureLock,
+      capability: 'tasks.records.create',
+      authority: 'authority.tasks.instance',
       containment: 'fixture',
       input: invalidContextCreateInput,
       effectId: 'effect.selftest.create-invalid-context-field',
@@ -4522,7 +3914,7 @@ export async function selftest(root) {
     });
     if (invalidContextCreate.invocation.state !== 'failed'
       || invalidContextCreate.invocation.error?.kind !== 'validation'
-      || !invalidContextCreate.invocation.error?.message.includes('Context record model')
+      || invalidContextCreate.invocation.error?.code !== 'HOST_CALL_VALIDATION_FAILED'
       || fingerprintJson(replayState) !== beforeInvalidContextWrite) {
       failures.push('Core did not reject a provider-neutral write field absent from Context before fixture dispatch');
     }
@@ -4581,7 +3973,7 @@ export async function selftest(root) {
     return false;
   }
   process.stdout.write(
-    'CORE SELFTEST PASS: deterministic source-bound and host-selectable locks, fingerprinted explainable configuration views, portable Codex and Claude request/result projection, typed fixture reads/writes, grounded Automation decisions with explicit ambiguity and abstention, exact-scope approval with selected-activity private review, compiler-exact request batches, deduplication, expected-version conflicts, rollback, read-after-write verification, resumable fixed and bound sequential operation plans, approval-bound connected update transactions and terminal creates with exact record/content verification, reverse compensation, and read-only ambiguity reconciliation, bounded connected context finalization with exact applicable policy bodies, resumable MCP host dispatch, exact-lock single and multi-step provider probes including minimized document reads, schema and identity drift rejection, exact subject-scoped maturity applicability, connected readiness, expiry, honest states, and stale-lock detection.\n'
+    'CORE SELFTEST PASS: deterministic source-bound and host-selectable locks, fingerprinted explainable configuration views, portable Codex and Claude request/result projection, typed fixture reads/writes, grounded Automation decisions with explicit ambiguity and abstention, exact-scope approval with selected-activity private review, compiler-exact request batches, deduplication, compare-before-write preconditions, read-after-write verification, resumable fixed and bound sequential operation plans, approval-bound connected update transactions and terminal creates with exact record/content verification, no automatic write retry or invented compensation, and read-only ambiguity reconciliation, bounded connected context finalization with exact applicable policy bodies, resumable MCP host dispatch, exact-lock single and multi-step provider probes including minimized document reads, schema and identity drift rejection, exact subject-scoped maturity applicability, connected readiness, expiry, honest states, and stale-lock detection.\n'
   );
   return true;
 }

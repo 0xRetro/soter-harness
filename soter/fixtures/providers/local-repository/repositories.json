@@ -1,0 +1,54 @@
+{
+  "$contract": "soter://contracts/provider-fixture/v1",
+  "contractVersion": "1.0.0",
+  "id": "fixture.local-repository.repositories",
+  "provider": "provider.integration.local-repository.fixture",
+  "observedAt": "2026-07-21T20:00:00.000Z",
+  "data": {
+    "repositories": [
+      {
+        "uri": "repo-fixture://process-platform",
+        "revision": "0123456789abcdef0123456789abcdef01234567",
+        "state": "clean",
+        "remote": "https://example.invalid/soter/process-platform.git",
+        "sourceFileCount": 137,
+        "readmeObserved": true,
+        "capabilities": [
+          {
+            "id": "reusable-integrator-onboarding",
+            "name": "Reusable integrator-onboarding guide",
+            "why": "Manual re-explanation wastes time and makes the first successful integration inconsistent.",
+            "summary": "A self-serve path guides a new integrator from repository setup to a first contained successful integration.",
+            "currentState": "The repository contains a documented onboarding flow and implementation entry points.",
+            "evidence": [
+              { "relativePath": "README.md", "contentFingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111" },
+              { "relativePath": "src/integrations/onboarding.ts", "contentFingerprint": "sha256:2222222222222222222222222222222222222222222222222222222222222222" }
+            ]
+          },
+          {
+            "id": "schema-derived-template-editor",
+            "name": "Schema-derived template editor",
+            "why": "Stable schema-derived identities prevent reordered fields from scrambling operator state.",
+            "summary": "The editor derives stable field controls and validation from the current process schema.",
+            "currentState": "Source modules implement stable schema-derived field keys and an ordered editor sequence.",
+            "evidence": [
+              { "relativePath": "packages/editor/required-field-expression.ts", "contentFingerprint": "sha256:3333333333333333333333333333333333333333333333333333333333333333" },
+              { "relativePath": "packages/editor/EditorSequenceRail.tsx", "contentFingerprint": "sha256:4444444444444444444444444444444444444444444444444444444444444444" }
+            ]
+          },
+          {
+            "id": "contained-validation-gate",
+            "name": "Contained template validation gate",
+            "why": "Template changes need deterministic validation before they become reusable process definitions.",
+            "summary": "A contained command validates template structure and required expressions without publishing changes.",
+            "currentState": "The repository exposes a templates check and local test boundary.",
+            "evidence": [
+              { "relativePath": "package.json", "contentFingerprint": "sha256:5555555555555555555555555555555555555555555555555555555555555555" },
+              { "relativePath": "scripts/templates-check.ts", "contentFingerprint": "sha256:6666666666666666666666666666666666666666666666666666666666666666" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,183 @@
+{
+  "$contract": "soter://contracts/evidence/v2",
+  "contractVersion": "2.0.0",
+  "id": "evidence.project-decision-resolution.legacy-project-management-decision-migration.fixture",
+  "createdAt": "2026-07-22T12:00:00.000Z",
+  "claimFamily": "migration",
+  "claim": "The exact target becomes canonical for this legacy responsibility and its fallback may be removed under the recorded parity decision; a mixed source artifact may remain only for separately unfinished responsibilities.",
+  "subject": {
+    "type": "pack",
+    "id": "automation.project-decision-resolution",
+    "version": "0.1.0"
+  },
+  "configurationLockFingerprint": "sha256:3cceb56bdd08b4cab872711f6972927773d78810beb5c845e741c6b1ad3de558",
+  "graphFingerprint": "sha256:1a9d3a912a2a697928cc2bdb7921fb4669a66a3e27cab43346ec706467394242",
+  "dependencies": [
+    {
+      "id": "kernel.soter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+    },
+    {
+      "id": "core.runtime",
+      "version": "0.1.0",
+      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+    },
+    {
+      "id": "context.projects",
+      "version": "0.1.0",
+      "fingerprint": "sha256:e8b68449ec9582d769c56d9b9cdf9ed3a6f220c15593a614ac13e9a656cf0ce5"
+    },
+    {
+      "id": "automation.project-decision-resolution",
+      "version": "0.1.0",
+      "fingerprint": "sha256:d709c8d13e9fe4561507f9402bbc72ac088d02fd5e73e2f4677ad359a5035592"
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "fingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
+  },
+  "integrations": [
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "manifestFingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5",
+      "evidenceMaturity": "declared"
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "declarationFingerprint": "sha256:e3e11d347b7a0109668facaeb7b12311023da39949d1328bfd918c53a406c756"
+    },
+    {
+      "id": "authority.projects.definition",
+      "role": "definition",
+      "subject": "projects.records",
+      "declarationFingerprint": "sha256:22e894767d6cefa5fa1acbbb783984b3c17576924322b91b971909ce612b5757"
+    },
+    {
+      "id": "authority.projects.instance",
+      "role": "instance",
+      "subject": "projects.records",
+      "declarationFingerprint": "sha256:5b92f29a8e62e3a32482298ff81513c035feb14a8e15742d3759da903784b63d"
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "declarationFingerprint": "sha256:8afe5da5de9d67a21267be3ba143ca970bf2a316ca513dd3146f805613c7ee46"
+    }
+  ],
+  "evaluator": {
+    "id": "kernel.legacy-migration-completion",
+    "version": "1.0.0",
+    "level": "fixture"
+  },
+  "environment": {
+    "containment": "fixture",
+    "runtime": "node"
+  },
+  "acceptanceCriteria": [
+    "The exact migration target is selected by and fingerprinted in the current configuration lock.",
+    "Every artifact labeled as same-lock supporting evidence passed against the exact configuration lock and stable semantic graph; separately labeled supporting artifacts are fingerprint-bound without a same-lock claim.",
+    "The complete inventory records the exact target authority or retirement, parity decision, fallback removal, evidence reference, and either a completed source tombstone or one completed responsibility inside a retained mixed source.",
+    "The mixed-source binding or completed source tombstone assigns Decision Resolution to this exact target with target authority and no fallback.",
+    "Both contained cases prepare exactly three joined review actions for Decision create, Question processed-only update, and exact work-item completion.",
+    "The missing-why case records the governed explicit marker in private review instead of fabricating rationale.",
+    "The pack exposes preparation only and every contained run has no approval, continuation, connected compiler, or write effect."
+  ],
+  "result": "passed",
+  "outcomes": [
+    {
+      "id": "migration-disposition",
+      "state": "migrated"
+    },
+    {
+      "id": "migration-parity",
+      "state": "intentional-change"
+    },
+    {
+      "id": "target-selected-in-exact-lock",
+      "state": "passed"
+    },
+    {
+      "id": "supporting-evidence-current",
+      "state": "passed"
+    },
+    {
+      "id": "authority-transition-explicit",
+      "state": "passed"
+    },
+    {
+      "id": "legacy-dependencies-cleared",
+      "state": "passed"
+    },
+    {
+      "id": "exact-complete-group-proven",
+      "state": "passed"
+    },
+    {
+      "id": "missing-rationale-never-invented",
+      "state": "passed"
+    },
+    {
+      "id": "preparation-grants-no-authority",
+      "state": "passed"
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "migration-source",
+      "path": ".claude/systems/project-management.md",
+      "fingerprint": "sha256:e556ce223ba1e81bbc316b42cd8f2a71c2ec5a77b3df5c779454132368fc7215"
+    },
+    {
+      "role": "migration-target",
+      "path": "soter/packs/automation.project-decision-resolution/pack.json",
+      "fingerprint": "sha256:d709c8d13e9fe4561507f9402bbc72ac088d02fd5e73e2f4677ad359a5035592"
+    },
+    {
+      "role": "supporting-evidence",
+      "path": "soter/fixtures/project-decision-resolution/happy-path.evidence.json",
+      "fingerprint": "sha256:fa62474a458f785862c911f2793aa151255d150d226ba26638df2dbac574152a"
+    },
+    {
+      "role": "supporting-evidence",
+      "path": "soter/fixtures/project-decision-resolution/missing-why.evidence.json",
+      "fingerprint": "sha256:7bcb26f33a3e1c56f36be5865df145a9940fc7df11e576a5d3fabaf520c5f9ae"
+    }
+  ],
+  "effects": [],
+  "failures": [],
+  "warnings": [],
+  "skipped": [
+    "Connected provider readiness, live behavior verification, and current health were not evaluated.",
+    "Removing a legacy source fallback does not grant provider effect or host execution authority."
+  ],
+  "limitations": [
+    "This intentional replacement proves exact contained preparation and private review only. It does not provide a connected compiler, approval request, continuation request, provider write, or retry authority.",
+    "Live Notion authentication, permission, provider conformance, readiness, verification, and health remain not evaluated."
+  ],
+  "freshness": {
+    "policy": "Valid only while every configuration-lock fingerprint remains unchanged.",
+    "validUntil": null
+  },
+  "supersedes": null,
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Credential references and credential values are excluded."
+    ]
+  }
+}

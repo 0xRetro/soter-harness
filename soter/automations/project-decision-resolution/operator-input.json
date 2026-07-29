@@ -1,0 +1,92 @@
+{
+  "$contract": "soter://contracts/automation-input/v1",
+  "contractVersion": "1.0.0",
+  "id": "input.automation.project-decision-resolution",
+  "automation": "automation.project-decision-resolution",
+  "version": "1.0.0",
+  "fields": [
+    {
+      "id": "project",
+      "label": "Project reference",
+      "description": "Exact authoritative project identity whose Question, work item, and Decision will be reconciled.",
+      "type": "reference",
+      "required": true,
+      "exposure": "identifier",
+      "reference": { "subject": "projects.records.project", "authorityRole": "instance" },
+      "constraints": { "minLength": 3, "maxLength": 500 }
+    },
+    {
+      "id": "question",
+      "label": "Question reference",
+      "description": "Exact existing unprocessed Question feed-entry identity that this decision resolves.",
+      "type": "reference",
+      "required": true,
+      "exposure": "identifier",
+      "reference": { "subject": "projects.records.project-feed-entry", "authorityRole": "instance" },
+      "constraints": { "minLength": 3, "maxLength": 500 }
+    },
+    {
+      "id": "workItemAction",
+      "label": "Work-item action",
+      "description": "Private exact action text of the current unchecked project work item completed by this decision.",
+      "type": "string",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minLength": 1, "maxLength": 1000 }
+    },
+    {
+      "id": "decisionHeadline",
+      "label": "Decision headline",
+      "description": "Private exact Update Feed headline; Automation does not invent or paraphrase it.",
+      "type": "string",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minLength": 3, "maxLength": 500 }
+    },
+    {
+      "id": "decisionWhat",
+      "label": "What was decided",
+      "description": "Private exact decision statement used as the first part of the governed Decision summary.",
+      "type": "string",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minLength": 1, "maxLength": 3000 }
+    },
+    {
+      "id": "decidedBy",
+      "label": "Decided by",
+      "description": "Private exact attribution supplied by the operator; no person identity is inferred.",
+      "type": "string",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minLength": 1, "maxLength": 500 }
+    },
+    {
+      "id": "decisionWhy",
+      "label": "Why",
+      "description": "Optional private rationale. If omitted, the prepared Decision shows the governed explicit missing-why marker instead of inventing a reason.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minLength": 1, "maxLength": 3000 }
+    },
+    {
+      "id": "decisionDate",
+      "label": "Decision date",
+      "description": "Private exact calendar date for the Decision feed entry.",
+      "type": "date",
+      "required": true,
+      "exposure": "private"
+    },
+    {
+      "id": "visibility",
+      "label": "Visibility",
+      "description": "Portable audience classification allowed by the shared Projects policy.",
+      "type": "enum",
+      "required": true,
+      "exposure": "identifier",
+      "options": ["Internal", "Agent", "Public"]
+    }
+  ],
+  "additionalInputs": false
+}

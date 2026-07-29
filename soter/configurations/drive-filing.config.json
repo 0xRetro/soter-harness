@@ -1,0 +1,76 @@
+{
+  "$contract": "soter://contracts/configuration/v1",
+  "contractVersion": "1.0.0",
+  "name": "drive-filing",
+  "base": { "kernel": "kernel.soter", "core": "core.runtime" },
+  "packs": [
+    { "id": "context.storage", "source": "dependency", "reason": "Storage policy, artifact, and registered-location meaning belong to portable Context." },
+    { "id": "context.docs", "source": "dependency", "reason": "The required shared document-index record belongs to portable Docs Context." },
+    { "id": "context.crm", "source": "dependency", "reason": "Exact organization references and authenticated owner identity use existing portable CRM relations." },
+    { "id": "automation.filing-a-drive-artifact", "source": "user", "reason": "The user selected one exact artifact filing review with no automated move, rename, or delete." },
+    { "id": "integration.google-drive", "source": "binding", "reason": "The selected contained provider supplies storage registry and artifact metadata plus fixture-only placement capability definitions." },
+    { "id": "integration.notion-docs", "source": "binding", "reason": "The selected contained provider supplies document-index schema, deduplication reads, and fixture-only create capability." },
+    { "id": "integration.notion", "source": "binding", "reason": "The existing CRM binding resolves optional organization and authenticated current-user identities." }
+  ],
+  "bindings": [
+    { "capability": "storage.registry.read", "providerPack": "integration.google-drive", "authorities": ["authority.storage.locations"], "secretRef": "secret-ref.google-drive", "reason": "The configured storage registry is the only source of valid destination identities." },
+    { "capability": "storage.artifacts.read", "providerPack": "integration.google-drive", "authorities": ["authority.storage.artifacts"], "secretRef": "secret-ref.google-drive", "reason": "Artifact metadata must be observed from the configured storage instance without reading content." },
+    { "capability": "storage.shortcuts.create", "providerPack": "integration.google-drive", "authorities": ["authority.storage.artifacts"], "secretRef": "secret-ref.google-drive", "reason": "A future separately authorized exact batch may create one shortcut; this migration slice has no connected implementation." },
+    { "capability": "storage.files.copy", "providerPack": "integration.google-drive", "authorities": ["authority.storage.artifacts"], "secretRef": "secret-ref.google-drive", "reason": "A future separately authorized exact batch may create one explicitly required snapshot; copy is never a move substitute." },
+    { "capability": "documents.schema.read", "providerPack": "integration.notion-docs", "authorities": ["authority.documents.definition"], "secretRef": "secret-ref.notion", "reason": "The current document-index schema owns writable fields and option vocabulary." },
+    { "capability": "documents.records.read", "providerPack": "integration.notion-docs", "authorities": ["authority.documents.instance"], "secretRef": "secret-ref.notion", "reason": "Exact Link plus Name candidates must be inspected before any create proposal." },
+    { "capability": "documents.records.create", "providerPack": "integration.notion-docs", "authorities": ["authority.documents.instance"], "secretRef": "secret-ref.notion", "reason": "A future separately authorized exact batch may create one document-index record; this migration slice has no connected implementation." },
+    { "capability": "crm.records.read", "providerPack": "integration.notion", "authorities": ["authority.crm.instance"], "secretRef": "secret-ref.notion", "reason": "Optional organization references must resolve to exact existing resources." },
+    { "capability": "workspace.identity.read", "providerPack": "integration.notion", "authorities": ["authority.notion.provider"], "secretRef": "secret-ref.notion", "reason": "An optional owner=self request resolves only through the authenticated current workspace identity." }
+  ],
+  "sources": [
+    {
+      "id": "source.storage.drive-filing-registry",
+      "capability": "storage.registry.read",
+      "authority": "authority.storage.locations",
+      "input": { "registryId": "registry.drive-filing.fixture" },
+      "readiness": { "mode": "probe-read", "reason": "Connected readiness would need to prove the exact policy and destination registry without retaining private paths." },
+      "consumers": [
+        { "pack": "automation.filing-a-drive-artifact", "purpose": "storage-location-registry", "subjects": ["drive-filing"], "reason": "Drive Filing must ground policy and every destination in one selected registry source." }
+      ],
+      "reason": "Workspace-specific destinations are configuration-owned source identities rather than Automation constants."
+    }
+  ],
+  "authorities": [
+    { "id": "authority.storage.locations", "role": "definition", "subject": "storage.locations", "uri": "soter-fixture://configuration-template/storage/registry/drive-filing", "reason": "The selected registry owns filing policy and exact destination identities." },
+    { "id": "authority.storage.artifacts", "role": "instance", "subject": "storage.artifacts", "uri": "soter-fixture://configuration-template/storage/artifacts", "reason": "The configured storage instance owns current artifact metadata and placement state." },
+    { "id": "authority.google-drive.provider", "role": "provider", "subject": "google-drive.account", "uri": "soter-fixture://configuration-template/storage/provider/google-drive", "reason": "The selected provider supplies contained storage translation only." },
+    { "id": "authority.documents.definition", "role": "definition", "subject": "documents.records", "uri": "soter-fixture://configuration-template/docs/schema", "reason": "The selected Docs definition authority owns current document-index fields and options." },
+    { "id": "authority.documents.instance", "role": "instance", "subject": "documents.records", "uri": "soter-fixture://configuration-template/docs/records", "reason": "The selected Docs instance owns current document-index records." },
+    { "id": "authority.crm.definition", "role": "definition", "subject": "crm.records", "uri": "soter-fixture://configuration-template/notion/authority/policies", "reason": "The selected CRM Context definition authority remains explicit even though this preparation reads only organization instances." },
+    { "id": "authority.crm.instance", "role": "instance", "subject": "crm.records", "uri": "soter-fixture://configuration-template/notion/authority/crm", "reason": "The selected CRM instance resolves optional organization resources." },
+    { "id": "authority.notion.provider", "role": "provider", "subject": "notion.workspace", "uri": "soter-fixture://configuration-template/notion/account/operator", "reason": "The selected Notion account supplies authenticated owner identity and private provider context." },
+    { "id": "authority.run.evidence", "role": "evidence", "subject": "runtime.runs", "uri": "soter-state://runs", "reason": "Local private runtime state owns prepared work and contained evidence." }
+  ],
+  "effectPolicies": {
+    "read": { "mode": "allow", "reason": "Exact registry, artifact metadata, schema, duplicate, organization, and identity facts may be read for private preparation." },
+    "disclosure": { "mode": "allow", "reason": "Selected normalized facts may enter the private run envelope with explicit minimization." },
+    "write": { "mode": "confirm", "reason": "Every future exact placement and index batch requires fresh confirmation and a separately consumed one-time start authority." },
+    "dispatch": { "mode": "prohibit", "reason": "Drive Filing does not send messages, publish notifications, or share files." },
+    "destructive": { "mode": "prohibit", "reason": "Move, rename, delete, permission changes, and copy-as-move workarounds are prohibited." }
+  },
+  "secretRefs": [
+    { "id": "secret-ref.google-drive", "provider": "host", "key": "GOOGLE_DRIVE_OAUTH" },
+    { "id": "secret-ref.notion", "provider": "host", "key": "NOTION_OAUTH" }
+  ],
+  "host": { "id": "codex", "adapter": "host.codex", "version": "0.3.1", "reason": "The contained configuration exercises Codex projection while provider behavior remains fixture-only." },
+  "settings": {
+    "integration.notion": {
+      "targets": {
+        "policies": "soter-fixture://configuration-template/notion/collection/policies",
+        "organizations": "soter-fixture://configuration-template/notion/collection/organizations",
+        "contacts": "soter-fixture://configuration-template/notion/collection/contacts",
+        "projects": "soter-fixture://configuration-template/notion/collection/projects",
+        "updates": "soter-fixture://configuration-template/notion/collection/updates",
+        "tasks": "soter-fixture://configuration-template/notion/collection/tasks",
+        "meetings": "soter-fixture://configuration-template/notion/collection/meetings",
+        "documents": "soter-fixture://configuration-template/notion/collection/documents"
+      }
+    }
+  }
+}

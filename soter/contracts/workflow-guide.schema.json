@@ -1,0 +1,283 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/workflow-guide/v2",
+  "title": "Soter provider-neutral governed workflow guide",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "contentFingerprint",
+    "workflow",
+    "skill",
+    "status",
+    "authority",
+    "stepDetails",
+    "verification",
+    "gotchas",
+    "references",
+    "source",
+    "privacy",
+    "limitations"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/workflow-guide/v2" },
+    "contractVersion": { "const": "2.0.0" },
+    "id": { "type": "string", "pattern": "^workflow-guide[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "contentFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "workflow": { "$ref": "#/$defs/workflowBinding" },
+    "skill": { "$ref": "#/$defs/skill" },
+    "status": {
+      "oneOf": [
+        { "$ref": "#/$defs/candidateStatus" },
+        { "$ref": "#/$defs/activeStatus" },
+        { "$ref": "#/$defs/retirementCandidateStatus" },
+        { "$ref": "#/$defs/retiredStatus" }
+      ]
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "executionAuthority", "effectAuthority", "approvalAuthority", "providerTransactionAuthority", "reasonCode"],
+      "properties": {
+        "kind": { "const": "procedural-guidance" },
+        "executionAuthority": { "const": "none" },
+        "effectAuthority": { "const": "none" },
+        "approvalAuthority": { "const": "none" },
+        "providerTransactionAuthority": { "const": "none" },
+        "reasonCode": { "const": "WORKFLOW_GUIDE_NO_EXECUTION_AUTHORITY" }
+      }
+    },
+    "stepDetails": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/stepDetail" }
+    },
+    "verification": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 12, "maxLength": 500 }
+    },
+    "gotchas": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/gotcha" }
+    },
+    "references": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/reference" }
+    },
+    "source": { "$ref": "#/$defs/sourceProvenance" },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rawSourceIncluded", "workspaceSpecificValuesIncluded", "credentialsIncluded", "privateInputsIncluded", "providerResponsesIncluded"],
+      "properties": {
+        "rawSourceIncluded": { "const": false },
+        "workspaceSpecificValuesIncluded": { "const": false },
+        "credentialsIncluded": { "const": false },
+        "privateInputsIncluded": { "const": false },
+        "providerResponsesIncluded": { "const": false }
+      }
+    },
+    "limitations": { "$ref": "#/$defs/limitations" }
+  },
+  "$defs": {
+    "version": { "type": "string", "pattern": "^(?:0|[1-9][0-9]*)[.](?:0|[1-9][0-9]*)[.](?:0|[1-9][0-9]*)$" },
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "evidenceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "fingerprint", "host"],
+      "properties": {
+        "path": { "type": "string", "pattern": "^soter/evidence/development/[A-Za-z0-9._/-]+[.]json$" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "host": { "enum": ["codex", "claude"] }
+      }
+    },
+    "retirementEvidenceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {
+        "path": { "type": "string", "pattern": "^soter/fixtures/[A-Za-z0-9._+/-]+[.]json$" }
+      }
+    },
+    "workflowBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "definitionPath", "definitionFingerprint", "evaluationSetPath", "evaluationSetFingerprint"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^automation[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "version": { "$ref": "#/$defs/version" },
+        "definitionPath": { "type": "string", "pattern": "^soter/automations/[a-z0-9]+(?:-[a-z0-9]+)*/definition[.]json$" },
+        "definitionFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "evaluationSetPath": { "type": "string", "pattern": "^soter/automations/[a-z0-9]+(?:-[a-z0-9]+)*/evaluations[.]json$" },
+        "evaluationSetFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "skill": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "description", "invocation", "displayName", "shortDescription", "defaultPrompt"],
+      "properties": {
+        "name": { "type": "string", "minLength": 2, "maxLength": 64, "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "description": { "type": "string", "minLength": 20, "maxLength": 500 },
+        "invocation": { "const": "explicit-only" },
+        "displayName": { "type": "string", "minLength": 3, "maxLength": 80 },
+        "shortDescription": { "type": "string", "minLength": 12, "maxLength": 100 },
+        "defaultPrompt": { "type": "string", "minLength": 12, "maxLength": 300 }
+      }
+    },
+    "candidateStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "reasonCode", "proceduralAuthority", "behaviorParity", "delivery", "evidence", "permittedNextAction"],
+      "properties": {
+        "state": { "const": "candidate" },
+        "reasonCode": { "const": "WORKFLOW_GUIDE_PARITY_NOT_EVALUATED" },
+        "proceduralAuthority": { "const": "legacy" },
+        "behaviorParity": { "const": "not-evaluated" },
+        "delivery": { "const": "preview-only" },
+        "evidence": { "type": "array", "maxItems": 0 },
+        "permittedNextAction": { "const": "evaluate-host-projections" }
+      }
+    },
+    "activeStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "reasonCode", "proceduralAuthority", "behaviorParity", "delivery", "evidence", "permittedNextAction"],
+      "properties": {
+        "state": { "const": "active" },
+        "reasonCode": { "const": "WORKFLOW_GUIDE_ACTIVE" },
+        "proceduralAuthority": { "const": "target" },
+        "behaviorParity": { "enum": ["passed", "intentional-change"] },
+        "delivery": { "const": "host-skill" },
+        "evidence": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/evidenceReference" }
+        },
+        "permittedNextAction": { "const": "invoke-through-selected-host" }
+      }
+    },
+    "retirementCandidateStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "reasonCode", "proceduralAuthority", "behaviorParity", "delivery", "evidence", "permittedNextAction"],
+      "properties": {
+        "state": { "const": "retirement-candidate" },
+        "reasonCode": { "const": "WORKFLOW_GUIDE_RETIREMENT_AWAITING_MIGRATION" },
+        "proceduralAuthority": { "const": "legacy" },
+        "behaviorParity": { "const": "not-evaluated" },
+        "delivery": { "const": "unavailable" },
+        "evidence": { "type": "array", "maxItems": 0 },
+        "permittedNextAction": { "const": "prove-retirement" }
+      }
+    },
+    "retiredStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "reasonCode", "proceduralAuthority", "behaviorParity", "delivery", "evidence", "permittedNextAction"],
+      "properties": {
+        "state": { "const": "retired" },
+        "reasonCode": { "const": "WORKFLOW_GUIDE_RETIRED" },
+        "proceduralAuthority": { "const": "none" },
+        "behaviorParity": { "const": "intentional-change" },
+        "delivery": { "const": "unavailable" },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/retirementEvidenceReference" },
+          "maxItems": 1
+        },
+        "permittedNextAction": { "const": "inspect-replacement" }
+      }
+    },
+    "stepDetail": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sequence", "instructions", "flexibility", "stopConditions"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "sequence": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "instructions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 12, "maxLength": 700 }
+        },
+        "flexibility": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 12, "maxLength": 400 }
+        },
+        "stopConditions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 12, "maxLength": 400 }
+        }
+      }
+    },
+    "gotcha": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "summary", "countermeasure"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "kind": { "enum": ["baseline", "observed", "research", "constraint"] },
+        "summary": { "type": "string", "minLength": 12, "maxLength": 500 },
+        "countermeasure": { "type": "string", "minLength": 12, "maxLength": 500 }
+      }
+    },
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "label", "target"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "kind": { "enum": ["architecture", "contract", "configuration", "pack", "workflow", "command"] },
+        "label": { "type": "string", "minLength": 3, "maxLength": 120 },
+        "target": { "type": "string", "minLength": 3, "maxLength": 240 }
+      }
+    },
+    "sourceProvenance": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["presence", "legacyPath", "legacyFingerprint", "normalization"],
+          "properties": {
+            "presence": { "const": "present" },
+            "legacyPath": { "type": "string", "pattern": "^[.]claude/skills/[a-z0-9]+(?:-[a-z0-9]+)*/SKILL[.]md$" },
+            "legacyFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "normalization": { "enum": ["behavior-preserving-with-explicit-authority-boundary", "intentional-change-with-explicit-authority-boundary"] }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["presence", "legacyPath", "legacyFingerprint", "normalization"],
+          "properties": {
+            "presence": { "const": "removed" },
+            "legacyPath": { "type": "string", "pattern": "^[.]claude/skills/[a-z0-9]+(?:-[a-z0-9]+)*/SKILL[.]md$" },
+            "legacyFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "normalization": { "enum": ["behavior-preserving-with-explicit-authority-boundary", "intentional-change-with-explicit-authority-boundary"] }
+          }
+        }
+      ]
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 12, "maxLength": 500 }
+    }
+  }
+}

@@ -92,7 +92,6 @@ export function App() {
             workflow={workflow}
             configuration={selectedConfiguration}
             initialActivity={selectedOperatorActivity}
-            onChanged={refresh}
           />}
           {view === 'explore' && (
             <div className="explore-view">

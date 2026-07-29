@@ -1,0 +1,142 @@
+{
+  "$contract": "soter://contracts/context-snapshot/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.repository-review.preparation-fixture",
+  "runId": "run.repository-review.preparation-fixture",
+  "createdAt": "2026-07-21T20:00:00.000Z",
+  "configurationLockFingerprint": "sha256:f30e15eb72dd6ed664e5b2ee1f29f5802e014180122c5036d2982aece73a7c5a",
+  "graphFingerprint": "sha256:ebc7bc5da6af667182057799821250706c809c390dd1ea57e151c37a5039b754",
+  "containment": "fixture",
+  "entries": [
+    {
+      "id": "context.repository-review.snapshot",
+      "subject": "repository.source.snapshot",
+      "authority": "authority.repository.instance",
+      "role": "instance",
+      "capability": "repository.snapshot.read",
+      "providerPack": "integration.local-repository",
+      "providerImplementation": "provider.integration.local-repository.fixture",
+      "providerVersion": "0.1.0",
+      "observedAt": "2026-07-21T20:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "local-repository-fixture",
+        "authority": "authority.repository.instance",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:a75ade24edbadd88f59e66cad02f035dd90a9bba53b988c38cb9ddf0757bc267"
+      },
+      "valueFingerprint": "sha256:be8ed7e450cd45b70fdbd26092954ec455961fa210519d69a6162ff6fdf65a25",
+      "value": {
+        "repository": {
+          "identityFingerprint": "sha256:6f0d5cf69b35466c55901e57bede84034d353a6c0c4b98e0670a7f4edb35ab64",
+          "revision": "0123456789abcdef0123456789abcdef01234567",
+          "state": "clean",
+          "remoteFingerprint": "sha256:1ee84b60722a489de0a4fac92ccabee4b311aafd54c395f37bbd80dc89a03667",
+          "sourceFileCount": 137,
+          "readmeObserved": true
+        },
+        "capabilities": [
+          {
+            "id": "reusable-integrator-onboarding",
+            "name": "Reusable integrator-onboarding guide",
+            "why": "Manual re-explanation wastes time and makes the first successful integration inconsistent.",
+            "summary": "A self-serve path guides a new integrator from repository setup to a first contained successful integration.",
+            "currentState": "The repository contains a documented onboarding flow and implementation entry points.",
+            "evidence": [
+              {
+                "relativePath": "README.md",
+                "contentFingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+              },
+              {
+                "relativePath": "src/integrations/onboarding.ts",
+                "contentFingerprint": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+              }
+            ],
+            "fingerprint": "sha256:aadf961b2440591d8e6313aecb8ae59630f424701a6c214f8cc1199403e2fb45"
+          },
+          {
+            "id": "schema-derived-template-editor",
+            "name": "Schema-derived template editor",
+            "why": "Stable schema-derived identities prevent reordered fields from scrambling operator state.",
+            "summary": "The editor derives stable field controls and validation from the current process schema.",
+            "currentState": "Source modules implement stable schema-derived field keys and an ordered editor sequence.",
+            "evidence": [
+              {
+                "relativePath": "packages/editor/required-field-expression.ts",
+                "contentFingerprint": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
+              },
+              {
+                "relativePath": "packages/editor/EditorSequenceRail.tsx",
+                "contentFingerprint": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+              }
+            ],
+            "fingerprint": "sha256:f1b1f75cdc06d2319b06096da2e91c9928df25baa343a38c83e12bcaf7d7bbcb"
+          },
+          {
+            "id": "contained-validation-gate",
+            "name": "Contained template validation gate",
+            "why": "Template changes need deterministic validation before they become reusable process definitions.",
+            "summary": "A contained command validates template structure and required expressions without publishing changes.",
+            "currentState": "The repository exposes a templates check and local test boundary.",
+            "evidence": [
+              {
+                "relativePath": "package.json",
+                "contentFingerprint": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+              },
+              {
+                "relativePath": "scripts/templates-check.ts",
+                "contentFingerprint": "sha256:6666666666666666666666666666666666666666666666666666666666666666"
+              }
+            ],
+            "fingerprint": "sha256:b210c1d13080198e7d58aed621e6ea19aa821f0fa4b61b78a73eb3bc9364548d"
+          }
+        ],
+        "provenance": {
+          "provider": "local-repository-fixture",
+          "authority": "authority.repository.instance",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:a75ade24edbadd88f59e66cad02f035dd90a9bba53b988c38cb9ddf0757bc267"
+        },
+        "observedAt": "2026-07-21T20:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.repository-review.duplicates",
+      "subject": "product.records.feature-candidates",
+      "authority": "authority.product.instance",
+      "role": "instance",
+      "capability": "product.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T20:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.product.instance",
+        "mapping": "mapping.integration.notion.product-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:8ec1ff8c47753ec838a34c5b53f2f7cde7d90c6cb2ecdbd14779e6a448203484"
+      },
+      "valueFingerprint": "sha256:0f61983e97f193e080293ffac7c52da887db3c2e2c62b5d96f331201fc7419f6",
+      "value": {
+        "candidateCount": 1,
+        "candidateIds": [
+          "https://www.notion.so/44444444444444444444444444444444"
+        ],
+        "providerOutputFingerprint": "sha256:a0e84caab7d6f376a537bdce9024917cd09caffc6e738ae1d59c120e75f8bbd1"
+      }
+    }
+  ],
+  "effectIds": [
+    "effect.repository-review.preparation.snapshot.fixture",
+    "effect.repository-review.preparation.duplicates.fixture"
+  ],
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Repository reference, remote, candidate names, why, summaries, evidence paths, Product record values, provider responses, and credentials are excluded from general inspection."
+    ]
+  }
+}

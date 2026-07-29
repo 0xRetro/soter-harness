@@ -1,0 +1,131 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "automation.project-work-promotion",
+  "version": "0.1.0",
+  "layer": "automation",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Prepares one exact operator-classified project work-item disposition: tracked execution becomes a deduplicated Task; coordination-only work completes in place.",
+  "dependencies": [
+    {
+      "pack": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Private review, exact selection, authority boundaries, and evidence are Core responsibilities."
+    },
+    {
+      "pack": "context.projects",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Project policy, project identity, milestones, and embedded work-item meaning belong to Projects Context."
+    },
+    {
+      "pack": "context.tasks",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Task policy, Task identity, assignment, dates, lifecycle, and duplicate meaning belong to Tasks Context."
+    }
+  ],
+  "capabilities": {
+    "requires": [
+      {
+        "id": "projects.records.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation must load the shared Projects policy and the exact project."
+      },
+      {
+        "id": "tasks.records.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation must load the shared Tasks policy and bounded Task duplicate candidates."
+      },
+      {
+        "id": "documents.content.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation must parse the exact current project work-item grammar."
+      },
+      {
+        "id": "workspace.identity.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Optional self-assignment must resolve only the authenticated current workspace user."
+      },
+      {
+        "id": "tasks.records.create",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "A tracked-execution disposition may prepare one exact Task create."
+      },
+      {
+        "id": "documents.content.update",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "A coordination-only disposition may prepare one exact unchecked-to-checked work-item replacement."
+      }
+    ],
+    "provides": []
+  },
+  "sourceRequirements": [
+    {
+      "purpose": "project-work-policy",
+      "capability": "projects.records.read",
+      "authorityRole": "definition",
+      "authoritySubject": "projects.records",
+      "minimum": 1,
+      "maximum": 1,
+      "reason": "Promotion and coordination boundaries come from one shared Projects policy."
+    },
+    {
+      "purpose": "task-work-policy",
+      "capability": "tasks.records.read",
+      "authorityRole": "definition",
+      "authoritySubject": "tasks.records",
+      "minimum": 1,
+      "maximum": 1,
+      "reason": "Default Task status, context, deduplication, assignment, and confirmation rules come from one shared Tasks policy."
+    }
+  ],
+  "authorities": [
+    { "role": "definition", "subject": "projects.records", "required": true },
+    { "role": "instance", "subject": "projects.records", "required": true },
+    { "role": "definition", "subject": "tasks.records", "required": true },
+    { "role": "instance", "subject": "tasks.records", "required": true },
+    { "role": "provider", "subject": "notion.workspace", "required": true },
+    { "role": "evidence", "subject": "runtime.runs", "required": true }
+  ],
+  "effects": ["read", "disclosure", "write"],
+  "operator": {
+    "input": "soter/automations/project-work-promotion/operator-input.json",
+    "preparation": {
+      "module": "soter/automations/project-work-promotion/prepare.mjs",
+      "export": "prepareProjectWorkPromotionRun",
+      "containment": "fixture",
+      "derivedReviewContract": "soter/automations/project-work-promotion/derived-review.json"
+    }
+  },
+  "artifacts": [
+    { "path": "soter/automations/project-work-promotion/operator-input.json", "role": "definition" },
+    { "path": "soter/automations/project-work-promotion/derived-review.json", "role": "definition" },
+    { "path": "soter/automations/project-work-promotion/prepare.mjs", "role": "implementation" },
+    { "path": "soter/automations/project-work-promotion/scenario.mjs", "role": "evaluation" },
+    { "path": "soter/automations/project-work-promotion/project-work-promotion.selftest.mjs", "role": "evaluation" },
+    { "path": "soter/scenarios/project-work-promotion/tracked-execution.scenario.json", "role": "evaluation" },
+    { "path": "soter/scenarios/project-work-promotion/coordination-only.scenario.json", "role": "evaluation" },
+    { "path": "soter/scenarios/project-work-promotion/duplicate-task.scenario.json", "role": "evaluation" }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": ["codex", "claude"]
+  },
+  "verification": {
+    "maxLevel": "fixture",
+    "scenarios": [
+      "soter/scenarios/project-work-promotion/tracked-execution.scenario.json",
+      "soter/scenarios/project-work-promotion/coordination-only.scenario.json",
+      "soter/scenarios/project-work-promotion/duplicate-task.scenario.json"
+    ]
+  }
+}

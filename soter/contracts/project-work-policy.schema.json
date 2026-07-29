@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contexts/projects/project-work-policy/v1",
+  "title": "Soter Projects Context project-work policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "name",
+    "progressRequiresPromotedTasks",
+    "milestoneWorkItemsRemainDistinct",
+    "healthMustBeOperatorJudgment",
+    "writesRequireConfirmation",
+    "updateCategory",
+    "defaultProcessed",
+    "allowedUpdateCategories",
+    "allowedVisibilities",
+    "duplicateCandidateLimit",
+    "doneTaskStatuses",
+    "blockedTaskStatuses",
+    "notStartedTaskStatuses",
+    "allowedProgressStates",
+    "allowedHealthStates",
+    "milestoneSyntaxVersion",
+    "workItemSyntaxVersion",
+    "milestoneProgressRule",
+    "promotionBoundary",
+    "coordinationDisposition",
+    "promotionTaskContext",
+    "promotionMarksTrackedWorkComplete",
+    "decisionCategory",
+    "questionCategory",
+    "decisionSummaryGrammar",
+    "questionSummaryGrammar",
+    "missingDecisionWhyMarker",
+    "decisionResolutionRequiresQuestion",
+    "decisionResolutionRequiresWorkItem"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contexts/projects/project-work-policy/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^policy\\.context\\.projects\\.project-work(?:[.-][a-z0-9]+)*$"
+    },
+    "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "progressRequiresPromotedTasks": { "const": true },
+    "milestoneWorkItemsRemainDistinct": { "const": true },
+    "healthMustBeOperatorJudgment": { "const": true },
+    "writesRequireConfirmation": { "const": true },
+    "updateCategory": { "const": "Status" },
+    "defaultProcessed": { "const": false },
+    "allowedUpdateCategories": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "items": { "enum": ["Update", "Status", "Decision", "Question", "Milestone"] }
+    },
+    "allowedVisibilities": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "uniqueItems": true,
+      "items": { "enum": ["Internal", "Agent", "Public"] }
+    },
+    "duplicateCandidateLimit": { "type": "integer", "minimum": 1, "maximum": 25 },
+    "doneTaskStatuses": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 100 }
+    },
+    "blockedTaskStatuses": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 100 }
+    },
+    "notStartedTaskStatuses": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 100 }
+    },
+    "allowedProgressStates": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": { "enum": ["todo", "in-progress", "done"] }
+    },
+    "allowedHealthStates": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": { "enum": ["on-track", "at-risk", "off-track"] }
+    },
+    "milestoneSyntaxVersion": { "const": "project-milestone-line/v1" },
+    "workItemSyntaxVersion": { "const": "dated-owner-action-line/v1" },
+    "milestoneProgressRule": { "const": "promoted-task-state-with-human-completion" },
+    "promotionBoundary": { "const": "tracked-execution-only" },
+    "coordinationDisposition": { "const": "complete-in-place" },
+    "promotionTaskContext": { "const": "Project" },
+    "promotionMarksTrackedWorkComplete": { "const": false },
+    "decisionCategory": { "const": "Decision" },
+    "questionCategory": { "const": "Question" },
+    "decisionSummaryGrammar": { "const": "what-decided-by-why/v1" },
+    "questionSummaryGrammar": { "const": "question-owner-needed-by/v1" },
+    "missingDecisionWhyMarker": { "const": "[why not supplied]" },
+    "decisionResolutionRequiresQuestion": { "const": true },
+    "decisionResolutionRequiresWorkItem": { "const": true }
+  }
+}

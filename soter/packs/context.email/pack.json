@@ -13,6 +13,12 @@
       "version": "^0.1.0",
       "optional": false,
       "reason": "Email context requires exact configuration resolution, private runtime state, and governed capability bindings."
+    },
+    {
+      "pack": "context.communications",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Email specializes shared communication scope, container, participant, private-content, and typed-link semantics without depending on collaboration channels."
     }
   ],
   "capabilities": { "requires": [], "provides": [] },

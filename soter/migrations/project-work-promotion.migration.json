@@ -1,0 +1,53 @@
+{
+  "$contract": "soter://contracts/migration/v1",
+  "contractVersion": "1.0.0",
+  "id": "project-work-promotion.prototype-to-v1",
+  "source": "claude-oriented-prototype",
+  "slice": "automation.project-work-promotion",
+  "items": [
+    {
+      "sourcePath": ".claude/systems/project-management.md",
+      "sourceFingerprint": "sha256:e556ce223ba1e81bbc316b42cd8f2a71c2ec5a77b3df5c779454132368fc7215",
+      "targetPath": "soter/packs/automation.project-work-promotion/pack.json",
+      "targetPack": "automation.project-work-promotion",
+      "state": "migrated",
+      "bridge": "Exact contained preparation now requires an explicit tracked-execution or coordination-only disposition. Tracked work inherits the exact action, project relation, optional date, and authenticated-self assignment into a deduplicated Task while leaving the source line open; coordination-only work completes only the exact source line. This intentional replacement grants no approval, connected compiler, continuation, provider write, readiness, verification, or health authority.",
+      "evidence": [
+        "soter/fixtures/project-work-promotion/legacy-project-management-promotion-migration.evidence.json"
+      ]
+    },
+    {
+      "sourcePath": ".claude/skills/pushing-to-notion/targets.md",
+      "sourceFingerprint": "sha256:00cfed74ae66ae7414561dfa0857a41fdfbfea1598675adc0471cd55661c4a17",
+      "targetPath": "soter/configurations/project-work-promotion.config.json",
+      "targetPack": "configuration.project-work-promotion",
+      "state": "migrated",
+      "bridge": "Project Work Promotion now selects the exact Notion collection references, shared policy sources, authorities, and effect policies in one governed configuration. This ownership does not grant connected write behavior.",
+      "evidence": [
+        "soter/fixtures/project-work-promotion/legacy-notion-targets-configuration-migration.evidence.json"
+      ]
+    },
+    {
+      "sourcePath": ".claude/systems/project-management.md",
+      "sourceFingerprint": "sha256:e556ce223ba1e81bbc316b42cd8f2a71c2ec5a77b3df5c779454132368fc7215",
+      "targetPath": "soter/contexts/projects/records.model.json",
+      "targetPack": "context.projects",
+      "state": "migrated",
+      "bridge": "Projects Context owns exact portable Project, milestone, embedded work-item, feed-entry, Decision, Question, policy, and document-work meaning independently from Tasks. Project creation is a separate intentionally unavailable Project Capture action held with COMPLETE_PROJECT_READBACK_UNAVAILABLE; it is not a bridge to legacy behavior.",
+      "evidence": [
+        "soter/fixtures/project-work-promotion/legacy-project-management-projects-context-migration.evidence.json"
+      ]
+    },
+    {
+      "sourcePath": ".claude/systems/project-management.md",
+      "sourceFingerprint": "sha256:e556ce223ba1e81bbc316b42cd8f2a71c2ec5a77b3df5c779454132368fc7215",
+      "targetPath": "soter/contexts/tasks/records.model.json",
+      "targetPack": "context.tasks",
+      "state": "migrated",
+      "bridge": "Tasks Context owns portable Task, assignment, date, lifecycle, policy, and Project-link meaning independently from Projects Context. This intentional replacement grants no provider or execution authority.",
+      "evidence": [
+        "soter/fixtures/project-work-promotion/legacy-project-management-tasks-context-migration.evidence.json"
+      ]
+    }
+  ]
+}

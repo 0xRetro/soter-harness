@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://automations/task-capture/proposal/v1",
+  "title": "Task Capture review proposal",
+  "type": "object",
+  "required": [
+    "$contract",
+    "id",
+    "automation",
+    "decision",
+    "proposalType",
+    "review"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/automation-proposal/v1" },
+    "id": {
+      "type": "string",
+      "pattern": "^proposal\\.task-capture\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "automation": {
+      "type": "object",
+      "required": ["id"],
+      "properties": { "id": { "const": "automation.task-capture" } }
+    },
+    "decision": {
+      "type": "object",
+      "required": ["id", "decisionType"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^decision\\.task-capture\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "decisionType": { "const": "task-capture.grounded-create" }
+      }
+    },
+    "proposalType": { "const": "task-capture.review-proposal" },
+    "review": {
+      "type": "object",
+      "required": ["$contract", "kind", "privateReview"],
+      "properties": {
+        "$contract": { "const": "soter://contracts/automation-review/v1" },
+        "kind": { "const": "task-capture-review" },
+        "privateReview": {
+          "type": "object",
+          "required": ["state"],
+          "properties": { "state": { "const": "available" } }
+        }
+      }
+    }
+  }
+}

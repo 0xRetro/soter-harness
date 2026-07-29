@@ -13,36 +13,68 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # GOLDEN_STALE reads guide history; a shallow clone would silence it
+          fetch-depth: 0   # Evidence and provenance checks require the exact source revision.
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - run: npm ci
-      # Prove the Checker itself catches violations (plant-and-assert)…
-      - run: node .claude/scripts/check.mjs --selftest
-      # …then hold the legacy implementation to its existing hard gate during migration.
-      - run: node .claude/scripts/check.mjs --all
-      # Prove and run the provider-neutral target verifier during the migration overlap.
+      # Prove the frozen v1 checker was completely and deliberately replaced.
+      - run: npm run soter:legacy-checker-run:selftest
+      - run: npm run soter:legacy-transition:selftest
+      - run: npm run soter:legacy-transition:check
+      - run: npm run soter:legacy-inventory:selftest
+      - run: npm run soter:legacy-inventory:check
+      # Exercise every final-cutover governance evaluation directly. These are
+      # intentionally separate from schema verification so stale migration
+      # assumptions cannot remain hidden behind a structurally valid graph.
+      - run: npm run soter:development-governance:selftest
+      - run: npm run soter:legacy-foundations:selftest
+      - run: node soter/kernel/development-catalog.selftest.mjs
+      # Prove and run the provider-neutral target verifier.
       - run: node soter/kernel/verify.mjs --selftest
+      - run: npm run soter:configuration-template-portability:selftest
+      - run: npm run soter:workflow-guides:selftest
+      - run: npm run soter:development-candidate-locks:selftest
+      - run: npm run soter:development-host-observations:selftest
+      - run: npm run soter:development-historical-evidence-batch:selftest
+      - run: npm run soter:development-host-runner:selftest
+      - run: npm run soter:development-workflow-lifecycle:selftest
+      - run: npm run soter:legacy-finalization-transition:selftest
+      - run: npm run soter:repository-cutover:selftest
+      # Prove the provider-neutral Communications ownership and bounded Slack
+      # normalization/review boundary directly rather than relying on a broad
+      # Core aggregate to retain these regressions.
+      - run: node soter/contexts/communications/collaboration/context-ownership.selftest.mjs
+      - run: node soter/contexts/communications/collaboration/identity.selftest.mjs
+      - run: node soter/integrations/slack/slack.selftest.mjs
+      - run: node soter/automations/slack-conversation-review/slack-conversation-review.selftest.mjs
+      - run: node soter/automations/slack-conversation-review/connected-context.selftest.mjs
       - run: node soter/kernel/verify.mjs
+      - run: npm run soter:distribution:selftest
       # Prove Core generates contract-valid, effect-free state and that checked-in evidence is current.
       - run: node soter/core/cli.mjs selftest
+      # Keep standalone domain and projection evaluations that are not part of
+      # the Core aggregate visible in CI.
+      - run: node soter/automations/email-triage/email-triage.selftest.mjs
+      - run: node soter/automations/meeting-intake/meeting-intake.selftest.mjs
+      - run: node soter/automations/meeting-intake/connected-context.selftest.mjs
+      - run: node soter/core/operator-inspection.selftest.mjs
       - run: npm run soter:mcp:selftest
       - run: node soter/core/cli.mjs fixtures --check
-      - run: node soter/core/cli.mjs doctor --lock soter/fixtures/meeting-intake/meeting-intake.lock.json --at 2026-07-15T12:00:00.000Z
+      - name: Run every current operational offline doctor
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r lock; do
+            node soter/core/cli.mjs doctor --lock "$lock"
+          done < <(
+            find soter/fixtures -name '*.lock.json' -type f \
+              ! -path 'soter/fixtures/harness-development-catalog-final/*.lock.json' |
+              LC_ALL=C sort
+          )
+          # The excluded pair is an immutable workflow observation basis. Kernel
+          # verifies it separately; it is not a current operational doctor input.
       # Prove the read-only inspection contract, React projection, packaged local build,
       # Electron sandbox, invalidation watcher, accessibility, and no-write boundary.
       - run: npm run soter:studio:check
       - run: xvfb-run -a npm run soter:studio:e2e
-
-  # Plugin invariant: the plugin + marketplace manifest must validate before ship.
-  # Separate job so a packaging break is distinct from a content break.
-  plugin:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm install -g @anthropic-ai/claude-code
-      - run: claude plugin validate .

@@ -1,12 +1,12 @@
 {
-  "$contract": "soter://contracts/host-projection-definition/v1",
-  "contractVersion": "1.0.0",
+  "$contract": "soter://contracts/host-projection-definition/v2",
+  "contractVersion": "2.0.0",
   "id": "host-projection.codex",
   "host": "codex",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "generator": {
     "id": "core.host-projection-generator",
-    "version": "1.0.0"
+    "version": "2.1.0"
   },
   "target": {
     "root": "consumer-root",
@@ -20,7 +20,11 @@
     "sharedOutput": "prohibited",
     "retirement": "remove-managed"
   },
-  "renderContext": ["configuration-id", "host-id", "pack-ids", "capability-ids"],
+  "renderContext": [
+    "configuration-id", "host-id", "pack-ids", "capability-ids",
+    "workflow-guide-ids", "effect-policy-modes", "provider-requirements",
+    "development-guards"
+  ],
   "outputs": [
     {
       "id": "output.codex.instructions",
@@ -31,7 +35,10 @@
       "newline": "lf",
       "finalNewline": true,
       "mode": "0644",
-      "renderContext": ["configuration-id", "host-id", "pack-ids", "capability-ids"]
+      "renderContext": [
+        "configuration-id", "host-id", "pack-ids", "capability-ids",
+        "provider-requirements", "development-guards"
+      ]
     },
     {
       "id": "output.codex.tools",
@@ -45,7 +52,38 @@
       "renderContext": ["host-id"]
     }
   ],
+  "collections": [
+    {
+      "id": "collection.codex.workflow-guides",
+      "role": "skills",
+      "sourceContract": "soter://contracts/workflow-guide/v2",
+      "selection": "selected-pack-active",
+      "pathPrefix": ".agents/skills/",
+      "outputs": [
+        {
+          "id": "skill",
+          "relativePath": "SKILL.md",
+          "format": "codex-skill-v1",
+          "template": "soter/hosts/codex/templates/workflow-guide.SKILL.md.tmpl",
+          "encoding": "utf-8",
+          "newline": "lf",
+          "finalNewline": true,
+          "mode": "0644"
+        },
+        {
+          "id": "metadata",
+          "relativePath": "agents/openai.yaml",
+          "format": "codex-openai-yaml-v1",
+          "template": "soter/hosts/codex/templates/workflow-guide.openai.yaml.tmpl",
+          "encoding": "utf-8",
+          "newline": "lf",
+          "finalNewline": true,
+          "mode": "0644"
+        }
+      ]
+    }
+  ],
   "limitations": [
-    "This definition projects local deterministic guidance and the Soter Core route only; it does not install Codex or prove launch, tool discovery, authentication, provider reachability, connected behavior, or health."
+    "This definition projects local deterministic guidance, the Soter Core route, and selected active explicit-only workflow skills; it excludes candidate guides and does not install Codex or prove launch, discovery, authentication, provider reachability, connected behavior, or health."
   ]
 }

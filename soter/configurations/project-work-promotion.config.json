@@ -1,0 +1,216 @@
+{
+  "$contract": "soter://contracts/configuration/v1",
+  "contractVersion": "1.0.0",
+  "name": "project-work-promotion",
+  "base": {
+    "kernel": "kernel.soter",
+    "core": "core.runtime"
+  },
+  "packs": [
+    {
+      "id": "context.projects",
+      "source": "dependency",
+      "reason": "Work promotion depends on portable Projects policy, project, milestone, and embedded work-item meaning."
+    },
+    {
+      "id": "context.tasks",
+      "source": "dependency",
+      "reason": "Tracked work promotion depends on portable Tasks policy, Task lifecycle, assignment, date, and deduplication meaning."
+    },
+    {
+      "id": "automation.project-work-promotion",
+      "source": "user",
+      "reason": "The user selected explicit project work-item disposition preparation for this configuration."
+    },
+    {
+      "id": "integration.notion",
+      "source": "binding",
+      "reason": "The configured policies, project, Task candidates, identity, document, and eventual write authorities live in Notion."
+    }
+  ],
+  "bindings": [
+    {
+      "capability": "projects.records.read",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.projects.definition", "authority.projects.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "Notion is the configured authority for the shared Projects policy and exact project."
+    },
+    {
+      "capability": "tasks.records.read",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.tasks.definition", "authority.tasks.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "Notion is the configured authority for the shared Tasks policy and bounded Task duplicate candidates."
+    },
+    {
+      "capability": "documents.content.read",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.projects.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "Notion supplies the exact current project document containing the selected work item."
+    },
+    {
+      "capability": "workspace.identity.read",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.notion.provider"],
+      "secretRef": "secret-ref.notion",
+      "reason": "Notion resolves only the optional authenticated current-user assignee."
+    },
+    {
+      "capability": "tasks.records.create",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.tasks.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "A separately governed transaction may later create one exact tracked-execution Task."
+    },
+    {
+      "capability": "documents.content.update",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.projects.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "A separately governed transaction may later complete one exact coordination-only project work item."
+    }
+  ],
+  "sources": [
+    {
+      "id": "source.policy.project-work-promotion.projects",
+      "capability": "projects.records.read",
+      "authority": "authority.projects.definition",
+      "input": {
+        "recordTypes": ["project-work-policy"],
+        "ids": ["policy.projects"],
+        "limit": 2
+      },
+      "readiness": {
+        "mode": "probe-read",
+        "reason": "Connected readiness must prove the configured shared Projects policy can be read and normalized without retaining private values."
+      },
+      "consumers": [
+        {
+          "pack": "automation.project-work-promotion",
+          "purpose": "project-work-policy",
+          "subjects": ["project-work-promotion"],
+          "reason": "Promotion must ground tracked-execution, coordination-only, work-item, context, and completion boundaries in one exact shared Projects policy."
+        }
+      ],
+      "reason": "The shared Projects policy is a portable configured source rather than Automation-owned constants."
+    },
+    {
+      "id": "source.policy.project-work-promotion.tasks",
+      "capability": "tasks.records.read",
+      "authority": "authority.tasks.definition",
+      "input": {
+        "recordTypes": ["task-work-policy"],
+        "ids": ["policy.tasks"],
+        "limit": 2
+      },
+      "readiness": {
+        "mode": "probe-read",
+        "reason": "Connected readiness must prove the configured shared Tasks policy can be read and normalized without retaining private values."
+      },
+      "consumers": [
+        {
+          "pack": "automation.project-work-promotion",
+          "purpose": "task-work-policy",
+          "subjects": ["project-work-promotion"],
+          "reason": "Tracked execution must ground Task status, Context, relation, assignment, deduplication, and confirmation in one exact shared Tasks policy."
+        }
+      ],
+      "reason": "The shared Tasks policy is a portable configured source rather than Automation-owned constants."
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.projects.definition",
+      "role": "definition",
+      "subject": "projects.records",
+      "uri": "soter-fixture://configuration-template/notion/authority/policies",
+      "reason": "The selected shared Projects policy defines valid Project work-item and promotion-boundary semantics."
+    },
+    {
+      "id": "authority.projects.instance",
+      "role": "instance",
+      "subject": "projects.records",
+      "uri": "soter-fixture://configuration-template/notion/authority/projects",
+      "reason": "The configured project and current project document are authoritative Project instances."
+    },
+    {
+      "id": "authority.tasks.definition",
+      "role": "definition",
+      "subject": "tasks.records",
+      "uri": "soter-fixture://configuration-template/notion/authority/policies",
+      "reason": "The selected shared Tasks policy defines valid Task creation, assignment, date, lifecycle, and duplicate semantics."
+    },
+    {
+      "id": "authority.tasks.instance",
+      "role": "instance",
+      "subject": "tasks.records",
+      "uri": "soter-fixture://configuration-template/notion/authority/tasks",
+      "reason": "The configured Task collection owns bounded duplicate candidates and any later exact Task create."
+    },
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "uri": "soter-fixture://configuration-template/notion/account/operator",
+      "reason": "The selected Notion account supplies the only supported optional assignee identity."
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "uri": "soter-state://runs",
+      "reason": "Local private runtime state owns prepared work, selected-work review material, and contained evidence."
+    }
+  ],
+  "effectPolicies": {
+    "read": {
+      "mode": "allow",
+      "reason": "The exact Projects and Tasks policies, project, document, optional current identity, and bounded Task candidates may be read for private preparation."
+    },
+    "disclosure": {
+      "mode": "allow",
+      "reason": "Selected records may enter the configured private run envelope with explicit minimization."
+    },
+    "write": {
+      "mode": "confirm",
+      "reason": "The exact selected Task-create or document-update action requires a fresh later confirmation and separately consumed one-time start authorization."
+    },
+    "dispatch": {
+      "mode": "prohibit",
+      "reason": "Work promotion does not send messages or publish notifications."
+    },
+    "destructive": {
+      "mode": "prohibit",
+      "reason": "Work promotion never deletes records or performs destructive changes."
+    }
+  },
+  "secretRefs": [
+    {
+      "id": "secret-ref.notion",
+      "provider": "host",
+      "key": "NOTION_OAUTH"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "reason": "This fixture configuration exercises Codex projection while preserving provider-neutral contracts."
+  },
+  "settings": {
+    "integration.notion": {
+      "targets": {
+        "policies": "soter-fixture://configuration-template/notion/collection/policies",
+        "organizations": "soter-fixture://configuration-template/notion/collection/organizations",
+        "contacts": "soter-fixture://configuration-template/notion/collection/contacts",
+        "projects": "soter-fixture://configuration-template/notion/collection/projects",
+        "updates": "soter-fixture://configuration-template/notion/collection/updates",
+        "tasks": "soter-fixture://configuration-template/notion/collection/tasks",
+        "meetings": "soter-fixture://configuration-template/notion/collection/meetings",
+        "documents": "soter-fixture://configuration-template/notion/collection/documents"
+      }
+    }
+  }
+}

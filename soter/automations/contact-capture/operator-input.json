@@ -1,0 +1,127 @@
+{
+  "$contract": "soter://contracts/automation-input/v1",
+  "contractVersion": "1.0.0",
+  "id": "input.automation.contact-capture",
+  "automation": "automation.contact-capture",
+  "version": "1.0.0",
+  "fields": [
+    {
+      "id": "name",
+      "label": "Contact name",
+      "description": "Private contact display name used for exact duplicate review.",
+      "type": "string",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minLength": 2, "maxLength": 200 }
+    },
+    {
+      "id": "email",
+      "label": "Email",
+      "description": "Optional private email normalized to a lowercase address and used for duplicate review.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minLength": 3, "maxLength": 320 }
+    },
+    {
+      "id": "organizationName",
+      "label": "Organization name",
+      "description": "Optional private organization name resolved to one exact existing resource or omitted and flagged.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minLength": 2, "maxLength": 200 }
+    },
+    {
+      "id": "role",
+      "label": "Requested role",
+      "description": "Optional private Role request accepted only by exact case-insensitive match to the current schema.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minLength": 1, "maxLength": 200 }
+    },
+    {
+      "id": "status",
+      "label": "Requested status",
+      "description": "Optional private Status request accepted only from the current schema.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minLength": 1, "maxLength": 200 }
+    },
+    {
+      "id": "disposition",
+      "label": "Requested disposition",
+      "description": "Optional private relationship disposition accepted only by exact current-option match; vague supportive language is not promoted automatically.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minLength": 1, "maxLength": 200 }
+    },
+    {
+      "id": "authority",
+      "label": "Requested authority labels",
+      "description": "Optional private Authority requests; every retained value must match the current schema.",
+      "type": "string-list",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minItems": 0, "maxItems": 8, "itemMinLength": 1, "itemMaxLength": 200 }
+    },
+    {
+      "id": "tags",
+      "label": "Requested tags",
+      "description": "Optional private Tags requests; unmatched values are omitted and flagged rather than created as provider options.",
+      "type": "string-list",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minItems": 0, "maxItems": 12, "itemMinLength": 1, "itemMaxLength": 200 }
+    },
+    {
+      "id": "telegram",
+      "label": "Telegram",
+      "description": "Optional private Telegram identity stored as bounded plain contact text.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minLength": 1, "maxLength": 300 }
+    },
+    {
+      "id": "signal",
+      "label": "Signal",
+      "description": "Optional private Signal identity stored as bounded plain contact text.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minLength": 1, "maxLength": 300 }
+    },
+    {
+      "id": "github",
+      "label": "GitHub",
+      "description": "Optional private GitHub identity stored as bounded plain contact text.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minLength": 1, "maxLength": 300 }
+    },
+    {
+      "id": "timezoneUtc",
+      "label": "Timezone (UTC)",
+      "description": "Optional private timezone text; no timezone is inferred from location or email.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minLength": 1, "maxLength": 100 }
+    },
+    {
+      "id": "source",
+      "label": "Source",
+      "description": "Optional private factual source description for how the contact was encountered.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minLength": 1, "maxLength": 500 }
+    }
+  ],
+  "additionalInputs": false
+}

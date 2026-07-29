@@ -1,0 +1,64 @@
+{
+  "$contract": "soter://contracts/migration/v1",
+  "contractVersion": "1.0.0",
+  "id": "organization-capture.prototype-to-v1",
+  "source": "claude-oriented-prototype",
+  "slice": "automation.organization-capture",
+  "items": [
+    {
+      "sourcePath": ".claude/skills/capturing-an-org/SKILL.md",
+      "sourceFingerprint": "sha256:90876c3b8335bce0edb3260809578646771895c6909aec4348029d4dd54588a2",
+      "targetPath": "soter/packs/automation.organization-capture/pack.json",
+      "targetPack": "automation.organization-capture",
+      "state": "migrated",
+      "bridge": "The typed Organization workflow is canonical from exact private input through current schema acquisition, deterministic Context classification, alias-aware duplicate observation, private proposal, exact approval, single-use start, contained create result, and read-after-write verification. Provider option guessing and prompt-only write discipline are intentionally replaced by mechanical contracts.",
+      "evidence": [
+        "soter/fixtures/organization-capture/legacy-guide-migration.evidence.json"
+      ]
+    },
+    {
+      "sourcePath": ".claude/evals/capturing-an-org/happy-path.md",
+      "sourceFingerprint": "sha256:c737cd3961d70c34c1433d81b7a5aeaa0a55a8f7b80b8d267c8526f1146ab1e0",
+      "targetPath": "soter/scenarios/organization-capture/preparation.scenario.json",
+      "targetPack": "automation.organization-capture",
+      "state": "migrated",
+      "bridge": "The target preserves URL normalization, current Type and Tag matching, sector-tag routing, alias-aware duplicate checks, and explicit confirmation. Fixture evidence covers the complete contained transaction without claiming live provider behavior.",
+      "evidence": [
+        "soter/fixtures/organization-capture/legacy-happy-path-migration.evidence.json"
+      ]
+    },
+    {
+      "sourcePath": ".claude/evals/capturing-an-org/invariant-sector-not-type.md",
+      "sourceFingerprint": "sha256:216b3a9a2815395e12a469e147a64fb6eac5c146db9b46cd72e296b610edca7e",
+      "targetPath": "soter/scenarios/organization-capture/preparation.scenario.json",
+      "targetPack": "automation.organization-capture",
+      "state": "migrated",
+      "bridge": "The target mechanically resolves Organization Type from governed Context rules while routing DeFi and grants signals only to current Tag options. A compound sector phrase cannot become a provider Type.",
+      "evidence": [
+        "soter/fixtures/organization-capture/legacy-invariant-sector-not-type-migration.evidence.json"
+      ]
+    },
+    {
+      "sourcePath": ".claude/evals/capturing-an-org/pressure-guess-type.md",
+      "sourceFingerprint": "sha256:764c1a1860e653283915921901358765bbc156f459d13cbc2c1b3d8fa7c95ace",
+      "targetPath": "soter/scenarios/organization-capture/preparation.scenario.json",
+      "targetPack": "automation.organization-capture",
+      "state": "migrated",
+      "bridge": "The target rejects a requested Type absent from the current normalized schema and cannot skip policy, schema, duplicate, review, or confirmation boundaries under pressure.",
+      "evidence": [
+        "soter/fixtures/organization-capture/legacy-pressure-guess-type-migration.evidence.json"
+      ]
+    },
+    {
+      "sourcePath": ".claude/systems/crm.md",
+      "sourceFingerprint": "sha256:039eb6736005444d84c9eaf829a8aa3456dfdff7ed70e445c8dae761466fa4eb",
+      "targetPath": "soter/packs/automation.organization-capture/pack.json",
+      "targetPack": "automation.organization-capture",
+      "state": "migrated",
+      "bridge": "Only the Organization Capture orchestration responsibility inside this mixed source is target-owned. The exact CRM card remains present and legacy-authoritative for Contact Capture and other incomplete responsibilities while its frozen Organization guide path is governed migration residue.",
+      "evidence": [
+        "soter/fixtures/organization-capture/legacy-crm-organization-migration.evidence.json"
+      ]
+    }
+  ]
+}

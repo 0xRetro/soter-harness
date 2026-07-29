@@ -1,0 +1,43 @@
+{
+  "$contract": "soter://contexts/projects/project-capture-policy/v1",
+  "contractVersion": "1.0.0",
+  "id": "policy.context.projects.project-capture",
+  "name": "Projects",
+  "createRequiresConfirmation": true,
+  "duplicateCandidateLimit": 8,
+  "duplicateKeyFields": ["name"],
+  "defaultStatus": "Not Started",
+  "allowedTypes": ["Project", "Operations", "Deal"],
+  "allowedStatuses": ["Not Started", "Active", "On Hold", "Complete", "Cancelled"],
+  "projectTypePolicy": "optional-when-unclear",
+  "namingRule": "related-organization-short-name-prefix",
+  "organizationPolicy": "client-facing-required-internal-optional",
+  "managerPolicy": "unavailable",
+  "clientContactPolicy": "unavailable",
+  "creationProfiles": [
+    {
+      "id": "project",
+      "name": "Project",
+      "allowedProjectTypes": ["Project", "Operations"],
+      "bodyFormat": "portable-project-body/v1",
+      "requiredBodySections": ["Overview", "Milestones"],
+      "milestoneSyntaxVersion": "project-milestone-line/v1",
+      "workItemSyntaxVersion": "dated-owner-action-line/v1"
+    },
+    {
+      "id": "deal",
+      "name": "Deal",
+      "allowedProjectTypes": ["Deal"],
+      "bodyFormat": "portable-project-body/v1",
+      "requiredBodySections": ["Overview", "Milestones"],
+      "milestoneSyntaxVersion": "project-milestone-line/v1",
+      "workItemSyntaxVersion": "dated-owner-action-line/v1"
+    }
+  ],
+  "bodyFormat": "portable-project-body/v1",
+  "requiredBodySections": ["Overview", "Milestones"],
+  "milestoneSyntaxVersion": "project-milestone-line/v1",
+  "workItemSyntaxVersion": "dated-owner-action-line/v1",
+  "granularityRequiresOperatorDecision": true,
+  "thirdPartyOrganizationRequiresOperatorDecision": true
+}

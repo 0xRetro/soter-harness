@@ -1,0 +1,31 @@
+{
+  "$contract": "soter://contracts/migration/v1",
+  "contractVersion": "1.0.0",
+  "id": "project-decision-resolution.prototype-to-v1",
+  "source": "claude-oriented-prototype",
+  "slice": "automation.project-decision-resolution",
+  "items": [
+    {
+      "sourcePath": ".claude/systems/project-management.md",
+      "sourceFingerprint": "sha256:e556ce223ba1e81bbc316b42cd8f2a71c2ec5a77b3df5c779454132368fc7215",
+      "targetPath": "soter/packs/automation.project-decision-resolution/pack.json",
+      "targetPack": "automation.project-decision-resolution",
+      "state": "migrated",
+      "bridge": "Exact contained preparation now owns the Decision feed entry, matching Question processed-only update, and matching project work-item checkbox replacement as one complete review group. Missing rationale is explicitly marked rather than invented. This intentional replacement grants no approval, connected compiler, continuation, provider write, readiness, verification, or health authority.",
+      "evidence": [
+        "soter/fixtures/project-decision-resolution/legacy-project-management-decision-migration.evidence.json"
+      ]
+    },
+    {
+      "sourcePath": ".claude/skills/pushing-to-notion/targets.md",
+      "sourceFingerprint": "sha256:00cfed74ae66ae7414561dfa0857a41fdfbfea1598675adc0471cd55661c4a17",
+      "targetPath": "soter/configurations/project-decision-resolution.config.json",
+      "targetPack": "configuration.project-decision-resolution",
+      "state": "migrated",
+      "bridge": "Decision Resolution now selects the exact Notion collection references, definition source, authorities, and effect policies in one governed configuration. This ownership does not grant connected write behavior.",
+      "evidence": [
+        "soter/fixtures/project-decision-resolution/legacy-notion-targets-configuration-migration.evidence.json"
+      ]
+    }
+  ]
+}

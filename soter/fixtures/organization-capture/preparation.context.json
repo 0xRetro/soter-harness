@@ -1,0 +1,242 @@
+{
+  "$contract": "soter://contracts/context-snapshot/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.organization-capture.preparation-fixture",
+  "runId": "run.organization-capture.preparation-fixture",
+  "createdAt": "2026-07-21T12:00:00.000Z",
+  "configurationLockFingerprint": "sha256:0db8d8f48ad0d478911cbbdce0cd71dab7a87a7e10e588399d03be15aee2e61e",
+  "graphFingerprint": "sha256:b3cf8233f7cf750a00121582591e1b42f01ae84454b701bbe5d449025bb3c35b",
+  "containment": "fixture",
+  "entries": [
+    {
+      "id": "context.organization-capture.policy",
+      "subject": "crm.records.organization-capture-policy",
+      "authority": "authority.crm.definition",
+      "role": "definition",
+      "capability": "crm.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T12:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.crm.definition",
+        "mapping": "mapping.integration.notion.crm-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:fd85f9564b1ed60751a76a06a093dff0cdbc9be8ffc3d947da190bd90e15f95d"
+      },
+      "valueFingerprint": "sha256:00bfca7e0e2fd0a14a82c468f395403e2ec52119b52ea3b19eeb3e125877fa14",
+      "value": {
+        "records": [
+          {
+            "type": "organization-capture-policy",
+            "id": "policy.organization-capture",
+            "version": "1",
+            "fields": {
+              "name": "Organizations"
+            },
+            "identityBinding": {
+              "state": "exact-request",
+              "requestedIdFingerprint": "sha256:eaf0dd68fa408686c687aff1c31ac7794bfb75e04ee5237e0f37868698d9f5e2"
+            }
+          }
+        ],
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.crm.definition",
+          "mapping": "mapping.integration.notion.crm-records",
+          "mappingVersion": "0.2.0",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:fd85f9564b1ed60751a76a06a093dff0cdbc9be8ffc3d947da190bd90e15f95d"
+        },
+        "observedAt": "2026-07-21T12:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.organization-capture.schema",
+      "subject": "crm.schema.organization",
+      "authority": "authority.crm.instance",
+      "role": "instance",
+      "capability": "crm.schema.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T12:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.crm.instance",
+        "mapping": "mapping.integration.notion.crm-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:6bb078f7600c18bdc466511e9ca38a1e785022c3f38cc9e622d200c85acb06e9"
+      },
+      "valueFingerprint": "sha256:6f6feee9e76e9f97c8fab901f0f97cf434487287c6e923bc625628ed83634572",
+      "value": {
+        "schema": {
+          "recordType": "organization",
+          "fields": [
+            {
+              "id": "contactUris",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "name",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "organizationType",
+              "writable": true,
+              "options": [
+                "Core Devs",
+                "DevCo",
+                "Ecosystem Actor",
+                "Ecosystem DAO",
+                "Executor Agent",
+                "Facilitator Team",
+                "Foundation",
+                "GovOps",
+                "Halo Agent",
+                "Prime Agent"
+              ]
+            },
+            {
+              "id": "projectUris",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "tags",
+              "writable": true,
+              "options": [
+                "CRM-ONLY",
+                "DeFi",
+                "Grants",
+                "L2",
+                "Priority",
+                "Prospect",
+                "Terminated",
+                "Vendor"
+              ]
+            },
+            {
+              "id": "twitter",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "website",
+              "writable": true,
+              "options": null
+            }
+          ],
+          "fingerprint": "sha256:a85602818b6cf92307b6206b279f611a6e782e7af74ad32dc0f836b426e67f13"
+        },
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.crm.instance",
+          "mapping": "mapping.integration.notion.crm-records",
+          "mappingVersion": "0.2.0",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:6bb078f7600c18bdc466511e9ca38a1e785022c3f38cc9e622d200c85acb06e9"
+        },
+        "observedAt": "2026-07-21T12:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.organization-capture.duplicates.1",
+      "subject": "crm.records.organization-candidates",
+      "authority": "authority.crm.instance",
+      "role": "instance",
+      "capability": "crm.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T12:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.crm.instance",
+        "mapping": "mapping.integration.notion.crm-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:fd85f9564b1ed60751a76a06a093dff0cdbc9be8ffc3d947da190bd90e15f95d"
+      },
+      "valueFingerprint": "sha256:f467e2a54c1ee018fc0a2d060365a856d2c23adf5fdd9144c4d2dc802c02b974",
+      "value": {
+        "candidateCount": 0,
+        "candidateIds": [],
+        "providerOutputFingerprint": "sha256:acad3996df17e8a6feef562e2694219df378ee8593c6c8264180a329ed8809c2"
+      }
+    },
+    {
+      "id": "context.organization-capture.duplicates.2",
+      "subject": "crm.records.organization-candidates",
+      "authority": "authority.crm.instance",
+      "role": "instance",
+      "capability": "crm.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T12:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.crm.instance",
+        "mapping": "mapping.integration.notion.crm-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:fd85f9564b1ed60751a76a06a093dff0cdbc9be8ffc3d947da190bd90e15f95d"
+      },
+      "valueFingerprint": "sha256:f467e2a54c1ee018fc0a2d060365a856d2c23adf5fdd9144c4d2dc802c02b974",
+      "value": {
+        "candidateCount": 0,
+        "candidateIds": [],
+        "providerOutputFingerprint": "sha256:acad3996df17e8a6feef562e2694219df378ee8593c6c8264180a329ed8809c2"
+      }
+    },
+    {
+      "id": "context.organization-capture.duplicates.3",
+      "subject": "crm.records.organization-candidates",
+      "authority": "authority.crm.instance",
+      "role": "instance",
+      "capability": "crm.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T12:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.crm.instance",
+        "mapping": "mapping.integration.notion.crm-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:fd85f9564b1ed60751a76a06a093dff0cdbc9be8ffc3d947da190bd90e15f95d"
+      },
+      "valueFingerprint": "sha256:f467e2a54c1ee018fc0a2d060365a856d2c23adf5fdd9144c4d2dc802c02b974",
+      "value": {
+        "candidateCount": 0,
+        "candidateIds": [],
+        "providerOutputFingerprint": "sha256:acad3996df17e8a6feef562e2694219df378ee8593c6c8264180a329ed8809c2"
+      }
+    }
+  ],
+  "effectIds": [
+    "effect.organization-capture.preparation.policy.fixture",
+    "effect.organization-capture.preparation.schema.fixture",
+    "effect.organization-capture.preparation.duplicate.1.fixture",
+    "effect.organization-capture.preparation.duplicate.2.fixture",
+    "effect.organization-capture.preparation.duplicate.3.fixture"
+  ],
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Provider credentials, raw operator prose, raw schema responses, aliases, URLs, and duplicate candidate fields are excluded from workspace inspection."
+    ]
+  }
+}

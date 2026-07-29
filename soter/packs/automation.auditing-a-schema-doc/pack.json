@@ -1,0 +1,49 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "automation.auditing-a-schema-doc",
+  "version": "0.1.0",
+  "layer": "automation",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Audit a schema document is preserved as a provider-neutral definition with no runtime or effect authority.",
+  "dependencies": [
+    {
+      "pack": "context.policy",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "The audited Fields section and its policy coverage rules belong to portable Policy Context."
+    }
+  ],
+  "capabilities": {
+    "requires": [],
+    "provides": []
+  },
+  "authorities": [],
+  "effects": [],
+  "artifacts": [
+    {
+      "path": "soter/automations/auditing-a-schema-doc/definition.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/auditing-a-schema-doc/guide.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/auditing-a-schema-doc/evaluations.json",
+      "role": "evaluation"
+    }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": [
+      "codex",
+      "claude"
+    ]
+  },
+  "verification": {
+    "maxLevel": "static",
+    "scenarios": []
+  }
+}

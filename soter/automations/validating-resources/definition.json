@@ -1,0 +1,179 @@
+{
+  "$contract": "soter://contracts/workflow-definition/v2",
+  "contractVersion": "2.0.0",
+  "id": "automation.validating-resources",
+  "version": "0.1.0",
+  "title": "Validate governed resources",
+  "summary": "Performs a complete policy, schema, record, liveness, and cross-record resource review with explicit coverage and separately confirmed fixes.",
+  "ownership": {
+    "layer": "automation",
+    "domain": "resource-governance",
+    "legacyLayer": "skill",
+    "responsibility": "outcome-definition"
+  },
+  "lifecycle": {
+    "state": "active-host-guided",
+    "activation": {
+      "state": "active",
+      "reasonCode": "WORKFLOW_HOST_GUIDANCE_ACTIVE",
+      "proceduralAuthority": "target",
+      "delivery": "host-skill",
+      "behaviorParity": "intentional-change",
+      "evidence": [
+        {
+          "path": "soter/evidence/development/development-agent-migration-evidence.claude.validating-resources.json",
+          "fingerprint": "sha256:627350e3995bb370c1b52546a30bceae72e5c3397cdfd0f3a92b54a77a58e638",
+          "host": "claude"
+        },
+        {
+          "path": "soter/evidence/development/development-agent-migration-evidence.codex.validating-resources.json",
+          "fingerprint": "sha256:177a657b5891df68215061b81c93f69bad7ba19b467de3cc78b02e9cd8fd2b95",
+          "host": "codex"
+        }
+      ],
+      "permittedNextAction": "invoke-through-selected-host"
+    },
+    "development": {
+      "requestContract": {
+        "id": "soter://contracts/development-request/v1",
+        "path": "soter/contracts/development-request.schema.json"
+      },
+      "resultContract": {
+        "id": "soter://contracts/development-result/v1",
+        "path": "soter/contracts/development-result.schema.json"
+      },
+      "workspacePolicy": {
+        "id": "settings.kernel.soter.development-workspace",
+        "path": "soter/kernel/development-workspace.settings.json",
+        "fingerprint": "sha256:84ea480a61e67ac271b9cb3bb58ef338f0430d9a04d772d3ec47cad17175bfc1"
+      },
+      "supportedHosts": [
+        "codex",
+        "claude"
+      ]
+    },
+    "effectBoundary": {
+      "localWorkspaceRead": "request-scoped",
+      "localWorkspaceWrite": "request-scoped",
+      "localCommand": "request-scoped",
+      "subagentDispatch": "request-scoped",
+      "providerRead": "separate-authority",
+      "providerWrite": "separate-authority",
+      "publication": "separate-authority",
+      "merge": "separate-authority",
+      "protectedRootMutation": "separate-authority",
+      "hostRealization": "separate-authority",
+      "authority": "development-request-only"
+    }
+  },
+  "intent": {
+    "goal": "Produce one evidence-backed drift report that distinguishes checked, skipped, unknown, adjacent, and fixable findings without guessing facts.",
+    "useWhen": [
+      "The complete configured Resources set needs policy and reality validation."
+    ],
+    "excludeWhen": [
+      "Only schema documentation, one known record edit, or a new resource capture is requested."
+    ]
+  },
+  "procedure": [
+    {
+      "id": "acquire-authorities",
+      "sequence": 1,
+      "outcome": "Acquire the exact policy, live schema, target mapping, and complete configured resource set.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "validate-policy-shape",
+      "sequence": 2,
+      "outcome": "Check every record against naming, option, required-field, no-secret, and body-shape rules.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "validate-observed-reality",
+      "sequence": 3,
+      "outcome": "Check resolvable administrators, bounded URL liveness, and declared cross-record claims.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "declare-coverage",
+      "sequence": 4,
+      "outcome": "Report every checked, skipped, unavailable, and adjacent item without implying silent completeness.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "prepare-exact-fixes",
+      "sequence": 5,
+      "outcome": "Prepare only evidence-backed exact changes and list every fact requiring a human source.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "confirm-and-verify",
+      "sequence": 6,
+      "outcome": "Apply an explicitly selected fix subset and verify each effect before closing the report.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    }
+  ],
+  "safeguards": [
+    "Never silently sample a complete-sweep request.",
+    "Never guess missing administrators, classifications, links, or cross-record facts.",
+    "Never stamp verification or apply fixes without exact evidence and confirmation."
+  ],
+  "evaluationSet": {
+    "id": "evaluation-set.validating-resources",
+    "path": "soter/automations/validating-resources/evaluations.json"
+  },
+  "guide": {
+    "id": "workflow-guide.validating-resources",
+    "path": "soter/automations/validating-resources/guide.json"
+  },
+  "potentialEffects": [
+    "read",
+    "disclosure",
+    "write"
+  ],
+  "source": {
+    "presence": "removed",
+    "legacyPath": ".claude/skills/validating-resources/SKILL.md",
+    "legacyFingerprint": "sha256:38aecb4f889d9ccab50edf578d0a571a0b2ef5639f2db589ecd30567b3ee651c"
+  },
+  "privacy": {
+    "rawSourceIncluded": false,
+    "workspaceSpecificValuesIncluded": false,
+    "credentialsIncluded": false,
+    "privateInputsIncluded": false
+  },
+  "limitations": [
+    "This normalized definition preserves inspectable intent only; it has no operator runtime, provider binding, effect authority, or behavior parity.",
+    "The fingerprinted legacy source remains canonical until a separate implemented and evidenced runtime migration removes that fallback."
+  ]
+}

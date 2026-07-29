@@ -1,0 +1,28 @@
+{
+  "$contract": "soter://contexts/crm/organization-capture-policy/v1",
+  "contractVersion": "1.0.0",
+  "id": "policy.context.crm.organization-capture",
+  "name": "Organizations",
+  "createRequiresConfirmation": true,
+  "duplicateCandidateLimit": 8,
+  "maximumAliases": 8,
+  "aliasSuffixes": ["Company", "DAO", "Foundation", "Inc", "Labs", "Ltd"],
+  "typeRules": [
+    { "terms": ["foundation"], "value": "Foundation" },
+    { "terms": ["dao", "decentralized autonomous"], "value": "Ecosystem DAO" },
+    { "terms": ["development company", "dev company", "rollup company"], "value": "DevCo" },
+    { "terms": ["facilitator", "facilitation team"], "value": "Facilitator Team" },
+    { "terms": ["governance operations", "govops"], "value": "GovOps" },
+    { "terms": ["prime agent"], "value": "Prime Agent" },
+    { "terms": ["halo agent"], "value": "Halo Agent" },
+    { "terms": ["executor agent"], "value": "Executor Agent" },
+    { "terms": ["core developer", "core devs"], "value": "Core Devs" },
+    { "terms": ["ecosystem actor", "ecosystem program", "grants program"], "value": "Ecosystem Actor" }
+  ],
+  "tagRules": [
+    { "terms": ["defi", "decentralized finance"], "value": "DeFi" },
+    { "terms": ["l2", "layer 2", "rollup"], "value": "L2" },
+    { "terms": ["grant", "grants"], "value": "Grants" }
+  ],
+  "relationsOnCreate": "empty"
+}

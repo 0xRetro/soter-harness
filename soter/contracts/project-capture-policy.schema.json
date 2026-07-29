@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contexts/projects/project-capture-policy/v1",
+  "title": "Soter Projects Context project-capture policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "name",
+    "createRequiresConfirmation",
+    "duplicateCandidateLimit",
+    "duplicateKeyFields",
+    "defaultStatus",
+    "allowedTypes",
+    "allowedStatuses",
+    "projectTypePolicy",
+    "namingRule",
+    "organizationPolicy",
+    "managerPolicy",
+    "clientContactPolicy",
+    "creationProfiles",
+    "bodyFormat",
+    "requiredBodySections",
+    "milestoneSyntaxVersion",
+    "workItemSyntaxVersion",
+    "granularityRequiresOperatorDecision",
+    "thirdPartyOrganizationRequiresOperatorDecision"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contexts/projects/project-capture-policy/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "const": "policy.context.projects.project-capture" },
+    "name": { "const": "Projects" },
+    "createRequiresConfirmation": { "const": true },
+    "duplicateCandidateLimit": { "type": "integer", "minimum": 1, "maximum": 25 },
+    "duplicateKeyFields": {
+      "const": ["name"]
+    },
+    "defaultStatus": { "const": "Not Started" },
+    "allowedTypes": {
+      "const": ["Project", "Operations", "Deal"]
+    },
+    "allowedStatuses": {
+      "const": ["Not Started", "Active", "On Hold", "Complete", "Cancelled"]
+    },
+    "projectTypePolicy": { "const": "optional-when-unclear" },
+    "namingRule": { "const": "related-organization-short-name-prefix" },
+    "organizationPolicy": { "const": "client-facing-required-internal-optional" },
+    "managerPolicy": { "const": "unavailable" },
+    "clientContactPolicy": { "const": "unavailable" },
+    "creationProfiles": {
+      "const": [
+        {
+          "id": "project",
+          "name": "Project",
+          "allowedProjectTypes": ["Project", "Operations"],
+          "bodyFormat": "portable-project-body/v1",
+          "requiredBodySections": ["Overview", "Milestones"],
+          "milestoneSyntaxVersion": "project-milestone-line/v1",
+          "workItemSyntaxVersion": "dated-owner-action-line/v1"
+        },
+        {
+          "id": "deal",
+          "name": "Deal",
+          "allowedProjectTypes": ["Deal"],
+          "bodyFormat": "portable-project-body/v1",
+          "requiredBodySections": ["Overview", "Milestones"],
+          "milestoneSyntaxVersion": "project-milestone-line/v1",
+          "workItemSyntaxVersion": "dated-owner-action-line/v1"
+        }
+      ]
+    },
+    "bodyFormat": { "const": "portable-project-body/v1" },
+    "requiredBodySections": {
+      "const": ["Overview", "Milestones"]
+    },
+    "milestoneSyntaxVersion": { "const": "project-milestone-line/v1" },
+    "workItemSyntaxVersion": { "const": "dated-owner-action-line/v1" },
+    "granularityRequiresOperatorDecision": { "const": true },
+    "thirdPartyOrganizationRequiresOperatorDecision": { "const": true }
+  }
+}

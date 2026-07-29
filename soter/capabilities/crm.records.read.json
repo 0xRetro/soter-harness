@@ -7,6 +7,7 @@
   "portability": "portable",
   "inputSchema": {
     "type": "object",
+    "additionalProperties": false,
     "required": ["recordTypes"],
     "properties": {
       "recordTypes": {
@@ -29,28 +30,80 @@
           "type": ["string", "number", "boolean"]
         }
       },
+      "filtersAny": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 12,
+        "uniqueItems": true,
+        "items": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": ["string", "number", "boolean"]
+          }
+        }
+      },
       "limit": { "type": "integer", "minimum": 1, "maximum": 100 }
     }
   },
   "outputSchema": {
     "type": "object",
+    "additionalProperties": false,
     "required": ["records", "provenance", "observedAt"],
     "properties": {
       "records": {
         "type": "array",
         "items": {
           "type": "object",
-          "required": ["type", "id", "version", "fields"],
+          "additionalProperties": false,
+          "required": ["type", "id", "version", "fields", "identityBinding"],
           "properties": {
             "type": { "type": "string" },
             "id": { "type": "string" },
             "version": { "type": "string" },
             "fields": { "type": "object" },
-            "body": { "type": ["string", "object", "null"] }
+            "body": { "type": ["string", "object", "null"] },
+            "identityBinding": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["state", "requestedIdFingerprint"],
+                  "properties": {
+                    "state": { "const": "exact-request" },
+                    "requestedIdFingerprint": {
+                      "type": "string",
+                      "pattern": "^sha256:[a-f0-9]{64}$"
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["state", "requestedIdFingerprint"],
+                  "properties": {
+                    "state": { "const": "observed" },
+                    "requestedIdFingerprint": { "type": "null" }
+                  }
+                }
+              ]
+            }
           }
         }
       },
-      "provenance": { "type": "object" },
+      "provenance": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["provider", "authority", "mapping", "mappingVersion", "sourceKind", "sourceReferenceFingerprint"],
+        "properties": {
+          "provider": { "type": "string", "minLength": 1 },
+          "authority": { "type": "string", "minLength": 1 },
+          "mapping": { "type": "string", "minLength": 1 },
+          "mappingVersion": { "type": "string", "minLength": 1 },
+          "sourceKind": { "enum": ["fixture", "connected"] },
+          "sourceReferenceFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        }
+      },
       "observedAt": { "type": "string" }
     }
   },

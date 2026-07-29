@@ -1,0 +1,312 @@
+{
+  "$contract": "soter://contracts/run-envelope/v1",
+  "contractVersion": "1.0.0",
+  "id": "run.contact-capture.preparation-fixture",
+  "createdAt": "2026-07-21T14:00:00.000Z",
+  "requestedOutcome": "Prepare one exact schema-grounded contact-create review and stop before change-set issuance, approval, or provider writes.",
+  "initiation": "user-requested",
+  "intent": "operate",
+  "lifecycleState": "paused",
+  "automation": {
+    "id": "automation.contact-capture",
+    "version": "0.1.0"
+  },
+  "configurationLock": {
+    "path": "soter/fixtures/contact-capture/contact-capture.lock.json",
+    "fingerprint": "sha256:a599779b29591ba69f17ce8b7d63ecf4318752d8df788f5dd9589cee359faaf8"
+  },
+  "graphFingerprint": "sha256:7921dec0ea23e31dad47d550d8c8ba43540269df8c053cfd3a253bc0f7923568",
+  "context": [
+    {
+      "subject": "crm.records",
+      "authority": "authority.crm.definition",
+      "role": "definition",
+      "uri": "soter-fixture://configuration-template/notion/authority/policies",
+      "declarationFingerprint": "sha256:b227f74aa9fe340623302d850236b1c1cab271c3ac7999bf6aa7ccacf80954a3",
+      "status": "loaded",
+      "provenance": "fixture:sha256:594f33daa1d67f6564941eddfd7679249188d1f3563102056422e0b5aa2bd1f6",
+      "freshness": "passed"
+    },
+    {
+      "subject": "crm.records",
+      "authority": "authority.crm.instance",
+      "role": "instance",
+      "uri": "soter-fixture://configuration-template/notion/authority/crm",
+      "declarationFingerprint": "sha256:e03ee1ca1dba612c75b80ee83b54a38f4a9e61c5ebad54e8a77903c8bd0825ee",
+      "status": "loaded",
+      "provenance": "fixture:sha256:1ebe3ff22b3c5035fdbdd98cf4c563e71872ccf88f72ecec64bb7d9b4d2a0a63",
+      "freshness": "passed"
+    },
+    {
+      "subject": "notion.workspace",
+      "authority": "authority.notion.provider",
+      "role": "provider",
+      "uri": "soter-fixture://configuration-template/notion/account/operator",
+      "declarationFingerprint": "sha256:cdee230730b0f3c9c6ca06e6578e38324ed0b7f7da89339d7628c70061e960e1",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:a599779b29591ba69f17ce8b7d63ecf4318752d8df788f5dd9589cee359faaf8",
+      "freshness": "unknown"
+    },
+    {
+      "subject": "runtime.runs",
+      "authority": "authority.run.evidence",
+      "role": "evidence",
+      "uri": "soter-state://runs",
+      "declarationFingerprint": "sha256:460a19b01a4b563273ab8064bb14cbafcacce77a8c9e39130533ebc3bae22546",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:a599779b29591ba69f17ce8b7d63ecf4318752d8df788f5dd9589cee359faaf8",
+      "freshness": "unknown"
+    }
+  ],
+  "bindings": [
+    {
+      "capability": "crm.records.create",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.crm.instance"
+      ],
+      "effects": [
+        "write"
+      ],
+      "reason": "A separately governed exact transaction may later create one mapped person record."
+    },
+    {
+      "capability": "crm.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.crm.definition",
+        "authority.crm.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Notion supplies the exact policy selection, bounded duplicate candidates, and optional organization candidates."
+    },
+    {
+      "capability": "crm.schema.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.crm.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Notion supplies one current provider-neutral person schema observation for exact option matching."
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0",
+    "projectionDefinition": {
+      "id": "host-projection.codex",
+      "version": "0.3.0",
+      "path": "soter/hosts/codex/projection.json",
+      "fingerprint": "sha256:76cd84436a3b5e7f00edcc8a0be3cdff64f53e488b13107a8bf56603b9600490"
+    },
+    "projectionGenerator": {
+      "id": "core.host-projection-generator",
+      "version": "2.1.0"
+    }
+  },
+  "effectPolicies": {
+    "read": {
+      "mode": "allow",
+      "reason": "The selected policy, current schema, and bounded person and organization candidates may be read for private preparation."
+    },
+    "disclosure": {
+      "mode": "allow",
+      "reason": "Selected observations may enter private runtime state with explicit minimization."
+    },
+    "write": {
+      "mode": "confirm",
+      "reason": "Every exact person-create batch requires fresh confirmation and separately consumed one-time start authority."
+    },
+    "dispatch": {
+      "mode": "prohibit",
+      "reason": "Contact Capture does not send or publish messages."
+    },
+    "destructive": {
+      "mode": "prohibit",
+      "reason": "Contact Capture never deletes records or performs destructive changes."
+    }
+  },
+  "approvals": [],
+  "checkpoints": [
+    {
+      "id": "effects-established",
+      "state": "passed",
+      "details": "Read and disclosure policies were evaluated before each contained invocation."
+    },
+    {
+      "id": "contact-review-grounded",
+      "state": "passed",
+      "details": "The exact policy, current normalized schema, bounded duplicate candidates, and optional organization candidates were loaded."
+    },
+    {
+      "id": "write-boundary-held",
+      "state": "passed",
+      "details": "No change set, approval, continuation request, provider write, or canonical write was issued."
+    }
+  ],
+  "outputs": [
+    {
+      "id": "context.contact-capture.preparation-fixture",
+      "type": "context-snapshot",
+      "fingerprint": "sha256:050409008b62f936b209018d7f0d1d1a8573d26844b6cd2056509e3de1538aaa"
+    }
+  ],
+  "effects": [
+    {
+      "id": "effect.contact-capture.preparation.policy.fixture",
+      "capability": "crm.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.crm.definition",
+      "startedAt": "2026-07-21T14:00:00.000Z",
+      "completedAt": "2026-07-21T14:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The selected policy, current schema, and bounded person and organization candidates may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected observations may enter private runtime state with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:c2e0c241a6226e9998bf2cdc44e8390a97ee1c416e7b8cc72ee191165c377cf1",
+      "state": "passed",
+      "outputFingerprint": "sha256:68318a6b54172c82d1b2fc340ffe32869dfb0fdcc0de64528114bd448dc8fc66",
+      "error": null
+    },
+    {
+      "id": "effect.contact-capture.preparation.schema.fixture",
+      "capability": "crm.schema.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.crm.instance",
+      "startedAt": "2026-07-21T14:00:00.000Z",
+      "completedAt": "2026-07-21T14:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The selected policy, current schema, and bounded person and organization candidates may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected observations may enter private runtime state with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:48daeb3f116755fb3b8905b2ff152277402b4779bfedecb85e1b24650306a244",
+      "state": "passed",
+      "outputFingerprint": "sha256:55a5ae0062b9b5555031b8710ddd2ff23fba1a910db252abdc944dce1c0955f9",
+      "error": null
+    },
+    {
+      "id": "effect.contact-capture.preparation.duplicates.fixture",
+      "capability": "crm.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.crm.instance",
+      "startedAt": "2026-07-21T14:00:00.000Z",
+      "completedAt": "2026-07-21T14:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The selected policy, current schema, and bounded person and organization candidates may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected observations may enter private runtime state with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:37fec690a1f187de3ac0c5c927199a92620be4a661e96ad1009a22be2ec3605b",
+      "state": "passed",
+      "outputFingerprint": "sha256:e0b39c461cdc2e85a87af0cdac021231e97f80314bb0c4e69c154f3b09c5a0db",
+      "error": null
+    },
+    {
+      "id": "effect.contact-capture.preparation.organization.fixture",
+      "capability": "crm.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.crm.instance",
+      "startedAt": "2026-07-21T14:00:00.000Z",
+      "completedAt": "2026-07-21T14:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The selected policy, current schema, and bounded person and organization candidates may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected observations may enter private runtime state with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:da962cc69e5a033d1b1b4006fbf89553df97d2a71a38059b6065c35099f787d4",
+      "state": "passed",
+      "outputFingerprint": "sha256:e65066235ccee5ce98cbbb8b90358309b4165eebfcd319d4a71297e780445ffe",
+      "error": null
+    }
+  ],
+  "evidenceIds": [],
+  "scenario": {
+    "id": "contact-capture.preparation",
+    "path": "soter/scenarios/contact-capture/preparation.scenario.json",
+    "fingerprint": "sha256:1a203525779776237070d06f71030e527a56e3366b6ee26260dd81dd2df76284"
+  }
+}

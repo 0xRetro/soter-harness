@@ -60,7 +60,7 @@
           "state": { "enum": ["pending", "passed", "failed"] },
           "effectId": { "type": ["string", "null"] },
           "outputFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
-          "error": { "type": ["object", "null"] }
+          "error": { "type": "null" }
         }
       }
     },

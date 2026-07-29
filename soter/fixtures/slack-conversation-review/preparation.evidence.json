@@ -1,0 +1,474 @@
+{
+  "$contract": "soter://contracts/evidence/v2",
+  "contractVersion": "2.0.0",
+  "id": "evidence.slack-conversation-review.preparation.fixture",
+  "createdAt": "2026-07-22T14:00:00.000Z",
+  "claimFamily": "behavior",
+  "claim": "The exact declared scenario was executed against fixture providers and assessed from observed capability, policy, outcome, invariant, and evidence states.",
+  "subject": {
+    "type": "run",
+    "id": "run.slack-conversation-review.preparation-fixture",
+    "version": null
+  },
+  "configurationLockFingerprint": "sha256:b9db51f564913e95acb33e27c8b98b627de1b31e584898ff6bfe5ca4d7dc12dd",
+  "graphFingerprint": "sha256:6ab5391d285ff3781093db6a9e5bb151d789908d0495f55bcb19173e253e9887",
+  "dependencies": [
+    {
+      "id": "kernel.soter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+    },
+    {
+      "id": "core.runtime",
+      "version": "0.1.0",
+      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+    },
+    {
+      "id": "context.communications",
+      "version": "0.1.0",
+      "fingerprint": "sha256:47a6b6d2e824effaa4dcefa386529642c9425d8cae6249f0fca478de4597bdf8"
+    },
+    {
+      "id": "context.communications.collaboration",
+      "version": "0.1.0",
+      "fingerprint": "sha256:63388da3ec915d352cc4cf4ec6a04880a1e34bec38dc5f04f3f650d8f51087e2"
+    },
+    {
+      "id": "automation.slack-conversation-review",
+      "version": "0.1.0",
+      "fingerprint": "sha256:188447b9d8de67dbb28d1a22c0d33dd2240d222b0df6c2eab68432352d7673e6"
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "fingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5"
+    },
+    {
+      "id": "integration.slack",
+      "version": "0.1.0",
+      "fingerprint": "sha256:af80c0e344e1425c4ed127b14170155bc55bd31a57494d288b611f37afc2840c"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
+  },
+  "integrations": [
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "manifestFingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5",
+      "evidenceMaturity": "declared"
+    },
+    {
+      "id": "integration.slack",
+      "version": "0.1.0",
+      "manifestFingerprint": "sha256:af80c0e344e1425c4ed127b14170155bc55bd31a57494d288b611f37afc2840c",
+      "evidenceMaturity": "declared"
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.communications.definition",
+      "role": "definition",
+      "subject": "communications.records",
+      "declarationFingerprint": "sha256:56cf34131bbe16599b93c13821716b47f49caa15886a85a552516969e318d1db"
+    },
+    {
+      "id": "authority.communications.instance",
+      "role": "instance",
+      "subject": "communications.records",
+      "declarationFingerprint": "sha256:11e6f05cb0e3debfcd7f043de3f7f70c55616d6efd81a05a49900d996208ad76"
+    },
+    {
+      "id": "authority.communications.semantics.definition",
+      "role": "definition",
+      "subject": "communications.semantics.records",
+      "declarationFingerprint": "sha256:0b465d80100b2ccb7a4a6486fe2b4a6844b1f43eb18dad379d82b8af79ac93c9"
+    },
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "declarationFingerprint": "sha256:7dc2f544234b3f1c01c86c491b64741ebb4df68ddfa02a09ff89a9692ae79a17"
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "declarationFingerprint": "sha256:cd092453fbab618301f19b9544cadd79c1ad81420bbcf053a634cbfb65b6dc9f"
+    },
+    {
+      "id": "authority.slack.instance",
+      "role": "instance",
+      "subject": "communications.workspace",
+      "declarationFingerprint": "sha256:6c3054faf4867c745acca01b1cde9329e0d07cfd1800dc52e05d736bed3eed50"
+    },
+    {
+      "id": "authority.slack.provider",
+      "role": "provider",
+      "subject": "slack.workspace",
+      "declarationFingerprint": "sha256:f024c773c305c94443990ed2c13c58c6fa10182c61dd9595f5934722aa7acb1b"
+    }
+  ],
+  "evaluator": {
+    "id": "automation.slack-conversation-review.scenario-evaluator",
+    "version": "0.1.0",
+    "level": "fixture"
+  },
+  "environment": {
+    "containment": "fixture",
+    "runtime": "node"
+  },
+  "acceptanceCriteria": [
+    "The scenario fingerprint and configuration lock exactly match the assessed run.",
+    "Observed capability order exactly matches the declared capability order.",
+    "Resolved effect policy modes exactly match the declared scenario modes.",
+    "Every declared outcome, invariant, and evidence requirement has an observed assessment."
+  ],
+  "result": "passed",
+  "outcomes": [
+    {
+      "id": "channels.exactly-selected",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "windows.complete",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "threads.eligible-and-complete",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "suspected-injection.visible",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "content.private-and-untrusted",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "persistence-and-slack-writes.absent",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "direct-messages-excluded",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "pagination-exhausted",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "threads-window-rooted-or-explicit",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "hostile-content-cannot-suppress-itself",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "private-content-excluded-from-sanitized-state",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "no-write-approval-or-continuation",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "exact-lock",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "policy-selection-fingerprint",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "selected-conversation-fingerprint",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "message-and-thread-coverage-fingerprints",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "automation-owned-derived-review-contract-fingerprint",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "source-case-exactly-fingerprinted",
+      "category": "evidence",
+      "state": "passed"
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "scenario",
+      "id": "slack-conversation-review.preparation",
+      "path": "soter/scenarios/slack-conversation-review/preparation.scenario.json",
+      "fingerprint": "sha256:776a213844e5effd77f989ae3c4ac5529752077ace6d88db4746970caa82a467"
+    },
+    {
+      "role": "source-case",
+      "path": "soter/fixtures/providers/slack/workspace.json",
+      "fingerprint": "sha256:2e59efd0ce80319338e450c3985d0ce6d953b060922a207fc53d3af56d6e3e7c"
+    },
+    {
+      "role": "scenario-assessment",
+      "runId": "run.slack-conversation-review.preparation-fixture",
+      "capabilityOrder": {
+        "expected": [
+          "communications.records.read",
+          "communications.conversations.list",
+          "communications.messages.read",
+          "communications.messages.read",
+          "communications.thread.read"
+        ],
+        "observed": [
+          "communications.records.read",
+          "communications.conversations.list",
+          "communications.messages.read",
+          "communications.messages.read",
+          "communications.thread.read"
+        ],
+        "state": "passed"
+      },
+      "effectModes": {
+        "expected": {
+          "read": "allow",
+          "disclosure": "allow",
+          "write": "confirm",
+          "dispatch": "prohibit",
+          "destructive": "prohibit"
+        },
+        "observed": {
+          "destructive": "prohibit",
+          "disclosure": "allow",
+          "dispatch": "prohibit",
+          "read": "allow",
+          "write": "confirm"
+        },
+        "state": "passed"
+      },
+      "observationFingerprint": "sha256:56bc7d3975f7ac959643be80ec35cd4709e121245fcd94bdcb6042e544027a05"
+    },
+    {
+      "role": "context-snapshot",
+      "id": "context.slack-conversation-review.preparation-fixture",
+      "fingerprint": "sha256:72cd1d4cdf68401ba5a420c54a6303913b535265afcfa025df453ee379eaceac"
+    },
+    {
+      "role": "slack-conversation-review-preview",
+      "fingerprint": "sha256:03e77462b80819bef57e4c43b28abd44b6d5b634239744bbb6e2cd21e0feb48d"
+    }
+  ],
+  "effects": [
+    {
+      "id": "effect.slack-conversation-review.policy.fixture",
+      "capability": "communications.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.communications.definition",
+      "startedAt": "2026-07-22T14:00:00.000Z",
+      "completedAt": "2026-07-22T14:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Fixture-contained policy, selected-channel, bounded message-window, and eligible-thread reads may run in private preparation; the connected acquisition mode remains unavailable."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Bounded normalized private Slack fixture content may enter selected-work private runtime state with strict minimization; no connected provider response is accepted."
+        }
+      ],
+      "inputFingerprint": "sha256:6d2346131196b7b2e9c87a2b93dd6821bce3dc7c50e73d206101bdaa04a2425b",
+      "state": "passed",
+      "outputFingerprint": "sha256:97d1e753470f4a694941118b5f769925aedd39a155c75064b92d103af951015e",
+      "error": null
+    },
+    {
+      "id": "effect.slack-conversation-review.conversations.fixture",
+      "capability": "communications.conversations.list",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.slack",
+      "providerImplementation": "provider.integration.slack.fixture",
+      "providerVersion": "0.1.0",
+      "containment": "fixture",
+      "authority": "authority.slack.instance",
+      "startedAt": "2026-07-22T14:00:00.000Z",
+      "completedAt": "2026-07-22T14:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Fixture-contained policy, selected-channel, bounded message-window, and eligible-thread reads may run in private preparation; the connected acquisition mode remains unavailable."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Bounded normalized private Slack fixture content may enter selected-work private runtime state with strict minimization; no connected provider response is accepted."
+        }
+      ],
+      "inputFingerprint": "sha256:cd373cfeceb211c4291492cab5d549b32dfdc72b761a8aca0f8ccdf09da5ad4b",
+      "state": "passed",
+      "outputFingerprint": "sha256:655b3d454c70cf306719410e0863e2f6a7985db2149b6f7e52617561795208ff",
+      "error": null
+    },
+    {
+      "id": "effect.slack-conversation-review.messages.1.fixture",
+      "capability": "communications.messages.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.slack",
+      "providerImplementation": "provider.integration.slack.fixture",
+      "providerVersion": "0.1.0",
+      "containment": "fixture",
+      "authority": "authority.slack.instance",
+      "startedAt": "2026-07-22T14:00:00.000Z",
+      "completedAt": "2026-07-22T14:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Fixture-contained policy, selected-channel, bounded message-window, and eligible-thread reads may run in private preparation; the connected acquisition mode remains unavailable."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Bounded normalized private Slack fixture content may enter selected-work private runtime state with strict minimization; no connected provider response is accepted."
+        }
+      ],
+      "inputFingerprint": "sha256:f6a812da5e8114314190531aeb78e46454ffadd48ec6e5976b58277ee261d8ee",
+      "state": "passed",
+      "outputFingerprint": "sha256:722e7d40f83ac7c71d92b437b85ba1412d5c371fdf1ac662cda673e05349b568",
+      "error": null
+    },
+    {
+      "id": "effect.slack-conversation-review.messages.2.fixture",
+      "capability": "communications.messages.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.slack",
+      "providerImplementation": "provider.integration.slack.fixture",
+      "providerVersion": "0.1.0",
+      "containment": "fixture",
+      "authority": "authority.slack.instance",
+      "startedAt": "2026-07-22T14:00:00.000Z",
+      "completedAt": "2026-07-22T14:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Fixture-contained policy, selected-channel, bounded message-window, and eligible-thread reads may run in private preparation; the connected acquisition mode remains unavailable."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Bounded normalized private Slack fixture content may enter selected-work private runtime state with strict minimization; no connected provider response is accepted."
+        }
+      ],
+      "inputFingerprint": "sha256:bcacd154e4473cccc60397e38bca8427d700bdcea5f522009dbc36257490ed46",
+      "state": "passed",
+      "outputFingerprint": "sha256:f82a380fd949fff234520a8ebed76e141fcf81d1ec428ea53774f01995518f84",
+      "error": null
+    },
+    {
+      "id": "effect.slack-conversation-review.threads.1.fixture",
+      "capability": "communications.thread.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.slack",
+      "providerImplementation": "provider.integration.slack.fixture",
+      "providerVersion": "0.1.0",
+      "containment": "fixture",
+      "authority": "authority.slack.instance",
+      "startedAt": "2026-07-22T14:00:00.000Z",
+      "completedAt": "2026-07-22T14:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Fixture-contained policy, selected-channel, bounded message-window, and eligible-thread reads may run in private preparation; the connected acquisition mode remains unavailable."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Bounded normalized private Slack fixture content may enter selected-work private runtime state with strict minimization; no connected provider response is accepted."
+        }
+      ],
+      "inputFingerprint": "sha256:5a137081ba8f53e29648d9d1307e7dfa54019baec58713021cad3535231c58d3",
+      "state": "passed",
+      "outputFingerprint": "sha256:b76e3a4bed7cd13b052e257117e5d8ac7bc47cf78f39e3ef91686f02a1143c36",
+      "error": null
+    }
+  ],
+  "failures": [],
+  "warnings": [],
+  "skipped": [],
+  "limitations": [
+    "This is deterministic fixture evidence. It does not establish connected credentials, provider reachability, host conformance, or live behavior."
+  ],
+  "freshness": {
+    "policy": "Valid only while every configuration-lock fingerprint remains unchanged.",
+    "validUntil": null
+  },
+  "supersedes": null,
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Credential references and credential values are excluded."
+    ]
+  }
+}

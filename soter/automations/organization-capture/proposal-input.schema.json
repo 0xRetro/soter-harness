@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://automations/organization-capture/proposal-input/v1",
+  "title": "Organization Capture deterministic proposal input",
+  "type": "object",
+  "additionalProperties": false
+}

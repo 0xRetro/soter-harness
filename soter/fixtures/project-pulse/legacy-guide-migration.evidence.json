@@ -1,0 +1,212 @@
+{
+  "$contract": "soter://contracts/evidence/v2",
+  "contractVersion": "2.0.0",
+  "id": "evidence.project-pulse.legacy-guide-migration.fixture",
+  "createdAt": "2026-07-16T12:00:00.000Z",
+  "claimFamily": "migration",
+  "claim": "The exact target becomes canonical for this legacy responsibility and its fallback may be removed under the recorded parity decision; a mixed source artifact may remain only for separately unfinished responsibilities.",
+  "subject": {
+    "type": "pack",
+    "id": "automation.project-pulse",
+    "version": "0.1.0"
+  },
+  "configurationLockFingerprint": "sha256:f1a6c353e163a1fd97479433405be26556aa46e77b4aaa6be71914cb82327c46",
+  "graphFingerprint": "sha256:94321ae2d22dc301363b101aa0d88284195144540129cfbfe2b992b85d52ae4b",
+  "dependencies": [
+    {
+      "id": "kernel.soter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+    },
+    {
+      "id": "core.runtime",
+      "version": "0.1.0",
+      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+    },
+    {
+      "id": "context.projects",
+      "version": "0.1.0",
+      "fingerprint": "sha256:e8b68449ec9582d769c56d9b9cdf9ed3a6f220c15593a614ac13e9a656cf0ce5"
+    },
+    {
+      "id": "context.tasks",
+      "version": "0.1.0",
+      "fingerprint": "sha256:5d516369250d03e1a270d7ac6c0dfe3a19d790eafab4a7971e1b11a36d282555"
+    },
+    {
+      "id": "automation.project-pulse",
+      "version": "0.1.0",
+      "fingerprint": "sha256:d7bc6133d16005aa765ca01ccf211e2518a08e41ab54a4dcd36faf81b3f5cb65"
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "fingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
+  },
+  "integrations": [
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "manifestFingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5",
+      "evidenceMaturity": "declared"
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "declarationFingerprint": "sha256:e3e11d347b7a0109668facaeb7b12311023da39949d1328bfd918c53a406c756"
+    },
+    {
+      "id": "authority.projects.definition",
+      "role": "definition",
+      "subject": "projects.records",
+      "declarationFingerprint": "sha256:99b31c418bf4e271b7511073c778608ea6e5eaebecb07089f41f7708cb501065"
+    },
+    {
+      "id": "authority.projects.instance",
+      "role": "instance",
+      "subject": "projects.records",
+      "declarationFingerprint": "sha256:c5e800de30db14f0288c0bf6eef2a8bb7e63c0b8cfa08f68032380098b7160cf"
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "declarationFingerprint": "sha256:29aefe23c870f66c4c851f271e58223059743752e2d73572e812bd7f2ef29379"
+    },
+    {
+      "id": "authority.tasks.definition",
+      "role": "definition",
+      "subject": "tasks.records",
+      "declarationFingerprint": "sha256:9c445d27249ac5d8b56dc4f153c08b59dc1d8e6b6b3793eb6d257dbc176e0c86"
+    },
+    {
+      "id": "authority.tasks.instance",
+      "role": "instance",
+      "subject": "tasks.records",
+      "declarationFingerprint": "sha256:affd06fe2426d81f1f7b07828c7ad0eec0b86e1ae1d60726f24a87a935db1ca9"
+    }
+  ],
+  "evaluator": {
+    "id": "kernel.legacy-migration-completion",
+    "version": "1.0.0",
+    "level": "fixture"
+  },
+  "environment": {
+    "containment": "fixture",
+    "runtime": "node"
+  },
+  "acceptanceCriteria": [
+    "The exact migration target is selected by and fingerprinted in the current configuration lock.",
+    "Every artifact labeled as same-lock supporting evidence passed against the exact configuration lock and stable semantic graph; separately labeled supporting artifacts are fingerprint-bound without a same-lock claim.",
+    "The complete inventory records the exact target authority or retirement, parity decision, fallback removal, evidence reference, and either a completed source tombstone or one completed responsibility inside a retained mixed source.",
+    "The executable Project Pulse guide is removed, no retained legacy artifact depends on its exact path, and the mixed Project Management source records target ownership for this responsibility.",
+    "Automation owns exact preparation, connected acquisition, deterministic analysis of a human-supplied health judgment, private proposal, complete-group compilation, and verification through the shared Core authority path.",
+    "The target requires exact project policy, real milestone/work-item grammar, promoted-task and document reads, a human health judgment, confirmed writes, prohibited dispatch/destructive effects, document update first, and status creation last.",
+    "Current contained evidence covers complete-group approval, one-time start, exact document and status effects, and read-after-write verification without a live provider effect."
+  ],
+  "result": "passed",
+  "outcomes": [
+    {
+      "id": "migration-disposition",
+      "state": "migrated"
+    },
+    {
+      "id": "migration-parity",
+      "state": "intentional-change"
+    },
+    {
+      "id": "target-selected-in-exact-lock",
+      "state": "passed"
+    },
+    {
+      "id": "supporting-evidence-current",
+      "state": "passed"
+    },
+    {
+      "id": "authority-transition-explicit",
+      "state": "passed"
+    },
+    {
+      "id": "legacy-dependencies-cleared",
+      "state": "passed"
+    },
+    {
+      "id": "complete-operator-path-declared",
+      "state": "passed"
+    },
+    {
+      "id": "grounded-write-boundary-enforced",
+      "state": "passed"
+    },
+    {
+      "id": "contained-transaction-completed",
+      "state": "passed"
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "migration-source",
+      "path": ".claude/skills/updating-project-status/SKILL.md",
+      "fingerprint": "sha256:64fbb9b6f5cd442590bceaeb5303b350b09843aefcd098d08afaa0953a037c8b"
+    },
+    {
+      "role": "migration-target",
+      "path": "soter/packs/automation.project-pulse/pack.json",
+      "fingerprint": "sha256:d7bc6133d16005aa765ca01ccf211e2518a08e41ab54a4dcd36faf81b3f5cb65"
+    },
+    {
+      "role": "supporting-evidence",
+      "path": "soter/fixtures/project-pulse/happy-path.evidence.json",
+      "fingerprint": "sha256:88c0740ad6f6c1abb6b5cdddf0accbb4038f480e9cd9099a864149bd8950c9b5"
+    },
+    {
+      "role": "supporting-evidence",
+      "path": "soter/fixtures/project-pulse/no-invented-progress.evidence.json",
+      "fingerprint": "sha256:5f0bb114ff89c5bd27d9df9f604cf8efa46e1c787b100d72735552c42e900618"
+    },
+    {
+      "role": "supporting-evidence",
+      "path": "soter/fixtures/project-pulse/pressure-on-track.evidence.json",
+      "fingerprint": "sha256:d6da1dd6208e37a5ffa536f2711bbc6442c5c5966c9deeaecff667939174e010"
+    },
+    {
+      "role": "supporting-artifact",
+      "path": "soter/fixtures/project-pulse/connected-workflow.evidence.json",
+      "fingerprint": "sha256:01dc5c979ca69f40d7eca80bdde12d7c09375b2993e24f1e2551a4923a44522e"
+    }
+  ],
+  "effects": [],
+  "failures": [],
+  "warnings": [],
+  "skipped": [
+    "Connected provider readiness, live behavior verification, and current health were not evaluated.",
+    "Removing a legacy source fallback does not grant provider effect or host execution authority."
+  ],
+  "limitations": [
+    "This intentional migration replaces conversational project discovery with one exact project, status date, visibility, required human health judgment, optional affected-milestone titles, and operator-note input contract.",
+    "Milestone progress is computed only from exact governed work items and matching promoted tasks. Health remains operator-owned; the Automation only applies selected health-tag changes and blocks exact contradictions.",
+    "The contained transaction proves local compilation and recovery boundaries only; live Notion authentication, permission, provider conformance, readiness, verification, and health remain not evaluated.",
+    "The two-effect transaction is ordered and verified but not externally atomic. Ambiguity or a later-effect failure pauses for manual reconciliation and never retries a write automatically."
+  ],
+  "freshness": {
+    "policy": "Valid only while every configuration-lock fingerprint remains unchanged.",
+    "validUntil": null
+  },
+  "supersedes": null,
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Credential references and credential values are excluded."
+    ]
+  }
+}

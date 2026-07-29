@@ -6,18 +6,21 @@
   "intent": "operate",
   "input": {
     "project": {
-      "fixtureId": "project.pulse-healthy",
+      "fixtureId": "https://www.notion.so/11111111111111111111111111111111",
       "referenceState": "resolvable",
       "policyState": "available",
       "promotedTasksState": "available",
       "milestoneState": "available"
-    }
+    },
+    "healthJudgment": "on-track",
+    "healthMilestones": []
   },
   "expected": {
     "capabilityOrder": [
-      "crm.records.read",
-      "crm.records.read",
-      "crm.records.read"
+      "projects.records.read",
+      "projects.records.read",
+      "tasks.records.read",
+      "documents.content.read"
     ],
     "effectModes": {
       "read": "allow",
@@ -28,7 +31,7 @@
     },
     "outcomes": [
       "project-progress.grounded",
-      "health-call.explained",
+      "health-judgment.checked",
       "status-record.previewed",
       "milestone-diff.previewed",
       "writes-held-for-confirmation"

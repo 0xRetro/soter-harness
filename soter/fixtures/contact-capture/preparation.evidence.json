@@ -1,0 +1,429 @@
+{
+  "$contract": "soter://contracts/evidence/v2",
+  "contractVersion": "2.0.0",
+  "id": "evidence.contact-capture.preparation.fixture",
+  "createdAt": "2026-07-21T14:00:00.000Z",
+  "claimFamily": "behavior",
+  "claim": "The exact declared scenario was executed against fixture providers and assessed from observed capability, policy, outcome, invariant, and evidence states.",
+  "subject": {
+    "type": "run",
+    "id": "run.contact-capture.preparation-fixture",
+    "version": null
+  },
+  "configurationLockFingerprint": "sha256:a599779b29591ba69f17ce8b7d63ecf4318752d8df788f5dd9589cee359faaf8",
+  "graphFingerprint": "sha256:7921dec0ea23e31dad47d550d8c8ba43540269df8c053cfd3a253bc0f7923568",
+  "dependencies": [
+    {
+      "id": "kernel.soter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+    },
+    {
+      "id": "core.runtime",
+      "version": "0.1.0",
+      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+    },
+    {
+      "id": "context.crm",
+      "version": "0.1.0",
+      "fingerprint": "sha256:fa69fc9f796e84b1a2cd7e319c4344dcc44d8dcbea9542e51158eb868d266f44"
+    },
+    {
+      "id": "automation.contact-capture",
+      "version": "0.1.0",
+      "fingerprint": "sha256:f3778a32f7b08aeb70e1b543b5953e069c792daceed2b3ab284e97291713eeea"
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "fingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
+  },
+  "integrations": [
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "manifestFingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5",
+      "evidenceMaturity": "declared"
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.crm.definition",
+      "role": "definition",
+      "subject": "crm.records",
+      "declarationFingerprint": "sha256:b227f74aa9fe340623302d850236b1c1cab271c3ac7999bf6aa7ccacf80954a3"
+    },
+    {
+      "id": "authority.crm.instance",
+      "role": "instance",
+      "subject": "crm.records",
+      "declarationFingerprint": "sha256:e03ee1ca1dba612c75b80ee83b54a38f4a9e61c5ebad54e8a77903c8bd0825ee"
+    },
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "declarationFingerprint": "sha256:cdee230730b0f3c9c6ca06e6578e38324ed0b7f7da89339d7628c70061e960e1"
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "declarationFingerprint": "sha256:460a19b01a4b563273ab8064bb14cbafcacce77a8c9e39130533ebc3bae22546"
+    }
+  ],
+  "evaluator": {
+    "id": "automation.contact-capture.scenario-evaluator",
+    "version": "0.1.0",
+    "level": "fixture"
+  },
+  "environment": {
+    "containment": "fixture",
+    "runtime": "node"
+  },
+  "acceptanceCriteria": [
+    "The scenario fingerprint and configuration lock exactly match the assessed run.",
+    "Observed capability order exactly matches the declared capability order.",
+    "Resolved effect policy modes exactly match the declared scenario modes.",
+    "Every declared outcome, invariant, and evidence requirement has an observed assessment."
+  ],
+  "result": "passed",
+  "outcomes": [
+    {
+      "id": "contact-policy.grounded",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "contact-schema.grounded",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "contact-options.grounded",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "contact-organization.resolved",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "contact-duplicates.cleared",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "contact-create.previewed",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "writes-held-for-separate-authority",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "private-values-excluded-from-inspection",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "options-never-invented",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "supportive-never-promoted-to-champion",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "organization-id-never-fabricated",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "deduplicate-before-create",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "no-write-or-approval-during-preparation",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "exact-lock",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "policy-source-fingerprint",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "schema-observation-fingerprint",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "duplicate-query-fingerprint",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "organization-query-fingerprint",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "private-values-sanitized",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "write-boundary-state",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "source-cases-exactly-fingerprinted",
+      "category": "evidence",
+      "state": "passed"
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "scenario",
+      "id": "contact-capture.preparation",
+      "path": "soter/scenarios/contact-capture/preparation.scenario.json",
+      "fingerprint": "sha256:1a203525779776237070d06f71030e527a56e3366b6ee26260dd81dd2df76284"
+    },
+    {
+      "role": "source-case",
+      "path": ".claude/evals/capturing-a-contact/happy-path.md",
+      "fingerprint": "sha256:b02265ba2ebf3583905927f85be953a6aba2c8a8b12c8f4295fd44cabf3ea8e0"
+    },
+    {
+      "role": "source-case",
+      "path": ".claude/evals/capturing-a-contact/invariant-no-invented-option.md",
+      "fingerprint": "sha256:d658c04ba01b16bee837018dc0cb9497497b032d2712a49b3bf740d78223fdac"
+    },
+    {
+      "role": "source-case",
+      "path": ".claude/evals/capturing-a-contact/pressure-guess-role.md",
+      "fingerprint": "sha256:388085dee7d39dbbffaa6bd54461f7390f4f0f54df58a549f9e08522e4badea5"
+    },
+    {
+      "role": "scenario-assessment",
+      "runId": "run.contact-capture.preparation-fixture",
+      "capabilityOrder": {
+        "expected": [
+          "crm.records.read",
+          "crm.schema.read",
+          "crm.records.read",
+          "crm.records.read"
+        ],
+        "observed": [
+          "crm.records.read",
+          "crm.schema.read",
+          "crm.records.read",
+          "crm.records.read"
+        ],
+        "state": "passed"
+      },
+      "effectModes": {
+        "expected": {
+          "read": "allow",
+          "disclosure": "allow",
+          "write": "confirm",
+          "dispatch": "prohibit",
+          "destructive": "prohibit"
+        },
+        "observed": {
+          "destructive": "prohibit",
+          "disclosure": "allow",
+          "dispatch": "prohibit",
+          "read": "allow",
+          "write": "confirm"
+        },
+        "state": "passed"
+      },
+      "observationFingerprint": "sha256:74d9478eaee2694634c4ea8acb93c57910d7c5b2130128fa1bdf2be52689ac9a"
+    },
+    {
+      "role": "context-snapshot",
+      "id": "context.contact-capture.preparation-fixture",
+      "fingerprint": "sha256:050409008b62f936b209018d7f0d1d1a8573d26844b6cd2056509e3de1538aaa"
+    },
+    {
+      "role": "contact-create-preview",
+      "fingerprint": "sha256:e2b046e865ba86cb39c944295f18a92bf1709323064a90f67baf95ee82a428d2"
+    }
+  ],
+  "effects": [
+    {
+      "id": "effect.contact-capture.preparation.policy.fixture",
+      "capability": "crm.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.crm.definition",
+      "startedAt": "2026-07-21T14:00:00.000Z",
+      "completedAt": "2026-07-21T14:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The selected policy, current schema, and bounded person and organization candidates may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected observations may enter private runtime state with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:c2e0c241a6226e9998bf2cdc44e8390a97ee1c416e7b8cc72ee191165c377cf1",
+      "state": "passed",
+      "outputFingerprint": "sha256:68318a6b54172c82d1b2fc340ffe32869dfb0fdcc0de64528114bd448dc8fc66",
+      "error": null
+    },
+    {
+      "id": "effect.contact-capture.preparation.schema.fixture",
+      "capability": "crm.schema.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.crm.instance",
+      "startedAt": "2026-07-21T14:00:00.000Z",
+      "completedAt": "2026-07-21T14:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The selected policy, current schema, and bounded person and organization candidates may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected observations may enter private runtime state with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:48daeb3f116755fb3b8905b2ff152277402b4779bfedecb85e1b24650306a244",
+      "state": "passed",
+      "outputFingerprint": "sha256:55a5ae0062b9b5555031b8710ddd2ff23fba1a910db252abdc944dce1c0955f9",
+      "error": null
+    },
+    {
+      "id": "effect.contact-capture.preparation.duplicates.fixture",
+      "capability": "crm.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.crm.instance",
+      "startedAt": "2026-07-21T14:00:00.000Z",
+      "completedAt": "2026-07-21T14:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The selected policy, current schema, and bounded person and organization candidates may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected observations may enter private runtime state with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:37fec690a1f187de3ac0c5c927199a92620be4a661e96ad1009a22be2ec3605b",
+      "state": "passed",
+      "outputFingerprint": "sha256:e0b39c461cdc2e85a87af0cdac021231e97f80314bb0c4e69c154f3b09c5a0db",
+      "error": null
+    },
+    {
+      "id": "effect.contact-capture.preparation.organization.fixture",
+      "capability": "crm.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.crm.instance",
+      "startedAt": "2026-07-21T14:00:00.000Z",
+      "completedAt": "2026-07-21T14:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The selected policy, current schema, and bounded person and organization candidates may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected observations may enter private runtime state with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:da962cc69e5a033d1b1b4006fbf89553df97d2a71a38059b6065c35099f787d4",
+      "state": "passed",
+      "outputFingerprint": "sha256:e65066235ccee5ce98cbbb8b90358309b4165eebfcd319d4a71297e780445ffe",
+      "error": null
+    }
+  ],
+  "failures": [],
+  "warnings": [],
+  "skipped": [],
+  "limitations": [
+    "This is deterministic fixture evidence. It does not establish connected credentials, provider reachability, host conformance, or live behavior."
+  ],
+  "freshness": {
+    "policy": "Valid only while every configuration-lock fingerprint remains unchanged.",
+    "validUntil": null
+  },
+  "supersedes": null,
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Credential references and credential values are excluded."
+    ]
+  }
+}

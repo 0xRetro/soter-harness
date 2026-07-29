@@ -13,9 +13,15 @@ const base = {
 };
 const field = { id: 'subject', label: 'Subject', description: 'A sufficiently descriptive operator field.', required: true, exposure: 'identifier' };
 const valid = [
-  { ...field, type: 'reference', reference: { subject: 'crm.records.project', authorityRole: 'instance' } },
+  { ...field, type: 'reference', reference: { subject: 'projects.records.project', authorityRole: 'instance' } },
   { ...field, type: 'enum', options: ['open', 'all'] },
   { ...field, type: 'string', constraints: { minLength: 2 } },
+  {
+    ...field,
+    type: 'string-list',
+    constraints: { minItems: 1, maxItems: 4, itemMinLength: 2, itemMaxLength: 40 },
+    examples: [['alpha', 'beta']]
+  },
   { ...field, type: 'boolean' },
   { ...field, type: 'date', examples: ['2026-07-16'] },
   { ...field, type: 'uri', examples: ['https://example.invalid/item'] }
@@ -27,8 +33,10 @@ for (const candidate of [
   { ...field, type: 'reference' },
   { ...field, type: 'enum' },
   { ...field, type: 'enum', options: [] },
+  { ...field, type: 'string-list' },
+  { ...field, type: 'string-list', constraints: { minItems: 0, maxItems: 2 }, examples: ['alpha'] },
   { ...field, type: 'boolean', options: ['true'] },
-  { ...field, type: 'date', reference: { subject: 'crm.records.project', authorityRole: 'instance' } },
+  { ...field, type: 'date', reference: { subject: 'projects.records.project', authorityRole: 'instance' } },
   { ...field, type: 'uri', constraints: { minLength: 3 } }
 ]) {
   assert(validateJsonSchema({ ...base, fields: [candidate] }, schema).length > 0);

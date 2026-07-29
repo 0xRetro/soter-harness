@@ -7,11 +7,15 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { fingerprintJson, fingerprintPath, readJson } from './lib/canonical-json.mjs';
 import { validateJsonSchema } from '../kernel/verify.mjs';
 import { createFixtureRuntimeState, invokeCapability } from './capabilities.mjs';
+import { materializeContainedPrivateConfiguration } from './contained-private-configurations.mjs';
 import { assertPreparedEmailTriage } from '../automations/email-triage/email-triage.selftest.mjs';
 import {
+  activeConfigurationLockStatePath,
+  preparedWorkStatePath,
   preparedWorkDerivedReviewMaterialStatePath,
   preparedWorkReviewMaterialStatePath,
-  readContextSnapshotState
+  readContextSnapshotState,
+  readRunState
 } from './runtime-state.mjs';
 import {
   assertPreparedWorkDerivedReviewMaterial,
@@ -20,26 +24,85 @@ import {
   inspectPreparedAutomationDerivedReviewMaterial,
   inspectPreparedAutomationReviewMaterial,
   inspectPreparedAutomationWork,
+  loadExactPreparedAutomationAcquisition,
   prepareAutomationRun
 } from './prepared-work.mjs';
 
 const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
+function withWorkFingerprint(work) {
+  const value = structuredClone(work);
+  delete value.fingerprint;
+  return { ...value, fingerprint: fingerprintJson(value) };
+}
+
+function projectPulseOptionMapping(mapping, recordType, field, entries) {
+  return {
+    mapping,
+    recordType,
+    field,
+    mode: 'exact-bijection',
+    entries
+  };
+}
+
+function projectPulseOptionMappings() {
+  return [
+    projectPulseOptionMapping(
+      'mapping.integration.notion.projects-records',
+      'project',
+      'projectType',
+      [{ portable: 'Project', provider: 'PRIVATE_PROVIDER_PROJECT_PULSE_PROJECT_TYPE' }]
+    ),
+    projectPulseOptionMapping(
+      'mapping.integration.notion.projects-records',
+      'project',
+      'status',
+      [{ portable: 'active', provider: 'PRIVATE_PROVIDER_PROJECT_PULSE_PROJECT_STATUS_ACTIVE' }]
+    ),
+    projectPulseOptionMapping(
+      'mapping.integration.notion.tasks-records',
+      'task',
+      'status',
+      [
+        { portable: 'done', provider: 'PRIVATE_PROVIDER_PROJECT_PULSE_TASK_STATUS_DONE' },
+        { portable: 'open', provider: 'PRIVATE_PROVIDER_PROJECT_PULSE_TASK_STATUS_OPEN' }
+      ]
+    ),
+    projectPulseOptionMapping(
+      'mapping.integration.notion.tasks-records',
+      'task',
+      'context',
+      [{ portable: 'Project', provider: 'PRIVATE_PROVIDER_PROJECT_PULSE_TASK_CONTEXT' }]
+    ),
+    projectPulseOptionMapping(
+      'mapping.integration.notion.projects-records',
+      'project-feed-entry',
+      'category',
+      [{ portable: 'Status', provider: 'PRIVATE_PROVIDER_PROJECT_PULSE_FEED_CATEGORY_STATUS' }]
+    ),
+    projectPulseOptionMapping(
+      'mapping.integration.notion.projects-records',
+      'project-feed-entry',
+      'visibility',
+      [{ portable: 'Internal', provider: 'PRIVATE_PROVIDER_PROJECT_PULSE_FEED_VISIBILITY_INTERNAL' }]
+    )
+  ];
+}
+
 export async function selftestPreparedWork(root = defaultRoot) {
   const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'soter-prepared-work-selftest-'));
   try {
     fs.cpSync(path.join(root, 'soter'), path.join(temporaryRoot, 'soter'), { recursive: true });
-    for (const directory of ['.claude', '.codex']) {
-      fs.cpSync(path.join(root, directory), path.join(temporaryRoot, directory), { recursive: true });
-    }
-    for (const file of ['package.json', 'package-lock.json', 'AGENTS.md', 'CLAUDE.md']) {
+    for (const file of ['package.json', 'package-lock.json']) {
       fs.copyFileSync(path.join(root, file), path.join(temporaryRoot, file));
     }
-    const canonicalBefore = fingerprintPath(path.join(temporaryRoot, 'soter'));
+    let canonicalBefore = fingerprintPath(path.join(temporaryRoot, 'soter'));
     const missing = await prepareAutomationRun({
       root: temporaryRoot,
       automationId: 'automation.project-pulse',
       configurationName: 'project-pulse',
+      configurationBasis: 'tracked-contained',
       input: {},
       createdAt: '2026-07-16T14:00:00.000Z'
     });
@@ -49,22 +112,42 @@ export async function selftestPreparedWork(root = defaultRoot) {
     assert.equal(missing.continuationRequest, null);
 
     const privateSentinel = 'PRIVATE_OPERATOR_GOAL_SENTINEL';
+    const privateHealthMilestone = 'LAUNCH READINESS';
     const ready = await prepareAutomationRun({
       root: temporaryRoot,
       automationId: 'automation.project-pulse',
       configurationName: 'project-pulse',
-      input: { project: 'project.pulse-risk', operatorGoal: privateSentinel },
+      configurationBasis: 'tracked-contained',
+      input: {
+        project: 'https://www.notion.so/11111111111111111111111111111111',
+        statusDate: '2026-07-16',
+        visibility: 'Internal',
+        health: 'on-track',
+        healthMilestones: [privateHealthMilestone],
+        operatorGoal: privateSentinel
+      },
       createdAt: '2026-07-16T14:01:00.000Z'
     });
     assert.equal(ready.state, 'ready-for-review');
     assert.deepEqual(ready.history.map((item) => item.state), ['draft', 'preparing', 'ready-for-review']);
-    assert.equal(ready.inputSummary.fields.find((item) => item.id === 'project')?.value, 'project.pulse-risk');
+    assert.equal(
+      ready.inputSummary.fields.find((item) => item.id === 'project')?.value,
+      'https://www.notion.so/11111111111111111111111111111111'
+    );
+    assert(!Object.hasOwn(ready.inputSummary.fields.find((item) => item.id === 'statusDate'), 'value'));
+    assert.equal(ready.inputSummary.fields.find((item) => item.id === 'visibility')?.value, 'Internal');
+    assert.equal(ready.inputSummary.fields.find((item) => item.id === 'health')?.value, 'on-track');
+    assert(!Object.hasOwn(ready.inputSummary.fields.find((item) => item.id === 'healthMilestones'), 'value'));
     assert(!Object.hasOwn(ready.inputSummary.fields.find((item) => item.id === 'operatorGoal'), 'value'));
-    assert(ready.contextPlan.length === 3 && ready.contextPlan.every((item) => item.state === 'completed'));
-    assert(ready.preview.contradictions.some((item) => item.id === 'risk-prevents-on-track-claim'));
+    assert(ready.contextPlan.length === 4 && ready.contextPlan.every((item) => item.state === 'completed'));
+    assert.equal(ready.preview.kind, 'project-pulse-preview');
+    assert.deepEqual(ready.preview.contradictions, []);
     assert(ready.preview.facts.length > 0);
-    assert.equal(ready.preview.proposedChanges.length, 0,
-      'Read-only Project Pulse must not propose undeclared create or update capabilities.');
+    assert.deepEqual(
+      ready.preview.proposedChanges.map((change) => change.id),
+      ['action.project-pulse.document-update', 'action.project-pulse.status-create'],
+      'Project Pulse preparation must project the exact complete review group without executing it.'
+    );
     assert(ready.effects.filter((item) => ['read', 'disclosure'].includes(item.effect)).every((item) => item.state === 'completed-contained'));
     assert(ready.effects.filter((item) => ['write', 'dispatch', 'destructive'].includes(item.effect)).every((item) => item.state === 'not-executed'));
     assert.equal(ready.approval.state, 'not-requested');
@@ -74,14 +157,36 @@ export async function selftestPreparedWork(root = defaultRoot) {
       workId: ready.id
     });
     assert.equal(readyReview.$contract, 'soter://contracts/prepared-work-review-material/v1');
+    assert.deepEqual(
+      readyReview.fields.find((item) => item.id === 'healthMilestones')?.reviewValue,
+      [privateHealthMilestone]
+    );
     assert.equal(readyReview.applicability, 'current');
     assert.equal(readyReview.preparedWorkFingerprint, ready.fingerprint);
     assert.equal(readyReview.checkpointFingerprint, ready.checkpoint.fingerprint);
-    assert.deepEqual(readyReview.fields.map((field) => field.id), ['project', 'operatorGoal']);
+    assert.deepEqual(
+      readyReview.fields.map((field) => field.id),
+      ['project', 'statusDate', 'visibility', 'health', 'healthMilestones', 'operatorGoal']
+    );
     assert.equal(readyReview.fields.find((field) => field.id === 'project')?.reviewValue,
-      'project.pulse-risk');
+      'https://www.notion.so/11111111111111111111111111111111');
+    assert.equal(readyReview.fields.find((field) => field.id === 'statusDate')?.reviewValue,
+      '2026-07-16');
+    assert.equal(readyReview.fields.find((field) => field.id === 'visibility')?.reviewValue,
+      'Internal');
+    assert.equal(readyReview.fields.find((field) => field.id === 'health')?.reviewValue,
+      'on-track');
     assert.equal(readyReview.fields.find((field) => field.id === 'operatorGoal')?.reviewValue,
       privateSentinel);
+    const readyDerivedReview = inspectPreparedAutomationDerivedReviewMaterial({
+      root: temporaryRoot,
+      workId: ready.id
+    });
+    assert.equal(readyDerivedReview.kind, 'project-pulse-derived-review');
+    assert.deepEqual(
+      readyDerivedReview.items.map((item) => item.kind),
+      ['project-document-update', 'project-status-create']
+    );
     assert.equal(
       fs.statSync(preparedWorkReviewMaterialStatePath(temporaryRoot, ready.id)).mode & 0o777,
       0o600
@@ -90,15 +195,360 @@ export async function selftestPreparedWork(root = defaultRoot) {
       fs.statSync(path.dirname(preparedWorkReviewMaterialStatePath(temporaryRoot, ready.id))).mode & 0o777,
       0o700
     );
+    assert.equal(
+      ready.id,
+      'work.project-pulse.'
+        + fingerprintJson({
+          automationId: ready.automation.id,
+          inputContractFingerprint: ready.inputSummary.inputContractFingerprint,
+          fields: ready.inputSummary.fields,
+          configurationBasis: ready.configuration.configurationBasis,
+          lockFingerprint: ready.configuration.lockFingerprint
+        }).slice('sha256:'.length, 'sha256:'.length + 24),
+      'Contained prepared-work identity must remain byte-compatible with the pre-mode contract.'
+    );
+    assert.equal(Object.hasOwn(ready, 'preparationMode'), false);
+
+    const crossedContained = structuredClone(ready);
+    crossedContained.state = 'ready-for-acquisition';
+    crossedContained.history.at(-1).state = 'ready-for-acquisition';
+    crossedContained.readiness.state = 'ready-for-acquisition';
+    crossedContained.checkpoint.state = 'ready-for-acquisition';
+    assert.throws(
+      () => assertPreparedWork(temporaryRoot, withWorkFingerprint(crossedContained)),
+      /does not satisfy its contract|lifecycle state is invalid/
+    );
+
+    materializeContainedPrivateConfiguration({
+      root: temporaryRoot,
+      configurationName: 'project-pulse',
+      notionOptionMappings: projectPulseOptionMappings()
+    });
+    canonicalBefore = fingerprintPath(path.join(temporaryRoot, 'soter'));
+    const connectedProject = 'https://www.notion.so/99999999999999999999999999999999';
+    const connectedGoal = 'PRIVATE_CONNECTED_STAGING_GOAL_SENTINEL';
+    assert.equal(
+      fs.readFileSync(
+        path.join(temporaryRoot, 'soter/fixtures/providers/notion/workspace-records.json'),
+        'utf8'
+      ).includes(connectedProject),
+      false,
+      'Connected staging regression requires a real-shaped identifier absent from fixtures.'
+    );
+    const connected = await prepareAutomationRun({
+      root: temporaryRoot,
+      automationId: 'automation.project-pulse',
+      configurationName: 'project-pulse',
+      configurationBasis: 'private-active',
+      preparationMode: 'connected-acquisition',
+      expectedHost: 'codex',
+      input: {
+        project: connectedProject,
+        statusDate: '2026-07-25',
+        visibility: 'Internal',
+        health: 'on-track',
+        operatorGoal: connectedGoal
+      },
+      createdAt: '2026-07-16T14:01:05.000Z'
+    });
+    assert.equal(connected.state, 'ready-for-acquisition');
+    assert.equal(connected.preparationMode, 'connected-acquisition');
+    assert.notEqual(connected.id, ready.id);
+    assert.deepEqual(connected.preview.facts, []);
+    assert.deepEqual(connected.preview.collections, []);
+    assert.deepEqual(connected.preview.proposedChanges, []);
+    assert.deepEqual(connected.contextPlan, []);
+    assert.deepEqual(connected.outcomes, []);
+    assert.deepEqual(connected.effects, []);
+    assert.deepEqual(connected.evidence, []);
+    assert.equal(connected.approval.state, 'not-requested');
+    assert.deepEqual(connected.approval.requiredFor, []);
+    assert.equal(connected.continuationRequest, null);
+    assert.equal(connected.checkpoint.contextSnapshotId, null);
+    assert.equal(connected.resume.classification, 'unavailable');
+    assert.equal(
+      fs.existsSync(preparedWorkDerivedReviewMaterialStatePath(temporaryRoot, connected.id)),
+      false
+    );
+    const stagedRun = readRunState(
+      temporaryRoot,
+      connected.checkpoint.runId
+    ).run;
+    assert.equal(stagedRun.lifecycleState, 'effects-established');
+    assert.deepEqual(stagedRun.effects, []);
+    assert.deepEqual(stagedRun.evidenceIds, []);
+    assert(
+      !JSON.stringify({
+        work: connected,
+        run: stagedRun
+      }).includes(connectedGoal),
+      'Connected private input escaped the selected-work review companion.'
+    );
+    const serializedConnectedProjection = JSON.stringify({
+      work: connected,
+      run: stagedRun
+    });
+    for (const providerValue of projectPulseOptionMappings()
+      .flatMap((mapping) => mapping.entries.map((entry) => entry.provider))) {
+      assert(
+        !serializedConnectedProjection.includes(providerValue),
+        'Private Notion option values escaped the sanitized connected projection.'
+      );
+    }
+    const exactAcquisition = loadExactPreparedAutomationAcquisition({
+      root: temporaryRoot,
+      workId: connected.id,
+      automationId: 'automation.project-pulse',
+      expectedHost: 'codex'
+    });
+    assert.equal(exactAcquisition.work.id, connected.id);
+    assert.equal(
+      exactAcquisition.acquisition.prepareExport,
+      'prepareProjectPulseConnectedAcquisition'
+    );
+    const repeatedConnected = await prepareAutomationRun({
+      root: temporaryRoot,
+      automationId: 'automation.project-pulse',
+      configurationName: 'project-pulse',
+      configurationBasis: 'private-active',
+      preparationMode: 'connected-acquisition',
+      expectedHost: 'codex',
+      input: {
+        project: connectedProject,
+        statusDate: '2026-07-25',
+        visibility: 'Internal',
+        health: 'on-track',
+        operatorGoal: connectedGoal
+      },
+      createdAt: '2026-07-16T14:01:06.000Z'
+    });
+    assert.deepEqual(repeatedConnected, connected);
+    const changedConnected = await prepareAutomationRun({
+      root: temporaryRoot,
+      automationId: 'automation.project-pulse',
+      configurationName: 'project-pulse',
+      configurationBasis: 'private-active',
+      preparationMode: 'connected-acquisition',
+      expectedHost: 'codex',
+      input: {
+        project: connectedProject,
+        statusDate: '2026-07-26',
+        visibility: 'Internal',
+        health: 'on-track',
+        operatorGoal: connectedGoal
+      },
+      createdAt: '2026-07-16T14:01:07.000Z'
+    });
+    assert.notEqual(changedConnected.id, connected.id);
+
+    await assert.rejects(
+      prepareAutomationRun({
+        root: temporaryRoot,
+        automationId: 'automation.project-pulse',
+        configurationName: 'project-pulse',
+        configurationBasis: 'tracked-contained',
+        preparationMode: 'connected-acquisition',
+        input: {
+          project: connectedProject,
+          statusDate: '2026-07-25',
+          visibility: 'Internal',
+          health: 'on-track'
+        }
+      }),
+      /requires configurationBasis private-active/
+    );
+    await assert.rejects(
+      prepareAutomationRun({
+        root: temporaryRoot,
+        automationId: 'automation.project-pulse',
+        configurationName: 'project-pulse',
+        configurationBasis: 'private-active',
+        preparationMode: 'connected-acquisition',
+        expectedHost: 'claude',
+        input: {
+          project: connectedProject,
+          statusDate: '2026-07-25',
+          visibility: 'Internal',
+          health: 'on-track'
+        }
+      }),
+      /does not match the exact active host/
+    );
+    await assert.rejects(
+      prepareAutomationRun({
+        root: temporaryRoot,
+        automationId: 'automation.project-pulse',
+        configurationName: 'project-pulse',
+        configurationBasis: 'private-active',
+        preparationMode: 'connected-acquisition',
+        expectedHost: 'codex',
+        input: {
+          project: connectedProject,
+          statusDate: '2026-07-25',
+          visibility: 'Internal',
+          health: 'on-track',
+          operatorGoal: 'sk-' + 'abcdefghijklmnopqrstuvwxyz123456'
+        }
+      }),
+      (error) => error.code === 'PREPARED_REVIEW_MATERIAL_CREDENTIAL_REJECTED'
+    );
+    const connectedMissing = await prepareAutomationRun({
+      root: temporaryRoot,
+      automationId: 'automation.project-pulse',
+      configurationName: 'project-pulse',
+      configurationBasis: 'private-active',
+      preparationMode: 'connected-acquisition',
+      expectedHost: 'codex',
+      input: {},
+      createdAt: '2026-07-16T14:01:08.000Z'
+    });
+    assert.equal(connectedMissing.state, 'needs-input');
+    assert.equal(connectedMissing.checkpoint.runId, null);
+    assert.deepEqual(
+      await prepareAutomationRun({
+        root: temporaryRoot,
+        automationId: 'automation.project-pulse',
+        configurationName: 'project-pulse',
+        configurationBasis: 'private-active',
+        preparationMode: 'connected-acquisition',
+        expectedHost: 'codex',
+        input: {},
+        createdAt: '2026-07-16T14:01:09.000Z'
+      }),
+      connectedMissing
+    );
+
+    const crossedConnected = structuredClone(connected);
+    crossedConnected.state = 'ready-for-review';
+    crossedConnected.history.at(-1).state = 'ready-for-review';
+    crossedConnected.readiness.state = 'ready-for-review';
+    crossedConnected.checkpoint.state = 'ready-for-review';
+    assert.throws(
+      () => assertPreparedWork(temporaryRoot, withWorkFingerprint(crossedConnected)),
+      /does not satisfy its contract|lifecycle state is invalid/
+    );
+    const crossedConnectedHistory = structuredClone(connected);
+    crossedConnectedHistory.history.splice(2, 0, {
+      state: 'ready-for-review',
+      at: '2026-07-16T14:01:04.500Z',
+      reasonCode: 'PREPARATION_CROSSED_MODE_SENTINEL'
+    });
+    assert.throws(
+      () => assertPreparedWork(
+        temporaryRoot,
+        withWorkFingerprint(crossedConnectedHistory)
+      ),
+      /does not satisfy its contract|lifecycle state is invalid/
+    );
+    const connectedWorkPath = preparedWorkStatePath(temporaryRoot, connected.id);
+    const connectedWorkSource = fs.readFileSync(connectedWorkPath, 'utf8');
+    fs.writeFileSync(
+      connectedWorkPath,
+      JSON.stringify(withWorkFingerprint(crossedConnected), null, 2) + '\n'
+    );
+    assert.throws(
+      () => inspectPreparedAutomationWork({
+        root: temporaryRoot,
+        workId: connected.id
+      }),
+      /does not satisfy its contract|lifecycle state is invalid/
+    );
+    fs.writeFileSync(connectedWorkPath, connectedWorkSource);
+
+    const projectPulsePackPath = path.join(
+      temporaryRoot,
+      'soter/packs/automation.project-pulse/pack.json'
+    );
+    const projectPulsePackSource = fs.readFileSync(projectPulsePackPath, 'utf8');
+    const packWithoutAcquisition = JSON.parse(projectPulsePackSource);
+    delete packWithoutAcquisition.operator.acquisition;
+    fs.writeFileSync(
+      projectPulsePackPath,
+      JSON.stringify(packWithoutAcquisition, null, 2) + '\n'
+    );
+    await assert.rejects(
+      prepareAutomationRun({
+        root: temporaryRoot,
+        automationId: 'automation.project-pulse',
+        configurationName: 'project-pulse',
+        configurationBasis: 'private-active',
+        preparationMode: 'connected-acquisition',
+        expectedHost: 'codex',
+        input: {
+          project: 'https://www.notion.so/88888888888888888888888888888888',
+          statusDate: '2026-07-25',
+          visibility: 'Internal',
+          health: 'on-track'
+        }
+      }),
+      /does not declare one exact connected-acquisition adapter/
+    );
+    fs.writeFileSync(projectPulsePackPath, projectPulsePackSource);
+
+    const connectedReviewPath = preparedWorkReviewMaterialStatePath(
+      temporaryRoot,
+      connected.id
+    );
+    const connectedReviewSource = fs.readFileSync(connectedReviewPath, 'utf8');
+    const tamperedConnectedReview = JSON.parse(connectedReviewSource);
+    tamperedConnectedReview.fields.find((field) => {
+      return field.id === 'operatorGoal';
+    }).reviewValue = 'PRIVATE_TAMPERED_CONNECTED_STAGING_SENTINEL';
+    fs.writeFileSync(
+      connectedReviewPath,
+      JSON.stringify(tamperedConnectedReview, null, 2) + '\n'
+    );
+    assert.throws(
+      () => loadExactPreparedAutomationAcquisition({
+        root: temporaryRoot,
+        workId: connected.id,
+        automationId: 'automation.project-pulse',
+        expectedHost: 'codex'
+      }),
+      (error) => error.code === 'PREPARED_ACQUISITION_WORK_INVALID'
+    );
+    fs.writeFileSync(connectedReviewPath, connectedReviewSource);
+
+    const activeLockPath = activeConfigurationLockStatePath(
+      temporaryRoot,
+      'project-pulse'
+    );
+    const activeLockSource = fs.readFileSync(activeLockPath, 'utf8');
+    const staleActiveLock = JSON.parse(activeLockSource);
+    staleActiveLock.graphFingerprint = 'sha256:' + 'f'.repeat(64);
+    fs.writeFileSync(activeLockPath, JSON.stringify(staleActiveLock, null, 2) + '\n');
+    assert.throws(
+      () => loadExactPreparedAutomationAcquisition({
+        root: temporaryRoot,
+        workId: connected.id,
+        automationId: 'automation.project-pulse',
+        expectedHost: 'codex'
+      }),
+      (error) => error.code === 'PREPARED_ACQUISITION_STALE'
+    );
+    fs.writeFileSync(activeLockPath, activeLockSource);
+
+    fs.rmSync(connectedReviewPath);
+    assert.throws(
+      () => loadExactPreparedAutomationAcquisition({
+        root: temporaryRoot,
+        workId: connected.id,
+        automationId: 'automation.project-pulse',
+        expectedHost: 'codex'
+      }),
+      (error) => error.code === 'PREPARED_ACQUISITION_WORK_INVALID'
+    );
+    fs.writeFileSync(connectedReviewPath, connectedReviewSource, { mode: 0o600 });
 
     const meetingGoal = 'PRIVATE_MEETING_GOAL_SENTINEL';
     const meeting = await prepareAutomationRun({
       root: temporaryRoot,
       automationId: 'automation.meeting-intake',
       configurationName: 'meeting-intake',
+      configurationBasis: 'tracked-contained',
       input: {
         meeting: 'meeting.fixture-001',
-        recordingUri: 'otter://fixture/meeting.fixture-001',
+        recordingUri: 'https://otter.ai/u/meeting_fixture_001',
         operatorGoal: meetingGoal
       },
       createdAt: '2026-07-16T14:01:15.000Z'
@@ -108,7 +558,7 @@ export async function selftestPreparedWork(root = defaultRoot) {
     assert.equal(meeting.inputSummary.fields.find((item) => item.id === 'meeting')?.value, 'meeting.fixture-001');
     assert(!Object.hasOwn(meeting.inputSummary.fields.find((item) => item.id === 'recordingUri'), 'value'));
     assert(!Object.hasOwn(meeting.inputSummary.fields.find((item) => item.id === 'operatorGoal'), 'value'));
-    assert.equal(meeting.contextPlan.length, 9);
+    assert.equal(meeting.contextPlan.length, 8);
     assert(meeting.contextPlan.every((item) => item.state === 'completed'));
     assert.equal(meeting.preview.kind, 'meeting-intake-review');
     assert(meeting.preview.facts.find((item) => item.id === 'transcript-segments')?.value > 0);
@@ -130,10 +580,10 @@ export async function selftestPreparedWork(root = defaultRoot) {
       return entry.id === 'context.meeting-intake.tasks';
     })?.value.records;
     assert.deepEqual(preparedProjects?.map((record) => record.id), [
-      'soter-fixture://crm/project/launch'
+      'soter-fixture://projects/project/launch'
     ]);
     assert.deepEqual(preparedTasks?.map((record) => record.id), [
-      'soter-fixture://crm/task/existing-deck'
+      'soter-fixture://tasks/task/existing-deck'
     ]);
     assert(!JSON.stringify(meetingSnapshot).includes('project.pulse-healthy'),
       'Unrelated project records reached bounded Meeting Intake preparation state.');
@@ -141,14 +591,14 @@ export async function selftestPreparedWork(root = defaultRoot) {
       .filter((entry) => entry.endsWith('.json'))
       .map((entry) => fs.readFileSync(path.join(temporaryRoot, '.soter', 'state', 'prepared-work', entry), 'utf8'))
       .find((value) => value.includes(meeting.id));
-    assert(meetingReceipt && !meetingReceipt.includes('otter://fixture/meeting.fixture-001'));
+    assert(meetingReceipt && !meetingReceipt.includes('https://otter.ai/u/meeting_fixture_001'));
     assert(!meetingReceipt.includes(meetingGoal));
     const meetingReview = inspectPreparedAutomationReviewMaterial({
       root: temporaryRoot,
       workId: meeting.id
     });
     assert.equal(meetingReview.fields.find((field) => field.id === 'recordingUri')?.reviewValue,
-      'otter://fixture/meeting.fixture-001');
+      'https://otter.ai/u/meeting_fixture_001');
     assert.equal(meetingReview.fields.find((field) => field.id === 'operatorGoal')?.reviewValue,
       meetingGoal);
 
@@ -158,10 +608,11 @@ export async function selftestPreparedWork(root = defaultRoot) {
       root: temporaryRoot,
       automationId: 'automation.task-capture',
       configurationName: 'task-capture',
+      configurationBasis: 'tracked-contained',
       input: {
         title: taskTitle,
-        project: 'soter-fixture://crm/project/launch',
-        assignee: 'provider-person.maya',
+        project: 'soter-fixture://projects/project/launch',
+        assignee: 'self',
         nextActionOn: taskDate,
         context: 'Project'
       },
@@ -170,9 +621,19 @@ export async function selftestPreparedWork(root = defaultRoot) {
     assert.equal(task.state, 'ready-for-review');
     assert.equal(task.preview.kind, 'task-capture-preview');
     assert.equal(task.preview.proposedChanges.length, 1);
-    assert.equal(task.preview.proposedChanges[0].effect, 'crm.records.create');
+    assert.equal(task.preview.proposedChanges[0].effect, 'tasks.records.create');
     assert.equal(task.preview.proposedChanges[0].beforeFingerprint, null);
     assert.match(task.preview.proposedChanges[0].afterFingerprint, /^sha256:[a-f0-9]{64}$/);
+    assert.equal(task.preview.privateReview.state, 'available');
+    assert.equal(task.preview.privateReview.kind, 'task-capture-derived-review');
+    assert.equal(task.preview.collections.length, 1);
+    const taskRow = task.preview.collections[0].rows[0];
+    const taskAction = taskRow.actions[0];
+    assert.equal(taskAction.kind, 'task-create');
+    assert.equal(taskAction.state, 'proposed');
+    assert.equal(taskAction.capability, 'tasks.records.create');
+    assert.equal(taskAction.changeFingerprint, fingerprintJson(task.preview.proposedChanges[0]));
+    assert.equal(taskRow.privateDetailFingerprint, task.preview.proposedChanges[0].afterFingerprint);
     assert.equal(task.preview.facts.find((item) => item.id === 'task-context')?.value, 'Project');
     assert.equal(task.preview.facts.find((item) => item.id === 'duplicate-candidate-count')?.value, 0);
     assert.equal(task.approval.state, 'not-requested');
@@ -196,20 +657,43 @@ export async function selftestPreparedWork(root = defaultRoot) {
     });
     assert.equal(taskReview.fields.find((field) => field.id === 'title')?.reviewValue, taskTitle);
     assert.equal(taskReview.fields.find((field) => field.id === 'nextActionOn')?.reviewValue, taskDate);
+    const taskDerivedReview = inspectPreparedAutomationDerivedReviewMaterial({
+      root: temporaryRoot,
+      workId: task.id
+    });
+    assert.equal(taskDerivedReview.kind, 'task-capture-derived-review');
+    assert.equal(taskDerivedReview.contentFingerprint, task.preview.privateReview.contentFingerprint);
+    assert.equal(taskDerivedReview.items.length, 1);
+    assert.equal(taskDerivedReview.items[0].kind, 'task-create');
+    const taskDerivedFields = new Map(taskDerivedReview.items[0].fields.map((field) => {
+      return [field.id, field.reviewValue];
+    }));
+    assert.equal(taskDerivedFields.get('title'), taskTitle);
+    assert.deepEqual(taskDerivedFields.get('projectUris'), ['soter-fixture://projects/project/launch']);
+    assert.deepEqual(taskDerivedFields.get('assigneeIds'), ['provider-person.maya']);
+    assert.deepEqual(taskDerivedFields.get('nextActionOn'), [taskDate]);
+    assert.equal(
+      fs.statSync(preparedWorkDerivedReviewMaterialStatePath(temporaryRoot, task.id)).mode & 0o777,
+      0o600
+    );
 
     const duplicateTask = await prepareAutomationRun({
       root: temporaryRoot,
       automationId: 'automation.task-capture',
       configurationName: 'task-capture',
+      configurationBasis: 'tracked-contained',
       input: {
         title: 'Send launch deck',
-        project: 'soter-fixture://crm/project/launch',
+        project: 'soter-fixture://projects/project/launch',
         context: 'Project'
       },
       createdAt: '2026-07-16T14:01:25.000Z'
     });
     assert.equal(duplicateTask.state, 'ready-for-review');
     assert.equal(duplicateTask.preview.proposedChanges.length, 0);
+    assert.equal(duplicateTask.preview.privateReview.state, 'available');
+    assert.equal(duplicateTask.preview.collections[0].rows[0].actions[0].state, 'held');
+    assert.equal(duplicateTask.preview.collections[0].rows[0].actions[0].changeFingerprint, null);
     assert(duplicateTask.preview.contradictions.some((item) => {
       return item.id === 'duplicate-candidates-observed';
     }));
@@ -218,9 +702,10 @@ export async function selftestPreparedWork(root = defaultRoot) {
       root: temporaryRoot,
       automationId: 'automation.task-capture',
       configurationName: 'task-capture',
+      configurationBasis: 'tracked-contained',
       input: {
         title: 'Invalid date is never prepared',
-        project: 'soter-fixture://crm/project/launch',
+        project: 'soter-fixture://projects/project/launch',
         nextActionOn: '2026-02-30'
       },
       createdAt: '2026-07-16T14:01:27.000Z'
@@ -235,6 +720,7 @@ export async function selftestPreparedWork(root = defaultRoot) {
       root: temporaryRoot,
       automationId: 'automation.email-triage',
       configurationName: 'email-triage',
+      configurationBasis: 'tracked-contained',
       input: {
         query: 'in:inbox newer_than:1d',
         scope: 'triage-drafts-handoffs-digest',
@@ -423,6 +909,7 @@ export async function selftestPreparedWork(root = defaultRoot) {
       root: temporaryRoot,
       automationId: 'automation.email-triage',
       configurationName: 'email-triage',
+      configurationBasis: 'tracked-contained',
       input: {
         query: 'in:inbox newer_than:1d',
         scope: 'triage-drafts-handoffs-digest',
@@ -445,6 +932,21 @@ export async function selftestPreparedWork(root = defaultRoot) {
       (error) => error.code === 'PREPARED_DERIVED_REVIEW_MATERIAL_TAMPERED'
     );
     fs.writeFileSync(derivedReviewPath, JSON.stringify(emailDerivedReview, null, 2) + '\n');
+    const derivedBasisMismatch = structuredClone(emailDerivedReview);
+    derivedBasisMismatch.configuration.configurationBasis = 'private-active';
+    const unsignedDerivedBasisMismatch = structuredClone(derivedBasisMismatch);
+    delete unsignedDerivedBasisMismatch.fingerprint;
+    delete unsignedDerivedBasisMismatch.applicability;
+    derivedBasisMismatch.fingerprint = fingerprintJson(unsignedDerivedBasisMismatch);
+    fs.writeFileSync(
+      derivedReviewPath,
+      JSON.stringify(derivedBasisMismatch, null, 2) + '\n'
+    );
+    assert.throws(
+      () => inspectPreparedAutomationDerivedReviewMaterial({ root: temporaryRoot, workId: email.id }),
+      (error) => error.code === 'PREPARED_DERIVED_REVIEW_MATERIAL_BINDING_INVALID'
+    );
+    fs.writeFileSync(derivedReviewPath, JSON.stringify(emailDerivedReview, null, 2) + '\n');
     fs.rmSync(derivedReviewPath);
     assert.equal(inspectPreparedAutomationWork({ root: temporaryRoot, workId: email.id }).id,
       email.id, 'Missing derived review must not hide sanitized queue work.');
@@ -457,6 +959,7 @@ export async function selftestPreparedWork(root = defaultRoot) {
         root: temporaryRoot,
         automationId: 'automation.email-triage',
         configurationName: 'email-triage',
+        configurationBasis: 'tracked-contained',
         input: {
           query: 'in:inbox newer_than:1d',
           scope: 'triage-drafts-handoffs-digest',
@@ -480,12 +983,23 @@ export async function selftestPreparedWork(root = defaultRoot) {
       classifyPreparationFailure({ code: 'PROVIDER_UNAVAILABLE' }),
       'PREPARATION_CONTEXT_UNAVAILABLE'
     );
+    assert.equal(
+      classifyPreparationFailure({ code: 'PREPARATION_INPUT_INVALID' }),
+      'PREPARATION_INPUT_INVALID'
+    );
 
     const unavailable = await prepareAutomationRun({
       root: temporaryRoot,
       automationId: 'automation.project-pulse',
       configurationName: 'project-pulse',
-      input: { project: 'project.does-not-exist', operatorGoal: 'PRIVATE_FAILURE_SENTINEL' },
+      configurationBasis: 'tracked-contained',
+      input: {
+        project: 'project.does-not-exist',
+        statusDate: '2026-07-16',
+        visibility: 'Internal',
+        health: 'on-track',
+        operatorGoal: 'PRIVATE_FAILURE_SENTINEL'
+      },
       createdAt: '2026-07-16T14:01:30.000Z'
     });
     assert.equal(unavailable.state, 'needs-input');
@@ -503,6 +1017,10 @@ export async function selftestPreparedWork(root = defaultRoot) {
       .join('\n');
     assert(!serializedSanitizedState.includes(privateSentinel),
       'Raw private operator input escaped the private review-material directory.');
+    assert(!serializedSanitizedState.includes(privateHealthMilestone),
+      'Raw private health-milestone selection escaped the private review-material directory.');
+    assert(!serializedSanitizedState.includes(connectedGoal),
+      'Raw private connected-acquisition input escaped the private review-material directory.');
     assert(!serializedSanitizedState.includes('PRIVATE_FAILURE_SENTINEL'),
       'Failed private input escaped the private review-material directory.');
     assert(!serializedSanitizedState.includes(meetingGoal),
@@ -524,7 +1042,15 @@ export async function selftestPreparedWork(root = defaultRoot) {
       root: temporaryRoot,
       automationId: 'automation.project-pulse',
       configurationName: 'project-pulse',
-      input: { project: 'project.pulse-risk', operatorGoal: privateSentinel },
+      configurationBasis: 'tracked-contained',
+      input: {
+        project: 'https://www.notion.so/11111111111111111111111111111111',
+        statusDate: '2026-07-16',
+        visibility: 'Internal',
+        health: 'on-track',
+        healthMilestones: [privateHealthMilestone],
+        operatorGoal: privateSentinel
+      },
       createdAt: '2026-07-16T15:00:00.000Z'
     });
     assert.deepEqual(repeated, ready, 'Exact re-entry must return the same checkpoint instead of duplicating work.');
@@ -547,7 +1073,14 @@ export async function selftestPreparedWork(root = defaultRoot) {
         root: temporaryRoot,
         automationId: 'automation.project-pulse',
         configurationName: 'project-pulse',
-        input: { project: 'project.does-not-exist', operatorGoal: 'PRIVATE_FAILURE_SENTINEL' },
+        configurationBasis: 'tracked-contained',
+        input: {
+          project: 'project.does-not-exist',
+          statusDate: '2026-07-16',
+          visibility: 'Internal',
+          health: 'on-track',
+          operatorGoal: 'PRIVATE_FAILURE_SENTINEL'
+        },
         createdAt: '2026-07-16T15:01:00.000Z'
       }),
       (error) => error.code === 'PREPARED_REVIEW_MATERIAL_MISSING'
@@ -563,7 +1096,14 @@ export async function selftestPreparedWork(root = defaultRoot) {
         root: temporaryRoot,
         automationId: 'automation.project-pulse',
         configurationName: 'project-pulse',
-        input: { project: 'project.pulse-risk', undeclared: 'hostile' },
+        configurationBasis: 'tracked-contained',
+        input: {
+          project: 'https://www.notion.so/22222222222222222222222222222221',
+          statusDate: '2026-07-16',
+          visibility: 'Internal',
+          health: 'at-risk',
+          undeclared: 'hostile'
+        },
         createdAt: '2026-07-16T14:02:00.000Z'
       }),
       /undeclared fields/
@@ -582,7 +1122,14 @@ export async function selftestPreparedWork(root = defaultRoot) {
         root: temporaryRoot,
         automationId: 'automation.project-pulse',
         configurationName: 'project-pulse',
-        input: { project: 'project.pulse-risk', operatorGoal: 'sk-' + 'abcdefghijklmnopqrstuvwxyz123456' },
+        configurationBasis: 'tracked-contained',
+        input: {
+          project: 'https://www.notion.so/22222222222222222222222222222221',
+          statusDate: '2026-07-16',
+          visibility: 'Internal',
+          health: 'at-risk',
+          operatorGoal: 'sk-' + 'abcdefghijklmnopqrstuvwxyz123456'
+        },
         createdAt: '2026-07-16T14:04:00.000Z'
       }),
       (error) => error.code === 'PREPARED_REVIEW_MATERIAL_CREDENTIAL_REJECTED'
@@ -639,6 +1186,20 @@ export async function selftestPreparedWork(root = defaultRoot) {
     fs.writeFileSync(
       preparedWorkReviewMaterialStatePath(temporaryRoot, ready.id),
       JSON.stringify(bindingMismatch, null, 2) + '\n'
+    );
+    assert.throws(
+      () => inspectPreparedAutomationReviewMaterial({ root: temporaryRoot, workId: ready.id }),
+      (error) => error.code === 'PREPARED_REVIEW_MATERIAL_BINDING_INVALID'
+    );
+    const basisMismatch = structuredClone(readyReview);
+    basisMismatch.configuration.configurationBasis = 'private-active';
+    const unsignedBasisMismatch = structuredClone(basisMismatch);
+    delete unsignedBasisMismatch.fingerprint;
+    delete unsignedBasisMismatch.applicability;
+    basisMismatch.fingerprint = fingerprintJson(unsignedBasisMismatch);
+    fs.writeFileSync(
+      preparedWorkReviewMaterialStatePath(temporaryRoot, ready.id),
+      JSON.stringify(basisMismatch, null, 2) + '\n'
     );
     assert.throws(
       () => inspectPreparedAutomationReviewMaterial({ root: temporaryRoot, workId: ready.id }),

@@ -1,0 +1,221 @@
+{
+  "$contract": "soter://contracts/context-record-model/v1",
+  "contractVersion": "1.0.0",
+  "id": "model.context.communications.semantics",
+  "pack": "context.communications",
+  "version": "0.1.0",
+  "subject": "communications.semantics.records",
+  "recordTypes": [
+    {
+      "id": "scope",
+      "summary": "A bounded communication authority such as one workspace or mailbox without provider transport behavior.",
+      "fields": [
+        {
+          "id": "kind",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The portable communication-scope kind selected by a specialization."
+        },
+        {
+          "id": "scopeFingerprint",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "An opaque fingerprint over the exact specialization-owned scope identity."
+        }
+      ],
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "A communication scope carries identity and authority boundaries rather than message content."
+      },
+      "deduplicationFields": ["scopeFingerprint"]
+    },
+    {
+      "id": "conversation-container",
+      "summary": "A scope-bound container for a communication sequence whose concrete lifecycle belongs to a specialization.",
+      "fields": [
+        {
+          "id": "scopeUri",
+          "type": "string",
+          "format": "resource-uri",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The exact communication scope that owns this conversation container.",
+          "reference": {
+            "subject": "communications.semantics.records.scope",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "kind",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The portable container kind selected by a communication specialization."
+        },
+        {
+          "id": "identityFingerprint",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "An opaque scope-bound provider identity fingerprint, never a provider identifier or address."
+        }
+      ],
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "The semantic container never copies its underlying private communication content."
+      },
+      "deduplicationFields": ["identityFingerprint"]
+    },
+    {
+      "id": "participant-identity",
+      "summary": "A scope-bound communication actor identity that is not automatically a CRM person or organization.",
+      "fields": [
+        {
+          "id": "scopeUri",
+          "type": "string",
+          "format": "resource-uri",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The exact communication scope in which this participant identity is meaningful.",
+          "reference": {
+            "subject": "communications.semantics.records.scope",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "kind",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The specialization-owned provider actor or mail-address identity kind."
+        },
+        {
+          "id": "identityFingerprint",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "An opaque fingerprint over the exact scope and provider participant identity."
+        }
+      ],
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "Participant identity has no portable message body content."
+      },
+      "deduplicationFields": ["identityFingerprint"]
+    },
+    {
+      "id": "content-envelope",
+      "summary": "A fingerprint-only boundary declaring that communication content is private and untrusted data.",
+      "fields": [
+        {
+          "id": "containerUri",
+          "type": "string",
+          "format": "resource-uri",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The exact conversation container whose private content is represented.",
+          "reference": {
+            "subject": "communications.semantics.records.conversation-container",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "contentFingerprint",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "An opaque fingerprint over content retained only in an authorized private boundary."
+        },
+        {
+          "id": "privacyClassification",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The private communication-content classification fixed by this semantic base."
+        },
+        {
+          "id": "trustClassification",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The untrusted-data classification that prevents content from becoming instruction authority."
+        }
+      ],
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "Raw communication content is intentionally absent from this portable semantic record."
+      },
+      "deduplicationFields": ["contentFingerprint"]
+    },
+    {
+      "id": "cross-context-link",
+      "summary": "An explicitly typed relation from one communication resource to a separately governed Context resource.",
+      "fields": [
+        {
+          "id": "sourceUri",
+          "type": "string",
+          "format": "resource-uri",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The exact source communication resource identity."
+        },
+        {
+          "id": "targetUri",
+          "type": "string",
+          "format": "resource-uri",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The exact target resource identity owned by another Context."
+        },
+        {
+          "id": "targetSubject",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The exact target Context subject that types the resource identity."
+        },
+        {
+          "id": "relationshipKind",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The specialization-owned relation meaning without transferring target authority."
+        }
+      ],
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "A typed link carries identities and relation meaning only."
+      },
+      "deduplicationFields": []
+    }
+  ],
+  "limitations": [
+    "This base defines communication meaning only and exposes no capability, provider route, storage mapping, effect, approval, or execution authority.",
+    "A specialization owns the exact scope, container, participant, and lifecycle vocabulary that it uses.",
+    "Raw communication content remains private untrusted data and cannot become instruction, policy, or external-action authority.",
+    "A cross-context link does not identify a provider participant as a CRM person or organization without a separate governed resolution."
+  ]
+}

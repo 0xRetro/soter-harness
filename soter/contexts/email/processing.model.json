@@ -3,6 +3,14 @@
   "contractVersion": "1.0.0",
   "id": "context.email.processing",
   "version": "3.0.0",
+  "specialization": {
+    "basePack": "context.communications",
+    "baseSubject": "communications.semantics.records",
+    "scopeKind": "mailbox",
+    "containerKind": "mail-thread",
+    "participantKind": "mail-address",
+    "contentClassification": "private-untrusted"
+  },
   "window": {
     "maximumThreads": 50,
     "queryRequired": true,

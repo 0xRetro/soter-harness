@@ -193,6 +193,7 @@ function exactBatchDocument({ work, actions, availableActionCount, blockers, cre
       name: work.configuration.name,
       path: work.configuration.path,
       lockPath: work.configuration.lockPath,
+      configurationBasis: work.configuration.configurationBasis,
       lockFingerprint: work.configuration.lockFingerprint,
       graphFingerprint: work.configuration.graphFingerprint,
       host: work.configuration.host
@@ -239,6 +240,7 @@ function assertBatchBindings(root, batch, work) {
       name: work.configuration.name,
       path: work.configuration.path,
       lockPath: work.configuration.lockPath,
+      configurationBasis: work.configuration.configurationBasis,
       lockFingerprint: work.configuration.lockFingerprint,
       graphFingerprint: work.configuration.graphFingerprint,
       host: work.configuration.host
@@ -582,6 +584,7 @@ export function assertPreparedReviewBatchMaterial(root, material, batch, work) {
       name: material.configuration.name,
       path: material.configuration.path,
       lockPath: material.configuration.lockPath,
+      configurationBasis: material.configuration.configurationBasis,
       lockFingerprint: material.configuration.lockFingerprint,
       graphFingerprint: material.configuration.graphFingerprint,
       host: material.configuration.host

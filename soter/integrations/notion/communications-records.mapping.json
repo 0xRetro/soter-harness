@@ -1,0 +1,128 @@
+{
+  "$contract": "soter://contracts/provider-mapping/v1",
+  "contractVersion": "1.0.0",
+  "id": "mapping.integration.notion.communications-records",
+  "pack": "integration.notion",
+  "provider": "provider.integration.notion.mcp",
+  "version": "0.2.0",
+  "contextModel": "model.context.communications.collaboration.records",
+  "settingsDefinition": "settings.integration.notion",
+  "capabilities": [
+    "communications.records.read",
+    "communications.records.create",
+    "communications.records.update",
+    "communications.schema.read"
+  ],
+  "recordTypes": [
+    {
+      "id": "channel-ingestion-policy",
+      "target": "policies",
+      "capabilities": ["communications.records.read"],
+      "fields": [
+        {
+          "portable": "name",
+          "provider": "Name",
+          "providerType": "title",
+          "decode": "scalar"
+        }
+      ]
+    },
+    {
+      "id": "conversation-review-policy",
+      "target": "policies",
+      "capabilities": ["communications.records.read"],
+      "fields": [
+        {
+          "portable": "name",
+          "provider": "Name",
+          "providerType": "title",
+          "decode": "scalar"
+        }
+      ]
+    },
+    {
+      "id": "channel",
+      "target": "channels",
+      "capabilities": [
+        "communications.records.read",
+        "communications.records.create",
+        "communications.records.update",
+        "communications.schema.read"
+      ],
+      "fields": [
+        {
+          "portable": "name",
+          "provider": "Name",
+          "providerType": "title",
+          "decode": "scalar"
+        },
+        {
+          "portable": "platform",
+          "provider": "Platform",
+          "providerType": "select",
+          "valueMapping": "configured-bijection",
+          "decode": "scalar",
+          "writeOperations": ["create"]
+        },
+        {
+          "portable": "workspaceUri",
+          "provider": "Workspace URI",
+          "providerType": "text",
+          "decode": "scalar",
+          "writeOperations": ["create"]
+        },
+        {
+          "portable": "workspaceIdentityFingerprint",
+          "provider": "Workspace Identity Fingerprint",
+          "providerType": "text",
+          "decode": "scalar",
+          "writeOperations": ["create"]
+        },
+        {
+          "portable": "conversationIdentityFingerprint",
+          "provider": "Conversation Identity Fingerprint",
+          "providerType": "text",
+          "decode": "scalar",
+          "writeOperations": ["create"]
+        },
+        {
+          "portable": "hostWorkspaceName",
+          "provider": "Host Workspace",
+          "providerType": "text",
+          "decode": "scalar"
+        },
+        {
+          "portable": "visibility",
+          "provider": "Visibility",
+          "providerType": "select",
+          "valueMapping": "configured-bijection",
+          "decode": "scalar"
+        },
+        {
+          "portable": "shared",
+          "provider": "Shared",
+          "providerType": "checkbox",
+          "decode": "scalar"
+        },
+        {
+          "portable": "personUris",
+          "provider": "Members",
+          "providerType": "relation",
+          "decode": "json"
+        },
+        {
+          "portable": "organizationUris",
+          "provider": "Related Orgs",
+          "providerType": "relation",
+          "decode": "json"
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "This mapping translates the provider-neutral Communications channel directory and policy records only; Slack workspace, conversation, participant, message, and thread transport remains owned by integration.slack.",
+    "Provider participants become personUris only after an explicit CRM identity-resolution workflow; this mapping never treats a provider actor as a CRM person automatically.",
+    "Message content, thread content, and native provider responses are not representable in the Communications Notion record mapping.",
+    "Schema compatibility is not established by this declaration; an exact-lock private probe must observe current target schemas."
+  ]
+}

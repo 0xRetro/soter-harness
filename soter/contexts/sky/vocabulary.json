@@ -1,0 +1,230 @@
+{
+  "$contract": "soter://contracts/context-vocabulary/v1",
+  "contractVersion": "1.0.0",
+  "id": "vocabulary.context.sky",
+  "pack": "context.sky",
+  "version": "0.1.0",
+  "subject": "sky.records",
+  "entries": [
+    {
+      "sequence": 1,
+      "id": "sky-ecosystem",
+      "term": "Sky ecosystem",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "The Sky ecosystem, formerly MakerDAO, in which the organization operates; the umbrella for its stars, agents, and governance artifacts.",
+      "domain": "ecosystem",
+      "sourceUris": []
+    },
+    {
+      "sequence": 2,
+      "id": "atlas",
+      "term": "Atlas",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "The Sky Atlas, the ecosystem governance rulebook whose articles are cited as A.x.y links.",
+      "domain": "governance",
+      "sourceUris": ["https://sky-atlas.io"]
+    },
+    {
+      "sequence": 3,
+      "id": "spell",
+      "term": "spell",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "A governance or protocol action executed onchain as a spell.",
+      "domain": "governance",
+      "sourceUris": []
+    },
+    {
+      "sequence": 4,
+      "id": "monthly-settlement-cycle",
+      "term": "MSC",
+      "aliases": [],
+      "abbreviation": "MSC",
+      "definition": "The Monthly Settlement Cycle, the Sky ecosystem monthly financial settlement covering PnL methodology, debt-mint mechanics, ER calculations, and settlement reporting.",
+      "domain": "settlement",
+      "sourceUris": []
+    },
+    {
+      "sequence": 5,
+      "id": "star",
+      "term": "star",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "A semi-autonomous sub-organization of the Sky ecosystem, onboarded through the Star Onboarding process.",
+      "domain": "organization",
+      "sourceUris": []
+    },
+    {
+      "sequence": 6,
+      "id": "prime-agent",
+      "term": "Prime Agent",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "An agent-organization rank in the ecosystem agent framework and a portable organization classification.",
+      "domain": "organization",
+      "sourceUris": []
+    },
+    {
+      "sequence": 7,
+      "id": "nfat",
+      "term": "NFAT",
+      "aliases": [],
+      "abbreviation": "NFAT",
+      "definition": "The NFAT product line: Beacon, Configurator, and Relay.",
+      "domain": "product",
+      "sourceUris": []
+    },
+    {
+      "sequence": 8,
+      "id": "distribution-rewards",
+      "term": "Distribution Rewards",
+      "aliases": [],
+      "abbreviation": "DR",
+      "definition": "The Sky incentive program rewarding partners for distributing Sky products such as USDS to end users, including its tracking, calculation, and payout material.",
+      "domain": "incentives",
+      "sourceUris": []
+    },
+    {
+      "sequence": 9,
+      "id": "integration-boost",
+      "term": "Integration Boost",
+      "aliases": [],
+      "abbreviation": "IB",
+      "definition": "The Sky incentive program rewarding platforms for integrating Sky assets, including eligibility, tracking, and payouts.",
+      "domain": "incentives",
+      "sourceUris": []
+    },
+    {
+      "sequence": 10,
+      "id": "governance-accessibility-rewards",
+      "term": "Governance Accessibility Rewards",
+      "aliases": [],
+      "abbreviation": "GAR",
+      "definition": "The Sky incentive program rewarding work that makes Sky governance accessible and participatory.",
+      "domain": "incentives",
+      "sourceUris": []
+    },
+    {
+      "sequence": 11,
+      "id": "pioneer-chain-rewards",
+      "term": "Pioneer Chain Rewards",
+      "aliases": [],
+      "abbreviation": "PCR",
+      "definition": "The Sky incentive program rewarding early deployments of Sky assets on new chains.",
+      "domain": "incentives",
+      "sourceUris": []
+    },
+    {
+      "sequence": 12,
+      "id": "admin-internal-ops",
+      "term": "Admin & Internal Ops",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "Internal team administration and operations, including accounts, workspace, signer operations, and day-to-day runbooks.",
+      "domain": "operations",
+      "sourceUris": []
+    },
+    {
+      "sequence": 13,
+      "id": "legal-compliance",
+      "term": "Legal & Compliance",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "Legal entities, agreements, resolutions, trademarks, and compliance material.",
+      "domain": "legal",
+      "sourceUris": []
+    },
+    {
+      "sequence": 14,
+      "id": "business-development",
+      "term": "Business Development",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "Partner and client acquisition and relationships, including proposals, offers, outreach, and client questions and answers.",
+      "domain": "commercial",
+      "sourceUris": []
+    },
+    {
+      "sequence": 15,
+      "id": "funding-financials",
+      "term": "Funding & Financials",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "Budgets, funding requests, and organizational financial self-assessment and reporting; this is money about the organization, while MSC is ecosystem settlement.",
+      "domain": "finance",
+      "sourceUris": []
+    },
+    {
+      "sequence": 16,
+      "id": "settlement-payments-ops",
+      "term": "Settlement & Payments Ops",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "Operational execution of payments and settlements, including payout runs, weekly payments, and transaction operations; this is execution, while MSC is methodology.",
+      "domain": "operations",
+      "sourceUris": []
+    },
+    {
+      "sequence": 17,
+      "id": "defi-products",
+      "term": "DeFi Products",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "The DeFi protocols and products the organization operates on or with, including market mechanics and launches.",
+      "domain": "defi",
+      "sourceUris": []
+    },
+    {
+      "sequence": 18,
+      "id": "vault-curation",
+      "term": "Vault Curation",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "Curating and managing DeFi vaults, including parameters, allocation, and risk monitoring.",
+      "domain": "defi",
+      "sourceUris": []
+    },
+    {
+      "sequence": 19,
+      "id": "skylink-bridge",
+      "term": "SkyLink Bridge",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "The Sky cross-chain bridge, including deployments, checklists, freezer or pause operations, and chain sanity checks.",
+      "domain": "technology",
+      "sourceUris": []
+    },
+    {
+      "sequence": 20,
+      "id": "agent-systems",
+      "term": "Agent Systems",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "The organization AI-agent tooling and automation, including meeting intelligence and agent standards.",
+      "domain": "technology",
+      "sourceUris": []
+    },
+    {
+      "sequence": 21,
+      "id": "branding-marketing-ip",
+      "term": "Branding Marketing & IP",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "Brand, marketing content, and intellectual property, including trademarks, naming, and public materials.",
+      "domain": "brand",
+      "sourceUris": []
+    }
+  ],
+  "invariants": {
+    "singleDefinitionSource": true,
+    "projectionCopiesAreNonCanonical": true,
+    "providerNeutral": true,
+    "runtimeAuthority": "none"
+  },
+  "limitations": [
+    "This vocabulary defines portable organizational meaning only; it does not interpret governance, resolve Atlas citations, classify live provider records, or grant operational authority.",
+    "Provider and policy projections must bind this exact artifact and fail visibly on drift; copied definitions never become canonical."
+  ]
+}

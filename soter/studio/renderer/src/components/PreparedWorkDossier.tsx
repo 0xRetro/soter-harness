@@ -2,7 +2,8 @@ import type { OperatorInputField, PreparedWork, PreparedWorkDerivedReviewMateria
 import { PreparedReviewCollections } from './PreparedReviewCollections';
 import { StateMark } from './StateMark';
 
-const stages = ['draft', 'preparing', 'needs-input', 'ready-for-review'] as const;
+const containedStages = ['draft', 'preparing', 'needs-input', 'ready-for-review'] as const;
+const acquisitionStages = ['draft', 'preparing', 'needs-input', 'ready-for-acquisition'] as const;
 
 export function PreparedWorkDossier({
   work,
@@ -19,6 +20,8 @@ export function PreparedWorkDossier({
   derivedReviewError: PreparedWorkReviewError | null;
   inputFields: OperatorInputField[];
 }) {
+  const connectedAcquisition = work.preparationMode === 'connected-acquisition';
+  const stages = connectedAcquisition ? acquisitionStages : containedStages;
   const visited = new Set(work.history.map((item) => item.state));
   const inputById = new Map(inputFields.map((field) => [field.id, field]));
   const reviewBound = Boolean(reviewMaterial
@@ -34,7 +37,7 @@ export function PreparedWorkDossier({
   return (
     <section className="preparation-dossier" aria-label="Prepared work dossier">
       <header className="dossier-header">
-        <div><span className="eyebrow">Private preparation receipt</span><strong>{work.id}</strong><code>{work.fingerprint}</code></div>
+        <div><span className="eyebrow">{connectedAcquisition ? 'Private acquisition staging receipt' : 'Private preparation receipt'}</span><strong>{work.id}</strong><code>{work.fingerprint}</code></div>
         <StateMark state={work.state} />
       </header>
 
@@ -43,13 +46,25 @@ export function PreparedWorkDossier({
           const active = work.state === stage;
           const observed = visited.has(stage);
           return <li key={stage} className={active ? 'current' : observed ? 'observed' : 'unobserved'} aria-current={active ? 'step' : undefined}>
-            <span>{String(index + 1).padStart(2, '0')}</span><strong>{stage.replaceAll('-', ' ')}</strong><small>{active ? work.resume.reasonCode : observed ? 'observed' : 'not reached'}</small>
+            <span>{String(index + 1).padStart(2, '0')}</span><strong>{stage === 'ready-for-acquisition' ? 'staged for acquisition' : stage.replaceAll('-', ' ')}</strong><small>{active ? work.resume.reasonCode : observed ? 'observed' : 'not reached'}</small>
           </li>;
         })}
       </ol>
 
+      {connectedAcquisition && (
+        <section className="dossier-acquisition-boundary" aria-label="Connected acquisition staging boundary">
+          <span aria-hidden="true">↧</span>
+          <div>
+            <span className="eyebrow">Staged input + lock</span>
+            <strong>No connected acquisition has run</strong>
+            <p>This receipt binds exact private input and the current private-active lock. It contains no provider call, acquired context, approval, continuation request, readiness, or execution authority.</p>
+            <code>mode:connected-acquisition · state:ready-for-acquisition · authority:none</code>
+          </div>
+        </section>
+      )}
+
       <section className="dossier-binding" aria-label="Exact preparation binding">
-        <DossierHeading index="A" title="Exact binding" note={`One configuration, lock, graph, and private checkpoint · ${work.configuration.applicability}`} />
+        <DossierHeading index="A" title="Exact binding" note={`${connectedAcquisition ? 'Staged input receipt' : 'Contained review receipt'} · one configuration, lock, graph, and private checkpoint · ${work.configuration.applicability}`} />
         <div className="dossier-fingerprint-grid">
           <Fingerprint label="Configuration" value={work.configuration.name} />
           <Fingerprint label="Applicability" value={work.configuration.applicability} />

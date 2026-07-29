@@ -1,0 +1,21 @@
+{
+  "$contract": "soter://contracts/automation-derived-review/v1",
+  "contractVersion": "1.0.0",
+  "automation": "automation.repository-review",
+  "kind": "repository-review-derived-review",
+  "items": [
+    {
+      "kind": "feature-capture-handoff",
+      "fields": [
+        { "id": "candidateId", "label": "Candidate identity", "type": "text" },
+        { "id": "name", "label": "Feature name", "type": "text" },
+        { "id": "why", "label": "Why", "type": "text" },
+        { "id": "summary", "label": "Summary", "type": "text" },
+        { "id": "currentState", "label": "Current state in code", "type": "text" },
+        { "id": "evidencePaths", "label": "Repository evidence", "type": "string-list" },
+        { "id": "duplicateCandidateIds", "label": "Existing feature candidates", "type": "string-list" },
+        { "id": "targetAutomation", "label": "Target Automation", "type": "text" }
+      ]
+    }
+  ]
+}

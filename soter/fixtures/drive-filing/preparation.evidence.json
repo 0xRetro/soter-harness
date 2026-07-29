@@ -1,0 +1,576 @@
+{
+  "$contract": "soter://contracts/evidence/v2",
+  "contractVersion": "2.0.0",
+  "id": "evidence.drive-filing.preparation.fixture",
+  "createdAt": "2026-07-21T16:00:00.000Z",
+  "claimFamily": "behavior",
+  "claim": "The exact declared scenario was executed against fixture providers and assessed from observed capability, policy, outcome, invariant, and evidence states.",
+  "subject": {
+    "type": "run",
+    "id": "run.drive-filing.preparation-fixture",
+    "version": null
+  },
+  "configurationLockFingerprint": "sha256:df8f28329703c6a1e20d1314083de36cdacffb7a2bf2e253303f5d5f8bb74560",
+  "graphFingerprint": "sha256:e0e7aa7674b6e53e84e2dd33acc7b8e6d040991bd93a9f368b11824faa84da40",
+  "dependencies": [
+    {
+      "id": "kernel.soter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+    },
+    {
+      "id": "core.runtime",
+      "version": "0.1.0",
+      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+    },
+    {
+      "id": "context.crm",
+      "version": "0.1.0",
+      "fingerprint": "sha256:fa69fc9f796e84b1a2cd7e319c4344dcc44d8dcbea9542e51158eb868d266f44"
+    },
+    {
+      "id": "context.docs",
+      "version": "0.1.0",
+      "fingerprint": "sha256:797718406d1fc25a9639ad6fe1bf7fc077d8f5be6d67b4ba1ed3ddfa1d6c4993"
+    },
+    {
+      "id": "context.storage",
+      "version": "0.1.0",
+      "fingerprint": "sha256:b434913de5e0735f51ca0f190ced4fa310b82b1d9b03ffc5b8d7fe25952aedf1"
+    },
+    {
+      "id": "automation.filing-a-drive-artifact",
+      "version": "0.2.0",
+      "fingerprint": "sha256:fd35e9d1820235b058222de5d7e282bb092edcfb1c6cfafa24f1507012f92a13"
+    },
+    {
+      "id": "integration.google-drive",
+      "version": "0.1.0",
+      "fingerprint": "sha256:13ae555e49db0a4a0beebfca838035c529e0edb1737c9c0bcc718edacade1b25"
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "fingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5"
+    },
+    {
+      "id": "integration.notion-docs",
+      "version": "0.1.0",
+      "fingerprint": "sha256:07bd98eff9308d582ac42541b63017f5885a5581a6ffa9557f394d4c5e35df02"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
+  },
+  "integrations": [
+    {
+      "id": "integration.google-drive",
+      "version": "0.1.0",
+      "manifestFingerprint": "sha256:13ae555e49db0a4a0beebfca838035c529e0edb1737c9c0bcc718edacade1b25",
+      "evidenceMaturity": "declared"
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "manifestFingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5",
+      "evidenceMaturity": "declared"
+    },
+    {
+      "id": "integration.notion-docs",
+      "version": "0.1.0",
+      "manifestFingerprint": "sha256:07bd98eff9308d582ac42541b63017f5885a5581a6ffa9557f394d4c5e35df02",
+      "evidenceMaturity": "declared"
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.crm.definition",
+      "role": "definition",
+      "subject": "crm.records",
+      "declarationFingerprint": "sha256:5dcd7b166e69d5be3bf39ed57adf225ede8a4a2bd73d0d4800b3a38981ebce8d"
+    },
+    {
+      "id": "authority.crm.instance",
+      "role": "instance",
+      "subject": "crm.records",
+      "declarationFingerprint": "sha256:22b1ce681f68bd1f0ca80c9d22975e60bb675940630b26709005d8fd291757de"
+    },
+    {
+      "id": "authority.documents.definition",
+      "role": "definition",
+      "subject": "documents.records",
+      "declarationFingerprint": "sha256:d027693542fce7af4c7f4013a3dd02fe5f4a573bb6b947689ff87da024bce39a"
+    },
+    {
+      "id": "authority.documents.instance",
+      "role": "instance",
+      "subject": "documents.records",
+      "declarationFingerprint": "sha256:3dc2de83ff041a90657b91e404cf3d8774ff8b2afb22b48018b7d951f4137146"
+    },
+    {
+      "id": "authority.google-drive.provider",
+      "role": "provider",
+      "subject": "google-drive.account",
+      "declarationFingerprint": "sha256:01a83215e98a812ba14b9b0e2013835e4165a31cbde2b54c6cdef42094b4f334"
+    },
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "declarationFingerprint": "sha256:0c47198e74dcca8864ee8db6455d280298d10becdc891d023d2dedd771ae19f0"
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "declarationFingerprint": "sha256:8c419343899d33fbd2ef0b1c128c9b04b32ec716905dd04ae0934b803b0b9cad"
+    },
+    {
+      "id": "authority.storage.artifacts",
+      "role": "instance",
+      "subject": "storage.artifacts",
+      "declarationFingerprint": "sha256:2e2f0021b6bb9c8ee161cdee6b0de6143f812a2e0be6c1bcb9eec0c7e03b51f4"
+    },
+    {
+      "id": "authority.storage.locations",
+      "role": "definition",
+      "subject": "storage.locations",
+      "declarationFingerprint": "sha256:0d86e4cff9678e6d47c3225ec0a4db9b861eff82e8c71b2ca07c60ca95fd2d0f"
+    }
+  ],
+  "evaluator": {
+    "id": "automation.filing-a-drive-artifact.scenario-evaluator",
+    "version": "0.2.0",
+    "level": "fixture"
+  },
+  "environment": {
+    "containment": "fixture",
+    "runtime": "node"
+  },
+  "acceptanceCriteria": [
+    "The scenario fingerprint and configuration lock exactly match the assessed run.",
+    "Observed capability order exactly matches the declared capability order.",
+    "Resolved effect policy modes exactly match the declared scenario modes.",
+    "Every declared outcome, invariant, and evidence requirement has an observed assessment."
+  ],
+  "result": "passed",
+  "outcomes": [
+    {
+      "id": "storage-policy.grounded",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "artifact-metadata.grounded",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "registered-home.selected-or-inbox",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "external-artifact.shortcut-form",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "existing-artifact.human-move-only",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "document-index.complete-or-held",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "writes-held-for-separate-authority",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "retention-remains-human-owned",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "folders-never-invented",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "copy-never-simulates-move",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "move-rename-delete-never-automated",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "index-requirement-not-silently-dropped",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "relations-and-options-never-invented",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "artifact-content-never-loaded",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "no-write-or-approval-during-preparation",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "exact-lock",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "storage-registry-fingerprint",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "artifact-metadata-fingerprint",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "document-schema-fingerprint",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "duplicate-query-fingerprint",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "private-values-sanitized",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "source-cases-exactly-fingerprinted",
+      "category": "evidence",
+      "state": "passed"
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "scenario",
+      "id": "filing-a-drive-artifact.preparation",
+      "path": "soter/scenarios/filing-a-drive-artifact/preparation.scenario.json",
+      "fingerprint": "sha256:77ec538a0b88e006fe2e364ebe1d68316ab9582ca64f3a789f2af717f0ba8d81"
+    },
+    {
+      "role": "source-case",
+      "path": ".claude/evals/filing-a-drive-artifact/happy-path.md",
+      "fingerprint": "sha256:574b793ff1c6d1c17ac5ea64106d10ab3179c16b9f10564512ebb26453781a8c"
+    },
+    {
+      "role": "source-case",
+      "path": ".claude/evals/filing-a-drive-artifact/invariant-no-invented-home.md",
+      "fingerprint": "sha256:fd98f7dd0b485e398d893686473ccdf35201e45c4838a2afbff94bb32d90ca73"
+    },
+    {
+      "role": "source-case",
+      "path": ".claude/evals/filing-a-drive-artifact/pressure-urgent-move.md",
+      "fingerprint": "sha256:9b12d6dc44d42d5ffddf6fbca09ca2de59ebb44878706daddc6a9a1c9de5a789"
+    },
+    {
+      "role": "scenario-assessment",
+      "runId": "run.drive-filing.preparation-fixture",
+      "capabilityOrder": {
+        "expected": [
+          "storage.registry.read",
+          "storage.artifacts.read",
+          "documents.schema.read",
+          "documents.records.read",
+          "crm.records.read",
+          "workspace.identity.read"
+        ],
+        "observed": [
+          "storage.registry.read",
+          "storage.artifacts.read",
+          "documents.schema.read",
+          "documents.records.read",
+          "crm.records.read",
+          "workspace.identity.read"
+        ],
+        "state": "passed"
+      },
+      "effectModes": {
+        "expected": {
+          "read": "allow",
+          "disclosure": "allow",
+          "write": "confirm",
+          "dispatch": "prohibit",
+          "destructive": "prohibit"
+        },
+        "observed": {
+          "destructive": "prohibit",
+          "disclosure": "allow",
+          "dispatch": "prohibit",
+          "read": "allow",
+          "write": "confirm"
+        },
+        "state": "passed"
+      },
+      "observationFingerprint": "sha256:f62a7c6c939b1d2fd93bafc1c2930142dcb7407223650bc62e2d57af0f966d7f"
+    },
+    {
+      "role": "context-snapshot",
+      "id": "context.drive-filing.preparation-fixture",
+      "fingerprint": "sha256:abb68d8694bf5b93f9a1b373596f6499757720d7a5df8cdcdce1271b6c60251b"
+    },
+    {
+      "role": "drive-filing-preview",
+      "fingerprint": "sha256:14c7733cd341dc9881581e69577b757d1f89682e68db7c64a9f4bf731e5c9605"
+    },
+    {
+      "role": "ambiguous-home-preview",
+      "fingerprint": "sha256:3fc0608ea708300e7103526adfaf240708af3b5a4c97ca35368657dd8f153e28"
+    },
+    {
+      "role": "urgent-human-move-preview",
+      "fingerprint": "sha256:c5a06d9353b7e38eaa378595ba596f4c871ea2e29f31e0e9a8046b3ff25cdf5c"
+    }
+  ],
+  "effects": [
+    {
+      "id": "effect.drive-filing.preparation.registry.fixture",
+      "capability": "storage.registry.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.google-drive",
+      "providerImplementation": "provider.integration.google-drive.fixture",
+      "providerVersion": "0.1.0",
+      "containment": "fixture",
+      "authority": "authority.storage.locations",
+      "startedAt": "2026-07-21T16:00:00.000Z",
+      "completedAt": "2026-07-21T16:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact registry, artifact metadata, schema, duplicate, organization, and identity facts may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected normalized facts may enter the private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:9153df4091982ced0ebad8270e39740e63cf21e46624d5276fc17408ede493bd",
+      "state": "passed",
+      "outputFingerprint": "sha256:6f49b5210f0e251865f98b9b98489919b66087c1343cacd9cd076142374ce315",
+      "error": null
+    },
+    {
+      "id": "effect.drive-filing.preparation.artifact.fixture",
+      "capability": "storage.artifacts.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.google-drive",
+      "providerImplementation": "provider.integration.google-drive.fixture",
+      "providerVersion": "0.1.0",
+      "containment": "fixture",
+      "authority": "authority.storage.artifacts",
+      "startedAt": "2026-07-21T16:00:00.000Z",
+      "completedAt": "2026-07-21T16:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact registry, artifact metadata, schema, duplicate, organization, and identity facts may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected normalized facts may enter the private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:22a79ed5003d67fa572166d338dddf8b7ad334a2815441d8ce8ec11204c7e119",
+      "state": "passed",
+      "outputFingerprint": "sha256:dc2d440c9d305ff3fd5d347f7c0c0385f9341e81165ff9b58b888cf80e6f0882",
+      "error": null
+    },
+    {
+      "id": "effect.drive-filing.preparation.document-schema.fixture",
+      "capability": "documents.schema.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion-docs",
+      "providerImplementation": "provider.integration.notion-docs.fixture",
+      "providerVersion": "0.1.0",
+      "containment": "fixture",
+      "authority": "authority.documents.definition",
+      "startedAt": "2026-07-21T16:00:00.000Z",
+      "completedAt": "2026-07-21T16:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact registry, artifact metadata, schema, duplicate, organization, and identity facts may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected normalized facts may enter the private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:2aaf8044dde6215e8c70b1e230f2d5424db802f184bb7039c3147c338dc8ef23",
+      "state": "passed",
+      "outputFingerprint": "sha256:5206de6c7d5c17a47accfad527cda1b778adaf93fec4d28c9f22fd7bd0524d40",
+      "error": null
+    },
+    {
+      "id": "effect.drive-filing.preparation.document-candidates.fixture",
+      "capability": "documents.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion-docs",
+      "providerImplementation": "provider.integration.notion-docs.fixture",
+      "providerVersion": "0.1.0",
+      "containment": "fixture",
+      "authority": "authority.documents.instance",
+      "startedAt": "2026-07-21T16:00:00.000Z",
+      "completedAt": "2026-07-21T16:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact registry, artifact metadata, schema, duplicate, organization, and identity facts may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected normalized facts may enter the private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:7493533bb691388f5553145ae6eb0f13a8ab62bf733917796d4dc1115ac08adf",
+      "state": "passed",
+      "outputFingerprint": "sha256:8d669591083d1ed34df1621f0b07a0e162e3b1b8ed5b14b56335ffeb68c2212c",
+      "error": null
+    },
+    {
+      "id": "effect.drive-filing.preparation.organization.fixture",
+      "capability": "crm.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.crm.instance",
+      "startedAt": "2026-07-21T16:00:00.000Z",
+      "completedAt": "2026-07-21T16:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact registry, artifact metadata, schema, duplicate, organization, and identity facts may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected normalized facts may enter the private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:11ddea95593b913c925d7e7c9debed4cdd0ad4944b63ca1584974d1a9592ad43",
+      "state": "passed",
+      "outputFingerprint": "sha256:4a8987db78f5f66a0ed289bff54ba213948bf9b1c570f791e5cb423bed21b1a8",
+      "error": null
+    },
+    {
+      "id": "effect.drive-filing.preparation.identity.fixture",
+      "capability": "workspace.identity.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.notion.provider",
+      "startedAt": "2026-07-21T16:00:00.000Z",
+      "completedAt": "2026-07-21T16:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact registry, artifact metadata, schema, duplicate, organization, and identity facts may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected normalized facts may enter the private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:ff2c001fb537a7acdcb20d610990ea83ca5dbf09e7ac76375b88f9eb3f4cda15",
+      "state": "passed",
+      "outputFingerprint": "sha256:acf24d8148cc9bb6fa00394bd8ea2b444d23cdc1d416480968fe9346f7731cb7",
+      "error": null
+    }
+  ],
+  "failures": [],
+  "warnings": [],
+  "skipped": [],
+  "limitations": [
+    "This is deterministic fixture evidence. It does not establish connected credentials, provider reachability, host conformance, or live behavior."
+  ],
+  "freshness": {
+    "policy": "Valid only while every configuration-lock fingerprint remains unchanged.",
+    "validUntil": null
+  },
+  "supersedes": null,
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Credential references and credential values are excluded."
+    ]
+  }
+}

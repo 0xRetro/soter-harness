@@ -6,7 +6,7 @@
   "additionalProperties": false,
   "required": [
     "$contract", "contractVersion", "id", "kind", "profile", "createdAt",
-    "updatedAt", "startedAt", "state", "configurationLock", "graphFingerprint",
+    "updatedAt", "startedAt", "state", "configuration", "configurationLock", "graphFingerprint",
     "host", "run", "batch", "batchFingerprint", "changeSet",
     "changeSetFingerprint", "approval", "approvalFingerprint", "operations",
     "current", "result", "privacy", "checkpointFingerprint"
@@ -21,6 +21,7 @@
     "updatedAt": { "type": "string", "minLength": 20 },
     "startedAt": { "type": "string", "minLength": 20 },
     "state": { "enum": ["requested", "completed", "failed", "needs-attention"] },
+    "configuration": { "$ref": "#/$defs/configurationSelection" },
     "configurationLock": {
       "type": "object", "additionalProperties": false,
       "required": ["path", "fingerprint"],
@@ -84,6 +85,160 @@
   },
   "$defs": {
     "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "failure": {
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "authentication" },
+            "code": { "const": "HOST_CALL_AUTHENTICATION_FAILED" },
+            "message": { "const": "The exact host operation could not authenticate." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "authorization" },
+            "code": { "const": "HOST_CALL_AUTHORIZATION_FAILED" },
+            "message": { "const": "The exact host operation was not authorized." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "validation" },
+            "code": { "const": "HOST_CALL_VALIDATION_FAILED" },
+            "message": { "const": "The exact host operation failed governed validation." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message", "diagnosticFingerprint"],
+          "properties": {
+            "kind": { "const": "validation" },
+            "code": { "const": "HOST_CALL_SCHEMA_INVALID" },
+            "message": { "const": "The exact host operation data did not satisfy its governed schema." },
+            "diagnosticFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "conflict" },
+            "code": { "const": "HOST_CALL_CONFLICT" },
+            "message": { "const": "The exact host operation encountered a conflict." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "rate-limit" },
+            "code": { "const": "HOST_CALL_RATE_LIMITED" },
+            "message": { "const": "The exact host operation was rate limited." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "unavailable" },
+            "code": { "const": "HOST_CALL_UNAVAILABLE" },
+            "message": { "const": "The exact host operation was unavailable." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "retryable" },
+            "code": { "const": "HOST_CALL_RETRYABLE_FAILURE" },
+            "message": { "const": "The exact host operation reported a retryable failure." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "not-found" },
+            "code": { "const": "HOST_CALL_NOT_FOUND" },
+            "message": { "const": "The exact host operation did not find its governed subject." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "unknown" },
+            "code": { "const": "HOST_CALL_FAILED" },
+            "message": { "const": "The exact host operation failed." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "reasonCode", "message"],
+          "properties": {
+            "kind": { "const": "validation" },
+            "code": { "const": "HOST_REQUEST_NOT_EMITTED" },
+            "reasonCode": { "const": "HOST_REQUEST_NOT_EMITTED" },
+            "message": { "const": "The exact host request was not emitted." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "reasonCode", "message"],
+          "properties": {
+            "kind": { "const": "conflict" },
+            "code": { "const": "CONNECTED_RECONCILIATION_MISMATCH" },
+            "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" },
+            "message": { "const": "Reconciliation did not observe the exact approved state." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "reasonCode", "message"],
+          "properties": {
+            "kind": { "const": "conflict" },
+            "code": { "const": "CONNECTED_PRECONDITION_MISMATCH" },
+            "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" },
+            "message": { "const": "The exact compare-before-write precondition was not satisfied." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "reasonCode", "message"],
+          "properties": {
+            "kind": { "const": "conflict" },
+            "code": { "const": "CONNECTED_VERIFICATION_MISMATCH" },
+            "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" },
+            "message": { "const": "Read-after-write verification did not observe the exact approved state." }
+          }
+        }
+      ]
+    },
+    "configurationSelection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name", "configurationBasis", "path", "lockPath",
+        "lockFingerprint", "graphFingerprint"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "configurationBasis": { "const": "private-active" },
+        "path": { "type": "string", "minLength": 1 },
+        "lockPath": { "type": "string", "minLength": 1 },
+        "lockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "graphFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
     "phase": {
       "oneOf": [
         { "type": "null" },
@@ -94,7 +249,12 @@
             "call": { "type": "object" },
             "output": { "type": ["object", "null"] },
             "outputFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
-            "error": { "type": ["object", "null"] }
+            "error": {
+              "oneOf": [
+                { "type": "null" },
+                { "$ref": "#/$defs/failure" }
+              ]
+            }
           }
         }
       ]
@@ -106,7 +266,12 @@
         "call": { "type": "object" },
         "output": { "type": ["object", "null"] },
         "outputFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
-        "error": { "type": ["object", "null"] }
+        "error": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/failure" }
+          ]
+        }
       }
     },
     "ambiguity": {
@@ -117,7 +282,7 @@
         "stage": { "enum": ["write", "verify"] },
         "callId": { "type": ["string", "null"], "pattern": "^toolcall\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
         "createdAt": { "type": "string", "minLength": 20 },
-        "error": { "type": "object" },
+        "error": { "$ref": "#/$defs/failure" },
         "status": { "enum": ["unresolved", "resolved"] },
         "resolvedAt": { "type": ["string", "null"], "minLength": 20 },
         "resolution": { "enum": ["expected-state", "unexpected-state", null] }
@@ -156,7 +321,12 @@
         },
         "reconciliations": { "type": "array", "maxItems": 20, "items": { "$ref": "#/$defs/reconciliation" } },
         "observedFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
-        "error": { "type": ["object", "null"] }
+        "error": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/failure" }
+          ]
+        }
       }
     },
     "current": {
@@ -175,7 +345,12 @@
       "properties": {
         "state": { "enum": ["completed", "failed", "needs-attention"] },
         "appliedOperationIds": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
-        "error": { "type": ["object", "null"] }
+        "error": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/failure" }
+          ]
+        }
       }
     }
   }

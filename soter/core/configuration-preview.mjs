@@ -8,11 +8,21 @@ import {
   fingerprintLock,
   resolveConfiguration
 } from './resolve.mjs';
+import {
+  hasPrivateConfigurationState,
+  privateConfigurationStatePath,
+  readPrivateConfigurationState
+} from './private-configurations.mjs';
+import {
+  hasActiveConfigurationLockState,
+  readActiveConfigurationLockState
+} from './runtime-state.mjs';
 
 const CONTRACT = 'soter://contracts/configuration-preview/v1';
 const VERSION = '1.0.0';
 const EFFECTS = ['read', 'disclosure', 'write', 'dispatch', 'destructive'];
 const EFFECT_MODES = ['allow', 'confirm', 'prohibit'];
+const CONFIGURATION_BASES = new Set(['tracked-contained', 'private-active']);
 const DEFAULT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 function compareText(left, right) {
@@ -48,9 +58,29 @@ function configurationPath(root, name) {
   return matches[0];
 }
 
+function assertConfigurationBasis(configurationBasis) {
+  if (!CONFIGURATION_BASES.has(configurationBasis)) {
+    throw new TypeError(
+      'Configuration preview requires configurationBasis tracked-contained or private-active.'
+    );
+  }
+  return configurationBasis;
+}
+
+function configurationStatePair(root, name) {
+  const desired = fs.existsSync(privateConfigurationStatePath(root, name));
+  const activeLock = hasActiveConfigurationLockState(root, name);
+  if (desired !== activeLock) {
+    throw new Error(
+      'Private desired configuration and active exact lock must either both exist or both be absent; tracked fallback is prohibited.'
+    );
+  }
+  return { desired, activeLock };
+}
+
 function hostAdapters(root) {
   return walkJson(path.join(root, 'soter', 'hosts')).map((file) => ({ file, value: readJson(file) }))
-    .filter((entry) => entry.value.$contract === 'soter://contracts/host-adapter/v1');
+    .filter((entry) => entry.value.$contract === 'soter://contracts/host-adapter/v2');
 }
 
 function packManifests(root) {
@@ -221,24 +251,50 @@ function changeRows(current, candidate) {
   return rows;
 }
 
-export function previewConfiguration({ root = DEFAULT_ROOT, name, draft = {} } = {}) {
+export function previewConfiguration({
+  root = DEFAULT_ROOT,
+  name,
+  configurationBasis,
+  draft = {}
+} = {}) {
   const resolvedRoot = path.resolve(root);
   if (typeof name !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name)) {
     throw new TypeError('Configuration preview name is invalid.');
   }
+  const basis = assertConfigurationBasis(configurationBasis);
+  const privateState = configurationStatePair(resolvedRoot, name);
   const normalizedDraft = normalizeDraft(draft);
-  const source = configurationPath(resolvedRoot, name);
-  const currentConfiguration = readJson(source);
-  const currentLock = resolveConfiguration({ root: resolvedRoot, configPath: source });
+  const template = configurationPath(resolvedRoot, name);
+  let source = template;
+  let currentConfiguration = readJson(template);
+  let currentLock = resolveConfiguration({ root: resolvedRoot, configPath: template });
+  if (basis === 'private-active') {
+    if (!privateState.desired || !privateState.activeLock) {
+      throw new Error(
+        'Configuration preview with configurationBasis private-active requires private desired configuration and its active exact lock; tracked fallback is prohibited.'
+      );
+    }
+    hasPrivateConfigurationState(resolvedRoot, name);
+    source = privateConfigurationStatePath(resolvedRoot, name);
+    currentConfiguration = readPrivateConfigurationState(resolvedRoot, name).configuration;
+    currentLock = resolveConfiguration({ root: resolvedRoot, configPath: source });
+    const activeLock = readActiveConfigurationLockState(resolvedRoot, name).lock;
+    if (fingerprintLock(activeLock) !== fingerprintLock(currentLock)) {
+      throw new Error('Active private configuration lock is stale; tracked fallback is prohibited.');
+    }
+  }
   const adapters = hostAdapters(resolvedRoot);
   const packs = packManifests(resolvedRoot);
   const diagnostics = [];
   const candidate = candidateConfiguration(currentConfiguration, adapters, packs, normalizedDraft, diagnostics);
+  const candidateChangesDocument = JSON.stringify(candidate) !== JSON.stringify(currentConfiguration);
   let candidateLock = null;
   if (!hasErrors(diagnostics)) {
     const evaluated = evaluateConfigurationDocument({
       root: resolvedRoot,
-      configPath: source,
+      configPath: candidateChangesDocument
+        ? privateConfigurationStatePath(resolvedRoot, name)
+        : source,
       configuration: candidate
     });
     appendCandidateDiagnostics(resolvedRoot, evaluated.verification, diagnostics);
@@ -246,7 +302,7 @@ export function previewConfiguration({ root = DEFAULT_ROOT, name, draft = {} } =
   }
   const currentFingerprint = fingerprintLock(currentLock);
   const candidateFingerprint = candidateLock ? fingerprintLock(candidateLock) : null;
-  const changed = candidateFingerprint !== null && candidateFingerprint !== currentFingerprint;
+  const changed = candidateFingerprint !== null && candidateChangesDocument;
   const selected = new Set(currentLock.packs.map((pack) => pack.id));
   const base = new Set([currentConfiguration.base.kernel, currentConfiguration.base.core]);
 
@@ -255,7 +311,8 @@ export function previewConfiguration({ root = DEFAULT_ROOT, name, draft = {} } =
     contractVersion: VERSION,
     configuration: {
       name: currentConfiguration.name,
-      sourcePath: repoRelativePath(resolvedRoot, source),
+      sourcePath: repoRelativePath(resolvedRoot, template),
+      configurationBasis: basis,
       host: currentConfiguration.host.adapter,
       lockFingerprint: currentFingerprint,
       graphFingerprint: currentLock.graphFingerprint

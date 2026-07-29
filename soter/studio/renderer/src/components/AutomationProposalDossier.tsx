@@ -39,14 +39,20 @@ export function AutomationProposalDossier({
   const proposedCount = proposal.review.collections.reduce((total, collection) => total
     + collection.rows.reduce((rows, row) => rows
       + row.actions.filter((action) => action.state === 'proposed').length, 0), 0);
+  const heldReasonCodes = [...new Set(proposal.review.collections.flatMap((collection) => (
+    collection.rows.flatMap((row) => row.actions
+      .filter((action) => action.state === 'held')
+      .map((action) => action.reasonCode))
+  )))].sort();
+  const reviewTitle = readable(proposal.review.kind.replace(/-review$/, ''));
 
   return (
-    <article className="automation-proposal-dossier" aria-label="Selected Email review-only proposal">
+    <article className="automation-proposal-dossier" aria-label={`Selected ${reviewTitle} review-only proposal`}>
       <header className="proposal-dossier-header">
         <div>
           <span className="eyebrow">Selected proposal · private local review</span>
-          <h2>Email review proposal</h2>
-          <p>One paused decision projected as a sanitized manifest with a separately loaded private folio.</p>
+          <h2>{reviewTitle} review proposal</h2>
+          <p>One paused Automation decision projected as a sanitized manifest with a separately loaded private folio.</p>
         </div>
         <div className="proposal-dossier-state">
           <StateMark state={proposal.state} compact />
@@ -62,7 +68,7 @@ export function AutomationProposalDossier({
       </section>
 
       <section className="proposal-authority-cut" aria-label="Proposal authority boundary">
-        <div><span className="eyebrow">Proposal state</span><strong>{proposal.review.collections.length} collections · {proposedCount} proposed review facts</strong><p>Coverage and proposed actions describe review material only.</p></div>
+        <div><span className="eyebrow">Proposal state</span><strong>{proposal.review.collections.length} collections · {proposedCount} selectable proposed actions</strong><p>Coverage, held reasons, and proposed actions describe review material only.</p></div>
         <div><span>Authority</span><strong>none</strong><code>{proposal.authority.reasonCode}</code></div>
         <div><span>External writes</span><strong>not performed</strong><code>run remains paused</code></div>
       </section>
@@ -75,18 +81,33 @@ export function AutomationProposalDossier({
         {proposal.review.contradictions.length > 0 && <ul>{proposal.review.contradictions.map((contradiction) => <li key={contradiction.id}><code>{contradiction.id}</code><span>{contradiction.claim}</span></li>)}</ul>}
       </section>
 
-      <section className="proposal-selection-instrument" aria-label="Exact proposed action selection">
-        <div>
-          <span className="eyebrow">Exact subset · sanitized identities only</span>
-          <strong>{selectedActionIds.length} of {proposedCount} proposed actions selected</strong>
-          <p>Only actions already marked proposed can enter the Core preview. Held, prohibited, none, and handoff rows remain outside the selection control.</p>
-        </div>
-        <div className="proposal-selection-count" aria-label={`${selectedActionIds.length} selected actions`}>
-          <span>{String(selectedActionIds.length).padStart(2, '0')}</span>
-          <i aria-hidden="true" />
-          <small>exact IDs</small>
-        </div>
-      </section>
+      {proposedCount > 0 ? (
+        <section className="proposal-selection-instrument" aria-label="Exact proposed action selection">
+          <div>
+            <span className="eyebrow">Exact subset · sanitized identities only</span>
+            <strong>{selectedActionIds.length} of {proposedCount} proposed actions selected</strong>
+            <p>Only actions already marked proposed can enter the Core preview. Held, prohibited, none, and handoff rows remain outside the selection control.</p>
+          </div>
+          <div className="proposal-selection-count" aria-label={`${selectedActionIds.length} selected actions`}>
+            <span>{String(selectedActionIds.length).padStart(2, '0')}</span>
+            <i aria-hidden="true" />
+            <small>exact IDs</small>
+          </div>
+        </section>
+      ) : heldReasonCodes.length > 0 ? (
+        <section className="proposal-selection-instrument" aria-label="Held proposal boundary">
+          <div>
+            <span className="eyebrow">Held review · no selectable action</span>
+            <strong>0 proposed actions</strong>
+            <p>{heldReasonCodes.join(' · ')}</p>
+          </div>
+          <div className="proposal-selection-count" aria-label="No selectable actions">
+            <span>00</span>
+            <i aria-hidden="true" />
+            <small>held</small>
+          </div>
+        </section>
+      ) : null}
 
       <section className="review-manifest proposal-review-manifest" aria-label="Automation proposal review collections">
         <ReviewCollectionLedger
@@ -97,7 +118,7 @@ export function AutomationProposalDossier({
           selectedActionIds={selectedActionIds}
           selectionDisabled={selectionDisabled}
           selectionPurpose="exact connected scope"
-          onToggleAction={onToggleAction}
+          onToggleAction={proposedCount > 0 ? onToggleAction : undefined}
         />
       </section>
 

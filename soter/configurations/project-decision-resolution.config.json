@@ -1,0 +1,167 @@
+{
+  "$contract": "soter://contracts/configuration/v1",
+  "contractVersion": "1.0.0",
+  "name": "project-decision-resolution",
+  "base": {
+    "kernel": "kernel.soter",
+    "core": "core.runtime"
+  },
+  "packs": [
+    {
+      "id": "context.projects",
+      "source": "dependency",
+      "reason": "Decision resolution depends on portable Projects policy, feed-entry, project, and work-item meaning."
+    },
+    {
+      "id": "automation.project-decision-resolution",
+      "source": "user",
+      "reason": "The user selected exact three-surface Decision resolution preparation for this configuration."
+    },
+    {
+      "id": "integration.notion",
+      "source": "binding",
+      "reason": "The configured policy, project, Question, document, and eventual write authorities live in Notion."
+    }
+  ],
+  "bindings": [
+    {
+      "capability": "projects.records.read",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.projects.definition", "authority.projects.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "Notion is the configured authority for the shared Projects policy, exact project, and exact current Question."
+    },
+    {
+      "capability": "documents.content.read",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.projects.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "Notion supplies the exact current project document containing the selected work item."
+    },
+    {
+      "capability": "projects.records.create",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.projects.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "A separately governed transaction may later create the exact reviewed Decision feed entry."
+    },
+    {
+      "capability": "projects.records.update",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.projects.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "A separately governed transaction may later mark only the exact reviewed Question as processed."
+    },
+    {
+      "capability": "documents.content.update",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.projects.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "A separately governed transaction may later replace only the exact reviewed work-item line."
+    }
+  ],
+  "sources": [
+    {
+      "id": "source.policy.project-decision-resolution",
+      "capability": "projects.records.read",
+      "authority": "authority.projects.definition",
+      "input": {
+        "recordTypes": ["project-work-policy"],
+        "ids": ["policy.projects"],
+        "limit": 2
+      },
+      "readiness": {
+        "mode": "probe-read",
+        "reason": "Connected readiness must prove the configured shared Projects policy can be read and normalized without retaining private values."
+      },
+      "consumers": [
+        {
+          "pack": "automation.project-decision-resolution",
+          "purpose": "project-work-policy",
+          "subjects": ["project-decision-resolution"],
+          "reason": "Decision resolution must ground Decision grammar, Question processing, work-item binding, visibility, and confirmation in one exact shared Projects policy."
+        }
+      ],
+      "reason": "The shared Projects policy is a portable configured source rather than Automation-owned provider identity or prose."
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.projects.definition",
+      "role": "definition",
+      "subject": "projects.records",
+      "uri": "soter-fixture://configuration-template/notion/authority/policies",
+      "reason": "The selected shared Projects policy defines valid Decision-resolution semantics."
+    },
+    {
+      "id": "authority.projects.instance",
+      "role": "instance",
+      "subject": "projects.records",
+      "uri": "soter-fixture://configuration-template/notion/authority/projects",
+      "reason": "The configured project, Question, and project document are authoritative current instances."
+    },
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "uri": "soter-fixture://configuration-template/notion/account/operator",
+      "reason": "The selected Notion account supplies provider identity and permission context."
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "uri": "soter-state://runs",
+      "reason": "Local private runtime state owns prepared work, selected-work review material, and contained evidence."
+    }
+  ],
+  "effectPolicies": {
+    "read": {
+      "mode": "allow",
+      "reason": "The exact policy, project, Question, and project document may be read for private preparation."
+    },
+    "disclosure": {
+      "mode": "allow",
+      "reason": "Selected records may enter the configured private run envelope with explicit minimization."
+    },
+    "write": {
+      "mode": "confirm",
+      "reason": "The exact three-action group requires a fresh later confirmation and separately consumed one-time start authorization."
+    },
+    "dispatch": {
+      "mode": "prohibit",
+      "reason": "Decision resolution does not send messages or publish notifications."
+    },
+    "destructive": {
+      "mode": "prohibit",
+      "reason": "Decision resolution never deletes records or performs destructive changes."
+    }
+  },
+  "secretRefs": [
+    {
+      "id": "secret-ref.notion",
+      "provider": "host",
+      "key": "NOTION_OAUTH"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "reason": "This fixture configuration exercises Codex projection while preserving provider-neutral contracts."
+  },
+  "settings": {
+    "integration.notion": {
+      "targets": {
+        "policies": "soter-fixture://configuration-template/notion/collection/policies",
+        "organizations": "soter-fixture://configuration-template/notion/collection/organizations",
+        "contacts": "soter-fixture://configuration-template/notion/collection/contacts",
+        "projects": "soter-fixture://configuration-template/notion/collection/projects",
+        "updates": "soter-fixture://configuration-template/notion/collection/updates",
+        "tasks": "soter-fixture://configuration-template/notion/collection/tasks",
+        "meetings": "soter-fixture://configuration-template/notion/collection/meetings",
+        "documents": "soter-fixture://configuration-template/notion/collection/documents"
+      }
+    }
+  }
+}

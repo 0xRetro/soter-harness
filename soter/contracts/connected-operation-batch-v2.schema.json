@@ -80,7 +80,30 @@
         "provider": { "$ref": "#/$defs/provider" },
         "input": { "type": "object" },
         "inputFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "inputBindings": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 5,
+          "items": { "$ref": "#/$defs/writeOutputBinding" }
+        },
         "expectation": { "$ref": "#/$defs/expectation" }
+      }
+    },
+    "writeOutputBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "sourceStage", "sourcePath", "targetPath", "transform"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^binding\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "sourceStage": { "const": "write" },
+        "sourcePath": {
+          "type": "array", "minItems": 1, "maxItems": 8,
+          "items": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*$" }
+        },
+        "targetPath": {
+          "type": "array", "minItems": 1, "maxItems": 8,
+          "items": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]*$" }
+        },
+        "transform": { "enum": ["exact-string", "singleton-string-list"] }
       }
     },
     "noPrecondition": {
@@ -120,13 +143,27 @@
           }
         },
         "before": {
-          "type": "object", "additionalProperties": false,
-          "required": ["state", "reasonCode", "fingerprint"],
-          "properties": {
-            "state": { "enum": ["not-required", "absent-required"] },
-            "reasonCode": { "enum": ["PRIOR_VALUE_NOT_REQUIRED", "DEDUPLICATION_ABSENCE_REQUIRED"] },
-            "fingerprint": { "type": "null" }
-          }
+          "oneOf": [
+            {
+              "type": "object", "additionalProperties": false,
+              "required": ["state", "reasonCode", "fingerprint"],
+              "properties": {
+                "state": { "enum": ["not-required", "absent-required"] },
+                "reasonCode": { "enum": ["PRIOR_VALUE_NOT_REQUIRED", "DEDUPLICATION_ABSENCE_REQUIRED"] },
+                "fingerprint": { "type": "null" }
+              }
+            },
+            {
+              "type": "object", "additionalProperties": false,
+              "required": ["state", "reasonCode", "fingerprint", "reviewValue"],
+              "properties": {
+                "state": { "const": "provided" },
+                "reasonCode": { "const": "PRIOR_VALUE_REQUIRED" },
+                "fingerprint": { "$ref": "#/$defs/fingerprint" },
+                "reviewValue": { "type": "object" }
+              }
+            }
+          ]
         },
         "after": {
           "type": "object", "additionalProperties": false,

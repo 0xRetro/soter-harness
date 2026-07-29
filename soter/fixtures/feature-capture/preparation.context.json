@@ -1,0 +1,173 @@
+{
+  "$contract": "soter://contracts/context-snapshot/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.feature-capture.preparation-fixture",
+  "runId": "run.feature-capture.preparation-fixture",
+  "createdAt": "2026-07-21T18:00:00.000Z",
+  "configurationLockFingerprint": "sha256:034d338223e780aff0222e20ff28da470bc004c9cdd965325ffeae7bfe5bf340",
+  "graphFingerprint": "sha256:2c6d74e71a6f75286f22ec03a32c26122f8582d1aeca0e2e228e0ae14133d114",
+  "containment": "fixture",
+  "entries": [
+    {
+      "id": "context.feature-capture.policy",
+      "subject": "product.records.feature-workflow-policy",
+      "authority": "authority.product.definition",
+      "role": "definition",
+      "capability": "product.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T18:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.product.definition",
+        "mapping": "mapping.integration.notion.product-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:8ec1ff8c47753ec838a34c5b53f2f7cde7d90c6cb2ecdbd14779e6a448203484"
+      },
+      "valueFingerprint": "sha256:3461e500d0cc47e3ee540c48957602de6597503f36a696e415bf29e1c47fbf9c",
+      "value": {
+        "record": {
+          "type": "feature-workflow-policy",
+          "id": "policy.feature-workflow",
+          "version": "1",
+          "fields": {
+            "name": "Feature Development"
+          },
+          "identityBinding": {
+            "state": "exact-request",
+            "requestedIdFingerprint": "sha256:c1f1b0ee629f9732e8b2ff371fc5aac3a46f0955981c52c47745ee8ff6f81665"
+          }
+        },
+        "definitionFingerprint": "sha256:b7e9e810b206d305690764d6231e57948f6379bf0f9548c4b99334e48ef8bfa8"
+      }
+    },
+    {
+      "id": "context.feature-capture.schema",
+      "subject": "product.records.feature-schema",
+      "authority": "authority.product.instance",
+      "role": "instance",
+      "capability": "product.schema.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T18:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.product.instance",
+        "mapping": "mapping.integration.notion.product-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:2a178defef440ea3fdc812553a5a951977ea2f059059c29d5e4d6325fbe9f987"
+      },
+      "valueFingerprint": "sha256:0bc0da663e1d9d29eb26a71c8715fa9b9eeaae4c98bc27bbec0d7b713b75e6fe",
+      "value": {
+        "schema": {
+          "recordType": "feature",
+          "fields": [
+            {
+              "id": "area",
+              "writable": true,
+              "options": [
+                "Automation",
+                "Context",
+                "Core",
+                "Kernel"
+              ]
+            },
+            {
+              "id": "description",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "featureType",
+              "writable": true,
+              "options": [
+                "Bug",
+                "Content",
+                "Enhancement",
+                "Feature"
+              ]
+            },
+            {
+              "id": "name",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "priority",
+              "writable": true,
+              "options": [
+                "Later",
+                "Next",
+                "Now"
+              ]
+            },
+            {
+              "id": "status",
+              "writable": true,
+              "options": [
+                "Canceled",
+                "Completed",
+                "In Development",
+                "Planned",
+                "Up Next"
+              ]
+            }
+          ],
+          "fingerprint": "sha256:29184b37156bd1f502531f4b3baf43d9fd65694a99ad09b636d9a49e0067c1c5"
+        },
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.product.instance",
+          "mapping": "mapping.integration.notion.product-records",
+          "mappingVersion": "0.2.0",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:2a178defef440ea3fdc812553a5a951977ea2f059059c29d5e4d6325fbe9f987"
+        },
+        "observedAt": "2026-07-21T18:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.feature-capture.candidates",
+      "subject": "product.records.feature-candidates",
+      "authority": "authority.product.instance",
+      "role": "instance",
+      "capability": "product.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T18:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.product.instance",
+        "mapping": "mapping.integration.notion.product-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:8ec1ff8c47753ec838a34c5b53f2f7cde7d90c6cb2ecdbd14779e6a448203484"
+      },
+      "valueFingerprint": "sha256:9aa4e07f29ff713ed2432be34b95ca52dfb9775bb88348c15e90ba5bcba4a177",
+      "value": {
+        "candidateCount": 0,
+        "candidateIds": [],
+        "providerOutputFingerprint": "sha256:a576cea0d87f711480f6dcbb4db830805a48ae66e272467393ffff06a6f094c3"
+      }
+    }
+  ],
+  "effectIds": [
+    "effect.feature-capture.preparation.policy.fixture",
+    "effect.feature-capture.preparation.schema.fixture",
+    "effect.feature-capture.preparation.candidates.fixture"
+  ],
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Feature name, why, body text, requested options, provider target identity, candidate values, native responses, and credentials are excluded from general inspection."
+    ]
+  }
+}

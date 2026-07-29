@@ -1,0 +1,26 @@
+{
+  "$contract": "soter://contexts/process/process-capture-policy/v1",
+  "contractVersion": "1.0.0",
+  "id": "policy.context.process.capture",
+  "name": "Processes",
+  "createRequiresConfirmation": true,
+  "defaultStatus": "Draft",
+  "statusLifecycle": ["Backlog", "Up Next", "Draft", "In Review", "Active", "Retired"],
+  "processOsLifecycle": ["Not Ready", "Ready", "Live"],
+  "duplicateCandidateLimit": 8,
+  "maximumSteps": 20,
+  "maximumWorkItemsPerStep": 1,
+  "requiredSections": ["Purpose", "Trigger", "Cadence", "Roles", "Initialization", "Steps", "Exception Handling", "Post Run Summary Report"],
+  "triggerKinds": ["Request", "Event", "Schedule", "Emergency"],
+  "frequencyAliases": [
+    { "input": "Fortnightly", "value": "Bi-Weekly" },
+    { "input": "Every two weeks", "value": "Bi-Weekly" },
+    { "input": "Twice a year", "value": "Bi-Annual" }
+  ],
+  "categoryAliases": [
+    { "input": "Ops-Finance", "value": "Operations — Finance" },
+    { "input": "Finance Ops", "value": "Operations — Finance" }
+  ],
+  "taskSpawnMode": "definition-prohibited-run-handoff-only",
+  "bodyShapeVersion": "1.0.0"
+}

@@ -1,0 +1,92 @@
+{
+  "$contract": "soter://contracts/provider-mapping/v1",
+  "contractVersion": "1.0.0",
+  "id": "mapping.integration.notion.product-records",
+  "pack": "integration.notion",
+  "provider": "provider.integration.notion.mcp",
+  "version": "0.2.0",
+  "contextModel": "model.context.product.records",
+  "settingsDefinition": "settings.integration.notion",
+  "capabilities": [
+    "product.records.read",
+    "product.records.create",
+    "product.schema.read"
+  ],
+  "recordTypes": [
+    {
+      "id": "feature-workflow-policy",
+      "target": "policies",
+      "capabilities": ["product.records.read"],
+      "fields": [
+        {
+          "portable": "name",
+          "provider": "Name",
+          "providerType": "title",
+          "decode": "scalar"
+        }
+      ]
+    },
+    {
+      "id": "feature",
+      "target": "features",
+      "capabilities": [
+        "product.records.read",
+        "product.records.create",
+        "product.schema.read"
+      ],
+      "fields": [
+        {
+          "portable": "name",
+          "provider": "Name",
+          "providerType": "title",
+          "decode": "scalar"
+        },
+        {
+          "portable": "description",
+          "provider": "Description",
+          "providerType": "text",
+          "decode": "scalar"
+        },
+        {
+          "portable": "status",
+          "provider": "Status",
+          "providerType": "status",
+          "valueMapping": "configured-bijection",
+          "decode": "scalar"
+        },
+        {
+          "portable": "featureType",
+          "provider": "Type",
+          "providerType": "select",
+          "valueMapping": "configured-bijection",
+          "decode": "scalar"
+        },
+        {
+          "portable": "area",
+          "provider": "Area",
+          "providerType": "select",
+          "valueMapping": "configured-bijection",
+          "decode": "scalar"
+        },
+        {
+          "portable": "priority",
+          "provider": "Priority",
+          "providerType": "select",
+          "valueMapping": "configured-bijection",
+          "decode": "scalar"
+        }
+      ],
+      "content": {
+        "portable": "body",
+        "provider": "page-content",
+        "providerType": "markdown"
+      }
+    }
+  ],
+  "limitations": [
+    "The features target is one exact user-selected board. The mapping does not discover inline databases, infer an owning product from a title, or adopt an arbitrary embedded collection.",
+    "Feature creates require a complete markdown body and exact current mapped properties. Definition edits use the separate documents.content.update capability so Description and Status remain untouched.",
+    "Provider templates and optional board fields are observations, not portable authority. An Automation must hold when a requested Type, Area, Priority, or lifecycle value is absent from the current normalized schema.",
+    "This mapping creates no approval, one-time start authorization, continuation request, provider write, readiness, verification, or health claim."
+  ]
+}

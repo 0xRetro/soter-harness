@@ -1,0 +1,217 @@
+{
+  "$contract": "soter://contracts/configuration/v1",
+  "contractVersion": "1.0.0",
+  "name": "project-capture",
+  "base": {
+    "kernel": "kernel.soter",
+    "core": "core.runtime"
+  },
+  "packs": [
+    {
+      "id": "context.projects",
+      "source": "dependency",
+      "reason": "Project Capture depends on portable Project fields, milestones, body, policy, schema, and duplicate meaning."
+    },
+    {
+      "id": "context.crm",
+      "source": "dependency",
+      "reason": "The selected Organization relation resolves through independent portable CRM identity."
+    },
+    {
+      "id": "automation.project-capture",
+      "source": "user",
+      "reason": "The user selected private, deduplicated Project candidate preparation. The current configuration stops at held review and grants no create authority."
+    },
+    {
+      "id": "integration.notion",
+      "source": "binding",
+      "reason": "The configured policy, organization, project schema, and duplicate candidates live in Notion. No Project-create capability is selected."
+    }
+  ],
+  "bindings": [
+    {
+      "capability": "projects.records.read",
+      "providerPack": "integration.notion",
+      "authorities": [
+        "authority.projects.definition",
+        "authority.projects.instance"
+      ],
+      "secretRef": "secret-ref.notion",
+      "reason": "Notion is the configured authority for the Project policy and bounded duplicate Project candidates."
+    },
+    {
+      "capability": "crm.records.read",
+      "providerPack": "integration.notion",
+      "authorities": [
+        "authority.crm.definition",
+        "authority.crm.instance"
+      ],
+      "secretRef": "secret-ref.notion",
+      "reason": "Notion resolves the exact selected CRM Organization without transferring CRM ownership into Projects Context."
+    },
+    {
+      "capability": "projects.schema.read",
+      "providerPack": "integration.notion",
+      "authorities": [
+        "authority.projects.instance"
+      ],
+      "secretRef": "secret-ref.notion",
+      "reason": "Notion supplies a normalized current project schema observation before any create proposal."
+    }
+  ],
+  "sources": [
+    {
+      "id": "source.policy.project-capture",
+      "capability": "projects.records.read",
+      "authority": "authority.projects.definition",
+      "input": {
+        "recordTypes": [
+          "project-capture-policy"
+        ],
+        "ids": [
+          "policy.project-capture"
+        ],
+        "limit": 2
+      },
+      "readiness": {
+        "mode": "probe-read",
+        "reason": "Connected readiness must prove a trusted normalized project-capture policy can be read without retaining private values."
+      },
+      "consumers": [
+        {
+          "pack": "automation.project-capture",
+          "purpose": "project-capture-policy",
+          "subjects": [
+            "project-capture"
+          ],
+          "reason": "Project Capture must ground naming, type, status, body, milestone, relation, deduplication, and confirmation rules in one selected definition source."
+        }
+      ],
+      "reason": "Project creation rules are a configured definition source rather than Automation-owned constants."
+    },
+    {
+      "id": "source.profile.project-capture",
+      "capability": "projects.records.read",
+      "authority": "authority.projects.definition",
+      "input": {
+        "recordTypes": [
+          "project-creation-profile"
+        ],
+        "ids": [
+          "profile.project-capture.project",
+          "profile.project-capture.deal"
+        ],
+        "limit": 2
+      },
+      "readiness": {
+        "mode": "probe-read",
+        "reason": "Connected readiness must prove the complete exact governed creation-profile set can be read without retaining private project values."
+      },
+      "consumers": [
+        {
+          "pack": "automation.project-capture",
+          "purpose": "project-creation-profiles",
+          "subjects": [
+            "project",
+            "deal"
+          ],
+          "reason": "Project Capture must bind the selected portable Project or Deal profile independently from provider-native templates."
+        }
+      ],
+      "reason": "Project and Deal creation-profile selection is an explicit read-only definition source."
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.projects.definition",
+      "role": "definition",
+      "subject": "projects.records",
+      "uri": "soter-fixture://configuration-template/notion/authority/policies",
+      "reason": "The selected normalized Projects policy defines valid project-create semantics."
+    },
+    {
+      "id": "authority.projects.instance",
+      "role": "instance",
+      "subject": "projects.records",
+      "uri": "soter-fixture://configuration-template/notion/authority/projects",
+      "reason": "The configured Project schema and Project records are authoritative for schema and duplicate review."
+    },
+    {
+      "id": "authority.crm.definition",
+      "role": "definition",
+      "subject": "crm.records",
+      "uri": "soter-fixture://configuration-template/notion/authority/crm-policies",
+      "reason": "The selected CRM Context retains its independent definition authority; Project Capture consumes only the exact Organization instance relation."
+    },
+    {
+      "id": "authority.crm.instance",
+      "role": "instance",
+      "subject": "crm.records",
+      "uri": "soter-fixture://configuration-template/notion/authority/crm",
+      "reason": "The configured Organization records are authoritative for exact Project relation resolution."
+    },
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "uri": "soter-fixture://configuration-template/notion/account/operator",
+      "reason": "The selected Notion account scopes connected provider calls but contributes no portable Project person identity."
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "uri": "soter-state://runs",
+      "reason": "Local private runtime state owns prepared work, review material, and contained evidence."
+    }
+  ],
+  "effectPolicies": {
+    "read": {
+      "mode": "allow",
+      "reason": "Selected policy, current project schema, organization, and bounded project candidates may be read for private preparation."
+    },
+    "disclosure": {
+      "mode": "allow",
+      "reason": "Selected records may enter the configured private run envelope with explicit minimization."
+    },
+    "write": {
+      "mode": "confirm",
+      "reason": "The selected Integration exposes separately governed write capabilities, so any write still requires confirmation. Project Capture itself declares no write capability: COMPLETE_PROJECT_READBACK_UNAVAILABLE holds its candidate before proposal selection, batch, approval, one-time start, checkpoint, provider write, or verification authority."
+    },
+    "dispatch": {
+      "mode": "prohibit",
+      "reason": "Project Capture does not send messages or publish notifications."
+    },
+    "destructive": {
+      "mode": "prohibit",
+      "reason": "Project Capture never deletes records or performs destructive changes."
+    }
+  },
+  "secretRefs": [
+    {
+      "id": "secret-ref.notion",
+      "provider": "host",
+      "key": "NOTION_OAUTH"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "reason": "This fixture configuration exercises Codex projection while preserving provider-neutral contracts."
+  },
+  "settings": {
+    "integration.notion": {
+      "targets": {
+        "policies": "soter-fixture://configuration-template/notion/collection/policies",
+        "organizations": "soter-fixture://configuration-template/notion/collection/organizations",
+        "contacts": "soter-fixture://configuration-template/notion/collection/contacts",
+        "projects": "soter-fixture://configuration-template/notion/collection/projects",
+        "updates": "soter-fixture://configuration-template/notion/collection/updates",
+        "tasks": "soter-fixture://configuration-template/notion/collection/tasks",
+        "meetings": "soter-fixture://configuration-template/notion/collection/meetings",
+        "documents": "soter-fixture://configuration-template/notion/collection/documents"
+      }
+    }
+  }
+}

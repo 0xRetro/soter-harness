@@ -1,0 +1,27 @@
+{
+  "$contract": "soter://contracts/capability-provider/v1",
+  "contractVersion": "1.0.0",
+  "id": "provider.integration.google-drive.fixture",
+  "pack": "integration.google-drive",
+  "version": "0.1.0",
+  "containment": "fixture",
+  "runtime": { "engine": "node", "module": "soter/integrations/google-drive/fixture.mjs", "export": "invoke" },
+  "capabilities": [
+    { "id": "storage.registry.read", "version": "1.0.0" },
+    { "id": "storage.artifacts.read", "version": "1.0.0" },
+    { "id": "storage.shortcuts.create", "version": "1.0.0" },
+    { "id": "storage.files.copy", "version": "1.0.0" }
+  ],
+  "authorities": [
+    { "role": "definition", "subject": "storage.locations" },
+    { "role": "instance", "subject": "storage.artifacts" },
+    { "role": "provider", "subject": "google-drive.account" }
+  ],
+  "effects": ["read", "disclosure", "write"],
+  "mappings": [],
+  "fixtures": ["soter/fixtures/providers/google-drive/storage.json"],
+  "limitations": [
+    "Uses an in-memory copy of deterministic local storage metadata only; it does not authenticate to, mutate, or represent the current state of Google Drive.",
+    "The fixture proves portable translation and no-move behavior only; no connected shortcut, copy, move, rename, delete, permission, readiness, verification, or health claim follows."
+  ]
+}

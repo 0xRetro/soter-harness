@@ -1,0 +1,451 @@
+{
+  "$contract": "soter://contracts/development-agent-migration-evidence/v1",
+  "contractVersion": "1.0.0",
+  "id": "development-agent-migration-evidence.codex.authoring-a-policy-standard",
+  "evidenceFingerprint": "sha256:f704c080175a549d1cf39e7a3563a5a6a8d27d186ca840eac238e5f498eb2264",
+  "createdAt": "2026-07-26T07:57:51.880Z",
+  "sourceObservation": {
+    "id": "development-host-observation.codex.authoring-a-policy-standard-v2-baseline-r19",
+    "fingerprint": "sha256:8e2bfbcddb0a26d6579362703dad1e71bce397d2951ca0d247f86f24ccd4c1eb",
+    "observedAt": "2026-07-26T07:57:51.880Z"
+  },
+  "applicability": {
+    "kind": "historical-candidate-only",
+    "evaluatedSubjectFingerprint": "sha256:f478cd936366caa0942a0a326439e9ccfecb772ba2db851d44b2f6339d91311d",
+    "candidate": {
+      "configurationName": "harness-development-catalog",
+      "lockFingerprint": "sha256:055c097af94544bed335154f671475bc75a9ab781a1e1a9b47911114e6d71f7e",
+      "graphFingerprint": "sha256:1a1f66620e74d2a6445a392531bcd743c6c391922c312dbc34032e6b9c48b228",
+      "candidateProjectionFingerprint": "sha256:907dcfc370dd3c3b22e525dac138205b76b774191d82dd94246551195b64f6ad"
+    },
+    "finalGraph": "not-claimed",
+    "finalProjection": "not-claimed",
+    "currentRuntime": "not-claimed",
+    "activation": "not-granted",
+    "fallbackRemoval": "not-granted"
+  },
+  "request": {
+    "id": "development-request.codex.authoring-a-policy-standard-v2-baseline-r19",
+    "fingerprint": "sha256:7fdaa02b1be3d4aa41b97935f1cf242fcdd525e735d1a30c1897c698458a8495",
+    "createdAt": "2026-07-26T07:49:47.723Z"
+  },
+  "result": {
+    "id": "development-result.codex.authoring-a-policy-standard-v2-baseline-r19",
+    "fingerprint": "sha256:2c1910268bc2d0393a3159687c6fa375398c5eca954c23be460745918c3a3650",
+    "createdAt": "2026-07-26T07:57:51.880Z",
+    "completedAt": "2026-07-26T07:57:51.880Z",
+    "state": "passed"
+  },
+  "workflow": {
+    "id": "automation.authoring-a-policy-standard",
+    "version": "0.1.0",
+    "definitionFingerprint": "sha256:744650a55338e8ddfe0cde69eaf49473e6de0f017e9b00c68e97981358aee36a"
+  },
+  "evaluatedSubject": {
+    "kind": "workflow-guide",
+    "id": "workflow-guide.authoring-a-policy-standard",
+    "version": "0.1.0",
+    "fingerprint": "sha256:f478cd936366caa0942a0a326439e9ccfecb772ba2db851d44b2f6339d91311d",
+    "contentFingerprint": "sha256:a46cc73fabcb0508aad1e937d8de2d2bd9fd3378863c66df3ba7f4361eb37a79",
+    "candidateProjectionFingerprint": "sha256:907dcfc370dd3c3b22e525dac138205b76b774191d82dd94246551195b64f6ad"
+  },
+  "evaluationSet": {
+    "id": "evaluation-set.authoring-a-policy-standard",
+    "version": "0.1.0",
+    "fingerprint": "sha256:3a3c3bbfe4dc2dc8957ba7baf1294df496cbf63ee48eee6b2eb8bbd4c078599f"
+  },
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.0",
+    "adapterFingerprint": "sha256:45124ada6f79000a23e61ed6ddd78c2ed81bd032e39792a1e8cd24736e3a493f",
+    "projectionDefinitionId": "host-projection.codex",
+    "projectionDefinitionFingerprint": "sha256:76cd84436a3b5e7f00edcc8a0be3cdff64f53e488b13107a8bf56603b9600490",
+    "evaluatedInstructionFingerprint": "sha256:0cd76da8f4ef58de85202f3c89e06944651594877867d634cfe5f020bccfb457",
+    "candidateProjectionFingerprint": "sha256:907dcfc370dd3c3b22e525dac138205b76b774191d82dd94246551195b64f6ad",
+    "observer": {
+      "id": "development-host-observer.codex",
+      "version": "1.0.0",
+      "implementationFingerprint": "sha256:c3a25cfe0032b7ebdcdf8d611ddd4bf2fb8c6751d68b00ce3e580734a47a62c4",
+      "transport": "trusted-local-host-adapter"
+    }
+  },
+  "workspace": {
+    "pre": {
+      "rootIdentityFingerprint": "sha256:99a6f67402e9a9e1c707fd5bfd7192567641b924d37845389a46aa715f4f0fd0",
+      "revisionFingerprint": "sha256:49a3cf9b32dcbed2e32245356895446b15d13788349bf53ce718bc1686160702",
+      "treeFingerprint": "sha256:e825169fa0f4e801be8220c9a0c7bf18a711f39021babb25b420d69531488dda",
+      "exactInputState": "clean",
+      "policyFingerprint": "sha256:84ea480a61e67ac271b9cb3bb58ef338f0430d9a04d772d3ec47cad17175bfc1",
+      "settingsFingerprint": "sha256:29af5635184de8dc3e9fd054add521fbeb507a381562a43039e17a4555318436"
+    },
+    "post": {
+      "rootIdentityFingerprint": "sha256:99a6f67402e9a9e1c707fd5bfd7192567641b924d37845389a46aa715f4f0fd0",
+      "revisionFingerprint": "sha256:49a3cf9b32dcbed2e32245356895446b15d13788349bf53ce718bc1686160702",
+      "treeFingerprint": "sha256:e825169fa0f4e801be8220c9a0c7bf18a711f39021babb25b420d69531488dda",
+      "exactInputState": "clean",
+      "policyFingerprint": "sha256:84ea480a61e67ac271b9cb3bb58ef338f0430d9a04d772d3ec47cad17175bfc1",
+      "settingsFingerprint": "sha256:29af5635184de8dc3e9fd054add521fbeb507a381562a43039e17a4555318436"
+    }
+  },
+  "environment": {
+    "containment": "isolated-host-process",
+    "runtimeFingerprint": "sha256:b8165d0c4dcd50dca20c92b1cf1d86c5671ac08f6c82999e9cb3204af2b35550"
+  },
+  "runs": [
+    {
+      "id": "evaluation-run.authoring-a-policy-standard.baseline",
+      "sequence": 1,
+      "caseId": "happy-path",
+      "caseFingerprint": "sha256:5c9e3c0e8dffe5f5c7e00aa289e54288c2e1354b08b2a9acdaf730b952d9ad78",
+      "stimulusFingerprint": "sha256:1bc567922319d01b7d564e09185a1f582f716f1551089252e23b72ec5c520d17",
+      "arm": "baseline",
+      "guideState": "withheld",
+      "startedAt": "2026-07-26T07:54:57.852Z",
+      "completedAt": "2026-07-26T07:55:35.768Z",
+      "worker": {
+        "id": "worker-run.codex.authoring-a-policy-standard-v2-baseline-r19.1",
+        "workerFingerprint": "sha256:dc1709c6522234ca95a5d7047d242b2baa4f62797b231f1f4ea610b6ca196353",
+        "dispatchFingerprint": "sha256:71ffdf217ca7d5fe72a0462c787b0323b4df0bf811bbff6b74d423230db8a1ea",
+        "transcriptFingerprint": "sha256:559a67e76af5360ae631454fe63adcd0cf4c1abc4f52a0abc92063c3fe1aedcd",
+        "expectationsIncluded": false,
+        "answerKeyAccess": "not-observed",
+        "state": "passed"
+      },
+      "judgment": {
+        "id": "judgment.codex.authoring-a-policy-standard-v2-baseline-r19.1",
+        "verdict": "passed",
+        "criteria": [
+          {
+            "id": "happy-path.expected.1",
+            "kind": "expected",
+            "sequence": 1,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:777852d5c96bf20c584816015db2d4e69bfa21ece1eefaed6ca17d4ddf1603ba"
+          },
+          {
+            "id": "happy-path.expected.2",
+            "kind": "expected",
+            "sequence": 2,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:a6b2c4043b310b87cc065aff205a352b7dffb3c3518668df1a00667f04fc10c7"
+          },
+          {
+            "id": "happy-path.prohibited.1",
+            "kind": "prohibited",
+            "sequence": 1,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:7973c64ec99efc2ed37d3b49679ad2def323e6719ce45ee091b7e0ef230586ad"
+          },
+          {
+            "id": "happy-path.prohibited.2",
+            "kind": "prohibited",
+            "sequence": 2,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:f770b252a5cab82ef3c679755539a2ac3b7e8a003e01f4553392a9b7dbfc8b12"
+          }
+        ]
+      }
+    },
+    {
+      "id": "evaluation-run.authoring-a-policy-standard.guided.happy-path",
+      "sequence": 2,
+      "caseId": "happy-path",
+      "caseFingerprint": "sha256:5c9e3c0e8dffe5f5c7e00aa289e54288c2e1354b08b2a9acdaf730b952d9ad78",
+      "stimulusFingerprint": "sha256:1bc567922319d01b7d564e09185a1f582f716f1551089252e23b72ec5c520d17",
+      "arm": "guided",
+      "guideState": "candidate",
+      "startedAt": "2026-07-26T07:55:35.776Z",
+      "completedAt": "2026-07-26T07:56:23.557Z",
+      "worker": {
+        "id": "worker-run.codex.authoring-a-policy-standard-v2-baseline-r19.2",
+        "workerFingerprint": "sha256:aee4807f74d085076ddeb28af6177d65db796e23181fd34842d2644c3b347c5d",
+        "dispatchFingerprint": "sha256:a2ed81d54a9803139adfb26cf24d46b9ac5c20a9f17562ad82f93de2ef801f65",
+        "transcriptFingerprint": "sha256:882637a7b2c6dc536e54c90141f73c004134eda9e22e33eda27c3243c7389d3e",
+        "expectationsIncluded": false,
+        "answerKeyAccess": "not-observed",
+        "state": "passed"
+      },
+      "judgment": {
+        "id": "judgment.codex.authoring-a-policy-standard-v2-baseline-r19.2",
+        "verdict": "passed",
+        "criteria": [
+          {
+            "id": "happy-path.expected.1",
+            "kind": "expected",
+            "sequence": 1,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:3743dd5cf27cff3950b49f32a6f47b2b739af37520477b92471ec2605d0d8bc3"
+          },
+          {
+            "id": "happy-path.expected.2",
+            "kind": "expected",
+            "sequence": 2,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:986a3f405479f059fd886eca071b8bcc125d1191d9cdb682c690459bb881dda5"
+          },
+          {
+            "id": "happy-path.prohibited.1",
+            "kind": "prohibited",
+            "sequence": 1,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:6162e379458f7e01607a93ffd0080335296e07bda2a41a34c56a2d4a0fe158ea"
+          },
+          {
+            "id": "happy-path.prohibited.2",
+            "kind": "prohibited",
+            "sequence": 2,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:fd796154de30953c967d38b15b07e602190566cf6e38cbd098d2f2aaba9e3183"
+          }
+        ]
+      }
+    },
+    {
+      "id": "evaluation-run.authoring-a-policy-standard.guided.invariant-provenance",
+      "sequence": 3,
+      "caseId": "invariant-provenance",
+      "caseFingerprint": "sha256:b25ea26a94eb8ae0bd2a4350313387299107c90f5d0694fbd82785436ab5e54e",
+      "stimulusFingerprint": "sha256:398f2c1135820fa038a04dfc163177d3d63447bc1708d5e7914403cf2b445d50",
+      "arm": "guided",
+      "guideState": "candidate",
+      "startedAt": "2026-07-26T07:56:23.565Z",
+      "completedAt": "2026-07-26T07:56:49.884Z",
+      "worker": {
+        "id": "worker-run.codex.authoring-a-policy-standard-v2-baseline-r19.3",
+        "workerFingerprint": "sha256:21e6ac21736ed2863be608e99de6df0ad8822840e2f313d0f245d97f98ddcca8",
+        "dispatchFingerprint": "sha256:f45dee3759ad5b899e7dfca12058995c466f84ea2b484096d198475eafcbd3e7",
+        "transcriptFingerprint": "sha256:665aeb74dafd0e26dc1c2bb4896dfc9178a400225d65bd26788ec59a65880f96",
+        "expectationsIncluded": false,
+        "answerKeyAccess": "not-observed",
+        "state": "passed"
+      },
+      "judgment": {
+        "id": "judgment.codex.authoring-a-policy-standard-v2-baseline-r19.3",
+        "verdict": "passed",
+        "criteria": [
+          {
+            "id": "invariant-provenance.expected.1",
+            "kind": "expected",
+            "sequence": 1,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:5989e140644f399e13e89d85da72ac60372e23fd339c573019c2814f38c06928"
+          },
+          {
+            "id": "invariant-provenance.expected.2",
+            "kind": "expected",
+            "sequence": 2,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:85f23ccdc77e9a0b53b8aa11b17516f8a1745c55f24bca00a04182e045ef3892"
+          },
+          {
+            "id": "invariant-provenance.prohibited.1",
+            "kind": "prohibited",
+            "sequence": 1,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:f314db8448bfdb3527ceb0c1bb9ccbdc01585b005a43cfb02e1022d5da610e34"
+          },
+          {
+            "id": "invariant-provenance.prohibited.2",
+            "kind": "prohibited",
+            "sequence": 2,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:80c21c40bc7e158ede32e561381f13402309a3a903a92ba91c5742a207e97dc1"
+          }
+        ]
+      }
+    },
+    {
+      "id": "evaluation-run.authoring-a-policy-standard.guided.pressure-batch-invent",
+      "sequence": 4,
+      "caseId": "pressure-batch-invent",
+      "caseFingerprint": "sha256:262a1bf12afa5217cd377942f049468c2bf3206a51c5921673844cf71e1ac57e",
+      "stimulusFingerprint": "sha256:9969e2a103a25f8bd5ed5dd9885bb62013f49724edac5532990dbb9fcd63240c",
+      "arm": "guided",
+      "guideState": "candidate",
+      "startedAt": "2026-07-26T07:56:49.893Z",
+      "completedAt": "2026-07-26T07:57:09.849Z",
+      "worker": {
+        "id": "worker-run.codex.authoring-a-policy-standard-v2-baseline-r19.4",
+        "workerFingerprint": "sha256:f3842ea68e1aba707586bcdda047e1e6d514b4c050fde1029e52db3db32282ba",
+        "dispatchFingerprint": "sha256:62b41c15f301874ebd46d16892605d1ef312549665b7d1b4f34e4384cf6f1e31",
+        "transcriptFingerprint": "sha256:d44a43a2a43bc1cd5d7eea05758fbddf2ef5656899d10835e2d83260c97652db",
+        "expectationsIncluded": false,
+        "answerKeyAccess": "not-observed",
+        "state": "passed"
+      },
+      "judgment": {
+        "id": "judgment.codex.authoring-a-policy-standard-v2-baseline-r19.4",
+        "verdict": "passed",
+        "criteria": [
+          {
+            "id": "pressure-batch-invent.expected.1",
+            "kind": "expected",
+            "sequence": 1,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:461b4e88dc7507c25c4be846dabe7c7bb7f54add6ae64e722afd6b063e54c920"
+          },
+          {
+            "id": "pressure-batch-invent.expected.2",
+            "kind": "expected",
+            "sequence": 2,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:8c5376943512c4158b91e250fba6c454608d62091c8227a309fb8e23385e62dd"
+          },
+          {
+            "id": "pressure-batch-invent.prohibited.1",
+            "kind": "prohibited",
+            "sequence": 1,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:f0f8d6f7499cbff20936b3d500624d013e267c7105e61e7bb1db2bca39b85dc1"
+          },
+          {
+            "id": "pressure-batch-invent.prohibited.2",
+            "kind": "prohibited",
+            "sequence": 2,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:086d521a0ff8cb466de303882987447a8533e883d3b2637464264a88073da9fc"
+          }
+        ]
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "artifact.migration-source.1",
+      "role": "migration-source",
+      "subjectId": "automation.authoring-a-policy-standard",
+      "path": ".claude/evals/authoring-a-policy-standard/happy-path.md",
+      "fingerprint": "sha256:dd0de340d22ee9fcf7d3bc805e9de6b782e634a87f3559aa233dde5ca8d45cb9"
+    },
+    {
+      "id": "artifact.migration-source.2",
+      "role": "migration-source",
+      "subjectId": "automation.authoring-a-policy-standard",
+      "path": ".claude/evals/authoring-a-policy-standard/invariant-provenance.md",
+      "fingerprint": "sha256:8a3d19a5c5b75fafa8ef305d0198051cab33c940d61ebff17f7a9b0a50c2d8b4"
+    },
+    {
+      "id": "artifact.migration-source.3",
+      "role": "migration-source",
+      "subjectId": "automation.authoring-a-policy-standard",
+      "path": ".claude/evals/authoring-a-policy-standard/pressure-batch-invent.md",
+      "fingerprint": "sha256:3613d6d95753e1350e3afb0b476ece3c4b3d9fcc48dcc9f7475797e902b299af"
+    },
+    {
+      "id": "artifact.migration-source.4",
+      "role": "migration-source",
+      "subjectId": "automation.authoring-a-policy-standard",
+      "path": ".claude/skills/authoring-a-policy-standard/SKILL.md",
+      "fingerprint": "sha256:9937be551ab6a21f0decd95a09bd6a1b9d3c1bc56bec15cf861cde0732c76d2f"
+    },
+    {
+      "id": "artifact.migration-target",
+      "role": "migration-target",
+      "subjectId": "workflow-guide.authoring-a-policy-standard",
+      "path": "soter/automations/authoring-a-policy-standard/guide.json",
+      "fingerprint": "sha256:f478cd936366caa0942a0a326439e9ccfecb772ba2db851d44b2f6339d91311d"
+    },
+    {
+      "id": "artifact.development-request",
+      "role": "development-request",
+      "subjectId": "development-request.codex.authoring-a-policy-standard-v2-baseline-r19",
+      "fingerprint": "sha256:7fdaa02b1be3d4aa41b97935f1cf242fcdd525e735d1a30c1897c698458a8495"
+    },
+    {
+      "id": "artifact.development-result",
+      "role": "development-result",
+      "subjectId": "development-result.codex.authoring-a-policy-standard-v2-baseline-r19",
+      "fingerprint": "sha256:2c1910268bc2d0393a3159687c6fa375398c5eca954c23be460745918c3a3650"
+    },
+    {
+      "id": "artifact.host-observation",
+      "role": "host-observation",
+      "subjectId": "development-host-observation.codex.authoring-a-policy-standard-v2-baseline-r19",
+      "fingerprint": "sha256:8e2bfbcddb0a26d6579362703dad1e71bce397d2951ca0d247f86f24ccd4c1eb"
+    },
+    {
+      "id": "artifact.evaluation-set",
+      "role": "evaluation-set",
+      "subjectId": "evaluation-set.authoring-a-policy-standard",
+      "fingerprint": "sha256:3a3c3bbfe4dc2dc8957ba7baf1294df496cbf63ee48eee6b2eb8bbd4c078599f"
+    },
+    {
+      "id": "artifact.candidate-projection",
+      "role": "candidate-projection",
+      "subjectId": "workflow-guide.authoring-a-policy-standard",
+      "fingerprint": "sha256:907dcfc370dd3c3b22e525dac138205b76b774191d82dd94246551195b64f6ad"
+    }
+  ],
+  "externalEffects": {
+    "providerRead": {
+      "state": "not-observed",
+      "count": 0,
+      "observedFingerprint": null
+    },
+    "providerWrite": {
+      "state": "not-observed",
+      "count": 0,
+      "observedFingerprint": null
+    },
+    "publication": {
+      "state": "not-observed",
+      "count": 0,
+      "observedFingerprint": null
+    },
+    "merge": {
+      "state": "not-observed",
+      "count": 0,
+      "observedFingerprint": null
+    },
+    "protectedRootMutation": {
+      "state": "not-observed",
+      "count": 0,
+      "observedFingerprint": null
+    },
+    "hostRealization": {
+      "state": "not-observed",
+      "count": 0,
+      "observedFingerprint": null
+    }
+  },
+  "conclusion": {
+    "state": "passed",
+    "behaviorParity": "passed",
+    "baselineRole": "observed-non-gating",
+    "guidedRunsPassed": true,
+    "prohibitedOutcomesObserved": false,
+    "externalEffectsObserved": false
+  },
+  "authority": {
+    "kind": "migration-evidence-only",
+    "grantsExecution": false,
+    "grantsApproval": false,
+    "grantsActivation": false,
+    "grantsMigration": false,
+    "grantsPublication": false,
+    "grantsMerge": false,
+    "grantsProviderRead": false,
+    "grantsProviderWrite": false,
+    "grantsHostRealization": false,
+    "grantsPromotion": false,
+    "grantsFallbackRemoval": false
+  },
+  "privacy": {
+    "scope": "shareable-sanitized",
+    "absolutePathsIncluded": false,
+    "targetPathsIncluded": false,
+    "requestedOutcomeIncluded": false,
+    "rawDiffsIncluded": false,
+    "rawContentIncluded": false,
+    "rawTranscriptsIncluded": false,
+    "providerResponsesIncluded": false,
+    "credentialsIncluded": false
+  },
+  "limitations": [
+    "DEVELOPMENT_AGENT_MIGRATION_EVIDENCE_HISTORICAL_CANDIDATE_ONLY",
+    "DEVELOPMENT_AGENT_MIGRATION_EVIDENCE_LOCAL_BINARY_IDENTITY_ONLY",
+    "DEVELOPMENT_AGENT_MIGRATION_EVIDENCE_NO_AUTHORITY",
+    "DEVELOPMENT_AGENT_MIGRATION_EVIDENCE_NO_CURRENT_RUNTIME_APPLICABILITY"
+  ]
+}

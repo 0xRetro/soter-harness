@@ -1,5 +1,11 @@
 import { fingerprintJson } from '../../core/lib/canonical-json.mjs';
 
+const RESPONSE_PROFILE = 'gmail.codex.connector.v1';
+
+function compareCodepoint(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 function providerError(kind, message) {
   const error = new Error(message);
   error.kind = kind;
@@ -24,24 +30,46 @@ function exactStrings(value, label, maximum) {
   return [...value];
 }
 
-function nativePayload(response, label) {
+function exactObject(value, label, { required = [], allowed = required } = {}) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw providerError('validation', label + ' must be one structured object.');
+  }
+  const keys = Object.keys(value);
+  if (required.some((key) => !Object.hasOwn(value, key))
+    || keys.some((key) => !allowed.includes(key))) {
+    throw providerError('validation', label + ' does not match the exact declared response profile.');
+  }
+  return value;
+}
+
+function nativePayload(response, responseProfile, label) {
+  if (responseProfile !== RESPONSE_PROFILE) {
+    throw providerError('validation', 'Gmail response profile is not declared by this adapter.');
+  }
+  exactObject(response, label + ' envelope', {
+    required: ['structuredContent'],
+    allowed: ['structuredContent', 'content', 'isError', '_meta']
+  });
+  if (Object.hasOwn(response, 'isError') && typeof response.isError !== 'boolean') {
+    throw providerError('validation', label + ' envelope returned a non-boolean isError state.');
+  }
+  if (Object.hasOwn(response, 'content') && !Array.isArray(response.content)) {
+    throw providerError('validation', label + ' envelope content must be an array when present.');
+  }
+  if (Object.hasOwn(response, '_meta')
+    && (!response._meta || typeof response._meta !== 'object' || Array.isArray(response._meta))) {
+    throw providerError('validation', label + ' envelope _meta must be an object when present.');
+  }
   if (response?.isError === true) {
     throw providerError('unknown', label + ' returned an error result.');
   }
-  const direct = response?.structuredContent?.result ?? response?.result;
-  if (direct !== undefined && direct !== null) return direct;
-  const text = response?.content?.find((item) => item?.type === 'text')?.text;
-  if (typeof text === 'string' && text.trim()) return text;
-  throw providerError('validation', label + ' did not return an acknowledged result.');
-}
-
-function parsedPayload(payload, label) {
-  if (typeof payload !== 'string') return payload;
-  try {
-    return JSON.parse(payload);
-  } catch {
-    throw providerError('validation', label + ' text result was not JSON.');
+  const structured = exactObject(response.structuredContent, label + ' structured result', {
+    required: ['result']
+  });
+  if (structured.result === undefined || structured.result === null) {
+    throw providerError('validation', label + ' omitted its exact structured result.');
   }
+  return structured.result;
 }
 
 function provenance(authority, source) {
@@ -54,82 +82,43 @@ function provenance(authority, source) {
 }
 
 function messageRecords(payload) {
-  const parsed = parsedPayload(payload, 'Gmail batch read');
-  if (Array.isArray(parsed)) return parsed;
-  if (Array.isArray(parsed?.messages)) return parsed.messages;
-  if (Array.isArray(parsed?.emails)) return parsed.emails;
-  if (Array.isArray(parsed?.results)) return parsed.results;
-  throw providerError(
-    'validation',
-    'Gmail batch read response normalization is unverified for this response shape.'
-  );
+  const parsed = exactObject(payload, 'Gmail batch read result', { required: ['messages'] });
+  if (!Array.isArray(parsed.messages)) {
+    throw providerError('validation', 'Gmail batch read messages must be an array.');
+  }
+  return parsed.messages;
 }
 
 function searchResult(payload, maximumMessages) {
-  const parsed = parsedPayload(payload, 'Gmail message search');
-  const records = Array.isArray(parsed)
-    ? parsed
-    : parsed?.message_ids ?? parsed?.messageIds ?? parsed?.ids
-      ?? parsed?.messages ?? parsed?.results;
-  if (!Array.isArray(records)) {
+  const parsed = exactObject(payload, 'Gmail message search result', {
+    required: ['message_ids', 'next_page_token']
+  });
+  if (!Array.isArray(parsed.message_ids)) {
     throw providerError(
       'validation',
-      'Gmail message search response normalization is unverified for this response shape.'
+      'Gmail message search message_ids must be an array.'
     );
   }
-  const ids = records.map((record) => {
-    return typeof record === 'string' ? requiredString(record, 'Gmail search message identity')
-      : messageId(record);
+  const ids = parsed.message_ids.map((record) => {
+    return requiredString(record, 'Gmail search message identity');
   });
   if (new Set(ids).size !== ids.length) {
     throw providerError('conflict', 'Gmail message search returned a duplicate message identity.');
   }
-  const nextPageToken = parsed?.next_page_token ?? parsed?.nextPageToken ?? null;
-  if (nextPageToken !== null && nextPageToken !== undefined
+  const nextPageToken = parsed.next_page_token;
+  if (nextPageToken !== null
     && (typeof nextPageToken !== 'string' || !nextPageToken.trim())) {
     throw providerError('validation', 'Gmail message search returned an invalid page token state.');
   }
-  const explicitComplete = parsed?.complete;
-  const explicitHasMore = parsed?.has_more ?? parsed?.hasMore;
-  if (explicitComplete !== undefined && typeof explicitComplete !== 'boolean') {
-    throw providerError('validation', 'Gmail message search returned an invalid completeness state.');
-  }
-  if (explicitHasMore !== undefined && typeof explicitHasMore !== 'boolean') {
-    throw providerError('validation', 'Gmail message search returned an invalid has-more state.');
-  }
-  const complete = nextPageToken
-    ? false
-    : (explicitComplete !== undefined
-      ? explicitComplete
-      : (explicitHasMore !== undefined ? !explicitHasMore : ids.length < maximumMessages));
-  return { ids, complete };
+  return { ids, complete: nextPageToken === null };
 }
 
 function threadRecords(payload) {
-  const parsed = parsedPayload(payload, 'Gmail thread read');
-  if (Array.isArray(parsed)) return parsed;
-  if (Array.isArray(parsed?.threads)) return parsed.threads;
-  if (Array.isArray(parsed?.results)) return parsed.results;
-  throw providerError(
-    'validation',
-    'Gmail thread read response normalization is unverified for this response shape.'
-  );
-}
-
-function headerValue(record, name) {
-  const headers = record?.headers ?? record?.payload?.headers;
-  if (Array.isArray(headers)) {
-    const match = headers.find((header) => {
-      return typeof header?.name === 'string'
-        && header.name.toLowerCase() === name.toLowerCase();
-    });
-    return match?.value;
+  const parsed = exactObject(payload, 'Gmail thread read result', { required: ['threads'] });
+  if (!Array.isArray(parsed.threads)) {
+    throw providerError('validation', 'Gmail thread read threads must be an array.');
   }
-  if (headers && typeof headers === 'object') {
-    const key = Object.keys(headers).find((item) => item.toLowerCase() === name.toLowerCase());
-    return key ? headers[key] : undefined;
-  }
-  return undefined;
+  return parsed.threads;
 }
 
 function exactOptionalStrings(value, label, maximum) {
@@ -143,14 +132,11 @@ function exactOptionalStrings(value, label, maximum) {
 }
 
 function recipientList(record) {
-  const value = record?.to ?? record?.recipients ?? headerValue(record, 'To');
-  if (Array.isArray(value)) return exactOptionalStrings(value, 'Gmail message recipients', 500);
-  if (typeof value === 'string' && value.trim()) return [value];
-  return [];
+  return exactOptionalStrings(record.to, 'Gmail message recipients', 500);
 }
 
 function normalizedSentAt(record) {
-  const value = record?.sentAt ?? record?.sent_at ?? record?.date ?? headerValue(record, 'Date');
+  const value = record.sent_at;
   if (typeof value !== 'string' || !value.trim()) {
     throw providerError('validation', 'Gmail message timestamp is unavailable.');
   }
@@ -162,23 +148,26 @@ function normalizedSentAt(record) {
 }
 
 function normalizedThreadMessage(record) {
-  const rfc822MessageId = record?.rfc822MessageId
-    ?? record?.rfc822_message_id
-    ?? record?.internetMessageId
-    ?? headerValue(record, 'Message-ID');
-  const subject = record?.subject ?? headerValue(record, 'Subject') ?? '';
-  const body = record?.body ?? record?.text ?? record?.body_text;
+  exactObject(record, 'Gmail thread message', {
+    required: [
+      'id', 'rfc822_message_id', 'from', 'to', 'sent_at', 'labels', 'subject', 'body'
+    ]
+  });
+  const body = record.body;
   if (typeof body !== 'string') {
     throw providerError('validation', 'Gmail message body normalization is unavailable.');
   }
+  if (typeof record.subject !== 'string') {
+    throw providerError('validation', 'Gmail message subject must be a string.');
+  }
   return {
     id: messageId(record),
-    rfc822MessageId: requiredString(rfc822MessageId, 'Gmail RFC822 Message-ID'),
-    from: requiredString(record?.from ?? record?.sender ?? headerValue(record, 'From'), 'Gmail sender'),
+    rfc822MessageId: requiredString(record.rfc822_message_id, 'Gmail RFC822 Message-ID'),
+    from: requiredString(record.from, 'Gmail sender'),
     to: recipientList(record),
     sentAt: normalizedSentAt(record),
     labels: messageLabels(record),
-    subject: typeof subject === 'string' ? subject : String(subject),
+    subject: record.subject,
     body
   };
 }
@@ -193,12 +182,13 @@ function normalizedThreads(payload, input) {
     throw providerError('validation', 'Gmail thread read returned an invalid thread count.');
   }
   const threads = records.map((record) => {
-    const id = requiredString(record?.id ?? record?.thread_id ?? record?.threadId, 'Gmail thread identity');
+    exactObject(record, 'Gmail thread', { required: ['id', 'messages'] });
+    const id = requiredString(record.id, 'Gmail thread identity');
     if (seenThreads.has(id)) {
       throw providerError('conflict', 'Gmail thread read returned a duplicate thread identity.');
     }
     seenThreads.add(id);
-    const rawMessages = record?.messages ?? record?.emails;
+    const rawMessages = record.messages;
     if (!Array.isArray(rawMessages)
       || rawMessages.length < 1
       || rawMessages.length > input.maximumMessagesPerThread) {
@@ -227,14 +217,11 @@ function normalizedThreads(payload, input) {
 }
 
 function messageId(record) {
-  return requiredString(
-    record?.id ?? record?.message_id ?? record?.messageId,
-    'Gmail batch read message identity'
-  );
+  return requiredString(record.id, 'Gmail batch read message identity');
 }
 
 function messageLabels(record) {
-  const labels = record?.labels ?? record?.label_names ?? record?.labelNames;
+  const labels = record.labels;
   if (!Array.isArray(labels)
     || labels.some((label) => typeof label !== 'string' || !label.trim())
     || new Set(labels).size !== labels.length) {
@@ -304,10 +291,10 @@ export function prepareMcp({ capability, input }) {
   throw providerError('validation', 'Gmail MCP adapter does not implement ' + capability + '.');
 }
 
-export function completeMcp({ capability, input, authority, response, at }) {
+export function completeMcp({ capability, input, authority, responseProfile, response, at }) {
   if (capability === 'mail.messages.search') {
     const result = searchResult(
-      nativePayload(response, 'Gmail message search'),
+      nativePayload(response, responseProfile, 'Gmail message search'),
       input.maximumMessages
     );
     if (result.ids.length > input.maximumMessages) {
@@ -315,7 +302,7 @@ export function completeMcp({ capability, input, authority, response, at }) {
     }
     return {
       queryFingerprint: fingerprintJson(input.query),
-      messageIds: [...result.ids].sort((left, right) => left.localeCompare(right, 'en')),
+      messageIds: [...result.ids].sort(compareCodepoint),
       returnedMessageCount: result.ids.length,
       complete: result.complete,
       provenance: provenance(authority, {
@@ -327,14 +314,17 @@ export function completeMcp({ capability, input, authority, response, at }) {
     };
   }
   if (capability === 'mail.threads.read') {
-    const threads = normalizedThreads(nativePayload(response, 'Gmail thread read'), input);
+    const threads = normalizedThreads(
+      nativePayload(response, responseProfile, 'Gmail thread read'),
+      input
+    );
     return {
-      requestedMessageIds: [...input.messageIds].sort((left, right) => left.localeCompare(right, 'en')),
+      requestedMessageIds: [...input.messageIds].sort(compareCodepoint),
       returnedThreadCount: threads.length,
       threads,
       provenance: provenance(authority, {
         capability,
-        messageIds: [...input.messageIds].sort((left, right) => left.localeCompare(right, 'en')),
+        messageIds: [...input.messageIds].sort(compareCodepoint),
         maximumThreads: input.maximumThreads,
         maximumMessagesPerThread: input.maximumMessagesPerThread
       }),
@@ -342,25 +332,42 @@ export function completeMcp({ capability, input, authority, response, at }) {
     };
   }
   if (capability === 'mail.labels.apply') {
-    nativePayload(response, 'Gmail label write');
+    const acknowledged = exactObject(
+      nativePayload(response, responseProfile, 'Gmail label write'),
+      'Gmail label write result',
+      { required: ['state'] }
+    );
+    if (acknowledged.state !== 'acknowledged') {
+      throw providerError('validation', 'Gmail label write did not return the exact acknowledged state.');
+    }
     return {
-      messageIds: [...input.messageIds].sort(),
-      addedLabelNames: [...input.addLabelNames].sort(),
-      removedLabelNames: [...input.removeLabelNames].sort(),
+      messageIds: [...input.messageIds].sort(compareCodepoint),
+      addedLabelNames: [...input.addLabelNames].sort(compareCodepoint),
+      removedLabelNames: [...input.removeLabelNames].sort(compareCodepoint),
       provenance: provenance(authority, {
         capability,
-        messageIds: [...input.messageIds].sort(),
-        addedLabelNames: [...input.addLabelNames].sort(),
-        removedLabelNames: [...input.removeLabelNames].sort()
+        messageIds: [...input.messageIds].sort(compareCodepoint),
+        addedLabelNames: [...input.addLabelNames].sort(compareCodepoint),
+        removedLabelNames: [...input.removeLabelNames].sort(compareCodepoint)
       }),
       observedAt: at
     };
   }
   if (capability === 'mail.labels.read') {
     const requested = new Set(input.messageIds);
-    const records = messageRecords(nativePayload(response, 'Gmail batch read'));
+    const records = messageRecords(nativePayload(response, responseProfile, 'Gmail batch read'));
     const seen = new Set();
     const messages = records.map((record) => {
+      exactObject(record, 'Gmail batch read message', {
+        required: ['id', 'labels'],
+        allowed: ['id', 'labels', 'body']
+      });
+      if (Object.hasOwn(record, 'body') && typeof record.body !== 'string') {
+        throw providerError(
+          'validation',
+          'Gmail batch read message body must be text when the declared profile returns it.'
+        );
+      }
       const id = messageId(record);
       if (!requested.has(id) || seen.has(id)) {
         throw providerError(
@@ -373,9 +380,9 @@ export function completeMcp({ capability, input, authority, response, at }) {
         messageId: id,
         labelNames: messageLabels(record).filter((label) => {
           return input.labelNames.includes(label);
-        }).sort()
+        }).sort(compareCodepoint)
       };
-    }).sort((left, right) => left.messageId.localeCompare(right.messageId, 'en'));
+    }).sort((left, right) => compareCodepoint(left.messageId, right.messageId));
     if (seen.size !== requested.size) {
       throw providerError('not-found', 'Gmail batch read omitted one or more exact messages.');
     }
@@ -383,8 +390,8 @@ export function completeMcp({ capability, input, authority, response, at }) {
       messages,
       provenance: provenance(authority, {
         capability,
-        messageIds: [...input.messageIds].sort(),
-        labelNames: [...input.labelNames].sort()
+        messageIds: [...input.messageIds].sort(compareCodepoint),
+        labelNames: [...input.labelNames].sort(compareCodepoint)
       }),
       observedAt: at
     };
@@ -392,12 +399,47 @@ export function completeMcp({ capability, input, authority, response, at }) {
   throw providerError('validation', 'Gmail MCP adapter does not implement ' + capability + '.');
 }
 
-export function prepareProbeMcp() {
-  return { tool: 'get_profile', arguments: {} };
+export function prepareProbePlanMcp() {
+  return {
+    steps: [{
+      id: 'step.identity',
+      kind: 'identity',
+      subject: 'provider.identity',
+      scope: {
+        expectation: {
+          acknowledgedProfile: true
+        }
+      },
+      tool: 'get_profile',
+      arguments: {}
+    }]
+  };
 }
 
-export function completeProbeMcp({ response, plan }) {
-  nativePayload(response, 'Gmail profile');
+export function completeProbePlanStepMcp({ step, responseProfile, response }) {
+  if (step?.id !== 'step.identity' || step.kind !== 'identity') {
+    throw providerError('validation', 'Gmail provider probe received an unsupported step.');
+  }
+  nativePayload(response, responseProfile, 'Gmail profile');
+  return {
+    profileAcknowledged: true,
+    expectedFingerprint: fingerprintJson(step.scope.expectation),
+    observedFingerprint: fingerprintJson({ acknowledgedProfile: true })
+  };
+}
+
+export function finalizeProbePlanMcp({ plan, steps, results }) {
+  const step = steps?.[0];
+  const observed = results?.[0];
+  if (steps?.length !== 1
+    || results?.length !== 1
+    || step?.id !== 'step.identity'
+    || observed?.stepId !== step.id
+    || !observed.result?.profileAcknowledged
+    || observed.result.expectedFingerprint !== fingerprintJson(step.scope.expectation)
+    || typeof observed.result.observedFingerprint !== 'string') {
+    throw providerError('validation', 'Gmail provider probe is missing its exact minimized identity result.');
+  }
   return {
     credentials: plan.credentialRefs.map((secretRefId) => ({
       secretRefId,
@@ -419,6 +461,18 @@ export function completeProbeMcp({ response, plan }) {
       method: 'metadata',
       details: 'Profile metadata does not establish exact message access, label permission, response normalization, or write behavior.'
     })),
+    checks: [{
+      id: 'check.identity',
+      stepId: step.id,
+      kind: step.kind,
+      subject: step.subject,
+      scopeFingerprint: step.scopeFingerprint,
+      state: 'passed',
+      method: 'metadata',
+      expectedFingerprint: observed.result.expectedFingerprint,
+      observedFingerprint: observed.result.observedFingerprint,
+      details: 'The host-authenticated Gmail profile response matched the minimized identity contract.'
+    }],
     limitations: [
       'This profile-only probe establishes authentication and endpoint reachability, not label capability readiness, verification, or health.',
       'The provider response and account identity value are excluded; only typed observations and fingerprints may persist.'

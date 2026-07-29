@@ -105,8 +105,15 @@ function basisSnapshot(root, request) {
   return snapshot;
 }
 
+function recordWriteKind(operation) {
+  const match = typeof operation?.capability === 'string'
+    ? operation.capability.match(/^[a-z0-9]+(?:[.-][a-z0-9]+)*\.records\.(create|update)$/)
+    : null;
+  return match?.[1] || null;
+}
+
 function matchingRecord(snapshot, operation) {
-  if (!snapshot || operation.capability !== 'crm.records.update') return null;
+  if (!snapshot || recordWriteKind(operation) !== 'update') return null;
   const matches = snapshot.entries.flatMap((entry) => {
     return Array.isArray(entry.value?.records) ? entry.value.records : [];
   }).filter((record) => {
@@ -122,7 +129,7 @@ function matchingRecord(snapshot, operation) {
 }
 
 function beforeReview(snapshot, operation) {
-  if (operation.capability === 'crm.records.create') {
+  if (recordWriteKind(operation) === 'create') {
     return {
       state: 'absent-required',
       reasonCode: CONNECTED_APPROVAL_REVIEW_REASON_CODES.DEDUPLICATION_ABSENCE_REQUIRED,
@@ -171,7 +178,7 @@ function beforeReview(snapshot, operation) {
 
 function afterReview(operation) {
   const input = operation.input;
-  const reviewValue = operation.capability === 'crm.records.create'
+  const reviewValue = recordWriteKind(operation) === 'create'
     ? {
         recordType: input.recordType,
         fields: structuredClone(input.fields),
@@ -205,7 +212,7 @@ function reviewOperation(source, compiled, snapshot, sequence) {
     subject: {
       kind: 'portable-resource',
       type: source.input.recordType,
-      id: source.capability === 'crm.records.update' ? source.input.id : null
+      id: recordWriteKind(source) === 'update' ? source.input.id : null
     },
     before,
     after: afterReview(source),
@@ -250,7 +257,12 @@ function compiledReviewOperation(source, compiled, sequence) {
     batchOperationFingerprint: fingerprintJson(compiled),
     inputFingerprint: source.inputFingerprint,
     subject: structuredClone(compiled.review.subject),
-    before: structuredClone(compiled.review.before),
+    before: compiled.review.before.state === 'provided'
+      ? {
+          ...structuredClone(compiled.review.before),
+          reasonCode: CONNECTED_APPROVAL_REVIEW_REASON_CODES.SOURCE_CONTEXT_BOUND
+        }
+      : structuredClone(compiled.review.before),
     after: structuredClone(compiled.review.after),
     precondition: structuredClone(compiled.review.precondition),
     verification: {

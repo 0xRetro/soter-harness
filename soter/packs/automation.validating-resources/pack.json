@@ -1,0 +1,49 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "automation.validating-resources",
+  "version": "0.1.0",
+  "layer": "automation",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Validate governed resources is preserved as a provider-neutral definition with no runtime or effect authority.",
+  "dependencies": [
+    {
+      "pack": "context.resources",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Resource identity, administration, access-reference, and validation-date meaning belong to portable Context."
+    }
+  ],
+  "capabilities": {
+    "requires": [],
+    "provides": []
+  },
+  "authorities": [],
+  "effects": [],
+  "artifacts": [
+    {
+      "path": "soter/automations/validating-resources/definition.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/validating-resources/evaluations.json",
+      "role": "evaluation"
+    },
+    {
+      "path": "soter/automations/validating-resources/guide.json",
+      "role": "definition"
+    }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": [
+      "codex",
+      "claude"
+    ]
+  },
+  "verification": {
+    "maxLevel": "static",
+    "scenarios": []
+  }
+}

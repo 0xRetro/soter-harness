@@ -1,0 +1,179 @@
+{
+  "$contract": "soter://contracts/workflow-definition/v2",
+  "contractVersion": "2.0.0",
+  "id": "automation.running-evals",
+  "version": "0.1.0",
+  "title": "Run workflow evaluations",
+  "summary": "Runs one exact workflow case through an isolated host task, judges observable evidence without leaking the answer key, and records a scoped result.",
+  "ownership": {
+    "layer": "automation",
+    "domain": "harness-evaluation",
+    "legacyLayer": "skill",
+    "responsibility": "outcome-definition"
+  },
+  "lifecycle": {
+    "state": "active-host-guided",
+    "activation": {
+      "state": "active",
+      "reasonCode": "WORKFLOW_HOST_GUIDANCE_ACTIVE",
+      "proceduralAuthority": "target",
+      "delivery": "host-skill",
+      "behaviorParity": "passed",
+      "evidence": [
+        {
+          "path": "soter/evidence/development/development-agent-migration-evidence.claude.running-evals.json",
+          "fingerprint": "sha256:f76fc0cac43c29168be484153db7c5e8bd810f2bf637c2b11a8dee59381c049d",
+          "host": "claude"
+        },
+        {
+          "path": "soter/evidence/development/development-agent-migration-evidence.codex.running-evals.json",
+          "fingerprint": "sha256:c5086ff5556241faf970f71769bc8b9f5624e78a9ee37178e7d5ed962fb61bdd",
+          "host": "codex"
+        }
+      ],
+      "permittedNextAction": "invoke-through-selected-host"
+    },
+    "development": {
+      "requestContract": {
+        "id": "soter://contracts/development-request/v1",
+        "path": "soter/contracts/development-request.schema.json"
+      },
+      "resultContract": {
+        "id": "soter://contracts/development-result/v1",
+        "path": "soter/contracts/development-result.schema.json"
+      },
+      "workspacePolicy": {
+        "id": "settings.kernel.soter.development-workspace",
+        "path": "soter/kernel/development-workspace.settings.json",
+        "fingerprint": "sha256:84ea480a61e67ac271b9cb3bb58ef338f0430d9a04d772d3ec47cad17175bfc1"
+      },
+      "supportedHosts": [
+        "codex",
+        "claude"
+      ]
+    },
+    "effectBoundary": {
+      "localWorkspaceRead": "request-scoped",
+      "localWorkspaceWrite": "request-scoped",
+      "localCommand": "request-scoped",
+      "subagentDispatch": "request-scoped",
+      "providerRead": "separate-authority",
+      "providerWrite": "separate-authority",
+      "publication": "separate-authority",
+      "merge": "separate-authority",
+      "protectedRootMutation": "separate-authority",
+      "hostRealization": "separate-authority",
+      "authority": "development-request-only"
+    }
+  },
+  "intent": {
+    "goal": "Produce one reproducible case verdict whose source, runtime basis, observations, limitations, and artifact effects are explicit.",
+    "useWhen": [
+      "A governed workflow case needs a baseline, regression, pressure, or invariant evaluation."
+    ],
+    "excludeWhen": [
+      "The case itself needs authoring, the workflow is being promoted, or no isolated runtime is available."
+    ]
+  },
+  "procedure": [
+    {
+      "id": "bind-case-and-target",
+      "sequence": 1,
+      "outcome": "Bind one exact case, workflow version, host, repository state, and containment policy.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "prepare-neutral-stimulus",
+      "sequence": 2,
+      "outcome": "Construct a neutral stimulus that excludes expected and prohibited outcomes from the worker context.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "dispatch-contained-run",
+      "sequence": 3,
+      "outcome": "Run one isolated worker with explicit external-write and publishing prohibitions.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "collect-observable-evidence",
+      "sequence": 4,
+      "outcome": "Collect tool calls, file effects, denied operations, and final report from the exact run.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "judge-declared-expectations",
+      "sequence": 5,
+      "outcome": "Evaluate every expected and prohibited outcome against artifacts rather than worker testimony.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "record-scoped-result",
+      "sequence": 6,
+      "outcome": "Record the exact verdict and limitations without promoting unrelated maturity or runtime health.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    }
+  ],
+  "safeguards": [
+    "Never expose the answer key or drafting conversation to the worker.",
+    "Never let an evaluation worker publish, merge, or write to external providers.",
+    "Never record a pass from self-review or testimony without exact run evidence."
+  ],
+  "evaluationSet": {
+    "id": "evaluation-set.running-evals",
+    "path": "soter/automations/running-evals/evaluations.json"
+  },
+  "guide": {
+    "id": "workflow-guide.running-evals",
+    "path": "soter/automations/running-evals/guide.json"
+  },
+  "potentialEffects": [
+    "read",
+    "disclosure",
+    "write"
+  ],
+  "source": {
+    "presence": "removed",
+    "legacyPath": ".claude/skills/running-evals/SKILL.md",
+    "legacyFingerprint": "sha256:82ed2174bdfb2ec24cece2db915468aa06b58c6e033e81a13b5b6b14c1dd04a9"
+  },
+  "privacy": {
+    "rawSourceIncluded": false,
+    "workspaceSpecificValuesIncluded": false,
+    "credentialsIncluded": false,
+    "privateInputsIncluded": false
+  },
+  "limitations": [
+    "This normalized definition preserves inspectable intent only; it has no operator runtime, provider binding, effect authority, or behavior parity.",
+    "The fingerprinted legacy source remains canonical until a separate implemented and evidenced runtime migration removes that fallback."
+  ]
+}

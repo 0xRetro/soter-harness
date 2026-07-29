@@ -120,11 +120,12 @@
     "configuration": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "status", "lockState", "host", "maturity", "selections", "bindings", "authorities", "effectPolicies", "graphFingerprint", "lockFingerprint"],
+      "required": ["name", "status", "lockState", "configurationBasis", "host", "maturity", "selections", "bindings", "authorities", "effectPolicies", "graphFingerprint", "lockFingerprint"],
       "properties": {
         "name": { "type": "string" },
         "status": { "type": "string" },
         "lockState": { "type": "string" },
+        "configurationBasis": { "enum": ["tracked-contained", "private-active"] },
         "host": { "type": "string" },
         "maturity": {
           "type": "object",
@@ -244,17 +245,120 @@
         "label": { "type": "string" }
       }
     },
+    "hostCompatibilityFact": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state"],
+          "properties": {
+            "state": { "const": "compatible" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "reasonCode", "reason"],
+          "properties": {
+            "state": { "const": "unavailable" },
+            "reasonCode": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 20
+            }
+          }
+        }
+      ]
+    },
+    "modeAvailabilityFact": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state"],
+          "properties": {
+            "state": { "const": "available" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "reasonCode", "reason"],
+          "properties": {
+            "state": { "const": "unavailable" },
+            "reasonCode": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 20
+            }
+          }
+        }
+      ]
+    },
+    "containedPreparationMode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "configurationBases", "resultState", "availability", "boundary"],
+      "properties": {
+        "id": { "const": "contained" },
+        "configurationBases": {
+          "const": ["tracked-contained", "private-active"]
+        },
+        "resultState": { "const": "ready-for-review" },
+        "availability": {
+          "const": { "state": "available" }
+        },
+        "boundary": {
+          "const": "private fixture-contained preparation only; no connected provider call, approval, execution, write, proof, maturity, or migration authority"
+        }
+      }
+    },
+    "connectedAcquisitionMode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "configurationBases", "resultState", "availability", "boundary"],
+      "properties": {
+        "id": { "const": "connected-acquisition" },
+        "configurationBases": {
+          "const": ["private-active"]
+        },
+        "resultState": { "const": "ready-for-acquisition" },
+        "availability": { "$ref": "#/$defs/modeAvailabilityFact" },
+        "boundary": {
+          "const": "stages exact private input and the current active lock only; no provider call, acquired context, approval, continuation, execution, write, readiness, verification, proof, maturity, or migration authority"
+        }
+      }
+    },
     "workflow": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "label", "summary", "version", "configuration", "host", "effects", "requiredCapabilities", "dependencies", "bindings", "operator", "scenarios", "migration"],
+      "required": ["id", "label", "summary", "version", "configuration", "configurationBasis", "host", "hostCompatibility", "effects", "requiredCapabilities", "dependencies", "bindings", "operator", "scenarios", "migration"],
       "properties": {
         "id": { "type": "string" },
         "label": { "type": "string" },
         "summary": { "type": "string" },
         "version": { "type": "string" },
         "configuration": { "$ref": "#/$defs/nullableString" },
+        "configurationBasis": {
+          "type": ["string", "null"],
+          "enum": ["tracked-contained", "private-active", null]
+        },
         "host": { "$ref": "#/$defs/nullableString" },
+        "hostCompatibility": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["claude", "codex"],
+          "properties": {
+            "claude": { "$ref": "#/$defs/hostCompatibilityFact" },
+            "codex": { "$ref": "#/$defs/hostCompatibilityFact" }
+          }
+        },
         "effects": { "$ref": "#/$defs/stringArray" },
         "requiredCapabilities": { "$ref": "#/$defs/stringArray" },
         "dependencies": { "$ref": "#/$defs/stringArray" },
@@ -278,11 +382,40 @@
             "preparation": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["supported", "boundary", "workStates"],
+              "required": ["supported", "boundary", "workStates", "modes"],
               "properties": {
                 "supported": { "type": "boolean" },
                 "boundary": { "type": "string" },
-                "workStates": { "$ref": "#/$defs/stringArray" }
+                "workStates": { "$ref": "#/$defs/stringArray" },
+                "modes": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "minItems": 1,
+                      "maxItems": 1,
+                      "prefixItems": [
+                        { "$ref": "#/$defs/containedPreparationMode" }
+                      ]
+                    },
+                    {
+                      "type": "array",
+                      "minItems": 1,
+                      "maxItems": 1,
+                      "prefixItems": [
+                        { "$ref": "#/$defs/connectedAcquisitionMode" }
+                      ]
+                    },
+                    {
+                      "type": "array",
+                      "minItems": 2,
+                      "maxItems": 2,
+                      "prefixItems": [
+                        { "$ref": "#/$defs/containedPreparationMode" },
+                        { "$ref": "#/$defs/connectedAcquisitionMode" }
+                      ]
+                    }
+                  ]
+                }
               }
             }
           }
@@ -303,7 +436,9 @@
               "invariants": { "$ref": "#/$defs/stringArray" },
               "evidence": { "$ref": "#/$defs/stringArray" },
               "sourceCases": { "$ref": "#/$defs/stringArray" },
-              "migrationState": { "type": "string" },
+              "migrationState": {
+                "enum": ["current", "mapped", "bridged", "migrated", "retired", "target-native", "unknown"]
+              },
               "execution": {
                 "type": ["object", "null"],
                 "additionalProperties": false,
@@ -370,7 +505,7 @@
         "id": { "type": "string" },
         "automationId": { "$ref": "#/$defs/nullableString" },
         "source": { "enum": ["fixture", "runtime"] },
-        "kind": { "enum": ["run", "capability", "provider-probe", "operation-plan", "connected-transaction", "prepared-work"] },
+        "kind": { "enum": ["run", "capability", "provider-probe", "operation-plan", "connected-transaction", "prepared-work", "development-run"] },
         "label": { "type": "string" },
         "state": { "type": "string" },
         "createdAt": { "$ref": "#/$defs/nullableString" },
@@ -397,6 +532,15 @@
           "required": ["workId"],
           "properties": {
             "workId": { "type": "string", "minLength": 1 }
+          }
+        },
+        "developmentRef": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["requestId", "resultId"],
+          "properties": {
+            "requestId": { "type": "string", "minLength": 1 },
+            "resultId": { "$ref": "#/$defs/nullableString" }
           }
         },
         "timeline": {

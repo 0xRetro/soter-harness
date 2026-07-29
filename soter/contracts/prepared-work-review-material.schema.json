@@ -31,9 +31,10 @@
     "configuration": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "lockFingerprint"],
+      "required": ["name", "configurationBasis", "lockFingerprint"],
       "properties": {
         "name": { "type": "string", "minLength": 1 },
+        "configurationBasis": { "enum": ["tracked-contained", "private-active"] },
         "lockFingerprint": { "$ref": "#/$defs/fingerprint" }
       }
     },
@@ -81,7 +82,16 @@
         "exposure": { "enum": ["identifier", "private"] },
         "state": { "const": "provided" },
         "fingerprint": { "$ref": "#/$defs/fingerprint" },
-        "reviewValue": { "type": ["string", "boolean"] }
+        "reviewValue": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "boolean" },
+            {
+              "type": "array", "minItems": 1, "uniqueItems": true,
+              "items": { "type": "string", "minLength": 1 }
+            }
+          ]
+        }
       }
     }
   }

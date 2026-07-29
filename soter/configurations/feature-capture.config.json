@@ -1,0 +1,59 @@
+{
+  "$contract": "soter://contracts/configuration/v1",
+  "contractVersion": "1.0.0",
+  "name": "feature-capture",
+  "base": { "kernel": "kernel.soter", "core": "core.runtime" },
+  "packs": [
+    { "id": "context.product", "source": "dependency", "reason": "Feature Capture depends on portable Product feature and lifecycle meaning." },
+    { "id": "automation.feature-capture", "source": "user", "reason": "The user selected exact-board feature-create preparation with required why and deterministic body review." },
+    { "id": "integration.notion", "source": "binding", "reason": "The selected policy, current feature schema, duplicate candidates, and eventual record authority live in Notion." }
+  ],
+  "bindings": [
+    { "capability": "product.records.read", "providerPack": "integration.notion", "authorities": ["authority.product.definition", "authority.product.instance"], "secretRef": "secret-ref.notion", "reason": "Notion supplies the exact policy selection and bounded feature candidate observations." },
+    { "capability": "product.schema.read", "providerPack": "integration.notion", "authorities": ["authority.product.instance"], "secretRef": "secret-ref.notion", "reason": "Notion supplies the current normalized feature board schema and writable options." },
+    { "capability": "product.records.create", "providerPack": "integration.notion", "authorities": ["authority.product.instance"], "secretRef": "secret-ref.notion", "reason": "A separately governed exact transaction may later create one mapped feature." }
+  ],
+  "sources": [
+    {
+      "id": "source.policy.feature-workflow",
+      "capability": "product.records.read",
+      "authority": "authority.product.definition",
+      "input": { "recordTypes": ["feature-workflow-policy"], "ids": ["policy.feature-workflow"], "limit": 2 },
+      "readiness": { "mode": "probe-read", "reason": "Connected readiness must prove the selected workflow policy record can be read without retaining private values." },
+      "consumers": [
+        { "pack": "automation.feature-capture", "purpose": "feature-workflow-policy", "subjects": ["feature-capture"], "reason": "The exact external selection binds the governed Product rules used by preparation." }
+      ],
+      "reason": "Feature workflow rules are a selected Product Context definition rather than Automation-owned constants."
+    }
+  ],
+  "authorities": [
+    { "id": "authority.product.definition", "role": "definition", "subject": "product.records", "uri": "soter-fixture://configuration-template/notion/authority/product-policies", "reason": "The selected policy row identifies the governed Product workflow definition." },
+    { "id": "authority.product.instance", "role": "instance", "subject": "product.records", "uri": "soter-fixture://configuration-template/notion/authority/feature-board", "reason": "One exact configured Feature Board is authoritative for its schema, records, and containment." },
+    { "id": "authority.notion.provider", "role": "provider", "subject": "notion.workspace", "uri": "soter-fixture://configuration-template/notion/account/operator", "reason": "The selected Notion account supplies provider identity and permission context without becoming Product authority." },
+    { "id": "authority.run.evidence", "role": "evidence", "subject": "runtime.runs", "uri": "soter-state://runs", "reason": "Private local runtime state owns prepared work and review companions." }
+  ],
+  "effectPolicies": {
+    "read": { "mode": "allow", "reason": "The exact policy, current schema, and bounded feature candidates may be read for private preparation." },
+    "disclosure": { "mode": "allow", "reason": "Selected observations may enter a private run envelope with explicit minimization." },
+    "write": { "mode": "confirm", "reason": "Every exact feature-create batch would require fresh confirmation and separately consumed one-time start authority." },
+    "dispatch": { "mode": "prohibit", "reason": "Feature Capture does not send or publish messages." },
+    "destructive": { "mode": "prohibit", "reason": "Feature Capture never deletes records or performs destructive changes." }
+  },
+  "secretRefs": [{ "id": "secret-ref.notion", "provider": "host", "key": "NOTION_OAUTH" }],
+  "host": { "id": "codex", "adapter": "host.codex", "version": "0.3.1", "reason": "This contained configuration exercises Codex projection while preserving provider-neutral contracts." },
+  "settings": {
+    "integration.notion": {
+      "targets": {
+        "policies": "soter-fixture://configuration-template/notion/collection/policies",
+        "organizations": "soter-fixture://configuration-template/notion/collection/organizations",
+        "contacts": "soter-fixture://configuration-template/notion/collection/contacts",
+        "projects": "soter-fixture://configuration-template/notion/collection/projects",
+        "updates": "soter-fixture://configuration-template/notion/collection/updates",
+        "tasks": "soter-fixture://configuration-template/notion/collection/tasks",
+        "meetings": "soter-fixture://configuration-template/notion/collection/meetings",
+        "documents": "soter-fixture://configuration-template/notion/collection/documents",
+        "features": "soter-fixture://configuration-template/notion/collection/features"
+      }
+    }
+  }
+}

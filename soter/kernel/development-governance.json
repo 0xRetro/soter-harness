@@ -1,0 +1,273 @@
+{
+  "$contract": "soter://contracts/development-governance/v1",
+  "contractVersion": "1.0.0",
+  "id": "kernel.development-governance",
+  "version": "0.1.0",
+  "intent": "develop",
+  "ownership": {
+    "kernel": [
+      "artifact-classification",
+      "authoring-rules",
+      "contract-shapes",
+      "evaluation-rules",
+      "migration-lifecycle",
+      "verification-requirements"
+    ],
+    "core": [
+      "develop-run-envelope",
+      "effect-policy",
+      "evidence-recording",
+      "runtime-checkpoints"
+    ],
+    "automation": [
+      "development-outcome-orchestration"
+    ],
+    "integration": [
+      "provider-translation-and-effects"
+    ],
+    "host": [
+      "isolated-task-delivery",
+      "native-tool-confinement"
+    ],
+    "configuration": [
+      "selected-packs-and-authority-grants",
+      "workspace-development-policy"
+    ]
+  },
+  "artifactModel": {
+    "canonicalAuthority": "one-exact-contract-or-definition",
+    "roles": [
+      "definition",
+      "implementation",
+      "projection",
+      "evaluation",
+      "fixture",
+      "migration"
+    ],
+    "scaffolding": "derived-from-governing-contract",
+    "legacyMarkdownTemplates": "compatibility-only",
+    "providerSpecificBehavior": "integration-or-host-owned",
+    "privateMaterial": "references-and-fingerprints-only",
+    "governingContracts": [
+      "soter://contracts/pack/v1",
+      "soter://contracts/capability/v1",
+      "soter://contracts/configuration/v1",
+      "soter://contracts/run-envelope/v1",
+      "soter://contracts/scenario/v1",
+      "soter://contracts/evidence/v2",
+      "soter://contracts/migration/v1",
+      "soter://contracts/workflow-definition/v2",
+      "soter://contracts/workflow-evaluation-set/v2",
+      "soter://contracts/development-request/v1",
+      "soter://contracts/development-result/v1",
+      "soter://contracts/host-projection-definition/v2"
+    ]
+  },
+  "lifecycle": [
+    {
+      "id": "observe",
+      "sequence": 1,
+      "outcome": "Record the requested improvement or observed divergence without changing canonical behavior.",
+      "requiredEvidence": ["request-or-observation"]
+    },
+    {
+      "id": "classify",
+      "sequence": 2,
+      "outcome": "Assign every responsibility to one layer, pack, authority, and effect boundary.",
+      "requiredEvidence": ["ownership-map"]
+    },
+    {
+      "id": "reproduce",
+      "sequence": 3,
+      "outcome": "Reproduce the behavior gap or record why an explicit intentional change is warranted.",
+      "requiredEvidence": ["baseline-or-change-decision"]
+    },
+    {
+      "id": "specify",
+      "sequence": 4,
+      "outcome": "Define the exact contract, inputs, outputs, authority, effects, and acceptance criteria.",
+      "requiredEvidence": ["governing-contract"]
+    },
+    {
+      "id": "implement",
+      "sequence": 5,
+      "outcome": "Implement only the responsibilities owned by the selected pack and declared capabilities.",
+      "requiredEvidence": ["implementation-fingerprint"]
+    },
+    {
+      "id": "evaluate",
+      "sequence": 6,
+      "outcome": "Exercise representative and adversarial cases against observable artifacts and effects.",
+      "requiredEvidence": ["evaluation-records"]
+    },
+    {
+      "id": "review",
+      "sequence": 7,
+      "outcome": "Review exact changes, limitations, privacy, compatibility, and unresolved proof dimensions.",
+      "requiredEvidence": ["review-disposition"]
+    },
+    {
+      "id": "promote",
+      "sequence": 8,
+      "outcome": "Change canonical authority only under the applicable policy and exact migration evidence.",
+      "requiredEvidence": ["authority-transition"]
+    },
+    {
+      "id": "monitor",
+      "sequence": 9,
+      "outcome": "Observe applicable outcomes and create a new development candidate when evidence regresses.",
+      "requiredEvidence": ["outcome-evidence-or-unknown"]
+    }
+  ],
+  "instructionProfiles": [
+    {
+      "id": "exact",
+      "useWhen": "The step is fragile, irreversible, security-sensitive, or required to produce identical bytes.",
+      "form": "Use a closed contract, exact operation, deterministic implementation, and explicit verification."
+    },
+    {
+      "id": "bounded",
+      "useWhen": "Judgment is useful but must stay inside declared authority, effect, scope, and quality limits.",
+      "form": "State the outcome, allowed variation, stop conditions, and mechanically checked boundaries."
+    },
+    {
+      "id": "open",
+      "useWhen": "The work is reversible and creative while its outcome and effect boundary remain explicit.",
+      "form": "State the intended outcome and evidence bar without prescribing unnecessary implementation detail."
+    }
+  ],
+  "qualityRequirements": [
+    {
+      "id": "right-owner",
+      "enforcement": "kernel-static",
+      "requirement": "Every artifact belongs to one declared pack and respects the five-layer dependency direction."
+    },
+    {
+      "id": "one-authority",
+      "enforcement": "kernel-static",
+      "requirement": "Every canonical definition has one exact authority; projections and bridges cannot redefine it."
+    },
+    {
+      "id": "contract-valid",
+      "enforcement": "kernel-static",
+      "requirement": "Every governed artifact validates against a closed registered contract and current graph."
+    },
+    {
+      "id": "effect-explicit",
+      "enforcement": "kernel-static",
+      "requirement": "Every possible read, disclosure, write, dispatch, or destructive effect is declared before execution."
+    },
+    {
+      "id": "private-by-construction",
+      "enforcement": "kernel-static",
+      "requirement": "Shareable definitions and inspections cannot represent credentials, private inputs, or raw provider responses."
+    },
+    {
+      "id": "fresh-dependencies",
+      "enforcement": "fixture-evidence",
+      "requirement": "Behavior-relevant dependencies are fingerprinted and invalidate applicable evidence when they change."
+    },
+    {
+      "id": "observable-verdict",
+      "enforcement": "fixture-evidence",
+      "requirement": "Evaluation verdicts derive from observable artifacts and effects rather than agent testimony."
+    },
+    {
+      "id": "pressure-covered",
+      "enforcement": "fixture-evidence",
+      "requirement": "Behavior-changing workflows include a realistic pressure case and one prohibited-outcome invariant."
+    },
+    {
+      "id": "scope-exclusions",
+      "enforcement": "operator-review",
+      "requirement": "Definitions state when they apply, when they do not, and which neighboring responsibility owns exclusions."
+    },
+    {
+      "id": "earned-complexity",
+      "enforcement": "operator-review",
+      "requirement": "New durable artifacts identify the observed gap that existing contracts could not express."
+    },
+    {
+      "id": "limitations-visible",
+      "enforcement": "kernel-static",
+      "requirement": "Unknown, stale, unavailable, skipped, and not-applicable proof states remain distinct and visible."
+    },
+    {
+      "id": "fallback-governed",
+      "enforcement": "kernel-static",
+      "requirement": "A retained legacy fallback has an exact fingerprint, owner, evidence state, and retirement criteria."
+    }
+  ],
+  "evaluationPolicy": {
+    "caseKinds": [
+      "baseline",
+      "happy-path",
+      "pressure",
+      "invariant"
+    ],
+    "workerContext": "fresh-and-expectations-withheld",
+    "verdictBasis": "observable-artifacts-and-effects",
+    "selfReportSufficient": false,
+    "externalEffects": "prohibited-unless-explicitly-contained",
+    "localEffects": "declared-and-contained",
+    "goldenBinding": {
+      "source": "fingerprinted",
+      "graph": "fingerprinted",
+      "configuration": "fingerprinted",
+      "host": "fingerprinted",
+      "freshness": "invalidated-on-applicable-change"
+    },
+    "resultStates": [
+      "passed",
+      "failed",
+      "stale",
+      "unknown",
+      "skipped",
+      "not-applicable"
+    ]
+  },
+  "governance": {
+    "authorityExpansion": "explicit-grant-or-confirmation",
+    "definitionChange": "separate-develop-run",
+    "promotion": "evidence-and-policy-gated",
+    "decisionRecords": "optional-for-ordinary-development",
+    "fallbackRemoval": "exact-parity-or-intentional-change-evidence"
+  },
+  "intentionalChanges": [
+    {
+      "id": "markdown-classification-retired",
+      "decision": "Layer and artifact ownership live in governed pack manifests and contracts rather than Markdown frontmatter."
+    },
+    {
+      "id": "copy-template-authority-retired",
+      "decision": "Scaffolds are derived from governing contracts; copying a Markdown mold never creates canonical authority."
+    },
+    {
+      "id": "mandatory-adr-ceremony-retired",
+      "decision": "Ordinary development does not require an ADR; historical decisions remain evidence and exceptional records stay optional."
+    },
+    {
+      "id": "host-line-budgets-host-scoped",
+      "decision": "Host instruction and discovery budgets belong to host conformance instead of universal Kernel artifact limits."
+    },
+    {
+      "id": "human-only-merge-not-runtime-authority",
+      "decision": "Repository merge policy is user configuration; Core still requires explicit authority for effects and transitions."
+    },
+    {
+      "id": "definition-only-not-executable",
+      "decision": "A normalized workflow definition preserves inspectable intent but grants no preparation, execution, or effect authority."
+    }
+  ],
+  "privacy": {
+    "credentialsIncluded": false,
+    "privateInputsIncluded": false,
+    "rawProviderResponsesIncluded": false,
+    "absoluteWorkspacePathsIncluded": false
+  },
+  "limitations": [
+    "This policy governs develop-intent artifacts but does not implement a development Automation or host task runner.",
+    "Legacy authoring and evaluation files remain canonical until exact migration or retirement evidence removes each fallback.",
+    "Local structural validity does not establish connected host conformance, provider readiness, behavior verification, or health."
+  ]
+}

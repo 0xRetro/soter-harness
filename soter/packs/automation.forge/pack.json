@@ -1,0 +1,42 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "automation.forge",
+  "version": "0.1.0",
+  "layer": "automation",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Forge a harness artifact is preserved as a provider-neutral definition with no runtime or effect authority.",
+  "dependencies": [],
+  "capabilities": {
+    "requires": [],
+    "provides": []
+  },
+  "authorities": [],
+  "effects": [],
+  "artifacts": [
+    {
+      "path": "soter/automations/forge/definition.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/forge/guide.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/forge/evaluations.json",
+      "role": "evaluation"
+    }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": [
+      "codex",
+      "claude"
+    ]
+  },
+  "verification": {
+    "maxLevel": "static",
+    "scenarios": []
+  }
+}

@@ -6,7 +6,7 @@
   "layer": "automation",
   "releaseStage": "experimental",
   "evidenceMaturity": "declared",
-  "summary": "Builds an evidence-grounded project status brief from authoritative project, milestone, and task records before any reviewed update.",
+  "summary": "Grounds exact project, task, milestone-document, and policy facts, then compiles one complete reviewed status batch for Core-governed approval, single-use start, and verified connected execution.",
   "dependencies": [
     {
       "pack": "core.runtime",
@@ -15,52 +15,159 @@
       "reason": "Project status inspection requires exact resolution, effect policy, evidence, and health reporting."
     },
     {
-      "pack": "context.crm",
+      "pack": "context.projects",
       "version": "^0.1.0",
       "optional": false,
-      "reason": "Projects, milestones, tasks, update records, and their authorities belong to shared CRM context."
+      "reason": "Project definitions, milestones, embedded work items, feed entries, and policy meaning belong to Projects Context."
+    },
+    {
+      "pack": "context.tasks",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Promoted task identity, status, and completion meaning belong to Tasks Context."
     }
   ],
   "capabilities": {
     "requires": [
       {
-        "id": "crm.records.read",
+        "id": "projects.records.read",
         "version": "^1.0.0",
         "optional": false,
-        "reason": "Every progress and health statement must be derived from authoritative project, milestone, and task records."
+        "reason": "Milestone progress must be derived from authoritative project work-item and promoted-task records; operator-owned health is checked against those facts rather than inferred from them."
+      },
+      {
+        "id": "tasks.records.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Progress must read every and only the Tasks explicitly referenced by the selected Project."
+      },
+      {
+        "id": "documents.content.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Embedded milestone state must be read from the exact current project document before interpretation or change."
+      },
+      {
+        "id": "projects.records.create",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "An approved Project Pulse batch may create one exact project-status update record."
+      },
+      {
+        "id": "documents.content.update",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "The same approved batch may apply exact reviewed milestone-tag replacements to the current project document."
       }
     ],
     "provides": []
   },
   "sourceRequirements": [
     {
-      "purpose": "project-status-policy",
-      "capability": "crm.records.read",
+      "purpose": "project-work-policy",
+      "capability": "projects.records.read",
       "authorityRole": "definition",
-      "authoritySubject": "crm.records",
+      "authoritySubject": "projects.records",
       "minimum": 1,
       "maximum": 1,
-      "reason": "Project Pulse requires one configured policy source that defines supported progress, milestone separation, explained health, and confirmation-gated writes."
+      "reason": "Project Pulse requires the shared configured Projects policy that defines exact milestone/work-item grammar, promoted-task progress, human-owned health judgment, and confirmation-gated writes."
     }
   ],
   "authorities": [
-    { "role": "definition", "subject": "crm.records", "required": true },
-    { "role": "instance", "subject": "crm.records", "required": true },
-    { "role": "evidence", "subject": "runtime.runs", "required": true }
+    {
+      "role": "definition",
+      "subject": "projects.records",
+      "required": true
+    },
+    {
+      "role": "instance",
+      "subject": "projects.records",
+      "required": true
+    },
+    {
+      "role": "instance",
+      "subject": "tasks.records",
+      "required": true
+    },
+    {
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "required": true
+    }
   ],
-  "effects": ["read", "disclosure"],
+  "effects": [
+    "read",
+    "disclosure",
+    "write"
+  ],
   "operator": {
     "input": "soter/automations/project-pulse/operator-input.json",
     "preparation": {
       "module": "soter/automations/project-pulse/prepare.mjs",
       "export": "prepareProjectPulseRun",
-      "containment": "fixture"
+      "containment": "fixture",
+      "derivedReviewContract": "soter/automations/project-pulse/derived-review.json"
+    },
+    "acquisition": {
+      "module": "soter/automations/project-pulse/context.mjs",
+      "prepareExport": "prepareProjectPulseConnectedAcquisition",
+      "finalizeExport": "finalizeProjectPulseConnectedAcquisition",
+      "containment": "connected",
+      "recordRequirements": [
+        {
+          "capability": "projects.records.read",
+          "recordTypes": ["project-work-policy", "project"]
+        },
+        { "capability": "tasks.records.read", "recordTypes": ["task"] }
+      ]
+    },
+    "connection": {
+      "module": "soter/automations/project-pulse/connected.mjs",
+      "compileExport": "compileProjectPulseConnectedOperations",
+      "evaluateExport": "evaluateProjectPulseConnectedVerification",
+      "recordRequirements": [
+        {
+          "capability": "projects.records.read",
+          "recordTypes": ["project-feed-entry"]
+        },
+        {
+          "capability": "projects.records.create",
+          "recordTypes": ["project-feed-entry"]
+        }
+      ]
+    },
+    "proposal": {
+      "module": "soter/automations/project-pulse/proposal.mjs",
+      "export": "createProjectPulseProposal",
+      "schema": "soter/automations/project-pulse/proposal.schema.json",
+      "inputSchema": "soter/automations/project-pulse/proposal-input.schema.json",
+      "derivedReviewContract": "soter/automations/project-pulse/derived-review.json"
     }
   },
   "artifacts": [
     {
       "path": "soter/automations/project-pulse/operator-input.json",
       "role": "definition"
+    },
+    {
+      "path": "soter/automations/project-pulse/derived-review.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/project-pulse/decision.schema.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/project-pulse/proposal-input.schema.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/project-pulse/proposal.schema.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/project-pulse/analysis.mjs",
+      "role": "implementation"
     },
     {
       "path": "soter/automations/project-pulse/context.mjs",
@@ -71,11 +178,27 @@
       "role": "implementation"
     },
     {
+      "path": "soter/automations/project-pulse/decision.mjs",
+      "role": "implementation"
+    },
+    {
+      "path": "soter/automations/project-pulse/proposal.mjs",
+      "role": "implementation"
+    },
+    {
+      "path": "soter/automations/project-pulse/connected.mjs",
+      "role": "implementation"
+    },
+    {
       "path": "soter/automations/project-pulse/scenario.mjs",
       "role": "implementation"
     },
     {
       "path": "soter/automations/project-pulse/project-pulse.selftest.mjs",
+      "role": "evaluation"
+    },
+    {
+      "path": "soter/automations/project-pulse/connected-context.selftest.mjs",
       "role": "evaluation"
     },
     {
@@ -93,7 +216,10 @@
   ],
   "compatibility": {
     "baseContract": "^1.0.0",
-    "hosts": ["codex", "claude"]
+    "hosts": [
+      "codex",
+      "claude"
+    ]
   },
   "verification": {
     "maxLevel": "fixture",

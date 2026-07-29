@@ -1,0 +1,38 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "storage.shortcuts.create",
+  "version": "1.0.0",
+  "purpose": "Creates one exact shortcut presence for an externally owned artifact under a reviewed destination.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["sourceUri", "destinationUri", "name", "deduplicationKey"],
+    "properties": {
+      "sourceUri": { "type": "string" },
+      "destinationUri": { "type": "string" },
+      "name": { "type": "string" },
+      "deduplicationKey": { "type": "string", "minLength": 12 }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["artifact", "created", "provenance", "observedAt"],
+    "properties": {
+      "artifact": { "type": "object", "additionalProperties": false, "required": ["uri", "name", "kind", "parentUris", "targetUri"], "properties": { "uri": { "type": "string" }, "name": { "type": "string" }, "kind": { "const": "shortcut" }, "parentUris": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string" } }, "targetUri": { "type": "string" } } },
+      "created": { "type": "boolean" },
+      "provenance": { "type": "object" },
+      "observedAt": { "type": "string" }
+    }
+  },
+  "authentication": { "required": true, "minimumScopes": ["storage:write"] },
+  "effects": ["write"],
+  "idempotency": { "mode": "conditional", "key": "deduplicationKey" },
+  "retry": { "safe": false, "maxAttempts": 1, "checkpoint": "Persist the exact deduplication key and observe destination state before any reconciliation." },
+  "errors": ["authentication", "authorization", "validation", "conflict", "rate-limit", "unavailable", "retryable", "not-found", "unknown"],
+  "freshness": { "returnsProvenance": true, "returnsObservedAt": true, "maxAgeSeconds": null },
+  "health": { "check": "Create one shortcut in a contained in-memory store.", "fixture": "soter/fixtures/providers/google-drive/storage.json", "containedVerification": "Prove one create, deduplicated replay, exact destination, and no source mutation." },
+  "providerLimitations": ["The initial connected Codex Google Drive route does not expose shortcut creation; this capability therefore remains fixture-only and grants no live write authority."]
+}

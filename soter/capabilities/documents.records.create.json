@@ -1,0 +1,18 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "documents.records.create",
+  "version": "1.0.0",
+  "purpose": "Creates one typed document-index record from an exact reviewed value and deduplication key.",
+  "portability": "portable",
+  "inputSchema": { "type": "object", "additionalProperties": false, "required": ["recordType", "deduplicationKey", "fields"], "properties": { "recordType": { "const": "document-index" }, "deduplicationKey": { "type": "string", "minLength": 12 }, "fields": { "type": "object" } } },
+  "outputSchema": { "type": "object", "additionalProperties": false, "required": ["record", "created", "provenance", "observedAt"], "properties": { "record": { "type": "object", "additionalProperties": false, "required": ["type", "id", "fields"], "properties": { "type": { "const": "document-index" }, "id": { "type": "string" }, "fields": { "type": "object" } } }, "created": { "type": "boolean" }, "provenance": { "type": "object" }, "observedAt": { "type": "string" } } },
+  "authentication": { "required": true, "minimumScopes": ["records:write"] },
+  "effects": ["write"],
+  "idempotency": { "mode": "conditional", "key": "deduplicationKey" },
+  "retry": { "safe": false, "maxAttempts": 1, "checkpoint": "Persist the exact deduplication key and observe record state before reconciliation." },
+  "errors": ["authentication", "authorization", "validation", "conflict", "rate-limit", "unavailable", "retryable", "not-found", "unknown"],
+  "freshness": { "returnsProvenance": true, "returnsObservedAt": true, "maxAgeSeconds": null },
+  "health": { "check": "Create one contained document-index record with deduplicated replay.", "fixture": "soter/fixtures/providers/notion/documents.json", "containedVerification": "Prove one create, exact fields, replay safety, and returned effect evidence." },
+  "providerLimitations": ["This capability does not create, copy, move, rename, delete, or verify the underlying stored artifact."]
+}

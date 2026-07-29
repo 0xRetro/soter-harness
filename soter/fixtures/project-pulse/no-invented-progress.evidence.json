@@ -10,73 +10,90 @@
     "id": "run.project-pulse.no-invented-progress-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:a6e439948cc14fa683e4bd0b2202d213d072ecf3b8b6a7252f2cf2017969a221",
-  "graphFingerprint": "sha256:406a385fedf2c0c9f547ab803b375532106cab959fd6144607efd9007c79fbf3",
+  "configurationLockFingerprint": "sha256:f1a6c353e163a1fd97479433405be26556aa46e77b4aaa6be71914cb82327c46",
+  "graphFingerprint": "sha256:94321ae2d22dc301363b101aa0d88284195144540129cfbfe2b992b85d52ae4b",
   "dependencies": [
     {
       "id": "kernel.soter",
       "version": "0.1.0",
-      "fingerprint": "sha256:e5b85b4419f12478ce332c2a9aeb0293401836182f1857180a6366cdb5f8d3bf"
+      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
     },
     {
       "id": "core.runtime",
       "version": "0.1.0",
-      "fingerprint": "sha256:d8778d78eaa3120cdb412b49e3cfe331bb2b83b09ec216acf472133003e25e5f"
+      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
     },
     {
-      "id": "context.crm",
+      "id": "context.projects",
       "version": "0.1.0",
-      "fingerprint": "sha256:18341b55f4438d57462769f5587fe17fd5534d2ac0146e6975ddb33f47ef19cc"
+      "fingerprint": "sha256:e8b68449ec9582d769c56d9b9cdf9ed3a6f220c15593a614ac13e9a656cf0ce5"
+    },
+    {
+      "id": "context.tasks",
+      "version": "0.1.0",
+      "fingerprint": "sha256:5d516369250d03e1a270d7ac6c0dfe3a19d790eafab4a7971e1b11a36d282555"
     },
     {
       "id": "automation.project-pulse",
       "version": "0.1.0",
-      "fingerprint": "sha256:1aafa429efa767cdb3b2d9b1c86031165104bce3315964d79bacb2166c1b83bf"
+      "fingerprint": "sha256:d7bc6133d16005aa765ca01ccf211e2518a08e41ab54a4dcd36faf81b3f5cb65"
     },
     {
       "id": "integration.notion",
-      "version": "0.1.0",
-      "fingerprint": "sha256:640943cbee2a8a93b5487897e39f1f9c36ab2baadf94d060b0ba7e4831c3f5b9"
+      "version": "0.2.0",
+      "fingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5"
     }
   ],
   "host": {
     "id": "codex",
     "adapter": "host.codex",
-    "version": "0.1.0",
-    "manifestFingerprint": "sha256:e91f3329631a3900000796a3cd54b2ba02f4aa3d0d728f9a2da40ff06b211fd0"
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
   },
   "integrations": [
     {
       "id": "integration.notion",
-      "version": "0.1.0",
-      "manifestFingerprint": "sha256:640943cbee2a8a93b5487897e39f1f9c36ab2baadf94d060b0ba7e4831c3f5b9",
+      "version": "0.2.0",
+      "manifestFingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5",
       "evidenceMaturity": "declared"
     }
   ],
   "authorities": [
     {
-      "id": "authority.crm.definition",
-      "role": "definition",
-      "subject": "crm.records",
-      "declarationFingerprint": "sha256:26f0e78fc7ab04ea8d2da6fdf804f219b9439925e663513bb134a554e147be97"
-    },
-    {
-      "id": "authority.crm.instance",
-      "role": "instance",
-      "subject": "crm.records",
-      "declarationFingerprint": "sha256:b6784d3267492ab0726d019ca20d7e83c7c87aa279b3f30c35e2f488f03c9885"
-    },
-    {
       "id": "authority.notion.provider",
       "role": "provider",
       "subject": "notion.workspace",
-      "declarationFingerprint": "sha256:0567ff10843e26a53e85ffa7d609867226b00615288193983c4e6f9384050032"
+      "declarationFingerprint": "sha256:e3e11d347b7a0109668facaeb7b12311023da39949d1328bfd918c53a406c756"
+    },
+    {
+      "id": "authority.projects.definition",
+      "role": "definition",
+      "subject": "projects.records",
+      "declarationFingerprint": "sha256:99b31c418bf4e271b7511073c778608ea6e5eaebecb07089f41f7708cb501065"
+    },
+    {
+      "id": "authority.projects.instance",
+      "role": "instance",
+      "subject": "projects.records",
+      "declarationFingerprint": "sha256:c5e800de30db14f0288c0bf6eef2a8bb7e63c0b8cfa08f68032380098b7160cf"
     },
     {
       "id": "authority.run.evidence",
       "role": "evidence",
       "subject": "runtime.runs",
       "declarationFingerprint": "sha256:29aefe23c870f66c4c851f271e58223059743752e2d73572e812bd7f2ef29379"
+    },
+    {
+      "id": "authority.tasks.definition",
+      "role": "definition",
+      "subject": "tasks.records",
+      "declarationFingerprint": "sha256:9c445d27249ac5d8b56dc4f153c08b59dc1d8e6b6b3793eb6d257dbc176e0c86"
+    },
+    {
+      "id": "authority.tasks.instance",
+      "role": "instance",
+      "subject": "tasks.records",
+      "declarationFingerprint": "sha256:affd06fe2426d81f1f7b07828c7ad0eec0b86e1ae1d60726f24a87a935db1ca9"
     }
   ],
   "evaluator": {
@@ -157,21 +174,28 @@
       "role": "scenario",
       "id": "project-pulse.no-invented-progress",
       "path": "soter/scenarios/project-pulse/no-invented-progress.scenario.json",
-      "fingerprint": "sha256:4b342a5a05c629296a164356d2c249bd4fa1fe8dc1dc32ee739f4e381ec6169e"
+      "fingerprint": "sha256:220641b95ab8ec90190a4b09ea5a62b5a80e663255cea14f2378c9f8c0e41315"
+    },
+    {
+      "role": "source-case",
+      "path": ".claude/evals/updating-project-status/invariant-no-invented-progress.md",
+      "fingerprint": "sha256:77c901e5ac31fd46c2fcc8a069c0202a848f3c0ccc15171b46559d500e9991a2"
     },
     {
       "role": "scenario-assessment",
       "runId": "run.project-pulse.no-invented-progress-fixture",
       "capabilityOrder": {
         "expected": [
-          "crm.records.read",
-          "crm.records.read",
-          "crm.records.read"
+          "projects.records.read",
+          "projects.records.read",
+          "tasks.records.read",
+          "documents.content.read"
         ],
         "observed": [
-          "crm.records.read",
-          "crm.records.read",
-          "crm.records.read"
+          "projects.records.read",
+          "projects.records.read",
+          "tasks.records.read",
+          "documents.content.read"
         ],
         "state": "passed"
       },
@@ -192,28 +216,28 @@
         },
         "state": "passed"
       },
-      "observationFingerprint": "sha256:d8406a545405566f95b121d3772be0aa3f5edff7dba74d3f821d67fd5cd301c0"
+      "observationFingerprint": "sha256:bcf975e9f84c3847784c05bfebb7b31676957ce66bd3e1f6f1974e3654dd9b3e"
     },
     {
       "role": "context-snapshot",
       "id": "context.project-pulse.no-invented-progress-fixture",
-      "fingerprint": "sha256:12d2d9de5149de6545936f3a18600cd5291d4db9bc6429779a14474832b31e97"
+      "fingerprint": "sha256:753640e36db4350b4637578dd2598308c992834ca032341b2b67be79faae5c11"
     },
     {
       "role": "project-pulse-preview",
-      "fingerprint": "sha256:1044f7dc8f75eb003005990f216f748b8692b72a627b9951553b50f3a54a3de1"
+      "fingerprint": "sha256:8a8984075a48a76e35cad0127d507865e3d066bc56ac99eeb8c5cd48684385f6"
     }
   ],
   "effects": [
     {
       "id": "effect.project-pulse.policy.fixture",
-      "capability": "crm.records.read",
+      "capability": "projects.records.read",
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.1.0",
+      "providerVersion": "0.2.0",
       "containment": "fixture",
-      "authority": "authority.crm.definition",
+      "authority": "authority.projects.definition",
       "startedAt": "2026-07-16T12:00:00.000Z",
       "completedAt": "2026-07-16T12:00:00.000Z",
       "declaredEffects": [
@@ -234,20 +258,20 @@
           "reason": "Selected project records may enter the configured private run envelope."
         }
       ],
-      "inputFingerprint": "sha256:c2757db83dc9f8d474e4ef3de62a5e3a60bf691a1a654cbdb4d18c707e25aa85",
+      "inputFingerprint": "sha256:7926a96bd072cf583c91ebd9105ecf2d29785d3c39ef5156e41487cfac8c6d3b",
       "state": "passed",
-      "outputFingerprint": "sha256:2006e84ff6f2c5db4fd69ce9e2d8c5e44bf7f83d36d49aa6356809dbbbc5bbb9",
+      "outputFingerprint": "sha256:a19d8eeb49f855355138dfefb224c24d6b60e4dda7cb8c40e1ebb4c5ed9d4dc5",
       "error": null
     },
     {
       "id": "effect.project-pulse.project.fixture",
-      "capability": "crm.records.read",
+      "capability": "projects.records.read",
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.1.0",
+      "providerVersion": "0.2.0",
       "containment": "fixture",
-      "authority": "authority.crm.instance",
+      "authority": "authority.projects.instance",
       "startedAt": "2026-07-16T12:00:00.000Z",
       "completedAt": "2026-07-16T12:00:00.000Z",
       "declaredEffects": [
@@ -268,20 +292,20 @@
           "reason": "Selected project records may enter the configured private run envelope."
         }
       ],
-      "inputFingerprint": "sha256:46ed14210c94cfd82766adb10329131da52165bf7b08bd3b987340d511954509",
+      "inputFingerprint": "sha256:8bea1e88c754214cb9b67965b8b558e8ec0a77539c367d7a506ac4835dfbb6d4",
       "state": "passed",
-      "outputFingerprint": "sha256:9a34b0ffd08fff5948db166dedfae9ee3be13e985270e89c740effd1a153a2c6",
+      "outputFingerprint": "sha256:75f2cc2a487e40412d7677df9fea45658a88dbae2c757d79bc5c18ec00ef2901",
       "error": null
     },
     {
-      "id": "effect.project-pulse.work.fixture",
-      "capability": "crm.records.read",
+      "id": "effect.project-pulse.tasks.fixture",
+      "capability": "tasks.records.read",
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.1.0",
+      "providerVersion": "0.2.0",
       "containment": "fixture",
-      "authority": "authority.crm.instance",
+      "authority": "authority.tasks.instance",
       "startedAt": "2026-07-16T12:00:00.000Z",
       "completedAt": "2026-07-16T12:00:00.000Z",
       "declaredEffects": [
@@ -302,9 +326,43 @@
           "reason": "Selected project records may enter the configured private run envelope."
         }
       ],
-      "inputFingerprint": "sha256:98448b93d6fe5968b35d3c36bcc0eff5a5214c30557e899f108ddad1afeea224",
+      "inputFingerprint": "sha256:0c8db024f594c2c878298e30b707d51986a25620f6e884b92922a791bee15f3e",
       "state": "passed",
-      "outputFingerprint": "sha256:9a4dd0e40669efd2c72575f1e9c49f9b08b9338660d407653d43d7095e7e4602",
+      "outputFingerprint": "sha256:817178c30e62bbc15d55a575ba741becb1bdb540535a2f8c26bf8316c16ff3af",
+      "error": null
+    },
+    {
+      "id": "effect.project-pulse.document.fixture",
+      "capability": "documents.content.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.projects.instance",
+      "startedAt": "2026-07-16T12:00:00.000Z",
+      "completedAt": "2026-07-16T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected project authorities may be read to assemble the requested status brief."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected project records may enter the configured private run envelope."
+        }
+      ],
+      "inputFingerprint": "sha256:72fcd9cc7c4082211bf4dc354a1a0115518a122798e8032a3be3a1f20d66ed49",
+      "state": "passed",
+      "outputFingerprint": "sha256:707ad3b76359c6b540a07411264ae7b97a279a0f975680677cd0d6989cfc5804",
       "error": null
     }
   ],

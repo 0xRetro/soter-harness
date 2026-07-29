@@ -1,7 +1,15 @@
 import path from 'node:path';
 
 import { listProviderDeclarations } from '../../core/capabilities.mjs';
-import { fingerprintJson, readJson, resolveRepoPath } from '../../core/lib/canonical-json.mjs';
+import {
+  fingerprintJson,
+  readJson,
+  repoRelativePath,
+  resolveRepoPath
+} from '../../core/lib/canonical-json.mjs';
+import {
+  loadExactPreparedAutomationAcquisition
+} from '../../core/prepared-work.mjs';
 import { fingerprintLock } from '../../core/resolve.mjs';
 import {
   commitDurableContextSnapshot,
@@ -17,28 +25,48 @@ const THREADS_STEP_ID = 'step.mail-thread-expansion';
 const MAXIMUM_MESSAGES = 100;
 const MAXIMUM_THREADS = 50;
 const MAXIMUM_MESSAGES_PER_THREAD = 500;
+const WORK_PATTERN = /^work\.email-triage\.([a-f0-9]{24})$/;
 
-function snapshotSuffix(snapshotId) {
-  if (typeof snapshotId !== 'string'
-    || !snapshotId.startsWith(SNAPSHOT_PREFIX)
-    || !/^[a-z0-9]+(?:[.-][a-z0-9]+)*$/.test(snapshotId.slice(SNAPSHOT_PREFIX.length))) {
-    throw new Error(
-      'Connected Email acquisition snapshot ID must start with ' + SNAPSHOT_PREFIX
-        + ' and end in a safe unique suffix.'
+function connectedError(code, message, cause = null) {
+  const error = new Error(message, cause ? { cause } : undefined);
+  error.code = code;
+  return error;
+}
+
+function safeWorkId(workId) {
+  if (typeof workId !== 'string' || !WORK_PATTERN.test(workId)) {
+    throw connectedError(
+      'EMAIL_CONNECTED_WORK_INVALID',
+      'Connected Email acquisition requires one exact prepared-work identifier.'
     );
   }
-  return snapshotId.slice(SNAPSHOT_PREFIX.length);
+  return workId;
+}
+
+function workSuffix(workId) {
+  return WORK_PATTERN.exec(safeWorkId(workId))[1];
+}
+
+function snapshotIdForWork(workId) {
+  return SNAPSHOT_PREFIX + workSuffix(workId);
+}
+
+function planIdForWork(workId) {
+  return PLAN_PREFIX + workSuffix(workId);
+}
+
+function workIdFromPlan(planId) {
+  if (typeof planId !== 'string' || !planId.startsWith(PLAN_PREFIX)) {
+    throw connectedError(
+      'EMAIL_CONNECTED_PLAN_INVALID',
+      'Connected Email checkpoint does not contain the expected plan family.'
+    );
+  }
+  return safeWorkId('work.email-triage.' + planId.slice(PLAN_PREFIX.length));
 }
 
 function snapshotIdFromPlan(planId) {
-  if (typeof planId !== 'string' || !planId.startsWith(PLAN_PREFIX)) {
-    throw new Error('Checkpoint is not a connected Email acquisition plan.');
-  }
-  const suffix = planId.slice(PLAN_PREFIX.length);
-  if (!/^[a-z0-9]+(?:[.-][a-z0-9]+)*$/.test(suffix)) {
-    throw new Error('Connected Email acquisition plan has an unsafe suffix.');
-  }
-  return SNAPSHOT_PREFIX + suffix;
+  return snapshotIdForWork(workIdFromPlan(planId));
 }
 
 function sameJson(left, right) {
@@ -50,7 +78,8 @@ function selectedAuthority(lock) {
     return item.role === 'instance' && item.subject === 'mail.mailbox';
   });
   if (matches.length !== 1) {
-    throw new Error(
+    throw connectedError(
+      'EMAIL_CONNECTED_BINDING_INVALID',
       'Connected Email acquisition requires exactly one mail.mailbox instance authority.'
     );
   }
@@ -59,7 +88,12 @@ function selectedAuthority(lock) {
 
 function connectedProvider(root, lock, capability) {
   const binding = lock.bindings.find((item) => item.capability === capability);
-  if (!binding) throw new Error('No resolved binding for ' + capability + '.');
+  if (!binding) {
+    throw connectedError(
+      'EMAIL_CONNECTED_BINDING_INVALID',
+      'Connected Email acquisition is missing a required capability binding.'
+    );
+  }
   const matches = listProviderDeclarations(root).filter((provider) => {
     return provider.pack === binding.providerPack
       && provider.containment === 'connected'
@@ -68,8 +102,9 @@ function connectedProvider(root, lock, capability) {
       });
   });
   if (matches.length !== 1) {
-    throw new Error(
-      'Expected one connected provider for ' + capability + '; found ' + matches.length + '.'
+    throw connectedError(
+      'EMAIL_CONNECTED_BINDING_INVALID',
+      'Connected Email acquisition requires one exact connected provider per capability.'
     );
   }
   return matches[0].id;
@@ -81,34 +116,136 @@ function assertSelectedAutomation(lock, run) {
     || matches[0].layer !== 'automation'
     || run?.automation?.id !== AUTOMATION_ID
     || run.automation.version !== matches[0].version) {
-    throw new Error(
+    throw connectedError(
+      'EMAIL_CONNECTED_BINDING_INVALID',
       'Connected Email acquisition requires an exact run selecting ' + AUTOMATION_ID + '.'
     );
   }
 }
 
+function reviewValue(material, id, { required = false } = {}) {
+  const matches = material.fields.filter((field) => field.id === id);
+  if (matches.length !== 1) {
+    throw connectedError(
+      'EMAIL_CONNECTED_WORK_INVALID',
+      'Connected Email private input does not match its declared fields.'
+    );
+  }
+  const field = matches[0];
+  if (field.state === 'omitted') {
+    if (required) {
+      throw connectedError(
+        'EMAIL_CONNECTED_WORK_INVALID',
+        'Connected Email prepared work is missing a required private input.'
+      );
+    }
+    return null;
+  }
+  if (field.state !== 'provided'
+    || field.fingerprint !== fingerprintJson(field.reviewValue)) {
+    throw connectedError(
+      'EMAIL_CONNECTED_WORK_INVALID',
+      'Connected Email private input fingerprint is invalid.'
+    );
+  }
+  return structuredClone(field.reviewValue);
+}
+
+export function loadExactEmailTriagePreparedInput({
+  root,
+  workId,
+  expectedHost = null
+}) {
+  const resolvedRoot = path.resolve(root);
+  const exactWorkId = safeWorkId(workId);
+  let prepared;
+  try {
+    prepared = loadExactPreparedAutomationAcquisition({
+      root: resolvedRoot,
+      workId: exactWorkId,
+      automationId: AUTOMATION_ID,
+      expectedHost
+    });
+  } catch (error) {
+    throw connectedError(
+      'EMAIL_CONNECTED_WORK_INVALID',
+      'Connected Email prepared work or private input is unavailable or invalid.',
+      error
+    );
+  }
+  const { work, material, lock, run, runPath } = prepared;
+  try {
+    assertSelectedAutomation(lock, run);
+  } catch (error) {
+    throw connectedError(
+      'EMAIL_CONNECTED_BINDING_INVALID',
+      'Connected Email durable run does not select the exact prepared Automation.',
+      error
+    );
+  }
+  const query = reviewValue(material, 'query', { required: true });
+  const scope = reviewValue(material, 'scope', { required: true });
+  const focus = reviewValue(material, 'focus');
+  if (typeof query !== 'string'
+    || !query.trim()
+    || query.length > 1000
+    || scope !== 'triage-drafts-handoffs-digest'
+    || (focus !== null && (typeof focus !== 'string' || focus.length > 1000))) {
+    throw connectedError(
+      'EMAIL_CONNECTED_WORK_INVALID',
+      'Connected Email private input does not satisfy its exact sealed mailbox bounds.'
+    );
+  }
+  return {
+    work,
+    material,
+    lock,
+    lockPath: work.configuration.lockPath,
+    run,
+    runPath,
+    input: { query, scope, focus },
+    privateInputFingerprint: fingerprintJson({ query, scope, focus })
+  };
+}
+
 export function createEmailTriageConnectedAcquisitionPlan({
   root,
-  lock,
-  runId,
-  snapshotId,
-  query,
-  createdAt
+  prepared,
+  createdAt,
+  expectedHost = null
 }) {
-  const suffix = snapshotSuffix(snapshotId);
+  const { work, lock, run, input } = prepared;
+  if (expectedHost && lock.host.id !== expectedHost) {
+    throw connectedError(
+      'EMAIL_CONNECTED_BINDING_INVALID',
+      'Connected Email prepared work belongs to another host.'
+    );
+  }
+  const query = input.query;
   if (typeof query !== 'string' || !query.trim() || query.length > 1000) {
-    throw new Error('Connected Email acquisition requires one bounded private mailbox query.');
+    throw connectedError(
+      'EMAIL_CONNECTED_WORK_INVALID',
+      'Connected Email acquisition requires one bounded private mailbox query.'
+    );
   }
   const authority = selectedAuthority(lock);
   return {
     $contract: 'soter://contracts/operation-plan/v2',
     contractVersion: '2.0.0',
-    id: PLAN_PREFIX + suffix,
-    runId,
+    id: planIdForWork(work.id),
+    runId: run.id,
     createdAt,
     mode: 'sequential',
     failurePolicy: 'stop',
     reason: 'Search one exact bounded private mailbox window, then expand only the returned provider-message identities into normalized private transport facts.',
+    configuration: {
+      name: work.configuration.name,
+      configurationBasis: 'private-active',
+      path: work.configuration.path,
+      lockPath: work.configuration.lockPath,
+      lockFingerprint: work.configuration.lockFingerprint,
+      graphFingerprint: work.configuration.graphFingerprint
+    },
     steps: [
       {
         id: SEARCH_STEP_ID,
@@ -143,13 +280,15 @@ export function createEmailTriageConnectedAcquisitionPlan({
 }
 
 export function assertEmailTriageConnectedAcquisitionPlan(plan) {
+  const workId = workIdFromPlan(plan?.id);
   const snapshotId = snapshotIdFromPlan(plan?.id);
-  const [search, threads] = plan?.steps || [];
+  const steps = Array.isArray(plan?.steps) ? plan.steps : [];
+  const [search, threads] = steps;
   if (plan.$contract !== 'soter://contracts/operation-plan/v2'
     || plan.contractVersion !== '2.0.0'
     || plan.mode !== 'sequential'
     || plan.failurePolicy !== 'stop'
-    || plan.steps.length !== 2
+    || steps.length !== 2
     || search?.id !== SEARCH_STEP_ID
     || search.capability !== 'mail.messages.search'
     || !sameJson(search.inputBindings, [])
@@ -171,22 +310,33 @@ export function assertEmailTriageConnectedAcquisitionPlan(plan) {
       onEmpty: 'skip-step'
     }])
     || search.authority !== threads.authority) {
-    throw new Error('Connected Email acquisition plan does not preserve its exact bounded source order.');
+    throw connectedError(
+      'EMAIL_CONNECTED_PLAN_INVALID',
+      'Connected Email acquisition plan does not preserve its exact bounded source order.'
+    );
   }
-  return { snapshotId, search, threads };
+  return { workId, snapshotId, search, threads };
 }
 
 function completedStep(checkpoint, id) {
   const step = checkpoint.steps.find((item) => item.id === id);
   if (!step || step.state !== 'completed' || !step.call || !step.output) {
-    throw new Error('Connected Email acquisition source ' + id + ' is not completed.');
+    throw connectedError(
+      'EMAIL_CONNECTED_INCOMPLETE',
+      'Connected Email acquisition source coverage is not complete.'
+    );
   }
   return step;
 }
 
 function terminalThreadStep(checkpoint, searchedMessageIds) {
   const step = checkpoint.steps.find((item) => item.id === THREADS_STEP_ID);
-  if (!step) throw new Error('Connected Email thread-expansion source is missing.');
+  if (!step) {
+    throw connectedError(
+      'EMAIL_CONNECTED_INCOMPLETE',
+      'Connected Email thread-expansion source is missing.'
+    );
+  }
   if (searchedMessageIds.length === 0) {
     if (step.state !== 'skipped'
       || step.call !== null
@@ -198,19 +348,28 @@ function terminalThreadStep(checkpoint, searchedMessageIds) {
       })
       || step.bindingResolutions.length !== 1
       || step.bindingResolutions[0].state !== 'empty') {
-      throw new Error('Empty connected Email acquisition did not preserve exact skip semantics.');
+      throw connectedError(
+        'EMAIL_CONNECTED_OUTPUT_INVALID',
+        'Empty connected Email acquisition did not preserve exact skip semantics.'
+      );
     }
     return null;
   }
   if (step.state !== 'completed' || !step.call || !step.output) {
-    throw new Error('Connected Email thread expansion is not completed.');
+    throw connectedError(
+      'EMAIL_CONNECTED_INCOMPLETE',
+      'Connected Email thread expansion is not completed.'
+    );
   }
   if (!sameJson(step.resolvedInput, {
     maximumThreads: MAXIMUM_THREADS,
     maximumMessagesPerThread: MAXIMUM_MESSAGES_PER_THREAD,
     messageIds: [...searchedMessageIds].sort((left, right) => left.localeCompare(right, 'en'))
   })) {
-    throw new Error('Connected Email thread expansion does not bind the exact search result.');
+    throw connectedError(
+      'EMAIL_CONNECTED_OUTPUT_INVALID',
+      'Connected Email thread expansion does not bind the exact search result.'
+    );
   }
   return step;
 }
@@ -226,7 +385,8 @@ function assertSearchOutput(step) {
     || output.queryFingerprint !== fingerprintJson(step.resolvedInput.query)
     || output.provenance?.sourceKind !== 'connected'
     || output.provenance?.authority !== step.call.authority) {
-    throw new Error(
+    throw connectedError(
+      'EMAIL_CONNECTED_OUTPUT_INVALID',
       'Connected Email search must be complete, bounded, unique, counted, and bound to the exact private query.'
     );
   }
@@ -242,7 +402,10 @@ function assertThreadOutput(step, searchedMessageIds) {
     || output.returnedThreadCount !== output.threads.length
     || output.provenance?.sourceKind !== 'connected'
     || output.provenance?.authority !== step.call.authority) {
-    throw new Error('Connected Email thread expansion does not preserve its exact bounded request.');
+    throw connectedError(
+      'EMAIL_CONNECTED_OUTPUT_INVALID',
+      'Connected Email thread expansion does not preserve its exact bounded request.'
+    );
   }
   const threadIds = output.threads.map((thread) => thread.id);
   const messages = output.threads.flatMap((thread) => thread.messages || []);
@@ -255,7 +418,8 @@ function assertThreadOutput(step, searchedMessageIds) {
         || thread.messages.length > MAXIMUM_MESSAGES_PER_THREAD;
     })
     || searchedMessageIds.some((id) => messageIds.filter((item) => item === id).length !== 1)) {
-    throw new Error(
+    throw connectedError(
+      'EMAIL_CONNECTED_OUTPUT_INVALID',
       'Connected Email thread expansion must cover every requested message exactly once with unique bounded thread and message identities.'
     );
   }
@@ -294,37 +458,46 @@ function effectId(call) {
 
 export async function prepareEmailTriageConnectedAcquisition({
   root,
-  lockPath,
-  runPath,
-  snapshotId,
-  query,
+  workId,
   at,
   expectedHost
 }) {
-  const resolvedRoot = path.resolve(root);
-  const lock = readJson(resolveRepoPath(resolvedRoot, lockPath));
-  const run = readJson(resolveRepoPath(resolvedRoot, runPath));
-  assertSelectedAutomation(lock, run);
-  const createdAt = at || new Date().toISOString();
-  const plan = createEmailTriageConnectedAcquisitionPlan({
-    root: resolvedRoot,
-    lock,
-    runId: run.id,
-    snapshotId,
-    query,
-    createdAt
-  });
-  return prepareDurableOperationPlanExecution({
-    root: resolvedRoot,
-    lockPath,
-    runPath,
-    plan,
-    at: createdAt,
-    expectedHost
-  });
+  try {
+    const resolvedRoot = path.resolve(root);
+    const prepared = loadExactEmailTriagePreparedInput({
+      root: resolvedRoot,
+      workId,
+      expectedHost
+    });
+    const createdAt = at || new Date().toISOString();
+    const plan = createEmailTriageConnectedAcquisitionPlan({
+      root: resolvedRoot,
+      prepared,
+      createdAt,
+      expectedHost
+    });
+    return await prepareDurableOperationPlanExecution({
+      root: resolvedRoot,
+      lockPath: prepared.lockPath,
+      runPath: prepared.runPath,
+      plan,
+      at: createdAt,
+      expectedHost,
+      configurationBasis: 'private-active'
+    });
+  } catch (error) {
+    if (typeof error?.code === 'string' && error.code.startsWith('EMAIL_CONNECTED_')) {
+      throw error;
+    }
+    throw connectedError(
+      'EMAIL_CONNECTED_PLAN_INVALID',
+      'Connected Email plan could not enter the durable host-tool boundary.',
+      error
+    );
+  }
 }
 
-export function finalizeEmailTriageConnectedAcquisition({
+function finalizeEmailTriageConnectedAcquisitionInternal({
   root,
   checkpointId,
   expectedHost
@@ -337,18 +510,46 @@ export function finalizeEmailTriageConnectedAcquisition({
   });
   const checkpoint = execution.checkpoint;
   if (checkpoint.kind !== 'operation-plan' || checkpoint.state !== 'completed') {
-    throw new Error('Connected Email acquisition can finalize only from a completed operation plan.');
+    throw connectedError(
+      'EMAIL_CONNECTED_INCOMPLETE',
+      'Connected Email acquisition can finalize only from a completed operation plan.'
+    );
   }
   const planShape = assertEmailTriageConnectedAcquisitionPlan(checkpoint.plan);
+  const prepared = loadExactEmailTriagePreparedInput({
+    root: resolvedRoot,
+    workId: planShape.workId,
+    expectedHost
+  });
+  const expectedPlan = createEmailTriageConnectedAcquisitionPlan({
+    root: resolvedRoot,
+    prepared,
+    createdAt: checkpoint.plan.createdAt,
+    expectedHost
+  });
+  if (!sameJson(expectedPlan, checkpoint.plan)
+    || checkpoint.configurationLock.path !== prepared.lockPath
+    || checkpoint.configurationLock.fingerprint !== fingerprintLock(prepared.lock)
+    || checkpoint.graphFingerprint !== prepared.lock.graphFingerprint
+    || checkpoint.plan.runId !== prepared.run.id
+    || execution.run.id !== prepared.run.id) {
+    throw connectedError(
+      'EMAIL_CONNECTED_STALE',
+      'Connected Email acquisition drifted from its current exact prepared-work basis.'
+    );
+  }
   const search = completedStep(checkpoint, SEARCH_STEP_ID);
   const searchedMessageIds = assertSearchOutput(search);
   const threads = terminalThreadStep(checkpoint, searchedMessageIds);
   if (threads) assertThreadOutput(threads, searchedMessageIds);
 
-  const lock = readJson(resolveRepoPath(resolvedRoot, checkpoint.configurationLock.path));
+  const lock = prepared.lock;
   if (checkpoint.configurationLock.fingerprint !== fingerprintLock(lock)
     || checkpoint.graphFingerprint !== lock.graphFingerprint) {
-    throw new Error('Connected Email acquisition checkpoint no longer matches its exact lock and graph.');
+    throw connectedError(
+      'EMAIL_CONNECTED_STALE',
+      'Connected Email acquisition checkpoint no longer matches its exact lock and graph.'
+    );
   }
   assertSelectedAutomation(lock, execution.run);
   const authority = selectedAuthority(lock);
@@ -360,7 +561,10 @@ export function finalizeEmailTriageConnectedAcquisition({
     || planShape.threads.providerImplementation !== threadProvider
     || (threads && (threads.call.authority !== authority
       || threads.call.provider.implementation !== threadProvider))) {
-    throw new Error('Connected Email acquisition does not match the resolved providers and authority.');
+    throw connectedError(
+      'EMAIL_CONNECTED_BINDING_INVALID',
+      'Connected Email acquisition does not match the resolved providers and authority.'
+    );
   }
 
   const createdAt = checkpoint.updatedAt;
@@ -423,4 +627,19 @@ export function finalizeEmailTriageConnectedAcquisition({
     checkpointDetails: 'Automation acquired one complete bounded provider-message set and its exact bounded normalized thread expansion through Core, then paused before triage judgment, drafts, approval, or writes.',
     expectedHost
   });
+}
+
+export function finalizeEmailTriageConnectedAcquisition(args) {
+  try {
+    return finalizeEmailTriageConnectedAcquisitionInternal(args);
+  } catch (error) {
+    if (typeof error?.code === 'string' && error.code.startsWith('EMAIL_CONNECTED_')) {
+      throw error;
+    }
+    throw connectedError(
+      'EMAIL_CONNECTED_SNAPSHOT_INVALID',
+      'Connected Email context could not be finalized from its exact durable checkpoint.',
+      error
+    );
+  }
 }

@@ -1,0 +1,136 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "projects.records.update",
+  "version": "1.0.0",
+  "purpose": "Updates named fields on one typed Project record through an expected-version precondition and explicit effect evidence.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "required": [
+      "recordType",
+      "id",
+      "expectedVersion",
+      "patch"
+    ],
+    "properties": {
+      "recordType": {
+        "type": "string"
+      },
+      "id": {
+        "type": "string"
+      },
+      "expectedVersion": {
+        "type": "string"
+      },
+      "patch": {
+        "type": "object"
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "record",
+      "changedFields",
+      "provenance",
+      "observedAt"
+    ],
+    "properties": {
+      "record": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "id",
+          "fields"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "object"
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "deduplicationKey": {
+            "type": "string",
+            "minLength": 1
+          },
+          "body": {
+            "type": ["string", "object", "null"]
+          }
+        }
+      },
+      "changedFields": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "provenance": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["provider", "authority", "mapping", "mappingVersion"],
+        "properties": {
+          "provider": { "type": "string", "minLength": 1 },
+          "authority": { "type": "string", "minLength": 1 },
+          "mapping": { "type": "string", "minLength": 1 },
+          "mappingVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+          "sourceKind": { "enum": ["fixture", "connected"] },
+          "sourceReferenceFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        }
+      },
+      "observedAt": {
+        "type": "string"
+      }
+    }
+  },
+  "authentication": {
+    "required": true,
+    "minimumScopes": [
+      "records:write"
+    ]
+  },
+  "effects": [
+    "write"
+  ],
+  "idempotency": {
+    "mode": "conditional",
+    "key": "recordType + id + expectedVersion + patch"
+  },
+  "retry": {
+    "safe": true,
+    "maxAttempts": 2,
+    "checkpoint": "Re-fetch the record and re-evaluate the patch after a version conflict."
+  },
+  "errors": [
+    "authentication",
+    "authorization",
+    "validation",
+    "conflict",
+    "rate-limit",
+    "unavailable",
+    "retryable",
+    "not-found",
+    "unknown"
+  ],
+  "freshness": {
+    "returnsProvenance": true,
+    "returnsObservedAt": true,
+    "maxAgeSeconds": null
+  },
+  "health": {
+    "check": "Validate a contained expected-version update against a fixture store.",
+    "fixture": "soter/scenarios/project-pulse/happy-path.scenario.json",
+    "containedVerification": "Prove named-field preservation, version conflicts, retries, and returned effect evidence."
+  },
+  "providerLimitations": []
+}

@@ -1,0 +1,53 @@
+{
+  "$contract": "soter://contracts/pack-settings/v1",
+  "contractVersion": "1.0.0",
+  "id": "settings.kernel.soter.development-workspace",
+  "pack": "kernel.soter",
+  "version": "0.1.0",
+  "required": false,
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "sessionIsolation",
+      "rootCheckout",
+      "baseRef",
+      "landingPolicy",
+      "publicationPolicy",
+      "sequentialIdentifierScope",
+      "stagingScope",
+      "externalStateIsolation",
+      "credentialPropagation"
+    ],
+    "properties": {
+      "sessionIsolation": {
+        "const": "one-session-one-worktree-one-branch"
+      },
+      "rootCheckout": {
+        "const": "main-read-only"
+      },
+      "baseRef": {
+        "const": "origin/main"
+      },
+      "landingPolicy": {
+        "const": "merge-commit-after-human-gate"
+      },
+      "publicationPolicy": {
+        "const": "explicit-user-authorization"
+      },
+      "sequentialIdentifierScope": {
+        "const": "main-and-all-live-worktrees"
+      },
+      "stagingScope": {
+        "const": "named-paths-only"
+      },
+      "externalStateIsolation": {
+        "const": "shared-not-worktree-isolated"
+      },
+      "credentialPropagation": {
+        "const": "worktreeinclude-local-only"
+      }
+    }
+  },
+  "reason": "Repository development delivery is user-selected configuration, while Kernel owns the closed policy shape and hosts own worktree mechanics."
+}

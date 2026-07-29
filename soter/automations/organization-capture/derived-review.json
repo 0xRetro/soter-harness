@@ -1,0 +1,19 @@
+{
+  "$contract": "soter://contracts/automation-derived-review/v1",
+  "contractVersion": "1.0.0",
+  "automation": "automation.organization-capture",
+  "kind": "organization-capture-derived-review",
+  "items": [
+    {
+      "kind": "organization-create",
+      "fields": [
+        { "id": "name", "label": "Organization name", "type": "text" },
+        { "id": "organizationType", "label": "Organization type", "type": "string-list" },
+        { "id": "tags", "label": "Organization tags", "type": "string-list" },
+        { "id": "website", "label": "Website", "type": "string-list" },
+        { "id": "twitter", "label": "Twitter profile", "type": "string-list" },
+        { "id": "duplicateSearchNames", "label": "Exact duplicate search names", "type": "string-list" }
+      ]
+    }
+  ]
+}

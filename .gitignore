@@ -9,11 +9,14 @@ dist/
 # Soter private runtime checkpoints (never portable configuration)
 .soter/state/
 
-# Claude Code — personal / runtime (never shared)
-.claude/settings.local.json
-.claude/evals/logs/*.jsonl
-.claude/scheduled_tasks.lock
+# Governed host realization outputs are private consumer state, never source.
+/AGENTS.md
+/CLAUDE.md
+/.mcp.json
+/.agents/
+/.codex/
+/.claude/
+/.claude-plugin/
 
 # Local planning tools (workshop scratch, never harness content)
 nimbalyst-local/
-.claude/worktrees/

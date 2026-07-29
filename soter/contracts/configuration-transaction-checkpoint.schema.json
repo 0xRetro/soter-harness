@@ -23,11 +23,10 @@
     "consumption": { "$ref": "#/$defs/reference" },
     "configuration": {
       "type": "object", "additionalProperties": false,
-      "required": ["name", "path", "activeLockPath", "currentDocumentFingerprint", "candidateDocumentFingerprint", "currentLockFingerprint", "candidateLockFingerprint"],
+      "required": ["name", "sourceKind", "currentDocumentFingerprint", "candidateDocumentFingerprint", "currentLockFingerprint", "candidateLockFingerprint"],
       "properties": {
         "name": { "type": "string" },
-        "path": { "type": "string" },
-        "activeLockPath": { "type": "string" },
+        "sourceKind": { "const": "private-active" },
         "currentDocumentFingerprint": { "$ref": "#/$defs/fingerprint" },
         "candidateDocumentFingerprint": { "$ref": "#/$defs/fingerprint" },
         "currentLockFingerprint": { "$ref": "#/$defs/fingerprint" },
@@ -36,8 +35,10 @@
     },
     "observation": {
       "type": "object", "additionalProperties": false,
-      "required": ["documentFingerprint", "activeLockFingerprint", "resolutionFingerprint"],
+      "required": ["sourceKind", "templateFingerprint", "documentFingerprint", "activeLockFingerprint", "resolutionFingerprint"],
       "properties": {
+        "sourceKind": { "enum": ["tracked-template", "private-active", "invalid"] },
+        "templateFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
         "documentFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
         "activeLockFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
         "resolutionFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" }

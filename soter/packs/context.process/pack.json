@@ -1,0 +1,30 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.process",
+  "version": "0.1.0",
+  "layer": "context",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Defines portable process definitions, runs, roles, services, policies, lifecycle separation, deterministic body shape, and the definition-versus-task boundary.",
+  "dependencies": [
+    { "pack": "core.runtime", "version": "^0.1.0", "optional": false, "reason": "Process definitions require portable context assembly and exact authority resolution." }
+  ],
+  "capabilities": { "requires": [], "provides": [] },
+  "authorities": [
+    { "role": "definition", "subject": "process.records", "required": true },
+    { "role": "instance", "subject": "process.records", "required": true }
+  ],
+  "effects": [],
+  "artifacts": [
+    { "path": "soter/contexts/process/records.model.json", "role": "definition" },
+    { "path": "soter/contracts/process-capture-policy.schema.json", "role": "definition" },
+    { "path": "soter/contexts/process/process-capture.policy.json", "role": "definition" },
+    { "path": "soter/contexts/process/process-capture.mjs", "role": "implementation" },
+    { "path": "soter/contracts/process-review-policy.schema.json", "role": "definition" },
+    { "path": "soter/contexts/process/process-review.policy.json", "role": "definition" },
+    { "path": "soter/contexts/process/process-review.mjs", "role": "implementation" }
+  ],
+  "compatibility": { "baseContract": "^1.0.0", "hosts": ["codex", "claude"] },
+  "verification": { "maxLevel": "static", "scenarios": [] }
+}

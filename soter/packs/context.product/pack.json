@@ -1,0 +1,35 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.product",
+  "version": "0.1.0",
+  "layer": "context",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Defines portable feature records, lifecycle meaning, why-versus-definition separation, and exact board-owned option boundaries.",
+  "dependencies": [
+    {
+      "pack": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Product definitions and instances require portable context assembly and exact authority resolution."
+    }
+  ],
+  "capabilities": { "requires": [], "provides": [] },
+  "authorities": [
+    { "role": "definition", "subject": "product.records", "required": true },
+    { "role": "instance", "subject": "product.records", "required": true }
+  ],
+  "effects": [],
+  "artifacts": [
+    { "path": "soter/contexts/product/records.model.json", "role": "definition" },
+    { "path": "soter/contracts/feature-workflow-policy.schema.json", "role": "definition" },
+    { "path": "soter/contexts/product/feature-workflow.policy.json", "role": "definition" },
+    { "path": "soter/contexts/product/feature-workflow.mjs", "role": "implementation" }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": ["codex", "claude"]
+  },
+  "verification": { "maxLevel": "static", "scenarios": [] }
+}

@@ -1,0 +1,27 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.tasks",
+  "version": "0.1.0",
+  "layer": "context",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Defines portable Tasks, assignees, dates, lifecycle, policies, grounded relationships, and authority boundaries independently from Projects, CRM, Meetings, and provider layout.",
+  "dependencies": [
+    { "pack": "core.runtime", "version": "^0.1.0", "optional": false, "reason": "Task definitions and instances require portable context assembly and authority resolution." }
+  ],
+  "capabilities": { "requires": [], "provides": [] },
+  "authorities": [
+    { "role": "definition", "subject": "tasks.records", "required": true },
+    { "role": "instance", "subject": "tasks.records", "required": true }
+  ],
+  "effects": [],
+  "artifacts": [
+    { "path": "soter/contexts/tasks/records.model.json", "role": "definition" },
+    { "path": "soter/contexts/tasks/vocabulary.json", "role": "definition" },
+    { "path": "soter/contexts/tasks/task-work.policy.json", "role": "definition" },
+    { "path": "soter/contexts/tasks/task-work-policy.mjs", "role": "implementation" }
+  ],
+  "compatibility": { "baseContract": "^1.0.0", "hosts": ["codex", "claude"] },
+  "verification": { "maxLevel": "static", "scenarios": [] }
+}

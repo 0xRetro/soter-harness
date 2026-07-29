@@ -1,0 +1,27 @@
+{
+  "$contract": "soter://contracts/context-record-model/v1",
+  "contractVersion": "1.0.0",
+  "id": "model.context.sky.records",
+  "pack": "context.sky",
+  "version": "0.1.0",
+  "subject": "sky.records",
+  "recordTypes": [
+    {
+      "id": "sky-term",
+      "summary": "One governed Sky-ecosystem term whose definition is reused across organizational records and policy projections.",
+      "fields": [
+        { "id": "name", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The exact canonical Sky-ecosystem term." },
+        { "id": "abbreviation", "type": "string", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "The governed abbreviation when one exists." },
+        { "id": "definition", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The portable organizational definition of the term." },
+        { "id": "domain", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The stable Sky subject area that owns use of the term." },
+        { "id": "sourceUris", "type": "string-list", "requiredOnCreate": false, "nullable": false, "mutable": true, "summary": "Exact public source references that ground the current definition." }
+      ],
+      "content": { "kind": "none", "requiredOnCreate": false, "summary": "Sky term records contain definition and grounding facts only." },
+      "deduplicationFields": ["name"]
+    }
+  ],
+  "limitations": [
+    "This model defines portable vocabulary shape; the governed context.sky vocabulary artifact owns the exact current term set and definitions.",
+    "A term definition grants no governance interpretation, onchain action, provider write, or execution authority."
+  ]
+}

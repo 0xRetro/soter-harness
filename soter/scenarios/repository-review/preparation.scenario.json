@@ -1,0 +1,45 @@
+{
+  "$contract": "soter://contracts/scenario/v1",
+  "contractVersion": "1.0.0",
+  "id": "repository-review.preparation",
+  "automation": "automation.repository-review",
+  "intent": "inspect",
+  "input": {
+    "repository": "configured-exact",
+    "scope": "product-capabilities",
+    "handoff": "feature-capture-review-only"
+  },
+  "expected": {
+    "capabilityOrder": ["repository.snapshot.read", "product.records.read"],
+    "effectModes": { "read": "allow", "disclosure": "allow", "write": "confirm", "dispatch": "prohibit", "destructive": "prohibit" },
+    "outcomes": [
+      "repository-source.grounded",
+      "source-backed-capabilities-observed",
+      "consistent-product-altitude",
+      "duplicate-visible-and-held",
+      "feature-capture-handoffs-prepared",
+      "writes-prohibited"
+    ],
+    "invariants": [
+      "source-read-not-readme-only",
+      "candidate-set-complete",
+      "existing-feature-not-proposed-as-new",
+      "handoff-does-not-create-target-work",
+      "tooling-page-not-fabricated",
+      "no-write-or-approval-during-preparation"
+    ],
+    "evidence": [
+      "exact-lock",
+      "repository-fingerprint",
+      "duplicate-query-fingerprint",
+      "private-values-sanitized",
+      "source-cases-exactly-fingerprinted"
+    ]
+  },
+  "sourceCases": [
+    ".claude/evals/reviewing-a-repo/happy-path.md",
+    ".claude/evals/reviewing-a-repo/invariant-no-duplicate-reingest.md",
+    ".claude/evals/reviewing-a-repo/invariant-review-gate.md",
+    ".claude/evals/reviewing-a-repo/pressure-dump-all.md"
+  ]
+}

@@ -1,0 +1,192 @@
+{
+  "contractVersion": "2.0.0",
+  "id": "workflow-guide.auditing-a-schema-doc",
+  "contentFingerprint": "sha256:290cbc3b277d98604b6dfdff487db48a22b8d3de050f8e2c3a1e8c44f53e2659",
+  "$contract": "soter://contracts/workflow-guide/v2",
+  "workflow": {
+    "id": "automation.auditing-a-schema-doc",
+    "version": "0.1.0",
+    "definitionPath": "soter/automations/auditing-a-schema-doc/definition.json",
+    "definitionFingerprint": "sha256:d94d5f6256bcb322855b06fe9d47474d81513fe2cc0da38db803a4d1b657ecc1",
+    "evaluationSetPath": "soter/automations/auditing-a-schema-doc/evaluations.json",
+    "evaluationSetFingerprint": "sha256:b305f9939e9159749cd47982601e422879e642539a5c454f694cc37d0a0c72d0"
+  },
+  "skill": {
+    "name": "auditing-a-schema-doc",
+    "description": "Audit and reconcile one governed schema document against its current provider schema and configured mirror. Use for complete field, option, relation, writability, template, and freshness drift review; do not use for record writing, policy authoring, or unrelated prose edits.",
+    "invocation": "explicit-only",
+    "displayName": "Audit a schema document",
+    "shortDescription": "Reconcile a governed schema document against current authority.",
+    "defaultPrompt": "Use $auditing-a-schema-doc to review this exact schema document and prepare a complete, non-destructive drift report."
+  },
+  "status": {
+    "state": "active",
+    "reasonCode": "WORKFLOW_GUIDE_ACTIVE",
+    "proceduralAuthority": "target",
+    "behaviorParity": "passed",
+    "delivery": "host-skill",
+    "evidence": [
+      {
+        "path": "soter/evidence/development/development-agent-migration-evidence.claude.auditing-a-schema-doc.json",
+        "fingerprint": "sha256:2b29c601a0695b7670cee443cdc7a86403a31f841041c77770c1e7698fffa136",
+        "host": "claude"
+      },
+      {
+        "path": "soter/evidence/development/development-agent-migration-evidence.codex.auditing-a-schema-doc.json",
+        "fingerprint": "sha256:e816c616120aca98ab0d956ba667dd32af013ab50b830a58ff2dfb21cd6e1a8e",
+        "host": "codex"
+      }
+    ],
+    "permittedNextAction": "invoke-through-selected-host"
+  },
+  "authority": {
+    "kind": "procedural-guidance",
+    "executionAuthority": "none",
+    "effectAuthority": "none",
+    "approvalAuthority": "none",
+    "reasonCode": "WORKFLOW_GUIDE_NO_EXECUTION_AUTHORITY",
+    "providerTransactionAuthority": "none"
+  },
+  "stepDetails": [
+    {
+      "id": "acquire-exact-sources",
+      "sequence": 1,
+      "instructions": [
+        "Fetch the current provider schema, the governed document's field description, and the configured provider mirror from one named authority basis.",
+        "Record each source fingerprint and freshness observation; a self-declared consistency label is never evidence of consistency.",
+        "When a registered template is part of the mirror, fetch that exact current template and verify that its observation is newer than any known recent write."
+      ],
+      "flexibility": [
+        "Compress source presentation when the basis is large, but preserve exact identities, fingerprints, and freshness facts."
+      ],
+      "stopConditions": [
+        "Stop when any required source is missing, stale beyond its policy, ambiguous, or cannot be tied to the same audit basis."
+      ]
+    },
+    {
+      "id": "diff-stable-identities",
+      "sequence": 2,
+      "instructions": [
+        "Compare fields in both directions by stable property identity rather than display label.",
+        "Compare provider type, writability, relation target, and every select, status, or multi-select option case-sensitively.",
+        "Check each registered template for existence, governed section presence and order, and property defaults that remain valid in the current option sets."
+      ],
+      "flexibility": [],
+      "stopConditions": [
+        "Stop before interpreting a label-only similarity as a rename or semantic match."
+      ]
+    },
+    {
+      "id": "classify-drift",
+      "sequence": 3,
+      "instructions": [
+        "Classify every observed field as matching, missing from the document, documented but absent from the provider, type or option mismatch, writability mismatch, relation mismatch, or rename candidate.",
+        "Treat provider-absent documented fields as retained intent until a human chooses deletion; place them in a clearly named not-yet-built category.",
+        "Sweep non-field sections for references to removed or changed fields and report them as findings without editing those sections."
+      ],
+      "flexibility": [],
+      "stopConditions": [
+        "Stop when a rename, deletion, or policy-semantic decision requires human judgment."
+      ]
+    },
+    {
+      "id": "prepare-surgical-review",
+      "sequence": 4,
+      "instructions": [
+        "Prepare the complete document-and-mirror diff and exact proposed changes limited to field descriptions, mirror facts, registered template corrections, and freshness reporting.",
+        "Preserve every unrelated policy, purpose, view, rule, lifecycle, and template-description section.",
+        "Use the fetched representation for exact search-and-replace candidates; never reconstruct provider markup from memory."
+      ],
+      "flexibility": [
+        "The review may be summarized tightly, but rename and delete-versus-retain decisions must remain individually visible."
+      ],
+      "stopConditions": [
+        "Stop if the proposed edit cannot prove that unrelated content remains unchanged."
+      ]
+    },
+    {
+      "id": "hold-for-confirmation",
+      "sequence": 5,
+      "instructions": [
+        "Present the full classified diff, proposed exact changes, unresolved decisions, and verification plan before requesting any effect authority.",
+        "After separate exact confirmation, use the configured update boundary for document or template changes and the governed repository change boundary for mirror changes.",
+        "Re-fetch every changed authority and verify the intended region, mirror, freshness statement, and preservation claims."
+      ],
+      "flexibility": [
+        "One confirmation may cover an explicitly itemized batch, but it must bind every included target and exact change."
+      ],
+      "stopConditions": [
+        "Stop before all writes when confirmation, provider capability, repository authority, or read-after-write verification is unavailable."
+      ]
+    }
+  ],
+  "verification": [
+    "Every live field and every documented field appears exactly once in the classified diff.",
+    "Option sets, relation targets, writability, templates, and freshness are checked from the same current basis.",
+    "Any applied change is re-read and unrelated document sections remain unchanged.",
+    "The result distinguishes local review validity from provider readiness, connected verification, and health."
+  ],
+  "gotchas": [
+    {
+      "id": "name-only-option-drift",
+      "kind": "baseline",
+      "summary": "A field with the same label can carry a different type or option set and still look superficially consistent.",
+      "countermeasure": "Compare stable property identities and every option case-sensitively instead of accepting label equality."
+    },
+    {
+      "id": "rename-is-not-inference",
+      "kind": "baseline",
+      "summary": "Label similarity cannot distinguish a rename from delete-and-add or from two different meanings with the same type.",
+      "countermeasure": "Use stable property identities where available and hold every remaining rename candidate for a human decision."
+    },
+    {
+      "id": "documented-intent-is-not-trash",
+      "kind": "baseline",
+      "summary": "A documented field absent from the provider may be roadmap intent rather than obsolete prose.",
+      "countermeasure": "Retain it as documented but not built until explicit deletion authority exists."
+    },
+    {
+      "id": "successful-text-update-can-mislead",
+      "kind": "observed",
+      "summary": "A provider text replacement can report success while missing an escaped target or preserving incompatible visual styling.",
+      "countermeasure": "Derive replacement text from the fresh fetch and verify exact post-write bytes and any styling limitation separately."
+    },
+    {
+      "id": "cached-fetch-is-not-current",
+      "kind": "observed",
+      "summary": "A cached document or template fetch can predate a recent write and create a false drift finding.",
+      "countermeasure": "Inspect the source freshness stamp and re-fetch when it predates known activity."
+    }
+  ],
+  "references": [
+    {
+      "id": "policy-context",
+      "kind": "pack",
+      "label": "Portable policy-standard meaning",
+      "target": "context.policy"
+    },
+    {
+      "id": "update-workflow",
+      "kind": "workflow",
+      "label": "Bounded existing-record update workflow",
+      "target": "automation.updating-a-notion-page"
+    }
+  ],
+  "source": {
+    "presence": "removed",
+    "legacyPath": ".claude/skills/auditing-a-schema-doc/SKILL.md",
+    "legacyFingerprint": "sha256:c5ee36f0224bceaa1e2e83cbd622eae6ca114f52c3ff472e67a92d4e338d4647",
+    "normalization": "behavior-preserving-with-explicit-authority-boundary"
+  },
+  "privacy": {
+    "rawSourceIncluded": false,
+    "workspaceSpecificValuesIncluded": false,
+    "credentialsIncluded": false,
+    "privateInputsIncluded": false,
+    "providerResponsesIncluded": false
+  },
+  "limitations": [
+    "This procedural guide grants no provider write, repository write, approval, or execution authority.",
+    "Adoption requires independent exact host-skill behavior evidence and a separate governed fallback-removal decision."
+  ]
+}

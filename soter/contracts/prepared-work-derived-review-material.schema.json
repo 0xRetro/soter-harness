@@ -31,9 +31,10 @@
     },
     "configuration": {
       "type": "object", "additionalProperties": false,
-      "required": ["name", "lockFingerprint"],
+      "required": ["name", "configurationBasis", "lockFingerprint"],
       "properties": {
         "name": { "type": "string", "minLength": 1 },
+        "configurationBasis": { "enum": ["tracked-contained", "private-active"] },
         "lockFingerprint": { "$ref": "#/$defs/fingerprint" }
       }
     },

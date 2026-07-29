@@ -1,0 +1,359 @@
+{
+  "$contract": "soter://contracts/evidence/v2",
+  "contractVersion": "2.0.0",
+  "id": "evidence.repository-review.preparation.fixture",
+  "createdAt": "2026-07-21T20:00:00.000Z",
+  "claimFamily": "behavior",
+  "claim": "The exact declared scenario was executed against fixture providers and assessed from observed capability, policy, outcome, invariant, and evidence states.",
+  "subject": {
+    "type": "run",
+    "id": "run.repository-review.preparation-fixture",
+    "version": null
+  },
+  "configurationLockFingerprint": "sha256:f30e15eb72dd6ed664e5b2ee1f29f5802e014180122c5036d2982aece73a7c5a",
+  "graphFingerprint": "sha256:ebc7bc5da6af667182057799821250706c809c390dd1ea57e151c37a5039b754",
+  "dependencies": [
+    {
+      "id": "kernel.soter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+    },
+    {
+      "id": "core.runtime",
+      "version": "0.1.0",
+      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+    },
+    {
+      "id": "context.product",
+      "version": "0.1.0",
+      "fingerprint": "sha256:962e1ee9a1d70e1ffc1e5dd2118c6264817115e1030ece09d50c8700d25525c9"
+    },
+    {
+      "id": "automation.repository-review",
+      "version": "0.1.0",
+      "fingerprint": "sha256:1083a2ff9d155594e9cc9a7ef0f8b76a00af24956c9625bd0207d660430749bb"
+    },
+    {
+      "id": "integration.local-repository",
+      "version": "0.1.0",
+      "fingerprint": "sha256:e25565edcb5907b79742fa83b7b0d8c2248e5fa4edd9656482441cb297e79269"
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "fingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
+  },
+  "integrations": [
+    {
+      "id": "integration.local-repository",
+      "version": "0.1.0",
+      "manifestFingerprint": "sha256:e25565edcb5907b79742fa83b7b0d8c2248e5fa4edd9656482441cb297e79269",
+      "evidenceMaturity": "declared"
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "manifestFingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5",
+      "evidenceMaturity": "declared"
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "declarationFingerprint": "sha256:98fd45b601c22716464315cbbc969b87e603026880645bd7695fcc90029d1d44"
+    },
+    {
+      "id": "authority.product.definition",
+      "role": "definition",
+      "subject": "product.records",
+      "declarationFingerprint": "sha256:b684b06cd81025f9200595cb311a091e023a5dc0226e888c51c92ef47f26fabc"
+    },
+    {
+      "id": "authority.product.instance",
+      "role": "instance",
+      "subject": "product.records",
+      "declarationFingerprint": "sha256:2dda21f1d42f1557b4239048540e7317ff2bf2e4c2a48215c8e1e27878f3c1a1"
+    },
+    {
+      "id": "authority.repository.instance",
+      "role": "instance",
+      "subject": "repository.source",
+      "declarationFingerprint": "sha256:b6e43b564aefec3b03c5db900b13bc2c5225075b03fb130c0f4d902295c765d1"
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "declarationFingerprint": "sha256:74c8fdd14e981038f959c469d6709fe66186b5f854f5f337f65bc67a6e7926c0"
+    }
+  ],
+  "evaluator": {
+    "id": "automation.repository-review.scenario-evaluator",
+    "version": "0.1.0",
+    "level": "fixture"
+  },
+  "environment": {
+    "containment": "fixture",
+    "runtime": "node"
+  },
+  "acceptanceCriteria": [
+    "The scenario fingerprint and configuration lock exactly match the assessed run.",
+    "Observed capability order exactly matches the declared capability order.",
+    "Resolved effect policy modes exactly match the declared scenario modes.",
+    "Every declared outcome, invariant, and evidence requirement has an observed assessment."
+  ],
+  "result": "passed",
+  "outcomes": [
+    {
+      "id": "repository-source.grounded",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "source-backed-capabilities-observed",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "consistent-product-altitude",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "duplicate-visible-and-held",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "feature-capture-handoffs-prepared",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "writes-prohibited",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "source-read-not-readme-only",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "candidate-set-complete",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "existing-feature-not-proposed-as-new",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "handoff-does-not-create-target-work",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "tooling-page-not-fabricated",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "no-write-or-approval-during-preparation",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "exact-lock",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "repository-fingerprint",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "duplicate-query-fingerprint",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "private-values-sanitized",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "source-cases-exactly-fingerprinted",
+      "category": "evidence",
+      "state": "passed"
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "scenario",
+      "id": "repository-review.preparation",
+      "path": "soter/scenarios/repository-review/preparation.scenario.json",
+      "fingerprint": "sha256:3c2082a73fe41302f6a585044380efb104b80be479d70f094cc72868c86b6381"
+    },
+    {
+      "role": "source-case",
+      "path": ".claude/evals/reviewing-a-repo/happy-path.md",
+      "fingerprint": "sha256:caf543fb1232977be08170f544a132e3044706c2657cb8fefd8c1565b9677d2d"
+    },
+    {
+      "role": "source-case",
+      "path": ".claude/evals/reviewing-a-repo/invariant-no-duplicate-reingest.md",
+      "fingerprint": "sha256:beec720ccca592faed299869286167845f898d1ec1296bfdb3dd3583065eba53"
+    },
+    {
+      "role": "source-case",
+      "path": ".claude/evals/reviewing-a-repo/invariant-review-gate.md",
+      "fingerprint": "sha256:29e1c4befc60cc9fb60904a3846ce07454d38c894f150ff14c9d3df2bac44311"
+    },
+    {
+      "role": "source-case",
+      "path": ".claude/evals/reviewing-a-repo/pressure-dump-all.md",
+      "fingerprint": "sha256:262158774fbe3bd748d27c0967c85884fc3a2cc8d099796c1f8e1a72f4b55172"
+    },
+    {
+      "role": "scenario-assessment",
+      "runId": "run.repository-review.preparation-fixture",
+      "capabilityOrder": {
+        "expected": [
+          "repository.snapshot.read",
+          "product.records.read"
+        ],
+        "observed": [
+          "repository.snapshot.read",
+          "product.records.read"
+        ],
+        "state": "passed"
+      },
+      "effectModes": {
+        "expected": {
+          "read": "allow",
+          "disclosure": "allow",
+          "write": "confirm",
+          "dispatch": "prohibit",
+          "destructive": "prohibit"
+        },
+        "observed": {
+          "destructive": "prohibit",
+          "disclosure": "allow",
+          "dispatch": "prohibit",
+          "read": "allow",
+          "write": "confirm"
+        },
+        "state": "passed"
+      },
+      "observationFingerprint": "sha256:8cee29127a443ecbe2a8606f463e11e711f00c2dd0f90563e19660c1d5c13ca9"
+    },
+    {
+      "role": "context-snapshot",
+      "id": "context.repository-review.preparation-fixture",
+      "fingerprint": "sha256:0cad113d48f3df67fc8297c6d4784b550b879c98723e77f374632af9b7c15733"
+    },
+    {
+      "role": "repository-review-preview",
+      "fingerprint": "sha256:67e56e998fc7d6261cf2d006018a234f72436274b61cba8acf769f763ce2f978"
+    }
+  ],
+  "effects": [
+    {
+      "id": "effect.repository-review.preparation.snapshot.fixture",
+      "capability": "repository.snapshot.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.local-repository",
+      "providerImplementation": "provider.integration.local-repository.fixture",
+      "providerVersion": "0.1.0",
+      "containment": "fixture",
+      "authority": "authority.repository.instance",
+      "startedAt": "2026-07-21T20:00:00.000Z",
+      "completedAt": "2026-07-21T20:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The exact repository snapshot and bounded Product duplicate candidates may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected normalized observations may enter private run state with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:e87f795abd9fd75918ef28802d32ba9288e51de701c166a2c595253b63590647",
+      "state": "passed",
+      "outputFingerprint": "sha256:be8ed7e450cd45b70fdbd26092954ec455961fa210519d69a6162ff6fdf65a25",
+      "error": null
+    },
+    {
+      "id": "effect.repository-review.preparation.duplicates.fixture",
+      "capability": "product.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.product.instance",
+      "startedAt": "2026-07-21T20:00:00.000Z",
+      "completedAt": "2026-07-21T20:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The exact repository snapshot and bounded Product duplicate candidates may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected normalized observations may enter private run state with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:a6181cc26290a448654f5aeb16baa06fc3f9d9719a4f1b4df47779cf283eca40",
+      "state": "passed",
+      "outputFingerprint": "sha256:a0e84caab7d6f376a537bdce9024917cd09caffc6e738ae1d59c120e75f8bbd1",
+      "error": null
+    }
+  ],
+  "failures": [],
+  "warnings": [],
+  "skipped": [],
+  "limitations": [
+    "This is deterministic fixture evidence. It does not establish connected credentials, provider reachability, host conformance, or live behavior."
+  ],
+  "freshness": {
+    "policy": "Valid only while every configuration-lock fingerprint remains unchanged.",
+    "validUntil": null
+  },
+  "supersedes": null,
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Credential references and credential values are excluded."
+    ]
+  }
+}

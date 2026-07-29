@@ -1,0 +1,69 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "integration.slack",
+  "version": "0.1.0",
+  "layer": "integration",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Provides bounded provider-neutral Slack workspace, conversation, participant, message-window, and exact-thread reads without mutation capabilities.",
+  "dependencies": [
+    {
+      "pack": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Integration binding, effect policy, private runtime state, and evidence are supplied by Core."
+    },
+    {
+      "pack": "context.communications.collaboration",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Collaboration Context owns portable workspace, channel, DM, thread, message, participant, and private untrusted-content meaning."
+    }
+  ],
+  "capabilities": {
+    "requires": [],
+    "provides": [
+      { "id": "communications.conversations.list", "version": "1.0.0" },
+      { "id": "communications.participants.read", "version": "1.0.0" },
+      { "id": "communications.messages.read", "version": "1.0.0" },
+      { "id": "communications.thread.read", "version": "1.0.0" }
+    ]
+  },
+  "authorities": [
+    { "role": "provider", "subject": "slack.workspace", "required": true },
+    { "role": "instance", "subject": "communications.workspace", "required": true }
+  ],
+  "effects": ["read", "disclosure"],
+  "artifacts": [
+    { "path": "soter/capabilities/communications.conversations.list.json", "role": "definition" },
+    { "path": "soter/capabilities/communications.participants.read.json", "role": "definition" },
+    { "path": "soter/capabilities/communications.messages.read.json", "role": "definition" },
+    { "path": "soter/capabilities/communications.thread.read.json", "role": "definition" },
+    { "path": "soter/integrations/slack/settings.json", "role": "definition" },
+    { "path": "soter/providers/provider.integration.slack.fixture.json", "role": "implementation" },
+    { "path": "soter/integrations/slack/fixture.mjs", "role": "implementation" },
+    { "path": "soter/providers/provider.integration.slack.mcp.json", "role": "implementation" },
+    { "path": "soter/integrations/slack/mcp.mjs", "role": "implementation" },
+    { "path": "soter/integrations/slack/slack.selftest.mjs", "role": "evaluation" },
+    { "path": "soter/fixtures/providers/slack/workspace.json", "role": "fixture" }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": ["codex"],
+    "unavailableHosts": [
+      {
+        "id": "claude",
+        "reasonCode": "STRUCTURED_RESPONSE_PROFILE_UNAVAILABLE",
+        "reason": "The declared Claude Slack route does not expose closed mechanically normalizable provider response profiles."
+      }
+    ]
+  },
+  "verification": {
+    "maxLevel": "fixture",
+    "scenarios": [
+      "soter/scenarios/slack-channel-ingestion/identity-review.scenario.json",
+      "soter/scenarios/slack-channel-ingestion/selected-enrichment.scenario.json"
+    ]
+  }
+}

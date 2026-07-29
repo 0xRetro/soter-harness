@@ -18,10 +18,13 @@ export function stateTone(state: ProofState) {
 }
 
 export function StateMark({ state, compact = false }: { state: ProofState; compact?: boolean }) {
+  const label = state === 'ready-for-acquisition'
+    ? 'staged for acquisition'
+    : state.replaceAll('-', ' ');
   return (
     <span className={`state-mark state-${stateTone(state)}${compact ? ' state-compact' : ''}`} title={state}>
       <span aria-hidden="true">{stateSymbol(state)}</span>
-      <span>{state.replaceAll('-', ' ')}</span>
+      <span>{label}</span>
     </span>
   );
 }

@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/context-vocabulary/v1",
+  "title": "Soter governed Context vocabulary",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "pack",
+    "version",
+    "subject",
+    "entries",
+    "invariants",
+    "limitations"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/context-vocabulary/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^vocabulary\\.[a-z0-9][a-z0-9.-]*$" },
+    "pack": { "type": "string", "pattern": "^context\\.[a-z0-9][a-z0-9.-]*$" },
+    "version": { "type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$" },
+    "subject": { "type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*$" },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/entry" }
+    },
+    "invariants": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "singleDefinitionSource",
+        "projectionCopiesAreNonCanonical",
+        "providerNeutral",
+        "runtimeAuthority"
+      ],
+      "properties": {
+        "singleDefinitionSource": { "const": true },
+        "projectionCopiesAreNonCanonical": { "const": true },
+        "providerNeutral": { "const": true },
+        "runtimeAuthority": { "const": "none" }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 1000 }
+    }
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sequence",
+        "id",
+        "term",
+        "aliases",
+        "abbreviation",
+        "definition",
+        "domain",
+        "sourceUris"
+      ],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1 },
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "term": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "aliases": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+        },
+        "abbreviation": {
+          "oneOf": [
+            { "type": "string", "minLength": 1, "maxLength": 40 },
+            { "type": "null" }
+          ]
+        },
+        "definition": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "domain": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "sourceUris": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^https://[^\\s]+$", "maxLength": 2000 }
+        }
+      }
+    }
+  }
+}

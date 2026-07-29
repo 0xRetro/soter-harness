@@ -1,0 +1,262 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://automations/organization-capture/decision/v1",
+  "title": "Organization Capture grounded decision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "automation",
+    "runId",
+    "createdAt",
+    "configurationLockFingerprint",
+    "graphFingerprint",
+    "context",
+    "producer",
+    "state",
+    "decisionType",
+    "payload",
+    "issues",
+    "privacy",
+    "decisionFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/automation-decision/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^decision\\.organization-capture\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "automation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "const": "automation.organization-capture" },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" }
+      }
+    },
+    "runId": {
+      "type": "string",
+      "pattern": "^run\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "configurationLockFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["snapshotId", "snapshotFingerprint"],
+      "properties": {
+        "snapshotId": {
+          "type": "string",
+          "pattern": "^context\\.organization-capture\\.connected-acquisition\\.[a-f0-9]{24}$"
+        },
+        "snapshotFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "host"],
+      "properties": {
+        "kind": { "enum": ["host", "user", "fixture"] },
+        "id": { "type": "string", "minLength": 1 },
+        "host": {
+          "type": ["string", "null"],
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        }
+      },
+      "allOf": [{
+        "if": { "properties": { "kind": { "const": "host" } } },
+        "then": { "properties": { "host": { "type": "string" } } },
+        "else": { "properties": { "host": { "type": "null" } } }
+      }]
+    },
+    "state": { "enum": ["ready", "needs-input"] },
+    "decisionType": { "const": "organization-capture.grounded-create" },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "preparedWork",
+        "policy",
+        "schema",
+        "duplicates",
+        "organization",
+        "limitations"
+      ],
+      "properties": {
+        "preparedWork": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "fingerprint",
+            "reviewMaterialFingerprint",
+            "inputContractFingerprint"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^work\\.organization-capture\\.[a-f0-9]{24}$"
+            },
+            "fingerprint": { "$ref": "#/$defs/fingerprint" },
+            "reviewMaterialFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "inputContractFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        "policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "definitionId",
+            "definitionFingerprint",
+            "entryId",
+            "entryFingerprint",
+            "externalRecordId",
+            "externalRecordFingerprint"
+          ],
+          "properties": {
+            "definitionId": { "const": "policy.context.crm.organization-capture" },
+            "definitionFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "entryId": { "const": "context.organization-capture.policy-selection" },
+            "entryFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "externalRecordId": { "type": "string", "minLength": 1, "maxLength": 500 },
+            "externalRecordFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        "schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["entryId", "entryFingerprint", "schemaFingerprint"],
+          "properties": {
+            "entryId": { "const": "context.organization-capture.schema" },
+            "entryFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "schemaFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        "duplicates": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["entryId", "entryFingerprint", "candidates"],
+          "properties": {
+            "entryId": { "const": "context.organization-capture.duplicates" },
+            "entryFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "candidates": {
+              "type": "array",
+              "maxItems": 8,
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/recordReference" }
+            }
+          }
+        },
+        "organization": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "organizationType",
+            "tags",
+            "website",
+            "twitter",
+            "duplicateSearchNames",
+            "afterFingerprint"
+          ],
+          "properties": {
+            "name": { "type": "string", "minLength": 2, "maxLength": 240 },
+            "organizationType": {
+              "type": ["string", "null"],
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "tags": {
+              "type": "array",
+              "maxItems": 12,
+              "uniqueItems": true,
+              "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+            },
+            "website": {
+              "type": ["string", "null"],
+              "minLength": 8,
+              "maxLength": 500
+            },
+            "twitter": {
+              "type": ["string", "null"],
+              "minLength": 8,
+              "maxLength": 500
+            },
+            "duplicateSearchNames": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 8,
+              "uniqueItems": true,
+              "items": { "type": "string", "minLength": 1, "maxLength": 240 }
+            },
+            "afterFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 12 }
+        }
+      }
+    },
+    "issues": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 12 }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "redactions"],
+      "properties": {
+        "scope": { "const": "private" },
+        "redactions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 12 }
+        }
+      }
+    },
+    "decisionFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "allOf": [{
+    "if": { "properties": { "state": { "const": "ready" } } },
+    "then": {
+      "properties": {
+        "issues": { "maxItems": 0 },
+        "payload": {
+          "properties": {
+            "duplicates": { "properties": { "candidates": { "maxItems": 0 } } },
+            "organization": {
+              "properties": { "organizationType": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "else": { "properties": { "issues": { "minItems": 1 } } }
+  }],
+  "$defs": {
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "recordReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["recordId", "recordFingerprint"],
+      "properties": {
+        "recordId": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "recordFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    }
+  }
+}

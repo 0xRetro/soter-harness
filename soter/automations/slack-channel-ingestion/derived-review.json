@@ -1,0 +1,92 @@
+{
+  "$contract": "soter://contracts/automation-derived-review/v1",
+  "contractVersion": "1.0.0",
+  "automation": "automation.slack-channel-ingestion",
+  "kind": "slack-channel-ingestion-derived-review",
+  "items": [
+    {
+      "kind": "channel-identity",
+      "fields": [
+        { "id": "providerConversationId", "label": "Provider conversation identity", "type": "text" },
+        { "id": "name", "label": "Channel name", "type": "text" },
+        { "id": "hostWorkspaceName", "label": "Host workspace", "type": "text" },
+        { "id": "visibility", "label": "Visibility", "type": "text" },
+        { "id": "permalink", "label": "Permalink", "type": "string-list" },
+        { "id": "existingRecordIds", "label": "Existing Communications channel candidates", "type": "string-list" }
+      ]
+    },
+    {
+      "kind": "channel-enrichment",
+      "fields": [
+        { "id": "providerConversationId", "label": "Provider conversation identity", "type": "text" },
+        { "id": "participantMatchFacts", "label": "Participant match facts", "type": "string-list" },
+        { "id": "unmatchedParticipantIds", "label": "Unmatched participants", "type": "string-list" },
+        { "id": "ambiguousParticipantIds", "label": "Ambiguous participants", "type": "string-list" },
+        { "id": "organizationMatchFacts", "label": "Organization match facts", "type": "string-list" },
+        { "id": "missingOrganizationNames", "label": "Missing organizations", "type": "string-list" }
+      ]
+    },
+    {
+      "kind": "channel-create",
+      "fields": [
+        { "id": "deduplicationKey", "label": "Deduplication key", "type": "text" },
+        { "id": "name", "label": "Channel name", "type": "text" },
+        { "id": "platform", "label": "Platform", "type": "text" },
+        { "id": "workspaceUri", "label": "Workspace resource", "type": "text" },
+        { "id": "workspaceIdentityFingerprint", "label": "Workspace identity fingerprint", "type": "text" },
+        { "id": "conversationIdentityFingerprint", "label": "Conversation identity fingerprint", "type": "text" },
+        { "id": "hostWorkspaceName", "label": "Host workspace", "type": "text" },
+        { "id": "visibility", "label": "Visibility", "type": "text" },
+        { "id": "shared", "label": "Shared channel", "type": "boolean" },
+        { "id": "personUris", "label": "Resolved CRM people", "type": "string-list" },
+        { "id": "organizationUris", "label": "Resolved organizations", "type": "string-list" }
+      ]
+    },
+    {
+      "kind": "channel-update",
+      "fields": [
+        { "id": "recordId", "label": "Existing channel record", "type": "text" },
+        { "id": "expectedVersion", "label": "Expected record version", "type": "text" },
+        { "id": "beforeFingerprint", "label": "Current record fingerprint", "type": "text" },
+        { "id": "beforeName", "label": "Current channel name", "type": "text" },
+        { "id": "beforePlatform", "label": "Current platform", "type": "text" },
+        { "id": "beforeWorkspaceUri", "label": "Current workspace resource", "type": "text" },
+        { "id": "beforeWorkspaceIdentityFingerprint", "label": "Current workspace identity fingerprint", "type": "text" },
+        { "id": "beforeConversationIdentityFingerprint", "label": "Current conversation identity fingerprint", "type": "text" },
+        { "id": "beforeHostWorkspaceName", "label": "Current host workspace", "type": "text" },
+        { "id": "beforeVisibility", "label": "Current visibility", "type": "text" },
+        { "id": "beforeShared", "label": "Current shared-channel state", "type": "boolean" },
+        { "id": "beforePersonUris", "label": "Current resolved CRM people", "type": "string-list" },
+        { "id": "beforeOrganizationUris", "label": "Current resolved organizations", "type": "string-list" },
+        { "id": "name", "label": "Channel name", "type": "text" },
+        { "id": "platform", "label": "Platform", "type": "text" },
+        { "id": "workspaceUri", "label": "Workspace resource", "type": "text" },
+        { "id": "workspaceIdentityFingerprint", "label": "Workspace identity fingerprint", "type": "text" },
+        { "id": "conversationIdentityFingerprint", "label": "Conversation identity fingerprint", "type": "text" },
+        { "id": "hostWorkspaceName", "label": "Host workspace", "type": "text" },
+        { "id": "visibility", "label": "Visibility", "type": "text" },
+        { "id": "shared", "label": "Shared channel", "type": "boolean" },
+        { "id": "personUris", "label": "Resolved CRM people", "type": "string-list" },
+        { "id": "organizationUris", "label": "Resolved organizations", "type": "string-list" }
+      ]
+    },
+    {
+      "kind": "contact-capture-handoff",
+      "fields": [
+        { "id": "providerParticipantId", "label": "Provider participant identity", "type": "text" },
+        { "id": "name", "label": "Person name", "type": "text" },
+        { "id": "email", "label": "Person email", "type": "string-list" },
+        { "id": "sourceConversationId", "label": "Source conversation identity", "type": "text" },
+        { "id": "targetAutomation", "label": "Target Automation", "type": "text" }
+      ]
+    },
+    {
+      "kind": "organization-capture-handoff",
+      "fields": [
+        { "id": "organizationName", "label": "Organization name", "type": "text" },
+        { "id": "sourceConversationId", "label": "Source conversation identity", "type": "text" },
+        { "id": "targetAutomation", "label": "Target Automation", "type": "text" }
+      ]
+    }
+  ]
+}

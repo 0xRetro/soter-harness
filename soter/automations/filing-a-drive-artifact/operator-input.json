@@ -1,0 +1,106 @@
+{
+  "$contract": "soter://contracts/automation-input/v1",
+  "contractVersion": "1.0.0",
+  "id": "input.automation.filing-a-drive-artifact",
+  "automation": "automation.filing-a-drive-artifact",
+  "version": "1.0.0",
+  "fields": [
+    {
+      "id": "artifactUri",
+      "label": "Artifact",
+      "description": "Exact private storage artifact identity whose metadata is read without loading its content.",
+      "type": "uri",
+      "required": true,
+      "exposure": "private"
+    },
+    {
+      "id": "retentionDecision",
+      "label": "Retention decision",
+      "description": "Human-owned decision about whether the organization is keeping this artifact.",
+      "type": "enum",
+      "required": true,
+      "exposure": "identifier",
+      "options": ["keep", "undecided"]
+    },
+    {
+      "id": "subjectKey",
+      "label": "Subject-area key",
+      "description": "Optional private policy subject key used only to select an exact registered home; omission uses the registered provisional inbox.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minLength": 2, "maxLength": 100 }
+    },
+    {
+      "id": "placementReason",
+      "label": "Placement basis",
+      "description": "Private factual basis for the subject-area judgment or for declaring that no defensible home is known.",
+      "type": "string",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minLength": 8, "maxLength": 1200 }
+    },
+    {
+      "id": "alternativeSubjectKeys",
+      "label": "Alternative subjects",
+      "description": "Optional private alternatives surfaced for review and validated against the current registered location set.",
+      "type": "string-list",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minItems": 0, "maxItems": 6, "itemMinLength": 2, "itemMaxLength": 100 }
+    },
+    {
+      "id": "frozenSnapshot",
+      "label": "Frozen snapshot required",
+      "description": "Whether a frozen copy is explicitly required instead of the normal externally owned shortcut form.",
+      "type": "boolean",
+      "required": true,
+      "exposure": "identifier"
+    },
+    {
+      "id": "owner",
+      "label": "Document owner",
+      "description": "Optional authenticated current workspace user; omission remains a visible required-human gap.",
+      "type": "enum",
+      "required": false,
+      "exposure": "identifier",
+      "options": ["self"]
+    },
+    {
+      "id": "organization",
+      "label": "Related organization",
+      "description": "Optional exact organization resource that must resolve through the configured CRM instance.",
+      "type": "reference",
+      "required": false,
+      "exposure": "identifier",
+      "reference": { "subject": "crm.records.organization", "authorityRole": "instance" }
+    },
+    {
+      "id": "documentType",
+      "label": "Document type",
+      "description": "Private requested document classification retained only when it exactly matches the current document-index schema.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minLength": 2, "maxLength": 120 }
+    },
+    {
+      "id": "description",
+      "label": "Index description",
+      "description": "Private factual one-line explanation of what the artifact is and why it is retained.",
+      "type": "string",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minLength": 8, "maxLength": 600 }
+    },
+    {
+      "id": "skipIndexRequested",
+      "label": "Skip index requested",
+      "description": "Records pressure to omit the required index so the request can be surfaced rather than silently obeyed.",
+      "type": "boolean",
+      "required": true,
+      "exposure": "identifier"
+    }
+  ],
+  "additionalInputs": false
+}

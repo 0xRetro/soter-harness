@@ -1,0 +1,235 @@
+{
+  "$contract": "soter://contracts/context-snapshot/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.feature-definition.preparation-fixture",
+  "runId": "run.feature-definition.preparation-fixture",
+  "createdAt": "2026-07-21T19:00:00.000Z",
+  "configurationLockFingerprint": "sha256:04fe0338560aa3ff399fbb7f69a1d4491573ca675d4e4ba01d9c29b238b4a600",
+  "graphFingerprint": "sha256:ed2dad3512b5876c293c9573b8a7f80c56954c0b2ed7f8a8e987f4179363469c",
+  "containment": "fixture",
+  "entries": [
+    {
+      "id": "context.feature-definition.policy",
+      "subject": "product.records.feature-workflow-policy",
+      "authority": "authority.product.definition",
+      "role": "definition",
+      "capability": "product.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T19:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.product.definition",
+        "mapping": "mapping.integration.notion.product-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:8ec1ff8c47753ec838a34c5b53f2f7cde7d90c6cb2ecdbd14779e6a448203484"
+      },
+      "valueFingerprint": "sha256:3461e500d0cc47e3ee540c48957602de6597503f36a696e415bf29e1c47fbf9c",
+      "value": {
+        "record": {
+          "type": "feature-workflow-policy",
+          "id": "policy.feature-workflow",
+          "version": "1",
+          "fields": {
+            "name": "Feature Development"
+          },
+          "identityBinding": {
+            "state": "exact-request",
+            "requestedIdFingerprint": "sha256:c1f1b0ee629f9732e8b2ff371fc5aac3a46f0955981c52c47745ee8ff6f81665"
+          }
+        },
+        "definitionFingerprint": "sha256:b7e9e810b206d305690764d6231e57948f6379bf0f9548c4b99334e48ef8bfa8"
+      }
+    },
+    {
+      "id": "context.feature-definition.schema",
+      "subject": "product.records.feature-schema",
+      "authority": "authority.product.instance",
+      "role": "instance",
+      "capability": "product.schema.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T19:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.product.instance",
+        "mapping": "mapping.integration.notion.product-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:2a178defef440ea3fdc812553a5a951977ea2f059059c29d5e4d6325fbe9f987"
+      },
+      "valueFingerprint": "sha256:1df08865afd97c686005f5ad8349d4c206ddfd8f82603e1c8d161bd62fb464a2",
+      "value": {
+        "schema": {
+          "recordType": "feature",
+          "fields": [
+            {
+              "id": "area",
+              "writable": true,
+              "options": [
+                "Automation",
+                "Context",
+                "Core",
+                "Kernel"
+              ]
+            },
+            {
+              "id": "description",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "featureType",
+              "writable": true,
+              "options": [
+                "Bug",
+                "Content",
+                "Enhancement",
+                "Feature"
+              ]
+            },
+            {
+              "id": "name",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "priority",
+              "writable": true,
+              "options": [
+                "Later",
+                "Next",
+                "Now"
+              ]
+            },
+            {
+              "id": "status",
+              "writable": true,
+              "options": [
+                "Canceled",
+                "Completed",
+                "In Development",
+                "Planned",
+                "Up Next"
+              ]
+            }
+          ],
+          "fingerprint": "sha256:29184b37156bd1f502531f4b3baf43d9fd65694a99ad09b636d9a49e0067c1c5"
+        },
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.product.instance",
+          "mapping": "mapping.integration.notion.product-records",
+          "mappingVersion": "0.2.0",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:2a178defef440ea3fdc812553a5a951977ea2f059059c29d5e4d6325fbe9f987"
+        },
+        "observedAt": "2026-07-21T19:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.feature-definition.record",
+      "subject": "product.records.feature",
+      "authority": "authority.product.instance",
+      "role": "instance",
+      "capability": "product.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T19:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.product.instance",
+        "mapping": "mapping.integration.notion.product-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:8ec1ff8c47753ec838a34c5b53f2f7cde7d90c6cb2ecdbd14779e6a448203484"
+      },
+      "valueFingerprint": "sha256:02c635b31503755f8927f21ad65404770a8686c26dcb7d85dac9d5110d775cec",
+      "value": {
+        "records": [
+          {
+            "type": "feature",
+            "id": "https://www.notion.so/44444444444444444444444444444444",
+            "version": "1",
+            "fields": {
+              "name": "Reusable integrator-onboarding guide",
+              "description": "Manual re-explanation wastes time and makes the first successful integration inconsistent.",
+              "status": "Planned",
+              "featureType": "Feature",
+              "area": "Context",
+              "priority": "Next"
+            },
+            "body": "# Reusable integrator-onboarding guide\n\n## Summary\n\nCaptured for definition.\n\n## Behavior / Acceptance\n\n\n\n## Current state in code\n\nNot built yet.\n\n## Relationships\n\n\n\n## Decisions & open questions\n\n",
+            "identityBinding": {
+              "state": "exact-request",
+              "requestedIdFingerprint": "sha256:5e5a768ca0b26fa14e1804cd7b54ba8ab1db0d4d968167baedfc47801662137f"
+            }
+          }
+        ],
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.product.instance",
+          "mapping": "mapping.integration.notion.product-records",
+          "mappingVersion": "0.2.0",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:8ec1ff8c47753ec838a34c5b53f2f7cde7d90c6cb2ecdbd14779e6a448203484"
+        },
+        "observedAt": "2026-07-21T19:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.feature-definition.body",
+      "subject": "product.records.feature-body",
+      "authority": "authority.product.instance",
+      "role": "instance",
+      "capability": "documents.content.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T19:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.product.instance",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:f915e63efa5409d66397ad849f0a44a01ceeb42cade6ca1e921f4cdd14ef0431"
+      },
+      "valueFingerprint": "sha256:03b6b0476daa32e74a05d47ffb92866e81f3b80bb6dffb32ce2d178bfbf67ed5",
+      "value": {
+        "document": {
+          "uri": "https://www.notion.so/44444444444444444444444444444444",
+          "title": "Reusable integrator-onboarding guide",
+          "format": "markdown",
+          "body": "# Reusable integrator-onboarding guide\n\n## Summary\n\nCaptured for definition.\n\n## Behavior / Acceptance\n\n\n\n## Current state in code\n\nNot built yet.\n\n## Relationships\n\n\n\n## Decisions & open questions\n\n",
+          "bodyFingerprint": "sha256:1a7cf334324e29b123dd5e534fadf0d7e4cd75d4c04df15de2255469b2a608ba"
+        },
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.product.instance",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:f915e63efa5409d66397ad849f0a44a01ceeb42cade6ca1e921f4cdd14ef0431"
+        },
+        "observedAt": "2026-07-21T19:00:00.000Z"
+      }
+    }
+  ],
+  "effectIds": [
+    "effect.feature-definition.preparation.policy.fixture",
+    "effect.feature-definition.preparation.schema.fixture",
+    "effect.feature-definition.preparation.record.fixture",
+    "effect.feature-definition.preparation.body.fixture"
+  ],
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Feature name, why, current and proposed body text, definition inputs, provider target identity, native responses, and credentials are excluded from general inspection."
+    ]
+  }
+}

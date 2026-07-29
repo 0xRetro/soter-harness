@@ -1,0 +1,71 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "automation.feature-capture",
+  "version": "0.1.0",
+  "layer": "automation",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Prepares one exact configured-board feature create with a required why, current option matching, deterministic body, duplicate review, and no write authority.",
+  "dependencies": [
+    {
+      "pack": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Feature Capture preparation requires exact locks, private review companions, effect policy, and no-authority boundaries."
+    },
+    {
+      "pack": "context.product",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Feature meaning, lifecycle, why ownership, body sections, and board-option boundaries belong to Product Context."
+    }
+  ],
+  "capabilities": {
+    "requires": [
+      { "id": "product.records.read", "version": "^1.0.0", "optional": false, "reason": "Preparation loads the exact selected policy and bounded duplicate candidates." },
+      { "id": "product.schema.read", "version": "^1.0.0", "optional": false, "reason": "Preparation intersects requested status, type, area, and priority with the current configured board schema." },
+      { "id": "product.records.create", "version": "^1.0.0", "optional": false, "reason": "A complete review may name one fingerprint-only feature create, but this migration slice declares no connected compiler." }
+    ],
+    "provides": []
+  },
+  "sourceRequirements": [
+    {
+      "purpose": "feature-workflow-policy",
+      "capability": "product.records.read",
+      "authorityRole": "definition",
+      "authoritySubject": "product.records",
+      "minimum": 1,
+      "maximum": 1,
+      "reason": "Feature Capture requires one configured external selection that binds the exact governed Product workflow definition."
+    }
+  ],
+  "authorities": [
+    { "role": "definition", "subject": "product.records", "required": true },
+    { "role": "instance", "subject": "product.records", "required": true },
+    { "role": "evidence", "subject": "runtime.runs", "required": true }
+  ],
+  "effects": ["read", "disclosure", "write"],
+  "operator": {
+    "input": "soter/automations/feature-capture/operator-input.json",
+    "preparation": {
+      "module": "soter/automations/feature-capture/prepare.mjs",
+      "export": "prepareFeatureCaptureRun",
+      "containment": "fixture",
+      "derivedReviewContract": "soter/automations/feature-capture/derived-review.json"
+    }
+  },
+  "artifacts": [
+    { "path": "soter/automations/feature-capture/operator-input.json", "role": "definition" },
+    { "path": "soter/automations/feature-capture/derived-review.json", "role": "definition" },
+    { "path": "soter/automations/feature-capture/prepare.mjs", "role": "implementation" },
+    { "path": "soter/automations/feature-capture/scenario.mjs", "role": "evaluation" },
+    { "path": "soter/automations/feature-capture/feature-capture.selftest.mjs", "role": "evaluation" },
+    { "path": "soter/scenarios/feature-capture/preparation.scenario.json", "role": "evaluation" }
+  ],
+  "compatibility": { "baseContract": "^1.0.0", "hosts": ["codex", "claude"] },
+  "verification": {
+    "maxLevel": "fixture",
+    "scenarios": ["soter/scenarios/feature-capture/preparation.scenario.json"]
+  }
+}

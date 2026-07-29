@@ -1,0 +1,97 @@
+{
+  "$contract": "soter://contracts/context-record-model/v1",
+  "contractVersion": "1.0.0",
+  "id": "model.context.process.records",
+  "pack": "context.process",
+  "version": "0.1.0",
+  "subject": "process.records",
+  "recordTypes": [
+    {
+      "id": "process-capture-policy",
+      "summary": "An external selection record that binds the governed process-capture definition.",
+      "fields": [
+        { "id": "name", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The exact human-readable process policy title." }
+      ],
+      "content": { "kind": "none", "requiredOnCreate": false, "summary": "The governed rules live in the selected Process Context definition artifact." },
+      "deduplicationFields": ["name"]
+    },
+    {
+      "id": "process-review-policy",
+      "summary": "An external selection record that binds the governed process-review definition.",
+      "fields": [
+        { "id": "name", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The exact human-readable process review policy title." }
+      ],
+      "content": { "kind": "none", "requiredOnCreate": false, "summary": "The governed lenses and report-only rules live in the selected Process Context definition artifact." },
+      "deduplicationFields": ["name"]
+    },
+    {
+      "id": "process",
+      "summary": "A reusable definition of repeatable work, distinct from any execution of that definition.",
+      "fields": [
+        { "id": "name", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The exact process definition name." },
+        { "id": "status", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The definition lifecycle state, separate from adoption and priority." },
+        { "id": "frequency", "type": "string", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "The exact configured cadence option for the process definition." },
+        { "id": "category", "type": "string", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "The exact configured process category when one is supplied." },
+        { "id": "tags", "type": "string-list", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "Exact configured process tags, never invented from free-form requests." },
+        { "id": "processOs", "type": "string", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "The separate process adoption stage, never encoded in Status." },
+        { "id": "priority", "type": "string", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "The separate process priority, never encoded in Status." },
+        { "id": "processLogicOwnerUris", "type": "string-list", "format": "resource-uri", "requiredOnCreate": true, "nullable": false, "mutable": true, "reference": { "subject": "process.records.role", "identity": "resource-uri" }, "summary": "Exact role resource identities that own process logic." },
+        { "id": "relatedServiceUris", "type": "string-list", "format": "resource-uri", "requiredOnCreate": false, "nullable": true, "mutable": true, "reference": { "subject": "process.records.service", "identity": "resource-uri" }, "summary": "Exact optional service resource identities resolved before preparation." },
+        { "id": "relatedRoleUris", "type": "string-list", "format": "resource-uri", "requiredOnCreate": true, "nullable": false, "mutable": true, "reference": { "subject": "process.records.role", "identity": "resource-uri" }, "summary": "Every exact directory role used by the process definition." },
+        { "id": "relatedPolicyUris", "type": "string-list", "format": "resource-uri", "requiredOnCreate": false, "nullable": true, "mutable": true, "reference": { "subject": "process.records.process-policy-standard", "identity": "resource-uri" }, "summary": "Exact policy standards whose required claims govern this definition." },
+        { "id": "writeTargetTypes", "type": "string-list", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "Portable record types whose current schemas must be included in a complete process review." },
+        { "id": "declaredClaims", "type": "string-list", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "Normalized operator-checkable controls the process definition explicitly declares." }
+      ],
+      "content": { "kind": "markdown", "requiredOnCreate": true, "summary": "The deterministic process body contains roles, initialization, role-bounded steps, work-items, exceptions, and close-out declarations." },
+      "deduplicationFields": ["name"]
+    },
+    {
+      "id": "role",
+      "summary": "A named responsibility and capability bundle referenced by process definitions and executions.",
+      "fields": [
+        { "id": "name", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The exact role directory name." },
+        { "id": "capabilities", "type": "string-list", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "The declared capability vocabulary owned by the role definition." }
+      ],
+      "content": { "kind": "markdown", "requiredOnCreate": false, "summary": "Optional role definition detail remains provider-neutral markdown." },
+      "deduplicationFields": ["name"]
+    },
+    {
+      "id": "service",
+      "summary": "A service catalog identity that may be related to one or more process definitions.",
+      "fields": [
+        { "id": "name", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The exact service catalog name." }
+      ],
+      "content": { "kind": "markdown", "requiredOnCreate": false, "summary": "Optional service description remains provider-neutral markdown." },
+      "deduplicationFields": ["name"]
+    },
+    {
+      "id": "process-run",
+      "summary": "One execution of a process definition with its own state, outcome, inputs, outputs, and proof.",
+      "fields": [
+        { "id": "name", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The exact run identity visible to an operator." },
+        { "id": "processUri", "type": "string", "format": "resource-uri", "requiredOnCreate": true, "nullable": false, "mutable": false, "reference": { "subject": "process.records.process", "identity": "resource-uri" }, "summary": "The immutable process definition resource identity executed by this run." },
+        { "id": "state", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The explicit execution state of this run." },
+        { "id": "outcome", "type": "string", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "The explicit observed run outcome when one exists." },
+        { "id": "observedClaims", "type": "string-list", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "Normalized controls and success-state facts actually observed on this run." }
+      ],
+      "content": { "kind": "markdown", "requiredOnCreate": true, "summary": "The run body retains exact inputs, outputs, and proof without changing the process definition." },
+      "deduplicationFields": ["name"]
+    },
+    {
+      "id": "process-policy-standard",
+      "summary": "A rules-first policy source explicitly related to the process definitions it governs.",
+      "fields": [
+        { "id": "name", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The exact policy standard title." },
+        { "id": "relatedProcessUris", "type": "string-list", "format": "resource-uri", "requiredOnCreate": false, "nullable": true, "mutable": true, "reference": { "subject": "process.records.process", "identity": "resource-uri" }, "summary": "Exact process definition resource identities governed by this policy." },
+        { "id": "requiredClaims", "type": "string-list", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "Normalized operator-checkable controls required by this policy standard." }
+      ],
+      "content": { "kind": "markdown", "requiredOnCreate": true, "summary": "The exact governed rules used when reviewing a process definition." },
+      "deduplicationFields": ["name"]
+    }
+  ],
+  "limitations": [
+    "A process definition is not a process run, and definition work-items are never Task records.",
+    "Current provider options, relation identities, and templates must be observed through configured capabilities; Context never fabricates them.",
+    "Preparation, private review, or contained evidence grants no approval, execution, provider-write, readiness, verification, or health authority."
+  ]
+}

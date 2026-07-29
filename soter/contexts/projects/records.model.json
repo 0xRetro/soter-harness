@@ -1,0 +1,625 @@
+{
+  "$contract": "soter://contracts/context-record-model/v1",
+  "contractVersion": "1.0.0",
+  "id": "model.context.projects.records",
+  "pack": "context.projects",
+  "version": "0.1.0",
+  "subject": "projects.records",
+  "recordTypes": [
+    {
+      "id": "project-capture-policy",
+      "summary": "An external selection record that binds one governed Project creation definition.",
+      "fields": [
+        {
+          "id": "name",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The exact human-readable Project creation policy title."
+        }
+      ],
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "The exact governed Project creation rules live in the selected Projects Context definition."
+      },
+      "deduplicationFields": [
+        "name"
+      ]
+    },
+    {
+      "id": "project-creation-profile",
+      "summary": "A portable external selection record for one exact governed Project or Deal creation profile.",
+      "fields": [
+        {
+          "id": "name",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The human-readable creation profile name."
+        },
+        {
+          "id": "profileId",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The exact portable creation profile identity selected by an operator."
+        },
+        {
+          "id": "allowedProjectTypes",
+          "type": "string-list",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The closed project classifications allowed by this creation profile."
+        },
+        {
+          "id": "bodyFormat",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The exact portable Project body format compiled by the Automation."
+        },
+        {
+          "id": "requiredBodySections",
+          "type": "string-list",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The ordered body sections required by this creation profile."
+        },
+        {
+          "id": "milestoneSyntaxVersion",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The exact portable embedded milestone grammar version."
+        },
+        {
+          "id": "workItemSyntaxVersion",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The exact portable embedded milestone work-item grammar version."
+        }
+      ],
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "Creation profile records contain only normalized selection fields and no provider template body."
+      },
+      "deduplicationFields": [
+        "profileId"
+      ]
+    },
+    {
+      "id": "project-work-policy",
+      "summary": "Machine-readable Project, milestone, feed, Decision, Question, and work-promotion rules selected from one definition authority.",
+      "fields": [
+        {
+          "id": "name",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The exact human-readable Projects policy title."
+        },
+        {
+          "id": "progressRequiresPromotedTasks",
+          "type": "boolean",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "Whether project progress may use only exact promoted Task observations."
+        },
+        {
+          "id": "milestoneWorkItemsRemainDistinct",
+          "type": "boolean",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "Whether embedded milestone work items remain distinct from Tasks."
+        },
+        {
+          "id": "healthMustBeOperatorJudgment",
+          "type": "boolean",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "Whether milestone health must be supplied by an operator and never inferred."
+        },
+        {
+          "id": "writesRequireConfirmation",
+          "type": "boolean",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "Whether each exact Project write batch requires operator confirmation."
+        },
+        {
+          "id": "updateCategory",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The default project feed category used for status entries."
+        },
+        {
+          "id": "defaultProcessed",
+          "type": "boolean",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The initial processed state for a new project feed entry."
+        },
+        {
+          "id": "allowedUpdateCategories",
+          "type": "string-list",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The closed portable Project feed category vocabulary."
+        },
+        {
+          "id": "allowedVisibilities",
+          "type": "string-list",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The closed portable audience vocabulary for Project feed entries."
+        },
+        {
+          "id": "duplicateCandidateLimit",
+          "type": "number",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The bounded number of Project feed candidates inspected before create."
+        },
+        {
+          "id": "doneTaskStatuses",
+          "type": "string-list",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "Portable Task states that count as completed execution."
+        },
+        {
+          "id": "blockedTaskStatuses",
+          "type": "string-list",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "Portable Task states that establish blocking evidence."
+        },
+        {
+          "id": "notStartedTaskStatuses",
+          "type": "string-list",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "Portable Task states that have not begun execution."
+        },
+        {
+          "id": "allowedProgressStates",
+          "type": "string-list",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The closed milestone progress vocabulary."
+        },
+        {
+          "id": "allowedHealthStates",
+          "type": "string-list",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The closed operator-owned milestone health vocabulary."
+        },
+        {
+          "id": "milestoneSyntaxVersion",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The exact embedded milestone grammar version."
+        },
+        {
+          "id": "workItemSyntaxVersion",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The exact embedded Project work-item grammar version."
+        },
+        {
+          "id": "milestoneProgressRule",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The exact rule binding milestone progress to work and Task observations."
+        },
+        {
+          "id": "promotionBoundary",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The exact boundary for promoting Project work into a Task."
+        },
+        {
+          "id": "coordinationDisposition",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The exact disposition for coordination-only work."
+        },
+        {
+          "id": "promotionTaskContext",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The Task context assigned to promoted execution work."
+        },
+        {
+          "id": "promotionMarksTrackedWorkComplete",
+          "type": "boolean",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "Whether Task promotion also completes the Project work item."
+        },
+        {
+          "id": "decisionCategory",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The Project feed category used for Decisions."
+        },
+        {
+          "id": "questionCategory",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The Project feed category used for Questions."
+        },
+        {
+          "id": "decisionSummaryGrammar",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The exact portable Decision summary grammar."
+        },
+        {
+          "id": "questionSummaryGrammar",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The exact portable Question summary grammar."
+        },
+        {
+          "id": "missingDecisionWhyMarker",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The explicit marker used when Decision rationale was not supplied."
+        },
+        {
+          "id": "decisionResolutionRequiresQuestion",
+          "type": "boolean",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "Whether Decision resolution requires one exact current Question."
+        },
+        {
+          "id": "decisionResolutionRequiresWorkItem",
+          "type": "boolean",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "Whether Decision resolution requires one exact unchecked work item."
+        }
+      ],
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "The normalized Projects rules contain no portable body content."
+      },
+      "deduplicationFields": [
+        "name"
+      ]
+    },
+    {
+      "id": "project",
+      "summary": "A bounded body of work related to organizations and tasks.",
+      "fields": [
+        {
+          "id": "name",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The project display name."
+        },
+        {
+          "id": "projectType",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "The configured project classification selected from the governed Projects policy when one applies."
+        },
+        {
+          "id": "status",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "The portable project lifecycle state when one is recorded."
+        },
+        {
+          "id": "startDate",
+          "type": "string",
+          "format": "date",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "The exact optional project start date."
+        },
+        {
+          "id": "targetEndDate",
+          "type": "string",
+          "format": "date",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "The exact optional project target end date."
+        },
+        {
+          "id": "managerPersonUris",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Exact portable CRM Person resource identities for project managers when a separate governed resolution workflow establishes them.",
+          "reference": {
+            "subject": "crm.records.person",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "clientContactPersonUris",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Exact portable CRM Person resource identities for client contacts when a separate governed resolution workflow establishes them.",
+          "reference": {
+            "subject": "crm.records.person",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "organizationUris",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Resolved organization resource identities; Project Capture separately requires exactly one.",
+          "reference": {
+            "subject": "crm.records.organization",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "taskUris",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Exact related task resource identities.",
+          "reference": {
+            "subject": "tasks.records.task",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "documentUris",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Exact related document resource identities.",
+          "reference": {
+            "subject": "documents.records.document",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "channelUris",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Exact related channel resource identities.",
+          "reference": {
+            "subject": "communications.records.channel",
+            "identity": "resource-uri"
+          }
+        }
+      ],
+      "content": {
+        "kind": "markdown",
+        "requiredOnCreate": false,
+        "summary": "Optional project body content; Project Capture separately requires the overview and governed milestone lines compiled from exact private review values."
+      },
+      "deduplicationFields": [
+        "name"
+      ]
+    },
+    {
+      "id": "project-feed-entry",
+      "summary": "A dated, typed, reviewable Project update, status, Decision, Question, or milestone entry whose claims and Project relationship are explicit.",
+      "fields": [
+        {
+          "id": "headline",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The concise Project feed headline."
+        },
+        {
+          "id": "category",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The portable update classification selected by the governing project-status policy."
+        },
+        {
+          "id": "date",
+          "type": "string",
+          "format": "date",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The exact calendar date covered by this status entry."
+        },
+        {
+          "id": "summary",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The evidence-grounded category-specific Project feed summary."
+        },
+        {
+          "id": "sourceUri",
+          "type": "string",
+          "format": "resource-uri",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "An optional external source resource supporting the update."
+        },
+        {
+          "id": "processed",
+          "type": "boolean",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "Whether every follow-up represented by the status entry has been dispositioned."
+        },
+        {
+          "id": "visibility",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The configured audience classification for the status entry."
+        },
+        {
+          "id": "projectIds",
+          "type": "string-list",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "Exact project record identities related to this status entry.",
+          "reference": {
+            "subject": "projects.records.project",
+            "identity": "record-id"
+          }
+        }
+      ],
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "Project feed entries use one bounded category-specific summary field rather than portable page-body content."
+      },
+      "deduplicationFields": [
+        "headline",
+        "date"
+      ]
+    },
+    {
+      "id": "milestone",
+      "summary": "A project milestone whose work-item progress and health remain distinct from promoted tasks.",
+      "fields": [
+        {
+          "id": "projectId",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The exact project record identity that owns this milestone.",
+          "reference": {
+            "subject": "projects.records.project",
+            "identity": "record-id"
+          }
+        },
+        {
+          "id": "workItemsCompleted",
+          "type": "number",
+          "requiredOnCreate": false,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The observed count of completed milestone work items."
+        },
+        {
+          "id": "workItemsTotal",
+          "type": "number",
+          "requiredOnCreate": false,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The observed total count of milestone work items."
+        },
+        {
+          "id": "progressTag",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "The source-defined qualitative milestone progress classification."
+        },
+        {
+          "id": "healthTag",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "The source-defined qualitative milestone health classification."
+        }
+      ],
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "Milestone records have no portable body content."
+      },
+      "deduplicationFields": []
+    }
+  ],
+  "limitations": [
+    "The governed context.projects vocabulary artifact owns portable Project terminology; compatibility pointers and provider labels are non-canonical projections.",
+    "This model owns portable Projects, milestones, embedded work items, status, Decisions, Questions, and Project policy; CRM, Tasks, and Meetings remain separate selectable Context packs.",
+    "Cross-context organization, Task, document, and channel links are typed resource identities and do not make those Context packs required dependencies.",
+    "Project work items remain exact governed structures embedded in Project content; promotion into tracked Task execution is always an explicit Automation decision.",
+    "Project manager and client-contact relations remain unavailable to Project Capture until a separate governed CRM Person resolution establishes portable resource URIs.",
+    "Project creation, updates, and document effects require separate Automation, Integration, configuration, approval, checkpoint, and verification authority."
+  ]
+}

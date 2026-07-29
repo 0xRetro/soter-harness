@@ -1,0 +1,67 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "documents.schema.read",
+  "version": "1.0.0",
+  "purpose": "Reads the current normalized document-index field and option schema without exposing raw provider schema payloads.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["recordType"],
+    "properties": {
+      "recordType": { "const": "document-index" }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["schema", "provenance", "observedAt"],
+    "properties": {
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["recordType", "fields", "fingerprint"],
+        "properties": {
+          "recordType": { "const": "document-index" },
+          "fields": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "writable", "options"],
+              "properties": {
+                "id": { "type": "string" },
+                "writable": { "type": "boolean" },
+                "options": {
+                  "oneOf": [
+                    { "type": "null" },
+                    {
+                      "type": "array",
+                      "minItems": 1,
+                      "uniqueItems": true,
+                      "items": { "type": "string" }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        }
+      },
+      "provenance": { "type": "object" },
+      "observedAt": { "type": "string" }
+    }
+  },
+  "authentication": { "required": true, "minimumScopes": ["records:read"] },
+  "effects": ["read", "disclosure"],
+  "idempotency": { "mode": "not-applicable", "key": null },
+  "retry": { "safe": true, "maxAttempts": 2, "checkpoint": "Persist the exact record type and normalized schema fingerprint before retry." },
+  "errors": ["authentication", "authorization", "validation", "conflict", "rate-limit", "unavailable", "retryable", "not-found", "unknown"],
+  "freshness": { "returnsProvenance": true, "returnsObservedAt": true, "maxAgeSeconds": 300 },
+  "health": { "check": "Read one contained normalized document-index schema.", "fixture": "soter/fixtures/providers/notion/documents.json", "containedVerification": "Prove exact type, current options, stable fingerprinting, and raw-schema exclusion." },
+  "providerLimitations": ["A schema observation does not establish future option compatibility, write permission, or record correctness."]
+}

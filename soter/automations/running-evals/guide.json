@@ -1,0 +1,207 @@
+{
+  "contractVersion": "2.0.0",
+  "id": "workflow-guide.running-evals",
+  "contentFingerprint": "sha256:bd5c7a4ff2f2975ea69cff34bf5d6171207f61548e0eacfee389faab54bc151d",
+  "$contract": "soter://contracts/workflow-guide/v2",
+  "workflow": {
+    "id": "automation.running-evals",
+    "version": "0.1.0",
+    "definitionPath": "soter/automations/running-evals/definition.json",
+    "definitionFingerprint": "sha256:c426697b37cfc10a5d875ba01c9ede88a0c09418db86ac27def034f01a04ed5d",
+    "evaluationSetPath": "soter/automations/running-evals/evaluations.json",
+    "evaluationSetFingerprint": "sha256:c8a29735e68382144bfad3a763a2ee859596ce692baac2d33c93808af24ed03e"
+  },
+  "skill": {
+    "name": "running-evals",
+    "description": "Run one governed evaluation case in a fresh contained context, keep its answer key out of the worker prompt, and judge observable artifacts. Use for baselines, pressure cases, invariants, regressions, and golden renewal; do not use for case authoring or promotion.",
+    "invocation": "explicit-only",
+    "displayName": "Run a governed evaluation",
+    "shortDescription": "Execute one isolated case and judge exact observable evidence.",
+    "defaultPrompt": "Use $running-evals to run this exact evaluation case in fresh containment and return an artifact-grounded verdict."
+  },
+  "status": {
+    "state": "active",
+    "reasonCode": "WORKFLOW_GUIDE_ACTIVE",
+    "proceduralAuthority": "target",
+    "behaviorParity": "passed",
+    "delivery": "host-skill",
+    "evidence": [
+      {
+        "path": "soter/evidence/development/development-agent-migration-evidence.claude.running-evals.json",
+        "fingerprint": "sha256:f76fc0cac43c29168be484153db7c5e8bd810f2bf637c2b11a8dee59381c049d",
+        "host": "claude"
+      },
+      {
+        "path": "soter/evidence/development/development-agent-migration-evidence.codex.running-evals.json",
+        "fingerprint": "sha256:c5086ff5556241faf970f71769bc8b9f5624e78a9ee37178e7d5ed962fb61bdd",
+        "host": "codex"
+      }
+    ],
+    "permittedNextAction": "invoke-through-selected-host"
+  },
+  "authority": {
+    "kind": "procedural-guidance",
+    "executionAuthority": "none",
+    "effectAuthority": "none",
+    "approvalAuthority": "none",
+    "reasonCode": "WORKFLOW_GUIDE_NO_EXECUTION_AUTHORITY",
+    "providerTransactionAuthority": "none"
+  },
+  "stepDetails": [
+    {
+      "id": "bind-case-and-target",
+      "sequence": 1,
+      "instructions": [
+        "Bind one exact case, workflow or artifact fingerprint, host, configuration or repository state, evaluator, and containment policy.",
+        "Read expected observations and prohibited outcomes only in the judge context; never place them in the worker context.",
+        "Create an absolute isolated workspace and verify that the target files contain the exact candidate under test."
+      ],
+      "flexibility": [],
+      "stopConditions": [
+        "Stop if the worker path is missing, resolves to another checkout, or cannot be kept separate from protected and external state.",
+        "When any exact workflow, case, guide, or configuration fingerprint binding is unavailable, withhold the verdict and identify every missing binding explicitly rather than collapsing them into an unqualified current candidate."
+      ]
+    },
+    {
+      "id": "prepare-neutral-stimulus",
+      "sequence": 2,
+      "instructions": [
+        "Construct a neutral prompt from the case stimulus, exact working directory, project-guidance instruction, no-approval-away-human boundary, and factual final-report request.",
+        "For explicit-only guidance, invoke the selected skill by its exact host-native name without revealing the answer key or drafting rationale.",
+        "Require the worker to fail rather than fall back when an expected file or workspace is absent."
+      ],
+      "flexibility": [
+        "Include only task-local facts needed to perform the case; omit suspected bugs, intended fixes, and expected answers."
+      ],
+      "stopConditions": [
+        "Stop when a neutral stimulus cannot be separated from judge-only expectations."
+      ]
+    },
+    {
+      "id": "dispatch-contained-run",
+      "sequence": 3,
+      "instructions": [
+        "Run one fresh worker per case with external writes, publication, push, pull-request creation, and protected-checkout mutation prohibited.",
+        "Use a worker type that cannot widen its own tool or effect authority; do not substitute a more powerful worker when the intended evaluator is unavailable.",
+        "Stagger only when shared read limits require it; rate-limit recovery does not change the case verdict by itself."
+      ],
+      "flexibility": [
+        "Independent cases may run concurrently only when their workspaces and external read surfaces cannot interfere."
+      ],
+      "stopConditions": [
+        "Stop and report immediately if a real external write, publication, or protected-checkout mutation occurs."
+      ]
+    },
+    {
+      "id": "collect-observable-evidence",
+      "sequence": 4,
+      "instructions": [
+        "Collect the final report, exact transcript or trace, tool requests and denials, file diff, and every produced artifact.",
+        "Record whether the worker discovered its own case or answer-key files and treat that as a limitation, never as invisible convenience.",
+        "Use the stand-down instruction to stop a worker without authorizing cleanup of an effect that already landed."
+      ],
+      "flexibility": [],
+      "stopConditions": [
+        "Stop judgment when required trace or artifact evidence is unavailable."
+      ]
+    },
+    {
+      "id": "judge-declared-expectations",
+      "sequence": 5,
+      "instructions": [
+        "Evaluate every expected observation and prohibited outcome against the collected artifacts, not the worker's success claim.",
+        "Record fixture drift or a vanished live premise explicitly and allow only the governed limited verdict supported by remaining evidence.",
+        "Treat any uncontained write or publication as an evaluation finding even when the task result otherwise looks correct."
+      ],
+      "flexibility": [
+        "A changed live premise may support a limited refusal verdict only when every applicable prohibition is still proven."
+      ],
+      "stopConditions": [
+        "Stop before a pass when any required expectation lacks observable evidence."
+      ]
+    },
+    {
+      "id": "record-scoped-result",
+      "sequence": 6,
+      "instructions": [
+        "Record the exact case, target, host, configuration, source and graph fingerprints, verdict, observations, artifacts, containment, and limitations.",
+        "Renew a golden only for the current behavior-relevant guide fingerprint and explain any carried-forward result whose changed lines cannot affect behavior.",
+        "Remove isolated worktrees and branches only after preserving the governed evidence; never treat scaffolding as the evidence itself."
+      ],
+      "flexibility": [],
+      "stopConditions": [
+        "Stop before recording a pass from self-review, testimony, stale source identity, or an evaluation that leaked its answer key."
+      ]
+    }
+  ],
+  "verification": [
+    "The worker receives no expected or prohibited outcome text and starts from a fresh isolated context.",
+    "The workspace and target fingerprint match the candidate named by the verdict.",
+    "Every expectation and prohibition is judged from trace, tool, file, or artifact evidence.",
+    "No external write, publication, or protected-checkout mutation is hidden or silently cleaned up.",
+    "The result remains scoped to the exact case and does not promote unrelated readiness, verification, or health."
+  ],
+  "gotchas": [
+    {
+      "id": "raw-prompt-misses-explicit-skill",
+      "kind": "baseline",
+      "summary": "A raw case prompt may never load an explicit-only skill, causing an unguided worker to improvise and create unsafe effects.",
+      "countermeasure": "Invoke the exact selected skill explicitly while keeping expectations out of the prompt."
+    },
+    {
+      "id": "answer-key-is-discoverable",
+      "kind": "observed",
+      "summary": "Repository cases can be discovered by the worker even when their expectations were not supplied directly.",
+      "countermeasure": "Judge observable artifacts, record answer-key access, and avoid using worker reasoning as the verdict basis."
+    },
+    {
+      "id": "wrong-worktree-fallback",
+      "kind": "observed",
+      "summary": "A missing relative worktree path can cause a worker to silently operate in the protected root or test the wrong revision.",
+      "countermeasure": "Use an absolute path, verify candidate bytes before dispatch, and require fail-not-fallback behavior."
+    },
+    {
+      "id": "contained-provider-is-not-contained-git",
+      "kind": "observed",
+      "summary": "Blocking provider writes alone still allows a worker to push branches or create real pull requests.",
+      "countermeasure": "Constrain provider, repository publication, and protected-checkout effects independently."
+    },
+    {
+      "id": "idle-is-not-final",
+      "kind": "observed",
+      "summary": "A worker can become idle without delivering the final report expected by the controller.",
+      "countermeasure": "Recover the factual report and evidence from the durable transcript instead of inferring completion."
+    }
+  ],
+  "references": [
+    {
+      "id": "evaluation-set-contract",
+      "kind": "contract",
+      "label": "Normalized workflow evaluation-set contract",
+      "target": "soter://contracts/workflow-evaluation-set/v2"
+    },
+    {
+      "id": "development-governance",
+      "kind": "contract",
+      "label": "Provider-neutral evaluation and development governance",
+      "target": "soter://contracts/development-governance/v1"
+    }
+  ],
+  "source": {
+    "presence": "removed",
+    "legacyPath": ".claude/skills/running-evals/SKILL.md",
+    "legacyFingerprint": "sha256:82ed2174bdfb2ec24cece2db915468aa06b58c6e033e81a13b5b6b14c1dd04a9",
+    "normalization": "behavior-preserving-with-explicit-authority-boundary"
+  },
+  "privacy": {
+    "rawSourceIncluded": false,
+    "workspaceSpecificValuesIncluded": false,
+    "credentialsIncluded": false,
+    "privateInputsIncluded": false,
+    "providerResponsesIncluded": false
+  },
+  "limitations": [
+    "This procedural guide grants no worker dispatch, file-write, publication, provider, or golden-update authority.",
+    "Behavior evidence requires an exact private request and an independently observed fresh-worker run through a trusted host boundary."
+  ]
+}

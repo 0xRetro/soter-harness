@@ -1,0 +1,23 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.resources",
+  "version": "0.1.0",
+  "layer": "context",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Defines portable external-resource identity, purpose, administration, access-reference, and validation-date meaning without credential authority.",
+  "dependencies": [],
+  "capabilities": { "requires": [], "provides": [] },
+  "authorities": [
+    { "role": "definition", "subject": "resources.records", "required": true },
+    { "role": "instance", "subject": "resources.records", "required": true }
+  ],
+  "effects": [],
+  "artifacts": [
+    { "path": "soter/contexts/resources/records.model.json", "role": "definition" },
+    { "path": "soter/contexts/resources/vocabulary.json", "role": "definition" }
+  ],
+  "compatibility": { "baseContract": "^1.0.0", "hosts": ["codex", "claude"] },
+  "verification": { "maxLevel": "static", "scenarios": [] }
+}

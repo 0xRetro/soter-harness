@@ -1,0 +1,57 @@
+{
+  "$contract": "soter://contracts/scenario/v1",
+  "contractVersion": "1.0.0",
+  "id": "project-work-promotion.tracked-execution",
+  "automation": "automation.project-work-promotion",
+  "intent": "operate",
+  "input": {
+    "project": "exact-project-reference",
+    "workItem": "exact-unchecked-action",
+    "disposition": "tracked-execution",
+    "assignee": "authenticated-self"
+  },
+  "expected": {
+    "capabilityOrder": [
+      "projects.records.read",
+      "tasks.records.read",
+      "projects.records.read",
+      "documents.content.read",
+      "workspace.identity.read",
+      "tasks.records.read"
+    ],
+    "effectModes": {
+      "read": "allow",
+      "disclosure": "allow",
+      "write": "confirm",
+      "dispatch": "prohibit",
+      "destructive": "prohibit"
+    },
+    "outcomes": [
+      "projects-and-tasks-policies.grounded",
+      "work-item.exact-and-unchecked",
+      "tracked-task-create.previewed",
+      "source-work-item.remains-incomplete",
+      "writes-held-for-separate-authority"
+    ],
+    "invariants": [
+      "task-title-inherits-exact-action",
+      "project-relation-exact",
+      "date-inherited-when-present",
+      "assignee-limited-to-authenticated-self",
+      "deduplicate-before-create",
+      "private-values-excluded-from-inspection",
+      "no-write-or-approval-during-preparation"
+    ],
+    "evidence": [
+      "exact-lock",
+      "policy-source-fingerprints",
+      "document-read-fingerprint",
+      "duplicate-query-fingerprint",
+      "private-review-material",
+      "write-boundary-state"
+    ]
+  },
+  "sourceCases": [
+    ".claude/systems/project-management.md"
+  ]
+}

@@ -5,7 +5,7 @@ import {
   contextRecordInputErrors,
   contextRecordOutputErrors
 } from '../kernel/verify.mjs';
-import { readJson } from './lib/canonical-json.mjs';
+import { fingerprintJson, readJson } from './lib/canonical-json.mjs';
 
 function walkJson(directory) {
   if (!fs.existsSync(directory)) return [];
@@ -52,7 +52,7 @@ export function assertContextRecordInput(root, capability, input, options = {}) 
       input,
       validationOptions(options)
     ),
-    'Portable CRM input'
+    'Portable record input'
   );
 }
 
@@ -64,6 +64,40 @@ export function assertContextRecordOutput(root, capability, output, options = {}
       output,
       validationOptions(options)
     ),
-    'Portable CRM output'
+    'Portable record output'
   );
+}
+
+export function exactRequestedContextRecord(output, {
+  recordType,
+  requestedId
+}) {
+  if (typeof recordType !== 'string' || !recordType
+    || typeof requestedId !== 'string' || !requestedId
+    || !Array.isArray(output?.records)) {
+    const error = new Error(
+      'Exact portable record selection requires one record type, one requested identity, and a records output.'
+    );
+    error.kind = 'validation';
+    throw error;
+  }
+  const matches = output.records.filter((record) => record?.type === recordType);
+  if (output.records.length !== 1 || matches.length !== 1) {
+    const error = new Error(
+      'Exact portable record selection did not return exactly one record of the requested type.'
+    );
+    error.kind = 'validation';
+    throw error;
+  }
+  const record = matches[0];
+  if (typeof record.id !== 'string' || !record.id
+    || record.identityBinding?.state !== 'exact-request'
+    || record.identityBinding.requestedIdFingerprint !== fingerprintJson(requestedId)) {
+    const error = new Error(
+      'Exact portable record selection is not bound to the requested identity.'
+    );
+    error.kind = 'validation';
+    throw error;
+  }
+  return record;
 }

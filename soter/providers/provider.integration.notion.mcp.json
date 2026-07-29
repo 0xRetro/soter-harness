@@ -3,46 +3,232 @@
   "contractVersion": "1.0.0",
   "id": "provider.integration.notion.mcp",
   "pack": "integration.notion",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "containment": "connected",
   "runtime": {
     "engine": "mcp",
     "module": "soter/integrations/notion/mcp.mjs",
     "prepareExport": "prepareMcp",
     "completeExport": "completeMcp",
-    "probePrepareExport": "prepareProbeMcp",
-    "probeCompleteExport": "completeProbeMcp",
     "probePlanExport": "prepareProbePlanMcp",
     "probeStepCompleteExport": "completeProbePlanStepMcp",
     "probeFinalizeExport": "finalizeProbePlanMcp",
+    "responseProfiles": [
+      "notion.claude.plugin.v1",
+      "notion.codex.connector.v1"
+    ],
     "server": "notion",
-    "tools": ["fetch", "query_data_sources", "create_pages", "update_page"],
-    "probeTools": ["fetch", "query_data_sources"]
+    "tools": [
+      "fetch",
+      "query_data_sources",
+      "create_pages",
+      "update_page"
+    ],
+    "probeTools": [
+      "fetch",
+      "query_data_sources"
+    ]
   },
   "capabilities": [
-    { "id": "crm.records.read", "version": "1.0.0" },
-    { "id": "crm.records.create", "version": "1.0.0" },
-    { "id": "crm.records.update", "version": "1.0.0" },
-    { "id": "documents.content.read", "version": "1.0.0" }
+    {
+      "id": "crm.records.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "crm.records.create",
+      "version": "1.0.0"
+    },
+    {
+      "id": "crm.records.update",
+      "version": "1.0.0"
+    },
+    {
+      "id": "crm.schema.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "communications.records.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "communications.records.create",
+      "version": "1.0.0"
+    },
+    {
+      "id": "communications.records.update",
+      "version": "1.0.0"
+    },
+    {
+      "id": "communications.schema.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "product.records.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "product.records.create",
+      "version": "1.0.0"
+    },
+    {
+      "id": "product.schema.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "process.records.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "process.records.create",
+      "version": "1.0.0"
+    },
+    {
+      "id": "process.schema.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "documents.content.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "documents.content.update",
+      "version": "1.0.0"
+    },
+    {
+      "id": "workspace.identity.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "projects.records.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "projects.records.create",
+      "version": "1.0.0"
+    },
+    {
+      "id": "projects.records.update",
+      "version": "1.0.0"
+    },
+    {
+      "id": "projects.schema.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "tasks.records.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "tasks.records.create",
+      "version": "1.0.0"
+    },
+    {
+      "id": "tasks.records.update",
+      "version": "1.0.0"
+    },
+    {
+      "id": "tasks.schema.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "meetings.records.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "meetings.records.create",
+      "version": "1.0.0"
+    },
+    {
+      "id": "meetings.schema.read",
+      "version": "1.0.0"
+    }
   ],
   "authorities": [
-    { "role": "definition", "subject": "crm.records" },
-    { "role": "instance", "subject": "crm.records" },
-    { "role": "provider", "subject": "notion.workspace" }
+    {
+      "role": "definition",
+      "subject": "crm.records"
+    },
+    {
+      "role": "instance",
+      "subject": "crm.records"
+    },
+    {
+      "role": "definition",
+      "subject": "communications.records"
+    },
+    {
+      "role": "instance",
+      "subject": "communications.records"
+    },
+    {
+      "role": "definition",
+      "subject": "product.records"
+    },
+    {
+      "role": "instance",
+      "subject": "product.records"
+    },
+    {
+      "role": "definition",
+      "subject": "process.records"
+    },
+    {
+      "role": "instance",
+      "subject": "process.records"
+    },
+    {
+      "role": "provider",
+      "subject": "notion.workspace"
+    },
+    {
+      "role": "definition",
+      "subject": "projects.records"
+    },
+    {
+      "role": "instance",
+      "subject": "projects.records"
+    },
+    {
+      "role": "definition",
+      "subject": "tasks.records"
+    },
+    {
+      "role": "instance",
+      "subject": "tasks.records"
+    },
+    {
+      "role": "definition",
+      "subject": "meetings.records"
+    },
+    {
+      "role": "instance",
+      "subject": "meetings.records"
+    }
   ],
-  "effects": ["read", "disclosure", "write"],
+  "effects": [
+    "read",
+    "disclosure",
+    "write"
+  ],
   "mappings": [
-    "soter/integrations/notion/crm-records.mapping.json"
+    "soter/integrations/notion/crm-records.mapping.json",
+    "soter/integrations/notion/communications-records.mapping.json",
+    "soter/integrations/notion/product-records.mapping.json",
+    "soter/integrations/notion/process-records.mapping.json",
+    "soter/integrations/notion/projects-records.mapping.json",
+    "soter/integrations/notion/tasks-records.mapping.json",
+    "soter/integrations/notion/meetings-records.mapping.json"
   ],
   "fixtures": [],
   "limitations": [
+    "The two host response profiles are explicit parser contracts. notion.codex.connector.v1 accepts one exact JSON content result or one exact structured result; the MCP success flag may be absent, but when either host error flag is present its exact profile-specific name and boolean type are mandatory, and only the connector's exact RATE_LIMITED error code is mapped. notion.claude.plugin.v1 accepts closed decoded direct results for authenticated identity (including a bounded, discarded current-tool-access status map), page, data-source, bounded query, one-page create, and exact page update; missing, crossed, hybrid, open, incomplete-pagination, and queued async-task results fail closed. These shapes do not by themselves establish authentication, connected readiness, write success, or health.",
     "Create and update translation is limited to explicitly mapped fields and record-level capability scopes. Generic capability preparation still blocks writes; an approval-bound operation batch must establish deduplication or expected-version preconditions, verification, and recovery before Core may emit either tool.",
-    "The connector exposes no delete compensation for a newly created page. Core therefore permits at most one deduplicated create as the final batch effect, verifies its exact record fields and content through reads, and pauses ambiguous outcomes without retrying or deleting.",
+    "The connector exposes no delete compensation for a newly created page. Core therefore permits at most one deduplicated create as the final batch effect and pauses ambiguous outcomes without retrying or deleting. Each Automation must declare the exact normalized read-back criteria it can prove; field-and-content parity is not implied unless both criteria are explicitly governed.",
     "Each connected record read accepts exactly one portable record type so it uses one Notion data source per host call. Cross-data-source SQL is plan-gated and is not a portable execution assumption.",
     "Connected readiness uses an explicit private sequence: authenticated identity, exact schema metadata and one bounded mapped query for each configured target, plus one exact read for every portable document source marked probe-read. A zero-row result establishes query and empty-envelope compatibility but not non-null value decoding; document bodies are discarded before minimized observations persist.",
     "Meeting-intake context can follow only mapped organization, project, and task page URIs observed in prior normalized records. Empty relations skip without a provider call, and related results outside the exact requested type, IDs, filters, or limit fail closed.",
     "Meeting participant values are provider People IDs and are not assumed to identify CRM contact pages; participant expansion requires a separate identity contract.",
-    "Document bodies are fetched only by exact configured page identity and expected title; the adapter returns bounded normalized content but does not interpret policy rules or establish that a write behaved correctly without transaction-bound read-back evidence.",
-    "Native provider responses and connected identity values must remain private and are never persisted by Core."
+    "Document bodies are fetched only by exact configured page identity and expected title. Targeted content updates use exact one-match replacements and still require transaction-bound precondition and read-back evidence; provider acceptance alone does not establish that a write behaved correctly.",
+    "Raw provider responses and credential values are never persisted by Core. Minimized normalized connected identities may be retained only in private runtime receipts needed for exact bindings and remain excluded from workspace inspection, logs, fixtures, canonical artifacts, and Git."
   ]
 }

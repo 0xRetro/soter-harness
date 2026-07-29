@@ -10,8 +10,10 @@
     "module": "soter/integrations/otter/mcp.mjs",
     "prepareExport": "prepareMcp",
     "completeExport": "completeMcp",
-    "probePrepareExport": "prepareProbeMcp",
-    "probeCompleteExport": "completeProbeMcp",
+    "probePlanExport": "prepareProbePlanMcp",
+    "probeStepCompleteExport": "completeProbePlanStepMcp",
+    "probeFinalizeExport": "finalizeProbePlanMcp",
+    "responseProfiles": ["otter.mcp.v1"],
     "server": "otter",
     "tools": ["fetch", "get_user_info"],
     "probeTools": ["get_user_info"]

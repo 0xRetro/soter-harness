@@ -27,8 +27,18 @@
         "additionalProperties": false,
         "required": ["sourcePath", "targetPath", "targetPack", "state", "bridge"],
         "properties": {
-          "sourcePath": { "type": "string", "minLength": 1 },
-          "targetPath": { "type": "string", "minLength": 1 },
+          "sourcePath": {
+            "type": "string",
+            "pattern": "^[.]claude/[A-Za-z0-9._+/-]+$"
+          },
+          "sourceFingerprint": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "targetPath": {
+            "type": "string",
+            "pattern": "^soter/[A-Za-z0-9._+/-]+$"
+          },
           "targetPack": { "type": "string", "minLength": 3 },
           "state": {
             "enum": ["current", "mapped", "bridged", "migrated", "retired"]
@@ -37,9 +47,40 @@
           "evidence": {
             "type": "array",
             "uniqueItems": true,
-            "items": { "type": "string", "minLength": 1 }
+            "items": {
+              "type": "string",
+              "pattern": "^soter/[A-Za-z0-9._+/-]+[.]json$"
+            }
           }
-        }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "state": { "enum": ["current", "mapped"] }
+              }
+            },
+            "then": {
+              "properties": {
+                "evidence": { "maxItems": 0 }
+              },
+              "maxProperties": 5
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "state": { "enum": ["bridged", "migrated", "retired"] }
+              }
+            },
+            "then": {
+              "required": ["sourceFingerprint", "evidence"],
+              "properties": {
+                "evidence": { "minItems": 1 }
+              }
+            }
+          }
+        ]
       }
     }
   }

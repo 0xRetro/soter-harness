@@ -14,7 +14,7 @@
     "scope": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["automationId", "workId", "runId", "configurationLockFingerprint", "changeSetId", "changeSetFingerprint", "batchId", "batchFingerprint", "approvalRequestId", "approvalRequestFingerprint", "effects", "authorities", "recordIds", "changes", "verificationCriterionIds", "compensationPlan"],
+      "required": ["automationId", "workId", "runId", "configurationLockFingerprint", "changeSetId", "changeSetFingerprint", "batchId", "batchFingerprint", "approvalRequestId", "approvalRequestFingerprint", "effects", "authorities", "recordIds", "changes", "verificationCriterionIds"],
       "properties": {
         "automationId": { "type": "string", "minLength": 1 },
         "workId": { "type": "string", "minLength": 1 },
@@ -42,33 +42,23 @@
             }
           }
         },
-        "verificationCriterionIds": { "$ref": "#/$defs/stringSet" },
-        "compensationPlan": {
-          "type": "array",
-          "items": {
-            "type": "object", "additionalProperties": false,
-            "required": ["stepId", "mode"],
-            "properties": {
-              "stepId": { "type": "string", "minLength": 1 },
-              "mode": { "type": "string", "minLength": 1 }
-            }
-          }
-        }
+        "verificationCriterionIds": { "$ref": "#/$defs/stringSet" }
       }
     },
     "states": {
       "type": "array", "minItems": 8,
       "items": {
         "type": "object", "additionalProperties": false,
-        "required": ["id", "workState", "phase", "approvalState", "checkpointState", "verificationState", "compensationState", "resume"],
+        "required": ["id", "workState", "phase", "configurationBasis", "approvalState", "checkpointState", "verificationState", "compensationState", "resume"],
         "properties": {
           "id": { "type": "string", "minLength": 1 },
-          "workState": { "type": "string", "minLength": 1 },
-          "phase": { "type": "string", "minLength": 1 },
-          "approvalState": { "type": "string", "minLength": 1 },
-          "checkpointState": { "type": ["string", "null"], "minLength": 1 },
-          "verificationState": { "type": "string", "minLength": 1 },
-          "compensationState": { "type": "string", "minLength": 1 },
+          "workState": { "enum": ["ready-for-review", "awaiting-approval", "approval-expired", "approved-not-started", "running", "blocked", "verification-failed", "completed", "failed"] },
+          "phase": { "enum": ["preparation", "approval", "execution", "reconciliation", "verification", "complete"] },
+          "configurationBasis": { "enum": ["tracked-contained", "private-active"] },
+          "approvalState": { "enum": ["not-issued", "awaiting", "expired", "confirmed", "consumed"] },
+          "checkpointState": { "enum": [null, "requested", "needs-attention", "completed", "failed"] },
+          "verificationState": { "enum": ["not-started", "unknown", "running", "failed", "verified"] },
+          "compensationState": { "const": "not-required" },
           "resume": {
             "type": "object", "additionalProperties": false,
             "required": ["classification", "reasonCode", "reason", "permittedNextAction"],

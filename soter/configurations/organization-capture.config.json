@@ -1,0 +1,81 @@
+{
+  "$contract": "soter://contracts/configuration/v1",
+  "contractVersion": "1.0.0",
+  "name": "organization-capture",
+  "base": { "kernel": "kernel.soter", "core": "core.runtime" },
+  "packs": [
+    { "id": "context.crm", "source": "dependency", "reason": "Organization Capture depends on portable CRM organization and policy meaning." },
+    { "id": "automation.organization-capture", "source": "user", "reason": "The user selected schema-grounded, alias-deduplicated organization-create preparation." },
+    { "id": "integration.notion", "source": "binding", "reason": "The selected policy, current schema, organization candidates, and eventual organization authority live in Notion." }
+  ],
+  "bindings": [
+    {
+      "capability": "crm.records.read",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.crm.definition", "authority.crm.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "Notion supplies the exact policy selection and bounded organization candidate observations."
+    },
+    {
+      "capability": "crm.schema.read",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.crm.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "Notion supplies one current provider-neutral organization schema observation for exact option matching."
+    },
+    {
+      "capability": "crm.records.create",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.crm.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "A separately governed exact transaction may later create one mapped organization."
+    }
+  ],
+  "sources": [
+    {
+      "id": "source.policy.organization-capture",
+      "capability": "crm.records.read",
+      "authority": "authority.crm.definition",
+      "input": { "recordTypes": ["organization-capture-policy"], "ids": ["policy.organization-capture"], "limit": 2 },
+      "readiness": { "mode": "probe-read", "reason": "Connected readiness must prove the selected policy record can be read without retaining private values." },
+      "consumers": [
+        {
+          "pack": "automation.organization-capture",
+          "purpose": "organization-capture-policy",
+          "subjects": ["organization-capture"],
+          "reason": "The exact external selection binds the governed Context rules used by preparation."
+        }
+      ],
+      "reason": "Organization creation rules are a selected Context definition rather than Automation-owned constants."
+    }
+  ],
+  "authorities": [
+    { "id": "authority.crm.definition", "role": "definition", "subject": "crm.records", "uri": "soter-fixture://configuration-template/notion/authority/policies", "reason": "The selected policy record identifies the governed organization-capture definition." },
+    { "id": "authority.crm.instance", "role": "instance", "subject": "crm.records", "uri": "soter-fixture://configuration-template/notion/authority/crm", "reason": "The configured organization schema and records are authoritative for option and duplicate observations." },
+    { "id": "authority.notion.provider", "role": "provider", "subject": "notion.workspace", "uri": "soter-fixture://configuration-template/notion/account/operator", "reason": "The selected Notion account supplies provider identity and permission context without becoming domain authority." },
+    { "id": "authority.run.evidence", "role": "evidence", "subject": "runtime.runs", "uri": "soter-state://runs", "reason": "Private local runtime state owns prepared work and review companions." }
+  ],
+  "effectPolicies": {
+    "read": { "mode": "allow", "reason": "The selected policy, current schema, and bounded organization candidates may be read for private preparation." },
+    "disclosure": { "mode": "allow", "reason": "Selected observations may enter a private run envelope with explicit minimization." },
+    "write": { "mode": "confirm", "reason": "Every exact organization-create batch requires fresh confirmation and separately consumed one-time start authority." },
+    "dispatch": { "mode": "prohibit", "reason": "Organization Capture does not send or publish messages." },
+    "destructive": { "mode": "prohibit", "reason": "Organization Capture never deletes records or performs destructive changes." }
+  },
+  "secretRefs": [{ "id": "secret-ref.notion", "provider": "host", "key": "NOTION_OAUTH" }],
+  "host": { "id": "codex", "adapter": "host.codex", "version": "0.3.1", "reason": "This contained configuration exercises Codex projection while preserving provider-neutral contracts." },
+  "settings": {
+    "integration.notion": {
+      "targets": {
+        "policies": "soter-fixture://configuration-template/notion/collection/policies",
+        "organizations": "soter-fixture://configuration-template/notion/collection/organizations",
+        "contacts": "soter-fixture://configuration-template/notion/collection/contacts",
+        "projects": "soter-fixture://configuration-template/notion/collection/projects",
+        "updates": "soter-fixture://configuration-template/notion/collection/updates",
+        "tasks": "soter-fixture://configuration-template/notion/collection/tasks",
+        "meetings": "soter-fixture://configuration-template/notion/collection/meetings",
+        "documents": "soter-fixture://configuration-template/notion/collection/documents"
+      }
+    }
+  }
+}

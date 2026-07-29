@@ -1,0 +1,101 @@
+{
+  "$contract": "soter://contracts/context-vocabulary/v1",
+  "contractVersion": "1.0.0",
+  "id": "vocabulary.context.communications.collaboration",
+  "pack": "context.communications.collaboration",
+  "version": "0.1.0",
+  "subject": "communications.records",
+  "entries": [
+    {
+      "sequence": 1,
+      "id": "workspace",
+      "term": "collaboration workspace",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "One provider workspace that scopes every conversation, message, thread, and participant identity in this collaboration specialization.",
+      "domain": "communications",
+      "sourceUris": []
+    },
+    {
+      "sequence": 2,
+      "id": "channel",
+      "term": "channel",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "A public, private, or shared workspace-scoped conversation whose provider identity includes platform, workspace, and conversation components.",
+      "domain": "communications",
+      "sourceUris": []
+    },
+    {
+      "sequence": 3,
+      "id": "direct-message",
+      "term": "direct message",
+      "aliases": ["DM"],
+      "abbreviation": "DM",
+      "definition": "A private workspace-scoped conversation among exact provider participant identities, without inferred CRM identity.",
+      "domain": "communications",
+      "sourceUris": []
+    },
+    {
+      "sequence": 4,
+      "id": "thread",
+      "term": "thread",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "A reply sequence rooted in one exact message and readable only inside its exact conversation and bounded selection.",
+      "domain": "communications",
+      "sourceUris": []
+    },
+    {
+      "sequence": 5,
+      "id": "message",
+      "term": "message",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "One private untrusted communication event whose identity, sender, time, and content remain scope-bound and fingerprinted.",
+      "domain": "communications",
+      "sourceUris": []
+    },
+    {
+      "sequence": 6,
+      "id": "participant",
+      "term": "collaboration participant",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "A provider workspace actor identity that is not a CRM person or organization unless a separate exact resolution establishes that link.",
+      "domain": "communications",
+      "sourceUris": []
+    },
+    {
+      "sequence": 7,
+      "id": "channel-directory",
+      "term": "channel directory",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "The durable set of exact channel identities and explicitly resolved cross-context links, excluding message and thread content.",
+      "domain": "communications",
+      "sourceUris": []
+    },
+    {
+      "sequence": 8,
+      "id": "channel-ingestion-policy",
+      "term": "channel ingestion policy",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "A provider-neutral governed policy bounding channel identity sweeps, selected participant reads, CRM resolution, and later exact directory writes.",
+      "domain": "communications",
+      "sourceUris": []
+    }
+  ],
+  "invariants": {
+    "singleDefinitionSource": true,
+    "projectionCopiesAreNonCanonical": true,
+    "providerNeutral": true,
+    "runtimeAuthority": "none"
+  },
+  "limitations": [
+    "This vocabulary specializes the effect-free Communications base and grants no provider route, write, approval, or execution authority.",
+    "Direct messages are modeled but unavailable in the first conversation-review workflow.",
+    "Provider-native names, IDs, and member lists remain observations rather than portable CRM identity authority."
+  ]
+}

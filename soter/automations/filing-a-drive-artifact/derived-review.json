@@ -1,0 +1,37 @@
+{
+  "$contract": "soter://contracts/automation-derived-review/v1",
+  "contractVersion": "1.0.0",
+  "automation": "automation.filing-a-drive-artifact",
+  "kind": "drive-filing-derived-review",
+  "items": [
+    {
+      "kind": "storage-placement",
+      "fields": [
+        { "id": "artifactName", "label": "Artifact name", "type": "text" },
+        { "id": "artifactUri", "label": "Artifact identity", "type": "text" },
+        { "id": "artifactKind", "label": "Artifact kind", "type": "text" },
+        { "id": "sourceParentUris", "label": "Observed source locations", "type": "string-list" },
+        { "id": "destinationKey", "label": "Destination key", "type": "text" },
+        { "id": "destinationLabel", "label": "Destination label", "type": "text" },
+        { "id": "destinationUri", "label": "Destination identity", "type": "text" },
+        { "id": "form", "label": "Filed form", "type": "text" },
+        { "id": "placementReason", "label": "Placement basis", "type": "text" },
+        { "id": "alternativeSubjectKeys", "label": "Alternative subjects", "type": "string-list" },
+        { "id": "humanMoveInstruction", "label": "Human move instruction", "type": "string-list" }
+      ]
+    },
+    {
+      "kind": "document-index-create",
+      "fields": [
+        { "id": "name", "label": "Document name", "type": "text" },
+        { "id": "documentType", "label": "Document type", "type": "string-list" },
+        { "id": "categories", "label": "Document categories", "type": "string-list" },
+        { "id": "description", "label": "Description", "type": "text" },
+        { "id": "link", "label": "Artifact link", "type": "text" },
+        { "id": "ownerIds", "label": "Owner identities", "type": "string-list" },
+        { "id": "organizationUris", "label": "Organization identities", "type": "string-list" },
+        { "id": "relatedProjectUris", "label": "Related project identities", "type": "string-list" }
+      ]
+    }
+  ]
+}

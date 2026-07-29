@@ -1,0 +1,43 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.communications.collaboration",
+  "version": "0.1.0",
+  "layer": "context",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Defines provider-neutral collaboration workspaces, channels, direct messages, threads, messages, participants, and the durable channel directory.",
+  "dependencies": [
+    {
+      "pack": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Collaboration definitions and records require portable context assembly and authority resolution."
+    },
+    {
+      "pack": "context.communications",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Collaboration specializes the shared communication scope, container, participant, content, and link semantics."
+    }
+  ],
+  "capabilities": { "requires": [], "provides": [] },
+  "authorities": [
+    { "role": "definition", "subject": "communications.records", "required": true },
+    { "role": "instance", "subject": "communications.records", "required": true }
+  ],
+  "effects": [],
+  "artifacts": [
+    { "path": "soter/contracts/channel-ingestion-policy.schema.json", "role": "definition" },
+    { "path": "soter/contracts/conversation-review-policy.schema.json", "role": "definition" },
+    { "path": "soter/contexts/communications/collaboration/records.model.json", "role": "definition" },
+    { "path": "soter/contexts/communications/collaboration/vocabulary.json", "role": "definition" },
+    { "path": "soter/contexts/communications/collaboration/channel-ingestion.policy.json", "role": "definition" },
+    { "path": "soter/contexts/communications/collaboration/conversation-review.policy.json", "role": "definition" },
+    { "path": "soter/contexts/communications/collaboration/identity.mjs", "role": "implementation" },
+    { "path": "soter/contexts/communications/collaboration/identity.selftest.mjs", "role": "evaluation" },
+    { "path": "soter/contexts/communications/collaboration/context-ownership.selftest.mjs", "role": "evaluation" }
+  ],
+  "compatibility": { "baseContract": "^1.0.0", "hosts": ["codex", "claude"] },
+  "verification": { "maxLevel": "static", "scenarios": [] }
+}

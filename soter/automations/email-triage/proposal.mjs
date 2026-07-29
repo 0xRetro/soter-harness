@@ -28,7 +28,7 @@ const ZERO_FINGERPRINT = 'sha256:' + '0'.repeat(64);
 const MACHINE_GROUPS = new Set(['notifications', 'admin-billing', 'marketing']);
 const LIMITATIONS = [
   'This private review proposal creates no approval, confirmation, continuation, provider call, write, dispatch, proof, maturity, or migration authority.',
-  'Email approval remains unavailable until a separate selected-activity private exact-batch review contract binds complete human-readable values to one exact batch and approval request.',
+  'This private proposal creates no approval. A selected review batch must compile one exact connected plan and private selected-activity review before a separate approval request and confirmation may be issued.',
   'Contained and connected acquisition evidence does not establish live label or draft write behavior; exact later verification must re-read labels and list drafts without retrying ambiguity into place.'
 ];
 

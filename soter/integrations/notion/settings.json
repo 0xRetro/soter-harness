@@ -3,8 +3,9 @@
   "contractVersion": "1.0.0",
   "id": "settings.integration.notion",
   "pack": "integration.notion",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "required": true,
+  "semanticInvariants": ["option-mappings-exact-bijection"],
   "schema": {
     "type": "object",
     "additionalProperties": false,
@@ -13,47 +14,133 @@
       "targets": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "policies",
-          "organizations",
-          "contacts",
-          "projects",
-          "tasks",
-          "meetings",
-          "documents"
-        ],
         "properties": {
           "policies": {
             "type": "string",
-            "pattern": "^collection://[a-f0-9-]{32,36}$"
+            "pattern": "^(?:collection://[a-f0-9-]{32,36}|soter-fixture://configuration-template/notion/collection/[a-z0-9]+(?:-[a-z0-9]+)*)$"
           },
           "organizations": {
             "type": "string",
-            "pattern": "^collection://[a-f0-9-]{32,36}$"
+            "pattern": "^(?:collection://[a-f0-9-]{32,36}|soter-fixture://configuration-template/notion/collection/[a-z0-9]+(?:-[a-z0-9]+)*)$"
           },
           "contacts": {
             "type": "string",
-            "pattern": "^collection://[a-f0-9-]{32,36}$"
+            "pattern": "^(?:collection://[a-f0-9-]{32,36}|soter-fixture://configuration-template/notion/collection/[a-z0-9]+(?:-[a-z0-9]+)*)$"
           },
           "projects": {
             "type": "string",
-            "pattern": "^collection://[a-f0-9-]{32,36}$"
+            "pattern": "^(?:collection://[a-f0-9-]{32,36}|soter-fixture://configuration-template/notion/collection/[a-z0-9]+(?:-[a-z0-9]+)*)$"
+          },
+          "updates": {
+            "type": "string",
+            "pattern": "^(?:collection://[a-f0-9-]{32,36}|soter-fixture://configuration-template/notion/collection/[a-z0-9]+(?:-[a-z0-9]+)*)$"
           },
           "tasks": {
             "type": "string",
-            "pattern": "^collection://[a-f0-9-]{32,36}$"
+            "pattern": "^(?:collection://[a-f0-9-]{32,36}|soter-fixture://configuration-template/notion/collection/[a-z0-9]+(?:-[a-z0-9]+)*)$"
           },
           "meetings": {
             "type": "string",
-            "pattern": "^collection://[a-f0-9-]{32,36}$"
+            "pattern": "^(?:collection://[a-f0-9-]{32,36}|soter-fixture://configuration-template/notion/collection/[a-z0-9]+(?:-[a-z0-9]+)*)$"
           },
           "documents": {
             "type": "string",
-            "pattern": "^collection://[a-f0-9-]{32,36}$"
+            "pattern": "^(?:collection://[a-f0-9-]{32,36}|soter-fixture://configuration-template/notion/collection/[a-z0-9]+(?:-[a-z0-9]+)*)$"
+          },
+          "channels": {
+            "type": "string",
+            "pattern": "^(?:collection://[a-f0-9-]{32,36}|soter-fixture://configuration-template/notion/collection/[a-z0-9]+(?:-[a-z0-9]+)*)$"
+          },
+          "features": {
+            "type": "string",
+            "pattern": "^(?:collection://[a-f0-9-]{32,36}|soter-fixture://configuration-template/notion/collection/[a-z0-9]+(?:-[a-z0-9]+)*)$"
+          },
+          "process-policies": {
+            "type": "string",
+            "pattern": "^(?:collection://[a-f0-9-]{32,36}|soter-fixture://configuration-template/notion/collection/[a-z0-9]+(?:-[a-z0-9]+)*)$"
+          },
+          "processes": {
+            "type": "string",
+            "pattern": "^(?:collection://[a-f0-9-]{32,36}|soter-fixture://configuration-template/notion/collection/[a-z0-9]+(?:-[a-z0-9]+)*)$"
+          },
+          "roles": {
+            "type": "string",
+            "pattern": "^(?:collection://[a-f0-9-]{32,36}|soter-fixture://configuration-template/notion/collection/[a-z0-9]+(?:-[a-z0-9]+)*)$"
+          },
+          "services": {
+            "type": "string",
+            "pattern": "^(?:collection://[a-f0-9-]{32,36}|soter-fixture://configuration-template/notion/collection/[a-z0-9]+(?:-[a-z0-9]+)*)$"
+          },
+          "process-runs": {
+            "type": "string",
+            "pattern": "^(?:collection://[a-f0-9-]{32,36}|soter-fixture://configuration-template/notion/collection/[a-z0-9]+(?:-[a-z0-9]+)*)$"
+          },
+          "process-policy-standards": {
+            "type": "string",
+            "pattern": "^(?:collection://[a-f0-9-]{32,36}|soter-fixture://configuration-template/notion/collection/[a-z0-9]+(?:-[a-z0-9]+)*)$"
+          }
+        }
+      },
+      "optionMappings": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 200,
+        "uniqueItems": true,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mapping",
+            "recordType",
+            "field",
+            "mode",
+            "entries"
+          ],
+          "properties": {
+            "mapping": {
+              "type": "string",
+              "pattern": "^mapping\\.integration\\.notion\\.[a-z0-9]+(?:-[a-z0-9]+)*$"
+            },
+            "recordType": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+            },
+            "field": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9]*$"
+            },
+            "mode": {
+              "const": "exact-bijection"
+            },
+            "entries": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 200,
+              "uniqueItems": true,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["portable", "provider"],
+                "properties": {
+                  "portable": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "pattern": "^(?!\\s)[^\\u0000-\\u001F\\u007F]*[^\\s\\u0000-\\u001F\\u007F]$"
+                  },
+                  "provider": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "pattern": "^(?!\\s)[^\\u0000-\\u001F\\u007F]*[^\\s\\u0000-\\u001F\\u007F]$"
+                  }
+                }
+              }
+            }
           }
         }
       }
     }
   },
-  "reason": "Notion target identities are user-specific configuration, while field semantics remain owned by the integration mapping."
+  "reason": "Notion target identities and exact provider choice values are user-specific private configuration, while portable field semantics remain owned by Context and the Integration mapping."
 }

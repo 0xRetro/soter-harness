@@ -19,6 +19,7 @@ export async function invoke({ capability, input, authority, fixtures }) {
   }
   return {
     meetingId: transcript.meetingId,
+    recordingUri: transcript.recordingUri,
     speakers: transcript.speakers,
     segments: transcript.segments,
     provenance: {

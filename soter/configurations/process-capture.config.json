@@ -1,0 +1,64 @@
+{
+  "$contract": "soter://contracts/configuration/v1",
+  "contractVersion": "1.0.0",
+  "name": "process-capture",
+  "base": { "kernel": "kernel.soter", "core": "core.runtime" },
+  "packs": [
+    { "id": "context.process", "source": "dependency", "reason": "Process Capture depends on portable process, run, role, service, policy, and body-shape meaning." },
+    { "id": "automation.process-capture", "source": "user", "reason": "The user selected schema-grounded, relation-resolved process-definition preparation." },
+    { "id": "integration.notion", "source": "binding", "reason": "The selected policy, current schema, exact relations, duplicate candidates, and eventual process authority live in Notion." }
+  ],
+  "bindings": [
+    { "capability": "process.records.read", "providerPack": "integration.notion", "authorities": ["authority.process.definition", "authority.process.instance"], "secretRef": "secret-ref.notion", "reason": "Notion supplies the exact policy selection, duplicate candidates, roles, services, runs, and policy sources." },
+    { "capability": "process.schema.read", "providerPack": "integration.notion", "authorities": ["authority.process.instance"], "secretRef": "secret-ref.notion", "reason": "Notion supplies one current normalized process schema observation for exact option matching." },
+    { "capability": "process.records.create", "providerPack": "integration.notion", "authorities": ["authority.process.instance"], "secretRef": "secret-ref.notion", "reason": "A future separately governed exact transaction may create one mapped process definition." }
+  ],
+  "sources": [
+    {
+      "id": "source.policy.process-capture",
+      "capability": "process.records.read",
+      "authority": "authority.process.definition",
+      "input": { "recordTypes": ["process-capture-policy"], "ids": ["policy.process-capture"], "limit": 2 },
+      "readiness": { "mode": "probe-read", "reason": "Connected readiness must prove the selected policy record can be read without retaining private values." },
+      "consumers": [
+        { "pack": "automation.process-capture", "purpose": "process-capture-policy", "subjects": ["process-capture"], "reason": "The exact external selection binds the governed Context rules used by preparation." }
+      ],
+      "reason": "Process creation rules are a selected Context definition rather than Automation-owned constants."
+    }
+  ],
+  "authorities": [
+    { "id": "authority.process.definition", "role": "definition", "subject": "process.records", "uri": "soter-fixture://configuration-template/notion/authority/process-policies", "reason": "The selected policy record identifies the governed process-capture definition." },
+    { "id": "authority.process.instance", "role": "instance", "subject": "process.records", "uri": "soter-fixture://configuration-template/notion/authority/process", "reason": "The configured Process records and schema own option, relation, duplicate, and run observations." },
+    { "id": "authority.notion.provider", "role": "provider", "subject": "notion.workspace", "uri": "soter-fixture://configuration-template/notion/account/operator", "reason": "The selected Notion account supplies provider identity and permission context without becoming domain authority." },
+    { "id": "authority.run.evidence", "role": "evidence", "subject": "runtime.runs", "uri": "soter-state://runs", "reason": "Private local runtime state owns prepared work and review companions." }
+  ],
+  "effectPolicies": {
+    "read": { "mode": "allow", "reason": "The selected policy, current schema, exact relations, and bounded process candidates may be read for private preparation." },
+    "disclosure": { "mode": "allow", "reason": "Selected observations may enter a private run envelope with explicit minimization." },
+    "write": { "mode": "confirm", "reason": "Every exact process-create batch requires fresh confirmation and separately consumed one-time start authority." },
+    "dispatch": { "mode": "prohibit", "reason": "Process Capture does not send messages or dispatch work." },
+    "destructive": { "mode": "prohibit", "reason": "Process Capture never deletes records or performs destructive changes." }
+  },
+  "secretRefs": [{ "id": "secret-ref.notion", "provider": "host", "key": "NOTION_OAUTH" }],
+  "host": { "id": "codex", "adapter": "host.codex", "version": "0.3.1", "reason": "This contained configuration exercises Codex projection while preserving provider-neutral contracts." },
+  "settings": {
+    "integration.notion": {
+      "targets": {
+        "policies": "soter-fixture://configuration-template/notion/collection/policies",
+        "organizations": "soter-fixture://configuration-template/notion/collection/organizations",
+        "contacts": "soter-fixture://configuration-template/notion/collection/contacts",
+        "projects": "soter-fixture://configuration-template/notion/collection/projects",
+        "updates": "soter-fixture://configuration-template/notion/collection/updates",
+        "tasks": "soter-fixture://configuration-template/notion/collection/tasks",
+        "meetings": "soter-fixture://configuration-template/notion/collection/meetings",
+        "documents": "soter-fixture://configuration-template/notion/collection/documents",
+        "process-policies": "soter-fixture://configuration-template/notion/collection/process-policies",
+        "processes": "soter-fixture://configuration-template/notion/collection/processes",
+        "roles": "soter-fixture://configuration-template/notion/collection/roles",
+        "services": "soter-fixture://configuration-template/notion/collection/services",
+        "process-runs": "soter-fixture://configuration-template/notion/collection/process-runs",
+        "process-policy-standards": "soter-fixture://configuration-template/notion/collection/process-policy-standards"
+      }
+    }
+  }
+}

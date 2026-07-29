@@ -1,0 +1,141 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "automation.filing-a-drive-artifact",
+  "version": "0.2.0",
+  "layer": "automation",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Grounds one retained artifact against an exact storage registry and current document-index schema, prepares placement or human-move review plus the required index item, and stops before approval or provider writes.",
+  "dependencies": [
+    {
+      "pack": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Drive Filing preparation requires exact locks, private review companions, effect policy, evidence, and no-authority boundaries."
+    },
+    {
+      "pack": "context.storage",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Retention, artifact form, registered destination, no-invention, and human-move meaning belong to portable Storage Context."
+    },
+    {
+      "pack": "context.docs",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Document-index fields, option meaning, relationship identity, and deduplication belong to portable Docs Context."
+    },
+    {
+      "pack": "context.crm",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "The optional organization relationship resolves through existing portable CRM identity meaning."
+    }
+  ],
+  "capabilities": {
+    "requires": [
+      {
+        "id": "storage.registry.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation must load one exact policy and closed registered destination set before placement judgment."
+      },
+      {
+        "id": "storage.artifacts.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation must observe exact artifact identity, kind, ownership, link, and current parents without reading content."
+      },
+      {
+        "id": "storage.shortcuts.create",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "An externally owned artifact may produce one fingerprint-only shortcut proposal, although connected shortcut creation is unavailable."
+      },
+      {
+        "id": "storage.files.copy",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "An explicitly requested frozen snapshot may produce one fingerprint-only copy proposal; copy is never a move substitute."
+      },
+      {
+        "id": "documents.schema.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation must observe current document-index writable fields and exact Type and Category options."
+      },
+      {
+        "id": "documents.records.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation must inspect bounded exact Link and Name candidates before proposing an index record."
+      },
+      {
+        "id": "documents.records.create",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "A complete prepared plan may name one fingerprint-only document-index create, but this pack declares no connected compiler."
+      },
+      {
+        "id": "crm.records.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "A requested organization must resolve to one exact existing CRM resource rather than a display name or invented identifier."
+      },
+      {
+        "id": "workspace.identity.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "A requested owner=self value must resolve through the authenticated current workspace identity."
+      }
+    ],
+    "provides": []
+  },
+  "sourceRequirements": [
+    {
+      "purpose": "storage-location-registry",
+      "capability": "storage.registry.read",
+      "authorityRole": "definition",
+      "authoritySubject": "storage.locations",
+      "minimum": 1,
+      "maximum": 1,
+      "reason": "Drive Filing requires one configured source for policy, exact destinations, subject mappings, categories, and the registered unclear-case inbox."
+    }
+  ],
+  "authorities": [
+    { "role": "definition", "subject": "storage.locations", "required": true },
+    { "role": "instance", "subject": "storage.artifacts", "required": true },
+    { "role": "definition", "subject": "documents.records", "required": true },
+    { "role": "instance", "subject": "documents.records", "required": true },
+    { "role": "instance", "subject": "crm.records", "required": true },
+    { "role": "provider", "subject": "notion.workspace", "required": true },
+    { "role": "evidence", "subject": "runtime.runs", "required": true }
+  ],
+  "effects": ["read", "disclosure", "write"],
+  "operator": {
+    "input": "soter/automations/filing-a-drive-artifact/operator-input.json",
+    "preparation": {
+      "module": "soter/automations/filing-a-drive-artifact/prepare.mjs",
+      "export": "prepareDriveFilingRun",
+      "containment": "fixture",
+      "derivedReviewContract": "soter/automations/filing-a-drive-artifact/derived-review.json"
+    }
+  },
+  "artifacts": [
+    { "path": "soter/automations/filing-a-drive-artifact/operator-input.json", "role": "definition" },
+    { "path": "soter/automations/filing-a-drive-artifact/derived-review.json", "role": "definition" },
+    { "path": "soter/automations/filing-a-drive-artifact/prepare.mjs", "role": "implementation" },
+    { "path": "soter/automations/filing-a-drive-artifact/scenario.mjs", "role": "evaluation" },
+    { "path": "soter/automations/filing-a-drive-artifact/filing-a-drive-artifact.selftest.mjs", "role": "evaluation" },
+    { "path": "soter/scenarios/filing-a-drive-artifact/preparation.scenario.json", "role": "evaluation" }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": ["codex", "claude"]
+  },
+  "verification": {
+    "maxLevel": "fixture",
+    "scenarios": ["soter/scenarios/filing-a-drive-artifact/preparation.scenario.json"]
+  }
+}

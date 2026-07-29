@@ -1,0 +1,322 @@
+{
+  "$contract": "soter://contracts/context-record-model/v1",
+  "contractVersion": "1.0.0",
+  "id": "model.context.meetings.records",
+  "pack": "context.meetings",
+  "version": "0.1.0",
+  "subject": "meetings.records",
+  "recordTypes": [
+    {
+      "id": "meeting",
+      "summary": "A meeting record anchored to one canonical recording identity.",
+      "fields": [
+        {
+          "id": "title",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The meeting display title."
+        },
+        {
+          "id": "meetingType",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "The configured meeting classification."
+        },
+        {
+          "id": "occurredOn",
+          "type": "string",
+          "format": "date",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "The exact calendar date used to determine whether historical-record review is required before deriving follow-up work."
+        },
+        {
+          "id": "recordingUri",
+          "type": "string",
+          "format": "resource-uri",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The exact canonical recording resource identity."
+        },
+        {
+          "id": "organizationUris",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Exact related organization resource identities.",
+          "reference": {
+            "subject": "crm.records.organization",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "projectUris",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Exact related Project resource identities when a governed relationship has established them.",
+          "reference": {
+            "subject": "projects.records.project",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "taskUris",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Exact related Task resource identities when a governed relationship has established them.",
+          "reference": {
+            "subject": "tasks.records.task",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "participantUris",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Exact Meeting participant resource identities; provider identities must be normalized before entering this portable field.",
+          "reference": {
+            "subject": "meetings.records.participant",
+            "identity": "resource-uri"
+          }
+        }
+      ],
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "Meeting records have no portable body content."
+      },
+      "deduplicationFields": [
+        "recordingUri",
+        "title"
+      ]
+    },
+    {
+      "id": "participant",
+      "summary": "A portable Meeting participant identity that remains distinct from CRM contact and provider-account identity.",
+      "fields": [
+        {
+          "id": "displayName",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The participant display name observed for this Meeting context."
+        },
+        {
+          "id": "identityUri",
+          "type": "string",
+          "format": "resource-uri",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The normalized stable participant resource identity."
+        },
+        {
+          "id": "personUris",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Exact CRM person resource identities only when a separate resolution has established them.",
+          "reference": {
+            "subject": "crm.records.person",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "role",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "The explicitly observed participant role in this Meeting context."
+        }
+      ],
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "Meeting participant records contain identity and relationship facts only."
+      },
+      "deduplicationFields": [
+        "identityUri"
+      ]
+    },
+    {
+      "id": "commitment",
+      "summary": "A Meeting-grounded commitment that may remain review-only or link to separately governed Project or Task work.",
+      "fields": [
+        {
+          "id": "summary",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The exact bounded commitment statement grounded in the Meeting."
+        },
+        {
+          "id": "status",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The portable commitment disposition or lifecycle state."
+        },
+        {
+          "id": "dueOn",
+          "type": "string",
+          "format": "date",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "The explicit due date when one was stated or selected."
+        },
+        {
+          "id": "assigneeIds",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Exact workspace actor identities only after governed resolution.",
+          "reference": {
+            "subject": "workspace.identity",
+            "identity": "provider-person-id"
+          }
+        },
+        {
+          "id": "meetingUris",
+          "type": "string-list",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "Exact source Meeting resource identities grounding the commitment.",
+          "reference": {
+            "subject": "meetings.records.meeting",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "projectUris",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Optional exact Project resource identities selected by a separate workflow.",
+          "reference": {
+            "subject": "projects.records.project",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "taskUris",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Optional exact Task resource identities created or selected by a separate workflow.",
+          "reference": {
+            "subject": "tasks.records.task",
+            "identity": "resource-uri"
+          }
+        }
+      ],
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "Commitments use structured fields rather than portable page-body content."
+      },
+      "deduplicationFields": [
+        "summary"
+      ]
+    },
+    {
+      "id": "meeting-summary",
+      "summary": "A transcript-grounded document linked to its canonical source meeting.",
+      "fields": [
+        {
+          "id": "title",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The human-readable summary title."
+        },
+        {
+          "id": "documentType",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The document classification for meeting summaries."
+        },
+        {
+          "id": "description",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "A bounded plain-language summary description."
+        },
+        {
+          "id": "link",
+          "type": "string",
+          "format": "resource-uri",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The canonical source recording link used for attribution and deduplication."
+        },
+        {
+          "id": "meetingUris",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Exact source Meeting resource identities represented by this summary.",
+          "reference": {
+            "subject": "meetings.records.meeting",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "transcriptUri",
+          "type": "string",
+          "format": "resource-uri",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "The exact transcript resource identity grounding this summary."
+        }
+      ],
+      "content": {
+        "kind": "markdown",
+        "requiredOnCreate": true,
+        "summary": "The transcript-grounded meeting summary body in Markdown."
+      },
+      "deduplicationFields": [
+        "link",
+        "title"
+      ]
+    }
+  ],
+  "limitations": [
+    "The governed context.meetings vocabulary artifact owns portable Meeting terminology; compatibility pointers and provider labels are non-canonical projections.",
+    "This model owns portable Meetings, participants, commitments, summaries, recording attribution, and transcript relationships; CRM, Projects, and Tasks remain separate selectable Context packs.",
+    "Organization, person, Project, and Task links are optional typed resource identities and do not make those Context packs required dependencies.",
+    "Provider participant identifiers must be normalized into Meeting participant resource identities and never become CRM contacts by implication.",
+    "Commitment extraction is review evidence only until a separate Automation explicitly dispositions it into a Task, Project update, or retained Meeting commitment.",
+    "Meeting summary or commitment writes require separate Automation, Integration, configuration, approval, checkpoint, and verification authority."
+  ]
+}

@@ -1,0 +1,116 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "automation.slack-conversation-review",
+  "version": "0.1.0",
+  "layer": "automation",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Prepares one fixture-contained policy-bounded exact selected-channel Slack conversation review with complete message windows, exact explicitly selected thread coverage, private untrusted content, visible injection suspicion, and no persistence or Slack-write proposal; connected message and thread acquisition is explicitly unavailable.",
+  "dependencies": [
+    {
+      "pack": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Conversation review requires exact locks, private selected-work review companions, closed review collections, and no-authority preparation."
+    },
+    {
+      "pack": "context.communications.collaboration",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Collaboration Context owns workspace, channel, thread, message, private-content, injection, and complete-coverage meaning."
+    }
+  ],
+  "capabilities": {
+    "requires": [
+      {
+        "id": "communications.records.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation must load one exact configured provider-neutral conversation-review policy selection."
+      },
+      {
+        "id": "communications.conversations.list",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation must validate the exact selected public or private channel identities and reject direct messages."
+      },
+      {
+        "id": "communications.messages.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation reads one exact complete policy-bounded top-level message window for every selected channel."
+      },
+      {
+        "id": "communications.thread.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Connected acquisition expands only exact explicitly supplied thread references; a normalized selected-window root classifies an exact selection but never creates one."
+      }
+    ],
+    "provides": []
+  },
+  "sourceRequirements": [
+    {
+      "purpose": "conversation-review-policy",
+      "capability": "communications.records.read",
+      "authorityRole": "definition",
+      "authoritySubject": "communications.records",
+      "minimum": 1,
+      "maximum": 1,
+      "reason": "Conversation review requires one exact external selection of the governed policy for channel kinds, windows, bounds, coverage, and no-persistence behavior."
+    }
+  ],
+  "authorities": [
+    { "role": "definition", "subject": "communications.records", "required": true },
+    { "role": "instance", "subject": "communications.workspace", "required": true },
+    { "role": "evidence", "subject": "runtime.runs", "required": true }
+  ],
+  "effects": ["read", "disclosure"],
+  "operator": {
+    "input": "soter/automations/slack-conversation-review/operator-input.json",
+    "preparation": {
+      "module": "soter/automations/slack-conversation-review/prepare.mjs",
+      "export": "prepareSlackConversationReviewRun",
+      "containment": "fixture",
+      "derivedReviewContract": "soter/automations/slack-conversation-review/derived-review.json"
+    },
+    "acquisition": {
+      "module": "soter/automations/slack-conversation-review/context.mjs",
+      "prepareExport": "prepareSlackConversationReviewConnectedAcquisition",
+      "finalizeExport": "finalizeSlackConversationReviewConnectedAcquisition",
+      "containment": "connected",
+      "availability": {
+        "state": "unavailable",
+        "reasonCode": "CLOSED_MESSAGE_THREAD_RESPONSE_UNAVAILABLE",
+        "reason": "Current Codex and Claude Slack routes expose message and thread results as human-formatted prose rather than a closed mechanically normalizable response."
+      },
+      "recordRequirements": [
+        {
+          "capability": "communications.records.read",
+          "recordTypes": ["conversation-review-policy"]
+        }
+      ]
+    }
+  },
+  "artifacts": [
+    { "path": "soter/automations/slack-conversation-review/operator-input.json", "role": "definition" },
+    { "path": "soter/automations/slack-conversation-review/derived-review.json", "role": "definition" },
+    { "path": "soter/automations/slack-conversation-review/connected-inspection.schema.json", "role": "definition" },
+    { "path": "soter/automations/slack-conversation-review/connected-review.schema.json", "role": "definition" },
+    { "path": "soter/automations/slack-conversation-review/prepare.mjs", "role": "implementation" },
+    { "path": "soter/automations/slack-conversation-review/context.mjs", "role": "implementation" },
+    { "path": "soter/automations/slack-conversation-review/scenario.mjs", "role": "evaluation" },
+    { "path": "soter/automations/slack-conversation-review/slack-conversation-review.selftest.mjs", "role": "evaluation" },
+    { "path": "soter/automations/slack-conversation-review/connected-context.selftest.mjs", "role": "evaluation" },
+    { "path": "soter/scenarios/slack-conversation-review/preparation.scenario.json", "role": "evaluation" }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": ["codex", "claude"]
+  },
+  "verification": {
+    "maxLevel": "fixture",
+    "scenarios": ["soter/scenarios/slack-conversation-review/preparation.scenario.json"]
+  }
+}

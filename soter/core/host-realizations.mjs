@@ -11,6 +11,7 @@ import {
 } from './lib/canonical-json.mjs';
 import { renderHostProjectionCandidates } from './host-projections.mjs';
 import { fingerprintLock, lockMatchesResolution } from './resolve.mjs';
+import { privateConfigurationStatePath } from './private-configurations.mjs';
 import {
   activeConfigurationLockStatePath,
   createHostRealizationCheckpointState,
@@ -250,6 +251,16 @@ function activeLock(root, configurationName) {
     fail('HOST_REALIZATION_ACTIVE_LOCK_MISSING', 'Exact active configuration lock is required before host realization.');
   }
   const lock = readActiveConfigurationLockState(root, configurationName).lock;
+  const expectedConfigurationPath = repoRelativePath(
+    root,
+    privateConfigurationStatePath(root, configurationName)
+  );
+  if (lock.configuration.path !== expectedConfigurationPath) {
+    fail(
+      'HOST_REALIZATION_ACTIVE_LOCK_STALE',
+      'Host realization requires an exact active private desired configuration; tracked templates are not active state.'
+    );
+  }
   const applicability = lockMatchesResolution({
     root,
     lock,
@@ -269,7 +280,9 @@ function renderedForLock(root, lock) {
     adapter,
     configurationId: lock.configuration.name,
     packIds: lock.packs.map((pack) => pack.id),
-    capabilityIds: lock.capabilities.map((capability) => capability.id)
+    capabilityIds: lock.capabilities.map((capability) => capability.id),
+    effectPolicies: lock.effectPolicies,
+    currentLock: lock
   });
   const projected = rendered.outputs.map((output) => ({
     id: output.id,

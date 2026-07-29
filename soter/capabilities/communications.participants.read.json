@@ -1,0 +1,84 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "communications.participants.read",
+  "version": "1.0.0",
+  "purpose": "Reads a complete bounded human participant roster for one exact communication conversation without treating provider actors as CRM identities.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["workspaceId", "conversationId", "excludeBots", "maximumParticipants"],
+    "properties": {
+      "workspaceId": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "conversationId": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "excludeBots": { "const": true },
+      "maximumParticipants": { "type": "integer", "minimum": 1, "maximum": 300 }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["workspaceId", "conversationId", "participants", "coverage", "provenance", "observedAt"],
+    "properties": {
+      "workspaceId": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "conversationId": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "participants": {
+        "type": "array",
+        "maxItems": 300,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["providerParticipantId", "displayName", "email", "identityFingerprint", "fingerprint"],
+          "properties": {
+            "providerParticipantId": { "type": "string", "minLength": 1, "maxLength": 300 },
+            "displayName": { "type": ["string", "null"], "minLength": 1, "maxLength": 300 },
+            "email": { "type": ["string", "null"], "maxLength": 500 },
+            "identityFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+            "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+          }
+        }
+      },
+      "coverage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["complete", "cursorExhausted", "pagesRead", "observedCount", "includedHumanCount", "excludedBotCount"],
+        "properties": {
+          "complete": { "const": true },
+          "cursorExhausted": { "const": true },
+          "pagesRead": { "type": "integer", "minimum": 1 },
+          "observedCount": { "type": "integer", "minimum": 0 },
+          "includedHumanCount": { "type": "integer", "minimum": 0 },
+          "excludedBotCount": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "provenance": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["provider", "authority", "sourceKind", "sourceReferenceFingerprint"],
+        "properties": {
+          "provider": { "type": "string", "minLength": 3 },
+          "authority": { "type": "string", "minLength": 3 },
+          "sourceKind": { "enum": ["fixture", "connected"] },
+          "sourceReferenceFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        }
+      },
+      "observedAt": { "type": "string", "minLength": 20 }
+    }
+  },
+  "authentication": { "required": true, "minimumScopes": ["conversations:read", "participants:read"] },
+  "effects": ["read", "disclosure"],
+  "idempotency": { "mode": "not-applicable", "key": null },
+  "retry": { "safe": true, "maxAttempts": 2, "checkpoint": "Persist the exact conversation and complete roster fingerprint before retry." },
+  "errors": ["authentication", "authorization", "validation", "conflict", "rate-limit", "unavailable", "retryable", "not-found", "unknown"],
+  "freshness": { "returnsProvenance": true, "returnsObservedAt": true, "maxAgeSeconds": 300 },
+  "health": {
+    "check": "Read one complete bounded contained human participant roster.",
+    "fixture": "soter/fixtures/providers/slack/workspace.json",
+    "containedVerification": "Prove exact conversation confinement, bot exclusion, complete coverage, and separation of provider identities from CRM resources."
+  },
+  "providerLimitations": [
+    "Provider participants are communication identities only; an explicit CRM resolution step is required before any person or organization link exists.",
+    "The connected connector exposes at most thirty participants per page; Core must checkpoint every exact continuation before a complete roster exists."
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "$contract": "soter://contracts/provider-mapping/v1",
+  "contractVersion": "1.0.0",
+  "id": "mapping.integration.notion.tasks-records",
+  "pack": "integration.notion",
+  "provider": "provider.integration.notion.mcp",
+  "version": "0.2.0",
+  "contextModel": "model.context.tasks.records",
+  "settingsDefinition": "settings.integration.notion",
+  "capabilities": [
+    "tasks.records.read",
+    "tasks.records.create",
+    "tasks.records.update",
+    "tasks.schema.read"
+  ],
+  "recordTypes": [
+    {
+      "id": "task-work-policy",
+      "target": "policies",
+      "capabilities": [
+        "tasks.records.read"
+      ],
+      "fields": [
+        {
+          "portable": "name",
+          "provider": "Name",
+          "providerType": "title",
+          "decode": "scalar"
+        }
+      ]
+    },
+    {
+      "id": "task",
+      "target": "tasks",
+      "capabilities": [
+        "tasks.records.read",
+        "tasks.records.create",
+        "tasks.records.update",
+        "tasks.schema.read"
+      ],
+      "fields": [
+        {
+          "portable": "title",
+          "provider": "Name",
+          "providerType": "title",
+          "decode": "scalar"
+        },
+        {
+          "portable": "status",
+          "provider": "Status",
+          "providerType": "status",
+          "valueMapping": "configured-bijection",
+          "decode": "scalar"
+        },
+        {
+          "portable": "context",
+          "provider": "Context",
+          "providerType": "select",
+          "valueMapping": "configured-bijection",
+          "decode": "scalar"
+        },
+        {
+          "portable": "projectUris",
+          "provider": "Project",
+          "providerType": "relation",
+          "decode": "json"
+        },
+        {
+          "portable": "assigneeIds",
+          "provider": "Assigned To",
+          "providerType": "person",
+          "decode": "json"
+        },
+        {
+          "portable": "nextActionOn",
+          "provider": "Next Action",
+          "providerType": "date",
+          "decode": "scalar"
+        },
+        {
+          "portable": "sourceMeetingUris",
+          "provider": "Source Meetings",
+          "providerType": "relation",
+          "decode": "json"
+        },
+        {
+          "portable": "sourceQuotes",
+          "provider": "Grounding",
+          "providerType": "text",
+          "decode": "json"
+        },
+        {
+          "portable": "sourceSummaryFingerprints",
+          "provider": "Summary Fingerprints",
+          "providerType": "text",
+          "decode": "json"
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "This mapping translates Task definitions and records only; Project and Meeting references remain typed portable resource identities owned by their respective Context packs.",
+    "Task create and update translation covers portable properties only; every write still requires an exact Core batch, approval, one-time start authorization, checkpoint, and connected verification.",
+    "The task-work-policy mapping identifies the configured Tasks policy row by name; preparation fails closed unless that external identity matches the selected Context definition.",
+    "Schema compatibility is not established by this declaration; an exact-lock private probe must observe current target schemas."
+  ]
+}

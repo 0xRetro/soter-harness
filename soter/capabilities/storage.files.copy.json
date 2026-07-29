@@ -1,0 +1,38 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "storage.files.copy",
+  "version": "1.0.0",
+  "purpose": "Creates one exact frozen copy only when the reviewed filing decision requires a snapshot.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["sourceUri", "destinationUri", "name", "deduplicationKey"],
+    "properties": {
+      "sourceUri": { "type": "string" },
+      "destinationUri": { "type": "string" },
+      "name": { "type": "string" },
+      "deduplicationKey": { "type": "string", "minLength": 12 }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["artifact", "created", "provenance", "observedAt"],
+    "properties": {
+      "artifact": { "type": "object", "additionalProperties": false, "required": ["uri", "name", "kind", "parentUris", "sourceUri"], "properties": { "uri": { "type": "string" }, "name": { "type": "string" }, "kind": { "const": "file" }, "parentUris": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string" } }, "sourceUri": { "type": "string" } } },
+      "created": { "type": "boolean" },
+      "provenance": { "type": "object" },
+      "observedAt": { "type": "string" }
+    }
+  },
+  "authentication": { "required": true, "minimumScopes": ["storage:write"] },
+  "effects": ["write"],
+  "idempotency": { "mode": "conditional", "key": "deduplicationKey" },
+  "retry": { "safe": false, "maxAttempts": 1, "checkpoint": "Persist the exact deduplication key and observe destination state before reconciliation." },
+  "errors": ["authentication", "authorization", "validation", "conflict", "rate-limit", "unavailable", "retryable", "not-found", "unknown"],
+  "freshness": { "returnsProvenance": true, "returnsObservedAt": true, "maxAgeSeconds": null },
+  "health": { "check": "Create one frozen copy in a contained in-memory store.", "fixture": "soter/fixtures/providers/google-drive/storage.json", "containedVerification": "Prove explicit snapshot intent, one create, deduplicated replay, and no source mutation." },
+  "providerLimitations": ["Copy is never a move substitute and must not be selected merely because shortcut or move support is unavailable."]
+}

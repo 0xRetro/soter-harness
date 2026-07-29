@@ -79,9 +79,31 @@
     "payload": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["meeting", "transcript", "summary", "tasks", "policies", "limitations"],
+      "required": ["preparedWork", "meeting", "transcript", "summary", "tasks", "policies", "limitations"],
       "properties": {
-        "meeting": { "$ref": "#/$defs/recordReference" },
+        "preparedWork": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "fingerprint", "reviewMaterialFingerprint", "inputContractFingerprint"],
+          "properties": {
+            "id": { "type": "string", "pattern": "^work\\.meeting-intake\\.[a-f0-9]{24}$" },
+            "fingerprint": { "$ref": "#/$defs/fingerprint" },
+            "reviewMaterialFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "inputContractFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        "meeting": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["recordId", "recordFingerprint", "occurredOn", "ageDays", "ageState"],
+          "properties": {
+            "recordId": { "type": "string", "minLength": 1 },
+            "recordFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "occurredOn": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+            "ageDays": { "type": "integer", "minimum": 0 },
+            "ageState": { "enum": ["current", "stale"] }
+          }
+        },
         "transcript": {
           "type": "object",
           "additionalProperties": false,
@@ -94,9 +116,16 @@
         "summary": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["title", "segmentReferences"],
+          "required": ["title", "project", "ourSpeakerIds", "segmentReferences"],
           "properties": {
             "title": { "type": "string", "minLength": 3 },
+            "project": { "$ref": "#/$defs/recordReference" },
+            "ourSpeakerIds": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "type": "string", "minLength": 1 }
+            },
             "segmentReferences": {
               "type": "array",
               "uniqueItems": true,

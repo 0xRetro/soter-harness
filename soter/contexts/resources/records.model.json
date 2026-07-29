@@ -1,0 +1,30 @@
+{
+  "$contract": "soter://contracts/context-record-model/v1",
+  "contractVersion": "1.0.0",
+  "id": "model.context.resources.records",
+  "pack": "context.resources",
+  "version": "0.1.0",
+  "subject": "resources.records",
+  "recordTypes": [
+    {
+      "id": "resource",
+      "summary": "One external account, platform, shared asset, or registry the organization uses and administers.",
+      "fields": [
+        { "id": "name", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The exact human-readable resource name." },
+        { "id": "resourceType", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The current governed resource classification." },
+        { "id": "description", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "One factual explanation of what the resource is used for." },
+        { "id": "accessUri", "type": "string", "format": "resource-uri", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "A non-secret governed access or administration reference." },
+        { "id": "administratorIds", "type": "string-list", "requiredOnCreate": false, "nullable": false, "mutable": true, "reference": { "subject": "workspace.identity", "identity": "provider-person-id" }, "summary": "Exact configured human administrator identities." },
+        { "id": "organizationUris", "type": "string-list", "requiredOnCreate": false, "nullable": false, "mutable": true, "reference": { "subject": "crm.records.organization", "identity": "resource-uri" }, "summary": "Exact related organization resource identities." },
+        { "id": "lastVerifiedOn", "type": "string", "format": "date", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "The exact date of the most recent separately evidenced validation." }
+      ],
+      "content": { "kind": "markdown", "requiredOnCreate": false, "summary": "Optional governed usage notes may be retained without secrets or credential values." },
+      "deduplicationFields": ["name", "accessUri"]
+    }
+  ],
+  "limitations": [
+    "Credential values, tokens, passwords, one-time codes, private invite material, and raw provider responses are outside this model.",
+    "The governed context.resources vocabulary artifact owns the exact current resource term and definition.",
+    "A resource record grants no account access, provider permission, validation result, write, disclosure, or execution authority."
+  ]
+}

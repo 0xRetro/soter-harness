@@ -1,4 +1,4 @@
-import { _electron as electron, expect, test, type ElectronApplication, type Page } from '@playwright/test';
+import { _electron as electron, expect, test, type ElectronApplication, type Locator, type Page } from '@playwright/test';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -6,30 +6,119 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 // @ts-expect-error The canonical Kernel distribution module is checked JavaScript without declarations.
 import { buildBundle, buildPackRelease } from '../../../kernel/distribution.mjs';
+// @ts-expect-error The canonical Core contained-state module is checked JavaScript without declarations.
+import { materializeContainedPrivateConfiguration } from '../../../core/contained-private-configurations.mjs';
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = path.resolve(directory, '../../../..');
 const axeSource = fs.readFileSync(path.join(repositoryRoot, 'node_modules/axe-core/axe.min.js'), 'utf8');
+const privateMeetingOptionPrefix = 'PRIVATE_PROVIDER_STUDIO_MEETING_OPTION_';
 
 test.setTimeout(90_000);
 
+function meetingOptionMapping(
+  mapping: string,
+  recordType: string,
+  field: string,
+  values: string[]
+) {
+  return {
+    mapping,
+    recordType,
+    field,
+    mode: 'exact-bijection',
+    entries: values.map((portable) => ({
+      portable,
+      provider: privateMeetingOptionPrefix
+        + field.toUpperCase().replace(/[^A-Z0-9]+/g, '_')
+        + '_'
+        + portable.toUpperCase().replace(/[^A-Z0-9]+/g, '_')
+    }))
+  };
+}
+
+function meetingIntakeOptionMappings() {
+  return [
+    meetingOptionMapping(
+      'mapping.integration.notion.meetings-records',
+      'meeting',
+      'meetingType',
+      ['Review']
+    ),
+    meetingOptionMapping(
+      'mapping.integration.notion.meetings-records',
+      'meeting-summary',
+      'documentType',
+      ['Meeting Summary']
+    ),
+    meetingOptionMapping(
+      'mapping.integration.notion.crm-records',
+      'organization',
+      'organizationType',
+      ['Foundation']
+    ),
+    meetingOptionMapping(
+      'mapping.integration.notion.crm-records',
+      'organization',
+      'tags',
+      ['DeFi']
+    ),
+    meetingOptionMapping(
+      'mapping.integration.notion.projects-records',
+      'project',
+      'projectType',
+      ['Project']
+    ),
+    meetingOptionMapping(
+      'mapping.integration.notion.projects-records',
+      'project',
+      'status',
+      ['active']
+    ),
+    meetingOptionMapping(
+      'mapping.integration.notion.tasks-records',
+      'task',
+      'status',
+      ['To Do']
+    ),
+    meetingOptionMapping(
+      'mapping.integration.notion.tasks-records',
+      'task',
+      'context',
+      ['Project']
+    )
+  ];
+}
+
 function containedWorkspace() {
   const root = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'soter-studio-e2e-'));
-  for (const name of ['soter', '.claude', '.codex']) fs.cpSync(path.join(repositoryRoot, name), path.join(root, name), { recursive: true });
-  for (const name of ['package.json', 'package-lock.json', 'tsconfig.studio.json', 'AGENTS.md', 'CLAUDE.md']) fs.copyFileSync(path.join(repositoryRoot, name), path.join(root, name));
+  fs.cpSync(path.join(repositoryRoot, 'soter'), path.join(root, 'soter'), { recursive: true });
+  for (const name of ['package.json', 'package-lock.json', 'tsconfig.studio.json']) {
+    fs.copyFileSync(path.join(repositoryRoot, name), path.join(root, name));
+  }
+  for (const unmanagedHostOutput of [
+    'AGENTS.md',
+    'CLAUDE.md',
+    '.agents',
+    '.codex',
+    '.claude',
+    '.claude-plugin'
+  ]) {
+    if (fs.existsSync(path.join(root, unmanagedHostOutput))) {
+      throw new Error('Contained Studio root adopted unmanaged host output: ' + unmanagedHostOutput);
+    }
+  }
   return root;
 }
 
 function containedHostConsumer() {
   const root = containedWorkspace();
-  fs.rmSync(path.join(root, 'AGENTS.md'), { force: true });
-  fs.rmSync(path.join(root, '.codex'), { recursive: true, force: true });
-  const activeLocks = path.join(root, '.soter/state/configuration-locks');
-  fs.mkdirSync(activeLocks, { recursive: true });
-  fs.copyFileSync(
-    path.join(root, 'soter/fixtures/meeting-intake/meeting-intake.lock.json'),
-    path.join(activeLocks, 'meeting-intake.json')
-  );
+  materializeContainedPrivateConfiguration({
+    root,
+    configurationName: 'meeting-intake',
+    host: 'codex',
+    notionOptionMappings: meetingIntakeOptionMappings()
+  });
   return root;
 }
 
@@ -106,7 +195,15 @@ async function launch(root: string): Promise<{ app: ElectronApplication; page: P
   return { app, page };
 }
 
+async function prepareContainedRun(page: Page, expectedOutcome: Locator) {
+  const route = page.url();
+  await page.getByRole('button', { name: 'Prepare contained run' }).click({ noWaitAfter: true });
+  await expect(expectedOutcome).toBeVisible({ timeout: 45_000 });
+  expect(page.url()).toBe(route);
+}
+
 test('launches with a sandboxed canonical adapter and performs zero workspace writes while browsing', async () => {
+  test.setTimeout(180_000);
   const root = containedWorkspace();
   const before = workspaceFingerprint(root);
   const { app, page } = await launch(root);
@@ -136,7 +233,7 @@ test('launches with a sandboxed canonical adapter and performs zero workspace wr
     expect(productionCsp).toContain("connect-src 'self'");
     expect(productionCsp).not.toContain('127.0.0.1');
     expect(productionCsp).not.toContain('ws://');
-    const missingProposalReads = await page.evaluate(async () => {
+    const unboundProposalReads = await page.evaluate(async () => {
       const snapshot = await window.soterStudio.getWorkspaceSnapshot();
       const configuration = snapshot.configurations.find((item) => item.name === 'email-triage');
       if (!configuration?.lockFingerprint) throw new Error('Email configuration lock is unavailable.');
@@ -150,21 +247,21 @@ test('launches with a sandboxed canonical adapter and performs zero workspace wr
         window.soterStudio.getAutomationProposalMaterial(request)
       ]);
     });
-    expect(missingProposalReads).toEqual([{
+    expect(unboundProposalReads).toEqual([{
       ok: false,
       error: {
-        code: 'AUTOMATION_PROPOSAL_MISSING',
+        code: 'AUTOMATION_PROPOSAL_BINDING_INVALID',
         message: 'The selected review-only proposal is unavailable.'
       }
     }, {
       ok: false,
       error: {
-        code: 'AUTOMATION_PROPOSAL_MISSING',
+        code: 'AUTOMATION_PROPOSAL_BINDING_INVALID',
         message: 'Private proposal material is unavailable for this selected proposal.'
       }
     }]);
-    expect(JSON.stringify(missingProposalReads)).not.toContain('.soter/state');
-    const missingConnectedProposalFlows = await page.evaluate(async () => {
+    expect(JSON.stringify(unboundProposalReads)).not.toContain('.soter/state');
+    const unboundConnectedProposalFlows = await page.evaluate(async () => {
       const snapshot = await window.soterStudio.getWorkspaceSnapshot();
       const configuration = snapshot.configurations.find((item) => item.name === 'email-triage');
       if (!configuration?.lockFingerprint) throw new Error('Email configuration lock is unavailable.');
@@ -178,30 +275,32 @@ test('launches with a sandboxed canonical adapter and performs zero workspace wr
         window.soterStudio.beginProposalConnectedApproval({ proposal, preview: {} as never })
       ]);
     });
-    expect(missingConnectedProposalFlows).toEqual([{
+    expect(unboundConnectedProposalFlows).toEqual([{
       ok: false,
       error: {
-        code: 'AUTOMATION_PROPOSAL_MISSING',
+        code: 'AUTOMATION_PROPOSAL_BINDING_INVALID',
         message: 'The exact connected proposal preview is unavailable.'
       }
     }, {
       ok: false,
       error: {
-        code: 'AUTOMATION_PROPOSAL_MISSING',
+        code: 'AUTOMATION_PROPOSAL_BINDING_INVALID',
         message: 'The exact connected approval request is unavailable.'
       }
     }]);
-    expect(JSON.stringify(missingConnectedProposalFlows)).not.toContain('.soter/state');
+    expect(JSON.stringify(unboundConnectedProposalFlows)).not.toContain('.soter/state');
     await app.evaluate(async ({ BrowserWindow }, source) => BrowserWindow.getAllWindows()[0].webContents.executeJavaScript(source), axeSource);
     await expectAccessible(page);
     await page.getByRole('link', { name: /Operate/ }).click();
     await page.locator('.catalog-row').filter({ hasText: 'Automation Project Pulse' }).click();
     await expect(page.getByText('Operator workspace · canonical projection')).toBeVisible();
     await expect(page.getByText('Example only · no authority')).toBeVisible();
-    await page.getByRole('textbox', { name: 'Project reference' }).fill('project.pulse-risk');
+    await page.getByRole('textbox', { name: 'Project reference' }).fill('https://www.notion.so/11111111111111111111111111111111');
+    await page.getByRole('textbox', { name: 'Status date' }).fill('2026-07-20');
+    await page.getByRole('combobox', { name: 'Visibility' }).selectOption('Internal');
+    await page.getByRole('combobox', { name: 'Project health judgment' }).selectOption('on-track');
     await page.getByRole('textbox', { name: 'Operator note' }).fill('PRIVATE_E2E_NOTE_SENTINEL');
-    await page.getByRole('button', { name: 'Prepare contained run' }).click();
-    await expect(page.getByText('Private preparation receipt', { exact: true })).toBeVisible();
+    await prepareContainedRun(page, page.getByText('Private preparation receipt', { exact: true }));
     await expect(page.getByText('Private local review', { exact: true })).toBeVisible();
     await expect(page.locator('.dossier-private-review')).toContainText('PRIVATE_E2E_NOTE_SENTINEL');
     await expect(page.getByText('PREPARATION_READY_FOR_REVIEW')).toBeVisible();
@@ -240,21 +339,24 @@ test('launches with a sandboxed canonical adapter and performs zero workspace wr
     await page.locator('.catalog-row').filter({ hasText: 'Automation Meeting Intake' }).click();
     await expect(page.getByRole('heading', { name: 'Automation Meeting Intake' })).toBeVisible();
     await page.getByRole('textbox', { name: 'Transcript meeting reference' }).fill('meeting.fixture-001');
-    await page.getByRole('textbox', { name: 'Recording reference' }).fill('otter://fixture/meeting.fixture-001');
+    await page.getByRole('textbox', { name: 'Recording reference' }).fill('https://otter.ai/u/meeting_fixture_001');
     await page.getByRole('textbox', { name: 'Desired outcome' }).fill('PRIVATE_MEETING_E2E_GOAL');
-    await page.getByRole('button', { name: 'Prepare contained run' }).click();
-    await expect(page.getByText('Meeting Intake preview', { exact: true })).toBeVisible();
+    await prepareContainedRun(page, page.getByText('Meeting Intake preview', { exact: true }));
     await expect(page.getByText('Relationships and follow-up candidates require cited judgment', { exact: true })).toBeVisible();
     await expect(page.getByText('Participant identity resolution', { exact: true })).toBeVisible();
     await expect(page.getByText('0 proposed changes · judgment not performed', { exact: true })).toBeVisible();
     await expect(page.getByText('No approval request', { exact: true })).toBeVisible();
     await expect(page.getByText('Proposed change ledger', { exact: true })).toHaveCount(0);
-    await expect(page.locator('.dossier-private-review')).toContainText('otter://fixture/meeting.fixture-001');
+    await expect(page.locator('.dossier-private-review')).toContainText('https://otter.ai/u/meeting_fixture_001');
     await expect(page.locator('.dossier-private-review')).toContainText('PRIVATE_MEETING_E2E_GOAL');
     const meetingPreparedState = fs.readdirSync(preparedDirectory)
       .map((name) => fs.readFileSync(path.join(preparedDirectory, name), 'utf8'))
       .join('\n');
-    expect(meetingPreparedState).not.toContain('otter://fixture/meeting.fixture-001');
+    const meetingPreparedWork = fs.readdirSync(preparedDirectory)
+      .map((name) => JSON.parse(fs.readFileSync(path.join(preparedDirectory, name), 'utf8')))
+      .find((work) => work.automation?.id === 'automation.meeting-intake');
+    expect(meetingPreparedWork?.id).toBeTruthy();
+    expect(meetingPreparedState).not.toContain('https://otter.ai/u/meeting_fixture_001');
     expect(meetingPreparedState).not.toContain('PRIVATE_MEETING_E2E_GOAL');
     const meetingReviewState = fs.readdirSync(reviewDirectory)
       .map((name) => fs.readFileSync(path.join(reviewDirectory, name), 'utf8'))
@@ -267,19 +369,18 @@ test('launches with a sandboxed canonical adapter and performs zero workspace wr
     await page.locator('.catalog-row').filter({ hasText: 'Automation Task Capture' }).click();
     await expect(page.getByRole('heading', { name: 'Automation Task Capture' })).toBeVisible();
     await page.getByRole('textbox', { name: 'Task title' }).fill('PRIVATE_TASK_E2E_TITLE');
-    await page.getByRole('textbox', { name: 'Project reference' }).fill('soter-fixture://crm/project/launch');
-    await page.getByRole('textbox', { name: 'Assignee reference' }).fill('provider-person.maya');
+    await page.getByRole('textbox', { name: 'Project reference' }).fill('soter-fixture://projects/project/launch');
+    await page.getByLabel('Assignee').selectOption('self');
     await page.getByLabel('Next action date').fill('2026-07-24');
     await page.getByLabel('Task context').selectOption('Project');
-    await page.getByRole('button', { name: 'Prepare contained run' }).click();
-    await expect(page.getByText('Task Capture preview', { exact: true })).toBeVisible();
+    await prepareContainedRun(page, page.getByText('Task Capture preview', { exact: true }));
     await expect(page.getByText('Task create scope prepared for review', { exact: true })).toBeVisible();
     const taskEffects = page.getByRole('region', { name: 'Preparation effect boundary' });
     await expect(taskEffects).toContainText('write');
     await expect(taskEffects).toContainText('confirm');
     await expect(taskEffects).toContainText('not executed');
     const taskChange = page.getByRole('region', { name: 'Proposed change fingerprints' });
-    await expect(taskChange).toContainText('crm.records.create');
+    await expect(taskChange).toContainText('tasks.records.create');
     await expect(taskChange).toContainText('unavailable');
     await expect(page.getByText('No approval request', { exact: true })).toBeVisible();
     await expect(page.locator('.dossier-private-review')).toContainText('PRIVATE_TASK_E2E_TITLE');
@@ -301,10 +402,9 @@ test('launches with a sandboxed canonical adapter and performs zero workspace wr
     await expectAccessible(page);
 
     await page.getByRole('textbox', { name: 'Task title' }).fill('Send launch deck');
-    await page.getByRole('button', { name: 'Prepare contained run' }).click();
-    await expect(page.getByText('An exact-title task candidate exists and must be reviewed instead of silently creating a duplicate.', { exact: true })).toBeVisible();
+    await prepareContainedRun(page, page.getByText('An exact-title task candidate exists and must be reviewed instead of silently creating a duplicate.', { exact: true }));
     await expect(page.getByRole('region', { name: 'Proposed change fingerprints' })).toHaveCount(0);
-    await expect(page.getByText('0 proposed changes · write not proposed', { exact: true })).toBeVisible();
+    await expect(page.getByText('0 proposed changes · held · TASK_CREATE_HELD_FOR_DUPLICATE_REVIEW', { exact: true })).toBeVisible();
     await expect(page.getByText('No approval request', { exact: true })).toBeVisible();
     await expect(page.locator('.operator-confirmation-ceremony button')).toHaveCount(0);
 
@@ -313,9 +413,8 @@ test('launches with a sandboxed canonical adapter and performs zero workspace wr
     await page.getByRole('textbox', { name: 'Mailbox window query' }).fill('in:inbox newer_than:1d');
     await page.getByLabel('Processing scope').selectOption('triage-drafts-handoffs-digest');
     await page.getByRole('textbox', { name: 'Private focus notes' }).fill('PRIVATE_EMAIL_E2E_FOCUS_SENTINEL');
-    await page.getByRole('button', { name: 'Prepare contained run' }).click();
     const emailManifest = page.getByRole('region', { name: 'Prepared review collections' });
-    await expect(emailManifest).toBeVisible();
+    await prepareContainedRun(page, emailManifest);
     await expect(emailManifest).toContainText('15');
     await expect(emailManifest).toContainText('11');
     await expect(emailManifest).toContainText('4');
@@ -406,7 +505,7 @@ test('launches with a sandboxed canonical adapter and performs zero workspace wr
     expect(workspaceProjection).not.toContain('PRIVATE_EMAIL_E2E_FOCUS_SENTINEL');
     const missingDerivedReview = await page.evaluate(
       (workId) => window.soterStudio.getPreparedWorkDerivedReview({ workId }),
-      projectReview.workId
+      meetingPreparedWork.id
     );
     expect(missingDerivedReview).toEqual({
       ok: false,
@@ -604,8 +703,8 @@ test('renders the canonical lifecycle coverage without enabling fixture authorit
     await expect(recovery.getByText('Exact current step')).toBeVisible();
     await expect(recovery.getByText('Remaining')).toBeVisible();
     await expect(recovery.getByRole('button', { name: 'No executable continuation' })).toBeDisabled();
-    await states.getByRole('button', { name: /rolled back/ }).click();
-    await expect(page.getByText('TRANSACTION_ROLLED_BACK')).toBeVisible();
+    await states.getByRole('button', { name: /private basis unavailable/ }).click();
+    await expect(page.getByText('CONFIGURATION_BASIS_NOT_PRIVATE_ACTIVE')).toBeVisible();
     await expect(page.getByRole('button', { name: 'No executable continuation' })).toBeDisabled();
     await app.evaluate(async ({ BrowserWindow }, source) => BrowserWindow.getAllWindows()[0].webContents.executeJavaScript(source), axeSource);
     await expectAccessible(page);
@@ -627,7 +726,7 @@ test('configuration ceremony reaches a one-time local checkpoint without applyin
   candidate.host = {
     id: 'claude',
     adapter: 'host.claude',
-    version: '0.1.0',
+    version: '0.3.1',
     reason: 'Use the declared Claude projection for this exact local configuration transaction.'
   };
   const { app, page } = await launch(root);
@@ -663,8 +762,7 @@ test('configuration ceremony reaches a one-time local checkpoint without applyin
 test('host realization executes and verifies only inside the contained consumer', async () => {
   const root = containedHostConsumer();
   const containedBefore = nonPrivateWorkspaceFiles(root);
-  const developmentInstructions = fs.readFileSync(path.join(repositoryRoot, 'AGENTS.md'));
-  const developmentConfig = fs.readFileSync(path.join(repositoryRoot, '.codex/config.toml'));
+  const canonicalHostSourcesBefore = workspaceFingerprint(path.join(repositoryRoot, 'soter/hosts'));
   const { app, page } = await launch(root);
   try {
     const hostile = await page.evaluate(async () => {
@@ -688,6 +786,7 @@ test('host realization executes and verifies only inside the contained consumer'
     expect(await page.locator('.host-realization-workbench').evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(1);
     expect(await page.locator('body').innerText()).not.toContain('/private/consumer/root');
     expect(await page.locator('body').innerText()).not.toContain('HOST_TEMPLATE_BYTES_SENTINEL');
+    expect(await page.locator('body').innerText()).not.toContain(privateMeetingOptionPrefix);
 
     await page.getByRole('button', { name: 'Request confirmation' }).click();
     await page.getByLabel('I reviewed every relative path, effect, mode, and fingerprint.').check();
@@ -732,8 +831,7 @@ test('host realization executes and verifies only inside the contained consumer'
     const added = [...containedAfter.keys()].filter((file) => !containedBefore.has(file)).sort();
     expect(added).toEqual(['.codex/config.toml', 'AGENTS.md']);
     for (const [file, before] of containedBefore) expect(containedAfter.get(file)).toEqual(before);
-    expect(fs.readFileSync(path.join(repositoryRoot, 'AGENTS.md'))).toEqual(developmentInstructions);
-    expect(fs.readFileSync(path.join(repositoryRoot, '.codex/config.toml'))).toEqual(developmentConfig);
+    expect(workspaceFingerprint(path.join(repositoryRoot, 'soter/hosts'))).toBe(canonicalHostSourcesBefore);
     await app.evaluate(async ({ BrowserWindow }, source) => BrowserWindow.getAllWindows()[0].webContents.executeJavaScript(source), axeSource);
     await expectAccessible(page);
   } finally {
@@ -745,6 +843,10 @@ test('host realization executes and verifies only inside the contained consumer'
 test('canonical file changes invalidate and refresh through Core', async () => {
   const root = containedWorkspace();
   const { app, page } = await launch(root);
+  // The production file watcher can be scheduled behind earlier packaged
+  // Electron scenarios on a loaded host. Keep this bounded, but allow the
+  // same refresh that passes immediately in isolation to complete in-suite.
+  const watcherRefreshTimeout = 30_000;
   try {
     const source = path.join(root, 'soter/capabilities/crm.records.read.json');
     const target = path.join(root, 'soter/capabilities/studio.test.read.json');
@@ -752,11 +854,11 @@ test('canonical file changes invalidate and refresh through Core', async () => {
     capability.id = 'studio.test.read';
     capability.purpose = 'Contained inspection capability used only to prove watcher invalidation.';
     fs.writeFileSync(target, JSON.stringify(capability, null, 2) + '\n');
-    await expect(page.locator('.catalog-panel').getByText('Studio Test Read')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('.catalog-panel').getByText('Studio Test Read')).toBeVisible({ timeout: watcherRefreshTimeout });
     const privateCalls = path.join(root, '.soter/state/host-calls');
     fs.mkdirSync(privateCalls, { recursive: true });
     fs.writeFileSync(path.join(privateCalls, 'malformed.json'), '{not-json\n');
-    await expect(page.getByText('SOTER_INSPECTION_RUNTIME_JSON_INVALID')).toBeAttached({ timeout: 10_000 });
+    await expect(page.getByText('SOTER_INSPECTION_RUNTIME_JSON_INVALID')).toBeAttached({ timeout: watcherRefreshTimeout });
   } finally {
     await app.close();
     fs.rmSync(root, { recursive: true, force: true });

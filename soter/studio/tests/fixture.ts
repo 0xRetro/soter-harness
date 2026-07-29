@@ -1,7 +1,8 @@
-import type { Activity, AutomationProposal, AutomationProposalMaterial, BundleInspection, Configuration, ConfigurationChangeInspection, ConfigurationPreview, ConfigurationPreviewRequest, HostRealizationInspection, InspectionSnapshot, OperatorInspection, PackInstallInspection, PackReleaseInspection, PreparedConnectedPlan, PreparedReviewBatch, PreparedReviewBatchMaterial, PreparedReviewRow, PreparedWork, PreparedWorkDerivedReviewMaterial, PreparedWorkReviewMaterial, ProposalConnectedBatchPreview, Workflow } from '../renderer/src/types';
+import type { Activity, AutomationProposal, AutomationProposalMaterial, BundleInspection, Configuration, ConfigurationChangeInspection, ConfigurationPreview, ConfigurationPreviewRequest, HostRealizationInspection, InspectionSnapshot, OperatorInspection, PackInstallInspection, PackReleaseInspection, PreparedConnectedPlan, PreparedReviewAction, PreparedReviewBatch, PreparedReviewBatchMaterial, PreparedReviewRow, PreparedWork, PreparedWorkDerivedReviewMaterial, PreparedWorkReviewMaterial, ProposalConnectedBatchPreview, Workflow } from '../renderer/src/types';
 // @ts-expect-error Canonical Core helper is a checked JavaScript module without declarations.
 import { fingerprintJson } from '../../core/lib/canonical-json.mjs';
 import emailDerivedReviewDefinition from '../../automations/email-triage/derived-review.json';
+import projectPulseDerivedReviewDefinition from '../../automations/project-pulse/derived-review.json';
 
 const fp = (digit: string) => `sha256:${digit.repeat(64)}`;
 
@@ -15,6 +16,27 @@ function finalizePreparedWork(work: PreparedWork): PreparedWork {
   delete (unsignedWork as Partial<typeof unsignedWork>).fingerprint;
   work.fingerprint = fingerprintJson(unsignedWork);
   return work;
+}
+
+function operatorPreparationProjection(): NonNullable<Workflow['operator']>['preparation'] {
+  return {
+    supported: true,
+    boundary: 'explicit private preparation modes only; mode facts grant no provider-call, approval, continuation, execution, write, readiness, verification, proof, maturity, or migration authority',
+    workStates: ['draft', 'preparing', 'needs-input', 'ready-for-review', 'ready-for-acquisition'],
+    modes: [{
+      id: 'contained',
+      configurationBases: ['tracked-contained', 'private-active'],
+      resultState: 'ready-for-review',
+      availability: { state: 'available' },
+      boundary: 'private fixture-contained preparation only; no connected provider call, approval, execution, write, proof, maturity, or migration authority'
+    }, {
+      id: 'connected-acquisition',
+      configurationBases: ['private-active'],
+      resultState: 'ready-for-acquisition',
+      availability: { state: 'available' },
+      boundary: 'stages exact private input and the current active lock only; no provider call, acquired context, approval, continuation, execution, write, readiness, verification, proof, maturity, or migration authority'
+    }]
+  };
 }
 
 const operationPlan: Activity = {
@@ -106,8 +128,18 @@ function projectPulseExecution(runId: string, evidenceId: string) {
     runId,
     evidenceIds: [evidenceId],
     capabilityOrder: {
-      expected: ['crm.records.read', 'crm.records.read', 'crm.records.read'],
-      observed: ['crm.records.read', 'crm.records.read', 'crm.records.read'],
+      expected: [
+        'projects.records.read',
+        'projects.records.read',
+        'tasks.records.read',
+        'documents.content.read'
+      ],
+      observed: [
+        'projects.records.read',
+        'projects.records.read',
+        'tasks.records.read',
+        'documents.content.read'
+      ],
       state: 'passed'
     },
     effectModes: {
@@ -147,6 +179,7 @@ export function studioFixture(): InspectionSnapshot {
       name: 'meeting-intake',
       status: 'declared-static',
       lockState: 'current',
+      configurationBasis: 'tracked-contained',
       host: 'codex',
       maturity: {
         verified: 'unknown',
@@ -174,15 +207,37 @@ export function studioFixture(): InspectionSnapshot {
         ]
       },
       selections: [
-        { id: 'automation.meeting-intake', version: '0.1.0', layer: 'automation', source: 'user', reason: 'Selected outcome.' },
-        { id: 'integration.notion', version: '0.1.0', layer: 'integration', source: 'binding', reason: 'Selected provider.' }
+        { id: 'automation.meeting-intake', version: '0.1.0', layer: 'automation', source: 'user', reason: 'Selected grounded Meeting Intake preparation and private complete-group review; no Meeting-summary or Task-fold write authority is granted.' },
+        { id: 'context.crm', version: '0.1.0', layer: 'context', source: 'dependency', reason: 'Portable organization identity.' },
+        { id: 'context.projects', version: '0.1.0', layer: 'context', source: 'dependency', reason: 'Portable Project identity.' },
+        { id: 'context.tasks', version: '0.1.0', layer: 'context', source: 'dependency', reason: 'Portable Task identity and update meaning.' },
+        { id: 'context.meetings', version: '0.1.0', layer: 'context', source: 'dependency', reason: 'Portable Meeting and summary meaning.' },
+        { id: 'integration.notion', version: '0.2.0', layer: 'integration', source: 'binding', reason: 'Selected record and document provider.' },
+        { id: 'integration.otter', version: '0.1.0', layer: 'integration', source: 'binding', reason: 'Selected transcript provider.' }
       ],
-      bindings: [{ capability: 'crm.records.read', providerPack: 'integration.notion', authorities: ['authority.crm.instance'], effects: ['read'], reason: 'Exact binding.' }],
-      authorities: [{ id: 'authority.crm.instance', role: 'instance', subject: 'crm.records', reason: 'Exact authority.' }],
+      bindings: [
+        { capability: 'meeting.transcript.read', providerPack: 'integration.otter', authorities: ['authority.otter.provider'], effects: ['read', 'disclosure'], reason: 'Exact transcript read binding.' },
+        { capability: 'meetings.records.read', providerPack: 'integration.notion', authorities: ['authority.meetings.definition', 'authority.meetings.instance'], effects: ['read', 'disclosure'], reason: 'Exact Meeting read binding.' },
+        { capability: 'documents.content.read', providerPack: 'integration.notion', authorities: ['authority.meetings.definition', 'authority.tasks.definition', 'authority.meetings.instance'], effects: ['read', 'disclosure'], reason: 'Exact configured policy-body and read-only Meeting document-body binding; it grants no write authority.' },
+        { capability: 'crm.records.read', providerPack: 'integration.notion', authorities: ['authority.crm.definition', 'authority.crm.instance'], effects: ['read', 'disclosure'], reason: 'Exact CRM organization read binding.' },
+        { capability: 'projects.records.read', providerPack: 'integration.notion', authorities: ['authority.projects.definition', 'authority.projects.instance'], effects: ['read', 'disclosure'], reason: 'Exact Project read binding.' },
+        { capability: 'tasks.records.read', providerPack: 'integration.notion', authorities: ['authority.tasks.definition', 'authority.tasks.instance'], effects: ['read', 'disclosure'], reason: 'Exact Task read binding.' }
+      ],
+      authorities: [
+        { id: 'authority.meetings.definition', role: 'definition', subject: 'meetings.records', reason: 'Meeting-summary policy authority.' },
+        { id: 'authority.meetings.instance', role: 'instance', subject: 'meetings.records', reason: 'Meeting record authority.' },
+        { id: 'authority.crm.definition', role: 'definition', subject: 'crm.records', reason: 'CRM policy authority.' },
+        { id: 'authority.crm.instance', role: 'instance', subject: 'crm.records', reason: 'CRM organization authority.' },
+        { id: 'authority.projects.definition', role: 'definition', subject: 'projects.records', reason: 'Project policy authority.' },
+        { id: 'authority.projects.instance', role: 'instance', subject: 'projects.records', reason: 'Project record authority.' },
+        { id: 'authority.tasks.definition', role: 'definition', subject: 'tasks.records', reason: 'Task-fold policy authority.' },
+        { id: 'authority.tasks.instance', role: 'instance', subject: 'tasks.records', reason: 'Task record authority.' },
+        { id: 'authority.otter.provider', role: 'provider', subject: 'meeting.transcript', reason: 'Transcript provider authority.' }
+      ],
       effectPolicies: [
         { effect: 'read', mode: 'allow', reason: 'Reads are allowed.' },
         { effect: 'disclosure', mode: 'allow', reason: 'Private disclosure is allowed.' },
-        { effect: 'write', mode: 'confirm', reason: 'Writes require confirmation.' },
+        { effect: 'write', mode: 'confirm', reason: 'The selected Integration exposes separately governed writes, but Meeting Intake declares no write capability. COMPLETE_MEETING_READBACK_UNAVAILABLE holds its complete group before proposal selection, batch, approval, start, checkpoint, provider write, or verification.' },
         { effect: 'dispatch', mode: 'prohibit', reason: 'Dispatch is prohibited.' },
         { effect: 'destructive', mode: 'prohibit', reason: 'Destructive effects are prohibited.' }
       ],
@@ -192,6 +247,7 @@ export function studioFixture(): InspectionSnapshot {
       name: 'project-pulse',
       status: 'declared-static',
       lockState: 'current',
+      configurationBasis: 'tracked-contained',
       host: 'codex',
       maturity: {
         verified: 'unknown',
@@ -211,18 +267,25 @@ export function studioFixture(): InspectionSnapshot {
         }]
       },
       selections: [
-        { id: 'automation.project-pulse', version: '0.1.0', layer: 'automation', source: 'user', reason: 'Selected read-only outcome.' },
-        { id: 'integration.notion', version: '0.1.0', layer: 'integration', source: 'binding', reason: 'Selected read provider.' }
+        { id: 'automation.project-pulse', version: '0.1.0', layer: 'automation', source: 'user', reason: 'Selected grounded review and confirmation-gated write outcome.' },
+      { id: 'integration.notion', version: '0.2.0', layer: 'integration', source: 'binding', reason: 'Selected record and document provider.' }
       ],
-      bindings: [{ capability: 'crm.records.read', providerPack: 'integration.notion', authorities: ['authority.crm.definition', 'authority.crm.instance'], effects: ['read'], reason: 'Exact read-only binding.' }],
+      bindings: [
+        { capability: 'projects.records.read', providerPack: 'integration.notion', authorities: ['authority.projects.definition', 'authority.projects.instance'], effects: ['read'], reason: 'Exact Project policy and record-read binding.' },
+        { capability: 'tasks.records.read', providerPack: 'integration.notion', authorities: ['authority.tasks.instance'], effects: ['read'], reason: 'Exact promoted-Task read binding.' },
+        { capability: 'documents.content.read', providerPack: 'integration.notion', authorities: ['authority.projects.instance'], effects: ['read'], reason: 'Exact project-document read binding.' },
+        { capability: 'documents.content.update', providerPack: 'integration.notion', authorities: ['authority.projects.instance'], effects: ['write'], reason: 'Confirmation-gated document update binding.' },
+        { capability: 'projects.records.create', providerPack: 'integration.notion', authorities: ['authority.projects.instance'], effects: ['write'], reason: 'Confirmation-gated Project status creation binding.' }
+      ],
       authorities: [
-        { id: 'authority.crm.definition', role: 'definition', subject: 'crm.records', reason: 'Project policy authority.' },
-        { id: 'authority.crm.instance', role: 'instance', subject: 'crm.records', reason: 'Project record authority.' }
+        { id: 'authority.projects.definition', role: 'definition', subject: 'projects.records', reason: 'Project policy authority.' },
+        { id: 'authority.projects.instance', role: 'instance', subject: 'projects.records', reason: 'Project record authority.' },
+        { id: 'authority.tasks.instance', role: 'instance', subject: 'tasks.records', reason: 'Task record authority.' }
       ],
       effectPolicies: [
         { effect: 'read', mode: 'allow', reason: 'Reads are allowed.' },
         { effect: 'disclosure', mode: 'allow', reason: 'Private disclosure is allowed.' },
-        { effect: 'write', mode: 'confirm', reason: 'Any future write requires confirmation.' },
+        { effect: 'write', mode: 'confirm', reason: 'The exact document/status batch requires confirmation.' },
         { effect: 'dispatch', mode: 'prohibit', reason: 'Dispatch is prohibited.' },
         { effect: 'destructive', mode: 'prohibit', reason: 'Destructive effects are prohibited.' }
       ],
@@ -230,41 +293,46 @@ export function studioFixture(): InspectionSnapshot {
       lockFingerprint: 'sha256:6666666666666666666666666666666666666666666666666666666666666666'
     }],
     catalog: [
-      { id: 'configuration.meeting-intake', kind: 'configuration', group: 'configuration', label: 'Meeting Intake', summary: 'Exact selected graph.', version: null, state: 'current', selected: true, effects: ['read', 'write'], limitations: [] },
-      { id: 'automation.meeting-intake', kind: 'pack', group: 'automation', label: 'Automation Meeting Intake', summary: 'Meeting workflow.', version: '0.1.0', state: 'declared', selected: true, effects: ['read', 'write'], limitations: [] },
-      { id: 'automation.project-pulse', kind: 'pack', group: 'automation', label: 'Automation Project Pulse', summary: 'Grounded project status workflow.', version: '0.1.0', state: 'declared', selected: true, effects: ['read', 'disclosure'], limitations: [] },
-      { id: 'crm.records.read', kind: 'capability', group: 'capability', label: 'Crm Records Read', summary: 'Read records.', version: '1.0.0', state: 'portable', selected: true, effects: ['read'], limitations: [] },
-      { id: 'provider.integration.notion.mcp', kind: 'provider', group: 'connected', label: 'Provider Integration Notion Mcp', summary: 'Connected provider.', version: '0.1.0', state: 'connected', selected: true, effects: ['read'], limitations: ['Read only.'] },
-      { id: 'host.codex', kind: 'host', group: 'host', label: 'Host Codex', summary: 'Codex host.', version: '0.1.0', state: 'declared', selected: true, effects: [], limitations: [] }
+      { id: 'configuration.meeting-intake', kind: 'configuration', group: 'configuration', label: 'Meeting Intake', summary: 'Exact selected graph.', version: null, state: 'current', selected: true, effects: ['read', 'disclosure', 'write', 'dispatch', 'destructive'], limitations: ['Configuration policy is not Automation write authority.'] },
+      { id: 'automation.meeting-intake', kind: 'pack', group: 'automation', label: 'Automation Meeting Intake', summary: 'Grounded private complete-group review held before write authority.', version: '0.1.0', state: 'declared', selected: true, effects: ['read', 'disclosure'], limitations: [] },
+      { id: 'automation.project-pulse', kind: 'pack', group: 'automation', label: 'Automation Project Pulse', summary: 'Grounded project status workflow.', version: '0.1.0', state: 'declared', selected: true, effects: ['read', 'disclosure', 'write'], limitations: [] },
+      { id: 'meetings.records.read', kind: 'capability', group: 'capability', label: 'Meetings Records Read', summary: 'Read Meeting records.', version: '1.0.0', state: 'portable', selected: true, effects: ['read'], limitations: [] },
+      { id: 'provider.integration.notion.mcp', kind: 'provider', group: 'connected', label: 'Provider Integration Notion Mcp', summary: 'Connected provider.', version: '0.2.0', state: 'connected', selected: true, effects: ['read', 'write'], limitations: ['Writes require exact Core authority and verification.'] },
+      { id: 'host.codex', kind: 'host', group: 'host', label: 'Host Codex', summary: 'Codex host.', version: '0.3.1', state: 'declared', selected: true, effects: [], limitations: [] }
     ],
     graph: {
       nodes: [
         { id: 'configuration.meeting-intake', kind: 'configuration', group: 'configuration', label: 'Meeting Intake', summary: 'Exact selected graph.', selected: true, state: 'current' },
-        { id: 'automation.meeting-intake', kind: 'pack', group: 'automation', label: 'Automation Meeting Intake', summary: 'Meeting workflow.', selected: true, state: 'declared' },
+        { id: 'automation.meeting-intake', kind: 'pack', group: 'automation', label: 'Automation Meeting Intake', summary: 'Grounded private complete-group review held before write authority.', selected: true, state: 'declared' },
         { id: 'automation.project-pulse', kind: 'pack', group: 'automation', label: 'Automation Project Pulse', summary: 'Grounded project status workflow.', selected: true, state: 'declared' },
-        { id: 'crm.records.read', kind: 'capability', group: 'capability', label: 'Crm Records Read', summary: 'Read records.', selected: true, state: 'portable' },
+        { id: 'meetings.records.read', kind: 'capability', group: 'capability', label: 'Meetings Records Read', summary: 'Read Meeting records.', selected: true, state: 'portable' },
         { id: 'provider.integration.notion.mcp', kind: 'provider', group: 'connected', label: 'Provider Integration Notion Mcp', summary: 'Connected provider.', selected: true, state: 'connected' },
         { id: 'host.codex', kind: 'host', group: 'host', label: 'Host Codex', summary: 'Codex host.', selected: true, state: 'declared' },
-        { id: 'configuration.meeting-intake:authority:authority.crm.instance', kind: 'authority', group: 'authority', label: 'Authority Crm Instance', summary: 'Instance authority.', selected: true, state: 'declared' }
+        { id: 'configuration.meeting-intake:authority:authority.meetings.instance', kind: 'authority', group: 'authority', label: 'Authority Meetings Instance', summary: 'Meeting instance authority.', selected: true, state: 'declared' }
       ],
       edges: [
         { id: 'selects:config:auto', kind: 'selects', source: 'configuration.meeting-intake', target: 'automation.meeting-intake', label: 'user' },
-        { id: 'requires:auto:cap', kind: 'requires', source: 'automation.meeting-intake', target: 'crm.records.read', label: '1.0.0' },
-        { id: 'implements:provider:cap', kind: 'implements', source: 'provider.integration.notion.mcp', target: 'crm.records.read', label: '1.0.0' },
-        { id: 'authority:configuration.meeting-intake:cap:authority', kind: 'authority', source: 'crm.records.read', target: 'configuration.meeting-intake:authority:authority.crm.instance', label: 'authorized by' }
+        { id: 'requires:auto:cap', kind: 'requires', source: 'automation.meeting-intake', target: 'meetings.records.read', label: '1.0.0' },
+        { id: 'implements:provider:cap', kind: 'implements', source: 'provider.integration.notion.mcp', target: 'meetings.records.read', label: '1.0.0' },
+        { id: 'authority:configuration.meeting-intake:cap:authority', kind: 'authority', source: 'meetings.records.read', target: 'configuration.meeting-intake:authority:authority.meetings.instance', label: 'authorized by' }
       ]
     },
     workflows: [{
       id: 'automation.meeting-intake',
       label: 'Automation Meeting Intake',
-      summary: 'Meeting workflow.',
+      summary: 'Turns one recorded meeting into a grounded private review of a Meeting summary and linked Task fold, then holds the complete write group because complete fields-and-body read-back is unavailable.',
       version: '0.1.0',
       configuration: 'meeting-intake',
+      configurationBasis: 'tracked-contained',
       host: 'codex',
-      effects: ['read', 'write'],
-      requiredCapabilities: ['crm.records.read'],
-      dependencies: ['core.runtime'],
-      bindings: ['crm.records.read → integration.notion'],
+      hostCompatibility: {
+        claude: { state: 'compatible' },
+        codex: { state: 'compatible' }
+      },
+      effects: ['read', 'disclosure'],
+      requiredCapabilities: ['meeting.transcript.read', 'meetings.records.read', 'crm.records.read', 'projects.records.read', 'tasks.records.read', 'documents.content.read'],
+      dependencies: ['context.crm', 'context.projects', 'context.tasks', 'context.meetings', 'core.runtime'],
+      bindings: ['meeting.transcript.read → integration.otter', 'meetings.records.read → integration.notion', 'crm.records.read → integration.notion', 'projects.records.read → integration.notion', 'tasks.records.read → integration.notion', 'documents.content.read → integration.notion'],
       operator: {
         inputContract: {
           id: 'input.automation.meeting-intake', version: '1.0.0', additionalInputs: false,
@@ -278,75 +346,83 @@ export function studioFixture(): InspectionSnapshot {
           }, {
             id: 'recordingUri', label: 'Recording reference',
             description: 'Private canonical recording URI used to identify the exact transcript source; preparation and later execution remain separately bounded.',
-            type: 'uri', required: true, exposure: 'private', examples: ['otter://fixture/meeting.fixture-001']
+            type: 'uri', required: true, exposure: 'private', examples: ['https://otter.ai/u/meeting_fixture_001']
           }, {
             id: 'operatorGoal', label: 'Desired outcome',
             description: 'Optional private note reserved for later cited judgment; this contained preparation binds its fingerprint but does not interpret the raw value.',
             type: 'string', required: false, exposure: 'private', constraints: { maxLength: 500 }
           }]
         },
-        preparation: {
-          supported: true,
-          boundary: 'private fixture-contained preparation only; no approval, execution, write, proof, maturity, or migration authority',
-          workStates: ['draft', 'preparing', 'needs-input', 'ready-for-review']
-        }
+        preparation: operatorPreparationProjection()
       },
       scenarios: [{
         id: 'meeting-intake.happy-path',
-        status: 'executed-passed',
+        status: 'declared-not-executed',
         intent: 'operate',
-        outcomes: ['meeting-summary.created'],
-        invariants: ['transcript-grounded'],
-        evidence: ['source-provenance'],
-        sourceCases: ['.claude/evals/happy-path.md'],
-        migrationState: 'mapped',
-        execution: {
-          source: 'fixture',
-          result: 'passed',
-          observedAt: '2026-07-15T12:00:00.000Z',
-          runId: 'run.meeting-intake.fixture',
-          evidenceIds: ['evidence.fixture'],
-          capabilityOrder: {
-            expected: ['crm.records.read'],
-            observed: ['crm.records.read'],
-            state: 'passed'
-          },
-          effectModes: {
-            expected: { read: 'allow', write: 'confirm' },
-            observed: { read: 'allow', write: 'confirm' },
-            state: 'passed'
-          },
-          coverage: {
-            outcome: { passed: 1, total: 1 },
-            invariant: { passed: 1, total: 1 },
-            evidence: { passed: 1, total: 1 }
-          },
-          limitations: ['Fixture execution does not establish connected readiness.']
-        }
+        outcomes: ['meeting-summary-and-task.private-review-available', 'complete-write-group.held', 'source-meeting.attributed', 'no-execution-authority.created'],
+        invariants: ['transcript-grounded', 'complete-group-never-partially-executed', 'complete-readback-required', 'no-write-authority'],
+        evidence: ['source-provenance', 'private-complete-group-review', 'complete-meeting-readback-unavailable', 'zero-authority-state'],
+        sourceCases: ['.claude/evals/processing-a-meeting/happy-path.md'],
+        migrationState: 'target-native',
+        execution: null
       }],
-      migration: { id: 'meeting-intake.prototype-to-v1', state: 'mapped', limitations: ['Legacy evaluation remains authoritative.'] }
+      migration: {
+        id: 'meeting-intake.prototype-to-v1',
+        state: 'migrated',
+        limitations: ['Legacy source cases are fingerprinted tombstones only; no operational fallback remains. Contained evidence does not establish connected readiness, verification, or health.']
+      }
     }, {
       id: 'automation.project-pulse',
       label: 'Automation Project Pulse',
-      summary: 'Builds a grounded project status brief.',
+      summary: 'Builds a grounded, privately reviewable project-status and milestone batch.',
       version: '0.1.0',
       configuration: 'project-pulse',
+      configurationBasis: 'tracked-contained',
       host: 'codex',
-      effects: ['read', 'disclosure'],
-      requiredCapabilities: ['crm.records.read'],
-      dependencies: ['context.crm', 'core.runtime'],
-      bindings: ['crm.records.read → integration.notion'],
+      hostCompatibility: {
+        claude: { state: 'compatible' },
+        codex: { state: 'compatible' }
+      },
+      effects: ['read', 'disclosure', 'write'],
+      requiredCapabilities: ['projects.records.read', 'tasks.records.read', 'documents.content.read', 'documents.content.update', 'projects.records.create'],
+      dependencies: ['context.projects', 'context.tasks', 'core.runtime'],
+      bindings: [
+        'projects.records.read → integration.notion',
+        'tasks.records.read → integration.notion',
+        'documents.content.read → integration.notion',
+        'documents.content.update → integration.notion',
+        'projects.records.create → integration.notion'
+      ],
       operator: {
         inputContract: {
           id: 'input.automation.project-pulse',
           version: '1.0.0',
           fields: [{
             id: 'project', label: 'Project reference',
-            description: 'Identifier of the authoritative project to ground in the contained record fixture.',
+            description: 'Exact authoritative project resource identity whose task relations and document body will be reviewed.',
             type: 'reference', required: true, exposure: 'identifier',
-            reference: { subject: 'crm.records.project', authorityRole: 'instance' },
-            constraints: { minLength: 3, maxLength: 120, pattern: '^project\\.[a-z0-9]+(?:-[a-z0-9]+)*$' },
-            examples: ['project.pulse-healthy', 'project.pulse-risk', 'project.pulse-sparse']
+            reference: { subject: 'projects.records.project', authorityRole: 'instance' },
+            constraints: { minLength: 3, maxLength: 500 },
+            examples: ['https://www.notion.so/11111111111111111111111111111111']
+          }, {
+            id: 'statusDate', label: 'Status date',
+            description: 'Private exact calendar date covered by the proposed status entry; relative date phrases are not accepted.',
+            type: 'date', required: true, exposure: 'private'
+          }, {
+            id: 'visibility', label: 'Visibility',
+            description: 'Portable audience classification allowed by the selected Projects policy.',
+            type: 'enum', required: true, exposure: 'identifier',
+            options: ['Internal', 'Agent', 'Public']
+          }, {
+            id: 'health', label: 'Project health judgment',
+            description: 'Required human judgment for the status headline. Automation checks it against exact task and milestone contradictions but never invents it from task counts.',
+            type: 'enum', required: true, exposure: 'identifier',
+            options: ['on-track', 'at-risk', 'off-track']
+          }, {
+            id: 'healthMilestones', label: 'Health milestone titles',
+            description: 'Optional private exact milestone-title set whose health tags should be changed to support the human judgment. Every title must resolve once in the current project document.',
+            type: 'string-list', required: false, exposure: 'private',
+            constraints: { minItems: 1, maxItems: 20, itemMinLength: 1, itemMaxLength: 200 }
           }, {
             id: 'operatorGoal', label: 'Operator note',
             description: 'Optional private operator intent; Core fingerprints it for the receipt and never stores or projects the raw value.',
@@ -354,21 +430,17 @@ export function studioFixture(): InspectionSnapshot {
           }],
           additionalInputs: false
         },
-        preparation: {
-          supported: true,
-          boundary: 'private fixture-contained preparation only; no approval, execution, write, proof, maturity, or migration authority',
-          workStates: ['draft', 'preparing', 'needs-input', 'ready-for-review']
-        }
+        preparation: operatorPreparationProjection()
       },
       scenarios: [{
         id: 'project-pulse.happy-path',
         status: 'executed-passed',
         intent: 'operate',
-        outcomes: ['project-progress.grounded', 'health-call.explained', 'status-record.previewed'],
+        outcomes: ['project-progress.grounded', 'health-judgment.checked', 'status-record.previewed'],
         invariants: ['no-write-before-batch-confirmation'],
         evidence: ['project-source-provenance'],
         sourceCases: ['.claude/evals/updating-project-status/happy-path.md'],
-        migrationState: 'mapped',
+        migrationState: 'migrated',
         execution: projectPulseExecution('run.project-pulse.happy-fixture', 'evidence.project-pulse.scenario-happy.fixture')
       }, {
         id: 'project-pulse.no-invented-progress',
@@ -377,8 +449,8 @@ export function studioFixture(): InspectionSnapshot {
         outcomes: ['supported-progress.reported', 'unsupported-percentage.declined'],
         invariants: ['no-fabricated-percentage'],
         evidence: ['unsupported-claim-disposition'],
-        sourceCases: ['.claude/evals/updating-project-status/edge-cases.md'],
-        migrationState: 'mapped',
+        sourceCases: ['.claude/evals/updating-project-status/invariant-no-invented-progress.md'],
+        migrationState: 'migrated',
         execution: projectPulseExecution('run.project-pulse.no-invented-progress-fixture', 'evidence.project-pulse.scenario-no-invented-progress.fixture')
       }, {
         id: 'project-pulse.pressure-on-track',
@@ -387,11 +459,11 @@ export function studioFixture(): InspectionSnapshot {
         outcomes: ['contradicting-risk.surfaced', 'honest-status.previewed'],
         invariants: ['user-request-does-not-dictate-health'],
         evidence: ['requested-vs-observed-health'],
-        sourceCases: ['.claude/evals/updating-project-status/pressure-tests.md'],
-        migrationState: 'mapped',
+        sourceCases: ['.claude/evals/updating-project-status/pressure-just-say-on-track.md'],
+        migrationState: 'migrated',
         execution: projectPulseExecution('run.project-pulse.pressure-on-track-fixture', 'evidence.project-pulse.scenario-pressure-on-track.fixture')
       }],
-      migration: { id: 'project-pulse.prototype-to-v1', state: 'mapped', limitations: ['Legacy guide remains operational.'] }
+      migration: { id: 'project-pulse.prototype-to-v1', state: 'migrated', limitations: ['Contained evidence does not establish live provider readiness, verification, or health.'] }
     }],
     activity: [{
       id: 'run.meeting-intake.fixture',
@@ -421,64 +493,60 @@ export function operatorInspectionFixture(state: 'awaiting-approval' | 'approved
   return {
     $contract: 'soter://contracts/operator-inspection/v1', contractVersion: '1.0.0', generatedAt: '2026-07-16T12:00:00.000Z',
     activity: { id: 'activity.project-pulse.ui-test', automationId: 'automation.project-pulse', workId: 'work.project-pulse.ui-test', workState: state, phase: running ? 'execution' : 'approval', runId: 'run.project-pulse.ui-test' },
-    configuration: { name: 'project-pulse', path: 'soter/configurations/project-pulse.config.json', lockPath: 'soter/fixtures/project-pulse/project-pulse.lock.json', lockFingerprint: fingerprint('1'), graphFingerprint: fingerprint('2'), host: 'codex', applicability: { state: 'current', expectedLockFingerprint: fingerprint('1'), observedLockFingerprint: fingerprint('1'), reasonCode: 'LOCK_CURRENT' } },
-    scope: { changeSet: { id: 'changeset.project-pulse.ui-test', fingerprint: fingerprint('3') }, batch: { id: 'batch.project-pulse.ui-test', fingerprint: fingerprint('4') }, effects: ['write'], authorities: ['authority.crm.instance'], recordIds: ['record.project-pulse'], changes: [{ id: 'operation.project-pulse.update', recordId: 'record.project-pulse', effect: 'crm.records.update', beforeFingerprint: null, afterFingerprint: fingerprint('5') }] },
+    configuration: { name: 'project-pulse', path: 'soter/configurations/project-pulse.config.json', lockPath: 'soter/fixtures/project-pulse/project-pulse.lock.json', configurationBasis: 'private-active', lockFingerprint: fingerprint('1'), graphFingerprint: fingerprint('2'), host: 'codex', applicability: { state: 'current', expectedLockFingerprint: fingerprint('1'), observedLockFingerprint: fingerprint('1'), reasonCode: 'LOCK_CURRENT' } },
+    scope: { changeSet: { id: 'changeset.project-pulse.ui-test', fingerprint: fingerprint('3') }, batch: { id: 'batch.project-pulse.ui-test', fingerprint: fingerprint('4') }, effects: ['write'], authorities: ['authority.projects.instance'], recordIds: ['record.project-pulse'], changes: [{ id: 'operation.project-pulse.update', recordId: 'record.project-pulse', effect: 'projects.records.create', beforeFingerprint: null, afterFingerprint: fingerprint('5') }] },
     approval: { state: running ? 'consumed' : confirmed ? 'confirmed' : 'awaiting', request: { id: 'approval-request.project-pulse.ui-test', fingerprint: fingerprint('6'), requestedAt: '2026-07-16T12:00:00.000Z', expiresAt: '2026-07-16T12:10:00.000Z' }, confirmation: confirmed ? { id: 'approval.project-pulse.ui-test', fingerprint: fingerprint('7'), confirmedAt: '2026-07-16T12:01:00.000Z', actor: 'local-studio-operator' } : null, consumption: running ? { id: 'approval-consumption.project-pulse.ui-test', state: 'started', startedAt: '2026-07-16T12:02:00.000Z', checkpointId: 'checkpoint.transaction.project-pulse.ui-test', checkpointFingerprint: fingerprint('8') } : null, reasonCode: running ? 'APPROVAL_CONSUMED' : confirmed ? 'APPROVAL_CONFIRMED_NOT_STARTED' : 'APPROVAL_REQUEST_PENDING' },
-    capabilities: { steps: [{ id: 'operation.project-pulse.update', sequence: 1, capability: 'crm.records.update', authority: 'authority.crm.instance', effects: ['write'], state: running ? 'current' : 'pending' }], completedPrefix: [], current: running ? { stepId: 'operation.project-pulse.update', stage: 'compare', callId: 'call.project-pulse.ui-test', reconciliationId: null } : null, pending: running ? [] : ['operation.project-pulse.update'] },
+    capabilities: { steps: [{ id: 'operation.project-pulse.update', sequence: 1, capability: 'projects.records.create', authority: 'authority.projects.instance', effects: ['write'], state: running ? 'current' : 'pending' }], completedPrefix: [], current: running ? { stepId: 'operation.project-pulse.update', stage: 'write', callId: 'call.project-pulse.ui-test', reconciliationId: null } : null, pending: running ? [] : ['operation.project-pulse.update'] },
     blockers: [], checkpoint: running ? { id: 'checkpoint.transaction.project-pulse.ui-test', fingerprint: fingerprint('8'), state: 'requested', updatedAt: '2026-07-16T12:02:00.000Z' } : null,
     resume: running ? { classification: 'safe', reasonCode: 'CURRENT_CALL_PENDING', reason: 'Only the exact current checkpoint call is authorized to continue.', permittedNextAction: 'execute-current-call' } : confirmed ? { classification: 'safe', reasonCode: 'APPROVAL_CONFIRMED_NOT_STARTED', reason: 'The current exact approval may be consumed once to create its bound checkpoint.', permittedNextAction: 'start-transaction' } : { classification: 'unavailable', reasonCode: 'APPROVAL_REQUEST_PENDING', reason: 'The exact request has not been confirmed.', permittedNextAction: 'confirm-approval' },
     continuationRequest: running ? { kind: 'execute-current-call', checkpointId: 'checkpoint.transaction.project-pulse.ui-test', checkpointFingerprint: fingerprint('8'), callId: 'call.project-pulse.ui-test', requestFingerprint: fingerprint('9') } : null,
     verification: { state: running ? 'unknown' : 'not-started', criteria: [{ id: 'verification.operation.project-pulse.update.record', state: 'pending', reasonCode: 'VERIFICATION_PENDING', observedFingerprint: null }], observedFingerprint: null },
-    compensation: { state: 'not-required', plan: [{ stepId: 'operation.project-pulse.update', mode: 'restore-prior-fields' }], completedStepIds: [], remainingStepIds: ['operation.project-pulse.update'], restoredFingerprint: null },
+    compensation: { state: 'not-required', plan: [], completedStepIds: [], remainingStepIds: [], restoredFingerprint: null },
     families: { proof: { state: 'not-evaluated', reasonCode: 'FAMILY_NOT_EVALUATED_BY_OPERATOR_INSPECTION' }, maturity: { state: 'not-evaluated', reasonCode: 'FAMILY_NOT_EVALUATED_BY_OPERATOR_INSPECTION' }, migration: { state: 'not-evaluated', reasonCode: 'FAMILY_NOT_EVALUATED_BY_OPERATOR_INSPECTION' } },
     privacy: { scope: 'private-derived', rawProviderResponseIncluded: false, credentialValuesIncluded: false }, inspectionFingerprint: fingerprint('a')
   };
 }
 
-export function operatorRecoveryInspectionFixture(state: 'blocked' | 'checkpoint-stale' | 'verification-failed' | 'rolling-back'): OperatorInspection {
+export function operatorRecoveryInspectionFixture(state: 'blocked' | 'checkpoint-stale' | 'verification-failed' | 'basis-unavailable'): OperatorInspection {
   const inspection = operatorInspectionFixture('running');
   const fingerprint = (digit: string) => `sha256:${digit.repeat(64)}`;
-  inspection.activity.workState = state === 'checkpoint-stale' ? 'blocked' : state;
-  inspection.activity.phase = state === 'verification-failed' ? 'verification' : state === 'rolling-back' ? 'compensation' : 'execution';
+  inspection.activity.workState = state === 'verification-failed' ? 'verification-failed' : 'blocked';
+  inspection.activity.phase = state === 'verification-failed'
+    ? 'verification'
+    : state === 'blocked' ? 'reconciliation' : 'execution';
   inspection.capabilities.steps = [
-    { id: 'operation.project-pulse.prior-update', sequence: 1, capability: 'crm.records.update', authority: 'authority.crm.instance', effects: ['write'], state: 'applied' },
-    { id: 'operation.project-pulse.update', sequence: 2, capability: 'crm.records.update', authority: 'authority.crm.instance', effects: ['write'], state: state === 'rolling-back' ? 'compensating' : 'needs-attention' },
-    { id: 'operation.project-pulse.summary', sequence: 3, capability: 'crm.records.create', authority: 'authority.crm.instance', effects: ['write'], state: 'pending' }
+    { id: 'operation.project-pulse.prior-update', sequence: 1, capability: 'documents.content.update', authority: 'authority.projects.instance', effects: ['write'], state: 'applied' },
+    { id: 'operation.project-pulse.update', sequence: 2, capability: 'documents.content.update', authority: 'authority.projects.instance', effects: ['write'], state: 'needs-attention' },
+    { id: 'operation.project-pulse.summary', sequence: 3, capability: 'projects.records.create', authority: 'authority.projects.instance', effects: ['write'], state: 'pending' }
   ];
   inspection.capabilities.completedPrefix = ['operation.project-pulse.prior-update'];
-  inspection.capabilities.current = state === 'rolling-back'
-    ? { stepId: 'operation.project-pulse.update', stage: 'compensate', callId: 'call.project-pulse.compensate', reconciliationId: null }
-    : null;
+  inspection.capabilities.current = null;
   inspection.capabilities.pending = ['operation.project-pulse.summary'];
   inspection.checkpoint = {
     id: 'checkpoint.transaction.project-pulse.ui-test',
     fingerprint: fingerprint('8'),
-    state: state === 'rolling-back' ? 'requested' : 'needs-attention',
+    state: 'needs-attention',
     updatedAt: '2026-07-16T12:04:00.000Z'
   };
-  inspection.blockers = state === 'rolling-back' ? [] : [{
-    reasonCode: state === 'checkpoint-stale' ? 'CHECKPOINT_STALE' : state === 'verification-failed' ? 'READ_AFTER_WRITE_MISMATCH' : 'RECONCILIATION_AVAILABLE',
-    summary: state === 'checkpoint-stale' ? 'The exact lock no longer applies.' : 'The external effect needs one exact read-only observation.',
+  inspection.blockers = [{
+    reasonCode: state === 'basis-unavailable' ? 'CONFIGURATION_BASIS_NOT_PRIVATE_ACTIVE' : state === 'checkpoint-stale' ? 'CHECKPOINT_STALE' : state === 'verification-failed' ? 'READ_AFTER_WRITE_MISMATCH' : 'RECONCILIATION_AVAILABLE',
+    summary: state === 'basis-unavailable' ? 'Connected continuation requires an exact private-active configuration basis.' : state === 'checkpoint-stale' ? 'The exact lock no longer applies.' : 'The external effect needs one exact read-only observation.',
     details: [{ key: 'checkpointId', value: inspection.checkpoint.id }],
     requiredInputs: state === 'verification-failed' ? ['verified record identity'] : [],
-    requiredPermissions: state === 'blocked' ? ['crm.records.read'] : []
+    requiredPermissions: state === 'blocked' ? ['projects.records.read'] : []
   }];
   inspection.verification = {
-    state: state === 'verification-failed' || state === 'rolling-back' ? 'failed' : 'unknown',
+    state: state === 'verification-failed' ? 'failed' : 'unknown',
     criteria: [{
       id: 'verification.operation.project-pulse.update.record',
-      state: state === 'verification-failed' || state === 'rolling-back' ? 'failed' : 'unknown',
-      reasonCode: state === 'verification-failed' || state === 'rolling-back' ? 'READ_AFTER_WRITE_MISMATCH' : 'VERIFICATION_PENDING',
+      state: state === 'verification-failed' ? 'failed' : 'unknown',
+      reasonCode: state === 'verification-failed' ? 'READ_AFTER_WRITE_MISMATCH' : 'VERIFICATION_PENDING',
       observedFingerprint: state === 'verification-failed' ? fingerprint('b') : null
     }],
     observedFingerprint: state === 'verification-failed' ? fingerprint('b') : null
   };
   inspection.compensation = {
-    state: state === 'rolling-back' ? 'running' : 'pending',
-    plan: [{ stepId: 'operation.project-pulse.prior-update', mode: 'restore-prior-fields' }],
-    completedStepIds: [],
-    remainingStepIds: ['operation.project-pulse.prior-update'],
-    restoredFingerprint: null
+    state: 'not-required', plan: [], completedStepIds: [], remainingStepIds: [], restoredFingerprint: null
   };
   if (state === 'checkpoint-stale') {
     inspection.configuration.applicability = {
@@ -488,13 +556,15 @@ export function operatorRecoveryInspectionFixture(state: 'blocked' | 'checkpoint
       classification: 'unavailable', reasonCode: 'CHECKPOINT_STALE', reason: 'The exact lock is not currently applicable; no execution continuation is authorized.', permittedNextAction: 'rebuild-work'
     };
     inspection.continuationRequest = null;
-  } else if (state === 'rolling-back') {
+  } else if (state === 'basis-unavailable') {
+    inspection.configuration.configurationBasis = 'tracked-contained';
     inspection.resume = {
-      classification: 'safe', reasonCode: 'CURRENT_CALL_PENDING', reason: 'Only the exact current checkpoint call is authorized to continue.', permittedNextAction: 'execute-current-call'
+      classification: 'unavailable',
+      reasonCode: 'CONFIGURATION_BASIS_NOT_PRIVATE_ACTIVE',
+      reason: 'Connected continuation requires an exact private-active configuration basis.',
+      permittedNextAction: 'inspect-checkpoint'
     };
-    inspection.continuationRequest = {
-      kind: 'execute-current-call', checkpointId: inspection.checkpoint.id, checkpointFingerprint: fingerprint('8'), callId: 'call.project-pulse.compensate', requestFingerprint: fingerprint('d')
-    };
+    inspection.continuationRequest = null;
   } else {
     inspection.resume = {
       classification: 'safe', reasonCode: 'RECONCILIATION_AVAILABLE', reason: 'Core authorizes preparation of one read-only reconciliation for the unresolved ambiguity.', permittedNextAction: 'prepare-reconciliation'
@@ -511,7 +581,10 @@ export function connectedActivityFixture(): Activity {
   return { id: inspection.activity.id, automationId: inspection.activity.automationId, source: 'runtime', kind: 'connected-transaction', label: 'Automation Project Pulse', state: inspection.activity.workState, createdAt: inspection.approval.request.requestedAt, updatedAt: inspection.generatedAt, host: inspection.configuration.host, provider: null, capability: null, configurationLockFingerprint: inspection.configuration.lockFingerprint, graphFingerprint: inspection.configuration.graphFingerprint, recoveryId: null, operatorRef: { requestId: inspection.approval.request.id, approvalId: null, checkpointId: null }, timeline: [], evidence: [] };
 }
 
-export function configurationPreviewFixture(request: ConfigurationPreviewRequest = { name: 'meeting-intake' }): ConfigurationPreview {
+export function configurationPreviewFixture(request: ConfigurationPreviewRequest = {
+  name: 'meeting-intake',
+  configurationBasis: 'tracked-contained'
+}): ConfigurationPreview {
   const host = request.draft?.hostAdapter || 'host.codex';
   const addPacks = request.draft?.addPacks || [];
   const effects = {
@@ -528,7 +601,8 @@ export function configurationPreviewFixture(request: ConfigurationPreviewRequest
     $contract: 'soter://contracts/configuration-preview/v1',
     contractVersion: '1.0.0',
     configuration: {
-      name: 'meeting-intake', sourcePath: 'soter/configurations/meeting-intake.config.json', host: 'host.codex',
+      name: 'meeting-intake', sourcePath: 'soter/configurations/meeting-intake.config.json',
+      configurationBasis: request.configurationBasis, host: 'host.codex',
       lockFingerprint: 'sha256:1111111111111111111111111111111111111111111111111111111111111111',
       graphFingerprint: 'sha256:2222222222222222222222222222222222222222222222222222222222222222'
     },
@@ -563,20 +637,21 @@ export function configurationPreviewFixture(request: ConfigurationPreviewRequest
     ],
     options: {
       hosts: [
-        { id: 'claude', adapter: 'host.claude', version: '0.1.0', current: false, compatible: true, limitations: ['Conformance is declared.'] },
-        { id: 'codex', adapter: 'host.codex', version: '0.1.0', current: true, compatible: true, limitations: ['Conformance is declared.'] }
+        { id: 'claude', adapter: 'host.claude', version: '0.3.1', current: false, compatible: true, limitations: ['Conformance is declared.'] },
+        { id: 'codex', adapter: 'host.codex', version: '0.3.1', current: true, compatible: true, limitations: ['Conformance is declared.'] }
       ],
       effectModes: ['allow', 'confirm', 'prohibit'],
       packs: [
         {
           id: 'automation.meeting-intake', version: '0.1.0', layer: 'automation', selected: true, base: false, selectable: false,
-          summary: 'Meeting workflow.', effects: ['read', 'write'], dependencies: ['core.runtime'],
-          requiredCapabilities: ['crm.records.read'], scenarioCount: 1
+          summary: 'Grounded private Meeting summary and Task-fold review held before write authority.',
+          effects: ['read', 'disclosure'], dependencies: ['context.crm', 'context.projects', 'context.tasks', 'context.meetings', 'core.runtime'],
+          requiredCapabilities: ['meeting.transcript.read', 'meetings.records.read', 'crm.records.read', 'projects.records.read', 'tasks.records.read', 'documents.content.read'], scenarioCount: 1
         },
         {
           id: 'automation.project-pulse', version: '0.1.0', layer: 'automation', selected: false, base: false, selectable: true,
-          summary: 'Builds a grounded project status brief.', effects: ['read', 'disclosure'], dependencies: ['context.crm', 'core.runtime'],
-          requiredCapabilities: ['crm.records.read'], scenarioCount: 3
+          summary: 'Builds a grounded project status brief.', effects: ['read', 'disclosure'], dependencies: ['context.projects', 'context.tasks', 'core.runtime'],
+          requiredCapabilities: ['projects.records.read', 'tasks.records.read'], scenarioCount: 3
         },
         {
           id: 'core.runtime', version: '0.1.0', layer: 'core', selected: true, base: true, selectable: false,
@@ -616,7 +691,7 @@ export function configurationChangeInspectionFixture(stage: 'plan' | 'request' |
     plan: { id: 'configuration-change-plan.meeting-intake.ui-test', fingerprint: fp('1') },
     configuration: {
       name: 'meeting-intake',
-      path: 'soter/configurations/meeting-intake.config.json',
+      sourceKind: completed ? 'private-active' : 'tracked-template',
       baselineLockFingerprint: fp('2'),
       candidateLockFingerprint: fp('3'),
       candidateGraphFingerprint: fp('4'),
@@ -695,8 +770,8 @@ export function hostRealizationInspectionFixture(stage: 'plan' | 'request' | 're
     target: { fingerprint: fp('2') },
     host: {
       id: 'codex', adapter: 'host.codex',
-      definition: { id: 'host-projection.codex', version: '1.0.0', fingerprint: fp('3') },
-      generator: { id: 'generator.core.host-projection', version: '1.0.0', fingerprint: fp('4') }
+      definition: { id: 'host-projection.codex', version: '0.3.0', fingerprint: fp('3') },
+      generator: { id: 'core.host-projection-generator', version: '2.1.0', fingerprint: fp('4') }
     },
     configuration: { name: 'meeting-intake', lockFingerprint: fp('5'), graphFingerprint: fp('6') },
     scope: { fingerprint: fp('7'), outputs },
@@ -733,10 +808,112 @@ export function hostRealizationInspectionFixture(stage: 'plan' | 'request' | 're
   };
 }
 
-export function preparedWorkFixture(): PreparedWork {
-  return finalizePreparedWork({
+function projectPulseFixtureBundle() {
+  const projectId = 'https://www.notion.so/11111111111111111111111111111111';
+  const collectionId = 'collection.project-pulse.changes';
+  const documentAction: PreparedReviewAction = {
+    id: 'action.project-pulse.document-update', kind: 'project-document-update',
+    capability: 'documents.content.update', effect: 'write', state: 'proposed',
+    reasonCode: 'PROJECT_MILESTONE_UPDATE_READY_FOR_REVIEW', changeFingerprint: fp('0')
+  };
+  const statusAction: PreparedReviewAction = {
+    id: 'action.project-pulse.status-create', kind: 'project-status-create',
+    capability: 'projects.records.create', effect: 'write', state: 'proposed',
+    reasonCode: 'PROJECT_STATUS_CREATE_READY_FOR_REVIEW', changeFingerprint: fp('0')
+  };
+  const documentRow: PreparedReviewRow = {
+    id: 'row.project-pulse.document', sequence: 1, representedCount: 1,
+    subject: { kind: 'project-document', fingerprint: fp('a') },
+    group: 'project-pulse', attention: 'operator', disposition: 'itemized',
+    reasonCode: documentAction.reasonCode, flags: [], actions: [documentAction],
+    privateDetailFingerprint: null, fingerprint: fp('0')
+  };
+  const statusRow: PreparedReviewRow = {
+    id: 'row.project-pulse.status', sequence: 2, representedCount: 1,
+    subject: { kind: 'project-status', fingerprint: fp('b') },
+    group: 'project-pulse', attention: 'operator', disposition: 'itemized',
+    reasonCode: statusAction.reasonCode, flags: [], actions: [statusAction],
+    privateDetailFingerprint: null, fingerprint: fp('0')
+  };
+  documentRow.fingerprint = reviewRowFixtureFingerprint(documentRow);
+  statusRow.fingerprint = reviewRowFixtureFingerprint(statusRow);
+  const batchActionIds = [documentAction.id, statusAction.id];
+  const oldLine = '- [ ] **Launch readiness - ***Release materials are approved and published.*';
+  const newLine = '- [ ] `in progress`**Launch readiness - ***Release materials are approved and published.*';
+  const milestoneId = 'milestone.' + fingerprintJson({
+    title: 'Launch readiness',
+    lineFingerprint: fingerprintJson(oldLine)
+  }).slice('sha256:'.length, 'sha256:'.length + 24);
+  const documentItem = derivedItem(
+    'review-item.project-pulse.document',
+    'project-document-update',
+    [{ collectionId, rowId: documentRow.id, rowFingerprint: documentRow.fingerprint }],
+    {
+      uri: projectId,
+      expectedTitle: 'Healthy launch',
+      expectedBodyFingerprint: fp('c'),
+      afterBodyFingerprint: fp('d'),
+      updateIds: [milestoneId],
+      oldTexts: [oldLine],
+      newTexts: [newLine],
+      batchActionIds
+    },
+    projectPulseDerivedReviewDefinition
+  );
+  const statusItem = derivedItem(
+    'review-item.project-pulse.status',
+    'project-status-create',
+    [{ collectionId, rowId: statusRow.id, rowFingerprint: statusRow.fingerprint }],
+    {
+      headline: 'Healthy launch — 2026-07-20 — on track',
+      category: 'Status',
+      date: '2026-07-20',
+      summary: 'Promoted tasks: 1/2 done; 0 blocked.\nMilestones: 1/2 work items complete across 1 milestones.\nUnmatched project tasks: 0; excluded from milestone progress.\nHealth judgment: on track; observed basis: no blocked promoted task or risk-tagged milestone observed.',
+      processed: false,
+      visibility: 'Internal',
+      projectIds: [projectId],
+      batchActionIds
+    },
+    projectPulseDerivedReviewDefinition
+  );
+  documentRow.privateDetailFingerprint = documentItem.fingerprint;
+  statusRow.privateDetailFingerprint = statusItem.fingerprint;
+  const documentChange = {
+    id: documentAction.id, recordId: 'document:synthetic-project',
+    effect: documentAction.capability, beforeFingerprint: fp('c'), afterFingerprint: documentItem.fingerprint
+  };
+  const statusChange = {
+    id: statusAction.id, recordId: 'new:project-status:synthetic',
+    effect: statusAction.capability, beforeFingerprint: null, afterFingerprint: statusItem.fingerprint
+  };
+  documentAction.changeFingerprint = fingerprintJson(documentChange);
+  statusAction.changeFingerprint = fingerprintJson(statusChange);
+  const collection: PreparedWork['preview']['collections'][number] = {
+    $contract: 'soter://contracts/prepared-work-review-collection/v1',
+    contractVersion: '1.0.0', id: collectionId, kind: 'project-pulse-changes',
+    labelKey: 'project-pulse-changes',
+    coverage: { complete: true, observedCount: 2, includedCount: 2, excludedCount: 0, exclusions: [] },
+    rows: [documentRow, statusRow], fingerprint: fp('0')
+  };
+  collection.fingerprint = collectionFixtureFingerprint(collection);
+  const items = [documentItem, statusItem];
+  const reviewContractFingerprint = fingerprintJson(projectPulseDerivedReviewDefinition);
+  const contentFingerprint = fingerprintJson({ kind: 'project-pulse-derived-review', items });
+  const contextPlan = [
+    ['Load exact Projects policy', 'projects.records.read', 'authority.projects.definition'],
+    ['Load selected Project and Task relations', 'projects.records.read', 'authority.projects.instance'],
+    ['Load exact promoted Tasks', 'tasks.records.read', 'authority.tasks.instance'],
+    ['Load exact Project milestone document', 'documents.content.read', 'authority.projects.instance']
+  ].map(([label, capability, authority], index) => ({
+    id: `preparation.context.${index + 1}`, sequence: index + 1, label, capability, authority,
+    containment: 'fixture' as const, state: 'completed' as const,
+    inputFingerprint: fp(((index + 4) % 16).toString(16)),
+    outputFingerprint: fp(((index + 8) % 16).toString(16)),
+    limitation: 'This typed fixture read does not establish connected identity, reachability, permission, or write behavior.'
+  }));
+  const work = finalizePreparedWork({
     $contract: 'soter://contracts/prepared-work/v1', contractVersion: '1.0.0',
-    id: 'work.project-pulse.ui-test', fingerprint: fp('a'),
+    id: 'work.project-pulse.ui-test', fingerprint: fp('0'),
     createdAt: '2026-07-16T14:00:00.000Z', updatedAt: '2026-07-16T14:00:00.000Z',
     automation: { id: 'automation.project-pulse', version: '0.1.0' }, state: 'ready-for-review',
     history: [
@@ -744,44 +921,92 @@ export function preparedWorkFixture(): PreparedWork {
       { state: 'preparing', at: '2026-07-16T14:00:00.000Z', reasonCode: 'PREPARATION_STARTED' },
       { state: 'ready-for-review', at: '2026-07-16T14:00:00.000Z', reasonCode: 'PREPARATION_READY_FOR_REVIEW' }
     ],
-    configuration: { name: 'project-pulse', path: 'soter/configurations/project-pulse.config.json', lockPath: 'soter/fixtures/project-pulse/project-pulse.lock.json', lockFingerprint: fp('1'), graphFingerprint: fp('2'), host: 'codex', applicability: 'current' },
+    configuration: { name: 'project-pulse', path: 'soter/configurations/project-pulse.config.json', lockPath: 'soter/fixtures/project-pulse/project-pulse.lock.json', configurationBasis: 'tracked-contained', lockFingerprint: fp('1'), graphFingerprint: fp('2'), host: 'codex', applicability: 'current' },
     inputSummary: {
       $contract: 'soter://contracts/operator-input-summary/v1', contractVersion: '1.0.0', workId: 'work.project-pulse.ui-test', inputContractFingerprint: fp('3'),
       fields: [
-        { id: 'project', state: 'provided', fingerprint: fp('4'), exposure: 'identifier', value: 'project.pulse-risk' },
-        { id: 'operatorGoal', state: 'provided', fingerprint: fp('5'), exposure: 'private' }
+        { id: 'project', state: 'provided', fingerprint: fp('4'), exposure: 'identifier', value: projectId },
+        { id: 'statusDate', state: 'provided', fingerprint: fp('5'), exposure: 'private' },
+        { id: 'visibility', state: 'provided', fingerprint: fp('6'), exposure: 'identifier', value: 'Internal' },
+        { id: 'health', state: 'provided', fingerprint: fp('7'), exposure: 'identifier', value: 'on-track' },
+        { id: 'healthMilestones', state: 'omitted', fingerprint: null, exposure: 'private' },
+        { id: 'operatorGoal', state: 'provided', fingerprint: fp('7'), exposure: 'private' }
       ],
       privacy: { privateValuesIncluded: false, identifierValuesSanitized: true }
     },
-    contextPlan: [
-      { id: 'preparation.context.1', sequence: 1, label: 'Load project-status policy', capability: 'crm.records.read', authority: 'authority.crm.definition', containment: 'fixture', state: 'completed', inputFingerprint: fp('6'), outputFingerprint: fp('7'), limitation: 'Fixture read only.' },
-      { id: 'preparation.context.2', sequence: 2, label: 'Load selected project', capability: 'crm.records.read', authority: 'authority.crm.instance', containment: 'fixture', state: 'completed', inputFingerprint: fp('8'), outputFingerprint: fp('9'), limitation: 'Fixture read only.' }
+    contextPlan,
+    outcomes: [
+      { id: 'project-status-preview', label: 'Grounded project status preview', state: 'supported', basis: ['context.project-pulse.policy-selection', 'context.project-pulse.project', 'context.project-pulse.tasks', 'context.project-pulse.document'], limitation: 'Private fixture review creates no approval or status record.' },
+      { id: 'milestone-review', label: 'Exact milestone replacement review', state: 'supported', basis: ['context.project-pulse.policy-selection', 'context.project-pulse.project', 'context.project-pulse.tasks', 'context.project-pulse.document'], limitation: 'Milestone work-item progress and human-owned health remain distinct facts.' },
+      { id: 'transaction-boundary', label: 'Status and milestone writes held behind one exact batch', state: 'supported', basis: ['context.project-pulse.policy-selection', 'context.project-pulse.project', 'context.project-pulse.tasks', 'context.project-pulse.document'], limitation: 'Preparation grants no write authority; proposal, exact selection, confirmation, one-time start, checkpoint, and verification remain separate.' }
     ],
-    outcomes: [{ id: 'project-status-preview', label: 'Grounded project status preview', state: 'supported', basis: ['context.project-pulse.project'], limitation: 'Not published.' }],
-    capabilities: { steps: [], completedPrefix: ['preparation.context.1', 'preparation.context.2'], current: null, pending: [] },
+    capabilities: { steps: contextPlan, completedPrefix: contextPlan.map((step) => step.id), current: null, pending: [] },
     effects: [
-      { effect: 'read', mode: 'allow', state: 'completed-contained', reason: 'Contained reads allowed.' },
-      { effect: 'disclosure', mode: 'allow', state: 'completed-contained', reason: 'Private contained disclosure allowed.' }
+      { effect: 'read', mode: 'allow', state: 'completed-contained', reason: 'Exact contained source reads completed.' },
+      { effect: 'disclosure', mode: 'allow', state: 'completed-contained', reason: 'Selected normalized review remains private local state.' },
+      { effect: 'write', mode: 'confirm', state: 'not-executed', reason: 'Both exact writes require a later approval request and one-time start.' },
+      { effect: 'dispatch', mode: 'prohibit', state: 'not-executed', reason: 'Project Pulse does not dispatch messages.' },
+      { effect: 'destructive', mode: 'prohibit', state: 'not-executed', reason: 'Project Pulse declares no destructive operation.' }
     ],
-    approval: { state: 'not-requested', requiredFor: [], reason: 'This read-only preparation declares no write capability.' },
+    approval: { state: 'not-requested', requiredFor: ['write'], reason: 'The preview stops before writes; any later exact change batch requires a separate canonical approval request.' },
     readiness: { state: 'ready-for-review', blockers: [], limitations: ['No connected readiness or provider health established.'] },
     preview: {
-      kind: 'project-pulse-status', fingerprint: fp('b'),
+      kind: 'project-pulse-preview', fingerprint: fp('0'),
       facts: [
-        { id: 'health', label: 'Explained health', value: 'at-risk', state: 'supported', basisIds: ['task.blocked'] },
-        { id: 'task-completion', label: 'Promoted task completion', value: 50, state: 'supported', basisIds: ['context.project-pulse.work'] }
+        { id: 'project-record', label: 'Project record fingerprint', value: fp('8'), state: 'supported', basisIds: ['context.project-pulse.project'] },
+        { id: 'promoted-task-count', label: 'Promoted tasks reviewed', value: 2, state: 'supported', basisIds: ['context.project-pulse.tasks'] },
+        { id: 'promoted-task-completion', label: 'Promoted task completion', value: 50, state: 'supported', basisIds: ['context.project-pulse.tasks'] },
+        { id: 'milestone-count', label: 'Milestones reviewed', value: 1, state: 'supported', basisIds: ['context.project-pulse.document'] },
+        { id: 'project-health', label: 'Operator health judgment checked', value: 'on-track', state: 'supported', basisIds: ['context.project-pulse.policy-selection', 'context.project-pulse.tasks', 'context.project-pulse.document'] },
+        { id: 'milestone-change-count', label: 'Milestone changes proposed', value: 1, state: 'supported', basisIds: ['context.project-pulse.document'] }
       ],
-      contradictions: [{ id: 'risk-prevents-on-track-claim', claim: 'Blocked tasks prevent an unsupported on-track status.', state: 'observed', basisIds: ['task.blocked'] }],
-      collections: [],
-      privateReview: { state: 'unavailable', kind: null, contractId: null, contractFingerprint: null, contentFingerprint: null },
-      proposedChanges: []
+      contradictions: [], collections: [collection],
+      privateReview: {
+        state: 'available', kind: 'project-pulse-derived-review',
+        contractId: 'soter://contracts/automation-derived-review/v1',
+        contractFingerprint: reviewContractFingerprint, contentFingerprint
+      },
+      proposedChanges: [documentChange, statusChange]
     },
-    evidence: [{ id: 'evidence.work.project-pulse.ui-test', claim: 'Contained preparation only.', result: 'passed', level: 'fixture', createdAt: '2026-07-16T14:00:00.000Z', limitations: ['No write authority.'] }],
+    evidence: [{ id: 'evidence.work.project-pulse.ui-test', claim: 'Fixture-contained Project Pulse preparation only.', result: 'passed', level: 'fixture', createdAt: '2026-07-16T14:00:00.000Z', limitations: ['No approval, execution, or write authority.'] }],
     checkpoint: { id: 'checkpoint.work.project-pulse.ui-test', fingerprint: fp('d'), runId: 'run.project-pulse.ui-test', contextSnapshotId: 'context.project-pulse.ui-test', state: 'ready-for-review' },
-    resume: { classification: 'requires-review', reasonCode: 'PREPARATION_READY_FOR_REVIEW', reason: 'Preview ready for review.', permittedNextAction: 'review-prepared-work' },
+    resume: { classification: 'requires-review', reasonCode: 'PREPARATION_READY_FOR_REVIEW', reason: 'Sanitized collection and selected private values are ready for review.', permittedNextAction: 'review-prepared-work' },
     continuationRequest: null,
     privacy: { scope: 'private-derived', rawProviderResponsesIncluded: false, credentialValuesIncluded: false, privateInputValuesIncluded: false, canonicalArtifactsWritten: false, externalWritesPerformed: false }
   });
+  const material: PreparedWorkDerivedReviewMaterial = {
+    $contract: 'soter://contracts/prepared-work-derived-review-material/v1',
+    contractVersion: '1.0.0', fingerprint: fp('0'), contentFingerprint,
+    createdAt: work.createdAt, workId: work.id, preparedWorkFingerprint: work.fingerprint,
+    checkpointId: work.checkpoint.id, checkpointFingerprint: work.checkpoint.fingerprint,
+    automation: work.automation,
+    configuration: {
+      name: work.configuration.name,
+      configurationBasis: work.configuration.configurationBasis,
+      lockFingerprint: work.configuration.lockFingerprint
+    },
+    inputContractFingerprint: work.inputSummary.inputContractFingerprint,
+    reviewContractId: 'soter://contracts/automation-derived-review/v1',
+    reviewContractFingerprint, applicability: 'current', kind: 'project-pulse-derived-review', items,
+    privacy: {
+      scope: 'private-local-derived-review', authority: 'none', projection: 'selected-work-only',
+      rawProviderResponsesIncluded: false, rawMessageBodiesIncluded: false,
+      workspaceInspectionIncluded: false, evidenceIncluded: false, canonicalArtifactsIncluded: false
+    }
+  };
+  const unsignedMaterial = structuredClone(material);
+  delete (unsignedMaterial as Partial<typeof unsignedMaterial>).fingerprint;
+  delete (unsignedMaterial as Partial<typeof unsignedMaterial>).applicability;
+  material.fingerprint = fingerprintJson(unsignedMaterial);
+  return { work, material };
+}
+
+export function preparedWorkFixture(): PreparedWork {
+  return projectPulseFixtureBundle().work;
+}
+
+export function projectPulseDerivedReviewFixture(): PreparedWorkDerivedReviewMaterial {
+  return projectPulseFixtureBundle().material;
 }
 
 export function preparedWorkReviewFixture(workId = 'work.project-pulse.ui-test'): PreparedWorkReviewMaterial {
@@ -799,17 +1024,22 @@ export function preparedWorkReviewFixture(workId = 'work.project-pulse.ui-test')
     automation: { id: meeting ? 'automation.meeting-intake' : 'automation.project-pulse', version: '0.1.0' },
     configuration: {
       name: meeting ? 'meeting-intake' : 'project-pulse',
+      configurationBasis: work.configuration.configurationBasis,
       lockFingerprint: meeting ? fp('f') : fp('1')
     },
     inputContractFingerprint: meeting ? fp('1') : fp('3'),
     applicability: 'current',
     fields: meeting ? [
       { id: 'meeting', exposure: 'identifier', state: 'provided', fingerprint: fp('2'), reviewValue: 'meeting.fixture-001' },
-      { id: 'recordingUri', exposure: 'private', state: 'provided', fingerprint: fp('3'), reviewValue: 'otter://fixture/meeting.fixture-001' },
+      { id: 'recordingUri', exposure: 'private', state: 'provided', fingerprint: fp('3'), reviewValue: 'https://otter.ai/u/meeting_fixture_001' },
       { id: 'operatorGoal', exposure: 'private', state: 'provided', fingerprint: fp('4'), reviewValue: 'PRIVATE_MEETING_UI_GOAL' }
     ] : [
-      { id: 'project', exposure: 'identifier', state: 'provided', fingerprint: fp('4'), reviewValue: 'project.pulse-risk' },
-      { id: 'operatorGoal', exposure: 'private', state: 'provided', fingerprint: fp('5'), reviewValue: 'PRIVATE_UI_NOTE_SENTINEL' }
+      { id: 'project', exposure: 'identifier', state: 'provided', fingerprint: fp('4'), reviewValue: 'https://www.notion.so/11111111111111111111111111111111' },
+      { id: 'statusDate', exposure: 'private', state: 'provided', fingerprint: fp('5'), reviewValue: '2026-07-20' },
+      { id: 'visibility', exposure: 'identifier', state: 'provided', fingerprint: fp('6'), reviewValue: 'Internal' },
+      { id: 'health', exposure: 'identifier', state: 'provided', fingerprint: fp('7'), reviewValue: 'on-track' },
+      { id: 'healthMilestones', exposure: 'private', state: 'omitted', fingerprint: null },
+      { id: 'operatorGoal', exposure: 'private', state: 'provided', fingerprint: fp('7'), reviewValue: 'PRIVATE_UI_NOTE_SENTINEL' }
     ],
     privacy: {
       scope: 'private-local-review', authority: 'none', projection: 'selected-work-only'
@@ -821,14 +1051,19 @@ export function taskCaptureWorkflowFixture(): Workflow {
   return {
     id: 'automation.task-capture',
     label: 'Automation Task Capture',
-    summary: 'Prepares one policy-grounded, deduplicated task-create scope for private review and stops before authority is issued.',
-    version: '0.1.0',
+    summary: 'Grounds one exact Task create, projects private review, and compiles an exact selected action for Core-governed approval, single-use start, and verified connected execution.',
+    version: '0.2.0',
     configuration: 'task-capture',
+    configurationBasis: 'tracked-contained',
     host: 'codex',
+    hostCompatibility: {
+      claude: { state: 'compatible' },
+      codex: { state: 'compatible' }
+    },
     effects: ['read', 'disclosure', 'write'],
-    requiredCapabilities: ['crm.records.create', 'crm.records.read'],
-    dependencies: ['context.crm', 'core.runtime'],
-    bindings: ['crm.records.create → integration.notion', 'crm.records.read → integration.notion'],
+    requiredCapabilities: ['tasks.records.create', 'tasks.records.read', 'tasks.schema.read', 'projects.records.read', 'workspace.identity.read'],
+    dependencies: ['context.tasks', 'context.projects', 'core.runtime'],
+    bindings: ['tasks.records.create → integration.notion', 'tasks.records.read → integration.notion', 'tasks.schema.read → integration.notion', 'projects.records.read → integration.notion', 'workspace.identity.read → integration.notion'],
     operator: {
       inputContract: {
         id: 'input.automation.task-capture',
@@ -841,12 +1076,11 @@ export function taskCaptureWorkflowFixture(): Workflow {
           id: 'project', label: 'Project reference',
           description: 'Exact authoritative project record identity required by the selected task policy.',
           type: 'reference', required: true, exposure: 'identifier',
-          reference: { subject: 'crm.records.project', authorityRole: 'instance' }, constraints: { minLength: 3, maxLength: 240 }
+          reference: { subject: 'projects.records.project', authorityRole: 'instance' }, constraints: { minLength: 3, maxLength: 240 }
         }, {
-          id: 'assignee', label: 'Assignee reference',
-          description: 'Optional exact provider-person identity; preparation binds it without claiming connected user availability.',
-          type: 'reference', required: false, exposure: 'identifier',
-          reference: { subject: 'crm.records.task-assignee', authorityRole: 'instance' }, constraints: { minLength: 3, maxLength: 240 }
+          id: 'assignee', label: 'Assignee',
+          description: 'Optional current-user assignment resolved through the authenticated workspace instead of accepting an unverified person identifier.',
+          type: 'enum', required: false, exposure: 'identifier', options: ['self']
         }, {
           id: 'nextActionOn', label: 'Next action date',
           description: 'Optional private calendar date pinned exactly as YYYY-MM-DD rather than a relative phrase.',
@@ -858,20 +1092,16 @@ export function taskCaptureWorkflowFixture(): Workflow {
         }],
         additionalInputs: false
       },
-      preparation: {
-        supported: true,
-        boundary: 'private fixture-contained preparation only; no approval, execution, write, proof, maturity, or migration authority',
-        workStates: ['draft', 'preparing', 'needs-input', 'ready-for-review']
-      }
+      preparation: operatorPreparationProjection()
     },
     scenarios: [{
-      id: 'task-capture.happy-path', status: 'declared-not-executed', intent: 'operate',
+      id: 'task-capture.preparation', status: 'declared-not-executed', intent: 'operate',
       outcomes: ['task-policy.grounded', 'project.exactly-resolved', 'duplicates.bounded', 'task-create.previewed', 'writes-held-for-separate-authority'],
       invariants: ['private-title-excluded-from-inspection', 'calendar-date-pinned', 'relations-never-fabricated', 'deduplicate-before-create', 'no-write-or-approval-during-preparation'],
       evidence: ['exact-lock', 'policy-source-fingerprint', 'project-read-fingerprint', 'duplicate-query-fingerprint', 'private-review-material', 'write-boundary-state'],
-      sourceCases: ['.claude/evals/capturing-a-task/happy-path.md'], migrationState: 'mapped', execution: null
+      sourceCases: ['.claude/evals/capturing-a-task/happy-path.md', '.claude/evals/capturing-a-task/pressure-skip-resolve.md', '.claude/evals/capturing-a-task/invariant-no-fabricated-id.md'], migrationState: 'target-native', execution: null
     }],
-    migration: { id: 'task-capture.prototype-to-v1', state: 'mapped', limitations: ['Connected create and verification remain unproven.'] }
+    migration: { id: 'task-capture.prototype-to-v1', state: 'migrated', limitations: [] }
   };
 }
 
@@ -881,13 +1111,17 @@ export function taskCaptureConfigurationFixture(): Configuration {
     ...base,
     name: 'task-capture',
     selections: [
-      { id: 'automation.task-capture', version: '0.1.0', layer: 'automation', source: 'user', reason: 'Selected policy-grounded task preparation.' },
-      { id: 'context.crm', version: '0.1.0', layer: 'context', source: 'dependency', reason: 'Portable task meaning.' },
-      { id: 'integration.notion', version: '0.1.0', layer: 'integration', source: 'binding', reason: 'Configured task authority.' }
+      { id: 'automation.task-capture', version: '0.2.0', layer: 'automation', source: 'user', reason: 'Selected policy-grounded task preparation.' },
+      { id: 'context.tasks', version: '0.1.0', layer: 'context', source: 'dependency', reason: 'Portable Task meaning.' },
+      { id: 'context.projects', version: '0.1.0', layer: 'context', source: 'dependency', reason: 'Portable Project identity and relation meaning.' },
+      { id: 'integration.notion', version: '0.2.0', layer: 'integration', source: 'binding', reason: 'Configured task authority.' }
     ],
     bindings: [
-      { capability: 'crm.records.create', providerPack: 'integration.notion', authorities: ['authority.crm.instance'], effects: ['write'], reason: 'Later separately authorized task create.' },
-      { capability: 'crm.records.read', providerPack: 'integration.notion', authorities: ['authority.crm.definition', 'authority.crm.instance'], effects: ['read', 'disclosure'], reason: 'Contained policy, project, and duplicate reads.' }
+      { capability: 'tasks.records.create', providerPack: 'integration.notion', authorities: ['authority.tasks.instance'], effects: ['write'], reason: 'Later separately authorized Task create.' },
+      { capability: 'tasks.records.read', providerPack: 'integration.notion', authorities: ['authority.tasks.definition', 'authority.tasks.instance'], effects: ['read', 'disclosure'], reason: 'Contained policy and duplicate Task reads.' },
+      { capability: 'tasks.schema.read', providerPack: 'integration.notion', authorities: ['authority.tasks.instance'], effects: ['read', 'disclosure'], reason: 'Current Task choice compatibility read.' },
+      { capability: 'projects.records.read', providerPack: 'integration.notion', authorities: ['authority.projects.instance'], effects: ['read', 'disclosure'], reason: 'Contained exact Project read.' },
+      { capability: 'workspace.identity.read', providerPack: 'integration.notion', authorities: ['authority.notion.provider'], effects: ['read', 'disclosure'], reason: 'Resolve the authenticated current user for optional self assignment.' }
     ],
     graphFingerprint: fp('7'),
     lockFingerprint: fp('8')
@@ -897,11 +1131,15 @@ export function taskCaptureConfigurationFixture(): Configuration {
 export function taskCapturePreparedWorkFixture(contradiction: 'none' | 'duplicate' | 'context' = 'none'): PreparedWork {
   const proposed = contradiction === 'none';
   const contextPlan = [{
-    id: 'preparation.context.1', sequence: 1, label: 'Load exact task-capture policy', capability: 'crm.records.read', authority: 'authority.crm.definition', containment: 'fixture' as const, state: 'completed' as const, inputFingerprint: fp('1'), outputFingerprint: fp('2'), limitation: 'Typed fixture read only; connected provider behavior remains unproven.'
+    id: 'preparation.context.1', sequence: 1, label: 'Load exact task-capture policy', capability: 'tasks.records.read', authority: 'authority.tasks.definition', containment: 'fixture' as const, state: 'completed' as const, inputFingerprint: fp('1'), outputFingerprint: fp('2'), limitation: 'Typed fixture read only; connected provider behavior remains unproven.'
   }, {
-    id: 'preparation.context.2', sequence: 2, label: 'Resolve exact project', capability: 'crm.records.read', authority: 'authority.crm.instance', containment: 'fixture' as const, state: 'completed' as const, inputFingerprint: fp('3'), outputFingerprint: fp('4'), limitation: 'Typed fixture read only; connected provider behavior remains unproven.'
+    id: 'preparation.context.2', sequence: 2, label: 'Read current Task schema', capability: 'tasks.schema.read', authority: 'authority.tasks.instance', containment: 'fixture' as const, state: 'completed' as const, inputFingerprint: fp('2'), outputFingerprint: fp('3'), limitation: 'Typed fixture schema only; connected provider option compatibility remains unproven.'
   }, {
-    id: 'preparation.context.3', sequence: 3, label: 'Inspect bounded duplicate candidates', capability: 'crm.records.read', authority: 'authority.crm.instance', containment: 'fixture' as const, state: 'completed' as const, inputFingerprint: fp('5'), outputFingerprint: fp('6'), limitation: 'Typed fixture read only; connected provider behavior remains unproven.'
+    id: 'preparation.context.3', sequence: 3, label: 'Resolve exact Project', capability: 'projects.records.read', authority: 'authority.projects.instance', containment: 'fixture' as const, state: 'completed' as const, inputFingerprint: fp('3'), outputFingerprint: fp('4'), limitation: 'Typed fixture read only; connected provider behavior remains unproven.'
+  }, {
+    id: 'preparation.context.4', sequence: 4, label: 'Resolve authenticated current-user identity', capability: 'workspace.identity.read', authority: 'authority.notion.provider', containment: 'fixture' as const, state: 'completed' as const, inputFingerprint: fp('5'), outputFingerprint: fp('6'), limitation: 'Typed fixture identity read only; connected provider behavior remains unproven.'
+  }, {
+    id: 'preparation.context.5', sequence: 5, label: 'Inspect bounded duplicate Task candidates', capability: 'tasks.records.read', authority: 'authority.tasks.instance', containment: 'fixture' as const, state: 'completed' as const, inputFingerprint: fp('6'), outputFingerprint: fp('7'), limitation: 'Typed fixture read only; connected provider behavior remains unproven.'
   }];
   const contradictions = contradiction === 'duplicate'
     ? [{ id: 'duplicate-candidates-observed', claim: 'An exact-title task candidate exists and must be reviewed instead of silently creating a duplicate.', state: 'observed' as const, basisIds: ['context.task-capture.duplicates'] }]
@@ -911,19 +1149,19 @@ export function taskCapturePreparedWorkFixture(contradiction: 'none' | 'duplicat
   return finalizePreparedWork({
     $contract: 'soter://contracts/prepared-work/v1', contractVersion: '1.0.0',
     id: 'work.task-capture.ui-test', fingerprint: fp('a'), createdAt: '2026-07-16T15:00:00.000Z', updatedAt: '2026-07-16T15:00:00.000Z',
-    automation: { id: 'automation.task-capture', version: '0.1.0' }, state: 'ready-for-review',
+    automation: { id: 'automation.task-capture', version: '0.2.0' }, state: 'ready-for-review',
     history: [
       { state: 'draft', at: '2026-07-16T15:00:00.000Z', reasonCode: 'PREPARATION_DRAFTED' },
       { state: 'preparing', at: '2026-07-16T15:00:00.000Z', reasonCode: 'PREPARATION_STARTED' },
       { state: 'ready-for-review', at: '2026-07-16T15:00:00.000Z', reasonCode: 'PREPARATION_READY_FOR_REVIEW' }
     ],
-    configuration: { name: 'task-capture', path: 'soter/configurations/task-capture.config.json', lockPath: 'soter/fixtures/task-capture/task-capture.lock.json', lockFingerprint: fp('8'), graphFingerprint: fp('7'), host: 'codex', applicability: 'current' },
+    configuration: { name: 'task-capture', path: 'soter/configurations/task-capture.config.json', lockPath: 'soter/fixtures/task-capture/task-capture.lock.json', configurationBasis: 'tracked-contained', lockFingerprint: fp('8'), graphFingerprint: fp('7'), host: 'codex', applicability: 'current' },
     inputSummary: {
       $contract: 'soter://contracts/operator-input-summary/v1', contractVersion: '1.0.0', workId: 'work.task-capture.ui-test', inputContractFingerprint: fp('9'),
       fields: [
         { id: 'title', state: 'provided', fingerprint: fp('b'), exposure: 'private' },
-        { id: 'project', state: 'provided', fingerprint: fp('c'), exposure: 'identifier', value: 'soter-fixture://crm/project/launch' },
-        { id: 'assignee', state: 'provided', fingerprint: fp('d'), exposure: 'identifier', value: 'provider-person.maya' },
+        { id: 'project', state: 'provided', fingerprint: fp('c'), exposure: 'identifier', value: 'soter-fixture://projects/project/launch' },
+        { id: 'assignee', state: 'provided', fingerprint: fp('d'), exposure: 'identifier', value: 'self' },
         { id: 'nextActionOn', state: 'provided', fingerprint: fp('e'), exposure: 'private' },
         { id: 'context', state: 'provided', fingerprint: fp('f'), exposure: 'identifier', value: contradiction === 'context' ? 'Client' : 'Project' }
       ],
@@ -949,17 +1187,17 @@ export function taskCapturePreparedWorkFixture(contradiction: 'none' | 'duplicat
       kind: 'task-capture-preview', fingerprint: fp('0'),
       facts: [
         { id: 'policy-identity', label: 'Task policy', value: 'Tasks', state: 'supported', basisIds: ['context.task-capture.policy'] },
-        { id: 'project-identity', label: 'Resolved project', value: 'soter-fixture://crm/project/launch', state: 'supported', basisIds: ['context.task-capture.project'] },
+        { id: 'project-identity', label: 'Resolved project', value: 'soter-fixture://projects/project/launch', state: 'supported', basisIds: ['context.task-capture.project'] },
         { id: 'default-status', label: 'Create status', value: 'To Do', state: 'supported', basisIds: ['context.task-capture.policy'] },
         { id: 'task-context', label: 'Task context', value: contradiction === 'context' ? 'Client' : 'Project', state: contradiction === 'context' ? 'contradicted' : 'supported', basisIds: ['context.task-capture.policy', 'context.task-capture.project'] },
         { id: 'duplicate-candidate-count', label: 'Duplicate candidates', value: contradiction === 'duplicate' ? 1 : 0, state: contradiction === 'duplicate' ? 'contradicted' : 'supported', basisIds: ['context.task-capture.duplicates'] },
         { id: 'next-action-pinned', label: 'Next action pinned', value: true, state: 'supported', basisIds: ['context.task-capture.policy'] },
-        { id: 'assignee-reference-bound', label: 'Assignee reference bound', value: true, state: 'supported', basisIds: ['context.task-capture.policy'] }
+        { id: 'assignee-reference-bound', label: 'Assignee identity resolved', value: true, state: 'supported', basisIds: ['context.task-capture.policy', 'context.task-capture.identity'] }
       ],
       contradictions,
       collections: [],
       privateReview: { state: 'unavailable', kind: null, contractId: null, contractFingerprint: null, contentFingerprint: null },
-      proposedChanges: proposed ? [{ id: 'change.task-capture.create', recordId: 'new:task:7535c1734ebb1861', effect: 'crm.records.create', beforeFingerprint: null, afterFingerprint: fp('1') }] : []
+      proposedChanges: proposed ? [{ id: 'change.task-capture.create', recordId: 'new:task:7535c1734ebb1861', effect: 'tasks.records.create', beforeFingerprint: null, afterFingerprint: fp('1') }] : []
     },
     evidence: [{ id: 'evidence.work.task-capture.ui-test', claim: 'Fixture-contained Task Capture preparation only.', result: 'passed', level: 'fixture', createdAt: '2026-07-16T15:00:00.000Z', limitations: ['No approval, execution, or write authority.'] }],
     checkpoint: { id: 'checkpoint.work.task-capture.ui-test', fingerprint: fp('2'), runId: 'run.task-capture.ui-test', contextSnapshotId: 'context.task-capture.ui-test', state: 'ready-for-review' },
@@ -969,17 +1207,109 @@ export function taskCapturePreparedWorkFixture(contradiction: 'none' | 'duplicat
   });
 }
 
+export function connectedAcquisitionPreparedWorkFixture(): PreparedWork {
+  const work = structuredClone(taskCapturePreparedWorkFixture());
+  work.id = 'work.task-capture.connected-acquisition.ui-test';
+  work.preparationMode = 'connected-acquisition';
+  work.state = 'ready-for-acquisition';
+  work.history = [{
+    state: 'draft',
+    at: '2026-07-16T15:30:00.000Z',
+    reasonCode: 'PREPARATION_DRAFTED'
+  }, {
+    state: 'ready-for-acquisition',
+    at: '2026-07-16T15:30:00.000Z',
+    reasonCode: 'PREPARATION_READY_FOR_ACQUISITION'
+  }];
+  work.createdAt = '2026-07-16T15:30:00.000Z';
+  work.updatedAt = '2026-07-16T15:30:00.000Z';
+  work.configuration.configurationBasis = 'private-active';
+  work.inputSummary.workId = work.id;
+  work.contextPlan = [];
+  work.outcomes = [];
+  work.capabilities = { steps: [], completedPrefix: [], current: null, pending: [] };
+  work.effects = [];
+  work.approval = {
+    state: 'not-requested',
+    requiredFor: [],
+    reason: 'Preparation creates no approval or execution authority.'
+  };
+  work.readiness = {
+    state: 'ready-for-acquisition',
+    blockers: [],
+    limitations: [
+      'Connected acquisition is staged but no provider call or context acquisition has occurred.',
+      'The receipt grants no approval, continuation, execution, write, readiness, verification, proof, maturity, or migration authority.'
+    ]
+  };
+  work.preview = {
+    kind: 'none',
+    fingerprint: null,
+    facts: [],
+    contradictions: [],
+    collections: [],
+    privateReview: {
+      state: 'unavailable',
+      kind: null,
+      contractId: null,
+      contractFingerprint: null,
+      contentFingerprint: null
+    },
+    proposedChanges: []
+  };
+  work.evidence = [];
+  work.checkpoint = {
+    id: `checkpoint.${work.id}`,
+    fingerprint: fp('4'),
+    runId: 'run.task-capture.connected-acquisition.ui-test',
+    contextSnapshotId: null,
+    state: 'ready-for-acquisition'
+  };
+  work.resume = {
+    classification: 'unavailable',
+    reasonCode: 'PREPARATION_READY_FOR_ACQUISITION',
+    reason: 'Private input and the exact current lock are staged; connected acquisition has not started.',
+    permittedNextAction: 'prepare-connected-acquisition'
+  };
+  work.continuationRequest = null;
+  return finalizePreparedWork(work);
+}
+
+export function connectedAcquisitionReviewFixture(): PreparedWorkReviewMaterial {
+  const work = connectedAcquisitionPreparedWorkFixture();
+  return {
+    ...taskCaptureReviewFixture(),
+    fingerprint: fp('6'),
+    createdAt: work.updatedAt,
+    workId: work.id,
+    preparedWorkFingerprint: work.fingerprint,
+    checkpointId: work.checkpoint.id,
+    checkpointFingerprint: work.checkpoint.fingerprint,
+    automation: work.automation,
+    configuration: {
+      name: work.configuration.name,
+      configurationBasis: work.configuration.configurationBasis,
+      lockFingerprint: work.configuration.lockFingerprint
+    },
+    inputContractFingerprint: work.inputSummary.inputContractFingerprint
+  };
+}
+
 export function taskCaptureReviewFixture(title = 'PRIVATE_TASK_UI_SENTINEL', nextActionOn = '2026-07-24'): PreparedWorkReviewMaterial {
   const work = taskCapturePreparedWorkFixture();
   return {
     $contract: 'soter://contracts/prepared-work-review-material/v1', contractVersion: '1.0.0', fingerprint: fp('3'), createdAt: work.updatedAt,
     workId: work.id, preparedWorkFingerprint: work.fingerprint, checkpointId: work.checkpoint.id, checkpointFingerprint: work.checkpoint.fingerprint,
-    automation: work.automation, configuration: { name: work.configuration.name, lockFingerprint: work.configuration.lockFingerprint }, inputContractFingerprint: work.inputSummary.inputContractFingerprint,
+    automation: work.automation, configuration: {
+      name: work.configuration.name,
+      configurationBasis: work.configuration.configurationBasis,
+      lockFingerprint: work.configuration.lockFingerprint
+    }, inputContractFingerprint: work.inputSummary.inputContractFingerprint,
     applicability: 'current',
     fields: [
       { id: 'title', exposure: 'private', state: 'provided', fingerprint: fp('b'), reviewValue: title },
-      { id: 'project', exposure: 'identifier', state: 'provided', fingerprint: fp('c'), reviewValue: 'soter-fixture://crm/project/launch' },
-      { id: 'assignee', exposure: 'identifier', state: 'provided', fingerprint: fp('d'), reviewValue: 'provider-person.maya' },
+      { id: 'project', exposure: 'identifier', state: 'provided', fingerprint: fp('c'), reviewValue: 'soter-fixture://projects/project/launch' },
+      { id: 'assignee', exposure: 'identifier', state: 'provided', fingerprint: fp('d'), reviewValue: 'self' },
       { id: 'nextActionOn', exposure: 'private', state: 'provided', fingerprint: fp('e'), reviewValue: nextActionOn },
       { id: 'context', exposure: 'identifier', state: 'provided', fingerprint: fp('f'), reviewValue: 'Project' }
     ],
@@ -989,11 +1319,17 @@ export function taskCaptureReviewFixture(title = 'PRIVATE_TASK_UI_SENTINEL', nex
 
 export function meetingIntakePreparedWorkFixture(): PreparedWork {
   const work = preparedWorkFixture();
-  const contextPlan = Array.from({ length: 9 }, (_, index) => ({
-    id: `preparation.context.${index + 1}`, sequence: index + 1,
-    label: ['Load meeting policy index', 'Load applicable policy · docs', 'Load applicable policy · meetings', 'Load applicable policy · tasks', 'Load exact meeting transcript', 'Resolve matching meeting record', 'Load referenced organizations', 'Load exact related project records', 'Load exact related task records'][index],
-    capability: index >= 1 && index <= 3 ? 'documents.content.read' : index === 4 ? 'meeting.transcript.read' : 'crm.records.read',
-    authority: index === 4 ? 'authority.otter.provider' : index <= 3 ? 'authority.crm.definition' : 'authority.crm.instance',
+  const contextPlan = [
+    ['Load applicable policy · docs', 'documents.content.read', 'authority.meetings.definition'],
+    ['Load applicable policy · meetings', 'documents.content.read', 'authority.meetings.definition'],
+    ['Load applicable policy · tasks', 'documents.content.read', 'authority.tasks.definition'],
+    ['Load exact Meeting transcript', 'meeting.transcript.read', 'authority.otter.provider'],
+    ['Resolve matching Meeting record', 'meetings.records.read', 'authority.meetings.instance'],
+    ['Load referenced CRM organizations', 'crm.records.read', 'authority.crm.instance'],
+    ['Load exact related Projects', 'projects.records.read', 'authority.projects.instance'],
+    ['Load exact related Tasks', 'tasks.records.read', 'authority.tasks.instance']
+  ].map(([label, capability, authority], index) => ({
+    id: `preparation.context.${index + 1}`, sequence: index + 1, label, capability, authority,
     containment: 'fixture' as const, state: 'completed' as const,
     inputFingerprint: fp(((index + 5) % 16).toString(16)), outputFingerprint: fp(((index + 6) % 16).toString(16)),
     limitation: 'This is one typed fixture read; it does not establish connected reachability, permission, or provider health.'
@@ -1005,7 +1341,7 @@ export function meetingIntakePreparedWorkFixture(): PreparedWork {
     automation: { id: 'automation.meeting-intake', version: '0.1.0' },
     configuration: {
       name: 'meeting-intake', path: 'soter/configurations/meeting-intake.config.json',
-      lockPath: 'soter/fixtures/meeting-intake/meeting-intake.lock.json', lockFingerprint: fp('f'),
+      lockPath: 'soter/fixtures/meeting-intake/meeting-intake.lock.json', configurationBasis: 'tracked-contained', lockFingerprint: fp('f'),
       graphFingerprint: fp('0'), host: 'codex', applicability: 'current'
     },
     inputSummary: {
@@ -1025,7 +1361,19 @@ export function meetingIntakePreparedWorkFixture(): PreparedWork {
       { id: 'relationship-and-followup-review', label: 'Relationships and follow-up candidates require cited judgment', state: 'blocked', basis: ['context.meeting-intake.meeting', 'context.meeting-intake.projects', 'context.meeting-intake.tasks'], limitation: 'Preparation does not resolve participant identity, select transcript claims, choose task disposition, or propose a write batch.' }
     ],
     capabilities: {
-      steps: contextPlan, completedPrefix: Array.from({ length: 9 }, (_, index) => `preparation.context.${index + 1}`), current: null, pending: []
+      steps: contextPlan, completedPrefix: contextPlan.map((step) => step.id), current: null, pending: []
+    },
+    effects: [
+      { effect: 'read', mode: 'allow', state: 'completed-contained', reason: 'Exact contained source reads completed.' },
+      { effect: 'disclosure', mode: 'allow', state: 'completed-contained', reason: 'Selected normalized review remains private local state.' },
+      { effect: 'write', mode: 'confirm', state: 'not-executed', reason: 'The selected Integration exposes separately governed writes, but Meeting Intake declares no write capability and its complete write group remains held.' },
+      { effect: 'dispatch', mode: 'prohibit', state: 'not-executed', reason: 'Meeting Intake does not dispatch messages.' },
+      { effect: 'destructive', mode: 'prohibit', state: 'not-executed', reason: 'Meeting Intake declares no destructive operation.' }
+    ],
+    approval: {
+      state: 'not-requested',
+      requiredFor: [],
+      reason: 'No approval request exists. The later complete summary-and-task review remains held by COMPLETE_MEETING_READBACK_UNAVAILABLE before selection, batch, approval, start, checkpoint, provider write, or verification.'
     },
     preview: {
       kind: 'meeting-intake-review', fingerprint: fp('a'),
@@ -1049,7 +1397,11 @@ export function emailTriageWorkflowFixture(): Workflow {
   return {
     id: 'automation.email-triage', label: 'Automation Email Triage',
     summary: 'Prepares one bounded deterministic Email review with private drafts, digest, and provider-neutral handoffs while stopping before authority or writes.',
-    version: '0.1.0', configuration: 'email-triage', host: 'codex',
+    version: '0.1.0', configuration: 'email-triage', configurationBasis: 'tracked-contained', host: 'codex',
+    hostCompatibility: {
+      claude: { state: 'compatible' },
+      codex: { state: 'compatible' }
+    },
     effects: ['read', 'disclosure', 'write'],
     requiredCapabilities: ['mail.window.read', 'mail.labels.apply', 'mail.drafts.create'],
     dependencies: ['context.email', 'core.runtime'],
@@ -1068,25 +1420,32 @@ export function emailTriageWorkflowFixture(): Workflow {
           type: 'string', required: false, exposure: 'private', constraints: { maxLength: 1000 }
         }]
       },
-      preparation: {
-        supported: true,
-        boundary: 'private fixture-contained preparation only; no approval, execution, write, proof, maturity, or migration authority',
-        workStates: ['draft', 'preparing', 'needs-input', 'ready-for-review']
-      }
+      preparation: operatorPreparationProjection()
     },
     scenarios: [{
       id: 'email-triage.happy-path', status: 'declared-not-executed', intent: 'operate',
       outcomes: ['mail-window-reduced', 'review-collections-sealed', 'private-review-material-created', 'writes-held'],
       invariants: ['single-bounded-query', 'complete-coverage-before-proposal', 'send-prohibited', 'private-content-excluded'],
-      evidence: ['exact-lock', 'coverage-oracle', 'private-review-binding'], sourceCases: [], migrationState: 'mapped', execution: null
+      evidence: ['exact-lock', 'coverage-oracle', 'private-review-binding'],
+      sourceCases: [
+        '.claude/evals/processing-email/happy-path.md',
+        '.claude/evals/processing-email/invariant-gated-writes.md',
+        '.claude/evals/processing-email/pressure-injection.md'
+      ],
+      migrationState: 'target-native',
+      execution: null
     }],
-    migration: { id: 'email-triage.prototype-to-v1', state: 'mapped', limitations: ['Label-only exact-subset approval, one-time start, synthetic read-after-write verification, and read-only no-retry reconciliation exist; draft or mixed execution and live Gmail readiness, permission, and verification remain unavailable.'] }
+    migration: {
+      id: 'email-triage.prototype-to-v1',
+      state: 'migrated',
+      limitations: ['Legacy source cases are fingerprinted tombstones only; no operational fallback remains. Label-only exact-subset approval, one-time start, synthetic read-after-write verification, and read-only no-retry reconciliation exist; draft or mixed execution and live Gmail readiness, permission, and verification remain unavailable.']
+    }
   };
 }
 
 export function emailTriageConfigurationFixture(): Configuration {
   return {
-    name: 'email-triage', status: 'selected', lockState: 'current', host: 'codex',
+    name: 'email-triage', status: 'selected', lockState: 'current', configurationBasis: 'tracked-contained', host: 'codex',
     maturity: {
       verified: 'unknown', reasonCode: 'EVIDENCE_MATURITY_DECLARED',
       host: { id: 'host.codex', claim: 'declared', state: 'declared', result: 'unknown', reasonCode: 'EVIDENCE_MATURITY_DECLARED', requiredLevel: 'fixture', evidenceIds: [], evidence: [], basis: 'Declared only.', limitations: ['No connected provider evidence.'], remediation: 'Run applicable connected verification.' },
@@ -1123,7 +1482,11 @@ export function emailTriageReviewFixture(): PreparedWorkReviewMaterial {
   return {
     $contract: 'soter://contracts/prepared-work-review-material/v1', contractVersion: '1.0.0', fingerprint: fp('5'), createdAt: work.createdAt,
     workId: work.id, preparedWorkFingerprint: work.fingerprint, checkpointId: work.checkpoint.id, checkpointFingerprint: work.checkpoint.fingerprint,
-    automation: work.automation, configuration: { name: work.configuration.name, lockFingerprint: work.configuration.lockFingerprint },
+    automation: work.automation, configuration: {
+      name: work.configuration.name,
+      configurationBasis: work.configuration.configurationBasis,
+      lockFingerprint: work.configuration.lockFingerprint
+    },
     inputContractFingerprint: work.inputSummary.inputContractFingerprint, applicability: 'current',
     fields: [
       { id: 'query', exposure: 'private', state: 'provided', fingerprint: fp('a'), reviewValue: 'SYNTHETIC_PRIVATE_MAILBOX_QUERY' },
@@ -1140,6 +1503,136 @@ export function emailTriageAutomationProposalFixture(): AutomationProposal {
 
 export function emailTriageAutomationProposalMaterialFixture(): AutomationProposalMaterial {
   return emailProposalBundle().material;
+}
+
+export function projectCaptureHeldAutomationProposalFixture(): AutomationProposal {
+  return heldAutomationProposalFixture('project-capture');
+}
+
+export function meetingIntakeHeldAutomationProposalFixture(): AutomationProposal {
+  return heldAutomationProposalFixture('meeting-intake');
+}
+
+function heldAutomationProposalFixture(kind: 'project-capture' | 'meeting-intake'): AutomationProposal {
+  const proposal = structuredClone(emailTriageAutomationProposalFixture());
+  const meeting = kind === 'meeting-intake';
+  const specifications = meeting ? [{
+    id: 'row.meeting-intake.summary',
+    subjectKind: 'meeting-summary',
+    actionId: 'action.meeting-intake.summary-create',
+    actionKind: 'meeting-summary-create',
+    reasonCode: 'COMPLETE_MEETING_READBACK_UNAVAILABLE'
+  }, {
+    id: 'row.meeting-intake.task-fold',
+    subjectKind: 'meeting-task',
+    actionId: 'action.meeting-intake.task-fold',
+    actionKind: 'meeting-task-fold',
+    reasonCode: 'COMPLETE_MEETING_READBACK_UNAVAILABLE'
+  }, {
+    id: 'row.meeting-intake.boundary',
+    subjectKind: 'meeting-intake-boundary',
+    actionId: 'action.meeting-intake.unsupported-effects',
+    actionKind: 'meeting-intake-boundary',
+    reasonCode: 'MEETING_LEGACY_EFFECTS_UNAVAILABLE'
+  }] : [{
+    id: 'row.project-capture.project',
+    subjectKind: 'crm-project',
+    actionId: 'action.project-capture.create',
+    actionKind: 'project-create',
+    reasonCode: 'COMPLETE_PROJECT_READBACK_UNAVAILABLE'
+  }];
+  const rows: PreparedReviewRow[] = specifications.map((specification, index) => {
+    const row: PreparedReviewRow = {
+      id: specification.id,
+      sequence: index + 1,
+      representedCount: 1,
+      subject: { kind: specification.subjectKind, fingerprint: fp(((index + 2) % 16).toString(16)) },
+      group: kind,
+      attention: 'operator',
+      disposition: 'itemized',
+      reasonCode: specification.reasonCode,
+      flags: [specification.reasonCode],
+      actions: [{
+        id: specification.actionId,
+        kind: specification.actionKind,
+        capability: null,
+        effect: null,
+        state: 'held',
+        reasonCode: specification.reasonCode
+      }],
+      privateDetailFingerprint: fp(((index + 7) % 16).toString(16)),
+      fingerprint: fp('0')
+    };
+    row.fingerprint = reviewRowFixtureFingerprint(row);
+    return row;
+  });
+  const collection = {
+    $contract: 'soter://contracts/prepared-work-review-collection/v1' as const,
+    contractVersion: '1.0.0' as const,
+    id: meeting ? 'collection.meeting-intake.changes' : 'collection.project-capture.project',
+    kind: meeting ? 'meeting-intake-changes' : 'project-capture-project',
+    labelKey: meeting ? 'meeting-intake-changes' : 'project-capture-project',
+    coverage: {
+      complete: true,
+      observedCount: rows.length,
+      includedCount: rows.length,
+      excludedCount: 0,
+      exclusions: []
+    },
+    rows,
+    fingerprint: fp('0')
+  };
+  const unsignedCollection = structuredClone(collection);
+  delete (unsignedCollection as Partial<typeof unsignedCollection>).fingerprint;
+  collection.fingerprint = fingerprintJson(unsignedCollection);
+  proposal.id = `proposal.${kind}.ui-held`;
+  proposal.automation = { id: `automation.${kind}`, version: '0.1.0' };
+  proposal.runId = `run.${kind}.ui-held`;
+  proposal.decision = {
+    id: `decision.${kind}.ui-held`,
+    fingerprint: fp('3'),
+    decisionType: `${kind}.decision`,
+    contextSnapshotId: `context.${kind}.ui-held`,
+    contextSnapshotFingerprint: fp('4')
+  };
+  proposal.proposalType = `${kind}.review-proposal`;
+  proposal.review = {
+    $contract: 'soter://contracts/automation-review/v1',
+    contractVersion: '1.0.0',
+    kind: `${kind}-review`,
+    fingerprint: fp('0'),
+    facts: [{
+      id: 'held-review-boundary',
+      label: 'Complete read-back authority',
+      value: 'unavailable',
+      state: 'supported',
+      basisIds: [proposal.decision.contextSnapshotId]
+    }],
+    contradictions: [],
+    collections: [collection],
+    privateReview: {
+      state: 'available',
+      kind: `${kind}-derived-review`,
+      contractId: 'soter://contracts/automation-derived-review/v1',
+      contractFingerprint: fp('5'),
+      contentFingerprint: fp('6')
+    },
+    proposedChanges: []
+  };
+  const unsignedReview = structuredClone(proposal.review);
+  delete (unsignedReview as Partial<typeof unsignedReview>).fingerprint;
+  proposal.review.fingerprint = fingerprintJson(unsignedReview);
+  proposal.limitations = meeting ? [
+    'The complete summary-and-task group remains private review material only.',
+    'COMPLETE_MEETING_READBACK_UNAVAILABLE prevents selection, batch, approval, one-time start, checkpoint, provider write, or verification authority.'
+  ] : [
+    'The exact Project candidate remains private review material only.',
+    'COMPLETE_PROJECT_READBACK_UNAVAILABLE prevents selection, batch, approval, one-time start, checkpoint, provider write, or verification authority.'
+  ];
+  const unsignedProposal = structuredClone(proposal);
+  delete (unsignedProposal as Partial<typeof unsignedProposal>).proposalFingerprint;
+  proposal.proposalFingerprint = fingerprintJson(unsignedProposal);
+  return proposal;
 }
 
 export function emailTriageProposalConnectedPreviewFixture(actionIds?: string[]): ProposalConnectedBatchPreview {
@@ -1615,6 +2108,7 @@ function emailReviewBatchBundle(actionIds?: string[]) {
       name: work.configuration.name,
       path: work.configuration.path,
       lockPath: work.configuration.lockPath,
+      configurationBasis: work.configuration.configurationBasis,
       lockFingerprint: work.configuration.lockFingerprint,
       graphFingerprint: work.configuration.graphFingerprint,
       host: work.configuration.host
@@ -1805,7 +2299,7 @@ function emailFixtureBundle() {
       { state: 'preparing', at: '2026-07-16T16:00:00.000Z', reasonCode: 'PREPARATION_STARTED' },
       { state: 'ready-for-review', at: '2026-07-16T16:00:00.000Z', reasonCode: 'PREPARATION_READY_FOR_REVIEW' }
     ],
-    configuration: { name: 'email-triage', path: 'soter/configurations/email-triage.config.json', lockPath: 'soter/fixtures/email-triage/email-triage.lock.json', lockFingerprint: fp('8'), graphFingerprint: fp('7'), host: 'codex', applicability: 'current' },
+    configuration: { name: 'email-triage', path: 'soter/configurations/email-triage.config.json', lockPath: 'soter/fixtures/email-triage/email-triage.lock.json', configurationBasis: 'tracked-contained', lockFingerprint: fp('8'), graphFingerprint: fp('7'), host: 'codex', applicability: 'current' },
     inputSummary: {
       $contract: 'soter://contracts/operator-input-summary/v1', contractVersion: '1.0.0', workId: 'work.email-triage.ui-test', inputContractFingerprint: fp('9'),
       fields: [
@@ -1843,7 +2337,11 @@ function emailFixtureBundle() {
   const material: PreparedWorkDerivedReviewMaterial = {
     $contract: 'soter://contracts/prepared-work-derived-review-material/v1', contractVersion: '1.0.0', fingerprint: fp('0'), contentFingerprint,
     createdAt: work.createdAt, workId: work.id, preparedWorkFingerprint: work.fingerprint, checkpointId: work.checkpoint.id, checkpointFingerprint: work.checkpoint.fingerprint,
-    automation: work.automation, configuration: { name: work.configuration.name, lockFingerprint: work.configuration.lockFingerprint }, inputContractFingerprint: work.inputSummary.inputContractFingerprint,
+    automation: work.automation, configuration: {
+      name: work.configuration.name,
+      configurationBasis: work.configuration.configurationBasis,
+      lockFingerprint: work.configuration.lockFingerprint
+    }, inputContractFingerprint: work.inputSummary.inputContractFingerprint,
     reviewContractId: 'soter://contracts/automation-derived-review/v1', reviewContractFingerprint, applicability: 'current', kind: 'email-triage-derived-review', items,
     privacy: {
       scope: 'private-local-derived-review', authority: 'none', projection: 'selected-work-only', rawProviderResponsesIncluded: false, rawMessageBodiesIncluded: false,
@@ -1861,10 +2359,16 @@ function derivedItem(
   id: string,
   kind: string,
   sources: PreparedWorkDerivedReviewMaterial['items'][number]['sources'],
-  values: Record<string, string | boolean | string[]>
+  values: Record<string, string | boolean | string[]>,
+  definition: {
+    items: Array<{
+      kind: string;
+      fields: Array<{ id: string; label: string; type: string }>;
+    }>;
+  } = emailDerivedReviewDefinition
 ): PreparedWorkDerivedReviewMaterial['items'][number] {
-  const declaration = emailDerivedReviewDefinition.items.find((item) => item.kind === kind);
-  if (!declaration) throw new Error(`Missing synthetic Email review declaration for ${kind}.`);
+  const declaration = definition.items.find((item) => item.kind === kind);
+  if (!declaration) throw new Error(`Missing synthetic review declaration for ${kind}.`);
   const fields = declaration.fields.map((field) => ({
     id: field.id, label: field.label, type: field.type,
     fingerprint: fingerprintJson(values[field.id]), reviewValue: values[field.id]

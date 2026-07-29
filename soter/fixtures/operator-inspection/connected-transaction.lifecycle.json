@@ -32,16 +32,14 @@
         "afterFingerprint": null
       }
     ],
-    "verificationCriterionIds": ["verification.operation.example.update.record"],
-    "compensationPlan": [
-      { "stepId": "operation.example.update", "mode": "restore-prior-fields" }
-    ]
+    "verificationCriterionIds": ["verification.operation.example.update.record"]
   },
   "states": [
     {
       "id": "prepared-work-unavailable",
       "workState": "ready-for-review",
       "phase": "preparation",
+      "configurationBasis": "tracked-contained",
       "approvalState": "not-issued",
       "checkpointState": null,
       "verificationState": "not-started",
@@ -57,6 +55,7 @@
       "id": "awaiting-approval",
       "workState": "awaiting-approval",
       "phase": "approval",
+      "configurationBasis": "private-active",
       "approvalState": "awaiting",
       "checkpointState": null,
       "verificationState": "not-started",
@@ -72,6 +71,7 @@
       "id": "approval-expired",
       "workState": "approval-expired",
       "phase": "approval",
+      "configurationBasis": "private-active",
       "approvalState": "expired",
       "checkpointState": null,
       "verificationState": "not-started",
@@ -87,6 +87,7 @@
       "id": "approved-not-started",
       "workState": "approved-not-started",
       "phase": "approval",
+      "configurationBasis": "private-active",
       "approvalState": "confirmed",
       "checkpointState": null,
       "verificationState": "not-started",
@@ -99,9 +100,26 @@
       }
     },
     {
+      "id": "private-basis-unavailable",
+      "workState": "approved-not-started",
+      "phase": "approval",
+      "configurationBasis": "tracked-contained",
+      "approvalState": "confirmed",
+      "checkpointState": null,
+      "verificationState": "not-started",
+      "compensationState": "not-required",
+      "resume": {
+        "classification": "unavailable",
+        "reasonCode": "CONFIGURATION_BASIS_NOT_PRIVATE_ACTIVE",
+        "reason": "Connected continuation requires an exact private-active configuration basis.",
+        "permittedNextAction": "inspect-checkpoint"
+      }
+    },
+    {
       "id": "running",
       "workState": "running",
       "phase": "execution",
+      "configurationBasis": "private-active",
       "approvalState": "consumed",
       "checkpointState": "requested",
       "verificationState": "unknown",
@@ -116,7 +134,8 @@
     {
       "id": "blocked-needs-attention",
       "workState": "blocked",
-      "phase": "execution",
+      "phase": "reconciliation",
+      "configurationBasis": "private-active",
       "approvalState": "consumed",
       "checkpointState": "needs-attention",
       "verificationState": "unknown",
@@ -132,6 +151,7 @@
       "id": "reconciliation-in-progress",
       "workState": "blocked",
       "phase": "reconciliation",
+      "configurationBasis": "private-active",
       "approvalState": "consumed",
       "checkpointState": "requested",
       "verificationState": "unknown",
@@ -147,6 +167,7 @@
       "id": "verification-failed",
       "workState": "verification-failed",
       "phase": "verification",
+      "configurationBasis": "private-active",
       "approvalState": "consumed",
       "checkpointState": "needs-attention",
       "verificationState": "failed",
@@ -159,54 +180,26 @@
       }
     },
     {
-      "id": "rolling-back",
-      "workState": "rolling-back",
-      "phase": "compensation",
+      "id": "execution-failed",
+      "workState": "failed",
+      "phase": "execution",
+      "configurationBasis": "private-active",
       "approvalState": "consumed",
-      "checkpointState": "requested",
-      "verificationState": "failed",
-      "compensationState": "running",
-      "resume": {
-        "classification": "safe",
-        "reasonCode": "CURRENT_CALL_PENDING",
-        "reason": "Only the exact current checkpoint call is authorized to continue.",
-        "permittedNextAction": "execute-current-call"
-      }
-    },
-    {
-      "id": "rolled-back",
-      "workState": "rolled-back",
-      "phase": "compensation",
-      "approvalState": "consumed",
-      "checkpointState": "rolled-back",
-      "verificationState": "failed",
-      "compensationState": "verified",
+      "checkpointState": "failed",
+      "verificationState": "unknown",
+      "compensationState": "not-required",
       "resume": {
         "classification": "unavailable",
-        "reasonCode": "TRANSACTION_ROLLED_BACK",
+        "reasonCode": "EXECUTION_FAILED",
         "reason": "The checkpoint has no authorized execution continuation.",
         "permittedNextAction": "none"
-      }
-    },
-    {
-      "id": "compensation-failed",
-      "workState": "blocked",
-      "phase": "compensation",
-      "approvalState": "consumed",
-      "checkpointState": "needs-attention",
-      "verificationState": "failed",
-      "compensationState": "failed",
-      "resume": {
-        "classification": "safe",
-        "reasonCode": "RECONCILIATION_AVAILABLE",
-        "reason": "Core authorizes preparation of one read-only reconciliation for the unresolved ambiguity.",
-        "permittedNextAction": "prepare-reconciliation"
       }
     },
     {
       "id": "checkpoint-stale",
       "workState": "blocked",
       "phase": "execution",
+      "configurationBasis": "private-active",
       "approvalState": "consumed",
       "checkpointState": "requested",
       "verificationState": "unknown",
@@ -222,6 +215,7 @@
       "id": "completed",
       "workState": "completed",
       "phase": "complete",
+      "configurationBasis": "private-active",
       "approvalState": "consumed",
       "checkpointState": "completed",
       "verificationState": "verified",

@@ -1,0 +1,54 @@
+{
+  "$contract": "soter://contracts/migration/v1",
+  "contractVersion": "1.0.0",
+  "id": "feature-definition.prototype-to-v2",
+  "source": "claude-oriented-prototype",
+  "slice": "automation.feature-definition",
+  "items": [
+    {
+      "sourcePath": ".claude/skills/defining-a-feature/SKILL.md",
+      "sourceFingerprint": "sha256:f3d54881a0e1d96ee2fddb38cbbc098ea984f740c13b28f215f81a4333dd3a89",
+      "targetPath": "soter/packs/automation.feature-definition/pack.json",
+      "targetPack": "automation.feature-definition",
+      "state": "migrated",
+      "bridge": "The target owns an exact existing-feature reference, current record and body grounding, deterministic scope and acceptance replacement, explicit Description and Planned preservation, and no-authority preparation. Arbitrary provider templates and connected writes remain unavailable.",
+      "evidence": ["soter/fixtures/feature-definition/legacy-guide-migration.evidence.json"]
+    },
+    {
+      "sourcePath": ".claude/evals/defining-a-feature/happy-path.md",
+      "sourceFingerprint": "sha256:3c5ce5f888a675cb8ce58bc6e33786a9622fc84dac01ab5fb4b4451311ee5750",
+      "targetPath": "soter/scenarios/feature-definition/preparation.scenario.json",
+      "targetPack": "automation.feature-definition",
+      "state": "migrated",
+      "bridge": "The target proves what-it-is, in/out scope, and done-when criteria land only in a privately reviewed body replacement while exact feature fields remain unchanged.",
+      "evidence": ["soter/fixtures/feature-definition/legacy-happy-path-migration.evidence.json"]
+    },
+    {
+      "sourcePath": ".claude/evals/defining-a-feature/invariant-preserve-why.md",
+      "sourceFingerprint": "sha256:f35487b67be4128d3273e5285dd11634838c430c9a992b57ff16a5dc7408bdb6",
+      "targetPath": "soter/scenarios/feature-definition/preparation.scenario.json",
+      "targetPack": "automation.feature-definition",
+      "state": "migrated",
+      "bridge": "The target reads Description as the exact why and compiles only a documents.content.update proposal, mechanically excluding Description append, overwrite, or replacement.",
+      "evidence": ["soter/fixtures/feature-definition/legacy-invariant-preserve-why-migration.evidence.json"]
+    },
+    {
+      "sourcePath": ".claude/evals/defining-a-feature/pressure-advance-status.md",
+      "sourceFingerprint": "sha256:16571620571998235ba948b2bfc533524de3411b36d389e649c41d8349404ec5",
+      "targetPath": "soter/scenarios/feature-definition/preparation.scenario.json",
+      "targetPack": "automation.feature-definition",
+      "state": "migrated",
+      "bridge": "The target surfaces requested lifecycle pressure as a separate excluded fact, proposes no status field change, and keeps Planned while privately reviewing the body definition.",
+      "evidence": ["soter/fixtures/feature-definition/legacy-pressure-advance-status-migration.evidence.json"]
+    },
+    {
+      "sourcePath": ".claude/systems/product-development.md",
+      "sourceFingerprint": "sha256:ab10b00eda08ef67d2374e04ae0839c62e6dd0838e95a2b151508951a565a523",
+      "targetPath": "soter/packs/automation.feature-definition/pack.json",
+      "targetPack": "automation.feature-definition",
+      "state": "migrated",
+      "bridge": "Only the Feature Definition orchestration responsibility inside this mixed Product source is target-owned. The source card remains present and legacy-authoritative for broader lifecycle and dynamic board-containment meaning.",
+      "evidence": ["soter/fixtures/feature-definition/legacy-product-definition-migration.evidence.json"]
+    }
+  ]
+}

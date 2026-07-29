@@ -1,0 +1,132 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "automation.contact-capture",
+  "version": "0.1.0",
+  "layer": "automation",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Grounds one current-schema person record, omits unmatched options, resolves an optional organization, blocks duplicates, and compiles one exact create for Core-governed approval, start, execution, and verification.",
+  "dependencies": [
+    {
+      "pack": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Contact preparation requires exact locks, private review companions, effect policy, approval, and checkpoint boundaries."
+    },
+    {
+      "pack": "context.crm",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Person fields, current-option semantics, duplicate keys, and organization relationship meaning belong to CRM Context."
+    }
+  ],
+  "capabilities": {
+    "requires": [
+      {
+        "id": "crm.records.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation must select one policy, inspect bounded person candidates, and resolve any requested organization before create."
+      },
+      {
+        "id": "crm.schema.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation must observe current Role, Status, Disposition, Authority, and Tags options rather than invent provider values."
+      },
+      {
+        "id": "crm.records.create",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "One exact proposal may create a mapped person only after separate Core authority."
+      }
+    ],
+    "provides": []
+  },
+  "sourceRequirements": [
+    {
+      "purpose": "contact-capture-policy",
+      "capability": "crm.records.read",
+      "authorityRole": "definition",
+      "authoritySubject": "crm.records",
+      "minimum": 1,
+      "maximum": 1,
+      "reason": "Contact Capture requires one configured definition selection for confirmation, exact option matching, duplicate bounds, and organization resolution."
+    }
+  ],
+  "authorities": [
+    { "role": "definition", "subject": "crm.records", "required": true },
+    { "role": "instance", "subject": "crm.records", "required": true },
+    { "role": "evidence", "subject": "runtime.runs", "required": true }
+  ],
+  "effects": ["read", "disclosure", "write"],
+  "operator": {
+    "input": "soter/automations/contact-capture/operator-input.json",
+    "preparation": {
+      "module": "soter/automations/contact-capture/prepare.mjs",
+      "export": "prepareContactCaptureRun",
+      "containment": "fixture",
+      "derivedReviewContract": "soter/automations/contact-capture/derived-review.json"
+    },
+    "acquisition": {
+      "module": "soter/automations/contact-capture/context.mjs",
+      "prepareExport": "prepareContactCaptureConnectedAcquisition",
+      "finalizeExport": "finalizeContactCaptureConnectedAcquisition",
+      "containment": "connected",
+      "recordRequirements": [
+        {
+          "capability": "crm.records.read",
+          "recordTypes": ["contact-capture-policy", "person", "organization"]
+        },
+        {
+          "capability": "crm.schema.read",
+          "recordTypes": ["person"]
+        }
+      ]
+    },
+    "connection": {
+      "module": "soter/automations/contact-capture/connected.mjs",
+      "compileExport": "compileContactCaptureConnectedOperations",
+      "evaluateExport": "evaluateContactCaptureConnectedVerification",
+      "recordRequirements": [
+        {
+          "capability": "crm.records.create",
+          "recordTypes": ["person"]
+        }
+      ]
+    },
+    "proposal": {
+      "module": "soter/automations/contact-capture/proposal.mjs",
+      "export": "createContactCaptureProposal",
+      "schema": "soter/automations/contact-capture/proposal.schema.json",
+      "inputSchema": "soter/automations/contact-capture/proposal-input.schema.json",
+      "derivedReviewContract": "soter/automations/contact-capture/derived-review.json"
+    }
+  },
+  "artifacts": [
+    { "path": "soter/automations/contact-capture/operator-input.json", "role": "definition" },
+    { "path": "soter/automations/contact-capture/derived-review.json", "role": "definition" },
+    { "path": "soter/automations/contact-capture/decision.schema.json", "role": "definition" },
+    { "path": "soter/automations/contact-capture/proposal-input.schema.json", "role": "definition" },
+    { "path": "soter/automations/contact-capture/proposal.schema.json", "role": "definition" },
+    { "path": "soter/automations/contact-capture/policy.mjs", "role": "implementation" },
+    { "path": "soter/automations/contact-capture/prepare.mjs", "role": "implementation" },
+    { "path": "soter/automations/contact-capture/context.mjs", "role": "implementation" },
+    { "path": "soter/automations/contact-capture/decision.mjs", "role": "implementation" },
+    { "path": "soter/automations/contact-capture/proposal.mjs", "role": "implementation" },
+    { "path": "soter/automations/contact-capture/connected.mjs", "role": "implementation" },
+    { "path": "soter/automations/contact-capture/scenario.mjs", "role": "evaluation" },
+    { "path": "soter/automations/contact-capture/contact-capture.selftest.mjs", "role": "evaluation" },
+    { "path": "soter/automations/contact-capture/connected-context.selftest.mjs", "role": "evaluation" },
+    { "path": "soter/scenarios/contact-capture/preparation.scenario.json", "role": "evaluation" }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": ["codex", "claude"]
+  },
+  "verification": {
+    "maxLevel": "fixture",
+    "scenarios": ["soter/scenarios/contact-capture/preparation.scenario.json"]
+  }
+}

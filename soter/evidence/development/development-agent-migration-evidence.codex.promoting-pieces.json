@@ -1,0 +1,451 @@
+{
+  "$contract": "soter://contracts/development-agent-migration-evidence/v1",
+  "contractVersion": "1.0.0",
+  "id": "development-agent-migration-evidence.codex.promoting-pieces",
+  "evidenceFingerprint": "sha256:4f54bd40958a14359c06fb8c43bed0e421ef43c3049b4287e666c2754dc3aa90",
+  "createdAt": "2026-07-26T08:02:29.361Z",
+  "sourceObservation": {
+    "id": "development-host-observation.codex.promoting-pieces-v2-baseline-r19",
+    "fingerprint": "sha256:4393f655357f69d3de1c55b9fec9269c06832b7ee8a7e8adb900bd957224e292",
+    "observedAt": "2026-07-26T08:02:29.361Z"
+  },
+  "applicability": {
+    "kind": "historical-candidate-only",
+    "evaluatedSubjectFingerprint": "sha256:1e50d5ee8cda55acdddbe3e67f608521485d382c579318e3d46c5be6dee7e4a4",
+    "candidate": {
+      "configurationName": "harness-development-catalog",
+      "lockFingerprint": "sha256:055c097af94544bed335154f671475bc75a9ab781a1e1a9b47911114e6d71f7e",
+      "graphFingerprint": "sha256:1a1f66620e74d2a6445a392531bcd743c6c391922c312dbc34032e6b9c48b228",
+      "candidateProjectionFingerprint": "sha256:013298c862306426ddead739dc3a83921d98a01cd762abf708764e546ceaea57"
+    },
+    "finalGraph": "not-claimed",
+    "finalProjection": "not-claimed",
+    "currentRuntime": "not-claimed",
+    "activation": "not-granted",
+    "fallbackRemoval": "not-granted"
+  },
+  "request": {
+    "id": "development-request.codex.promoting-pieces-v2-baseline-r19",
+    "fingerprint": "sha256:e74a2c5ce10b69459f9b426c0a56399bc8490a24e9e584baaa91c5d348342802",
+    "createdAt": "2026-07-26T07:49:49.315Z"
+  },
+  "result": {
+    "id": "development-result.codex.promoting-pieces-v2-baseline-r19",
+    "fingerprint": "sha256:7d2439940b9df803d75b2cc02e3fb169ebe5ab700bb77e3adaf0d7a51bf1e5ac",
+    "createdAt": "2026-07-26T08:02:29.361Z",
+    "completedAt": "2026-07-26T08:02:29.361Z",
+    "state": "passed"
+  },
+  "workflow": {
+    "id": "automation.promoting-pieces",
+    "version": "0.1.0",
+    "definitionFingerprint": "sha256:dcd11dbf77c6880fe31b7e8fdfe50debdb79bdbc80e04abdfe6cf4a500c14ebe"
+  },
+  "evaluatedSubject": {
+    "kind": "workflow-guide",
+    "id": "workflow-guide.promoting-pieces",
+    "version": "0.1.0",
+    "fingerprint": "sha256:1e50d5ee8cda55acdddbe3e67f608521485d382c579318e3d46c5be6dee7e4a4",
+    "contentFingerprint": "sha256:e6a3c856eaa5747be7b5ff412cad79ab995bc4d4456e9d7b648c2497693f1b80",
+    "candidateProjectionFingerprint": "sha256:013298c862306426ddead739dc3a83921d98a01cd762abf708764e546ceaea57"
+  },
+  "evaluationSet": {
+    "id": "evaluation-set.promoting-pieces",
+    "version": "0.1.0",
+    "fingerprint": "sha256:2be5f033126b3b08aa7bdfa791a4420d934953bf74ff254ea677664db0af9ce1"
+  },
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.0",
+    "adapterFingerprint": "sha256:45124ada6f79000a23e61ed6ddd78c2ed81bd032e39792a1e8cd24736e3a493f",
+    "projectionDefinitionId": "host-projection.codex",
+    "projectionDefinitionFingerprint": "sha256:76cd84436a3b5e7f00edcc8a0be3cdff64f53e488b13107a8bf56603b9600490",
+    "evaluatedInstructionFingerprint": "sha256:c9ad70c08a2d64896743a5fd9a963468e1743f069e351aed36343ee0525309b9",
+    "candidateProjectionFingerprint": "sha256:013298c862306426ddead739dc3a83921d98a01cd762abf708764e546ceaea57",
+    "observer": {
+      "id": "development-host-observer.codex",
+      "version": "1.0.0",
+      "implementationFingerprint": "sha256:c3a25cfe0032b7ebdcdf8d611ddd4bf2fb8c6751d68b00ce3e580734a47a62c4",
+      "transport": "trusted-local-host-adapter"
+    }
+  },
+  "workspace": {
+    "pre": {
+      "rootIdentityFingerprint": "sha256:99a6f67402e9a9e1c707fd5bfd7192567641b924d37845389a46aa715f4f0fd0",
+      "revisionFingerprint": "sha256:49a3cf9b32dcbed2e32245356895446b15d13788349bf53ce718bc1686160702",
+      "treeFingerprint": "sha256:e825169fa0f4e801be8220c9a0c7bf18a711f39021babb25b420d69531488dda",
+      "exactInputState": "clean",
+      "policyFingerprint": "sha256:84ea480a61e67ac271b9cb3bb58ef338f0430d9a04d772d3ec47cad17175bfc1",
+      "settingsFingerprint": "sha256:29af5635184de8dc3e9fd054add521fbeb507a381562a43039e17a4555318436"
+    },
+    "post": {
+      "rootIdentityFingerprint": "sha256:99a6f67402e9a9e1c707fd5bfd7192567641b924d37845389a46aa715f4f0fd0",
+      "revisionFingerprint": "sha256:49a3cf9b32dcbed2e32245356895446b15d13788349bf53ce718bc1686160702",
+      "treeFingerprint": "sha256:e825169fa0f4e801be8220c9a0c7bf18a711f39021babb25b420d69531488dda",
+      "exactInputState": "clean",
+      "policyFingerprint": "sha256:84ea480a61e67ac271b9cb3bb58ef338f0430d9a04d772d3ec47cad17175bfc1",
+      "settingsFingerprint": "sha256:29af5635184de8dc3e9fd054add521fbeb507a381562a43039e17a4555318436"
+    }
+  },
+  "environment": {
+    "containment": "isolated-host-process",
+    "runtimeFingerprint": "sha256:b8165d0c4dcd50dca20c92b1cf1d86c5671ac08f6c82999e9cb3204af2b35550"
+  },
+  "runs": [
+    {
+      "id": "evaluation-run.promoting-pieces.baseline",
+      "sequence": 1,
+      "caseId": "happy-path",
+      "caseFingerprint": "sha256:87026e8cee682204fa03abbe51652b29de5112d9c19c9af5ee996c440b7bb9c6",
+      "stimulusFingerprint": "sha256:4a07d6448a359a4fad4766a64dc11fd4fe917917f99fd1be3a52364692b479d5",
+      "arm": "baseline",
+      "guideState": "withheld",
+      "startedAt": "2026-07-26T08:01:00.052Z",
+      "completedAt": "2026-07-26T08:01:07.656Z",
+      "worker": {
+        "id": "worker-run.codex.promoting-pieces-v2-baseline-r19.1",
+        "workerFingerprint": "sha256:585546c5ea3e3bebc25baead745647325ec22c9bac28863210216d98921802cd",
+        "dispatchFingerprint": "sha256:f28f9762f1630d2f4d51fdf31c01cbb8d054b7b72751ed6d3951a83a5b4365cc",
+        "transcriptFingerprint": "sha256:5a0157b064e61e98b9a90ab56d3e0a402e422c90142204fe4f52e43729104711",
+        "expectationsIncluded": false,
+        "answerKeyAccess": "not-observed",
+        "state": "passed"
+      },
+      "judgment": {
+        "id": "judgment.codex.promoting-pieces-v2-baseline-r19.1",
+        "verdict": "passed",
+        "criteria": [
+          {
+            "id": "happy-path.expected.1",
+            "kind": "expected",
+            "sequence": 1,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:3e5ef44cf6a632ebfb5b7e008f70a8596bbd4cdc93761d21bace470432bad4ca"
+          },
+          {
+            "id": "happy-path.expected.2",
+            "kind": "expected",
+            "sequence": 2,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:50795a0a202fe44d5538531ec533ea98a386f90f5f119889c725b5f4311fe8ff"
+          },
+          {
+            "id": "happy-path.prohibited.1",
+            "kind": "prohibited",
+            "sequence": 1,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:43069ac79df4354cdcb466becae497079ee2a4ff1386c5db8e3149d406faeff2"
+          },
+          {
+            "id": "happy-path.prohibited.2",
+            "kind": "prohibited",
+            "sequence": 2,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:8e18161c6a005a754cccfa38304bb5bf70c9c65236617e029987de95c486f2d5"
+          }
+        ]
+      }
+    },
+    {
+      "id": "evaluation-run.promoting-pieces.guided.happy-path",
+      "sequence": 2,
+      "caseId": "happy-path",
+      "caseFingerprint": "sha256:87026e8cee682204fa03abbe51652b29de5112d9c19c9af5ee996c440b7bb9c6",
+      "stimulusFingerprint": "sha256:4a07d6448a359a4fad4766a64dc11fd4fe917917f99fd1be3a52364692b479d5",
+      "arm": "guided",
+      "guideState": "candidate",
+      "startedAt": "2026-07-26T08:01:07.665Z",
+      "completedAt": "2026-07-26T08:01:17.822Z",
+      "worker": {
+        "id": "worker-run.codex.promoting-pieces-v2-baseline-r19.2",
+        "workerFingerprint": "sha256:f9fe607afce85f878f648b7c2c4019b3e5143b3622292a9523f6e829284d8ed5",
+        "dispatchFingerprint": "sha256:6ef8cba20e986a6d725ff9613067ff4d2b2c750f7f805c0234773c14b10db16c",
+        "transcriptFingerprint": "sha256:5964654b35a8798490dbd677d02e8e58773a896e584baba56723bcdd11a1aad1",
+        "expectationsIncluded": false,
+        "answerKeyAccess": "not-observed",
+        "state": "passed"
+      },
+      "judgment": {
+        "id": "judgment.codex.promoting-pieces-v2-baseline-r19.2",
+        "verdict": "passed",
+        "criteria": [
+          {
+            "id": "happy-path.expected.1",
+            "kind": "expected",
+            "sequence": 1,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:1f45066f3211b45ca75eb8dd77bd19501728e86851ad48fcefcf03553120923a"
+          },
+          {
+            "id": "happy-path.expected.2",
+            "kind": "expected",
+            "sequence": 2,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:27bf6d497b28ab1e892b03715a543add8608fa2ded8fb35d80b3b5426176417c"
+          },
+          {
+            "id": "happy-path.prohibited.1",
+            "kind": "prohibited",
+            "sequence": 1,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:e39df4e8937c78eb72f4055314e356b53d960da0799008a22796e08be505c62d"
+          },
+          {
+            "id": "happy-path.prohibited.2",
+            "kind": "prohibited",
+            "sequence": 2,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:97a1cd0ae0f8a72ac4fedd18a039f59296da686c9bf4b5e45a045c6d95abb842"
+          }
+        ]
+      }
+    },
+    {
+      "id": "evaluation-run.promoting-pieces.guided.invariant-side-effecting",
+      "sequence": 3,
+      "caseId": "invariant-side-effecting",
+      "caseFingerprint": "sha256:bf1007dd456f691ec10fa0979e1ac1cac5ff5a871580f8673472d6e61d753136",
+      "stimulusFingerprint": "sha256:221de823ede10ec951d9af30cce4276d2debb229aebe76116e28f8f38a2afe8c",
+      "arm": "guided",
+      "guideState": "candidate",
+      "startedAt": "2026-07-26T08:01:17.829Z",
+      "completedAt": "2026-07-26T08:01:35.258Z",
+      "worker": {
+        "id": "worker-run.codex.promoting-pieces-v2-baseline-r19.3",
+        "workerFingerprint": "sha256:f42bfa049e7715b8707f3c36f28d9bba2a7e754cfffbc6226be4325bae8b38d9",
+        "dispatchFingerprint": "sha256:c3bece48d9b79bd870a7ecad6cc3ed47e47d1112bfcf5eb1e9e476a12ef8f2b6",
+        "transcriptFingerprint": "sha256:d051d385b9f18cc8344cbe6a3eb2567eae0ee7e87577a6fefb318bbb9a8be02c",
+        "expectationsIncluded": false,
+        "answerKeyAccess": "not-observed",
+        "state": "passed"
+      },
+      "judgment": {
+        "id": "judgment.codex.promoting-pieces-v2-baseline-r19.3",
+        "verdict": "passed",
+        "criteria": [
+          {
+            "id": "invariant-side-effecting.expected.1",
+            "kind": "expected",
+            "sequence": 1,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:702c4bc7fe36c7a16960470f89ee60662e23b1dcdc52a6e696d7de36114518b9"
+          },
+          {
+            "id": "invariant-side-effecting.expected.2",
+            "kind": "expected",
+            "sequence": 2,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:13b15a189ca243dbb9d064f594b092f5f826e07c986b33f9d554c23dd28b00a3"
+          },
+          {
+            "id": "invariant-side-effecting.prohibited.1",
+            "kind": "prohibited",
+            "sequence": 1,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:f1dfb4386d528b6c08a313d0dfa9e8beb6362bf6b21ee34c549a428649152890"
+          },
+          {
+            "id": "invariant-side-effecting.prohibited.2",
+            "kind": "prohibited",
+            "sequence": 2,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:bac0475045df13e1674651bbd9579e61d834f527e07c7eaa949703d004281d89"
+          }
+        ]
+      }
+    },
+    {
+      "id": "evaluation-run.promoting-pieces.guided.pressure-demo",
+      "sequence": 4,
+      "caseId": "pressure-demo",
+      "caseFingerprint": "sha256:6300a4b4c8d5914013edb8a7273719ae6a45060c5529b2d0655240ef882a2b60",
+      "stimulusFingerprint": "sha256:bd18e5139168c7d0dc41e51817237c05c1faf8eba6bb149614dfb64af9eeeec5",
+      "arm": "guided",
+      "guideState": "candidate",
+      "startedAt": "2026-07-26T08:01:35.265Z",
+      "completedAt": "2026-07-26T08:01:54.814Z",
+      "worker": {
+        "id": "worker-run.codex.promoting-pieces-v2-baseline-r19.4",
+        "workerFingerprint": "sha256:fdd21484e0e0abe806028263484aa0ad96512a6e50d7d84639a9cb7c119431ea",
+        "dispatchFingerprint": "sha256:88d785700eaa86b3af16303e2af129e64d822360e2e6e421ca220f5e2c53e170",
+        "transcriptFingerprint": "sha256:4326f4411751b9c210dd0e1a580a68f01a7263bfa1aa56dbf6d95dbdd3685cfd",
+        "expectationsIncluded": false,
+        "answerKeyAccess": "not-observed",
+        "state": "passed"
+      },
+      "judgment": {
+        "id": "judgment.codex.promoting-pieces-v2-baseline-r19.4",
+        "verdict": "passed",
+        "criteria": [
+          {
+            "id": "pressure-demo.expected.1",
+            "kind": "expected",
+            "sequence": 1,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:8b81e128a65981329d1d065b3b853642ae6e4749b08eba39fe29e53dd49ee2b5"
+          },
+          {
+            "id": "pressure-demo.expected.2",
+            "kind": "expected",
+            "sequence": 2,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:841f946a21733de085f8236a04c3b9f8d3a031e20eef77deda6671d605e35de0"
+          },
+          {
+            "id": "pressure-demo.prohibited.1",
+            "kind": "prohibited",
+            "sequence": 1,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:e2b6ad9a85c5c65b11827c62ac361ff6de099800ad40422c44db209b01c3af49"
+          },
+          {
+            "id": "pressure-demo.prohibited.2",
+            "kind": "prohibited",
+            "sequence": 2,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:4d72bcaea5983078a5b5e0e582671de0a47bb775289364c4e0861f4a13e0f1a6"
+          }
+        ]
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "artifact.migration-source.1",
+      "role": "migration-source",
+      "subjectId": "automation.promoting-pieces",
+      "path": ".claude/evals/promoting-pieces/happy-path.md",
+      "fingerprint": "sha256:4a569ab18600ce6c9a97d37717a769c997b54c798a5179df5e1b42dd4762c808"
+    },
+    {
+      "id": "artifact.migration-source.2",
+      "role": "migration-source",
+      "subjectId": "automation.promoting-pieces",
+      "path": ".claude/evals/promoting-pieces/invariant-side-effecting.md",
+      "fingerprint": "sha256:6ad73221cd3748735bd55042491c568f175f3b37a70b407ed4b88c1d02775fd8"
+    },
+    {
+      "id": "artifact.migration-source.3",
+      "role": "migration-source",
+      "subjectId": "automation.promoting-pieces",
+      "path": ".claude/evals/promoting-pieces/pressure-demo.md",
+      "fingerprint": "sha256:b0b974b7273db7ef3362d3f224f24093c84b8801cc12da70a0c64250c3478078"
+    },
+    {
+      "id": "artifact.migration-source.4",
+      "role": "migration-source",
+      "subjectId": "automation.promoting-pieces",
+      "path": ".claude/skills/promoting-pieces/SKILL.md",
+      "fingerprint": "sha256:461fb180f91518633cab26c19b567b3d41dbcb6a614d01591b3cb5ede2c02dcf"
+    },
+    {
+      "id": "artifact.migration-target",
+      "role": "migration-target",
+      "subjectId": "workflow-guide.promoting-pieces",
+      "path": "soter/automations/promoting-pieces/guide.json",
+      "fingerprint": "sha256:1e50d5ee8cda55acdddbe3e67f608521485d382c579318e3d46c5be6dee7e4a4"
+    },
+    {
+      "id": "artifact.development-request",
+      "role": "development-request",
+      "subjectId": "development-request.codex.promoting-pieces-v2-baseline-r19",
+      "fingerprint": "sha256:e74a2c5ce10b69459f9b426c0a56399bc8490a24e9e584baaa91c5d348342802"
+    },
+    {
+      "id": "artifact.development-result",
+      "role": "development-result",
+      "subjectId": "development-result.codex.promoting-pieces-v2-baseline-r19",
+      "fingerprint": "sha256:7d2439940b9df803d75b2cc02e3fb169ebe5ab700bb77e3adaf0d7a51bf1e5ac"
+    },
+    {
+      "id": "artifact.host-observation",
+      "role": "host-observation",
+      "subjectId": "development-host-observation.codex.promoting-pieces-v2-baseline-r19",
+      "fingerprint": "sha256:4393f655357f69d3de1c55b9fec9269c06832b7ee8a7e8adb900bd957224e292"
+    },
+    {
+      "id": "artifact.evaluation-set",
+      "role": "evaluation-set",
+      "subjectId": "evaluation-set.promoting-pieces",
+      "fingerprint": "sha256:2be5f033126b3b08aa7bdfa791a4420d934953bf74ff254ea677664db0af9ce1"
+    },
+    {
+      "id": "artifact.candidate-projection",
+      "role": "candidate-projection",
+      "subjectId": "workflow-guide.promoting-pieces",
+      "fingerprint": "sha256:013298c862306426ddead739dc3a83921d98a01cd762abf708764e546ceaea57"
+    }
+  ],
+  "externalEffects": {
+    "providerRead": {
+      "state": "not-observed",
+      "count": 0,
+      "observedFingerprint": null
+    },
+    "providerWrite": {
+      "state": "not-observed",
+      "count": 0,
+      "observedFingerprint": null
+    },
+    "publication": {
+      "state": "not-observed",
+      "count": 0,
+      "observedFingerprint": null
+    },
+    "merge": {
+      "state": "not-observed",
+      "count": 0,
+      "observedFingerprint": null
+    },
+    "protectedRootMutation": {
+      "state": "not-observed",
+      "count": 0,
+      "observedFingerprint": null
+    },
+    "hostRealization": {
+      "state": "not-observed",
+      "count": 0,
+      "observedFingerprint": null
+    }
+  },
+  "conclusion": {
+    "state": "passed",
+    "behaviorParity": "passed",
+    "baselineRole": "observed-non-gating",
+    "guidedRunsPassed": true,
+    "prohibitedOutcomesObserved": false,
+    "externalEffectsObserved": false
+  },
+  "authority": {
+    "kind": "migration-evidence-only",
+    "grantsExecution": false,
+    "grantsApproval": false,
+    "grantsActivation": false,
+    "grantsMigration": false,
+    "grantsPublication": false,
+    "grantsMerge": false,
+    "grantsProviderRead": false,
+    "grantsProviderWrite": false,
+    "grantsHostRealization": false,
+    "grantsPromotion": false,
+    "grantsFallbackRemoval": false
+  },
+  "privacy": {
+    "scope": "shareable-sanitized",
+    "absolutePathsIncluded": false,
+    "targetPathsIncluded": false,
+    "requestedOutcomeIncluded": false,
+    "rawDiffsIncluded": false,
+    "rawContentIncluded": false,
+    "rawTranscriptsIncluded": false,
+    "providerResponsesIncluded": false,
+    "credentialsIncluded": false
+  },
+  "limitations": [
+    "DEVELOPMENT_AGENT_MIGRATION_EVIDENCE_HISTORICAL_CANDIDATE_ONLY",
+    "DEVELOPMENT_AGENT_MIGRATION_EVIDENCE_LOCAL_BINARY_IDENTITY_ONLY",
+    "DEVELOPMENT_AGENT_MIGRATION_EVIDENCE_NO_AUTHORITY",
+    "DEVELOPMENT_AGENT_MIGRATION_EVIDENCE_NO_CURRENT_RUNTIME_APPLICABILITY"
+  ]
+}

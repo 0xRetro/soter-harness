@@ -1,0 +1,22 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.sky",
+  "version": "0.1.0",
+  "layer": "context",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Defines portable Sky-ecosystem vocabulary identity, definition, subject ownership, and grounding references without operational authority.",
+  "dependencies": [],
+  "capabilities": { "requires": [], "provides": [] },
+  "authorities": [
+    { "role": "definition", "subject": "sky.records", "required": true }
+  ],
+  "effects": [],
+  "artifacts": [
+    { "path": "soter/contexts/sky/records.model.json", "role": "definition" },
+    { "path": "soter/contexts/sky/vocabulary.json", "role": "definition" }
+  ],
+  "compatibility": { "baseContract": "^1.0.0", "hosts": ["codex", "claude"] },
+  "verification": { "maxLevel": "static", "scenarios": [] }
+}

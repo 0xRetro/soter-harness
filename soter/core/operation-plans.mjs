@@ -2,16 +2,16 @@ import path from 'node:path';
 
 import { validateJsonSchema } from '../kernel/verify.mjs';
 import {
+  assertHostToolCall,
   completeHostToolCall,
   failHostToolCall,
   preflightHostToolBinding,
   prepareHostToolCall
 } from './host-tools.mjs';
+import { normalizedError } from './host-runtime.mjs';
 import { fingerprintJson, readJson } from './lib/canonical-json.mjs';
 
-const PLAN_V1 = 'soter://contracts/operation-plan/v1';
 const PLAN_V2 = 'soter://contracts/operation-plan/v2';
-const CHECKPOINT_V1 = 'soter://contracts/operation-plan-checkpoint/v1';
 const CHECKPOINT_V2 = 'soter://contracts/operation-plan-checkpoint/v2';
 
 function contractFailures(root, value, schemaPath, label) {
@@ -39,20 +39,12 @@ function checkpointFingerprint(checkpoint) {
   return fingerprintJson(value);
 }
 
-function isBoundPlan(plan) {
-  return plan?.$contract === PLAN_V2;
-}
-
 function planSchemaPath(plan) {
-  if (plan?.$contract === PLAN_V1) return 'soter/contracts/operation-plan.schema.json';
   if (plan?.$contract === PLAN_V2) return 'soter/contracts/operation-plan-v2.schema.json';
   throw new Error('Unsupported operation plan contract: ' + plan?.$contract + '.');
 }
 
 function checkpointSchemaPath(checkpoint) {
-  if (checkpoint?.$contract === CHECKPOINT_V1) {
-    return 'soter/contracts/operation-plan-checkpoint.schema.json';
-  }
   if (checkpoint?.$contract === CHECKPOINT_V2) {
     return 'soter/contracts/operation-plan-checkpoint-v2.schema.json';
   }
@@ -60,20 +52,12 @@ function checkpointSchemaPath(checkpoint) {
 }
 
 function expectedResult(plan, steps) {
-  if (isBoundPlan(plan)) {
-    return {
-      stepResults: steps.map((step) => ({
-        stepId: step.id,
-        state: step.state,
-        resolvedInputFingerprint: step.resolvedInputFingerprint,
-        outputFingerprint: step.outputFingerprint
-      }))
-    };
-  }
   return {
-    outputFingerprints: steps.map((step) => ({
+    stepResults: steps.map((step) => ({
       stepId: step.id,
-      fingerprint: step.outputFingerprint
+      state: step.state,
+      resolvedInputFingerprint: step.resolvedInputFingerprint,
+      outputFingerprint: step.outputFingerprint
     }))
   };
 }
@@ -175,11 +159,20 @@ function resolveBindingValue(sourceRuntime, binding) {
     );
   }
   const selected = selectedValues(sourceRuntime.output, binding.sourcePath, binding.id);
-  if (binding.transform !== 'unique-string-list') {
-    throw new Error('Unsupported binding transform ' + binding.transform + '.');
+  const strings = flattenStrings(selected, binding.id);
+  if (binding.transform === 'unique-string-list') {
+    return [...new Set(strings)]
+      .sort((left, right) => left.localeCompare(right, 'en'));
   }
-  return [...new Set(flattenStrings(selected, binding.id))]
-    .sort((left, right) => left.localeCompare(right, 'en'));
+  if (binding.transform === 'exact-string') {
+    if (strings.length !== 1) {
+      throw new Error(
+        'Binding ' + binding.id + ' requires exactly one non-empty string value.'
+      );
+    }
+    return strings[0];
+  }
+  throw new Error('Unsupported binding transform ' + binding.transform + '.');
 }
 
 function resolveBoundStepInput(checkpoint, source) {
@@ -191,7 +184,8 @@ function resolveBoundStepInput(checkpoint, source) {
       const sourceRuntime = checkpoint.steps.find((step) => step.id === binding.sourceStepId);
       const value = resolveBindingValue(sourceRuntime, binding);
       setBoundPath(input, binding.targetPath, value);
-      const empty = value.length === 0;
+      const valueCount = Array.isArray(value) ? value.length : value ? 1 : 0;
+      const empty = valueCount === 0;
       resolutions.push({
         id: binding.id,
         sourceStepId: binding.sourceStepId,
@@ -201,7 +195,7 @@ function resolveBoundStepInput(checkpoint, source) {
         transform: binding.transform,
         onEmpty: binding.onEmpty,
         state: empty ? 'empty' : 'bound',
-        valueCount: value.length,
+        valueCount,
         valueFingerprint: fingerprintJson(value)
       });
       if (empty && binding.onEmpty === 'fail-plan') action = 'fail';
@@ -213,7 +207,11 @@ function resolveBoundStepInput(checkpoint, source) {
       input: null,
       inputFingerprint: null,
       resolutions,
-      error: { kind: 'validation', message: error.message }
+      error: {
+        kind: 'validation',
+        code: 'OPERATION_PLAN_BINDING_INVALID',
+        message: 'The exact operation-plan binding was invalid.'
+      }
     };
   }
   const inputFingerprint = fingerprintJson(input);
@@ -228,7 +226,8 @@ function resolveBoundStepInput(checkpoint, source) {
       resolutions,
       error: {
         kind: 'validation',
-        message: 'Binding ' + empty.id + ' resolved no values and requires the plan to fail.'
+        code: 'OPERATION_PLAN_BINDING_EMPTY',
+        message: 'An exact required operation-plan binding resolved no values.'
       }
     };
   }
@@ -243,15 +242,12 @@ function assertStepCall(root, checkpoint, runtimeStep, source) {
   if (!runtimeStep.call) {
     throw new Error('Operation plan step ' + runtimeStep.id + ' has no call record.');
   }
-  contractFailures(
-    root,
-    runtimeStep.call,
-    'soter/contracts/host-tool-call.schema.json',
-    'Operation plan step call'
-  );
+  assertHostToolCall(root, runtimeStep.call);
   const call = runtimeStep.call;
-  const input = isBoundPlan(checkpoint.plan) ? runtimeStep.resolvedInput : source.input;
+  const input = runtimeStep.resolvedInput;
   if (call.runId !== checkpoint.plan.runId
+    || !call.configuration
+    || fingerprintJson(call.configuration) !== fingerprintJson(checkpoint.configuration)
     || call.configurationLockFingerprint !== checkpoint.configurationLock.fingerprint
     || call.graphFingerprint !== checkpoint.graphFingerprint
     || fingerprintJson(call.host) !== fingerprintJson(checkpoint.host)
@@ -332,46 +328,44 @@ export function assertOperationPlanDocument(root, plan) {
   if (new Set(ids).size !== ids.length) {
     throw new Error('Operation plan step identifiers must be unique.');
   }
-  if (isBoundPlan(plan)) {
-    const bindingIds = [];
-    for (let index = 0; index < plan.steps.length; index += 1) {
-      const step = plan.steps[index];
-      const priorIds = new Set(plan.steps.slice(0, index).map((item) => item.id));
-      const targetPaths = [];
-      for (const binding of step.inputBindings) {
-        bindingIds.push(binding.id);
-        targetPaths.push(binding.targetPath);
-        if (!priorIds.has(binding.sourceStepId)) {
-          throw new Error(
-            'Operation plan binding ' + binding.id
-              + ' must reference an earlier step in the same plan.'
-          );
-        }
-        if (pathExists(step.input, binding.targetPath)) {
-          throw new Error(
-            'Operation plan binding ' + binding.id
-              + ' cannot overwrite a fixed input value at ' + pathKey(binding.targetPath) + '.'
-          );
-        }
-        if (targetPathTraversesFixedScalar(step.input, binding.targetPath)) {
-          throw new Error(
-            'Operation plan binding ' + binding.id
-              + ' cannot traverse a fixed non-object input at '
-              + pathKey(binding.targetPath) + '.'
-          );
-        }
+  const bindingIds = [];
+  for (let index = 0; index < plan.steps.length; index += 1) {
+    const step = plan.steps[index];
+    const priorIds = new Set(plan.steps.slice(0, index).map((item) => item.id));
+    const targetPaths = [];
+    for (const binding of step.inputBindings) {
+      bindingIds.push(binding.id);
+      targetPaths.push(binding.targetPath);
+      if (!priorIds.has(binding.sourceStepId)) {
+        throw new Error(
+          'Operation plan binding ' + binding.id
+            + ' must reference an earlier step in the same plan.'
+        );
       }
-      if (targetPaths.some((target, targetIndex) => {
-        return targetPaths.some((other, otherIndex) => {
-          return targetIndex !== otherIndex && pathsOverlap(target, other);
-        });
-      })) {
-        throw new Error('Operation plan binding target paths cannot duplicate or overlap.');
+      if (pathExists(step.input, binding.targetPath)) {
+        throw new Error(
+          'Operation plan binding ' + binding.id
+            + ' cannot overwrite a fixed input value at ' + pathKey(binding.targetPath) + '.'
+        );
+      }
+      if (targetPathTraversesFixedScalar(step.input, binding.targetPath)) {
+        throw new Error(
+          'Operation plan binding ' + binding.id
+            + ' cannot traverse a fixed non-object input at '
+            + pathKey(binding.targetPath) + '.'
+        );
       }
     }
-    if (new Set(bindingIds).size !== bindingIds.length) {
-      throw new Error('Operation plan binding identifiers must be unique.');
+    if (targetPaths.some((target, targetIndex) => {
+      return targetPaths.some((other, otherIndex) => {
+        return targetIndex !== otherIndex && pathsOverlap(target, other);
+      });
+    })) {
+      throw new Error('Operation plan binding target paths cannot duplicate or overlap.');
     }
+  }
+  if (new Set(bindingIds).size !== bindingIds.length) {
+    throw new Error('Operation plan binding identifiers must be unique.');
   }
   return plan;
 }
@@ -380,7 +374,7 @@ export async function preflightOperationPlanSteps({ root, lock, plan, at }) {
   assertOperationPlanDocument(root, plan);
   for (const step of plan.steps) {
     try {
-      if (isBoundPlan(plan) && step.inputBindings.length > 0) {
+      if (step.inputBindings.length > 0) {
         await preflightHostToolBinding({
           root,
           lock,
@@ -394,6 +388,7 @@ export async function preflightOperationPlanSteps({ root, lock, plan, at }) {
         const prepared = await prepareHostToolCall({
           root,
           lock,
+          configuration: plan.configuration || null,
           runId: plan.runId,
           callId: operationPlanCallId(plan, step),
           capability: step.capability,
@@ -404,8 +399,7 @@ export async function preflightOperationPlanSteps({ root, lock, plan, at }) {
           at,
           approvedEffects: []
         });
-        if (prepared.call.state === 'failed'
-          || (isBoundPlan(plan) && prepared.call.state === 'blocked')) {
+        if (prepared.call.state === 'failed' || prepared.call.state === 'blocked') {
           throw new Error(prepared.call.error.message);
         }
       }
@@ -432,7 +426,13 @@ export function assertOperationPlanCheckpoint(root, checkpoint) {
   }
   if (checkpoint.planFingerprint !== fingerprintJson(checkpoint.plan)
     || checkpoint.plan.runId !== checkpoint.run.id
-    || (checkpoint.$contract === CHECKPOINT_V2) !== isBoundPlan(checkpoint.plan)
+    || !checkpoint.plan.configuration
+    || fingerprintJson(checkpoint.configuration)
+      !== fingerprintJson(checkpoint.plan.configuration)
+    || checkpoint.configuration.lockPath !== checkpoint.configurationLock.path
+    || checkpoint.configuration.lockFingerprint
+      !== checkpoint.configurationLock.fingerprint
+    || checkpoint.configuration.graphFingerprint !== checkpoint.graphFingerprint
     || checkpoint.steps.length !== checkpoint.plan.steps.length) {
     throw new Error('Operation plan checkpoint does not match its source plan and run.');
   }
@@ -440,8 +440,7 @@ export function assertOperationPlanCheckpoint(root, checkpoint) {
   let completedPrefix = 0;
   while (checkpoint.steps[completedPrefix]
     && (checkpoint.steps[completedPrefix].state === 'completed'
-      || (isBoundPlan(checkpoint.plan)
-        && checkpoint.steps[completedPrefix].state === 'skipped'))) {
+      || checkpoint.steps[completedPrefix].state === 'skipped')) {
     completedPrefix += 1;
   }
   for (let index = 0; index < checkpoint.steps.length; index += 1) {
@@ -450,18 +449,7 @@ export function assertOperationPlanCheckpoint(root, checkpoint) {
     if (runtimeStep.id !== source.id || runtimeStep.sequence !== index + 1) {
       throw new Error('Operation plan runtime steps do not preserve source order.');
     }
-    if (isBoundPlan(checkpoint.plan)) {
-      assertBoundRuntimeStep(resolvedRoot, checkpoint, runtimeStep, source);
-    } else if (runtimeStep.state === 'pending') {
-      if (runtimeStep.call !== null
-        || runtimeStep.output !== null
-        || runtimeStep.outputFingerprint !== null
-        || runtimeStep.error !== null) {
-        throw new Error('Pending operation plan step ' + runtimeStep.id + ' contains execution state.');
-      }
-    } else {
-      assertStepCall(resolvedRoot, checkpoint, runtimeStep, sourceStep(checkpoint, runtimeStep));
-    }
+    assertBoundRuntimeStep(resolvedRoot, checkpoint, runtimeStep, source);
   }
 
   const active = checkpoint.steps[completedPrefix] || null;
@@ -508,21 +496,31 @@ export function createOperationPlanCheckpoint({
   runSourcePath,
   runStatePath,
   plan,
+  configuration,
   at
 }) {
   assertOperationPlanDocument(root, plan);
   if (plan.runId !== run.id) {
     throw new Error('Operation plan does not belong to the supplied exact run.');
   }
-  const bound = isBoundPlan(plan);
+  if (!plan.configuration
+    || fingerprintJson(plan.configuration) !== fingerprintJson(configuration)
+    || configuration.lockPath !== lockPath
+    || configuration.lockFingerprint !== fingerprintJson(lock)
+    || configuration.graphFingerprint !== lock.graphFingerprint) {
+    throw new Error(
+      'Operation plan does not bind the exact selected configuration and lock.'
+    );
+  }
   return {
-    $contract: bound ? CHECKPOINT_V2 : CHECKPOINT_V1,
-    contractVersion: bound ? '2.0.0' : '1.0.0',
+    $contract: CHECKPOINT_V2,
+    contractVersion: '2.0.0',
     id: 'checkpoint.' + plan.id,
     kind: 'operation-plan',
     createdAt: plan.createdAt,
     updatedAt: at,
     state: 'failed',
+    configuration: structuredClone(configuration),
     configurationLock: {
       path: lockPath,
       fingerprint: fingerprintJson(lock)
@@ -545,11 +543,9 @@ export function createOperationPlanCheckpoint({
       id: step.id,
       sequence: index + 1,
       state: 'pending',
-      ...(bound ? {
-        resolvedInput: null,
-        resolvedInputFingerprint: null,
-        bindingResolutions: []
-      } : {}),
+      resolvedInput: null,
+      resolvedInputFingerprint: null,
+      bindingResolutions: [],
       call: null,
       output: null,
       outputFingerprint: null,
@@ -579,32 +575,31 @@ export async function requestNextOperationPlanStep({ root, lock, checkpoint, at 
     }
     const source = sourceStep(next, runtimeStep);
     let input = source.input;
-    if (isBoundPlan(next.plan)) {
-      const resolved = resolveBoundStepInput(next, source);
-      runtimeStep.resolvedInput = structuredClone(resolved.input);
-      runtimeStep.resolvedInputFingerprint = resolved.inputFingerprint;
-      runtimeStep.bindingResolutions = structuredClone(resolved.resolutions);
-      if (resolved.action === 'skip') {
-        runtimeStep.state = 'skipped';
-        runtimeStep.error = null;
-        next.updatedAt = at;
-        continue;
-      }
-      if (resolved.action === 'fail') {
-        runtimeStep.state = 'failed';
-        runtimeStep.error = structuredClone(resolved.error);
-        next.updatedAt = at;
-        next.state = 'failed';
-        next.currentStepId = null;
-        next.result = null;
-        return next;
-      }
-      input = resolved.input;
+    const resolved = resolveBoundStepInput(next, source);
+    runtimeStep.resolvedInput = structuredClone(resolved.input);
+    runtimeStep.resolvedInputFingerprint = resolved.inputFingerprint;
+    runtimeStep.bindingResolutions = structuredClone(resolved.resolutions);
+    if (resolved.action === 'skip') {
+      runtimeStep.state = 'skipped';
+      runtimeStep.error = null;
+      next.updatedAt = at;
+      continue;
     }
+    if (resolved.action === 'fail') {
+      runtimeStep.state = 'failed';
+      runtimeStep.error = structuredClone(resolved.error);
+      next.updatedAt = at;
+      next.state = 'failed';
+      next.currentStepId = null;
+      next.result = null;
+      return next;
+    }
+    input = resolved.input;
     const callId = operationPlanCallId(next.plan, source);
     const prepared = await prepareHostToolCall({
       root,
       lock,
+      configuration: next.configuration,
       runId: next.plan.runId,
       callId,
       capability: source.capability,
@@ -627,9 +622,16 @@ export async function requestNextOperationPlanStep({ root, lock, checkpoint, at 
 }
 
 function previousResponse(checkpoint, callId, response) {
-  const step = checkpoint.steps.find((item) => item.call?.id === callId);
-  if (!step || !step.call.responseFingerprint) return false;
-  if (step.call.responseFingerprint !== fingerprintJson(response)) {
+  const step = checkpoint.steps.find((item) => {
+    return item.call?.id === callId
+      || item.call?.pagination?.pages.some((page) => page.callId === callId);
+  });
+  if (!step) return false;
+  const responseFingerprint = step.call.id === callId
+    ? step.call.responseFingerprint
+    : step.call.pagination.pages.find((page) => page.callId === callId)?.responseFingerprint;
+  if (!responseFingerprint) return false;
+  if (responseFingerprint !== fingerprintJson(response)) {
     throw new Error('Operation plan response does not match the exact completed step call.');
   }
   return true;
@@ -658,10 +660,22 @@ export async function completeOperationPlanStep({
     root,
     lock,
     call: runtimeStep.call,
-    input: isBoundPlan(next.plan) ? runtimeStep.resolvedInput : source.input,
+    input: runtimeStep.resolvedInput,
     response,
     at
   });
+  if (completed.call.state === 'requested') {
+    runtimeStep.call = completed.call;
+    runtimeStep.state = 'requested';
+    runtimeStep.output = null;
+    runtimeStep.outputFingerprint = null;
+    runtimeStep.error = null;
+    next.updatedAt = at;
+    next.state = 'requested';
+    next.currentStepId = runtimeStep.id;
+    next.result = null;
+    return { checkpoint: next, idempotent: false };
+  }
   runtimeStep.call = completed.call;
   runtimeStep.state = completed.call.state;
   runtimeStep.output = completed.call.state === 'completed'
@@ -694,11 +708,12 @@ export function failOperationPlanStep({
   at
 }) {
   assertOperationPlanCheckpoint(root, checkpoint);
+  const normalized = normalizedError(error);
   const currentCall = operationPlanCurrentCall(checkpoint);
   if (!currentCall || currentCall.id !== callId) {
     const previous = checkpoint.steps.find((step) => step.call?.id === callId);
-    if (previous?.call.error?.kind === error.kind
-      && previous.call.error.message === error.message) {
+    if (previous?.call.error
+      && fingerprintJson(previous.call.error) === fingerprintJson(normalized)) {
       return { checkpoint: structuredClone(checkpoint), idempotent: true };
     }
     throw new Error('Operation plan failure does not match the exact current step call.');
@@ -709,7 +724,7 @@ export function failOperationPlanStep({
     root,
     lock,
     call: runtimeStep.call,
-    error,
+    error: normalized,
     at
   });
   runtimeStep.call = failed;

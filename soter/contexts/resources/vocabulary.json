@@ -1,0 +1,30 @@
+{
+  "$contract": "soter://contracts/context-vocabulary/v1",
+  "contractVersion": "1.0.0",
+  "id": "vocabulary.context.resources",
+  "pack": "context.resources",
+  "version": "0.1.0",
+  "subject": "resources.records",
+  "entries": [
+    {
+      "sequence": 1,
+      "id": "resource",
+      "term": "resource",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "An external account, platform, shared asset, or registry used by an organization, represented by portable purpose, access-reference, administration, organization, and validation-date facts without credential material.",
+      "domain": "resources",
+      "sourceUris": []
+    }
+  ],
+  "invariants": {
+    "singleDefinitionSource": true,
+    "projectionCopiesAreNonCanonical": true,
+    "providerNeutral": true,
+    "runtimeAuthority": "none"
+  },
+  "limitations": [
+    "This vocabulary defines portable external-resource meaning only; it does not expose credentials, establish access, validate a provider record, or grant read, write, disclosure, or execution authority.",
+    "Provider and policy projections must bind this exact artifact and fail visibly on drift; copied definitions never become canonical."
+  ]
+}

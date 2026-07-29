@@ -19,6 +19,7 @@
           { "$ref": "#/$defs/referenceField" },
           { "$ref": "#/$defs/enumField" },
           { "$ref": "#/$defs/stringField" },
+          { "$ref": "#/$defs/stringListField" },
           { "$ref": "#/$defs/booleanField" },
           { "$ref": "#/$defs/dateField" },
           { "$ref": "#/$defs/uriField" }
@@ -78,6 +79,23 @@
         "constraints": { "$ref": "#/$defs/textConstraints" }, "examples": { "$ref": "#/$defs/examples" }
       }
     },
+    "stringListField": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "label", "description", "type", "required", "exposure", "constraints"],
+      "properties": {
+        "id": { "$ref": "#/$defs/fieldId" }, "label": { "$ref": "#/$defs/label" },
+        "description": { "$ref": "#/$defs/description" }, "type": { "const": "string-list" },
+        "required": { "type": "boolean" }, "exposure": { "$ref": "#/$defs/exposure" },
+        "constraints": { "$ref": "#/$defs/listConstraints" },
+        "examples": {
+          "type": "array",
+          "items": {
+            "type": "array", "minItems": 1, "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
     "booleanField": {
       "type": "object", "additionalProperties": false,
       "required": ["id", "label", "description", "type", "required", "exposure"],
@@ -117,6 +135,17 @@
         "minLength": { "type": "integer", "minimum": 0 },
         "maxLength": { "type": "integer", "minimum": 1 },
         "pattern": { "type": "string", "minLength": 1 }
+      }
+    },
+    "listConstraints": {
+      "type": "object", "additionalProperties": false,
+      "required": ["minItems", "maxItems"],
+      "properties": {
+        "minItems": { "type": "integer", "minimum": 0 },
+        "maxItems": { "type": "integer", "minimum": 1 },
+        "itemMinLength": { "type": "integer", "minimum": 1 },
+        "itemMaxLength": { "type": "integer", "minimum": 1 },
+        "itemPattern": { "type": "string", "minLength": 1 }
       }
     },
     "examples": { "type": "array", "items": { "type": "string", "minLength": 1 } }

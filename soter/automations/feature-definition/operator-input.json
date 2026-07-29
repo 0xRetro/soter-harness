@@ -1,0 +1,74 @@
+{
+  "$contract": "soter://contracts/automation-input/v1",
+  "contractVersion": "1.0.0",
+  "id": "input.automation.feature-definition",
+  "automation": "automation.feature-definition",
+  "version": "1.0.0",
+  "fields": [
+    {
+      "id": "feature",
+      "label": "Feature reference",
+      "description": "Exact existing feature resource identity on the configured board; display-name search is not accepted.",
+      "type": "reference",
+      "required": true,
+      "exposure": "identifier",
+      "reference": { "subject": "product.records.feature", "authorityRole": "instance" },
+      "constraints": { "minLength": 3, "maxLength": 500 },
+      "examples": ["https://www.notion.so/44444444444444444444444444444444"]
+    },
+    {
+      "id": "whatItIs",
+      "label": "What it is",
+      "description": "Private one-sentence feature definition written into the body Summary section.",
+      "type": "string",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minLength": 3, "maxLength": 5000 }
+    },
+    {
+      "id": "scopeIn",
+      "label": "In scope",
+      "description": "Private bounded list of behavior intentionally included in this feature definition.",
+      "type": "string-list",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minItems": 1, "maxItems": 30, "itemMinLength": 2, "itemMaxLength": 1000 }
+    },
+    {
+      "id": "scopeOut",
+      "label": "Out of scope",
+      "description": "Private bounded list of explicit boundaries that prevents definition creep.",
+      "type": "string-list",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minItems": 1, "maxItems": 30, "itemMinLength": 2, "itemMaxLength": 1000 }
+    },
+    {
+      "id": "doneWhen",
+      "label": "Done when",
+      "description": "Private observable acceptance conditions rendered as unchecked body criteria.",
+      "type": "string-list",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minItems": 1, "maxItems": 30, "itemMinLength": 2, "itemMaxLength": 1000 }
+    },
+    {
+      "id": "openQuestions",
+      "label": "Open questions",
+      "description": "Optional private unresolved decisions kept visible instead of silently guessed.",
+      "type": "string-list",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minItems": 0, "maxItems": 20, "itemMinLength": 2, "itemMaxLength": 1000 }
+    },
+    {
+      "id": "statusChangeRequested",
+      "label": "Status change requested",
+      "description": "Records pressure to advance status so the request can be surfaced and excluded from Feature Definition.",
+      "type": "boolean",
+      "required": true,
+      "exposure": "private"
+    }
+  ],
+  "additionalInputs": false
+}

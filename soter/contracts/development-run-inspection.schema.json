@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/development-run-inspection/v1",
+  "title": "Soter sanitized development run inspection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$contract", "contractVersion", "request", "result", "workflow", "host", "configuration", "workspace", "invocation", "progress", "changes", "checks", "effects", "promotion", "authority", "privacy", "limitations", "inspectionFingerprint"],
+  "properties": {
+    "$contract": { "const": "soter://contracts/development-run-inspection/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fingerprint", "createdAt"],
+      "properties": {
+        "id": { "type": "string" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "result": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "fingerprint", "state", "completedAt"],
+          "properties": {
+            "id": { "type": "string" },
+            "fingerprint": { "$ref": "#/$defs/fingerprint" },
+            "state": { "enum": ["passed", "failed", "blocked", "partial"] },
+            "completedAt": { "type": "string" }
+          }
+        }
+      ]
+    },
+    "workflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "evaluatedSubjectFingerprint", "definitionFingerprint", "guideContentFingerprint", "evaluationSetFingerprint"],
+      "properties": {
+        "id": { "type": "string" },
+        "version": { "type": "string" },
+        "evaluatedSubjectFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "definitionFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "guideContentFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "evaluationSetFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "adapterFingerprint", "evaluatedInstructionFingerprint", "candidateProjectionFingerprint"],
+      "properties": {
+        "id": { "enum": ["codex", "claude"] },
+        "adapterFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "evaluatedInstructionFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "candidateProjectionFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "lockFingerprint", "graphFingerprint"],
+      "properties": {
+        "name": { "type": "string" },
+        "lockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "graphFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "workspace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rootIdentityFingerprint", "revisionFingerprint", "treeFingerprint", "exactInputState", "policyFingerprint", "settingsFingerprint"],
+      "properties": {
+        "rootIdentityFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "revisionFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+        "treeFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "exactInputState": { "enum": ["clean", "dirty", "unknown"] },
+        "policyFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "settingsFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "invocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "profile", "targetIds", "plannedRuns"],
+      "properties": {
+        "kind": { "enum": ["develop", "evaluation-suite"] },
+        "profile": { "enum": ["exact", "bounded", "open"] },
+        "targetIds": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+        "plannedRuns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "sequence", "caseId", "arm", "guideState"],
+            "properties": {
+              "id": { "type": "string" },
+              "sequence": { "type": "integer", "minimum": 1 },
+              "caseId": { "type": "string" },
+              "arm": { "enum": ["baseline", "guided"] },
+              "guideState": { "enum": ["withheld", "candidate"] }
+            }
+          }
+        }
+      }
+    },
+    "progress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "completedRuns", "totalRuns", "judgments"],
+      "properties": {
+        "state": { "enum": ["requested", "passed", "failed", "blocked", "partial"] },
+        "completedRuns": { "type": "integer", "minimum": 0 },
+        "totalRuns": { "type": "integer", "minimum": 0 },
+        "judgments": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "beforeFingerprint", "afterFingerprint"],
+        "properties": {
+          "id": { "type": "string" },
+          "kind": { "enum": ["create", "modify", "remove", "unchanged"] },
+          "beforeFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+          "afterFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
+        }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "state", "observedFingerprint"],
+        "properties": {
+          "id": { "type": "string" },
+          "state": { "enum": ["passed", "failed", "blocked", "unknown"] },
+          "observedFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
+        }
+      }
+    },
+    "effects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["category", "scope", "state", "count", "observedFingerprint"],
+        "properties": {
+          "category": { "type": "string" },
+          "scope": { "type": "string" },
+          "state": { "type": "string" },
+          "count": { "type": "integer", "minimum": 0 },
+          "observedFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
+        }
+      }
+    },
+    "promotion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "artifactFingerprint", "reasonCode", "decisionEvidenceIds"],
+      "properties": {
+        "state": { "enum": ["not-requested", "held", "proposed", "accepted", "declined"] },
+        "artifactFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+        "reasonCode": { "type": "string" },
+        "decisionEvidenceIds": { "type": "array", "uniqueItems": true, "items": { "type": "string" } }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "grantsExecution", "grantsApproval", "grantsPublication", "grantsMerge", "grantsProviderWrite", "grantsFallbackRemoval"],
+      "properties": {
+        "kind": { "const": "inspection-only" },
+        "grantsExecution": { "const": false },
+        "grantsApproval": { "const": false },
+        "grantsPublication": { "const": false },
+        "grantsMerge": { "const": false },
+        "grantsProviderWrite": { "const": false },
+        "grantsFallbackRemoval": { "const": false }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["absolutePathsIncluded", "targetPathsIncluded", "requestedOutcomeIncluded", "rawDiffsIncluded", "rawTranscriptsIncluded", "providerResponsesIncluded", "credentialsIncluded"],
+      "properties": {
+        "absolutePathsIncluded": { "const": false },
+        "targetPathsIncluded": { "const": false },
+        "requestedOutcomeIncluded": { "const": false },
+        "rawDiffsIncluded": { "const": false },
+        "rawTranscriptsIncluded": { "const": false },
+        "providerResponsesIncluded": { "const": false },
+        "credentialsIncluded": { "const": false }
+      }
+    },
+    "limitations": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+    "inspectionFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "nullableFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" }
+  }
+}

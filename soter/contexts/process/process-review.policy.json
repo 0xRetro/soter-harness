@@ -1,0 +1,24 @@
+{
+  "$contract": "soter://contexts/process/process-review-policy/v1",
+  "contractVersion": "1.0.0",
+  "id": "policy.context.process.review",
+  "name": "Process Red Team",
+  "lenses": [
+    "operator-execution",
+    "adversarial",
+    "consistency",
+    "completeness",
+    "failure-paths"
+  ],
+  "severityOrder": ["critical", "should-fix", "nice-to-have"],
+  "criticalVerification": "exact-source-reproduction-required",
+  "fixMode": "report-only",
+  "sourceRoles": [
+    "process-definition",
+    "policy-standards",
+    "write-target-schemas",
+    "process-runs",
+    "body-shape"
+  ],
+  "maximumFindings": 50
+}

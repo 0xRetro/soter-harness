@@ -5,6 +5,11 @@ import { validateJsonSchema } from '../kernel/verify.mjs';
 import { listProviderDeclarations } from './capabilities.mjs';
 import { containsCredentialMaterial } from './host-runtime.mjs';
 import {
+  assertConnectedObservationInputBindings,
+  connectedObservationInputFingerprint
+} from './connected-input-bindings.mjs';
+import { assertContextRecordOutput } from './context-records.mjs';
+import {
   fingerprintJson,
   fingerprintPath,
   readJson,
@@ -17,6 +22,7 @@ const OPERATION_KEYS = [
   'verification'
 ];
 const OBSERVATION_KEYS = ['capability', 'expectation', 'input', 'inputFingerprint'];
+const BOUND_OBSERVATION_KEYS = [...OBSERVATION_KEYS, 'inputBindings'].sort(compareText);
 const EXPECTATION_KEYS = ['expectedFingerprint', 'kind'];
 const NONE_PRECONDITION_KEYS = ['capability', 'expectation', 'input', 'inputFingerprint', 'kind'];
 const EXPECTATION_PRECONDITION_KEYS = NONE_PRECONDITION_KEYS;
@@ -25,6 +31,7 @@ const RECOVERY_KEYS = ['mode', 'reasonCode'];
 const REVIEW_KEYS = ['after', 'before', 'precondition', 'subject'];
 const SUBJECT_KEYS = ['id', 'kind', 'type'];
 const BEFORE_KEYS = ['fingerprint', 'reasonCode', 'state'];
+const PROVIDED_BEFORE_KEYS = ['fingerprint', 'reasonCode', 'reviewValue', 'state'];
 const AFTER_KEYS = ['fingerprint', 'reviewValue', 'state'];
 const PRIVATE_OBJECT_KEYS = ['fingerprint', 'reviewValue'];
 
@@ -62,7 +69,7 @@ function validateCapabilityInput(input, contract, label) {
   }
 }
 
-function exactCapability(root, lock, manifest, capabilityId) {
+function exactCapability(root, lock, manifest, capabilityId, requiredAuthority = null) {
   const requirement = manifest.capabilities.requires.find((item) => item.id === capabilityId);
   const lockCapability = lock.capabilities.find((item) => item.id === capabilityId);
   const binding = lock.bindings.find((item) => item.capability === capabilityId);
@@ -80,13 +87,20 @@ function exactCapability(root, lock, manifest, capabilityId) {
     || lockCapability.version !== contract.version
     || lockCapability.contractFingerprint !== fingerprintJson(contract)
     || binding.capabilityVersion !== contract.version
-    || binding.authorities.length !== 1) {
+    || binding.authorities.length < 1
+    || (requiredAuthority === null
+      ? binding.authorities.length !== 1
+      : !binding.authorities.includes(requiredAuthority))) {
     throw codedError(
       'CONNECTED_COMPILER_BINDING_INVALID',
       'A compiler capability is undeclared, stale, unbound, or authority-ambiguous.'
     );
   }
-  return { contract, binding, authority: binding.authorities[0] };
+  return {
+    contract,
+    binding,
+    authority: requiredAuthority === null ? binding.authorities[0] : requiredAuthority
+  };
 }
 
 function connectedProvider(root, lock, binding, capability, authority) {
@@ -125,11 +139,20 @@ function assertExpectation(value, label) {
 }
 
 function assertObservation(value, label) {
-  assertExactKeys(value, OBSERVATION_KEYS, label);
+  assertExactKeys(
+    value,
+    Object.hasOwn(value || {}, 'inputBindings') ? BOUND_OBSERVATION_KEYS : OBSERVATION_KEYS,
+    label
+  );
   assertExpectation(value.expectation, label);
+  try {
+    assertConnectedObservationInputBindings(value);
+  } catch (error) {
+    throw codedError('CONNECTED_COMPILER_INVALID', label + ' input binding is invalid.', error);
+  }
   if (typeof value.capability !== 'string'
     || !value.input || typeof value.input !== 'object' || Array.isArray(value.input)
-    || value.inputFingerprint !== fingerprintJson(value.input)) {
+    || value.inputFingerprint !== connectedObservationInputFingerprint(value)) {
     throw codedError('CONNECTED_COMPILER_INVALID', label + ' is invalid.');
   }
 }
@@ -172,17 +195,28 @@ function assertReview(value, precondition) {
     || (value.subject.id !== null && typeof value.subject.id !== 'string')) {
     throw codedError('CONNECTED_COMPILER_INVALID', 'Compiler review subject is invalid.');
   }
-  assertExactKeys(value.before, BEFORE_KEYS, 'Compiler before review');
-  const expectedBeforeState = precondition.kind === 'expectation'
-    ? 'absent-required'
-    : 'not-required';
-  const expectedBeforeReason = precondition.kind === 'expectation'
-    ? 'DEDUPLICATION_ABSENCE_REQUIRED'
-    : 'PRIOR_VALUE_NOT_REQUIRED';
-  if (value.before.state !== expectedBeforeState
-    || value.before.reasonCode !== expectedBeforeReason
-    || value.before.fingerprint !== null) {
-    throw codedError('CONNECTED_COMPILER_INVALID', 'Compiler before review is invalid.');
+  if (value.before?.state === 'provided') {
+    assertExactKeys(value.before, PROVIDED_BEFORE_KEYS, 'Compiler before review');
+    if (precondition.kind !== 'expectation'
+      || value.before.reasonCode !== 'PRIOR_VALUE_REQUIRED'
+      || !value.before.reviewValue || typeof value.before.reviewValue !== 'object'
+      || Array.isArray(value.before.reviewValue)
+      || value.before.fingerprint !== fingerprintJson(value.before.reviewValue)) {
+      throw codedError('CONNECTED_COMPILER_INVALID', 'Compiler provided before review is invalid.');
+    }
+  } else {
+    assertExactKeys(value.before, BEFORE_KEYS, 'Compiler before review');
+    const expectedBeforeState = precondition.kind === 'expectation'
+      ? 'absent-required'
+      : 'not-required';
+    const expectedBeforeReason = precondition.kind === 'expectation'
+      ? 'DEDUPLICATION_ABSENCE_REQUIRED'
+      : 'PRIOR_VALUE_NOT_REQUIRED';
+    if (value.before.state !== expectedBeforeState
+      || value.before.reasonCode !== expectedBeforeReason
+      || value.before.fingerprint !== null) {
+      throw codedError('CONNECTED_COMPILER_INVALID', 'Compiler before review is invalid.');
+    }
   }
   assertExactKeys(value.after, AFTER_KEYS, 'Compiler after review');
   if (value.after.state !== 'provided'
@@ -226,7 +260,13 @@ function assertCompilerOperationShape(operation) {
 }
 
 function resolveReadObservation(root, lock, manifest, execution, observation, label) {
-  const resolved = exactCapability(root, lock, manifest, observation.capability);
+  const resolved = exactCapability(
+    root,
+    lock,
+    manifest,
+    observation.capability,
+    execution.authority
+  );
   if (resolved.binding.providerPack !== execution.binding.providerPack
     || resolved.authority !== execution.authority
     || resolved.contract.effects.some((effect) => {
@@ -451,7 +491,8 @@ export async function evaluateAutomationConnectedObservation({
   compiler,
   operation,
   phase,
-  output
+  output,
+  resolvedInput = null
 }) {
   const context = resolveAutomationConnection({ root, lock, automationId });
   if (fingerprintJson(context.compiler) !== fingerprintJson(compiler)) {
@@ -467,7 +508,20 @@ export async function evaluateAutomationConnectedObservation({
       'Connected verification requires one exact compiled read observation.'
     );
   }
-  const resolved = exactCapability(root, lock, context.manifest, observation.capability);
+  const resolved = exactCapability(
+    root,
+    lock,
+    context.manifest,
+    observation.capability,
+    operation.authority
+  );
+  if (observation.provider?.pack !== resolved.binding.providerPack
+    || observation.provider?.connectedImplementation === undefined) {
+    throw codedError(
+      'CONNECTED_COMPILER_BINDING_INVALID',
+      'Connected verification observation does not retain its exact operation authority and provider binding.'
+    );
+  }
   const outputFailures = validateJsonSchema(output, resolved.contract.outputSchema);
   if (outputFailures.length) {
     throw codedError(
@@ -475,13 +529,33 @@ export async function evaluateAutomationConnectedObservation({
       'Connected verification output does not satisfy its exact minimized capability contract.'
     );
   }
+  assertContextRecordOutput(root, observation.capability, output, {
+    packIds: lock.packs.filter((pack) => pack.layer === 'context').map((pack) => pack.id)
+  });
+  if (resolvedInput !== null) {
+    const inputFailures = validateJsonSchema(resolvedInput, resolved.contract.inputSchema);
+    if (inputFailures.length) {
+      throw codedError(
+        'CONNECTED_COMPILER_BINDING_INVALID',
+        'Connected verification resolved input does not satisfy its exact minimized capability contract.'
+      );
+    }
+    if (!Object.hasOwn(observation, 'inputBindings')
+      && fingerprintJson(resolvedInput) !== fingerprintJson(observation.input)) {
+      throw codedError(
+        'CONNECTED_COMPILER_BINDING_INVALID',
+        'Connected verification resolved input changed an observation without an exact output binding.'
+      );
+    }
+  }
   const { evaluate } = await loadAutomationConnectionImplementation(context);
   let result;
   try {
     result = await evaluate({
       operation: structuredClone(operation),
       phase,
-      output: structuredClone(output)
+      output: structuredClone(output),
+      resolvedInput: resolvedInput === null ? null : structuredClone(resolvedInput)
     });
   } catch (error) {
     throw codedError(

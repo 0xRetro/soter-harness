@@ -1,0 +1,70 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "automation.repository-review",
+  "version": "0.1.0",
+  "layer": "automation",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Prepares one bounded repository capability review and exact private handoffs to Feature Capture, with duplicate visibility and no external write authority.",
+  "dependencies": [
+    {
+      "pack": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Repository Review requires exact locks, private review companions, structured collections, and no-authority preparation."
+    },
+    {
+      "pack": "context.product",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Feature identity, why ownership, lifecycle, and duplicate meaning belong to portable Product Context."
+    }
+  ],
+  "capabilities": {
+    "requires": [
+      {
+        "id": "repository.snapshot.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation reads one exact bounded normalized repository snapshot."
+      },
+      {
+        "id": "product.records.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation compares every observed capability name with bounded current feature candidates."
+      }
+    ],
+    "provides": []
+  },
+  "sourceRequirements": [],
+  "authorities": [
+    { "role": "instance", "subject": "repository.source", "required": true },
+    { "role": "instance", "subject": "product.records", "required": true },
+    { "role": "evidence", "subject": "runtime.runs", "required": true }
+  ],
+  "effects": ["read", "disclosure"],
+  "operator": {
+    "input": "soter/automations/repository-review/operator-input.json",
+    "preparation": {
+      "module": "soter/automations/repository-review/prepare.mjs",
+      "export": "prepareRepositoryReviewRun",
+      "containment": "fixture",
+      "derivedReviewContract": "soter/automations/repository-review/derived-review.json"
+    }
+  },
+  "artifacts": [
+    { "path": "soter/automations/repository-review/operator-input.json", "role": "definition" },
+    { "path": "soter/automations/repository-review/derived-review.json", "role": "definition" },
+    { "path": "soter/automations/repository-review/prepare.mjs", "role": "implementation" },
+    { "path": "soter/automations/repository-review/scenario.mjs", "role": "evaluation" },
+    { "path": "soter/automations/repository-review/repository-review.selftest.mjs", "role": "evaluation" },
+    { "path": "soter/scenarios/repository-review/preparation.scenario.json", "role": "evaluation" }
+  ],
+  "compatibility": { "baseContract": "^1.0.0", "hosts": ["codex", "claude"] },
+  "verification": {
+    "maxLevel": "fixture",
+    "scenarios": ["soter/scenarios/repository-review/preparation.scenario.json"]
+  }
+}

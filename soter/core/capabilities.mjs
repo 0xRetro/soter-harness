@@ -4,19 +4,8 @@ import { pathToFileURL } from 'node:url';
 
 import { validateJsonSchema } from '../kernel/verify.mjs';
 import { assertContextRecordInput, assertContextRecordOutput } from './context-records.mjs';
+import { normalizedError } from './host-runtime.mjs';
 import { fingerprintJson, readJson, resolveRepoPath } from './lib/canonical-json.mjs';
-
-const ERROR_KINDS = new Set([
-  'authentication',
-  'authorization',
-  'validation',
-  'conflict',
-  'rate-limit',
-  'unavailable',
-  'retryable',
-  'not-found',
-  'unknown'
-]);
 
 export function listProviderDeclarations(root) {
   const directory = path.join(root, 'soter', 'providers');
@@ -68,19 +57,18 @@ export function evaluateEffectPolicy(lock, effects, approvedEffects = []) {
   });
 }
 
-function normalizedError(error, fallbackKind = 'unknown') {
-  const kind = ERROR_KINDS.has(error?.kind) ? error.kind : fallbackKind;
-  return {
-    kind,
-    message: error?.message || String(error)
-  };
-}
-
 function schemaFailure(kind, failures) {
   return {
     kind: 'validation',
-    message: kind + ' does not satisfy the capability schema: '
-      + failures.slice(0, 5).map((item) => item.path + ' ' + item.message).join('; ')
+    code: 'CAPABILITY_SCHEMA_INVALID',
+    message: 'The capability data did not satisfy its governed schema.',
+    diagnosticFingerprint: fingerprintJson({
+      subject: kind,
+      failures: failures.slice(0, 5).map((item) => ({
+        path: item.path,
+        message: item.message
+      }))
+    })
   };
 }
 
@@ -133,10 +121,7 @@ export async function invokeCapability({
         ...base,
         state: 'blocked',
         outputFingerprint: null,
-        error: {
-          kind: 'authorization',
-          message: 'Effect policy blocked ' + capability + ' before provider invocation.'
-        }
+        error: normalizedError({ kind: 'authorization' })
       },
       output: null
     };
@@ -183,7 +168,9 @@ export async function invokeCapability({
       capability,
       input,
       authority,
+      settings: lock.settings || {},
       fixtures: provider.fixtures.map((fixture) => resolveRepoPath(root, fixture)),
+      mappings: provider.mappings.map((mapping) => readJson(resolveRepoPath(root, mapping))),
       state: runtimeState?.[provider.id] || null,
       at
     });

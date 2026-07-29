@@ -1,0 +1,49 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "automation.authoring-a-policy-standard",
+  "version": "0.1.0",
+  "layer": "automation",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Author a policy standard is preserved as a provider-neutral definition with no runtime or effect authority.",
+  "dependencies": [
+    {
+      "pack": "context.policy",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Policy-standard identity, section order, coverage, lifecycle, and change-control meaning belong to portable Context."
+    }
+  ],
+  "capabilities": {
+    "requires": [],
+    "provides": []
+  },
+  "authorities": [],
+  "effects": [],
+  "artifacts": [
+    {
+      "path": "soter/automations/authoring-a-policy-standard/definition.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/authoring-a-policy-standard/guide.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/authoring-a-policy-standard/evaluations.json",
+      "role": "evaluation"
+    }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": [
+      "codex",
+      "claude"
+    ]
+  },
+  "verification": {
+    "maxLevel": "static",
+    "scenarios": []
+  }
+}

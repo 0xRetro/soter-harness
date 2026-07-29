@@ -1,0 +1,47 @@
+{
+  "$contract": "soter://contracts/scenario/v1",
+  "contractVersion": "1.0.0",
+  "id": "feature-capture.preparation",
+  "automation": "automation.feature-capture",
+  "intent": "operate",
+  "input": {
+    "board": "configured-exact",
+    "why": "required-and-private",
+    "body": "deterministic-template-spine"
+  },
+  "expected": {
+    "capabilityOrder": ["product.records.read", "product.schema.read", "product.records.read"],
+    "effectModes": { "read": "allow", "disclosure": "allow", "write": "confirm", "dispatch": "prohibit", "destructive": "prohibit" },
+    "outcomes": [
+      "feature-policy.grounded",
+      "feature-schema.grounded",
+      "why-kept-in-description",
+      "planned-status-preserved",
+      "type-specific-body-shaped",
+      "complete-create-reviewed-or-held",
+      "writes-held-for-separate-authority"
+    ],
+    "invariants": [
+      "configured-board-only",
+      "name-and-why-remain-distinct",
+      "provisional-why-never-silently-created",
+      "duplicate-never-silently-created",
+      "options-never-invented",
+      "no-write-or-approval-during-preparation"
+    ],
+    "evidence": [
+      "exact-lock",
+      "policy-fingerprint",
+      "schema-fingerprint",
+      "duplicate-query-fingerprint",
+      "private-values-sanitized",
+      "source-cases-exactly-fingerprinted"
+    ]
+  },
+  "sourceCases": [
+    ".claude/evals/capturing-a-feature/happy-path.md",
+    ".claude/evals/capturing-a-feature/invariant-why-in-description.md",
+    ".claude/evals/capturing-a-feature/pressure-batch-skip.md",
+    ".claude/evals/capturing-a-feature/type-swap-bug.md"
+  ]
+}

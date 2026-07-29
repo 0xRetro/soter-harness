@@ -82,10 +82,18 @@
       "containment": "fixture",
       "derivedReviewContract": "soter/automations/email-triage/derived-review.json"
     },
+    "acquisition": {
+      "module": "soter/automations/email-triage/context.mjs",
+      "prepareExport": "prepareEmailTriageConnectedAcquisition",
+      "finalizeExport": "finalizeEmailTriageConnectedAcquisition",
+      "containment": "connected",
+      "recordRequirements": []
+    },
     "connection": {
       "module": "soter/automations/email-triage/connected.mjs",
       "compileExport": "compileEmailConnectedOperations",
-      "evaluateExport": "evaluateEmailConnectedVerification"
+      "evaluateExport": "evaluateEmailConnectedVerification",
+      "recordRequirements": []
     },
     "proposal": {
       "module": "soter/automations/email-triage/proposal.mjs",
@@ -106,9 +114,11 @@
     { "path": "soter/automations/email-triage/decision.mjs", "role": "implementation" },
     { "path": "soter/automations/email-triage/proposal.mjs", "role": "implementation" },
     { "path": "soter/automations/email-triage/connected.mjs", "role": "implementation" },
+    { "path": "soter/automations/email-triage/scenario.mjs", "role": "evaluation" },
     { "path": "soter/automations/email-triage/email-triage.selftest.mjs", "role": "evaluation" },
     { "path": "soter/automations/email-triage/connected-context.selftest.mjs", "role": "evaluation" },
-    { "path": "soter/scenarios/email-triage/happy-path.scenario.json", "role": "evaluation" }
+    { "path": "soter/scenarios/email-triage/happy-path.scenario.json", "role": "evaluation" },
+    { "path": "soter/scenarios/email-triage/preparation.scenario.json", "role": "evaluation" }
   ],
   "compatibility": {
     "baseContract": "^1.0.0",
@@ -116,6 +126,9 @@
   },
   "verification": {
     "maxLevel": "fixture",
-    "scenarios": ["soter/scenarios/email-triage/happy-path.scenario.json"]
+    "scenarios": [
+      "soter/scenarios/email-triage/happy-path.scenario.json",
+      "soter/scenarios/email-triage/preparation.scenario.json"
+    ]
   }
 }

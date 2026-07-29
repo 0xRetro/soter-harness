@@ -1,0 +1,25 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.meetings",
+  "version": "0.1.0",
+  "layer": "context",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Defines portable Meetings, participants, commitments, summaries, recording and transcript relationships, and authority boundaries independently from CRM, Projects, Tasks, and provider layout.",
+  "dependencies": [
+    { "pack": "core.runtime", "version": "^0.1.0", "optional": false, "reason": "Meeting definitions and instances require portable context assembly and authority resolution." }
+  ],
+  "capabilities": { "requires": [], "provides": [] },
+  "authorities": [
+    { "role": "definition", "subject": "meetings.records", "required": true },
+    { "role": "instance", "subject": "meetings.records", "required": true }
+  ],
+  "effects": [],
+  "artifacts": [
+    { "path": "soter/contexts/meetings/records.model.json", "role": "definition" },
+    { "path": "soter/contexts/meetings/vocabulary.json", "role": "definition" }
+  ],
+  "compatibility": { "baseContract": "^1.0.0", "hosts": ["codex", "claude"] },
+  "verification": { "maxLevel": "static", "scenarios": [] }
+}

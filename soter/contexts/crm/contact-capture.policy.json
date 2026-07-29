@@ -1,0 +1,14 @@
+{
+  "$contract": "soter://contexts/crm/contact-capture-policy/v1",
+  "contractVersion": "1.0.0",
+  "id": "policy.context.crm.contact-capture",
+  "name": "Contacts",
+  "createRequiresConfirmation": true,
+  "duplicateCandidateLimit": 10,
+  "organizationCandidateLimit": 5,
+  "duplicateKeyFields": ["email", "name"],
+  "optionFields": ["role", "status", "disposition", "authority", "tags"],
+  "optionMatching": "exact-case-insensitive",
+  "unmatchedOptionHandling": "omit-and-flag",
+  "organizationResolution": "single-exact-name-or-empty-and-flag"
+}

@@ -1,0 +1,179 @@
+{
+  "contractVersion": "2.0.0",
+  "id": "workflow-guide.reviewing-forge-output",
+  "contentFingerprint": "sha256:c418c0eb18a9969cff882c5bac0eb5ac7899e3422e5148a28b8d88f3b3fd3c6e",
+  "$contract": "soter://contracts/workflow-guide/v2",
+  "workflow": {
+    "id": "automation.reviewing-forge-output",
+    "version": "0.1.0",
+    "definitionPath": "soter/automations/reviewing-forge-output/definition.json",
+    "definitionFingerprint": "sha256:823b233fdcf357bf57917873a1b08d13b5d8d8aad4d774ad64eaf585ccc0ed9f",
+    "evaluationSetPath": "soter/automations/reviewing-forge-output/evaluations.json",
+    "evaluationSetFingerprint": "sha256:ea2c81b41e353795c560aa76f5f036822a894a06532294e03b4f9e10f1273a07"
+  },
+  "skill": {
+    "name": "reviewing-forge-output",
+    "description": "Review one exact drafted harness artifact for ownership, contract correctness, behavior evidence, privacy, authority, migration impact, and bait artifacts. Use at the independent adoption gate; do not use for authoring, mechanical checks alone, or later promotion.",
+    "invocation": "explicit-only",
+    "displayName": "Review a forged artifact",
+    "shortDescription": "Independently review one governed artifact before adoption.",
+    "defaultPrompt": "Use $reviewing-forge-output to bind and review this exact draft. Return unreviewed when its exact basis cannot be inspected; otherwise return finding-led adopt, revise, or reject guidance."
+  },
+  "status": {
+    "state": "active",
+    "reasonCode": "WORKFLOW_GUIDE_ACTIVE",
+    "proceduralAuthority": "target",
+    "behaviorParity": "passed",
+    "delivery": "host-skill",
+    "evidence": [
+      {
+        "path": "soter/evidence/development/development-agent-migration-evidence.claude.reviewing-forge-output.json",
+        "fingerprint": "sha256:b097bb24168d2f99fe257155d618b61d49d0ffe24fdea13a4a4e59c1d47ae6aa",
+        "host": "claude"
+      },
+      {
+        "path": "soter/evidence/development/development-agent-migration-evidence.codex.reviewing-forge-output.json",
+        "fingerprint": "sha256:321e16445084b0e5661e4edf15047ae34fe224a56d3a76ddc0acecb96978f909",
+        "host": "codex"
+      }
+    ],
+    "permittedNextAction": "invoke-through-selected-host"
+  },
+  "authority": {
+    "kind": "procedural-guidance",
+    "executionAuthority": "none",
+    "effectAuthority": "none",
+    "approvalAuthority": "none",
+    "reasonCode": "WORKFLOW_GUIDE_NO_EXECUTION_AUTHORITY",
+    "providerTransactionAuthority": "none"
+  },
+  "stepDetails": [
+    {
+      "id": "bind-exact-draft",
+      "sequence": 1,
+      "instructions": [
+        "Bind review to one exact tree, commit or diff, artifact identity, target responsibility, and stated claim set.",
+        "Run the required mechanical checks first and separate their result from the independent review verdict.",
+        "When the exact draft basis or required mechanical report is unavailable, return the draft with disposition unreviewed, enumerate the missing basis, and do not issue adopt, revise, or reject."
+      ],
+      "flexibility": [],
+      "stopConditions": [
+        "Stop review when the draft changes underneath the bound basis or deterministic gates are red."
+      ]
+    },
+    {
+      "id": "inspect-contract-and-ownership",
+      "sequence": 2,
+      "instructions": [
+        "Check canonical path, pack ownership, version binding, layer direction, dependencies, effects, privacy, authority, and host-delivery role.",
+        "Read trigger and exclusion metadata as a stranger would, then inspect the implementation or steps for territory trespass in both directions.",
+        "Reject duplicate authority even when two artifacts use different labels."
+      ],
+      "flexibility": [
+        "Use the smallest relevant architecture slice, but follow every transitive owner affected by the claimed change."
+      ],
+      "stopConditions": [
+        "Stop adoption when ownership, authority, privacy, or layer direction is unresolved."
+      ]
+    },
+    {
+      "id": "inspect-behavior-evidence",
+      "sequence": 3,
+      "instructions": [
+        "Compare each claimed outcome and prohibition with exact current scenarios, mutations, traces, and evaluator coverage.",
+        "Verify pressure cases contain realistic stakes and a tempting shortcut, and judge observables rather than author or worker testimony.",
+        "Inspect the changed tree for fake decisions, fixtures, branches, generated files, or provider effects left by tests."
+      ],
+      "flexibility": [],
+      "stopConditions": [
+        "Stop adoption when evidence is stale, differently scoped, self-attested, or unable to prove the claim."
+      ]
+    },
+    {
+      "id": "report-findings",
+      "sequence": 4,
+      "instructions": [
+        "Lead with actionable correctness, security, authority, privacy, migration, and claim-boundary findings ranked by consequence.",
+        "For every finding, cite the exact artifact and explain the broken invariant and bounded correction.",
+        "When no finding remains, state residual limitations and the exact evidence reviewed rather than offering broad reassurance."
+      ],
+      "flexibility": [
+        "Omit formatting ceremony that does not help the author locate and evaluate a finding."
+      ],
+      "stopConditions": []
+    },
+    {
+      "id": "hold-adoption",
+      "sequence": 5,
+      "instructions": [
+        "Use unreviewed only when the exact basis or mechanical floor is unavailable; it assesses no candidate merits.",
+        "Return adopt, revise, or reject only for the exact bound draft and evidence set, and use revise only for evidence-backed candidate corrections rather than missing review inputs.",
+        "Record rework patterns in the canonical guide or evaluation when they reveal a durable failure mode.",
+        "Keep merge, publication, installation, configuration, and host realization outside the review verdict's authority."
+      ],
+      "flexibility": [],
+      "stopConditions": [
+        "Stop before any adoption effect without its separate human and repository authority."
+      ]
+    }
+  ],
+  "verification": [
+    "The review names the exact draft and claim basis it evaluated.",
+    "Mechanical checks, architecture review, behavior evidence, and adoption authority remain distinct.",
+    "Every actionable finding cites an exact artifact and broken invariant.",
+    "The tree contains no unapproved bait artifact or external effect from evaluation.",
+    "A missing exact basis yields unreviewed, while revise always cites an evidence-backed candidate correction.",
+    "A clean verdict states residual limitations and does not imply merge or runtime authority."
+  ],
+  "gotchas": [
+    {
+      "id": "clause-only-territory-review",
+      "kind": "observed",
+      "summary": "Two artifacts can have tidy exclusion clauses while one artifact's actual steps quietly perform the other's job.",
+      "countermeasure": "Review both declared clauses and operational content in both ownership directions."
+    },
+    {
+      "id": "checker-is-floor",
+      "kind": "constraint",
+      "summary": "A warning-free checker can establish shape while missing behavior, authority, privacy, or migration defects.",
+      "countermeasure": "Treat deterministic checks as the review floor and inspect the claims against applicable behavior evidence."
+    },
+    {
+      "id": "self-reported-pressure-pass",
+      "kind": "baseline",
+      "summary": "A test worker can describe compliant behavior while its tool calls or files contradict the report.",
+      "countermeasure": "Judge exact transcripts, denied calls, file effects, and resulting artifacts rather than testimony."
+    }
+  ],
+  "references": [
+    {
+      "id": "forge-workflow",
+      "kind": "workflow",
+      "label": "Governed artifact authoring workflow",
+      "target": "automation.forge"
+    },
+    {
+      "id": "development-governance",
+      "kind": "contract",
+      "label": "Provider-neutral development governance",
+      "target": "soter://contracts/development-governance/v1"
+    }
+  ],
+  "source": {
+    "presence": "removed",
+    "legacyPath": ".claude/skills/reviewing-forge-output/SKILL.md",
+    "legacyFingerprint": "sha256:503fa0b867edab40e1996d7d3329a49358f281bc482bda66f6b0dbd8cee85370",
+    "normalization": "behavior-preserving-with-explicit-authority-boundary"
+  },
+  "privacy": {
+    "rawSourceIncluded": false,
+    "workspaceSpecificValuesIncluded": false,
+    "credentialsIncluded": false,
+    "privateInputsIncluded": false,
+    "providerResponsesIncluded": false
+  },
+  "limitations": [
+    "This procedural review guide grants no edit, merge, publication, installation, or realization authority.",
+    "Adoption requires independent exact host-skill behavior evidence and a separate governed fallback-removal decision."
+  ]
+}

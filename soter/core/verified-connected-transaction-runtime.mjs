@@ -15,6 +15,7 @@ import {
 import { fingerprintJson, readJson } from './lib/canonical-json.mjs';
 import { assertExactProposalConnectedBatch } from './proposal-connected-batches.mjs';
 import { fingerprintLock } from './resolve.mjs';
+import { resolveConnectedObservationInput } from './connected-input-bindings.mjs';
 
 const CONTRACT = 'soter://contracts/connected-transaction-checkpoint/v2';
 
@@ -26,6 +27,18 @@ function checkpointFingerprint(checkpoint) {
   const unsigned = structuredClone(checkpoint);
   delete unsigned.checkpointFingerprint;
   return fingerprintJson(unsigned);
+}
+
+function approvalConfigurationSelection(approval) {
+  const configuration = approval.request.configuration;
+  return {
+    name: configuration.name,
+    configurationBasis: configuration.configurationBasis,
+    path: configuration.path,
+    lockPath: configuration.lockPath,
+    lockFingerprint: configuration.lockFingerprint,
+    graphFingerprint: configuration.graphFingerprint
+  };
 }
 
 function seal(checkpoint) {
@@ -59,7 +72,7 @@ function stageRecord(operation, stage) {
   return null;
 }
 
-function stageDescriptor(source, stage) {
+function stageDescriptor(source, stage, operation = null) {
   if (stage === 'precondition') {
     if (source.precondition.kind !== 'expectation') {
       throw new Error('Verified connected transaction requested an absent precondition.');
@@ -83,7 +96,10 @@ function stageDescriptor(source, stage) {
     return {
       capability: source.verification.capability,
       provider: source.verification.provider,
-      input: source.verification.input,
+      input: resolveConnectedObservationInput(
+        source.verification,
+        operation?.write?.output || null
+      ),
       approvedEffects: []
     };
   }
@@ -174,12 +190,36 @@ function markAmbiguous(checkpoint, operation, stage, call, at, error) {
   checkpoint.result = result(checkpoint, 'needs-attention', error);
 }
 
+function connectedTransactionPreflightError(error) {
+  if (error?.code === 'CONNECTED_TRANSACTION_PREFLIGHT_FAILED') return error;
+  const failure = new Error(
+    'Verified connected transaction preflight could not prepare one exact host call.'
+  );
+  failure.code = 'CONNECTED_TRANSACTION_PREFLIGHT_FAILED';
+  failure.reasonCode = typeof error?.reasonCode === 'string'
+    ? error.reasonCode
+    : typeof error?.code === 'string'
+      ? error.code
+      : 'HOST_REQUEST_NOT_EMITTED';
+  return failure;
+}
+
+export function assertVerifiedConnectedWriteIsNotPaginated(call) {
+  if (call?.pagination) {
+    throw new Error(
+      'Verified connected transaction writes cannot use a paginated provider call.'
+    );
+  }
+  return true;
+}
+
 async function requestStage({ root, lock, checkpoint, operation, stage, at }) {
   const source = sourceOperation(checkpoint, operation.id);
-  const descriptor = stageDescriptor(source, stage);
+  const descriptor = stageDescriptor(source, stage, operation);
   const prepared = await prepareHostToolCall({
     root,
     lock,
+    configuration: checkpoint.configuration,
     runId: checkpoint.run.id,
     callId: callId(checkpoint, operation, stage),
     capability: descriptor.capability,
@@ -190,6 +230,7 @@ async function requestStage({ root, lock, checkpoint, operation, stage, at }) {
     at,
     approvedEffects: descriptor.approvedEffects
   });
+  if (stage === 'write') assertVerifiedConnectedWriteIsNotPaginated(prepared.call);
   operation[stage === 'verify' ? 'verification' : stage] = phase(
     prepared.call,
     null,
@@ -199,6 +240,7 @@ async function requestStage({ root, lock, checkpoint, operation, stage, at }) {
   if (prepared.call.state !== 'requested') {
     const error = prepared.call.error || {
       kind: 'validation',
+      code: 'HOST_REQUEST_NOT_EMITTED',
       reasonCode: 'HOST_REQUEST_NOT_EMITTED',
       message: 'The exact host request was not emitted.'
     };
@@ -238,9 +280,11 @@ async function continueAfterApplied({ root, lock, checkpoint, at }) {
 
 function assertCallBinding(checkpoint, source, operation, stage, record) {
   if (!record) return;
-  const descriptor = stageDescriptor(source, stage);
+  const descriptor = stageDescriptor(source, stage, operation);
   const call = record.call;
   if (call.runId !== checkpoint.run.id
+    || !call.configuration
+    || fingerprintJson(call.configuration) !== fingerprintJson(checkpoint.configuration)
     || call.capability.id !== descriptor.capability
     || call.authority !== source.authority
     || call.provider.implementation !== descriptor.provider.connectedImplementation
@@ -271,6 +315,15 @@ export function assertVerifiedConnectedTransactionCheckpoint(root, checkpoint) {
     || checkpoint.approvalFingerprint !== connectedApprovalFingerprint(checkpoint.approval)
     || checkpoint.batch.$contract !== 'soter://contracts/connected-operation-batch/v2'
     || checkpoint.batch.profile !== checkpoint.profile
+    || checkpoint.configuration.configurationBasis !== 'private-active'
+    || checkpoint.configuration.name
+      !== checkpoint.approval.request.configuration.name
+    || fingerprintJson(checkpoint.configuration)
+      !== fingerprintJson(approvalConfigurationSelection(checkpoint.approval))
+    || checkpoint.configuration.lockPath !== checkpoint.configurationLock.path
+    || checkpoint.configuration.lockFingerprint
+      !== checkpoint.configurationLock.fingerprint
+    || checkpoint.configuration.graphFingerprint !== checkpoint.graphFingerprint
     || checkpoint.operations.length !== checkpoint.batch.operations.length) {
     throw new Error('Verified connected transaction checkpoint fingerprint or embedded source is stale.');
   }
@@ -321,22 +374,74 @@ export function assertVerifiedConnectedTransactionCheckpoint(root, checkpoint) {
   return checkpoint;
 }
 
-async function preflight({ root, lock, batch }) {
+async function preflight({
+  root,
+  lock,
+  batch,
+  configuration,
+  run,
+  at
+}) {
   for (const operation of batch.operations) {
-    const descriptors = [stageDescriptor(operation, 'write'), stageDescriptor(operation, 'verify')];
+    const descriptors = [
+      { stage: 'write', ...stageDescriptor(operation, 'write') }
+    ];
     if (operation.precondition.kind === 'expectation') {
-      descriptors.unshift(stageDescriptor(operation, 'precondition'));
+      descriptors.unshift({
+        stage: 'precondition',
+        ...stageDescriptor(operation, 'precondition')
+      });
+    }
+    if (!Object.hasOwn(operation.verification, 'inputBindings')) {
+      descriptors.push({
+        stage: 'verify',
+        ...stageDescriptor(operation, 'verify')
+      });
+    } else {
+      descriptors.push({
+        stage: 'verify-binding',
+        capability: operation.verification.capability,
+        provider: operation.verification.provider,
+        approvedEffects: []
+      });
     }
     for (const descriptor of descriptors) {
-      await preflightHostToolBinding({
-        root,
-        lock,
-        capability: descriptor.capability,
-        authority: operation.authority,
-        containment: 'connected',
-        providerImplementation: descriptor.provider.connectedImplementation,
-        approvedEffects: descriptor.approvedEffects
-      });
+      try {
+        if (descriptor.input === undefined) {
+          await preflightHostToolBinding({
+            root,
+            lock,
+            capability: descriptor.capability,
+            authority: operation.authority,
+            containment: 'connected',
+            providerImplementation: descriptor.provider.connectedImplementation,
+            approvedEffects: descriptor.approvedEffects
+          });
+          continue;
+        }
+        const prepared = await prepareHostToolCall({
+          root,
+          lock,
+          configuration,
+          runId: run.id,
+          callId: callId({ batch }, operation, 'preflight-' + descriptor.stage),
+          capability: descriptor.capability,
+          authority: operation.authority,
+          containment: 'connected',
+          providerImplementation: descriptor.provider.connectedImplementation,
+          input: descriptor.input,
+          at,
+          approvedEffects: descriptor.approvedEffects
+        });
+        if (prepared.call.state !== 'requested') {
+          throw connectedTransactionPreflightError(prepared.call.error);
+        }
+        if (descriptor.approvedEffects.includes('write')) {
+          assertVerifiedConnectedWriteIsNotPaginated(prepared.call);
+        }
+      } catch (error) {
+        throw connectedTransactionPreflightError(error);
+      }
     }
   }
 }
@@ -351,6 +456,7 @@ export async function createVerifiedConnectedTransactionCheckpoint({
   batch,
   changeSet,
   approval,
+  configuration,
   at
 }) {
   const resolvedRoot = path.resolve(root);
@@ -362,7 +468,16 @@ export async function createVerifiedConnectedTransactionCheckpoint({
     at
   });
   if (batch.configurationLockFingerprint !== fingerprintLock(lock)
-    || batch.runId !== run.id) {
+    || batch.runId !== run.id
+    || !configuration
+    || configuration.configurationBasis !== 'private-active'
+    || configuration.name !== lock.configuration.name
+    || configuration.path !== lock.configuration.path
+    || configuration.lockPath !== lockPath
+    || configuration.lockFingerprint !== fingerprintLock(lock)
+    || configuration.graphFingerprint !== lock.graphFingerprint
+    || fingerprintJson(configuration)
+      !== fingerprintJson(approvalConfigurationSelection(approval))) {
     throw new Error('Verified connected transaction sources do not match the exact lock and run.');
   }
   await assertExactProposalConnectedBatch({
@@ -370,9 +485,17 @@ export async function createVerifiedConnectedTransactionCheckpoint({
     lockPath,
     batch,
     changeSet,
-    expectedHost: lock.host.id
+    expectedHost: lock.host.id,
+    at
   });
-  await preflight({ root: resolvedRoot, lock, batch });
+  await preflight({
+    root: resolvedRoot,
+    lock,
+    batch,
+    configuration,
+    run,
+    at
+  });
   const checkpoint = {
     $contract: CONTRACT,
     contractVersion: '2.0.0',
@@ -383,6 +506,7 @@ export async function createVerifiedConnectedTransactionCheckpoint({
     updatedAt: at,
     startedAt: at,
     state: 'failed',
+    configuration: structuredClone(configuration),
     configurationLock: { path: lockPath, fingerprint: fingerprintLock(lock) },
     graphFingerprint: lock.graphFingerprint,
     host: { id: lock.host.id, adapter: lock.host.adapter, version: lock.host.version },
@@ -438,14 +562,24 @@ function priorReplay(checkpoint, callId, response) {
     operation.verification,
     ...operation.reconciliations.map((item) => item.phase)
   ]).filter(Boolean);
-  return phases.some((record) => {
-    return record.call.id === callId
-      && record.call.state === 'completed'
-      && record.call.responseFingerprint === responseFingerprint;
-  });
+  for (const record of phases) {
+    const page = record.call.pagination?.pages.find((item) => item.callId === callId);
+    const observed = page?.responseFingerprint
+      || (record.call.id === callId && record.call.state === 'completed'
+        ? record.call.responseFingerprint
+        : null);
+    if (!observed) continue;
+    if (observed !== responseFingerprint) {
+      throw new Error(
+        'Verified connected transaction replay does not match the exact completed page response.'
+      );
+    }
+    return true;
+  }
+  return false;
 }
 
-async function evaluate({ root, lock, checkpoint, source, phaseName, output }) {
+async function evaluate({ root, lock, checkpoint, source, phaseName, output, resolvedInput }) {
   return evaluateAutomationConnectedObservation({
     root,
     lock,
@@ -453,7 +587,8 @@ async function evaluate({ root, lock, checkpoint, source, phaseName, output }) {
     compiler: checkpoint.batch.compiler,
     operation: source,
     phase: phaseName,
-    output
+    output,
+    resolvedInput
   });
 }
 
@@ -483,7 +618,7 @@ export async function completeVerifiedConnectedTransactionCall({
   const operation = runtimeOperation(next, next.current.operationId);
   const source = sourceOperation(next, operation.id);
   const stage = next.current.stage;
-  const descriptor = stageDescriptor(source, stage);
+  const descriptor = stageDescriptor(source, stage, operation);
   const completed = await completeHostToolCall({
     root: resolvedRoot,
     lock,
@@ -493,6 +628,25 @@ export async function completeVerifiedConnectedTransactionCall({
     at
   });
   next.updatedAt = at;
+  if (completed.call.state === 'requested') {
+    if (stage === 'write') {
+      throw new Error(
+        'Verified connected transaction write returned an unsafe paginated continuation.'
+      );
+    }
+    if (stage === 'reconcile') {
+      const reconciliation = operation.reconciliations.find((item) => {
+        return item.id === checkpoint.current.reconciliationId;
+      });
+      reconciliation.phase = phase(completed.call);
+    } else {
+      operation[stage === 'verify' ? 'verification' : stage] = phase(completed.call);
+    }
+    next.current.callId = completed.call.id;
+    next.state = 'requested';
+    next.result = null;
+    return { checkpoint: seal(next), idempotent: false };
+  }
   next.current = null;
   if (stage === 'reconcile') {
     const reconciliation = operation.reconciliations.find((item) => {
@@ -513,7 +667,8 @@ export async function completeVerifiedConnectedTransactionCall({
       checkpoint: next,
       source,
       phaseName: 'verification',
-      output: completed.output
+      output: completed.output,
+      resolvedInput: descriptor.input
     });
     reconciliation.outcome = observed.state;
     reconciliation.observedFingerprint = observed.observedFingerprint;
@@ -529,6 +684,7 @@ export async function completeVerifiedConnectedTransactionCall({
     } else {
       const error = {
         kind: 'conflict',
+        code: 'CONNECTED_RECONCILIATION_MISMATCH',
         reasonCode: observed.reasonCode,
         message: 'Reconciliation did not observe the exact approved state.'
       };
@@ -557,12 +713,14 @@ export async function completeVerifiedConnectedTransactionCall({
       checkpoint: next,
       source,
       phaseName: 'precondition',
-      output: completed.output
+      output: completed.output,
+      resolvedInput: descriptor.input
     });
     operation.observedFingerprint = observed.observedFingerprint;
     if (observed.state !== 'passed') {
       markTerminal(next, operation, 'failed', {
         kind: 'conflict',
+        code: 'CONNECTED_PRECONDITION_MISMATCH',
         reasonCode: observed.reasonCode,
         message: 'The exact compare-before-write precondition was not satisfied.'
       });
@@ -578,7 +736,8 @@ export async function completeVerifiedConnectedTransactionCall({
       checkpoint: next,
       source,
       phaseName: 'verification',
-      output: completed.output
+      output: completed.output,
+      resolvedInput: descriptor.input
     });
     operation.observedFingerprint = observed.observedFingerprint;
     if (observed.state === 'passed') {
@@ -588,6 +747,7 @@ export async function completeVerifiedConnectedTransactionCall({
     } else {
       markAmbiguous(next, operation, 'verify', completed.call, at, {
         kind: 'conflict',
+        code: 'CONNECTED_VERIFICATION_MISMATCH',
         reasonCode: observed.reasonCode,
         message: 'Read-after-write verification did not observe the exact approved state.'
       });
@@ -621,11 +781,12 @@ export async function prepareVerifiedConnectedTransactionReconciliation({
     throw new Error('Verified connected reconciliation attempt limit has been reached.');
   }
   const source = sourceOperation(next, operation.id);
-  const descriptor = stageDescriptor(source, 'reconcile');
+  const descriptor = stageDescriptor(source, 'reconcile', operation);
   const id = reconciliationId(operation);
   const prepared = await prepareHostToolCall({
     root: resolvedRoot,
     lock,
+    configuration: next.configuration,
     runId: next.run.id,
     callId: callId(next, operation, 'reconcile', operation.reconciliations.length + 1),
     capability: descriptor.capability,

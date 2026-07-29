@@ -6,13 +6,16 @@ import {
   getExactDurableAutomationDecision,
   getExactDurableContextSnapshot
 } from '../../core/service.mjs';
-import { fingerprintJson, readJson, resolveRepoPath } from '../../core/lib/canonical-json.mjs';
+import { fingerprintJson, readJson } from '../../core/lib/canonical-json.mjs';
 import { fingerprintLock } from '../../core/resolve.mjs';
 import {
   hasAutomationDecisionState,
-  readAutomationDecisionState,
-  readContextSnapshotState
+  readAutomationDecisionState
 } from '../../core/runtime-state.mjs';
+import {
+  loadExactMeetingIntakePreparedInput,
+  meetingIntakePreparedWorkIdFromSnapshot
+} from './context.mjs';
 
 const AUTOMATION_ID = 'automation.meeting-intake';
 const DECISION_TYPE = 'meeting-intake.grounded-outcome';
@@ -115,7 +118,51 @@ function candidateDecisionMap(inputs, key, label) {
   return new Map(values.map((item) => [item[key], item]));
 }
 
-function buildDecision({ lock, snapshot, id, createdAt, producer, input }) {
+function exactCalendarDate(value, label) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw new Error(label + ' must be one exact calendar date.');
+  }
+  const parsed = Date.parse(value + 'T00:00:00.000Z');
+  if (!Number.isFinite(parsed) || new Date(parsed).toISOString().slice(0, 10) !== value) {
+    throw new Error(label + ' must be one valid calendar date.');
+  }
+  return value;
+}
+
+function meetingAge(occurredOn, createdAt) {
+  const meetingDate = Date.parse(exactCalendarDate(occurredOn, 'Meeting date') + 'T00:00:00.000Z');
+  const decisionDate = Date.parse(new Date(createdAt).toISOString().slice(0, 10) + 'T00:00:00.000Z');
+  const ageDays = Math.floor((decisionDate - meetingDate) / 86400000);
+  if (!Number.isInteger(ageDays) || ageDays < 0) {
+    throw new Error('Meeting date cannot be after the decision date.');
+  }
+  return { occurredOn, ageDays, state: ageDays > 7 ? 'stale' : 'current' };
+}
+
+function assertAcquisitionRun(run, snapshot, workId) {
+  const suffix = workId.slice('work.meeting-intake.'.length);
+  const planId = 'plan.meeting-intake.connected-acquisition.' + suffix;
+  const plans = run.checkpoints.filter((checkpoint) => {
+    return checkpoint.kind === 'operation-plan' && checkpoint.planId === planId;
+  });
+  const assemblies = run.checkpoints.filter((checkpoint) => {
+    return checkpoint.kind === 'context-assembly'
+      && checkpoint.id === 'context-assembly.' + snapshot.id;
+  });
+  if (plans.length !== 1
+    || plans[0].state !== 'completed'
+    || assemblies.length !== 1
+    || assemblies[0].state !== 'passed'
+    || assemblies[0].planId !== planId
+    || assemblies[0].planFingerprint !== plans[0].planFingerprint
+    || assemblies[0].snapshotFingerprint !== fingerprintJson(snapshot)) {
+    throw new Error(
+      'Meeting Intake decision requires the exact completed acquisition plan and context-assembly binding.'
+    );
+  }
+}
+
+function buildDecision({ root, lock, snapshot, run, id, createdAt, producer, input }) {
   const automation = selectedAutomation(lock);
   if (!producer
     || !['host', 'user', 'fixture'].includes(producer.kind)
@@ -126,10 +173,25 @@ function buildDecision({ lock, snapshot, id, createdAt, producer, input }) {
       : producer.host !== null)) {
     throw new Error('Meeting-intake decision producer must have an exact kind, identity, and host binding.');
   }
-  if (snapshot.configurationLockFingerprint !== fingerprintLock(lock)
-    || snapshot.graphFingerprint !== lock.graphFingerprint) {
+  if (snapshot.containment !== 'connected'
+    || snapshot.configurationLockFingerprint !== fingerprintLock(lock)
+    || snapshot.graphFingerprint !== lock.graphFingerprint
+    || snapshot.runId !== run?.id) {
     throw new Error('Meeting-intake decision context does not match the exact lock and graph.');
   }
+  const workId = meetingIntakePreparedWorkIdFromSnapshot(snapshot.id);
+  const prepared = loadExactMeetingIntakePreparedInput({
+    root,
+    workId,
+    expectedHost: lock.host.id
+  });
+  if (fingerprintLock(prepared.lock) !== fingerprintLock(lock)
+    || prepared.run.id !== run.id) {
+    throw new Error(
+      'Meeting-intake decision prepared input does not match the exact connected lock and run.'
+    );
+  }
+  assertAcquisitionRun(run, snapshot, workId);
   if (!['ready', 'needs-input'].includes(input?.state)) {
     throw new Error('Meeting-intake decision state must be ready or needs-input.');
   }
@@ -153,12 +215,39 @@ function buildDecision({ lock, snapshot, id, createdAt, producer, input }) {
     requireText(input.meetingRecordId, 'Meeting record ID'),
     'Meeting selection'
   );
+  if (meeting.fields?.recordingUri !== prepared.input.recordingUri) {
+    throw new Error('Meeting Intake decision meeting does not match the exact prepared recording identity.');
+  }
+  const age = meetingAge(meeting.fields?.occurredOn, createdAt);
   const transcript = exactTranscriptEntry(snapshot);
+  if (transcript.value.meetingId !== prepared.input.meeting
+    || transcript.value.recordingUri !== prepared.input.recordingUri) {
+    throw new Error('Meeting Intake decision transcript does not match the exact prepared input.');
+  }
   const summaryReferences = segmentReferences(
     input.summarySegmentIndexes,
     transcript,
     'Summary segment indexes'
   );
+  const projects = snapshotRecords(snapshot, 'project');
+  if (new Set(projects.map((record) => record.id)).size !== projects.length) {
+    throw new Error('Bounded Meeting Intake projects contain duplicate record identities.');
+  }
+  const project = exactRecord(
+    projects,
+    requireText(input.projectRecordId, 'Summary project record ID'),
+    'Summary project attribution'
+  );
+  const transcriptSpeakerIds = new Set(transcript.value.speakers.map((speaker) => speaker.id));
+  const ourSpeakerIds = requireArray(input.ourSpeakerIds, 'Our speaker identities');
+
+  if (ourSpeakerIds.length < 1
+    || new Set(ourSpeakerIds).size !== ourSpeakerIds.length
+    || ourSpeakerIds.some((speakerId) => {
+      return typeof speakerId !== 'string' || !transcriptSpeakerIds.has(speakerId);
+    })) {
+    throw new Error('Our speaker identities must be unique exact identities in the bounded transcript.');
+  }
 
   const taskCandidates = snapshotRecords(snapshot, 'task');
   if (new Set(taskCandidates.map((record) => record.id)).size !== taskCandidates.length) {
@@ -237,7 +326,8 @@ function buildDecision({ lock, snapshot, id, createdAt, producer, input }) {
 
   if (input.state === 'ready') {
     const folded = tasks.filter((task) => task.disposition === 'fold');
-    if (issues.length
+    if (age.state !== 'current'
+      || issues.length
       || summaryReferences.length < 1
       || taskCandidates.length < 1
       || folded.length !== 1
@@ -247,11 +337,15 @@ function buildDecision({ lock, snapshot, id, createdAt, producer, input }) {
         || policy.citations.length < 1)
       || (snapshot.containment === 'connected' && policies.length < 1)) {
       throw new Error(
-        'A ready meeting-intake decision requires no issues, grounded summary segments, exactly one folded task, resolved cited task decisions, and cited allow outcomes for every connected policy.'
+        'A ready meeting-intake decision requires a current meeting, no issues, grounded summary and project attribution, exactly one folded task, resolved cited task decisions, and cited allow outcomes for every connected policy.'
       );
     }
   } else if (issues.length < 1) {
     throw new Error('A needs-input meeting-intake decision must state at least one issue.');
+  }
+  if (age.state === 'stale'
+    && !issues.some((issue) => issue.startsWith('MEETING_STALE_REQUIRES_HISTORY_REVIEW:'))) {
+    throw new Error('A stale Meeting Intake decision must fail closed with explicit history-review evidence missing.');
   }
 
   const decision = {
@@ -271,9 +365,18 @@ function buildDecision({ lock, snapshot, id, createdAt, producer, input }) {
     state: input.state,
     decisionType: DECISION_TYPE,
     payload: {
+      preparedWork: {
+        id: workId,
+        fingerprint: prepared.work.fingerprint,
+        reviewMaterialFingerprint: prepared.material.fingerprint,
+        inputContractFingerprint: prepared.material.inputContractFingerprint
+      },
       meeting: {
         recordId: meeting.id,
-        recordFingerprint: fingerprintJson(meeting)
+        recordFingerprint: fingerprintJson(meeting),
+        occurredOn: age.occurredOn,
+        ageDays: age.ageDays,
+        ageState: age.state
       },
       transcript: {
         contextEntryId: transcript.id,
@@ -281,6 +384,11 @@ function buildDecision({ lock, snapshot, id, createdAt, producer, input }) {
       },
       summary: {
         title: meeting.fields.title + ' summary',
+        project: {
+          recordId: project.id,
+          recordFingerprint: fingerprintJson(project)
+        },
+        ourSpeakerIds: [...ourSpeakerIds],
         segmentReferences: summaryReferences
       },
       tasks,
@@ -292,7 +400,7 @@ function buildDecision({ lock, snapshot, id, createdAt, producer, input }) {
       scope: 'private',
       redactions: [
         'Provider credentials, secret references, and raw host responses are excluded.',
-        'Only exact bounded record identities, transcript segment fingerprints, and cited policy excerpts are retained.'
+        'Exact bounded record identities, private transcript-derived values, and cited policy excerpts remain in private decision state and are excluded from workspace inspection.'
       ]
     },
     decisionFingerprint: fingerprintJson(null)
@@ -305,6 +413,8 @@ function inputFromDecision(decision) {
   return {
     state: decision.state,
     meetingRecordId: decision.payload.meeting.recordId,
+    projectRecordId: decision.payload.summary.project.recordId,
+    ourSpeakerIds: structuredClone(decision.payload.summary.ourSpeakerIds),
     summarySegmentIndexes: decision.payload.summary.segmentReferences.map((item) => item.index),
     tasks: decision.payload.tasks.map((task) => ({
       recordId: task.recordId,
@@ -325,7 +435,7 @@ function inputFromDecision(decision) {
 
 export function createMeetingIntakeDecision(args) {
   const resolvedRoot = path.resolve(args.root);
-  const decision = buildDecision(args);
+  const decision = buildDecision({ ...args, root: resolvedRoot });
   validate(
     resolvedRoot,
     decision,
@@ -366,6 +476,7 @@ export function inspectMeetingIntakeDecisionContext({
   }
   const transcript = exactTranscriptEntry(snapshot);
   const tasks = snapshotRecords(snapshot, 'task');
+  const projects = snapshotRecords(snapshot, 'project');
   if (new Set(tasks.map((task) => task.id)).size !== tasks.length) {
     throw new Error('Meeting-intake decision inspection found duplicate bounded task identities.');
   }
@@ -375,6 +486,8 @@ export function inspectMeetingIntakeDecisionContext({
     inputTemplate: {
       state: 'needs-input',
       meetingRecordId: meetings[0].id,
+      projectRecordId: null,
+      ourSpeakerIds: [],
       summarySegmentIndexes: [],
       tasks: tasks.map((task) => ({
         recordId: task.id,
@@ -398,12 +511,13 @@ export function inspectMeetingIntakeDecisionContext({
     counts: {
       transcriptSegments: transcript.value.segments.length,
       taskCandidates: tasks.length,
+      projectCandidates: projects.length,
       applicablePolicies: policies.length
     }
   };
 }
 
-export function assertMeetingIntakeDecision({ root, lock, snapshot, decision }) {
+export function assertMeetingIntakeDecision({ root, lock, snapshot, run, decision }) {
   const resolvedRoot = path.resolve(root);
   validate(
     resolvedRoot,
@@ -418,8 +532,10 @@ export function assertMeetingIntakeDecision({ root, lock, snapshot, decision }) 
     'Meeting-intake decision'
   );
   const expected = buildDecision({
+    root: resolvedRoot,
     lock,
     snapshot,
+    run,
     id: decision.id,
     createdAt: decision.createdAt,
     producer: decision.producer,
@@ -445,15 +561,20 @@ export function commitMeetingIntakeDecision({
   expectedHost
 }) {
   const resolvedRoot = path.resolve(root);
-  const lock = readJson(resolveRepoPath(resolvedRoot, lockPath));
-  const snapshot = readContextSnapshotState(resolvedRoot, snapshotId).snapshot;
+  const exact = getExactDurableContextSnapshot({
+    root: resolvedRoot,
+    lockPath,
+    snapshotId,
+    expectedHost
+  });
   const existing = hasAutomationDecisionState(resolvedRoot, id)
     ? readAutomationDecisionState(resolvedRoot, id).decision
     : null;
   const decision = createMeetingIntakeDecision({
     root: resolvedRoot,
-    lock,
-    snapshot,
+    lock: exact.lock,
+    snapshot: exact.snapshot,
+    run: exact.run,
     id,
     createdAt: existing?.createdAt || at || new Date().toISOString(),
     producer,
@@ -462,7 +583,13 @@ export function commitMeetingIntakeDecision({
   if (existing && fingerprintJson(existing) !== fingerprintJson(decision)) {
     throw new Error('Meeting-intake decision input conflicts with existing durable state.');
   }
-  assertMeetingIntakeDecision({ root: resolvedRoot, lock, snapshot, decision });
+  assertMeetingIntakeDecision({
+    root: resolvedRoot,
+    lock: exact.lock,
+    snapshot: exact.snapshot,
+    run: exact.run,
+    decision
+  });
   return commitDurableAutomationDecision({
     root: resolvedRoot,
     lockPath,
@@ -482,6 +609,7 @@ export function loadMeetingIntakeDecision({ root, lockPath, decisionId, expected
     root,
     lock: exact.lock,
     snapshot: exact.snapshot,
+    run: exact.run,
     decision: exact.decision
   });
   return exact;

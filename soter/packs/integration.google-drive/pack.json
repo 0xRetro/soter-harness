@@ -1,0 +1,37 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "integration.google-drive",
+  "version": "0.1.0",
+  "layer": "integration",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Provides portable storage registry, artifact metadata, shortcut, and frozen-copy capabilities through a contained Google Drive fixture boundary.",
+  "dependencies": [],
+  "capabilities": {
+    "requires": [],
+    "provides": [
+      { "id": "storage.registry.read", "version": "1.0.0" },
+      { "id": "storage.artifacts.read", "version": "1.0.0" },
+      { "id": "storage.shortcuts.create", "version": "1.0.0" },
+      { "id": "storage.files.copy", "version": "1.0.0" }
+    ]
+  },
+  "authorities": [
+    { "role": "definition", "subject": "storage.locations", "required": true },
+    { "role": "instance", "subject": "storage.artifacts", "required": true },
+    { "role": "provider", "subject": "google-drive.account", "required": true }
+  ],
+  "effects": ["read", "disclosure", "write"],
+  "artifacts": [
+    { "path": "soter/capabilities/storage.registry.read.json", "role": "definition" },
+    { "path": "soter/capabilities/storage.artifacts.read.json", "role": "definition" },
+    { "path": "soter/capabilities/storage.shortcuts.create.json", "role": "definition" },
+    { "path": "soter/capabilities/storage.files.copy.json", "role": "definition" },
+    { "path": "soter/providers/provider.integration.google-drive.fixture.json", "role": "implementation" },
+    { "path": "soter/integrations/google-drive/fixture.mjs", "role": "implementation" },
+    { "path": "soter/fixtures/providers/google-drive/storage.json", "role": "fixture" }
+  ],
+  "compatibility": { "baseContract": "^1.0.0", "hosts": ["codex", "claude"] },
+  "verification": { "maxLevel": "fixture", "scenarios": [] }
+}

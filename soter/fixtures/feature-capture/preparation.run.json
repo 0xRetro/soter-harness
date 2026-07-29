@@ -1,0 +1,278 @@
+{
+  "$contract": "soter://contracts/run-envelope/v1",
+  "contractVersion": "1.0.0",
+  "id": "run.feature-capture.preparation-fixture",
+  "createdAt": "2026-07-21T18:00:00.000Z",
+  "requestedOutcome": "Prepare one exact configured-board feature create with its why and complete deterministic body, then stop before approval or provider writes.",
+  "initiation": "user-requested",
+  "intent": "operate",
+  "lifecycleState": "paused",
+  "automation": {
+    "id": "automation.feature-capture",
+    "version": "0.1.0"
+  },
+  "configurationLock": {
+    "path": "soter/fixtures/feature-capture/feature-capture.lock.json",
+    "fingerprint": "sha256:034d338223e780aff0222e20ff28da470bc004c9cdd965325ffeae7bfe5bf340"
+  },
+  "graphFingerprint": "sha256:2c6d74e71a6f75286f22ec03a32c26122f8582d1aeca0e2e228e0ae14133d114",
+  "context": [
+    {
+      "subject": "notion.workspace",
+      "authority": "authority.notion.provider",
+      "role": "provider",
+      "uri": "soter-fixture://configuration-template/notion/account/operator",
+      "declarationFingerprint": "sha256:fe87c2d43c694fc63f3350b4027335b79120041e7dc2d343f14cc12f0f672a0c",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:034d338223e780aff0222e20ff28da470bc004c9cdd965325ffeae7bfe5bf340",
+      "freshness": "unknown"
+    },
+    {
+      "subject": "product.records",
+      "authority": "authority.product.definition",
+      "role": "definition",
+      "uri": "soter-fixture://configuration-template/notion/authority/product-policies",
+      "declarationFingerprint": "sha256:ed518e64a3106cdecb49fa22e4afd340b5b92d0f7e1cd82bf42e71460688dac3",
+      "status": "loaded",
+      "provenance": "fixture:sha256:1676ad676febed0ec638fe07d8a5cdcabb15ef59d35b2f2e3bb50d678b05f9dc",
+      "freshness": "passed"
+    },
+    {
+      "subject": "product.records",
+      "authority": "authority.product.instance",
+      "role": "instance",
+      "uri": "soter-fixture://configuration-template/notion/authority/feature-board",
+      "declarationFingerprint": "sha256:2f32c08c2c5212765a146bd109195570fe8e6f79f577ff0b4a97d4e878810159",
+      "status": "loaded",
+      "provenance": "fixture:sha256:29b5b17eafbbca98e89a665fd3024e411fd7073a4ff1dd8a0c7fbdb0b6d7ec45",
+      "freshness": "passed"
+    },
+    {
+      "subject": "runtime.runs",
+      "authority": "authority.run.evidence",
+      "role": "evidence",
+      "uri": "soter-state://runs",
+      "declarationFingerprint": "sha256:74c8fdd14e981038f959c469d6709fe66186b5f854f5f337f65bc67a6e7926c0",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:034d338223e780aff0222e20ff28da470bc004c9cdd965325ffeae7bfe5bf340",
+      "freshness": "unknown"
+    }
+  ],
+  "bindings": [
+    {
+      "capability": "product.records.create",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.product.instance"
+      ],
+      "effects": [
+        "write"
+      ],
+      "reason": "A separately governed exact transaction may later create one mapped feature."
+    },
+    {
+      "capability": "product.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.product.definition",
+        "authority.product.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Notion supplies the exact policy selection and bounded feature candidate observations."
+    },
+    {
+      "capability": "product.schema.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.product.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Notion supplies the current normalized feature board schema and writable options."
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0",
+    "projectionDefinition": {
+      "id": "host-projection.codex",
+      "version": "0.3.0",
+      "path": "soter/hosts/codex/projection.json",
+      "fingerprint": "sha256:76cd84436a3b5e7f00edcc8a0be3cdff64f53e488b13107a8bf56603b9600490"
+    },
+    "projectionGenerator": {
+      "id": "core.host-projection-generator",
+      "version": "2.1.0"
+    }
+  },
+  "effectPolicies": {
+    "read": {
+      "mode": "allow",
+      "reason": "The exact policy, current schema, and bounded feature candidates may be read for private preparation."
+    },
+    "disclosure": {
+      "mode": "allow",
+      "reason": "Selected observations may enter a private run envelope with explicit minimization."
+    },
+    "write": {
+      "mode": "confirm",
+      "reason": "Every exact feature-create batch would require fresh confirmation and separately consumed one-time start authority."
+    },
+    "dispatch": {
+      "mode": "prohibit",
+      "reason": "Feature Capture does not send or publish messages."
+    },
+    "destructive": {
+      "mode": "prohibit",
+      "reason": "Feature Capture never deletes records or performs destructive changes."
+    }
+  },
+  "approvals": [],
+  "checkpoints": [
+    {
+      "id": "effects-established",
+      "state": "passed",
+      "details": "Read and disclosure policies were evaluated before every contained context invocation."
+    },
+    {
+      "id": "feature-capture-review-grounded",
+      "state": "passed",
+      "details": "The exact policy, current configured board schema, and bounded exact-name candidates were loaded."
+    },
+    {
+      "id": "write-boundary-held",
+      "state": "passed",
+      "details": "No change set, approval request, continuation request, provider write, board discovery, or canonical write was issued."
+    }
+  ],
+  "outputs": [
+    {
+      "id": "context.feature-capture.preparation-fixture",
+      "type": "context-snapshot",
+      "fingerprint": "sha256:c3d034d9fa69c5ac280baf15ea66fcb838b63c47f96585ee36efdc123931339f"
+    }
+  ],
+  "effects": [
+    {
+      "id": "effect.feature-capture.preparation.policy.fixture",
+      "capability": "product.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.product.definition",
+      "startedAt": "2026-07-21T18:00:00.000Z",
+      "completedAt": "2026-07-21T18:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The exact policy, current schema, and bounded feature candidates may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected observations may enter a private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:e55069c6ea85bc98a277f9ff6a5e25fdbf21ce3e4cf351a72995a364c13ac5ae",
+      "state": "passed",
+      "outputFingerprint": "sha256:6da1097e866bd3ab21dd6d2e616f74de4cbc17f9c96b33cf7a97cc14bfbc022d",
+      "error": null
+    },
+    {
+      "id": "effect.feature-capture.preparation.schema.fixture",
+      "capability": "product.schema.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.product.instance",
+      "startedAt": "2026-07-21T18:00:00.000Z",
+      "completedAt": "2026-07-21T18:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The exact policy, current schema, and bounded feature candidates may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected observations may enter a private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:1476fc703480fd385456458baad701bad76409e10506d87778614675252e07b5",
+      "state": "passed",
+      "outputFingerprint": "sha256:0bc0da663e1d9d29eb26a71c8715fa9b9eeaae4c98bc27bbec0d7b713b75e6fe",
+      "error": null
+    },
+    {
+      "id": "effect.feature-capture.preparation.candidates.fixture",
+      "capability": "product.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.product.instance",
+      "startedAt": "2026-07-21T18:00:00.000Z",
+      "completedAt": "2026-07-21T18:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The exact policy, current schema, and bounded feature candidates may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected observations may enter a private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:adb0b33aa89bf4ecd67a266b6a617a392455f8b829d491b8b798dd64800d0f2c",
+      "state": "passed",
+      "outputFingerprint": "sha256:a576cea0d87f711480f6dcbb4db830805a48ae66e272467393ffff06a6f094c3",
+      "error": null
+    }
+  ],
+  "evidenceIds": [],
+  "scenario": {
+    "id": "feature-capture.preparation",
+    "path": "soter/scenarios/feature-capture/preparation.scenario.json",
+    "fingerprint": "sha256:8ec0bd39946d39d4774de66b9fc1bd86760fae93464f1e9521c1fe64631a152e"
+  }
+}

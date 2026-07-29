@@ -1,0 +1,30 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.projects",
+  "version": "0.1.0",
+  "layer": "context",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Defines portable Projects, milestones, embedded work items, status, Decisions, Questions, policies, relationships, and authority boundaries independently from CRM and provider layout.",
+  "dependencies": [
+    { "pack": "core.runtime", "version": "^0.1.0", "optional": false, "reason": "Project definitions and instances require portable context assembly and authority resolution." }
+  ],
+  "capabilities": { "requires": [], "provides": [] },
+  "authorities": [
+    { "role": "definition", "subject": "projects.records", "required": true },
+    { "role": "instance", "subject": "projects.records", "required": true }
+  ],
+  "effects": [],
+  "artifacts": [
+    { "path": "soter/contexts/projects/records.model.json", "role": "definition" },
+    { "path": "soter/contexts/projects/vocabulary.json", "role": "definition" },
+    { "path": "soter/contexts/projects/project-capture.policy.json", "role": "definition" },
+    { "path": "soter/contexts/projects/project-capture-policy.mjs", "role": "implementation" },
+    { "path": "soter/contexts/projects/project-work.policy.json", "role": "definition" },
+    { "path": "soter/contexts/projects/project-work-policy.mjs", "role": "implementation" },
+    { "path": "soter/contexts/projects/project-work.mjs", "role": "implementation" }
+  ],
+  "compatibility": { "baseContract": "^1.0.0", "hosts": ["codex", "claude"] },
+  "verification": { "maxLevel": "static", "scenarios": [] }
+}

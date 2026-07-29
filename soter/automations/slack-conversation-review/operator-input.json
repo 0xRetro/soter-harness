@@ -1,0 +1,62 @@
+{
+  "$contract": "soter://contracts/automation-input/v1",
+  "contractVersion": "1.0.0",
+  "id": "input.automation.slack-conversation-review",
+  "automation": "automation.slack-conversation-review",
+  "version": "1.0.0",
+  "fields": [
+    {
+      "id": "workspaceId",
+      "label": "Provider workspace",
+      "description": "Exact private provider workspace identity containing the selected conversations; it must equal the integration.slack private configuration setting.",
+      "type": "string",
+      "required": true,
+      "exposure": "private",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 200,
+        "pattern": "^(?:[A-Za-z0-9._-]+|soter-fixture://configuration-template/slack/workspace/[a-z0-9]+(?:-[a-z0-9]+)*)$"
+      }
+    },
+    {
+      "id": "selectedConversationIds",
+      "label": "Selected channel identities",
+      "description": "Exact private public or private channel identities selected for one bounded review; direct messages are unavailable.",
+      "type": "string-list",
+      "required": true,
+      "exposure": "private",
+      "constraints": {
+        "minItems": 1,
+        "maxItems": 20,
+        "itemMinLength": 1,
+        "itemMaxLength": 200,
+        "itemPattern": "^[A-Za-z0-9._-]+$"
+      }
+    },
+    {
+      "id": "window",
+      "label": "Review window",
+      "description": "Provider-neutral policy window whose exact instants are pinned when preparation begins.",
+      "type": "enum",
+      "required": true,
+      "exposure": "identifier",
+      "options": ["last-24-hours", "last-7-days"]
+    },
+    {
+      "id": "selectedThreadReferences",
+      "label": "Explicit thread references",
+      "description": "Optional exact private conversation and root-message references in conversation:<id>/thread:<id> form; every conversation must also be selected, and each explicit root is read as one complete policy-bounded thread even when it falls outside the separate conversation window.",
+      "type": "string-list",
+      "required": false,
+      "exposure": "private",
+      "constraints": {
+        "minItems": 1,
+        "maxItems": 20,
+        "itemMinLength": 25,
+        "itemMaxLength": 420,
+        "itemPattern": "^conversation:[A-Za-z0-9._-]+/thread:[A-Za-z0-9._:-]+$"
+      }
+    }
+  ],
+  "additionalInputs": false
+}

@@ -1,0 +1,189 @@
+{
+  "$contract": "soter://contracts/configuration/v1",
+  "contractVersion": "1.0.0",
+  "name": "slack-conversation-review",
+  "base": { "kernel": "kernel.soter", "core": "core.runtime" },
+  "packs": [
+    {
+      "id": "context.communications",
+      "source": "dependency",
+      "reason": "The Communications base owns provider-neutral scope, participants, private untrusted content, and typed-link meaning."
+    },
+    {
+      "id": "context.communications.collaboration",
+      "source": "dependency",
+      "reason": "Collaboration Context owns workspace, conversation, message, thread, bounded coverage, injection, and review-policy semantics."
+    },
+    {
+      "id": "automation.slack-conversation-review",
+      "source": "user",
+      "reason": "The user selected one bounded private read-only review of exact Slack channels."
+    },
+    {
+      "id": "integration.slack",
+      "source": "binding",
+      "reason": "The selected Integration supplies provider-neutral Slack capability contracts and contained fixtures; this Automation's connected message and thread acquisition mode is unavailable."
+    },
+    {
+      "id": "integration.notion",
+      "source": "binding",
+      "reason": "The configured policy collection selects the exact governed conversation-review definition."
+    }
+  ],
+  "bindings": [
+    {
+      "capability": "communications.records.read",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.communications.definition", "authority.communications.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "Notion supplies only the external selection record for the exact governed conversation-review policy."
+    },
+    {
+      "capability": "communications.conversations.list",
+      "providerPack": "integration.slack",
+      "authorities": ["authority.slack.instance"],
+      "secretRef": "secret-ref.slack",
+      "reason": "The capability contract identifies exact eligible public or private channels without treating direct messages as eligible; this configuration does not claim a usable connected acquisition route."
+    },
+    {
+      "capability": "communications.messages.read",
+      "providerPack": "integration.slack",
+      "authorities": ["authority.slack.instance"],
+      "secretRef": "secret-ref.slack",
+      "reason": "The capability contract owns complete bounded top-level message windows for exact selected channels; current connected Slack routes return prose and cannot execute this acquisition mode."
+    },
+    {
+      "capability": "communications.thread.read",
+      "providerPack": "integration.slack",
+      "authorities": ["authority.slack.instance"],
+      "secretRef": "secret-ref.slack",
+      "reason": "The capability contract owns complete bounded threads only for roots present in the selected window or explicitly selected exactly; current connected Slack routes return prose and cannot execute this acquisition mode."
+    }
+  ],
+  "sources": [
+    {
+      "id": "source.policy.conversation-review",
+      "capability": "communications.records.read",
+      "authority": "authority.communications.definition",
+      "input": {
+        "recordTypes": ["conversation-review-policy"],
+        "ids": ["soter-fixture://configuration-template/notion/document/conversation-review-policy"],
+        "limit": 2
+      },
+      "readiness": {
+        "mode": "probe-read",
+        "reason": "Connected readiness must prove the exact policy selection can be read without retaining its provider values."
+      },
+      "consumers": [
+        {
+          "pack": "automation.slack-conversation-review",
+          "purpose": "conversation-review-policy",
+          "subjects": ["slack-conversations"],
+          "reason": "The exact external selection binds the governed Collaboration Context review policy."
+        }
+      ],
+      "reason": "Conversation windows, channel kinds, thread eligibility, privacy, complete coverage, and no-write rules are selected Context meaning."
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.communications.semantics.definition",
+      "role": "definition",
+      "subject": "communications.semantics.records",
+      "uri": "soter://context/communications",
+      "reason": "The selected base Context owns provider-neutral communication scope, identity, privacy, and typed-link meaning."
+    },
+    {
+      "id": "authority.communications.definition",
+      "role": "definition",
+      "subject": "communications.records",
+      "uri": "soter-fixture://configuration-template/notion/authority/policies",
+      "reason": "The selected policy record identifies the exact governed conversation-review definition."
+    },
+    {
+      "id": "authority.slack.instance",
+      "role": "instance",
+      "subject": "communications.workspace",
+      "uri": "soter-fixture://configuration-template/slack/workspace/review",
+      "reason": "The configured workspace is authoritative only for exact provider conversation, message, and thread observations."
+    },
+    {
+      "id": "authority.communications.instance",
+      "role": "instance",
+      "subject": "communications.records",
+      "uri": "soter-fixture://configuration-template/notion/authority/communications",
+      "reason": "The configured Communications record space remains the instance authority even though this workflow reads only its policy-selection record."
+    },
+    {
+      "id": "authority.slack.provider",
+      "role": "provider",
+      "subject": "slack.workspace",
+      "uri": "soter-fixture://configuration-template/slack/account/operator",
+      "reason": "The selected Slack account supplies provider identity and permission context without becoming communication-policy authority."
+    },
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "uri": "soter-fixture://configuration-template/notion/account/operator",
+      "reason": "The selected Notion account supplies provider identity and permission context without becoming communication-domain authority."
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "uri": "soter-state://runs",
+      "reason": "Private local runtime state owns selected inputs, message content, preparation evidence, and private review material."
+    }
+  ],
+  "effectPolicies": {
+    "read": {
+      "mode": "allow",
+      "reason": "Fixture-contained policy, selected-channel, bounded message-window, and eligible-thread reads may run in private preparation; the connected acquisition mode remains unavailable."
+    },
+    "disclosure": {
+      "mode": "allow",
+      "reason": "Bounded normalized private Slack fixture content may enter selected-work private runtime state with strict minimization; no connected provider response is accepted."
+    },
+    "write": {
+      "mode": "confirm",
+      "reason": "The selected Notion integration carries write capabilities for other workflows, but this Automation declares none and emits no review action, batch, approval, or continuation authority."
+    },
+    "dispatch": {
+      "mode": "prohibit",
+      "reason": "Conversation review never sends, replies, reacts, forwards, or republishes Slack content."
+    },
+    "destructive": {
+      "mode": "prohibit",
+      "reason": "Conversation review never deletes, archives, leaves, or destructively mutates any conversation or message."
+    }
+  },
+  "secretRefs": [
+    { "id": "secret-ref.slack", "provider": "host", "key": "SLACK_OAUTH" },
+    { "id": "secret-ref.notion", "provider": "host", "key": "NOTION_OAUTH" }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "reason": "This configuration exercises Codex projection for fixture-contained review only; host selection does not make the unavailable connected Slack message and thread acquisition mode executable."
+  },
+  "settings": {
+    "integration.notion": {
+      "targets": {
+        "policies": "soter-fixture://configuration-template/notion/collection/policies",
+        "organizations": "soter-fixture://configuration-template/notion/collection/organizations",
+        "contacts": "soter-fixture://configuration-template/notion/collection/contacts",
+        "projects": "soter-fixture://configuration-template/notion/collection/projects",
+        "updates": "soter-fixture://configuration-template/notion/collection/updates",
+        "tasks": "soter-fixture://configuration-template/notion/collection/tasks",
+        "meetings": "soter-fixture://configuration-template/notion/collection/meetings",
+        "documents": "soter-fixture://configuration-template/notion/collection/documents",
+        "channels": "soter-fixture://configuration-template/notion/collection/channels"
+      }
+    },
+    "integration.slack": {
+      "workspaceId": "soter-fixture://configuration-template/slack/workspace/contained"
+    }
+  }
+}

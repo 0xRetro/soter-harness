@@ -1,0 +1,179 @@
+{
+  "$contract": "soter://contracts/workflow-definition/v2",
+  "contractVersion": "2.0.0",
+  "id": "automation.authoring-a-policy-standard",
+  "version": "0.1.0",
+  "title": "Author a policy standard",
+  "summary": "Authors one subject-scoped policy standard from declared sources, explicit unknowns, and separately confirmed proposals without inventing organization law.",
+  "ownership": {
+    "layer": "automation",
+    "domain": "policy-governance",
+    "legacyLayer": "skill",
+    "responsibility": "outcome-definition"
+  },
+  "lifecycle": {
+    "state": "active-host-guided",
+    "activation": {
+      "state": "active",
+      "reasonCode": "WORKFLOW_HOST_GUIDANCE_ACTIVE",
+      "proceduralAuthority": "target",
+      "delivery": "host-skill",
+      "behaviorParity": "passed",
+      "evidence": [
+        {
+          "path": "soter/evidence/development/development-agent-migration-evidence.claude.authoring-a-policy-standard.json",
+          "fingerprint": "sha256:aa467d90a671b441bb8f807f04cd90a0b0ddab049745347802dbcd9122e22d30",
+          "host": "claude"
+        },
+        {
+          "path": "soter/evidence/development/development-agent-migration-evidence.codex.authoring-a-policy-standard.json",
+          "fingerprint": "sha256:e461f746a8a49eeb0349977ece4f3ce4e02c3fed08e430f68164d3121b8b8396",
+          "host": "codex"
+        }
+      ],
+      "permittedNextAction": "invoke-through-selected-host"
+    },
+    "development": {
+      "requestContract": {
+        "id": "soter://contracts/development-request/v1",
+        "path": "soter/contracts/development-request.schema.json"
+      },
+      "resultContract": {
+        "id": "soter://contracts/development-result/v1",
+        "path": "soter/contracts/development-result.schema.json"
+      },
+      "workspacePolicy": {
+        "id": "settings.kernel.soter.development-workspace",
+        "path": "soter/kernel/development-workspace.settings.json",
+        "fingerprint": "sha256:84ea480a61e67ac271b9cb3bb58ef338f0430d9a04d772d3ec47cad17175bfc1"
+      },
+      "supportedHosts": [
+        "codex",
+        "claude"
+      ]
+    },
+    "effectBoundary": {
+      "localWorkspaceRead": "request-scoped",
+      "localWorkspaceWrite": "request-scoped",
+      "localCommand": "request-scoped",
+      "subagentDispatch": "request-scoped",
+      "providerRead": "separate-authority",
+      "providerWrite": "separate-authority",
+      "publication": "separate-authority",
+      "merge": "separate-authority",
+      "protectedRootMutation": "separate-authority",
+      "hostRealization": "separate-authority",
+      "authority": "development-request-only"
+    }
+  },
+  "intent": {
+    "goal": "Prepare one provenance-complete policy standard whose given, found, proposed, and not-defined material remains mechanically distinguishable.",
+    "useWhen": [
+      "One subject needs a new or expanded rules-first policy standard."
+    ],
+    "excludeWhen": [
+      "Only schema drift, provider write mechanics, or a Process definition is in scope."
+    ]
+  },
+  "procedure": [
+    {
+      "id": "resolve-single-subject",
+      "sequence": 1,
+      "outcome": "Resolve one subject and its existing registry record before deciding create versus expansion.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "gather-provenance",
+      "sequence": 2,
+      "outcome": "Gather definitions, classifications, rules, and lifecycle facts with given, found, or proposed provenance.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "shape-complete-draft",
+      "sequence": 3,
+      "outcome": "Apply the governed policy shape and expose every unresolved decision as not defined.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "resolve-bounded-relations",
+      "sequence": 4,
+      "outcome": "Resolve exact relation targets and bounded linked-process candidates before declaring lookup gaps.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "confirm-decisions",
+      "sequence": 5,
+      "outcome": "Present the draft, decisions needed, and proposals awaiting confirmation as separate exact lists.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "write-and-verify",
+      "sequence": 6,
+      "outcome": "After exact confirmation only, apply the current-state write, change log, and read-after-write verification.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    }
+  ],
+  "safeguards": [
+    "Never infer organization policy from schema vocabulary alone.",
+    "Never hide proposals inside finished-looking prose or treat a batch approval as subject-level confirmation.",
+    "Never write before the complete decision and proposal lists are confirmed."
+  ],
+  "evaluationSet": {
+    "id": "evaluation-set.authoring-a-policy-standard",
+    "path": "soter/automations/authoring-a-policy-standard/evaluations.json"
+  },
+  "guide": {
+    "id": "workflow-guide.authoring-a-policy-standard",
+    "path": "soter/automations/authoring-a-policy-standard/guide.json"
+  },
+  "potentialEffects": [
+    "read",
+    "disclosure",
+    "write"
+  ],
+  "source": {
+    "presence": "removed",
+    "legacyPath": ".claude/skills/authoring-a-policy-standard/SKILL.md",
+    "legacyFingerprint": "sha256:9937be551ab6a21f0decd95a09bd6a1b9d3c1bc56bec15cf861cde0732c76d2f"
+  },
+  "privacy": {
+    "rawSourceIncluded": false,
+    "workspaceSpecificValuesIncluded": false,
+    "credentialsIncluded": false,
+    "privateInputsIncluded": false
+  },
+  "limitations": [
+    "This normalized definition preserves inspectable intent only; it has no operator runtime, provider binding, effect authority, or behavior parity.",
+    "The fingerprinted legacy source remains canonical until a separate implemented and evidenced runtime migration removes that fallback."
+  ]
+}

@@ -6,7 +6,7 @@
   "layer": "automation",
   "releaseStage": "experimental",
   "evidenceMaturity": "declared",
-  "summary": "Turns one recorded meeting into grounded summaries and linked CRM records through one reviewable batch.",
+  "summary": "Turns one recorded meeting into a grounded private review of a Meeting summary and linked Task fold, then holds the complete write group. The current Core verifier supports only one observation per operation and cannot prove the summary's required fields-and-body read-back.",
   "dependencies": [
     {
       "pack": "core.runtime",
@@ -18,7 +18,25 @@
       "pack": "context.crm",
       "version": "^0.1.0",
       "optional": false,
-      "reason": "Meeting meaning, record shapes, relationships, and authorities belong to CRM context."
+      "reason": "Organization and customer-relationship identity belong to CRM Context."
+    },
+    {
+      "pack": "context.projects",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Project identity and project-to-Task relationships belong to Projects Context."
+    },
+    {
+      "pack": "context.tasks",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Task identity, lifecycle, assignment, dates, policy, and update meaning belong to Tasks Context."
+    },
+    {
+      "pack": "context.meetings",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Meeting, summary, participant, commitment, and transcript-relationship meaning belong to Meetings Context."
     }
   ],
   "capabilities": {
@@ -33,25 +51,31 @@
         "id": "crm.records.read",
         "version": "^1.0.0",
         "optional": false,
-        "reason": "The automation must resolve authorities, policies, relationships, and existing records."
+        "reason": "The automation must resolve exact CRM organizations referenced by the selected meeting."
+      },
+      {
+        "id": "projects.records.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "The automation must resolve exact Projects referenced by grounded organizations."
+      },
+      {
+        "id": "tasks.records.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "The automation must resolve exact Task candidates referenced by grounded Projects."
+      },
+      {
+        "id": "meetings.records.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "The automation must resolve the exact Meeting matching the selected recording URI."
       },
       {
         "id": "documents.content.read",
         "version": "^1.0.0",
         "optional": false,
-        "reason": "The automation must load each applicable policy body and Core must verify the exact body of a created meeting summary."
-      },
-      {
-        "id": "crm.records.create",
-        "version": "^1.0.0",
-        "optional": false,
-        "reason": "Approved summaries and tasks are created through the configured CRM record provider."
-      },
-      {
-        "id": "crm.records.update",
-        "version": "^1.0.0",
-        "optional": false,
-        "reason": "Approved folding of existing meeting-derived tasks requires bounded updates."
+        "reason": "The automation must load each applicable policy body for grounded private review."
       }
     ],
     "provides": []
@@ -61,25 +85,60 @@
       "purpose": "applicable-policy",
       "capability": "documents.content.read",
       "authorityRole": "definition",
-      "authoritySubject": "crm.records",
+      "authoritySubject": "meetings.records",
+      "minimum": 2,
+      "maximum": 2,
+      "reason": "Meeting intake must ground the exact Meeting and Meeting-summary policy documents before proposing governed outcomes."
+    },
+    {
+      "purpose": "applicable-policy",
+      "capability": "documents.content.read",
+      "authorityRole": "definition",
+      "authoritySubject": "tasks.records",
       "minimum": 1,
-      "maximum": 10,
-      "reason": "Meeting intake must ground every explicitly applicable policy source before proposing governed outcomes."
+      "maximum": 1,
+      "reason": "Meeting intake must ground the exact Tasks policy document before proposing a Task fold."
     }
   ],
   "authorities": [
     { "role": "definition", "subject": "crm.records", "required": true },
     { "role": "instance", "subject": "crm.records", "required": true },
+    { "role": "definition", "subject": "projects.records", "required": true },
+    { "role": "instance", "subject": "projects.records", "required": true },
+    { "role": "definition", "subject": "tasks.records", "required": true },
+    { "role": "instance", "subject": "tasks.records", "required": true },
+    { "role": "definition", "subject": "meetings.records", "required": true },
+    { "role": "instance", "subject": "meetings.records", "required": true },
     { "role": "provider", "subject": "meeting.transcript", "required": true },
     { "role": "evidence", "subject": "runtime.runs", "required": true }
   ],
-  "effects": ["read", "disclosure", "write"],
+  "effects": ["read", "disclosure"],
   "operator": {
     "input": "soter/automations/meeting-intake/operator-input.json",
     "preparation": {
       "module": "soter/automations/meeting-intake/prepare.mjs",
       "export": "prepareMeetingIntakeRun",
-      "containment": "fixture"
+      "containment": "fixture",
+      "derivedReviewContract": "soter/automations/meeting-intake/derived-review.json"
+    },
+    "acquisition": {
+      "module": "soter/automations/meeting-intake/context.mjs",
+      "prepareExport": "prepareMeetingIntakeConnectedContext",
+      "finalizeExport": "finalizeMeetingIntakeConnectedContext",
+      "containment": "connected",
+      "recordRequirements": [
+        { "capability": "meetings.records.read", "recordTypes": ["meeting"] },
+        { "capability": "crm.records.read", "recordTypes": ["organization"] },
+        { "capability": "projects.records.read", "recordTypes": ["project"] },
+        { "capability": "tasks.records.read", "recordTypes": ["task"] }
+      ]
+    },
+    "proposal": {
+      "module": "soter/automations/meeting-intake/proposal.mjs",
+      "export": "createMeetingIntakeProposal",
+      "schema": "soter/automations/meeting-intake/proposal.schema.json",
+      "inputSchema": "soter/automations/meeting-intake/proposal-input.schema.json",
+      "derivedReviewContract": "soter/automations/meeting-intake/derived-review.json"
     }
   },
   "artifacts": [
@@ -92,11 +151,11 @@
       "role": "implementation"
     },
     {
-      "path": "soter/automations/meeting-intake/context.mjs",
-      "role": "implementation"
+      "path": "soter/automations/meeting-intake/scenario.mjs",
+      "role": "evaluation"
     },
     {
-      "path": "soter/automations/meeting-intake/transaction.mjs",
+      "path": "soter/automations/meeting-intake/context.mjs",
       "role": "implementation"
     },
     {
@@ -106,6 +165,30 @@
     {
       "path": "soter/automations/meeting-intake/decision.schema.json",
       "role": "definition"
+    },
+    {
+      "path": "soter/automations/meeting-intake/proposal.mjs",
+      "role": "implementation"
+    },
+    {
+      "path": "soter/automations/meeting-intake/proposal.schema.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/meeting-intake/proposal-input.schema.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/meeting-intake/derived-review.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/meeting-intake/meeting-intake.selftest.mjs",
+      "role": "evaluation"
+    },
+    {
+      "path": "soter/automations/meeting-intake/connected-context.selftest.mjs",
+      "role": "evaluation"
     },
     {
       "path": "soter/automations/meeting-intake/settings.json",
@@ -122,6 +205,10 @@
     {
       "path": "soter/scenarios/meeting-intake/grounded-and-gated.scenario.json",
       "role": "evaluation"
+    },
+    {
+      "path": "soter/scenarios/meeting-intake/preparation.scenario.json",
+      "role": "evaluation"
     }
   ],
   "compatibility": {
@@ -129,11 +216,12 @@
     "hosts": ["codex", "claude"]
   },
   "verification": {
-    "maxLevel": "static",
+    "maxLevel": "fixture",
     "scenarios": [
       "soter/scenarios/meeting-intake/happy-path.scenario.json",
       "soter/scenarios/meeting-intake/stale-meeting.scenario.json",
-      "soter/scenarios/meeting-intake/grounded-and-gated.scenario.json"
+      "soter/scenarios/meeting-intake/grounded-and-gated.scenario.json",
+      "soter/scenarios/meeting-intake/preparation.scenario.json"
     ]
   }
 }

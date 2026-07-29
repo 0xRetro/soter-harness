@@ -17,9 +17,9 @@
   },
   "expected": {
     "capabilityOrder": [
-      "crm.records.read",
+      "meetings.records.read",
       "meeting.transcript.read",
-      "crm.records.read"
+      "tasks.records.read"
     ],
     "effectModes": {
       "read": "allow",
@@ -30,20 +30,20 @@
     },
     "outcomes": [
       "unsupported-commitment.rejected",
-      "grounded-record-batch.previewed",
-      "writes-held-for-confirmation"
+      "grounded-private-complete-group.previewed",
+      "writes-held-for-complete-readback"
     ],
     "invariants": [
       "user-assertion-does-not-replace-source",
       "no-fabricated-grounding",
-      "no-write-before-batch-confirmation",
+      "no-write-authority-created",
       "external-person-never-assigned-internal-task"
     ],
     "evidence": [
       "transcript-source-provenance",
       "rejected-claim-disposition",
-      "batch-preview",
-      "write-gate-state"
+      "private-complete-group-review",
+      "complete-meeting-readback-unavailable"
     ]
   },
   "sourceCases": [

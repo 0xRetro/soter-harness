@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/policy-standard-model/v1",
+  "title": "Soter portable policy-standard model",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "pack",
+    "version",
+    "subject",
+    "identity",
+    "sectionOrder",
+    "classification",
+    "rules",
+    "lifecycle",
+    "fields",
+    "coverage",
+    "currentState",
+    "changeLog",
+    "privacy",
+    "limitations"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/policy-standard-model/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "const": "model.context.policy.standard" },
+    "pack": { "const": "context.policy" },
+    "version": { "$ref": "#/$defs/version" },
+    "subject": { "const": "policy.standard" },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cardinality", "subjectIdentityRequired"],
+      "properties": {
+        "cardinality": { "const": "one-per-subject" },
+        "subjectIdentityRequired": { "const": true }
+      }
+    },
+    "sectionOrder": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "definition",
+          "scope",
+          "classifications",
+          "rules",
+          "lifecycle-and-states",
+          "fields",
+          "linked-processes",
+          "change-control",
+          "change-log"
+        ]
+      }
+    },
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dimensionShape",
+        "requiredFacts",
+        "valuesAsList",
+        "lifecycleExcluded",
+        "extensionCriteriaLocation"
+      ],
+      "properties": {
+        "dimensionShape": { "const": "uniform" },
+        "requiredFacts": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["requirement", "classifies", "proven-by", "values"]
+          }
+        },
+        "valuesAsList": { "const": true },
+        "lifecycleExcluded": { "const": true },
+        "extensionCriteriaLocation": { "const": "change-control" }
+      }
+    },
+    "rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["families", "imperative", "enforcerRequired", "determinationRuleIds"],
+      "properties": {
+        "families": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["data", "operating", "determination"]
+          }
+        },
+        "imperative": { "const": true },
+        "enforcerRequired": { "const": true },
+        "determinationRuleIds": { "const": true }
+      }
+    },
+    "lifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["transitionActorRequired", "transitionGateRequired", "encodedStateOwnedHere"],
+      "properties": {
+        "transitionActorRequired": { "const": true },
+        "transitionGateRequired": { "const": true },
+        "encodedStateOwnedHere": { "const": true }
+      }
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "implementationReferenceRequired",
+        "relationRuleRequired",
+        "instanceRepresentationAuthority"
+      ],
+      "properties": {
+        "implementationReferenceRequired": { "const": true },
+        "relationRuleRequired": { "const": true },
+        "instanceRepresentationAuthority": { "const": "configured-live-source" }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "classificationDeterminationRequired",
+        "classificationChangeControlRequired",
+        "transitionOperatingRuleRequired",
+        "fieldConstraintDataRuleRequired",
+        "unknownMarker"
+      ],
+      "properties": {
+        "classificationDeterminationRequired": { "const": true },
+        "classificationChangeControlRequired": { "const": true },
+        "transitionOperatingRuleRequired": { "const": true },
+        "fieldConstraintDataRuleRequired": { "const": true },
+        "unknownMarker": { "const": "not-defined" }
+      }
+    },
+    "currentState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["currentOnly", "proposalMarker", "proposalDisposition", "placeholders"],
+      "properties": {
+        "currentOnly": { "const": true },
+        "proposalMarker": { "const": "proposed" },
+        "proposalDisposition": { "const": "confirm-or-drop" },
+        "placeholders": { "const": "prohibited" }
+      }
+    },
+    "changeLog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["order", "versioned"],
+      "properties": {
+        "order": { "const": "newest-first" },
+        "versioned": { "const": true }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "credentialsIncluded",
+        "privateInstancesIncluded",
+        "rawProviderResponsesIncluded",
+        "workspaceIdentifiersIncluded"
+      ],
+      "properties": {
+        "credentialsIncluded": { "const": false },
+        "privateInstancesIncluded": { "const": false },
+        "rawProviderResponsesIncluded": { "const": false },
+        "workspaceIdentifiersIncluded": { "const": false }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 20 }
+    }
+  },
+  "$defs": {
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)[.](0|[1-9][0-9]*)[.](0|[1-9][0-9]*)$"
+    }
+  }
+}

@@ -1,11 +1,14 @@
 import path from 'node:path';
 
 import { validateJsonSchema } from '../kernel/verify.mjs';
-import { getExactDurableAutomationProposal } from './automation-proposals.mjs';
+import {
+  getExactDurableAutomationProposal,
+  inspectContextSnapshotCurrentness
+} from './automation-proposals.mjs';
 import { compileAutomationConnectedSelection } from './connected-compilers.mjs';
 import { containsCredentialMaterial } from './host-runtime.mjs';
 import { fingerprintJson, readJson } from './lib/canonical-json.mjs';
-import { changeSetScopeFingerprint } from './transaction.mjs';
+import { changeSetScopeFingerprint } from './connected-scope.mjs';
 
 const CHANGE_SET_CONTRACT = 'soter://contracts/connected-change-set/v2';
 const BATCH_CONTRACT = 'soter://contracts/connected-operation-batch/v2';
@@ -31,6 +34,16 @@ function batchFingerprint(batch) {
   const unsigned = structuredClone(batch);
   delete unsigned.batchFingerprint;
   return fingerprintJson(unsigned);
+}
+
+function assertProposalContextCurrent(root, snapshot, at) {
+  const currentness = inspectContextSnapshotCurrentness({ root, snapshot, at });
+  if (currentness.state !== 'current') {
+    throw codedError(
+      'PROPOSAL_CONNECTED_BATCH_CONTEXT_STALE',
+      'Connected proposal authority requires current exact Context observations.'
+    );
+  }
 }
 
 function proposedActionBindings(proposal) {
@@ -313,6 +326,7 @@ export async function createProposalConnectedBatch({
       'Stale proposal material cannot create a connected batch.'
     );
   }
+  assertProposalContextCurrent(resolvedRoot, exact.snapshot, createdAt);
   if (!Array.isArray(actionIds) || actionIds.length < 1 || actionIds.length > 100
     || actionIds.some((id) => typeof id !== 'string' || !id)
     || new Set(actionIds).size !== actionIds.length) {
@@ -386,7 +400,8 @@ export async function assertExactProposalConnectedBatch({
   lockPath,
   batch,
   changeSet,
-  expectedHost
+  expectedHost,
+  at = batch?.createdAt
 }) {
   assertProposalConnectedBatch({ root, batch, changeSet });
   const expected = await createProposalConnectedBatch({
@@ -406,5 +421,12 @@ export async function assertExactProposalConnectedBatch({
       'Connected batch does not match the exact current proposal, private material, compiler, and lock.'
     );
   }
+  const exact = getExactDurableAutomationProposal({
+    root: path.resolve(root),
+    lockPath,
+    proposalId: changeSet.basis.proposal.id,
+    expectedHost
+  });
+  assertProposalContextCurrent(path.resolve(root), exact.snapshot, at);
   return { batch, changeSet };
 }

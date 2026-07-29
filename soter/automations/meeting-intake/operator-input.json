@@ -23,7 +23,7 @@
       "type": "uri",
       "required": true,
       "exposure": "private",
-      "examples": ["otter://fixture/meeting.fixture-001"]
+      "examples": ["https://otter.ai/u/meeting_fixture_001"]
     },
     {
       "id": "operatorGoal",

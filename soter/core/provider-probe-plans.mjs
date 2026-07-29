@@ -28,6 +28,10 @@ const REQUIRED_PLAN_EXPORTS = [
 ];
 const STEP_KINDS = new Set(['identity', 'schema', 'read', 'document']);
 
+function compareCodepoint(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 function contractFailures(root, value, schemaPath, label) {
   const schema = readJson(path.join(root, schemaPath));
   const failures = validateJsonSchema(value, schema);
@@ -71,6 +75,56 @@ function probePlanId(probeId) {
   return 'probeplan.' + probeId.slice('probe.'.length);
 }
 
+function validationError(message) {
+  return Object.assign(new Error(message), { kind: 'validation' });
+}
+
+function selectedOperatorRecordRequirements(root, lock, provider) {
+  const requirements = new Map();
+  const selectedAutomations = lock.packs.filter((pack) => pack.layer === 'automation');
+  for (const locked of selectedAutomations) {
+    const manifest = readJson(path.join(root, 'soter', 'packs', locked.id, 'pack.json'));
+    if (manifest.id !== locked.id
+      || manifest.version !== locked.version
+      || manifest.layer !== 'automation'
+      || fingerprintJson(manifest) !== locked.manifestFingerprint) {
+      throw validationError(
+        'Selected Automation manifest does not match the exact provider probe lock: '
+          + locked.id + '.'
+      );
+    }
+    const phases = [
+      manifest.operator?.acquisition?.recordRequirements || [],
+      manifest.operator?.connection?.recordRequirements || []
+    ];
+    for (const phase of phases) {
+      for (const requirement of phase) {
+        const bindings = lock.bindings.filter((binding) => {
+          return binding.capability === requirement.capability;
+        });
+        if (bindings.length !== 1) {
+          throw validationError(
+            'Selected Automation record requirement must resolve one exact provider binding: '
+              + requirement.capability + '; found ' + bindings.length + '.'
+          );
+        }
+        if (bindings[0].providerPack !== provider.pack) continue;
+        if (!requirements.has(requirement.capability)) {
+          requirements.set(requirement.capability, new Set());
+        }
+        const recordTypes = requirements.get(requirement.capability);
+        for (const recordType of requirement.recordTypes) recordTypes.add(recordType);
+      }
+    }
+  }
+  return [...requirements].sort(([left], [right]) => {
+    return compareCodepoint(left, right);
+  }).map(([capability, recordTypes]) => ({
+    capability,
+    recordTypes: [...recordTypes].sort(compareCodepoint)
+  }));
+}
+
 function assertPlanRuntime(provider) {
   assertMcpRuntime(provider);
   const missing = REQUIRED_PLAN_EXPORTS.filter((field) => !provider.runtime[field]);
@@ -80,11 +134,6 @@ function assertPlanRuntime(provider) {
         + missing.join(', ') + '.'
     );
   }
-}
-
-export function providerUsesProbePlan(root, lock, providerImplementation) {
-  const { provider } = selectedProvider(path.resolve(root), lock, providerImplementation);
-  return REQUIRED_PLAN_EXPORTS.every((field) => typeof provider.runtime[field] === 'string');
 }
 
 function validateTranslatorStep(root, lock, provider, step, ids) {
@@ -126,7 +175,8 @@ function validateTranslatorStep(root, lock, provider, step, ids) {
       protocol: 'mcp',
       server: provider.runtime.server,
       operation: step.tool,
-      tool: hostTool.nativeTool
+      tool: hostTool.nativeTool,
+      responseProfile: hostTool.responseProfile
     },
     arguments: structuredClone(step.arguments),
     argumentsFingerprint: fingerprintJson(step.arguments)
@@ -139,6 +189,7 @@ async function derivePlan({
   providerImplementation,
   probeId,
   validForSeconds,
+  configuration,
   at,
   translator
 }) {
@@ -151,6 +202,11 @@ async function derivePlan({
   assertPlanRuntime(provider);
   const scope = probePlan(resolvedRoot, lock, provider, bindings);
   const sources = providerProbeSources(lock, bindings);
+  const operatorRecordRequirements = selectedOperatorRecordRequirements(
+    resolvedRoot,
+    lock,
+    provider
+  );
   const implementation = await loadProviderModule(resolvedRoot, provider, translator);
   const prepare = implementation[provider.runtime.probePlanExport];
   if (typeof prepare !== 'function') {
@@ -164,6 +220,7 @@ async function derivePlan({
     sources,
     settings: lock.settings || {},
     mappings: loadProviderMappings(resolvedRoot, provider),
+    operatorRecordRequirements,
     at
   });
   if (!prepared || !Array.isArray(prepared.steps)
@@ -182,6 +239,7 @@ async function derivePlan({
     plan: {
       id: probePlanId(probeId),
       probeId,
+      configuration: structuredClone(configuration),
       scope,
       validForSeconds,
       steps
@@ -273,6 +331,12 @@ export function assertProviderProbePlanCheckpoint(root, checkpoint) {
   );
   if (checkpoint.checkpointFingerprint !== checkpointFingerprint(checkpoint)
     || checkpoint.planFingerprint !== fingerprintJson(checkpoint.plan)
+    || fingerprintJson(checkpoint.configuration)
+      !== fingerprintJson(checkpoint.plan.configuration)
+    || checkpoint.configuration.lockPath !== checkpoint.configurationLock.path
+    || checkpoint.configuration.lockFingerprint
+      !== checkpoint.configurationLock.fingerprint
+    || checkpoint.configuration.graphFingerprint !== checkpoint.graphFingerprint
     || checkpoint.steps.length !== checkpoint.plan.steps.length) {
     throw new Error('Provider probe checkpoint fingerprint or plan is stale.');
   }
@@ -319,10 +383,22 @@ export async function createProviderProbePlanCheckpoint({
   lockPath,
   providerImplementation,
   probeId,
+  configuration,
   validForSeconds = 300,
   at,
   translator = null
 }) {
+  if (!configuration
+    || configuration.configurationBasis !== 'private-active'
+    || configuration.lockPath !== lockPath
+    || configuration.lockFingerprint !== fingerprintLock(lock)
+    || configuration.graphFingerprint !== lock.graphFingerprint
+    || configuration.name !== lock.configuration.name
+    || configuration.path !== lock.configuration.path) {
+    throw new Error(
+      'Provider probe plan requires the exact private-active configuration selection.'
+    );
+  }
   if (!Number.isInteger(validForSeconds) || validForSeconds < 60 || validForSeconds > 900) {
     throw new Error('Provider probes must be valid for an integer duration from 60 through 900 seconds.');
   }
@@ -339,6 +415,7 @@ export async function createProviderProbePlanCheckpoint({
     providerImplementation,
     probeId,
     validForSeconds,
+    configuration,
     at,
     translator
   });
@@ -350,6 +427,7 @@ export async function createProviderProbePlanCheckpoint({
     createdAt: at,
     updatedAt: at,
     state: 'failed',
+    configuration: structuredClone(configuration),
     configurationLock: {
       path: lockPath,
       fingerprint: fingerprintLock(lock)
@@ -387,6 +465,7 @@ async function exactDerivedPlan({ root, lock, checkpoint, translator }) {
     providerImplementation: checkpoint.provider.implementation,
     probeId: checkpoint.plan.probeId,
     validForSeconds: checkpoint.plan.validForSeconds,
+    configuration: checkpoint.configuration,
     at: checkpoint.createdAt,
     translator
   });
@@ -510,7 +589,7 @@ export async function completeProviderProbePlanStep({
     if (priorResponse(checkpoint, callId, response)) {
       return { checkpoint: structuredClone(checkpoint), idempotent: true };
     }
-    throw new Error('Provider probe response does not match the exact current step call.');
+    throw new Error('Provider probe response does not match the exact current call.');
   }
   if (checkpoint.configurationLock.fingerprint !== fingerprintLock(lock)
     || checkpoint.graphFingerprint !== lock.graphFingerprint) {
@@ -537,6 +616,7 @@ export async function completeProviderProbePlanStep({
   try {
     const result = await complete({
       step: structuredClone(source),
+      responseProfile: currentCall.transport.responseProfile,
       response,
       plan: next.plan.scope,
       settings: lock.settings || {},
@@ -612,14 +692,15 @@ export function failProviderProbePlanStep({
   at
 }) {
   assertProviderProbePlanCheckpoint(root, checkpoint);
+  const normalized = normalizedError(error);
   const currentCall = providerProbePlanCurrentCall(checkpoint);
   if (!currentCall || currentCall.id !== callId) {
     const previous = checkpoint.steps.find((step) => step.call?.id === callId);
-    if (previous?.call?.error?.kind === error.kind
-      && previous.call.error.message === error.message) {
+    if (previous?.call?.error
+      && fingerprintJson(previous.call.error) === fingerprintJson(normalized)) {
       return { checkpoint: structuredClone(checkpoint), idempotent: true };
     }
-    throw new Error('Provider probe failure does not match the exact current step call.');
+    throw new Error('Provider probe failure does not match the exact current call.');
   }
   if (checkpoint.configurationLock.fingerprint !== fingerprintLock(lock)
     || checkpoint.graphFingerprint !== lock.graphFingerprint) {
@@ -627,7 +708,6 @@ export function failProviderProbePlanStep({
   }
   const next = structuredClone(checkpoint);
   const runtimeStep = next.steps.find((step) => step.id === next.currentStepId);
-  const normalized = normalizedError(error);
   runtimeStep.state = 'failed';
   runtimeStep.call = {
     ...runtimeStep.call,

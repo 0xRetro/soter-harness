@@ -1,0 +1,208 @@
+{
+  "contractVersion": "2.0.0",
+  "id": "workflow-guide.authoring-a-policy-standard",
+  "contentFingerprint": "sha256:35a7fc813492833aa8fa9d0c59c87807a501be07eff96e60a4b176b9e3990995",
+  "$contract": "soter://contracts/workflow-guide/v2",
+  "workflow": {
+    "id": "automation.authoring-a-policy-standard",
+    "version": "0.1.0",
+    "definitionPath": "soter/automations/authoring-a-policy-standard/definition.json",
+    "definitionFingerprint": "sha256:474983ecfed277794ec651d5332803d9cbf7238427ab732915cf5c8cdbd2673a",
+    "evaluationSetPath": "soter/automations/authoring-a-policy-standard/evaluations.json",
+    "evaluationSetFingerprint": "sha256:1b8663d70282663c178744296c0b2319cd9f40173585aa1b8af8cfdfe75d2de7"
+  },
+  "skill": {
+    "name": "authoring-a-policy-standard",
+    "description": "Author or expand one rules-first policy standard with explicit given, found, proposed, and not-defined provenance. Use for a single governed policy subject; do not use for schema drift, Process definitions, or provider write mechanics.",
+    "invocation": "explicit-only",
+    "displayName": "Author a policy standard",
+    "shortDescription": "Build one provenance-complete rules-first policy standard.",
+    "defaultPrompt": "Use $authoring-a-policy-standard to prepare this subject's policy without inventing rules or hiding unresolved decisions."
+  },
+  "status": {
+    "state": "active",
+    "reasonCode": "WORKFLOW_GUIDE_ACTIVE",
+    "proceduralAuthority": "target",
+    "behaviorParity": "passed",
+    "delivery": "host-skill",
+    "evidence": [
+      {
+        "path": "soter/evidence/development/development-agent-migration-evidence.claude.authoring-a-policy-standard.json",
+        "fingerprint": "sha256:aa467d90a671b441bb8f807f04cd90a0b0ddab049745347802dbcd9122e22d30",
+        "host": "claude"
+      },
+      {
+        "path": "soter/evidence/development/development-agent-migration-evidence.codex.authoring-a-policy-standard.json",
+        "fingerprint": "sha256:e461f746a8a49eeb0349977ece4f3ce4e02c3fed08e430f68164d3121b8b8396",
+        "host": "codex"
+      }
+    ],
+    "permittedNextAction": "invoke-through-selected-host"
+  },
+  "authority": {
+    "kind": "procedural-guidance",
+    "executionAuthority": "none",
+    "effectAuthority": "none",
+    "approvalAuthority": "none",
+    "reasonCode": "WORKFLOW_GUIDE_NO_EXECUTION_AUTHORITY",
+    "providerTransactionAuthority": "none"
+  },
+  "stepDetails": [
+    {
+      "id": "resolve-single-subject",
+      "sequence": 1,
+      "instructions": [
+        "Name one policy subject and inspect the configured policy registry for an exact existing definition before choosing create or expansion.",
+        "Treat a batch as separate subject-level decisions even when their review is presented together.",
+        "Bind the applicable portable policy shape, source authorities, and current target identity before drafting."
+      ],
+      "flexibility": [
+        "Several subjects may share one review meeting, but each keeps a separate draft, decision list, proposal list, and confirmation scope."
+      ],
+      "stopConditions": [
+        "Stop when subject identity, existing-record identity, or governing policy shape is ambiguous."
+      ]
+    },
+    {
+      "id": "gather-provenance",
+      "sequence": 2,
+      "instructions": [
+        "Collect definition, classifications, rules, lifecycle, and change expectations from the operator and named sources.",
+        "Mark each fact as given, found, or proposed; record exact source identity for every found fact.",
+        "Treat schema names, types, options, and relations as found structure only; any claim about meaning, requirement, or determination logic remains proposed unless another authority states it."
+      ],
+      "flexibility": [
+        "Draft as few or as many proposals as useful, but keep every proposal explicit and separately reviewable."
+      ],
+      "stopConditions": [
+        "Stop before presenting inferred schema semantics as organization policy."
+      ]
+    },
+    {
+      "id": "shape-complete-draft",
+      "sequence": 3,
+      "instructions": [
+        "Apply the governed policy-standard section order and coverage derivations to the exact subject.",
+        "Write bare not defined for a required policy decision that has no authoritative value; do not omit it or turn it into a guess.",
+        "Keep not defined distinct from a proposed value awaiting explicit acceptance."
+      ],
+      "flexibility": [],
+      "stopConditions": [
+        "Stop if the registered shape or a required section cannot be resolved from the selected Context contract."
+      ]
+    },
+    {
+      "id": "resolve-bounded-relations",
+      "sequence": 4,
+      "instructions": [
+        "Resolve every named relation target against the current configured registry or provider authority.",
+        "For open-ended linked-process discovery, perform one bounded registry query and one bounded keyword pass.",
+        "Record positive matches as proposals and record the exact lookup attempt when no match exists."
+      ],
+      "flexibility": [
+        "A bounded lookup is sufficient; do not expand into an unbounded workspace crawl."
+      ],
+      "stopConditions": [
+        "Stop before writing not defined for a relation that the configured authority can answer."
+      ]
+    },
+    {
+      "id": "confirm-decisions",
+      "sequence": 5,
+      "instructions": [
+        "Present the complete draft together with a decisions-needed list and a proposals-awaiting-confirmation list.",
+        "Require an explicit decision for each subject and each proposed rule; urgency or polished prose never substitutes for confirmation.",
+        "Keep declined proposals out of the current-state document."
+      ],
+      "flexibility": [
+        "Compress the visual presentation when useful, but preserve itemized decisions and exact subject scopes."
+      ],
+      "stopConditions": [
+        "Stop before any write while proposals, not-defined decisions, or subject-level confirmations remain unresolved."
+      ]
+    },
+    {
+      "id": "write-and-verify",
+      "sequence": 6,
+      "instructions": [
+        "After separate exact authority exists, create or update the single current policy record through the configured capability and include one versioned change-log entry.",
+        "Remove proposed markers only from accepted values and apply any required schema or option change in the same governed batch rather than claiming an unimplemented rule.",
+        "Re-fetch the written record and verify the complete shape, accepted values, change-log entry, and absence of unresolved proposal residue."
+      ],
+      "flexibility": [],
+      "stopConditions": [
+        "Stop before provider effects when the compiler, exact approval, single-use start, or read-after-write verification is unavailable."
+      ]
+    }
+  ],
+  "verification": [
+    "Exactly one current policy record exists for the selected subject.",
+    "Every durable rule is given or found, or was explicitly accepted from the proposal list.",
+    "Every unresolved decision is visibly not defined and never silently absent.",
+    "Every relation is resolved or carries the bounded lookup evidence that established a real gap.",
+    "Any applied write is re-read with its change log and no proposed-marker residue."
+  ],
+  "gotchas": [
+    {
+      "id": "polished-invention",
+      "kind": "baseline",
+      "summary": "A complete-looking policy can hide that every substantive rule was invented from a skeleton or schema under deadline pressure.",
+      "countermeasure": "Expose all proposals in a separate decision list and require itemized subject-level confirmation."
+    },
+    {
+      "id": "schema-is-not-semantics",
+      "kind": "constraint",
+      "summary": "A schema proves that fields and values exist but does not prove what the organization means by them or when they are required.",
+      "countermeasure": "Mark inferred meaning as proposed unless an exact policy authority supplies it."
+    },
+    {
+      "id": "lookup-is-not-decision",
+      "kind": "baseline",
+      "summary": "A resolvable relation can be mislabeled not defined when the author skips the configured registry lookup.",
+      "countermeasure": "Perform the bounded lookup first and reserve not defined for unanswered policy decisions."
+    },
+    {
+      "id": "current-state-only",
+      "kind": "constraint",
+      "summary": "Leaving declined proposals or accepted proposal markers in the durable document makes current policy ambiguous.",
+      "countermeasure": "Drop declined proposals and remove markers only from explicitly accepted values before verification."
+    }
+  ],
+  "references": [
+    {
+      "id": "policy-context",
+      "kind": "pack",
+      "label": "Portable policy-standard contract",
+      "target": "context.policy"
+    },
+    {
+      "id": "schema-audit-workflow",
+      "kind": "workflow",
+      "label": "Schema drift review workflow",
+      "target": "automation.auditing-a-schema-doc"
+    },
+    {
+      "id": "update-workflow",
+      "kind": "workflow",
+      "label": "Bounded existing-record update workflow",
+      "target": "automation.updating-a-notion-page"
+    }
+  ],
+  "source": {
+    "presence": "removed",
+    "legacyPath": ".claude/skills/authoring-a-policy-standard/SKILL.md",
+    "legacyFingerprint": "sha256:9937be551ab6a21f0decd95a09bd6a1b9d3c1bc56bec15cf861cde0732c76d2f",
+    "normalization": "behavior-preserving-with-explicit-authority-boundary"
+  },
+  "privacy": {
+    "rawSourceIncluded": false,
+    "workspaceSpecificValuesIncluded": false,
+    "credentialsIncluded": false,
+    "privateInputsIncluded": false,
+    "providerResponsesIncluded": false
+  },
+  "limitations": [
+    "This procedural guide does not create policy, provider-write, approval, or execution authority.",
+    "Adoption requires independent exact host-skill behavior evidence and a separate governed fallback-removal decision."
+  ]
+}

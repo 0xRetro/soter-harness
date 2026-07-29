@@ -28,6 +28,8 @@ import emailDerivedReviewDefinition from '../../automations/email-triage/derived
 import { validateJsonSchema } from '../../kernel/verify.mjs';
 
 import { App } from '../renderer/src/App';
+import { AutomationProposalDossier } from '../renderer/src/components/AutomationProposalDossier';
+import { CatalogNav } from '../renderer/src/components/CatalogNav';
 import { ConfigView } from '../renderer/src/components/ConfigView';
 import { DistributionView } from '../renderer/src/components/DistributionView';
 import { HostRealizationDesk } from '../renderer/src/components/HostRealizationDesk';
@@ -36,8 +38,9 @@ import { OperatorInputControl } from '../renderer/src/components/OperatorInputCo
 import { OperatorView } from '../renderer/src/components/OperatorView';
 import { previewTitle } from '../renderer/src/components/PreparedWorkDossier';
 import { RunsView } from '../renderer/src/components/RunsView';
-import type { ConnectedApprovalReviewMaterial, OperatorInputField, OperatorInspection } from '../renderer/src/types';
-import { bundleInspectionFixture, configurationChangeInspectionFixture, configurationPreviewFixture, connectedActivityFixture, emailConnectedAcquisitionActivityFixture, emailTriageAutomationProposalFixture, emailTriageAutomationProposalMaterialFixture, emailTriageConfigurationFixture, emailTriageConnectedPlanFixture, emailTriageDerivedReviewFixture, emailTriagePreparedWorkFixture, emailTriageProposalConnectedPreviewFixture, emailTriageReviewBatchFixture, emailTriageReviewBatchMaterialFixture, emailTriageReviewFixture, emailTriageWorkflowFixture, hostRealizationInspectionFixture, meetingIntakePreparedWorkFixture, operatorInspectionFixture, operatorRecoveryInspectionFixture, packInstallInspectionFixture, packReleaseInspectionFixture, preparedWorkFixture, preparedWorkReviewFixture, studioFixture, taskCaptureConfigurationFixture, taskCapturePreparedWorkFixture, taskCaptureReviewFixture, taskCaptureWorkflowFixture } from './fixture';
+import { WorkflowView } from '../renderer/src/components/WorkflowView';
+import type { Activity, ConnectedApprovalReviewMaterial, OperatorInputField, OperatorInspection } from '../renderer/src/types';
+import { bundleInspectionFixture, configurationChangeInspectionFixture, configurationPreviewFixture, connectedAcquisitionPreparedWorkFixture, connectedAcquisitionReviewFixture, connectedActivityFixture, emailConnectedAcquisitionActivityFixture, emailTriageAutomationProposalFixture, emailTriageAutomationProposalMaterialFixture, emailTriageConfigurationFixture, emailTriageConnectedPlanFixture, emailTriageDerivedReviewFixture, emailTriagePreparedWorkFixture, emailTriageProposalConnectedPreviewFixture, emailTriageReviewBatchFixture, emailTriageReviewBatchMaterialFixture, emailTriageReviewFixture, emailTriageWorkflowFixture, hostRealizationInspectionFixture, meetingIntakeHeldAutomationProposalFixture, meetingIntakePreparedWorkFixture, operatorInspectionFixture, operatorRecoveryInspectionFixture, packInstallInspectionFixture, packReleaseInspectionFixture, preparedWorkFixture, preparedWorkReviewFixture, projectCaptureHeldAutomationProposalFixture, projectPulseDerivedReviewFixture, studioFixture, taskCaptureConfigurationFixture, taskCapturePreparedWorkFixture, taskCaptureReviewFixture, taskCaptureWorkflowFixture } from './fixture';
 
 beforeEach(() => {
   const snapshot = studioFixture();
@@ -71,9 +74,20 @@ beforeEach(() => {
     inspectHostRealization: vi.fn().mockResolvedValue({ ok: true as const, inspection: hostRealizationInspectionFixture('started') }),
     getOperatorActivity: vi.fn().mockResolvedValue(operatorInspectionFixture()),
     getPreparedWork: vi.fn().mockImplementation((request: { workId: string }) => Promise.resolve(request.workId.includes('email-triage') ? emailTriagePreparedWorkFixture() : request.workId.includes('task-capture') ? taskCapturePreparedWorkFixture() : request.workId.includes('meeting-intake') ? meetingIntakePreparedWorkFixture() : preparedWorkFixture())),
-    getPreparedWorkReview: vi.fn().mockImplementation((request: { workId: string }) => Promise.resolve({ ok: true as const, material: request.workId.includes('email-triage') ? emailTriageReviewFixture() : request.workId.includes('task-capture') ? taskCaptureReviewFixture() : preparedWorkReviewFixture(request.workId) })),
+    getPreparedWorkReview: vi.fn().mockImplementation((request: { workId: string }) => Promise.resolve({
+      ok: true as const,
+      material: request.workId.includes('connected-acquisition')
+        ? connectedAcquisitionReviewFixture()
+        : request.workId.includes('email-triage')
+          ? emailTriageReviewFixture()
+          : request.workId.includes('task-capture')
+            ? taskCaptureReviewFixture()
+            : preparedWorkReviewFixture(request.workId)
+    })),
     getPreparedWorkDerivedReview: vi.fn().mockImplementation((request: { workId: string }) => Promise.resolve(request.workId.includes('email-triage')
       ? { ok: true as const, material: emailTriageDerivedReviewFixture() }
+      : request.workId.includes('project-pulse')
+        ? { ok: true as const, material: projectPulseDerivedReviewFixture() }
       : { ok: false as const, error: { code: 'PREPARED_DERIVED_REVIEW_MATERIAL_MISSING', message: 'Private derived review material is unavailable for this prepared work.' } })),
     createPreparedReviewBatch: vi.fn().mockResolvedValue({ ok: true as const, batch: emailTriageReviewBatchFixture() }),
     getPreparedReviewBatchMaterial: vi.fn().mockResolvedValue({ ok: true as const, material: emailTriageReviewBatchMaterialFixture() }),
@@ -84,9 +98,19 @@ beforeEach(() => {
     previewProposalConnectedBatch: vi.fn().mockResolvedValue({ ok: true as const, preview: emailTriageProposalConnectedPreviewFixture() }),
     beginProposalConnectedApproval: vi.fn().mockResolvedValue({ ok: true as const, inspection: operatorInspectionFixture() }),
     getConnectedApprovalReview: vi.fn().mockResolvedValue({ ok: true as const, material: testConnectedApprovalReview(operatorInspectionFixture()) }),
-    prepareAutomationRun: vi.fn().mockImplementation((request: { automationId: string }) => Promise.resolve(request.automationId === 'automation.email-triage' ? emailTriagePreparedWorkFixture() : request.automationId === 'automation.task-capture' ? taskCapturePreparedWorkFixture() : request.automationId === 'automation.meeting-intake' ? meetingIntakePreparedWorkFixture() : preparedWorkFixture())),
-    confirmConnectedApproval: vi.fn().mockResolvedValue(operatorInspectionFixture('approved-not-started')),
-    startConnectedTransaction: vi.fn().mockResolvedValue(operatorInspectionFixture('running')),
+    prepareAutomationRun: vi.fn().mockImplementation((request: { automationId: string; preparationMode: string }) => Promise.resolve(
+      request.preparationMode === 'connected-acquisition'
+        ? connectedAcquisitionPreparedWorkFixture()
+        : request.automationId === 'automation.email-triage'
+          ? emailTriagePreparedWorkFixture()
+          : request.automationId === 'automation.task-capture'
+            ? taskCapturePreparedWorkFixture()
+            : request.automationId === 'automation.meeting-intake'
+              ? meetingIntakePreparedWorkFixture()
+              : preparedWorkFixture()
+    )),
+    confirmConnectedApproval: vi.fn().mockResolvedValue({ ok: true as const, inspection: operatorInspectionFixture('approved-not-started') }),
+    startConnectedTransaction: vi.fn().mockResolvedValue({ ok: true as const, inspection: operatorInspectionFixture('running') }),
     prepareConnectedReconciliation: vi.fn().mockResolvedValue(operatorInspectionFixture('running')),
     onWorkspaceInvalidated: vi.fn().mockReturnValue(() => undefined)
   };
@@ -97,6 +121,50 @@ describe('Soter Studio canonical operator projection', () => {
     expect(previewTitle('project-pulse-status')).toBe('Project Pulse');
     expect(previewTitle('meeting-intake-review')).toBe('Meeting Intake');
     expect(previewTitle('task-capture-preview')).toBe('Task Capture');
+  });
+
+  it('renders Project Capture and Meeting Intake held proposals without selection or authority controls', async () => {
+    const snapshot = studioFixture();
+    const meetingWorkflow = snapshot.workflows.find((workflow) => workflow.id === 'automation.meeting-intake')!;
+    const meetingConfiguration = snapshot.configurations.find((configuration) => configuration.name === 'meeting-intake')!;
+    expect(meetingWorkflow.effects).toEqual(['read', 'disclosure']);
+    expect(meetingWorkflow.requiredCapabilities).not.toContain('meetings.records.create');
+    expect(meetingWorkflow.requiredCapabilities).not.toContain('tasks.records.update');
+    expect(meetingWorkflow.scenarios.every((scenario) => scenario.execution === null)).toBe(true);
+    expect(meetingConfiguration.bindings.flatMap((binding) => binding.effects)).not.toContain('write');
+    expect(meetingConfiguration.effectPolicies.find((policy) => policy.effect === 'write')).toMatchObject({
+      mode: 'confirm'
+    });
+
+    for (const [proposal, reasonCodes] of [
+      [projectCaptureHeldAutomationProposalFixture(), ['COMPLETE_PROJECT_READBACK_UNAVAILABLE']],
+      [meetingIntakeHeldAutomationProposalFixture(), ['COMPLETE_MEETING_READBACK_UNAVAILABLE', 'MEETING_LEGACY_EFFECTS_UNAVAILABLE']]
+    ] as const) {
+      expect(validateJsonSchema(proposal, automationProposalSchema)).toEqual([]);
+      const rendered = render(
+        <AutomationProposalDossier
+          proposal={proposal}
+          material={null}
+          error={null}
+          configurationName={proposal.automation.id.slice('automation.'.length)}
+          lockFingerprint={proposal.configurationLockFingerprint}
+          selectedActionIds={[]}
+          selectionDisabled={false}
+          connectedPreview={null}
+          onToggleAction={vi.fn()}
+          onClose={vi.fn()}
+        />
+      );
+
+      expect(screen.getByLabelText('Held proposal boundary')).toHaveTextContent('0 proposed actions');
+      for (const reasonCode of reasonCodes) {
+        expect(screen.getAllByText(reasonCode).length).toBeGreaterThan(0);
+      }
+      expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+      expect(screen.queryByText('Preview exact connected scope')).not.toBeInTheDocument();
+      expect((await axe.run(rendered.container)).violations).toEqual([]);
+      rendered.unmount();
+    }
   });
 
   it('renders schema-valid release evidence without implying install, trust, or runtime claims', async () => {
@@ -480,6 +548,58 @@ describe('Soter Studio canonical operator projection', () => {
     expect((await axe.run(container)).violations).toEqual([]);
   });
 
+  it('renders post-cutover scenario provenance as source tombstones without reviving legacy authority', () => {
+    const snapshot = studioFixture();
+    const workflows = [
+      ...snapshot.workflows,
+      taskCaptureWorkflowFixture(),
+      emailTriageWorkflowFixture()
+    ];
+    expect(workflows.some((workflow) => workflow.migration.state === 'mapped'
+      || workflow.migration.state === 'bridged')).toBe(false);
+    expect(workflows.flatMap((workflow) => workflow.scenarios)
+      .some((scenario) => scenario.migrationState === 'mapped'
+        || scenario.migrationState === 'bridged')).toBe(false);
+    expect(taskCaptureWorkflowFixture().scenarios[0].migrationState).toBe('target-native');
+
+    const workflow = snapshot.workflows.find((item) => item.id === 'automation.meeting-intake')!;
+    const configuration = snapshot.configurations.find((item) => item.name === 'meeting-intake')!;
+    const { container } = render(<WorkflowView workflow={workflow} configuration={configuration} />);
+
+    fireEvent.click(container.querySelector('.scenario-row > summary')!);
+    expect(screen.getByText('Legacy source tombstones')).toBeVisible();
+    expect(screen.getByText('target native')).toBeVisible();
+    expect(container).toHaveTextContent('.claude/evals/processing-a-meeting/happy-path.md');
+    expect(container).not.toHaveTextContent('Mapped legacy cases');
+    expect(container).not.toHaveTextContent('Legacy evaluation remains authoritative');
+  });
+
+  it('renders canonical host incompatibility facts without inventing a fallback', async () => {
+    const workflow = structuredClone(studioFixture().workflows[1]);
+    workflow.id = 'automation.slack-conversation-review';
+    workflow.label = 'Automation Slack Conversation Review';
+    workflow.hostCompatibility = {
+      claude: {
+        state: 'unavailable',
+        reasonCode: 'STRUCTURED_RESPONSE_PROFILE_UNAVAILABLE',
+        reason: 'The declared Claude Slack route does not expose a closed mechanically normalizable message and thread response profile.'
+      },
+      codex: { state: 'compatible' }
+    };
+    const { container } = render(
+      <WorkflowView workflow={workflow} configuration={null} />
+    );
+
+    const compatibility = screen.getByRole('region', {
+      name: 'Workflow host compatibility'
+    });
+    expect(compatibility).toHaveTextContent('codex');
+    expect(compatibility).toHaveTextContent('claude unavailable');
+    expect(compatibility).toHaveTextContent('STRUCTURED_RESPONSE_PROFILE_UNAVAILABLE');
+    expect(within(compatibility).queryByRole('button')).not.toBeInTheDocument();
+    expect((await axe.run(container)).violations).toEqual([]);
+  });
+
   it('keeps typed renderer fixtures aligned with canonical inspection and input contracts', () => {
     const snapshot = studioFixture();
     expect(validateJsonSchema(snapshot, workspaceInspectionSchema)).toEqual([]);
@@ -498,12 +618,14 @@ describe('Soter Studio canonical operator projection', () => {
     expect(validateJsonSchema(meetingIntakePreparedWorkFixture(), preparedWorkSchema)).toEqual([]);
     expect(validateJsonSchema(taskCapturePreparedWorkFixture(), preparedWorkSchema)).toEqual([]);
     expect(validateJsonSchema(taskCapturePreparedWorkFixture('duplicate'), preparedWorkSchema)).toEqual([]);
+    expect(validateJsonSchema(connectedAcquisitionPreparedWorkFixture(), preparedWorkSchema)).toEqual([]);
     expect(validateJsonSchema(emailTriagePreparedWorkFixture(), preparedWorkSchema)).toEqual([]);
     expect(validateJsonSchema(preparedWorkReviewFixture(), preparedWorkReviewSchema)).toEqual([]);
     expect(validateJsonSchema(preparedWorkReviewFixture('work.meeting-intake.ui-test'), preparedWorkReviewSchema)).toEqual([]);
     expect(validateJsonSchema(taskCaptureReviewFixture(), preparedWorkReviewSchema)).toEqual([]);
     expect(validateJsonSchema(emailTriageReviewFixture(), preparedWorkReviewSchema)).toEqual([]);
     expect(validateJsonSchema(emailDerivedReviewDefinition, automationDerivedReviewSchema)).toEqual([]);
+    expect(validateJsonSchema(projectPulseDerivedReviewFixture(), preparedWorkDerivedReviewSchema)).toEqual([]);
     expect(validateJsonSchema(emailTriageDerivedReviewFixture(), preparedWorkDerivedReviewSchema)).toEqual([]);
     expect(validateJsonSchema(emailTriageReviewBatchFixture(), preparedReviewBatchSchema)).toEqual([]);
     expect(validateJsonSchema(emailTriageReviewBatchMaterialFixture(), preparedReviewBatchMaterialSchema)).toEqual([]);
@@ -545,29 +667,179 @@ describe('Soter Studio canonical operator projection', () => {
     ]);
     expect(validateJsonSchema(operatorInspectionFixture(), operatorInspectionSchema)).toEqual([]);
     expect(validateJsonSchema(testConnectedApprovalReview(operatorInspectionFixture()), connectedApprovalReviewSchema)).toEqual([]);
-    for (const state of ['blocked', 'checkpoint-stale', 'verification-failed', 'rolling-back'] as const) {
+    for (const state of ['blocked', 'checkpoint-stale', 'verification-failed', 'basis-unavailable'] as const) {
       expect(validateJsonSchema(operatorRecoveryInspectionFixture(state), operatorInspectionSchema)).toEqual([]);
     }
+    const impossibleRollback = structuredClone(operatorInspectionFixture('running'));
+    (impossibleRollback.activity as { workState: string }).workState = 'rolling-back';
+    expect(validateJsonSchema(impossibleRollback, operatorInspectionSchema).length).toBeGreaterThan(0);
+    const impossibleCompensation = structuredClone(operatorInspectionFixture('running'));
+    (impossibleCompensation.compensation as { state: string }).state = 'running';
+    expect(validateJsonSchema(impossibleCompensation, operatorInspectionSchema).length).toBeGreaterThan(0);
+    const missingBasis = structuredClone(operatorInspectionFixture('running')) as unknown as {
+      configuration: { configurationBasis?: string };
+    };
+    delete missingBasis.configuration.configurationBasis;
+    expect(validateJsonSchema(missingBasis, operatorInspectionSchema).length).toBeGreaterThan(0);
+    const hostileContainedContinuation = structuredClone(operatorInspectionFixture('running'));
+    hostileContainedContinuation.configuration.configurationBasis = 'tracked-contained';
+    expect(validateJsonSchema(hostileContainedContinuation, operatorInspectionSchema).length).toBeGreaterThan(0);
+  });
+
+  it('stages connected acquisition only from the declared private-active mode and renders no review or execution authority', async () => {
+    const workflow = taskCaptureWorkflowFixture();
+    workflow.configurationBasis = 'private-active';
+    const configuration = taskCaptureConfigurationFixture();
+    configuration.configurationBasis = 'private-active';
+    const { container } = render(
+      <OperatorView snapshot={studioFixture()} workflow={workflow} configuration={configuration} initialActivity={null} />
+    );
+
+    await userEvent.type(screen.getByLabelText('Task title'), 'PRIVATE_TASK_UI_SENTINEL');
+    await userEvent.type(screen.getByLabelText('Project reference'), 'project.connected-test');
+    await userEvent.click(screen.getByRole('button', { name: 'Stage connected acquisition' }));
+
+    await waitFor(() => expect(window.soterStudio.prepareAutomationRun).toHaveBeenCalledWith({
+      automationId: 'automation.task-capture',
+      configurationName: 'task-capture',
+      configurationBasis: 'private-active',
+      preparationMode: 'connected-acquisition',
+      input: {
+        title: 'PRIVATE_TASK_UI_SENTINEL',
+        project: 'project.connected-test'
+      }
+    }));
+
+    const dossier = await screen.findByRole('region', { name: 'Prepared work dossier' });
+    expect(within(dossier).getByRole('region', { name: 'Connected acquisition staging boundary' })).toHaveTextContent('Staged input + lock');
+    expect(dossier).toHaveTextContent('No connected acquisition has run');
+    expect(dossier).toHaveTextContent('no provider call, acquired context, approval, continuation request, readiness, or execution authority');
+    expect(within(dossier).getAllByText('staged for acquisition').length).toBeGreaterThan(0);
+    expect(within(dossier).queryByText('ready for review', { exact: false })).not.toBeInTheDocument();
+    expect(within(dossier).queryByText('approved', { exact: false })).not.toBeInTheDocument();
+    expect(within(dossier).queryByRole('region', { name: 'Contained context acquisition plan' })).not.toBeInTheDocument();
+    expect(within(dossier).queryByRole('region', { name: 'Proposed change fingerprints' })).not.toBeInTheDocument();
+    expect(within(dossier).queryByRole('button', { name: /approve|confirm|continue|execute|start|retry/i })).not.toBeInTheDocument();
+    expect(container.querySelector('.dossier-inputs')).not.toHaveTextContent('PRIVATE_TASK_UI_SENTINEL');
+    expect(container.querySelector('.dossier-private-review')).toHaveTextContent('PRIVATE_TASK_UI_SENTINEL');
+  });
+
+  it('does not infer connected staging from a private configuration or send it from tracked-contained work', async () => {
+    const trackedWorkflow = taskCaptureWorkflowFixture();
+    const trackedConfiguration = taskCaptureConfigurationFixture();
+    const first = render(
+      <OperatorView snapshot={studioFixture()} workflow={trackedWorkflow} configuration={trackedConfiguration} initialActivity={null} />
+    );
+    const trackedStage = screen.getByRole('button', { name: 'Stage connected acquisition' });
+    expect(trackedStage).toBeDisabled();
+    await userEvent.click(trackedStage);
+    expect(window.soterStudio.prepareAutomationRun).not.toHaveBeenCalled();
+    first.unmount();
+
+    const unavailableWorkflow = taskCaptureWorkflowFixture();
+    unavailableWorkflow.configurationBasis = 'private-active';
+    unavailableWorkflow.operator!.preparation.modes = unavailableWorkflow.operator!.preparation.modes
+      .filter((mode) => mode.id !== 'connected-acquisition');
+    const privateConfiguration = taskCaptureConfigurationFixture();
+    privateConfiguration.configurationBasis = 'private-active';
+    const second = render(
+      <OperatorView snapshot={studioFixture()} workflow={unavailableWorkflow} configuration={privateConfiguration} initialActivity={null} />
+    );
+    expect(screen.queryByRole('button', { name: 'Stage connected acquisition' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Prepare contained run' })).toBeEnabled();
+    expect(window.soterStudio.prepareAutomationRun).not.toHaveBeenCalled();
+    second.unmount();
+
+    const modeUnavailableWorkflow = taskCaptureWorkflowFixture();
+    modeUnavailableWorkflow.configurationBasis = 'private-active';
+    const unavailableMode = modeUnavailableWorkflow.operator!.preparation.modes
+      .find((mode) => mode.id === 'connected-acquisition')!;
+    unavailableMode.availability = {
+      state: 'unavailable',
+      reasonCode: 'CLOSED_MESSAGE_THREAD_RESPONSE_UNAVAILABLE',
+      reason: 'Current provider routes expose formatted prose instead of a closed response.'
+    };
+    const unavailableModeView = render(
+      <OperatorView
+        snapshot={studioFixture()}
+        workflow={modeUnavailableWorkflow}
+        configuration={privateConfiguration}
+        initialActivity={null}
+      />
+    );
+    expect(screen.queryByRole('button', { name: 'Stage connected acquisition' })).not.toBeInTheDocument();
+    expect(screen.getByText(/CLOSED_MESSAGE_THREAD_RESPONSE_UNAVAILABLE/)).toBeVisible();
+    expect(window.soterStudio.prepareAutomationRun).not.toHaveBeenCalled();
+    unavailableModeView.unmount();
+
+    const hostileWorkflow = taskCaptureWorkflowFixture();
+    hostileWorkflow.configurationBasis = 'private-active';
+    const hostileModes = hostileWorkflow.operator!.preparation.modes as unknown as Array<{
+      id: string;
+      configurationBases: string[];
+      resultState: string;
+      boundary: string;
+    }>;
+    const hostileConnected = hostileModes.find((mode) => mode.id === 'connected-acquisition')!;
+    hostileConnected.configurationBases = ['tracked-contained'];
+    hostileConnected.resultState = 'ready-for-review';
+    render(
+      <OperatorView snapshot={studioFixture()} workflow={hostileWorkflow} configuration={privateConfiguration} initialActivity={null} />
+    );
+    expect(screen.queryByRole('button', { name: 'Stage connected acquisition' })).not.toBeInTheDocument();
+    expect(window.soterStudio.prepareAutomationRun).not.toHaveBeenCalled();
+  });
+
+  it('routes ready-for-acquisition work to a staged queue section without calling it review-ready', () => {
+    const snapshot = studioFixture();
+    const staged: Activity = {
+      id: 'work.task-capture.connected-acquisition.ui-test',
+      automationId: 'automation.task-capture',
+      source: 'runtime',
+      kind: 'prepared-work',
+      label: 'Task Capture connected acquisition input',
+      state: 'ready-for-acquisition',
+      createdAt: '2026-07-16T15:30:00.000Z',
+      updatedAt: '2026-07-16T15:30:00.000Z',
+      host: 'codex',
+      provider: null,
+      capability: null,
+      configurationLockFingerprint: 'sha256:' + '8'.repeat(64),
+      graphFingerprint: 'sha256:' + '7'.repeat(64),
+      recoveryId: null,
+      preparedWorkRef: { workId: 'work.task-capture.connected-acquisition.ui-test' },
+      timeline: [],
+      evidence: []
+    };
+    snapshot.activity = [staged];
+    render(<CatalogNav snapshot={snapshot} view="operate" selectedId={null} onSelect={vi.fn()} />);
+
+    const section = screen.getByRole('heading', { name: /Staged for acquisition/ }).closest('section')!;
+    expect(section).toHaveTextContent('staged input + lock');
+    expect(section).toHaveTextContent('staged for acquisition');
+    expect(screen.queryByRole('heading', { name: /Ready for review/ })).not.toBeInTheDocument();
   });
 
   it('mechanically prepares Task Capture with private review and a held create proposal', async () => {
     const snapshot = studioFixture();
     const workflow = taskCaptureWorkflowFixture();
     const configuration = taskCaptureConfigurationFixture();
-    const { container } = render(<OperatorView snapshot={snapshot} workflow={workflow} configuration={configuration} initialActivity={null} onChanged={vi.fn()} />);
+    const { container } = render(<OperatorView snapshot={snapshot} workflow={workflow} configuration={configuration} initialActivity={null} />);
     await userEvent.type(screen.getByLabelText('Task title'), 'PRIVATE_TASK_UI_SENTINEL');
-    await userEvent.type(screen.getByLabelText('Project reference'), 'soter-fixture://crm/project/launch');
-    await userEvent.type(screen.getByLabelText('Assignee reference'), 'provider-person.maya');
+    await userEvent.type(screen.getByLabelText('Project reference'), 'soter-fixture://projects/project/launch');
+    await userEvent.selectOptions(screen.getByLabelText('Assignee'), 'self');
     await userEvent.type(screen.getByLabelText('Next action date'), '2026-07-24');
     await userEvent.selectOptions(screen.getByLabelText('Task context'), 'Project');
     await userEvent.click(screen.getByRole('button', { name: 'Prepare contained run' }));
     await waitFor(() => expect(window.soterStudio.prepareAutomationRun).toHaveBeenCalledWith({
       automationId: 'automation.task-capture',
       configurationName: 'task-capture',
+      configurationBasis: 'tracked-contained',
+      preparationMode: 'contained',
       input: {
         title: 'PRIVATE_TASK_UI_SENTINEL',
-        project: 'soter-fixture://crm/project/launch',
-        assignee: 'provider-person.maya',
+        project: 'soter-fixture://projects/project/launch',
+        assignee: 'self',
         nextActionOn: '2026-07-24',
         context: 'Project'
       }
@@ -578,7 +850,7 @@ describe('Soter Studio canonical operator projection', () => {
     expect(effects).toHaveTextContent('write');
     expect(effects).toHaveTextContent('confirm');
     expect(effects).toHaveTextContent('not executed');
-    expect(screen.getByRole('region', { name: 'Proposed change fingerprints' })).toHaveTextContent('crm.records.create');
+    expect(screen.getByRole('region', { name: 'Proposed change fingerprints' })).toHaveTextContent('tasks.records.create');
     expect(screen.getByRole('region', { name: 'Proposed change fingerprints' })).toHaveTextContent('unavailable');
     expect(screen.getByText('No approval request')).toBeVisible();
     expect(screen.queryByText('0 proposed changes · read-only review')).not.toBeInTheDocument();
@@ -592,9 +864,9 @@ describe('Soter Studio canonical operator projection', () => {
   it('keeps duplicate Task Capture review factual and proposes no create authority', async () => {
     vi.mocked(window.soterStudio.prepareAutomationRun).mockResolvedValueOnce(taskCapturePreparedWorkFixture('duplicate'));
     vi.mocked(window.soterStudio.getPreparedWorkReview).mockResolvedValueOnce({ ok: true, material: taskCaptureReviewFixture('Send launch deck') });
-    const { container } = render(<OperatorView snapshot={studioFixture()} workflow={taskCaptureWorkflowFixture()} configuration={taskCaptureConfigurationFixture()} initialActivity={null} onChanged={vi.fn()} />);
+    const { container } = render(<OperatorView snapshot={studioFixture()} workflow={taskCaptureWorkflowFixture()} configuration={taskCaptureConfigurationFixture()} initialActivity={null} />);
     await userEvent.type(screen.getByLabelText('Task title'), 'Send launch deck');
-    await userEvent.type(screen.getByLabelText('Project reference'), 'soter-fixture://crm/project/launch');
+    await userEvent.type(screen.getByLabelText('Project reference'), 'soter-fixture://projects/project/launch');
     await userEvent.selectOptions(screen.getByLabelText('Task context'), 'Project');
     await userEvent.click(screen.getByRole('button', { name: 'Prepare contained run' }));
     expect(await screen.findByText('An exact-title task candidate exists and must be reviewed instead of silently creating a duplicate.')).toBeVisible();
@@ -605,13 +877,15 @@ describe('Soter Studio canonical operator projection', () => {
   });
 
   it('mechanically renders Email coverage, closed actions, exact private joins, and the no-authority stop', async () => {
-    const { container } = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} onChanged={vi.fn()} />);
+    const { container } = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} />);
     await userEvent.type(screen.getByLabelText('Mailbox window query'), 'SYNTHETIC_PRIVATE_MAILBOX_QUERY');
     await userEvent.selectOptions(screen.getByLabelText('Processing scope'), 'triage-drafts-handoffs-digest');
     await userEvent.type(screen.getByLabelText('Private focus notes'), 'SYNTHETIC_PRIVATE_FOCUS_NOTE');
     await userEvent.click(screen.getByRole('button', { name: 'Prepare contained run' }));
     await waitFor(() => expect(window.soterStudio.prepareAutomationRun).toHaveBeenCalledWith({
       automationId: 'automation.email-triage', configurationName: 'email-triage',
+      configurationBasis: 'tracked-contained',
+      preparationMode: 'contained',
       input: { query: 'SYNTHETIC_PRIVATE_MAILBOX_QUERY', scope: 'triage-drafts-handoffs-digest', focus: 'SYNTHETIC_PRIVATE_FOCUS_NOTE' }
     }));
     await waitFor(() => expect(window.soterStudio.getPreparedWorkDerivedReview).toHaveBeenCalledWith({ workId: 'work.email-triage.ui-test' }));
@@ -648,7 +922,7 @@ describe('Soter Studio canonical operator projection', () => {
   });
 
   it('opens one exact connected Email proposal as a review-only sanitized ledger and selected private folio', async () => {
-    const { container } = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} onChanged={vi.fn()} />);
+    const { container } = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} />);
     await userEvent.type(screen.getByLabelText('Exact proposal ID'), 'proposal.email-triage.ui-test');
     await userEvent.click(screen.getByRole('button', { name: 'Inspect selected proposal' }));
 
@@ -663,7 +937,7 @@ describe('Soter Studio canonical operator projection', () => {
       lockFingerprint: 'sha256:' + '8'.repeat(64)
     }));
 
-    const dossier = await screen.findByRole('article', { name: 'Selected Email review-only proposal' });
+    const dossier = await screen.findByRole('article', { name: 'Selected Email triage review-only proposal' });
     expect(screen.queryByRole('region', { name: 'Two-step approval ceremony' })).not.toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Exact connected subset gate' })).toHaveTextContent('Approval requestnot created');
     expect(dossier).toHaveTextContent('AUTOMATION_PROPOSAL_REVIEW_ONLY');
@@ -695,7 +969,7 @@ describe('Soter Studio canonical operator projection', () => {
 
     await userEvent.clear(screen.getByLabelText('Exact proposal ID'));
     await userEvent.type(screen.getByLabelText('Exact proposal ID'), 'proposal.email-triage.other');
-    expect(screen.queryByRole('article', { name: 'Selected Email review-only proposal' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('article', { name: 'Selected Email triage review-only proposal' })).not.toBeInTheDocument();
     expect(container).not.toHaveTextContent('Synthetic triage subject 1');
   });
 
@@ -705,7 +979,7 @@ describe('Soter Studio canonical operator projection', () => {
       .flatMap((row) => row.actions).find((action) => action.state === 'proposed' && action.kind === 'label')!;
     const preview = emailTriageProposalConnectedPreviewFixture([labelAction.id]);
     window.soterStudio.previewProposalConnectedBatch = vi.fn().mockResolvedValue({ ok: true, preview });
-    const { container } = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} onChanged={vi.fn()} />);
+    const { container } = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} />);
     await userEvent.type(screen.getByLabelText('Exact proposal ID'), proposal.id);
     await userEvent.click(screen.getByRole('button', { name: 'Inspect selected proposal' }));
     await userEvent.click((await screen.findAllByRole('checkbox', { name: /Select Label for exact connected scope/ }))[0]);
@@ -739,10 +1013,47 @@ describe('Soter Studio canonical operator projection', () => {
     }));
     expect(await screen.findByText('Awaiting exact approval')).toBeVisible();
     expect(await screen.findByRole('region', { name: 'Private exact-batch approval review' })).toBeVisible();
-    expect(screen.queryByRole('article', { name: 'Selected Email review-only proposal' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('article', { name: 'Selected Email triage review-only proposal' })).not.toBeInTheDocument();
     expect(window.soterStudio.confirmConnectedApproval).not.toHaveBeenCalled();
     expect(window.soterStudio.startConnectedTransaction).not.toHaveBeenCalled();
     expect((await axe.run(container)).violations).toEqual([]);
+  });
+
+  it('renders the stable stale-context code for an exact request and discards request transport prose', async () => {
+    const proposal = emailTriageAutomationProposalFixture();
+    const labelAction = proposal.review.collections.flatMap((collection) => collection.rows)
+      .flatMap((row) => row.actions).find((action) => action.state === 'proposed' && action.kind === 'label')!;
+    window.soterStudio.beginProposalConnectedApproval = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      error: {
+        code: 'PROPOSAL_CONNECTED_BATCH_CONTEXT_STALE',
+        message: 'The exact connected proposal context is stale. Rebuild and review a current proposal before requesting, confirming, or starting.'
+      }
+    });
+    const first = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} />);
+    await userEvent.type(screen.getByLabelText('Exact proposal ID'), proposal.id);
+    await userEvent.click(screen.getByRole('button', { name: 'Inspect selected proposal' }));
+    await userEvent.click((await screen.findAllByRole('checkbox', { name: /Select Label for exact connected scope/ }))[0]);
+    await userEvent.click(screen.getByRole('button', { name: 'Preview exact connected scope' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Request exact approval' }));
+    expect(await screen.findByText('PROPOSAL_CONNECTED_BATCH_CONTEXT_STALE')).toBeVisible();
+    expect(screen.getByText(/Rebuild and review a current proposal/)).toBeVisible();
+    expect(screen.queryByText('Awaiting exact approval')).not.toBeInTheDocument();
+    first.unmount();
+
+    window.soterStudio.beginProposalConnectedApproval = vi.fn().mockRejectedValueOnce(
+      new Error('PRIVATE_REQUEST_PATH_SENTINEL /Users/operator/.soter/state/approval.json')
+    );
+    const second = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} />);
+    await userEvent.type(screen.getByLabelText('Exact proposal ID'), proposal.id);
+    await userEvent.click(screen.getByRole('button', { name: 'Inspect selected proposal' }));
+    await userEvent.click((await screen.findAllByRole('checkbox', { name: /Select Label for exact connected scope/ }))[0]);
+    await userEvent.click(screen.getByRole('button', { name: 'Preview exact connected scope' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Request exact approval' }));
+    expect(await screen.findByText('PROPOSAL_CONNECTED_APPROVAL_ADAPTER_UNAVAILABLE')).toBeVisible();
+    expect(screen.getByText('The exact connected approval request is unavailable.')).toBeVisible();
+    expect(second.container).not.toHaveTextContent('PRIVATE_REQUEST_PATH_SENTINEL');
+    expect(second.container).not.toHaveTextContent('/Users/operator/.soter/state/approval.json');
   });
 
   it('keeps draft subsets blocked and discards hostile connected-preview rejection prose', async () => {
@@ -755,7 +1066,7 @@ describe('Soter Studio canonical operator projection', () => {
         }
       })
       .mockRejectedValueOnce(new Error('PRIVATE_CONNECTED_PREVIEW_SENTINEL /Users/operator/.soter/state'));
-    const first = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} onChanged={vi.fn()} />);
+    const first = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} />);
     await userEvent.type(screen.getByLabelText('Exact proposal ID'), 'proposal.email-triage.ui-test');
     await userEvent.click(screen.getByRole('button', { name: 'Inspect selected proposal' }));
     await userEvent.click(await screen.findByRole('checkbox', { name: /Select Draft for exact connected scope/ }));
@@ -765,7 +1076,7 @@ describe('Soter Studio canonical operator projection', () => {
     expect(screen.queryByRole('button', { name: 'Request exact approval' })).not.toBeInTheDocument();
     first.unmount();
 
-    const second = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} onChanged={vi.fn()} />);
+    const second = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} />);
     await userEvent.type(screen.getByLabelText('Exact proposal ID'), 'proposal.email-triage.ui-test');
     await userEvent.click(screen.getByRole('button', { name: 'Inspect selected proposal' }));
     await userEvent.click((await screen.findAllByRole('checkbox', { name: /Select Label for exact connected scope/ }))[0]);
@@ -781,7 +1092,7 @@ describe('Soter Studio canonical operator projection', () => {
     vi.mocked(window.soterStudio.getAutomationProposal).mockRejectedValueOnce(
       new Error('PRIVATE_PROPOSAL_REJECTION_SENTINEL /Users/operator/.soter/state/automation-proposals')
     );
-    const first = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} onChanged={vi.fn()} />);
+    const first = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} />);
     await userEvent.type(screen.getByLabelText('Exact proposal ID'), 'proposal.email-triage.ui-test');
     await userEvent.click(screen.getByRole('button', { name: 'Inspect selected proposal' }));
     expect(await screen.findByText('AUTOMATION_PROPOSAL_TRANSPORT_UNAVAILABLE')).toBeVisible();
@@ -794,7 +1105,7 @@ describe('Soter Studio canonical operator projection', () => {
     mismatched.proposal.id = 'proposal.email-triage.binding-mismatch';
     mismatched.items[0].fields[0].reviewValue = 'PRIVATE_PROPOSAL_BINDING_SENTINEL';
     window.soterStudio.getAutomationProposalMaterial = vi.fn().mockResolvedValue({ ok: true, material: mismatched });
-    const second = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} onChanged={vi.fn()} />);
+    const second = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} />);
     await userEvent.type(screen.getByLabelText('Exact proposal ID'), 'proposal.email-triage.ui-test');
     await userEvent.click(screen.getByRole('button', { name: 'Inspect selected proposal' }));
     expect(await screen.findByText(/does not bind this exact proposal, decision, Automation, configuration, review contract, and content seal/i)).toBeVisible();
@@ -803,7 +1114,7 @@ describe('Soter Studio canonical operator projection', () => {
   });
 
   it('creates an exact review-only Email subset and replaces request order with Core canonical order', async () => {
-    const { container } = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} onChanged={vi.fn()} />);
+    const { container } = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} />);
     await userEvent.type(screen.getByLabelText('Mailbox window query'), 'synthetic bounded query');
     await userEvent.selectOptions(screen.getByLabelText('Processing scope'), 'triage-drafts-handoffs-digest');
     await userEvent.click(screen.getByRole('button', { name: 'Prepare contained run' }));
@@ -874,7 +1185,7 @@ describe('Soter Studio canonical operator projection', () => {
     vi.mocked(window.soterStudio.getPreparedConnectedPlan).mockRejectedValueOnce(
       new Error('PRIVATE_CONNECTED_PLAN_TRANSPORT_SENTINEL /Users/operator/.soter/state/prepared-connected-plans')
     );
-    const first = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} onChanged={vi.fn()} />);
+    const first = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} />);
     await userEvent.type(screen.getByLabelText('Mailbox window query'), 'synthetic bounded query');
     await userEvent.selectOptions(screen.getByLabelText('Processing scope'), 'triage-drafts-handoffs-digest');
     await userEvent.click(screen.getByRole('button', { name: 'Prepare contained run' }));
@@ -892,7 +1203,7 @@ describe('Soter Studio canonical operator projection', () => {
     mismatched.source.batchId = 'review-batch.email-triage.binding-mismatch';
     mismatched.operations[0].input.messageIds = ['PRIVATE_CONNECTED_PLAN_BINDING_SENTINEL'];
     window.soterStudio.getPreparedConnectedPlan = vi.fn().mockResolvedValue({ ok: true, plan: mismatched });
-    const second = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} onChanged={vi.fn()} />);
+    const second = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} />);
     await userEvent.type(screen.getByLabelText('Mailbox window query'), 'synthetic bounded query');
     await userEvent.selectOptions(screen.getByLabelText('Processing scope'), 'triage-drafts-handoffs-digest');
     await userEvent.click(screen.getByRole('button', { name: 'Prepare contained run' }));
@@ -909,7 +1220,7 @@ describe('Soter Studio canonical operator projection', () => {
     vi.mocked(window.soterStudio.getPreparedReviewBatchMaterial).mockRejectedValueOnce(
       new Error('PRIVATE_BATCH_TRANSPORT_SENTINEL /Users/operator/.soter/state/prepared-review-batches')
     );
-    const { container, unmount } = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} onChanged={vi.fn()} />);
+    const { container, unmount } = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} />);
     await userEvent.type(screen.getByLabelText('Mailbox window query'), 'synthetic bounded query');
     await userEvent.selectOptions(screen.getByLabelText('Processing scope'), 'triage-drafts-handoffs-digest');
     await userEvent.click(screen.getByRole('button', { name: 'Prepare contained run' }));
@@ -926,7 +1237,7 @@ describe('Soter Studio canonical operator projection', () => {
     mismatched.batch.id = 'review-batch.email-triage.binding-mismatch';
     mismatched.actions[0].proposed.fields[0].reviewValue = 'PRIVATE_BATCH_BINDING_SENTINEL';
     window.soterStudio.getPreparedReviewBatchMaterial = vi.fn().mockResolvedValue({ ok: true, material: mismatched });
-    const second = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} onChanged={vi.fn()} />);
+    const second = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} />);
     await userEvent.type(screen.getByLabelText('Mailbox window query'), 'synthetic bounded query');
     await userEvent.selectOptions(screen.getByLabelText('Processing scope'), 'triage-drafts-handoffs-digest');
     await userEvent.click(screen.getByRole('button', { name: 'Prepare contained run' }));
@@ -941,7 +1252,7 @@ describe('Soter Studio canonical operator projection', () => {
     vi.mocked(window.soterStudio.getPreparedWorkDerivedReview).mockRejectedValueOnce(
       new Error('HOSTILE_DERIVED_BODY_SENTINEL /private/mail/body.txt')
     );
-    const { container } = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} onChanged={vi.fn()} />);
+    const { container } = render(<OperatorView snapshot={studioFixture()} workflow={emailTriageWorkflowFixture()} configuration={emailTriageConfigurationFixture()} initialActivity={null} />);
     await userEvent.type(screen.getByLabelText('Mailbox window query'), 'synthetic bounded query');
     await userEvent.selectOptions(screen.getByLabelText('Processing scope'), 'triage-drafts-handoffs-digest');
     await userEvent.click(screen.getByRole('button', { name: 'Prepare contained run' }));
@@ -953,29 +1264,46 @@ describe('Soter Studio canonical operator projection', () => {
     expect(screen.getByRole('region', { name: 'Prepared review collections' })).toHaveTextContent('15');
   });
 
-  it('mechanically prepares Project Pulse and renders a private stop-before-write dossier', async () => {
+  it('mechanically prepares Project Pulse and renders the exact private write-review boundary', async () => {
     const { container } = render(<App />);
     expect(await screen.findByText('Operator workspace · canonical projection')).toBeVisible();
     expect(screen.getByText('Example only · no authority')).toBeVisible();
-    await userEvent.type(screen.getByLabelText('Project reference'), 'project.pulse-risk');
+    await userEvent.type(screen.getByLabelText('Project reference'), 'https://www.notion.so/11111111111111111111111111111111');
+    await userEvent.type(screen.getByLabelText('Status date'), '2026-07-20');
+    await userEvent.selectOptions(screen.getByLabelText('Visibility'), 'Internal');
+    await userEvent.selectOptions(screen.getByLabelText('Project health judgment'), 'on-track');
+    expect(screen.getByLabelText('Health milestone titles')).toBeVisible();
     await userEvent.type(screen.getByLabelText('Operator note'), 'PRIVATE_UI_NOTE_SENTINEL');
     await userEvent.click(screen.getByRole('button', { name: 'Prepare contained run' }));
     await waitFor(() => expect(window.soterStudio.prepareAutomationRun).toHaveBeenCalledWith({
       automationId: 'automation.project-pulse',
       configurationName: 'project-pulse',
-      input: { project: 'project.pulse-risk', operatorGoal: 'PRIVATE_UI_NOTE_SENTINEL' }
+      configurationBasis: 'tracked-contained',
+      preparationMode: 'contained',
+      input: {
+        project: 'https://www.notion.so/11111111111111111111111111111111',
+        statusDate: '2026-07-20',
+        visibility: 'Internal',
+        health: 'on-track',
+        operatorGoal: 'PRIVATE_UI_NOTE_SENTINEL'
+      }
     }));
     expect(await screen.findByText('Private preparation receipt')).toBeVisible();
     expect(screen.getByText('PREPARATION_READY_FOR_REVIEW')).toBeVisible();
     expect(screen.getByText('Project Pulse preview')).toBeVisible();
     expect(screen.getByRole('region', { name: 'Preparation effect boundary' })).toHaveTextContent('read');
     expect(screen.getByRole('region', { name: 'Preparation effect boundary' })).toHaveTextContent('disclosure');
+    expect(screen.getByRole('region', { name: 'Preparation effect boundary' })).toHaveTextContent('write');
+    expect(screen.getByRole('region', { name: 'Preparation effect boundary' })).toHaveTextContent('not executed');
     expect(screen.getByRole('region', { name: 'Preparation effect boundary' })).toHaveTextContent('completed contained');
-    expect(screen.queryByText('Proposed change ledger')).not.toBeInTheDocument();
+    expect(screen.getByText('Proposed change ledger')).toBeVisible();
+    expect(screen.getByRole('region', { name: 'Prepared review collections' })).toHaveTextContent('documents.content.update');
+    expect(screen.getByRole('region', { name: 'Prepared review collections' })).toHaveTextContent('projects.records.create');
+    expect(await screen.findByRole('region', { name: 'Selected private derived review' })).toHaveTextContent('Launch readiness');
     expect(screen.getByText('No approval request')).toBeVisible();
     expect(screen.getAllByText('Private value · submitted only to local Core preparation · never returned in inspection').length).toBeGreaterThan(0);
     expect(screen.getByText(/Private inputs originate in this renderer and are sent only to the trusted local Core preparation operation/)).toBeVisible();
-    expect(screen.getByText('fingerprinted · raw absent')).toBeVisible();
+    expect(screen.getAllByText('fingerprinted · raw absent').length).toBeGreaterThanOrEqual(2);
     expect(await screen.findByText('Private local review')).toBeVisible();
     expect(container.querySelector('.dossier-inputs')).not.toHaveTextContent('PRIVATE_UI_NOTE_SENTINEL');
     expect(container.querySelector('.dossier-private-review')).toHaveTextContent('PRIVATE_UI_NOTE_SENTINEL');
@@ -992,7 +1320,9 @@ describe('Soter Studio canonical operator projection', () => {
     });
     const { container } = render(<App />);
     expect(await screen.findByText('Operator workspace · canonical projection')).toBeVisible();
-    await userEvent.type(screen.getByLabelText('Project reference'), 'project.pulse-risk');
+    await userEvent.type(screen.getByLabelText('Project reference'), 'https://www.notion.so/11111111111111111111111111111111');
+    await userEvent.type(screen.getByLabelText('Status date'), '2026-07-20');
+    await userEvent.selectOptions(screen.getByLabelText('Visibility'), 'Internal');
     await userEvent.type(screen.getByLabelText('Operator note'), 'PRIVATE_UNAVAILABLE_SENTINEL');
     await userEvent.click(screen.getByRole('button', { name: 'Prepare contained run' }));
     expect(await screen.findByText('Private preparation receipt')).toBeVisible();
@@ -1009,7 +1339,9 @@ describe('Soter Studio canonical operator projection', () => {
     );
     const { container } = render(<App />);
     expect(await screen.findByText('Operator workspace · canonical projection')).toBeVisible();
-    await userEvent.type(screen.getByLabelText('Project reference'), 'project.pulse-risk');
+    await userEvent.type(screen.getByLabelText('Project reference'), 'https://www.notion.so/11111111111111111111111111111111');
+    await userEvent.type(screen.getByLabelText('Status date'), '2026-07-20');
+    await userEvent.selectOptions(screen.getByLabelText('Visibility'), 'Internal');
     await userEvent.click(screen.getByRole('button', { name: 'Prepare contained run' }));
     expect(await screen.findByText('PREPARED_REVIEW_ADAPTER_UNAVAILABLE')).toBeVisible();
     expect(screen.getByText('Private review material is unavailable for this prepared work.')).toBeVisible();
@@ -1017,20 +1349,22 @@ describe('Soter Studio canonical operator projection', () => {
     expect(container).not.toHaveTextContent('/private/user/secrets.json');
   });
 
-  it('mechanically prepares Meeting Intake without inventing judgment or approval scope', async () => {
+  it('mechanically prepares Meeting Intake without inventing judgment or write authority', async () => {
     window.location.hash = '#/operate/automation.meeting-intake';
     const { container } = render(<App />);
     expect(await screen.findByRole('heading', { name: 'Automation Meeting Intake' })).toBeVisible();
     await userEvent.type(screen.getByLabelText('Transcript meeting reference'), 'meeting.fixture-001');
-    await userEvent.type(screen.getByLabelText('Recording reference'), 'otter://fixture/meeting.fixture-001');
+    await userEvent.type(screen.getByLabelText('Recording reference'), 'https://otter.ai/u/meeting_fixture_001');
     await userEvent.type(screen.getByLabelText('Desired outcome'), 'PRIVATE_MEETING_UI_GOAL');
     await userEvent.click(screen.getByRole('button', { name: 'Prepare contained run' }));
     await waitFor(() => expect(window.soterStudio.prepareAutomationRun).toHaveBeenCalledWith({
       automationId: 'automation.meeting-intake',
       configurationName: 'meeting-intake',
+      configurationBasis: 'tracked-contained',
+      preparationMode: 'contained',
       input: {
         meeting: 'meeting.fixture-001',
-        recordingUri: 'otter://fixture/meeting.fixture-001',
+        recordingUri: 'https://otter.ai/u/meeting_fixture_001',
         operatorGoal: 'PRIVATE_MEETING_UI_GOAL'
       }
     }));
@@ -1039,10 +1373,13 @@ describe('Soter Studio canonical operator projection', () => {
     expect(screen.getByText('Participant identity resolution')).toBeVisible();
     expect(screen.getByText('0 proposed changes · judgment not performed')).toBeVisible();
     expect(screen.getByText('No approval request')).toBeVisible();
+    expect(screen.getAllByText(/COMPLETE_MEETING_READBACK_UNAVAILABLE/).length).toBeGreaterThan(0);
     expect(screen.queryByText('Proposed change ledger')).not.toBeInTheDocument();
-    expect(container.querySelector('.dossier-inputs')).not.toHaveTextContent('otter://fixture/meeting.fixture-001');
+    expect(screen.queryByRole('button', { name: 'Approve exact request' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Consume approval + start' })).not.toBeInTheDocument();
+    expect(container.querySelector('.dossier-inputs')).not.toHaveTextContent('https://otter.ai/u/meeting_fixture_001');
     expect(container.querySelector('.dossier-inputs')).not.toHaveTextContent('PRIVATE_MEETING_UI_GOAL');
-    expect(container.querySelector('.dossier-private-review')).toHaveTextContent('otter://fixture/meeting.fixture-001');
+    expect(container.querySelector('.dossier-private-review')).toHaveTextContent('https://otter.ai/u/meeting_fixture_001');
     expect(container.querySelector('.dossier-private-review')).toHaveTextContent('PRIVATE_MEETING_UI_GOAL');
   });
 
@@ -1091,6 +1428,39 @@ describe('Soter Studio canonical operator projection', () => {
     expect(accessibility.violations).toEqual([]);
   });
 
+  it('renders stale confirmation as a typed no-authority result and never parses rejection prose', async () => {
+    const snapshot = studioFixture();
+    const activity = connectedActivityFixture();
+    snapshot.activity.unshift(activity);
+    window.soterStudio.getWorkspaceSnapshot = vi.fn().mockResolvedValue(snapshot);
+    window.soterStudio.confirmConnectedApproval = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      error: {
+        code: 'PROPOSAL_CONNECTED_BATCH_CONTEXT_STALE',
+        message: 'The exact connected proposal context is stale. Rebuild and review a current proposal before requesting, confirming, or starting.'
+      }
+    });
+    window.location.hash = `#/operate/${activity.id}`;
+    const first = render(<App />);
+    await userEvent.click(await screen.findByLabelText(/I reviewed the exact lock/i));
+    await userEvent.click(screen.getByRole('button', { name: 'Approve exact request' }));
+    expect(await screen.findByText('PROPOSAL_CONNECTED_BATCH_CONTEXT_STALE')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Approve exact request' })).toBeVisible();
+    expect(window.soterStudio.startConnectedTransaction).not.toHaveBeenCalled();
+    first.unmount();
+
+    window.soterStudio.confirmConnectedApproval = vi.fn().mockRejectedValueOnce(
+      new Error('PRIVATE_CONFIRM_PATH_SENTINEL /Users/operator/.soter/state/approval.json')
+    );
+    const second = render(<App />);
+    await userEvent.click(await screen.findByLabelText(/I reviewed the exact lock/i));
+    await userEvent.click(screen.getByRole('button', { name: 'Approve exact request' }));
+    expect(await screen.findByText('CONNECTED_APPROVAL_CONFIRM_ADAPTER_UNAVAILABLE')).toBeVisible();
+    expect(screen.getByText('The exact connected approval could not be confirmed.')).toBeVisible();
+    expect(second.container).not.toHaveTextContent('PRIVATE_CONFIRM_PATH_SENTINEL');
+    expect(second.container).not.toHaveTextContent('/Users/operator/.soter/state/approval.json');
+  });
+
   it('suppresses private approval values when selected-activity bindings do not match', async () => {
     const snapshot = studioFixture();
     const activity = connectedActivityFixture();
@@ -1135,11 +1505,11 @@ describe('Soter Studio canonical operator projection', () => {
       state: 'unavailable', reasonCode: 'SOURCE_CONTEXT_UNAVAILABLE', fingerprint: null
     };
     window.soterStudio.getConnectedApprovalReview = vi.fn().mockResolvedValue({ ok: true, material });
-    const { container, rerender } = render(<OperatorView snapshot={snapshot} workflow={workflow} configuration={configuration} initialActivity={activity} onChanged={vi.fn()} />);
+    const { container, rerender } = render(<OperatorView snapshot={snapshot} workflow={workflow} configuration={configuration} initialActivity={activity} />);
     expect(await screen.findByText('Source context is unavailable; no value is represented.')).toBeVisible();
     expect(screen.getAllByText('SOURCE_CONTEXT_UNAVAILABLE').length).toBeGreaterThan(0);
     expect(container).toHaveTextContent('PRIVATE_APPROVAL_PROPOSED_SENTINEL');
-    rerender(<OperatorView snapshot={snapshot} workflow={workflow} configuration={configuration} initialActivity={null} onChanged={vi.fn()} />);
+    rerender(<OperatorView snapshot={snapshot} workflow={workflow} configuration={configuration} initialActivity={null} />);
     await waitFor(() => expect(screen.queryByRole('region', { name: 'Private exact-batch approval review' })).not.toBeInTheDocument());
     expect(container).not.toHaveTextContent('PRIVATE_APPROVAL_PROPOSED_SENTINEL');
   });
@@ -1155,7 +1525,7 @@ describe('Soter Studio canonical operator projection', () => {
     material.operations[0].before = { state: 'not-required', reasonCode: 'PRIOR_VALUE_NOT_REQUIRED', fingerprint: null };
     window.soterStudio.getOperatorActivity = vi.fn().mockResolvedValue(inspection);
     window.soterStudio.getConnectedApprovalReview = vi.fn().mockResolvedValue({ ok: true, material });
-    const { container } = render(<OperatorView snapshot={snapshot} workflow={workflow} configuration={configuration} initialActivity={activity} onChanged={vi.fn()} />);
+    const { container } = render(<OperatorView snapshot={snapshot} workflow={workflow} configuration={configuration} initialActivity={activity} />);
     const before = await screen.findByRole('region', { name: 'Before review value' });
     expect(before).toHaveTextContent('not-required');
     expect(before).toHaveTextContent('PRIOR_VALUE_NOT_REQUIRED');
@@ -1178,6 +1548,41 @@ describe('Soter Studio canonical operator projection', () => {
     await waitFor(() => expect(window.soterStudio.startConnectedTransaction).toHaveBeenCalledWith({ approvalId: 'approval.project-pulse.ui-test' }));
   });
 
+  it('renders exact start preflight failure without consuming approval or exposing transport prose', async () => {
+    const snapshot = studioFixture();
+    const activity = connectedActivityFixture();
+    activity.operatorRef = { requestId: 'approval-request.project-pulse.ui-test', approvalId: 'approval.project-pulse.ui-test', checkpointId: null };
+    snapshot.activity.unshift(activity);
+    window.soterStudio.getWorkspaceSnapshot = vi.fn().mockResolvedValue(snapshot);
+    window.soterStudio.getOperatorActivity = vi.fn().mockResolvedValue(operatorInspectionFixture('approved-not-started'));
+    window.soterStudio.startConnectedTransaction = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      error: {
+        code: 'CONNECTED_TRANSACTION_PREFLIGHT_FAILED',
+        reasonCode: 'HOST_CALL_VALIDATION_FAILED',
+        message: 'The exact connected transaction could not prepare its provider call. No approval was consumed and no checkpoint or provider effect was created.'
+      }
+    });
+    window.location.hash = `#/operate/${activity.id}`;
+    const first = render(<App />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Consume approval + start' }));
+    expect(await screen.findByText('CONNECTED_TRANSACTION_PREFLIGHT_FAILED')).toBeVisible();
+    expect(screen.getByText('HOST_CALL_VALIDATION_FAILED')).toBeVisible();
+    expect(screen.getByText(/No approval was consumed and no checkpoint or provider effect was created/)).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Consume approval + start' })).toBeVisible();
+    first.unmount();
+
+    window.soterStudio.startConnectedTransaction = vi.fn().mockRejectedValueOnce(
+      new Error('PRIVATE_PREFLIGHT_PATH_SENTINEL /Users/operator/.soter/state/provider-call.json')
+    );
+    const second = render(<App />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Consume approval + start' }));
+    expect(await screen.findByText('CONNECTED_TRANSACTION_START_ADAPTER_UNAVAILABLE')).toBeVisible();
+    expect(screen.getByText('The exact connected transaction could not be started.')).toBeVisible();
+    expect(second.container).not.toHaveTextContent('PRIVATE_PREFLIGHT_PATH_SENTINEL');
+    expect(second.container).not.toHaveTextContent('/Users/operator/.soter/state/provider-call.json');
+  });
+
   it('makes a blocked checkpoint actionable only through its exact read-only continuation request', async () => {
     const snapshot = studioFixture();
     const activity = connectedActivityFixture();
@@ -1196,7 +1601,7 @@ describe('Soter Studio canonical operator projection', () => {
     expect(screen.getByText('Completed prefix')).toBeVisible();
     expect(screen.getByText('Exact current step')).toBeVisible();
     expect(screen.getByText('Remaining')).toBeVisible();
-    expect(screen.getByText('crm.records.read')).toBeVisible();
+    expect(screen.getByText('projects.records.read')).toBeVisible();
     await userEvent.click(screen.getByRole('button', { name: 'Prepare read-only reconciliation' }));
     await waitFor(() => expect(window.soterStudio.prepareConnectedReconciliation).toHaveBeenCalledWith({
       checkpointId: 'checkpoint.transaction.project-pulse.ui-test'
@@ -1221,38 +1626,40 @@ describe('Soter Studio canonical operator projection', () => {
     expect(window.soterStudio.prepareConnectedReconciliation).not.toHaveBeenCalled();
   });
 
-  it('keeps verification failure and compensation progress separate', async () => {
+  it('keeps a non-private configuration basis unavailable without inventing continuation authority', async () => {
     const snapshot = studioFixture();
     const activity = connectedActivityFixture();
-    activity.state = 'rolling-back';
+    activity.state = 'blocked';
     activity.operatorRef = { requestId: 'approval-request.project-pulse.ui-test', approvalId: 'approval.project-pulse.ui-test', checkpointId: 'checkpoint.transaction.project-pulse.ui-test' };
     snapshot.activity.unshift(activity);
     window.soterStudio.getWorkspaceSnapshot = vi.fn().mockResolvedValue(snapshot);
-    window.soterStudio.getOperatorActivity = vi.fn().mockResolvedValue(operatorRecoveryInspectionFixture('rolling-back'));
+    window.soterStudio.getOperatorActivity = vi.fn().mockResolvedValue(operatorRecoveryInspectionFixture('basis-unavailable'));
     window.location.hash = `#/operate/${activity.id}`;
     render(<App />);
-    expect(await screen.findByText('READ_AFTER_WRITE_MISMATCH')).toBeVisible();
-    expect(screen.getAllByText('restore-prior-fields').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('running', { exact: true }).length).toBeGreaterThan(0);
-    expect(screen.getByRole('button', { name: 'Continue through configured host' })).toBeDisabled();
+    expect((await screen.findAllByText('CONFIGURATION_BASIS_NOT_PRIVATE_ACTIVE')).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'No executable continuation' })).toBeDisabled();
+    expect(window.soterStudio.prepareConnectedReconciliation).not.toHaveBeenCalled();
   });
 
   it('mechanically renders the full input control matrix with WCAG semantics', async () => {
     const fields: OperatorInputField[] = [
-      { id: 'project', label: 'Project reference', description: 'Exact project identifier.', type: 'reference', required: true, exposure: 'identifier', reference: { subject: 'crm.records.project', authorityRole: 'instance' }, examples: ['project.fixture-001'] },
+      { id: 'project', label: 'Project reference', description: 'Exact project identifier.', type: 'reference', required: true, exposure: 'identifier', reference: { subject: 'projects.records.project', authorityRole: 'instance' }, examples: ['project.fixture-001'] },
       { id: 'thread', label: 'Email thread', description: 'Private provider reference.', type: 'uri', required: true, exposure: 'private' },
       { id: 'scope', label: 'Task scope', description: 'Declared task boundary.', type: 'enum', required: true, exposure: 'identifier', options: ['open', 'all'] },
       { id: 'approved', label: 'Scope acknowledged', description: 'Required acknowledgement.', type: 'boolean', required: true, exposure: 'identifier' },
       { id: 'due', label: 'Due date', description: 'Requested completion date.', type: 'date', required: false, exposure: 'identifier' },
-      { id: 'notes', label: 'Optional notes', description: 'Private operator intent.', type: 'string', required: false, exposure: 'private', constraints: { minLength: 3, maxLength: 120 } }
+      { id: 'notes', label: 'Optional notes', description: 'Private operator intent.', type: 'string', required: false, exposure: 'private', constraints: { minLength: 3, maxLength: 120 } },
+      { id: 'tags', label: 'Organization tags', description: 'Private exact tag values.', type: 'string-list', required: false, exposure: 'private', constraints: { minItems: 0, maxItems: 8, itemMinLength: 2, itemMaxLength: 80 }, examples: [['Prospect', 'Priority']] }
     ];
-    const { container } = render(<form>{fields.map((field) => <OperatorInputControl key={field.id} field={field} value={field.type === 'boolean' ? false : ''} onChange={vi.fn()} />)}</form>);
+    const { container } = render(<form>{fields.map((field) => <OperatorInputControl key={field.id} field={field} value={field.type === 'boolean' ? false : field.type === 'string-list' ? [] : ''} onChange={vi.fn()} />)}</form>);
     expect(screen.getByLabelText('Project reference')).toHaveAttribute('autocomplete', 'off');
     expect(screen.getByLabelText('Email thread')).toHaveAttribute('inputmode', 'url');
     expect(screen.getByLabelText('Task scope')).toBeRequired();
     expect(screen.getByLabelText('Scope acknowledged')).toHaveAttribute('type', 'checkbox');
     expect(screen.getByLabelText('Due date')).toHaveAttribute('type', 'date');
     expect(screen.getByLabelText('Optional notes').tagName).toBe('TEXTAREA');
+    expect(screen.getByLabelText('Organization tags').tagName).toBe('TEXTAREA');
+    expect(screen.getByRole('button', { name: 'Use Prospect, Priority for Organization tags' })).toBeVisible();
     const accessibility = await axe.run(container, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa'] }, rules: { 'color-contrast': { enabled: false } } });
     expect(accessibility.violations).toEqual([]);
   });
@@ -1292,8 +1699,8 @@ function testConnectedApprovalReview(inspection: OperatorInspection): ConnectedA
     operations: [{
       id: inspection.scope.changes[0].id,
       sequence: 1,
-      capability: 'crm.records.update',
-      authority: 'authority.crm.instance',
+      capability: 'projects.records.create',
+      authority: 'authority.projects.instance',
       reason: 'Update the exact portable project record after human review.',
       changeSetOperationFingerprint: fp('e'),
       batchOperationFingerprint: fp('f'),

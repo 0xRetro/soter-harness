@@ -1,0 +1,74 @@
+{
+  "$contract": "soter://contracts/policy-standard-model/v1",
+  "contractVersion": "1.0.0",
+  "id": "model.context.policy.standard",
+  "pack": "context.policy",
+  "version": "0.1.0",
+  "subject": "policy.standard",
+  "identity": {
+    "cardinality": "one-per-subject",
+    "subjectIdentityRequired": true
+  },
+  "sectionOrder": [
+    "definition",
+    "scope",
+    "classifications",
+    "rules",
+    "lifecycle-and-states",
+    "fields",
+    "linked-processes",
+    "change-control",
+    "change-log"
+  ],
+  "classification": {
+    "dimensionShape": "uniform",
+    "requiredFacts": ["requirement", "classifies", "proven-by", "values"],
+    "valuesAsList": true,
+    "lifecycleExcluded": true,
+    "extensionCriteriaLocation": "change-control"
+  },
+  "rules": {
+    "families": ["data", "operating", "determination"],
+    "imperative": true,
+    "enforcerRequired": true,
+    "determinationRuleIds": true
+  },
+  "lifecycle": {
+    "transitionActorRequired": true,
+    "transitionGateRequired": true,
+    "encodedStateOwnedHere": true
+  },
+  "fields": {
+    "implementationReferenceRequired": true,
+    "relationRuleRequired": true,
+    "instanceRepresentationAuthority": "configured-live-source"
+  },
+  "coverage": {
+    "classificationDeterminationRequired": true,
+    "classificationChangeControlRequired": true,
+    "transitionOperatingRuleRequired": true,
+    "fieldConstraintDataRuleRequired": true,
+    "unknownMarker": "not-defined"
+  },
+  "currentState": {
+    "currentOnly": true,
+    "proposalMarker": "proposed",
+    "proposalDisposition": "confirm-or-drop",
+    "placeholders": "prohibited"
+  },
+  "changeLog": {
+    "order": "newest-first",
+    "versioned": true
+  },
+  "privacy": {
+    "credentialsIncluded": false,
+    "privateInstancesIncluded": false,
+    "rawProviderResponsesIncluded": false,
+    "workspaceIdentifiersIncluded": false
+  },
+  "limitations": [
+    "This model defines portable policy-standard shape only; configured instances and live schemas remain separate authorities.",
+    "The governed context.policy vocabulary artifact owns the exact current policy-standard, subject, and schema-doc terms and definitions.",
+    "The model grants no interview, proposal, approval, provider-write, publication, or execution authority."
+  ]
+}

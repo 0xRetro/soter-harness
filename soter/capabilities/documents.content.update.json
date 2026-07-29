@@ -1,0 +1,102 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "documents.content.update",
+  "version": "1.0.0",
+  "purpose": "Applies one bounded set of exact targeted replacements to an existing document whose full observed body fingerprint is known.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["uri", "expectedTitle", "expectedBodyFingerprint", "updates"],
+    "properties": {
+      "uri": { "type": "string", "minLength": 3, "maxLength": 2048 },
+      "expectedTitle": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "expectedBodyFingerprint": {
+        "type": "string",
+        "pattern": "^sha256:[a-f0-9]{64}$"
+      },
+      "updates": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 20,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "oldText", "newText", "replaceAllMatches"],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+            },
+            "oldText": { "type": "string", "minLength": 1, "maxLength": 20000 },
+            "newText": { "type": "string", "minLength": 1, "maxLength": 20000 },
+            "replaceAllMatches": { "const": false }
+          }
+        }
+      }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["document", "accepted", "changeFingerprint", "provenance", "observedAt"],
+    "properties": {
+      "document": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["uri", "title"],
+        "properties": {
+          "uri": { "type": "string", "minLength": 3, "maxLength": 2048 },
+          "title": { "type": "string", "minLength": 1, "maxLength": 200 }
+        }
+      },
+      "accepted": { "const": true },
+      "changeFingerprint": {
+        "type": "string",
+        "pattern": "^sha256:[a-f0-9]{64}$"
+      },
+      "provenance": { "type": "object" },
+      "observedAt": { "type": "string", "minLength": 20 }
+    }
+  },
+  "authentication": {
+    "required": true,
+    "minimumScopes": ["documents:write"]
+  },
+  "effects": ["write"],
+  "idempotency": {
+    "mode": "conditional",
+    "key": "uri + expectedBodyFingerprint + updates"
+  },
+  "retry": {
+    "safe": false,
+    "maxAttempts": 1,
+    "checkpoint": "Do not retry an ambiguous write. Re-read the exact document and reconcile the expected resulting body fingerprint."
+  },
+  "errors": [
+    "authentication",
+    "authorization",
+    "validation",
+    "conflict",
+    "rate-limit",
+    "unavailable",
+    "retryable",
+    "not-found",
+    "unknown"
+  ],
+  "freshness": {
+    "returnsProvenance": true,
+    "returnsObservedAt": true,
+    "maxAgeSeconds": null
+  },
+  "health": {
+    "check": "Apply one exact targeted replacement to a contained document fixture after matching its full body fingerprint.",
+    "fixture": "soter/fixtures/providers/notion/workspace-records.json",
+    "containedVerification": "Prove expected-body conflict detection, unique-match replacement, unrelated-content preservation, ambiguous-match rejection, and exact read-after-write verification."
+  },
+  "providerLimitations": [
+    "A successful write result records provider acceptance only. The owning Automation must separately read the document and verify the exact expected body fingerprint.",
+    "This first version permits only non-empty one-match replacements. Append, deletion, whole-document replacement, and replace-all behavior require separate deliberate contracts."
+  ]
+}

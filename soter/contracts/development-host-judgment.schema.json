@@ -1,0 +1,342 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/development-host-judgment/v1",
+  "title": "Soter private independent host evaluation judgment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "judgmentFingerprint",
+    "judgedAt",
+    "request",
+    "execution",
+    "judge",
+    "judgments",
+    "authority",
+    "privacy",
+    "limitations"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/development-host-judgment/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^development-host-judgment[.][a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "judgmentFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "judgedAt": { "$ref": "#/$defs/instant" },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fingerprint"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^development-request[.][a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fingerprint"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^development-host-execution[.][a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "judge": {
+      "oneOf": [
+        { "$ref": "#/$defs/agentJudge" },
+        { "$ref": "#/$defs/humanJudge" }
+      ]
+    },
+    "judgments": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 500,
+      "items": { "$ref": "#/$defs/judgment" }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "grantsExecution",
+        "grantsApproval",
+        "grantsPublication",
+        "grantsMerge",
+        "grantsProviderRead",
+        "grantsProviderWrite",
+        "grantsHostRealization",
+        "grantsPromotion",
+        "grantsFallbackRemoval"
+      ],
+      "properties": {
+        "kind": { "const": "private-evaluation-judgment-only" },
+        "grantsExecution": { "const": false },
+        "grantsApproval": { "const": false },
+        "grantsPublication": { "const": false },
+        "grantsMerge": { "const": false },
+        "grantsProviderRead": { "const": false },
+        "grantsProviderWrite": { "const": false },
+        "grantsHostRealization": { "const": false },
+        "grantsPromotion": { "const": false },
+        "grantsFallbackRemoval": { "const": false }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope",
+        "workspaceInspectionIncluded",
+        "rawTranscriptsIncluded",
+        "rawContentIncluded",
+        "absolutePathsIncluded",
+        "providerResponsesIncluded",
+        "credentialsIncluded"
+      ],
+      "properties": {
+        "scope": { "const": "private-runtime" },
+        "workspaceInspectionIncluded": { "const": false },
+        "rawTranscriptsIncluded": { "const": false },
+        "rawContentIncluded": { "const": false },
+        "absolutePathsIncluded": { "const": false },
+        "providerResponsesIncluded": { "const": false },
+        "credentialsIncluded": { "const": false }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "DEVELOPMENT_HOST_JUDGMENT_NO_AUTHORITY",
+          "DEVELOPMENT_HOST_JUDGMENT_INDEPENDENT_REVIEW",
+          "DEVELOPMENT_HOST_JUDGMENT_LOCAL_BINARY_IDENTITY_ONLY"
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "instant": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:[.][0-9]{3})?Z$"
+    },
+    "agentJudge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id",
+        "method",
+        "identityFingerprint",
+        "runtimeFingerprint",
+        "implementationFingerprint",
+        "executable",
+        "argvTemplateFingerprint",
+        "policy",
+        "reviews",
+        "freshProcess",
+        "answerKeyAccess",
+        "workerSelfReportAccepted"
+      ],
+      "properties": {
+        "kind": { "const": "agent-review" },
+        "id": {
+          "type": "string",
+          "pattern": "^development-host-judge[.](?:codex|claude)$"
+        },
+        "method": { "const": "independent-private-transcript-review" },
+        "identityFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "runtimeFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "implementationFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "executable": { "$ref": "#/$defs/executable" },
+        "argvTemplateFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "policy": { "$ref": "#/$defs/judgePolicy" },
+        "reviews": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 500,
+          "items": { "$ref": "#/$defs/judgeReview" }
+        },
+        "freshProcess": { "const": true },
+        "answerKeyAccess": { "const": "judge-only" },
+        "workerSelfReportAccepted": { "const": false }
+      }
+    },
+    "humanJudge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id",
+        "method",
+        "identityFingerprint",
+        "explicitTranscriptAttestation",
+        "workerSelfReportAccepted"
+      ],
+      "properties": {
+        "kind": { "const": "human-operator-attestation" },
+        "id": {
+          "type": "string",
+          "pattern": "^human-judge[.][a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "method": { "const": "human-private-transcript-review" },
+        "identityFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "explicitTranscriptAttestation": { "const": true },
+        "workerSelfReportAccepted": { "const": false }
+      }
+    },
+    "executable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "mode", "binaryFingerprint"],
+      "properties": {
+        "id": { "enum": ["codex-cli", "claude-cli"] },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._()+-]*$"
+        },
+        "mode": { "enum": ["0500", "0550", "0555", "0700", "0750", "0755"] },
+        "binaryFingerprint": { "$ref": "#/$defs/fingerprint" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "id": { "const": "codex-cli" } } },
+          "then": {
+            "properties": {
+              "version": {
+                "pattern": "^codex-cli (?:0|[1-9][0-9]*)[.](?:0|[1-9][0-9]*)[.](?:0|[1-9][0-9]*)(?:-[0-9A-Za-z]+(?:[.][0-9A-Za-z]+)*)?(?:[+][0-9A-Za-z.-]+)?$"
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "id": { "const": "claude-cli" } } },
+          "then": {
+            "properties": {
+              "version": {
+                "pattern": "^(?:0|[1-9][0-9]*)[.](?:0|[1-9][0-9]*)[.](?:0|[1-9][0-9]*)(?:-[0-9A-Za-z]+(?:[.][0-9A-Za-z]+)*)?(?:[+][0-9A-Za-z.-]+)? [(]Claude Code[)]$"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "judgePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "binaryIdentity",
+        "freshProcessPerRun",
+        "projectCustomizations",
+        "sessionPersistence",
+        "toolAccess",
+        "workingDirectory",
+        "answerKeyAccess",
+        "outputContract"
+      ],
+      "properties": {
+        "binaryIdentity": { "const": "exact-local-bytes-version-mode-not-publisher-trust" },
+        "freshProcessPerRun": { "const": true },
+        "projectCustomizations": { "const": "disabled" },
+        "sessionPersistence": { "const": "disabled" },
+        "toolAccess": { "const": "disabled-and-observed-use-fails-closed" },
+        "workingDirectory": { "const": "fresh-private-empty-directory" },
+        "answerKeyAccess": { "const": "judge-only" },
+        "outputContract": { "const": "closed-criterion-states" }
+      }
+    },
+    "judgeReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "sequence",
+        "runId",
+        "judgeFingerprint",
+        "dispatchFingerprint",
+        "promptFingerprint",
+        "transcriptFingerprint",
+        "process"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^judge-run[.][a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "sequence": { "type": "integer", "minimum": 1, "maximum": 500 },
+        "runId": {
+          "type": "string",
+          "pattern": "^evaluation-run[.][a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "judgeFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "dispatchFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "promptFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "transcriptFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "process": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "exitCode", "signal", "toolCallsObserved"],
+          "properties": {
+            "state": { "const": "completed" },
+            "exitCode": { "const": 0 },
+            "signal": { "type": "null" },
+            "toolCallsObserved": { "const": 0 }
+          }
+        }
+      }
+    },
+    "criterion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "sequence", "state"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*[.](?:expected|prohibited)[.][1-9][0-9]*$"
+        },
+        "kind": { "enum": ["expected", "prohibited"] },
+        "sequence": { "type": "integer", "minimum": 1, "maximum": 500 },
+        "state": { "enum": ["observed", "not-observed", "unknown"] }
+      }
+    },
+    "judgment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sequence", "runId", "caseId", "verdict", "criteria"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^judgment[.][a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "sequence": { "type": "integer", "minimum": 1, "maximum": 500 },
+        "runId": {
+          "type": "string",
+          "pattern": "^evaluation-run[.][a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "caseId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "verdict": { "enum": ["passed", "failed", "blocked"] },
+        "criteria": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 500,
+          "items": { "$ref": "#/$defs/criterion" }
+        }
+      }
+    }
+  }
+}

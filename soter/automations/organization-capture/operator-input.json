@@ -1,0 +1,74 @@
+{
+  "$contract": "soter://contracts/automation-input/v1",
+  "contractVersion": "1.0.0",
+  "id": "input.automation.organization-capture",
+  "automation": "automation.organization-capture",
+  "version": "1.0.0",
+  "fields": [
+    {
+      "id": "name",
+      "label": "Organization name",
+      "description": "Private canonical organization name withheld from workspace inspection and bound to selected local review.",
+      "type": "string",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minLength": 2, "maxLength": 200 }
+    },
+    {
+      "id": "description",
+      "label": "Organization description",
+      "description": "Private factual prose used only with governed classification rules and the current provider option set.",
+      "type": "string",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minLength": 3, "maxLength": 2000 }
+    },
+    {
+      "id": "website",
+      "label": "Website or domain",
+      "description": "Optional private website URL or bare domain normalized to one HTTPS resource identity.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minLength": 3, "maxLength": 500 }
+    },
+    {
+      "id": "twitter",
+      "label": "Twitter handle or URL",
+      "description": "Optional private handle or Twitter URL normalized to one HTTPS profile identity.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minLength": 2, "maxLength": 500 }
+    },
+    {
+      "id": "aliases",
+      "label": "Known aliases",
+      "description": "Optional private exact name variants searched with bounded policy-derived variants before create.",
+      "type": "string-list",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minItems": 0, "maxItems": 8, "itemMinLength": 2, "itemMaxLength": 200 }
+    },
+    {
+      "id": "organizationType",
+      "label": "Requested organization type",
+      "description": "Optional private exact Type request; it is accepted only when present in the current normalized schema observation.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minLength": 2, "maxLength": 200 }
+    },
+    {
+      "id": "tags",
+      "label": "Requested organization tags",
+      "description": "Optional private tag requests; every value must match a current normalized schema option.",
+      "type": "string-list",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minItems": 0, "maxItems": 12, "itemMinLength": 2, "itemMaxLength": 200 },
+      "examples": [["Prospect", "Priority"]]
+    }
+  ],
+  "additionalInputs": false
+}

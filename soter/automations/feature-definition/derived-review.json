@@ -1,0 +1,25 @@
+{
+  "$contract": "soter://contracts/automation-derived-review/v1",
+  "contractVersion": "1.0.0",
+  "automation": "automation.feature-definition",
+  "kind": "feature-definition-derived-review",
+  "items": [
+    {
+      "kind": "feature-definition",
+      "fields": [
+        { "id": "featureId", "label": "Feature identity", "type": "text" },
+        { "id": "name", "label": "Feature name", "type": "text" },
+        { "id": "description", "label": "Preserved why", "type": "text" },
+        { "id": "status", "label": "Preserved lifecycle status", "type": "text" },
+        { "id": "featureType", "label": "Card type", "type": "text" },
+        { "id": "currentBody", "label": "Current body", "type": "text" },
+        { "id": "proposedBody", "label": "Proposed body", "type": "text" },
+        { "id": "scopeIn", "label": "In scope", "type": "string-list" },
+        { "id": "scopeOut", "label": "Out of scope", "type": "string-list" },
+        { "id": "doneWhen", "label": "Done when", "type": "string-list" },
+        { "id": "openQuestions", "label": "Open questions", "type": "string-list" },
+        { "id": "statusChangeRequested", "label": "Status change requested", "type": "boolean" }
+      ]
+    }
+  ]
+}

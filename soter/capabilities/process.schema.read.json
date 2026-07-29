@@ -1,0 +1,66 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "process.schema.read",
+  "version": "1.0.0",
+  "purpose": "Reads one exact provider-neutral Process schema observation, including current writable options, without exposing target identities or native payloads.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["recordType"],
+    "properties": { "recordType": { "type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" } }
+  },
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["schema", "provenance", "observedAt"],
+    "properties": {
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["recordType", "fields", "fingerprint"],
+        "properties": {
+          "recordType": { "type": "string" },
+          "fields": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "writable", "options"],
+              "properties": {
+                "id": { "type": "string" },
+                "writable": { "type": "boolean" },
+                "options": {
+                  "oneOf": [
+                    { "type": "null" },
+                    { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 200 } }
+                  ]
+                }
+              }
+            }
+          },
+          "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        }
+      },
+      "provenance": { "type": "object" },
+      "observedAt": { "type": "string" }
+    }
+  },
+  "authentication": { "required": true, "minimumScopes": ["records:read"] },
+  "effects": ["read", "disclosure"],
+  "idempotency": { "mode": "not-applicable", "key": null },
+  "retry": { "safe": true, "maxAttempts": 2, "checkpoint": "Persist the exact record type and normalized schema fingerprint before retry." },
+  "errors": ["authentication", "authorization", "validation", "conflict", "rate-limit", "unavailable", "retryable", "not-found", "unknown"],
+  "freshness": { "returnsProvenance": true, "returnsObservedAt": true, "maxAgeSeconds": 300 },
+  "health": {
+    "check": "Read one contained normalized process schema and prove exact current choice values.",
+    "fixture": "soter/fixtures/providers/notion/workspace-records.json",
+    "containedVerification": "Prove exact type binding, closed fields, stable choice ordering, and current schema fingerprinting."
+  },
+  "providerLimitations": [
+    "One normalized schema observation does not establish future provider compatibility, write permission, workflow readiness, verification, or health."
+  ]
+}

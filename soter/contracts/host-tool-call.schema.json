@@ -43,6 +43,7 @@
     "createdAt": { "type": "string", "minLength": 20 },
     "completedAt": { "type": ["string", "null"], "minLength": 20 },
     "state": { "enum": ["requested", "completed", "failed", "blocked"] },
+    "configuration": { "$ref": "#/$defs/configurationSelection" },
     "configurationLockFingerprint": { "$ref": "#/$defs/fingerprint" },
     "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
     "host": {
@@ -105,12 +106,16 @@
     "transport": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["protocol", "server", "operation", "tool"],
+      "required": ["protocol", "server", "operation", "tool", "responseProfile"],
       "properties": {
         "protocol": { "const": "mcp" },
         "server": { "type": "string", "minLength": 1 },
         "operation": { "type": ["string", "null"], "minLength": 1 },
-        "tool": { "type": ["string", "null"], "minLength": 1 }
+        "tool": { "type": ["string", "null"], "minLength": 1 },
+        "responseProfile": {
+          "type": ["string", "null"],
+          "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        }
       }
     },
     "arguments": { "type": ["object", "null"] },
@@ -127,7 +132,42 @@
       "pattern": "^sha256:[a-f0-9]{64}$"
     },
     "error": {
-      "type": ["object", "null"]
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/failure" }
+      ]
+    },
+    "pagination": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "baseCallId",
+            "maximumPages",
+            "currentPage",
+            "pages",
+            "cursorValuesExcluded",
+            "rawProviderResponsesExcluded"
+          ],
+          "properties": {
+            "baseCallId": {
+              "type": "string",
+              "pattern": "^toolcall\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+            },
+            "maximumPages": { "type": "integer", "minimum": 2, "maximum": 50 },
+            "currentPage": { "type": "integer", "minimum": 1, "maximum": 50 },
+            "pages": {
+              "type": "array",
+              "maxItems": 50,
+              "items": { "$ref": "#/$defs/pageReceipt" }
+            },
+            "cursorValuesExcluded": { "const": true },
+            "rawProviderResponsesExcluded": { "const": true }
+          }
+        }
+      ]
     },
     "secretValuesExcluded": { "const": true }
   },
@@ -140,8 +180,184 @@
       "type": "string",
       "pattern": "^sha256:[a-f0-9]{64}$"
     },
+    "configurationSelection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "configurationBasis",
+        "path",
+        "lockPath",
+        "lockFingerprint",
+        "graphFingerprint"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "configurationBasis": {
+          "enum": ["tracked-contained", "private-active"]
+        },
+        "path": { "type": "string", "minLength": 1 },
+        "lockPath": { "type": "string", "minLength": 1 },
+        "lockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "graphFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "failure": {
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "authentication" },
+            "code": { "const": "HOST_CALL_AUTHENTICATION_FAILED" },
+            "message": { "const": "The exact host operation could not authenticate." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "authorization" },
+            "code": { "const": "HOST_CALL_AUTHORIZATION_FAILED" },
+            "message": { "const": "The exact host operation was not authorized." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "validation" },
+            "code": { "const": "HOST_CALL_VALIDATION_FAILED" },
+            "message": { "const": "The exact host operation failed governed validation." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message", "diagnosticFingerprint"],
+          "properties": {
+            "kind": { "const": "validation" },
+            "code": { "const": "HOST_CALL_SCHEMA_INVALID" },
+            "message": { "const": "The exact host operation data did not satisfy its governed schema." },
+            "diagnosticFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "conflict" },
+            "code": { "const": "HOST_CALL_CONFLICT" },
+            "message": { "const": "The exact host operation encountered a conflict." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "rate-limit" },
+            "code": { "const": "HOST_CALL_RATE_LIMITED" },
+            "message": { "const": "The exact host operation was rate limited." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "unavailable" },
+            "code": { "const": "HOST_CALL_UNAVAILABLE" },
+            "message": { "const": "The exact host operation was unavailable." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "retryable" },
+            "code": { "const": "HOST_CALL_RETRYABLE_FAILURE" },
+            "message": { "const": "The exact host operation reported a retryable failure." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "not-found" },
+            "code": { "const": "HOST_CALL_NOT_FOUND" },
+            "message": { "const": "The exact host operation did not find its governed subject." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "unknown" },
+            "code": { "const": "HOST_CALL_FAILED" },
+            "message": { "const": "The exact host operation failed." }
+          }
+        }
+      ]
+    },
     "effect": {
       "enum": ["read", "disclosure", "write", "dispatch", "destructive"]
+    },
+    "pageReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sequence",
+        "callId",
+        "argumentsFingerprint",
+        "responseFingerprint",
+        "inputCursorFingerprint",
+        "continuationState",
+        "nextCursorFingerprint",
+        "page",
+        "pageFingerprint"
+      ],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1, "maximum": 50 },
+        "callId": {
+          "type": "string",
+          "pattern": "^toolcall\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "argumentsFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "responseFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "inputCursorFingerprint": {
+          "type": ["string", "null"],
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "continuationState": { "enum": ["more", "exhausted"] },
+        "nextCursorFingerprint": {
+          "type": ["string", "null"],
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "page": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "observedCount",
+            "includedCount",
+            "excludedCount",
+            "observedIdentityFingerprints",
+            "data"
+          ],
+          "properties": {
+            "observedCount": { "type": "integer", "minimum": 0 },
+            "includedCount": { "type": "integer", "minimum": 0 },
+            "excludedCount": { "type": "integer", "minimum": 0 },
+            "observedIdentityFingerprints": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/fingerprint" }
+            },
+            "data": { "type": "object" }
+          }
+        },
+        "pageFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
     }
   }
 }

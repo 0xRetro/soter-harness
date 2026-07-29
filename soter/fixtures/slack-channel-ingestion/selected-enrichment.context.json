@@ -1,0 +1,535 @@
+{
+  "$contract": "soter://contracts/context-snapshot/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.slack-channel-ingestion.preparation-fixture.selected",
+  "runId": "run.slack-channel-ingestion.preparation-fixture.selected",
+  "createdAt": "2026-07-21T21:00:00.000Z",
+  "configurationLockFingerprint": "sha256:51acc8121ec5dcd6e9778460f4db91382885a924644c9a1505740b1ec3a3fd9d",
+  "graphFingerprint": "sha256:2136077a1ebf7d12e0b047e2cd3f9ec905fb9796766c8f1cb331e5c85cb4c85e",
+  "containment": "fixture",
+  "entries": [
+    {
+      "id": "context.slack-channel-ingestion.policy",
+      "subject": "communications.records.channel-ingestion-policy",
+      "authority": "authority.communications.definition",
+      "role": "definition",
+      "capability": "communications.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T21:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.communications.definition",
+        "mapping": "mapping.integration.notion.communications-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:f88440d549fe22670acbd4be0f48cb45c38afa1145e42f0907b009dad0704141"
+      },
+      "valueFingerprint": "sha256:d7bb68d1712106fb59e267eee65d0fbe1defaa6d068ac7649fab07a0fc8c9b5c",
+      "value": {
+        "records": [
+          {
+            "type": "channel-ingestion-policy",
+            "id": "policy.channel-ingestion",
+            "version": "1",
+            "fields": {
+              "name": "Collaboration Channels"
+            },
+            "identityBinding": {
+              "state": "exact-request",
+              "requestedIdFingerprint": "sha256:4ebc3a472abe3d48c92a53576d9cfd45894e5dbb1827374fe3f1a3dc2d612849"
+            }
+          }
+        ],
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.communications.definition",
+          "mapping": "mapping.integration.notion.communications-records",
+          "mappingVersion": "0.2.0",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:f88440d549fe22670acbd4be0f48cb45c38afa1145e42f0907b009dad0704141"
+        },
+        "observedAt": "2026-07-21T21:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.slack-channel-ingestion.identities",
+      "subject": "communications.workspace.channels",
+      "authority": "authority.slack.instance",
+      "role": "instance",
+      "capability": "communications.conversations.list",
+      "providerPack": "integration.slack",
+      "providerImplementation": "provider.integration.slack.fixture",
+      "providerVersion": "0.1.0",
+      "observedAt": "2026-07-21T21:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "slack-fixture",
+        "authority": "authority.slack.instance",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:d31a53324ddf30b488963120779eb99158b692ed9c0e2152a26cb07a3774f146"
+      },
+      "valueFingerprint": "sha256:887a94d1cd81d2b7ecc96103d76642c57870178d3e3febffb5bd61b0a18e44e3",
+      "value": {
+        "workspace": {
+          "providerWorkspaceId": "soter-fixture://configuration-template/slack/workspace/contained",
+          "displayName": "Soter Fixture Workspace",
+          "identityFingerprint": "sha256:2fdcf276fbeb50b629e05d7ed8f997bd5f5f40e96330a4beeae3b644b2b84d52"
+        },
+        "conversations": [
+          {
+            "providerConversationId": "C001",
+            "kind": "private-channel",
+            "name": "spell-planning-internal",
+            "visibility": "private",
+            "shared": false,
+            "permalink": "https://fixture.slack.test/archives/C001",
+            "identityFingerprint": "sha256:f314a72750a5ebcb9a0b5e6e19560b083921139e036496972793f4c095c904c1",
+            "fingerprint": "sha256:3d05dad1667a946aea51e6373f47c1f5dccf2440394556c3f22ef2874bedfedc"
+          },
+          {
+            "providerConversationId": "C002",
+            "kind": "public-channel",
+            "name": "spell-planning-acme",
+            "visibility": "public",
+            "shared": true,
+            "permalink": "https://fixture.slack.test/archives/C002",
+            "identityFingerprint": "sha256:4ee1f8979520a79889869674e1c6bef5ff51784f9d390f7c952490da2d830ecf",
+            "fingerprint": "sha256:eecb8f8dbc97af4be27f4b8e5ca2c9f61fa54020045ef840fdc019e438845dd3"
+          }
+        ],
+        "coverage": {
+          "complete": true,
+          "cursorExhausted": true,
+          "pagesRead": 2,
+          "observedCount": 6,
+          "includedCount": 2,
+          "excludedCount": 4
+        },
+        "provenance": {
+          "provider": "slack-fixture",
+          "authority": "authority.slack.instance",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:d31a53324ddf30b488963120779eb99158b692ed9c0e2152a26cb07a3774f146"
+        },
+        "observedAt": "2026-07-21T21:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.slack-channel-ingestion.schema",
+      "subject": "communications.records.channel-schema",
+      "authority": "authority.communications.instance",
+      "role": "instance",
+      "capability": "communications.schema.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T21:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.communications.instance",
+        "mapping": "mapping.integration.notion.communications-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:29b7ad4dd386384790d17897a0f8bc5bd5786e969003f5b2665b6c59caff90f6"
+      },
+      "valueFingerprint": "sha256:74660a8c15889aba4e6e9e7f7ac06651fc599c2a93112fc664e4199c9dd93e57",
+      "value": {
+        "schema": {
+          "recordType": "channel",
+          "fields": [
+            {
+              "id": "conversationIdentityFingerprint",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "hostWorkspaceName",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "name",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "organizationUris",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "personUris",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "platform",
+              "writable": true,
+              "options": [
+                "Discord",
+                "Email",
+                "Forum",
+                "Other",
+                "Slack",
+                "Telegram"
+              ]
+            },
+            {
+              "id": "shared",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "visibility",
+              "writable": true,
+              "options": [
+                "private",
+                "public"
+              ]
+            },
+            {
+              "id": "workspaceIdentityFingerprint",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "workspaceUri",
+              "writable": true,
+              "options": null
+            }
+          ],
+          "fingerprint": "sha256:58996e220ac589a86a332f91e726caf2a92882991e5d490fa20061eab2fe8212"
+        },
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.communications.instance",
+          "mapping": "mapping.integration.notion.communications-records",
+          "mappingVersion": "0.2.0",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:29b7ad4dd386384790d17897a0f8bc5bd5786e969003f5b2665b6c59caff90f6"
+        },
+        "observedAt": "2026-07-21T21:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.slack-channel-ingestion.channels",
+      "subject": "communications.records.channel-candidates",
+      "authority": "authority.communications.instance",
+      "role": "instance",
+      "capability": "communications.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T21:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.communications.instance",
+        "mapping": "mapping.integration.notion.communications-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:f88440d549fe22670acbd4be0f48cb45c38afa1145e42f0907b009dad0704141"
+      },
+      "valueFingerprint": "sha256:a98c47f4c0abb12902669e3a252f442272f2dfb84484784c7553d43dce04fbb4",
+      "value": {
+        "records": [
+          {
+            "type": "channel",
+            "id": "soter-fixture://communications/channel/existing-spell",
+            "version": "1",
+            "fields": {
+              "name": "spell-planning-old-name",
+              "platform": "Slack",
+              "workspaceUri": "soter://communications/workspace/2fdcf276fbeb50b629e05d7ed8f997bd5f5f40e96330a4beeae3b644b2b84d52",
+              "workspaceIdentityFingerprint": "sha256:2fdcf276fbeb50b629e05d7ed8f997bd5f5f40e96330a4beeae3b644b2b84d52",
+              "conversationIdentityFingerprint": "sha256:f314a72750a5ebcb9a0b5e6e19560b083921139e036496972793f4c095c904c1",
+              "hostWorkspaceName": "Soter Fixture Workspace",
+              "visibility": "private",
+              "shared": false,
+              "personUris": [],
+              "organizationUris": []
+            },
+            "identityBinding": {
+              "state": "observed",
+              "requestedIdFingerprint": null
+            }
+          }
+        ],
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.communications.instance",
+          "mapping": "mapping.integration.notion.communications-records",
+          "mappingVersion": "0.2.0",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:f88440d549fe22670acbd4be0f48cb45c38afa1145e42f0907b009dad0704141"
+        },
+        "observedAt": "2026-07-21T21:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.slack-channel-ingestion.participants.part-1",
+      "subject": "communications.workspace.selected-channel-participants",
+      "authority": "authority.slack.instance",
+      "role": "instance",
+      "capability": "communications.participants.read",
+      "providerPack": "integration.slack",
+      "providerImplementation": "provider.integration.slack.fixture",
+      "providerVersion": "0.1.0",
+      "observedAt": "2026-07-21T21:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "slack-fixture",
+        "authority": "authority.slack.instance",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:5bc500a0b95149e8575734bb50c95327b943ff554892a0e1df8187538872f97b"
+      },
+      "valueFingerprint": "sha256:5e1b372ee5aa11fc0b7708d809f88cc270d48c1c84ad78027334d70393ccb4b9",
+      "value": {
+        "workspaceId": "soter-fixture://configuration-template/slack/workspace/contained",
+        "conversationId": "C001",
+        "participants": [
+          {
+            "providerParticipantId": "slack-person.maya",
+            "displayName": "Maya Chen",
+            "email": "maya.fixture@example.test",
+            "identityFingerprint": "sha256:91140c0beff9a42109b304ce97dc022b33c4bc0c5b38f56ef6df18cdb2b781f3",
+            "fingerprint": "sha256:a3cb226cfdc56cea29c3884d3467bc4f336c5aebcbd9b8382ffa40fc3996cda3"
+          }
+        ],
+        "coverage": {
+          "complete": true,
+          "cursorExhausted": true,
+          "pagesRead": 1,
+          "observedCount": 2,
+          "includedHumanCount": 1,
+          "excludedBotCount": 1
+        },
+        "provenance": {
+          "provider": "slack-fixture",
+          "authority": "authority.slack.instance",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:5bc500a0b95149e8575734bb50c95327b943ff554892a0e1df8187538872f97b"
+        },
+        "observedAt": "2026-07-21T21:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.slack-channel-ingestion.participants.part-2",
+      "subject": "communications.workspace.selected-channel-participants",
+      "authority": "authority.slack.instance",
+      "role": "instance",
+      "capability": "communications.participants.read",
+      "providerPack": "integration.slack",
+      "providerImplementation": "provider.integration.slack.fixture",
+      "providerVersion": "0.1.0",
+      "observedAt": "2026-07-21T21:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "slack-fixture",
+        "authority": "authority.slack.instance",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:07caa61fc49fda9bf8f5879d72234d2b6daba007423a699ddfbb06dc678d3627"
+      },
+      "valueFingerprint": "sha256:038e56a66388419b272e572c3af546149cd1b3da95e4fb2d601e9c88ddc389cc",
+      "value": {
+        "workspaceId": "soter-fixture://configuration-template/slack/workspace/contained",
+        "conversationId": "C002",
+        "participants": [
+          {
+            "providerParticipantId": "slack-person.jonah",
+            "displayName": "Jonah Reyes",
+            "email": null,
+            "identityFingerprint": "sha256:7b338ed76a4cb11d3575a5111c96454cb139365d52250438ba49af24f2519392",
+            "fingerprint": "sha256:a795082b6fcfa86adb84610f56029bb35f50bf922a7bac827a1de7f6602543c6"
+          },
+          {
+            "providerParticipantId": "slack-person.maya",
+            "displayName": "Maya Chen",
+            "email": "maya.fixture@example.test",
+            "identityFingerprint": "sha256:91140c0beff9a42109b304ce97dc022b33c4bc0c5b38f56ef6df18cdb2b781f3",
+            "fingerprint": "sha256:a3cb226cfdc56cea29c3884d3467bc4f336c5aebcbd9b8382ffa40fc3996cda3"
+          },
+          {
+            "providerParticipantId": "slack-person.quinn",
+            "displayName": "Quinn Patel",
+            "email": "quinn.unmatched@example.test",
+            "identityFingerprint": "sha256:fd7d78b0584c0ea1ec38093e1b323307a6937d19fc83939530640c19b4ea35d7",
+            "fingerprint": "sha256:6797f64d54b13e16877beabbbdb137680b53e1569ec2edcf55cc8aa830c7e23a"
+          }
+        ],
+        "coverage": {
+          "complete": true,
+          "cursorExhausted": true,
+          "pagesRead": 1,
+          "observedCount": 3,
+          "includedHumanCount": 3,
+          "excludedBotCount": 0
+        },
+        "provenance": {
+          "provider": "slack-fixture",
+          "authority": "authority.slack.instance",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:07caa61fc49fda9bf8f5879d72234d2b6daba007423a699ddfbb06dc678d3627"
+        },
+        "observedAt": "2026-07-21T21:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.slack-channel-ingestion.contacts.part-1",
+      "subject": "crm.records.person-candidates",
+      "authority": "authority.crm.instance",
+      "role": "instance",
+      "capability": "crm.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T21:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.crm.instance",
+        "mapping": "mapping.integration.notion.crm-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:fd85f9564b1ed60751a76a06a093dff0cdbc9be8ffc3d947da190bd90e15f95d"
+      },
+      "valueFingerprint": "sha256:089d940051d78a907039bf975d3686ec611a25a548088e4ace5dc5a503430795",
+      "value": {
+        "records": [
+          {
+            "type": "person",
+            "id": "soter-fixture://crm/person/maya",
+            "version": "1",
+            "fields": {
+              "name": "Maya Chen",
+              "email": "maya.fixture@example.test",
+              "organizationUris": [
+                "soter-fixture://crm/organization/acme"
+              ]
+            },
+            "identityBinding": {
+              "state": "observed",
+              "requestedIdFingerprint": null
+            }
+          },
+          {
+            "type": "person",
+            "id": "soter-fixture://crm/person/jonah-1",
+            "version": "1",
+            "fields": {
+              "name": "Jonah Reyes"
+            },
+            "identityBinding": {
+              "state": "observed",
+              "requestedIdFingerprint": null
+            }
+          },
+          {
+            "type": "person",
+            "id": "soter-fixture://crm/person/jonah-2",
+            "version": "1",
+            "fields": {
+              "name": "Jonah Reyes"
+            },
+            "identityBinding": {
+              "state": "observed",
+              "requestedIdFingerprint": null
+            }
+          }
+        ],
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.crm.instance",
+          "mapping": "mapping.integration.notion.crm-records",
+          "mappingVersion": "0.2.0",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:fd85f9564b1ed60751a76a06a093dff0cdbc9be8ffc3d947da190bd90e15f95d"
+        },
+        "observedAt": "2026-07-21T21:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.slack-channel-ingestion.organizations",
+      "subject": "crm.records.organization-candidates",
+      "authority": "authority.crm.instance",
+      "role": "instance",
+      "capability": "crm.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T21:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.crm.instance",
+        "mapping": "mapping.integration.notion.crm-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:fd85f9564b1ed60751a76a06a093dff0cdbc9be8ffc3d947da190bd90e15f95d"
+      },
+      "valueFingerprint": "sha256:6739de3b3182a6f1281c93f96b78e88bcdd2946da44c1dfd6b7361b6e6c091e4",
+      "value": {
+        "records": [
+          {
+            "type": "organization",
+            "id": "soter-fixture://crm/organization/acme",
+            "version": "1",
+            "fields": {
+              "name": "Acme Design",
+              "status": "active",
+              "projectUris": [
+                "soter-fixture://projects/project/launch"
+              ]
+            },
+            "identityBinding": {
+              "state": "observed",
+              "requestedIdFingerprint": null
+            }
+          },
+          {
+            "type": "organization",
+            "id": "soter-fixture://crm/organization/soter",
+            "version": "1",
+            "fields": {
+              "name": "Soter Labs",
+              "status": "active"
+            },
+            "identityBinding": {
+              "state": "observed",
+              "requestedIdFingerprint": null
+            }
+          }
+        ],
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.crm.instance",
+          "mapping": "mapping.integration.notion.crm-records",
+          "mappingVersion": "0.2.0",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:fd85f9564b1ed60751a76a06a093dff0cdbc9be8ffc3d947da190bd90e15f95d"
+        },
+        "observedAt": "2026-07-21T21:00:00.000Z"
+      }
+    }
+  ],
+  "effectIds": [
+    "effect.slack-channel-ingestion.policy.fixture",
+    "effect.slack-channel-ingestion.identities.fixture",
+    "effect.slack-channel-ingestion.schema.fixture",
+    "effect.slack-channel-ingestion.channels.fixture",
+    "effect.slack-channel-ingestion.participants.1.fixture",
+    "effect.slack-channel-ingestion.participants.2.fixture",
+    "effect.slack-channel-ingestion.contacts.1.fixture",
+    "effect.slack-channel-ingestion.organizations.fixture"
+  ],
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Workspace reference, channel identities, names, hosts, permalinks, participant profiles, CRM candidates, provider responses, and credentials are excluded from general inspection."
+    ]
+  }
+}

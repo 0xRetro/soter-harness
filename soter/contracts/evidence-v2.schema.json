@@ -122,8 +122,40 @@
         "scope": { "enum": ["private", "shareable", "public"] },
         "redactions": { "type": "array", "items": { "type": "string" } }
       }
+    },
+    "privateContainedBasis": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/privateContainedBasis" }
+      ]
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "required": ["evaluator"],
+        "properties": {
+          "evaluator": {
+            "required": ["id"],
+            "properties": {
+              "id": { "pattern": "[.]contained-connected-(workflow|review)$" }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": ["privateContainedBasis"],
+        "properties": {
+          "privateContainedBasis": { "$ref": "#/$defs/privateContainedBasis" }
+        }
+      },
+      "else": {
+        "properties": {
+          "privateContainedBasis": { "type": "null" }
+        }
+      }
+    }
+  ],
   "$defs": {
     "fingerprint": {
       "type": "string",
@@ -173,6 +205,81 @@
         "role": { "enum": ["definition", "instance", "provider", "projection", "evidence"] },
         "subject": { "type": "string", "minLength": 1 },
         "declarationFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "privateContainedBasis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "version",
+        "configurationName",
+        "privateConfigurationFingerprint",
+        "privateLockFingerprint",
+        "privateGraphFingerprint",
+        "trackedTemplateLockFingerprint",
+        "trackedTemplateGraphFingerprint",
+        "applicabilityProjectionFingerprint",
+        "substitutions",
+        "privacy",
+        "basisFingerprint"
+      ],
+      "properties": {
+        "kind": { "const": "private-active-contained" },
+        "version": { "const": "1.1.0" },
+        "configurationName": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "privateConfigurationFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "privateLockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "privateGraphFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "trackedTemplateLockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "trackedTemplateGraphFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "applicabilityProjectionFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "substitutions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "notionTargetCount",
+            "notionDocumentSourceCount",
+            "providerFixtureDocumentCount",
+            "notionOptionMappingScopeCount",
+            "notionOptionMappingEntryCount",
+            "notionOptionMappingScopeFingerprint"
+          ],
+          "properties": {
+            "notionTargetCount": { "type": "integer", "minimum": 1 },
+            "notionDocumentSourceCount": { "type": "integer", "minimum": 0 },
+            "providerFixtureDocumentCount": { "type": "integer", "minimum": 0 },
+            "notionOptionMappingScopeCount": { "type": "integer", "minimum": 0 },
+            "notionOptionMappingEntryCount": { "type": "integer", "minimum": 0 },
+            "notionOptionMappingScopeFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        "privacy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "fullPrivateLockIncluded",
+            "privateConfigurationPathIncluded",
+            "providerTargetValuesIncluded",
+            "providerSourceValuesIncluded",
+            "providerOptionValuesIncluded",
+            "rawProviderResponsesIncluded",
+            "privateInputsIncluded"
+          ],
+          "properties": {
+            "fullPrivateLockIncluded": { "const": false },
+            "privateConfigurationPathIncluded": { "const": false },
+            "providerTargetValuesIncluded": { "const": false },
+            "providerSourceValuesIncluded": { "const": false },
+            "providerOptionValuesIncluded": { "const": false },
+            "rawProviderResponsesIncluded": { "const": false },
+            "privateInputsIncluded": { "const": false }
+          }
+        },
+        "basisFingerprint": { "$ref": "#/$defs/fingerprint" }
       }
     }
   }

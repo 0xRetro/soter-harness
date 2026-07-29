@@ -1,0 +1,24 @@
+{
+  "$contract": "soter://contracts/automation-derived-review/v1",
+  "contractVersion": "1.0.0",
+  "automation": "automation.project-capture",
+  "kind": "project-capture-derived-review",
+  "items": [
+    {
+      "kind": "project-create",
+      "fields": [
+        { "id": "name", "label": "Project name", "type": "text" },
+        { "id": "organizationShortName", "label": "Organization short name", "type": "text" },
+        { "id": "creationProfile", "label": "Creation profile", "type": "text" },
+        { "id": "projectType", "label": "Project type", "type": "text" },
+        { "id": "status", "label": "Project status", "type": "text" },
+        { "id": "organizationUris", "label": "Organization identities", "type": "string-list" },
+        { "id": "startDate", "label": "Start date", "type": "string-list" },
+        { "id": "targetEndDate", "label": "Target end date", "type": "string-list" },
+        { "id": "body", "label": "Candidate body supplement", "type": "text" },
+        { "id": "milestoneLines", "label": "Candidate milestone lines", "type": "string-list" },
+        { "id": "workItemLines", "label": "Candidate milestone work-item lines", "type": "string-list" }
+      ]
+    }
+  ]
+}

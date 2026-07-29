@@ -6,8 +6,7 @@ import {
   assertConnectedOperationBatchApproval,
   assertConnectedOperationBatchApprovalRequest,
   connectedApprovalFingerprint,
-  createBoundConnectedApprovalRequest,
-  createConnectedOperationBatchApprovalRequest
+  createBoundConnectedApprovalRequest
 } from './connected-transactions.mjs';
 import { assertExactProposalConnectedBatch } from './proposal-connected-batches.mjs';
 import {
@@ -15,11 +14,12 @@ import {
   readJson,
   resolveRepoPath
 } from './lib/canonical-json.mjs';
-import {
-  fingerprintLock,
-  lockMatchesResolution
-} from './resolve.mjs';
+import { fingerprintLock } from './resolve.mjs';
 import { inspectConnectedApprovalReviewMaterial } from './connected-approval-review.mjs';
+import {
+  revalidateExactConnectedConfiguration,
+  selectExactConnectedConfiguration
+} from './connected-configuration.mjs';
 import {
   createApprovalConsumptionState,
   hasApprovalConsumptionState,
@@ -45,6 +45,30 @@ function approvalConsumptionFingerprint(consumption) {
   return fingerprintJson(value);
 }
 
+function batchProviderImplementations(batch) {
+  return [...new Set((batch?.operations || []).flatMap((operation) => [
+    operation.provider?.connectedImplementation,
+    operation.precondition?.provider?.connectedImplementation,
+    operation.verification?.provider?.connectedImplementation
+  ]).filter(Boolean))].sort((left, right) => left.localeCompare(right, 'en'));
+}
+
+function revalidateApprovalConfiguration(root, request, expectedHost = null) {
+  return revalidateExactConnectedConfiguration({
+    root,
+    selection: {
+      name: request.configuration.name,
+      configurationBasis: request.configuration.configurationBasis,
+      path: request.configuration.path,
+      lockPath: request.configuration.lockPath,
+      lockFingerprint: request.configuration.lockFingerprint,
+      graphFingerprint: request.configuration.graphFingerprint
+    },
+    expectedHost: expectedHost || request.configuration.host,
+    providerImplementations: batchProviderImplementations(request.batch)
+  });
+}
+
 export function assertApprovalConsumptionDocument(root, consumption) {
   const resolvedRoot = path.resolve(root);
   validate(
@@ -54,6 +78,9 @@ export function assertApprovalConsumptionDocument(root, consumption) {
     'Approval consumption'
   );
   if (consumption.consumptionFingerprint !== approvalConsumptionFingerprint(consumption)
+    || consumption.configuration.configurationBasis !== 'private-active'
+    || consumption.configuration.lockFingerprint
+      !== consumption.configurationLockFingerprint
     || (consumption.state === 'reserved') !== (consumption.checkpointFingerprint === null)) {
     throw new Error('Approval consumption fingerprint or lifecycle fields are stale.');
   }
@@ -69,6 +96,7 @@ export function readConnectedApprovalRequest({ root, requestId, at, allowExpired
     at: at || request.createdAt,
     allowExpired
   });
+  revalidateApprovalConfiguration(resolvedRoot, request);
   return request;
 }
 
@@ -82,6 +110,10 @@ export function readConnectedApproval({
 }) {
   const resolvedRoot = path.resolve(root);
   const approval = readConnectedApprovalState(resolvedRoot, approvalId).approval;
+  const exactConfiguration = revalidateApprovalConfiguration(
+    resolvedRoot,
+    approval.request
+  );
   assertConnectedOperationBatchApproval({
     root: resolvedRoot,
     batch: approval.request.batch,
@@ -98,6 +130,9 @@ export function readConnectedApproval({
     at: at || approval.createdAt,
     allowExpired
   });
+  if (lock && fingerprintJson(lock) !== fingerprintJson(exactConfiguration.lock)) {
+    throw new Error('Connected approval does not match the exact private-active lock.');
+  }
   return approval;
 }
 
@@ -108,50 +143,10 @@ export function approvalConsumptionId(approvalId) {
   return 'approval-consumption.' + approvalId.slice('approval.'.length);
 }
 
-export function beginConnectedApprovalRequest({
-  root,
-  lockPath,
-  runPath,
-  batch,
-  changeSet,
-  id,
-  reason,
-  createdAt,
-  expiresAt
-}) {
-  const resolvedRoot = path.resolve(root);
-  const lock = readJson(resolveRepoPath(resolvedRoot, lockPath));
-  const exact = lockMatchesResolution({ lock, root: resolvedRoot });
-  if (!exact.matches) {
-    throw new Error('Connected approval request requires a current exact lock.');
-  }
-  const run = readJson(resolveRepoPath(resolvedRoot, runPath));
-  if (run.id !== batch.runId
-    || run.configurationLock.fingerprint !== fingerprintLock(lock)
-    || run.graphFingerprint !== lock.graphFingerprint
-    || run.host.id !== lock.host.id) {
-    throw new Error('Connected approval request requires an exact run for the current lock and host.');
-  }
-  const request = createConnectedOperationBatchApprovalRequest({
-    root: resolvedRoot,
-    lock,
-    lockPath,
-    run,
-    runPath,
-    batch,
-    changeSet,
-    id,
-    reason,
-    createdAt,
-    expiresAt
-  });
-  const persisted = writeApprovalRequestState(resolvedRoot, request);
-  return { request, requestPath: persisted.path };
-}
-
 export async function beginProposalConnectedApprovalRequest({
   root,
   lockPath,
+  configurationBasis,
   runPath,
   batch,
   changeSet,
@@ -161,11 +156,13 @@ export async function beginProposalConnectedApprovalRequest({
   expiresAt
 }) {
   const resolvedRoot = path.resolve(root);
-  const lock = readJson(resolveRepoPath(resolvedRoot, lockPath));
-  const exact = lockMatchesResolution({ lock, root: resolvedRoot });
-  if (!exact.matches) {
-    throw new Error('Connected approval request requires a current exact lock.');
-  }
+  const selected = selectExactConnectedConfiguration({
+    root: resolvedRoot,
+    configurationBasis,
+    lockPath,
+    providerImplementations: batchProviderImplementations(batch)
+  });
+  const { lock } = selected;
   const run = readJson(resolveRepoPath(resolvedRoot, runPath));
   if (run.id !== batch.runId
     || run.configurationLock.fingerprint !== fingerprintLock(lock)
@@ -178,7 +175,8 @@ export async function beginProposalConnectedApprovalRequest({
     lockPath,
     batch,
     changeSet,
-    expectedHost: lock.host.id
+    expectedHost: lock.host.id,
+    at: createdAt
   });
   const request = createBoundConnectedApprovalRequest({
     root: resolvedRoot,
@@ -186,6 +184,7 @@ export async function beginProposalConnectedApprovalRequest({
     lockPath,
     run,
     runPath,
+    configuration: selected.selection,
     batch,
     changeSet,
     id,
@@ -195,54 +194,6 @@ export async function beginProposalConnectedApprovalRequest({
   });
   const persisted = writeApprovalRequestState(resolvedRoot, request);
   return { request, requestPath: persisted.path };
-}
-
-export function confirmConnectedApprovalRequest({
-  root,
-  requestId,
-  approvalId,
-  actor,
-  reason,
-  confirmedAt
-}) {
-  const resolvedRoot = path.resolve(root);
-  const request = readConnectedApprovalRequest({
-    root: resolvedRoot,
-    requestId,
-    at: confirmedAt,
-    allowExpired: false
-  });
-  const lock = readJson(resolveRepoPath(resolvedRoot, request.configuration.lockPath));
-  const exact = lockMatchesResolution({ lock, root: resolvedRoot });
-  if (!exact.matches
-    || fingerprintLock(lock) !== request.configuration.lockFingerprint
-    || lock.graphFingerprint !== request.configuration.graphFingerprint
-    || lock.host.id !== request.configuration.host) {
-    throw new Error('Connected approval confirmation requires the request exact lock to remain current.');
-  }
-  const run = readJson(resolveRepoPath(resolvedRoot, request.run.path));
-  assertConnectedOperationBatchApprovalRequest({
-    root: resolvedRoot,
-    request,
-    lock,
-    run,
-    at: confirmedAt,
-    allowExpired: false
-  });
-  const review = inspectConnectedApprovalReviewMaterial({ root: resolvedRoot, requestId });
-  if (review.configuration.applicability.state !== 'current') {
-    throw new Error('Connected approval confirmation requires current exact private review material.');
-  }
-  const approval = approveConnectedOperationBatch({
-    root: resolvedRoot,
-    request,
-    id: approvalId,
-    actor,
-    reason,
-    createdAt: confirmedAt
-  });
-  const persisted = writeConnectedApprovalState(resolvedRoot, approval);
-  return { approval, approvalPath: persisted.path };
 }
 
 export async function confirmProposalConnectedApprovalRequest({
@@ -260,13 +211,12 @@ export async function confirmProposalConnectedApprovalRequest({
     at: confirmedAt,
     allowExpired: false
   });
+  const selected = revalidateApprovalConfiguration(resolvedRoot, request);
   if (request.batch.$contract !== 'soter://contracts/connected-operation-batch/v2') {
     throw new Error('Proposal approval confirmation requires a pack-compiled connected batch.');
   }
-  const lock = readJson(resolveRepoPath(resolvedRoot, request.configuration.lockPath));
-  const exact = lockMatchesResolution({ lock, root: resolvedRoot });
-  if (!exact.matches
-    || fingerprintLock(lock) !== request.configuration.lockFingerprint
+  const lock = selected.lock;
+  if (fingerprintLock(lock) !== request.configuration.lockFingerprint
     || lock.graphFingerprint !== request.configuration.graphFingerprint
     || lock.host.id !== request.configuration.host) {
     throw new Error('Connected approval confirmation requires the request exact lock to remain current.');
@@ -285,7 +235,8 @@ export async function confirmProposalConnectedApprovalRequest({
     lockPath: request.configuration.lockPath,
     batch: request.batch,
     changeSet: request.changeSet,
-    expectedHost: request.configuration.host
+    expectedHost: request.configuration.host,
+    at: confirmedAt
   });
   const review = inspectConnectedApprovalReviewMaterial({ root: resolvedRoot, requestId });
   if (review.configuration.applicability.state !== 'current'
@@ -304,8 +255,9 @@ export async function confirmProposalConnectedApprovalRequest({
   return { approval, approvalPath: persisted.path };
 }
 
-export function reserveApprovalConsumption({ root, approval, checkpointId, at }) {
+export async function reserveApprovalConsumption({ root, approval, checkpointId, at }) {
   const resolvedRoot = path.resolve(root);
+  revalidateApprovalConfiguration(resolvedRoot, approval.request);
   const id = approvalConsumptionId(approval.id);
   if (hasApprovalConsumptionState(resolvedRoot, id)) {
     const existing = readApprovalConsumptionState(resolvedRoot, id).consumption;
@@ -323,12 +275,31 @@ export function reserveApprovalConsumption({ root, approval, checkpointId, at })
       && existing.approval.fingerprint === connectedApprovalFingerprint(approval)
       && existing.configurationLockFingerprint
         === approval.request.configuration.lockFingerprint
+      && fingerprintJson(existing.configuration)
+        === fingerprintJson({
+          name: approval.request.configuration.name,
+          configurationBasis: approval.request.configuration.configurationBasis,
+          path: approval.request.configuration.path,
+          lockPath: approval.request.configuration.lockPath,
+          lockFingerprint: approval.request.configuration.lockFingerprint,
+          graphFingerprint: approval.request.configuration.graphFingerprint
+        })
       && existing.runId === approval.request.run.id
       && existing.batchId === approval.request.batch.id
       && existing.batchFingerprint === approval.request.batch.batchFingerprint
       && existing.checkpointId === checkpointId;
     if (!sameScope) {
       throw new Error('Approval consumption id already belongs to different exact work.');
+    }
+    if (existing.state === 'reserved') {
+      await assertExactProposalConnectedBatch({
+        root: resolvedRoot,
+        lockPath: approval.request.configuration.lockPath,
+        batch: approval.request.batch,
+        changeSet: approval.request.changeSet,
+        expectedHost: approval.request.configuration.host,
+        at
+      });
     }
     return { consumption: existing, consumptionPath: null, created: false };
   }
@@ -337,6 +308,14 @@ export function reserveApprovalConsumption({ root, approval, checkpointId, at })
     batch: approval.request.batch,
     changeSet: approval.request.changeSet,
     approval,
+    at
+  });
+  await assertExactProposalConnectedBatch({
+    root: resolvedRoot,
+    lockPath: approval.request.configuration.lockPath,
+    batch: approval.request.batch,
+    changeSet: approval.request.changeSet,
+    expectedHost: approval.request.configuration.host,
     at
   });
   const request = approval.request;
@@ -349,6 +328,14 @@ export function reserveApprovalConsumption({ root, approval, checkpointId, at })
     state: 'reserved',
     request: { id: request.id, fingerprint: request.requestFingerprint },
     approval: { id: approval.id, fingerprint: connectedApprovalFingerprint(approval) },
+    configuration: {
+      name: request.configuration.name,
+      configurationBasis: request.configuration.configurationBasis,
+      path: request.configuration.path,
+      lockPath: request.configuration.lockPath,
+      lockFingerprint: request.configuration.lockFingerprint,
+      graphFingerprint: request.configuration.graphFingerprint
+    },
     configurationLockFingerprint: request.configuration.lockFingerprint,
     runId: request.run.id,
     batchId: request.batch.id,
@@ -371,6 +358,8 @@ export function reserveApprovalConsumption({ root, approval, checkpointId, at })
       && existing.approval.id === consumption.approval.id
       && existing.approval.fingerprint === consumption.approval.fingerprint
       && existing.configurationLockFingerprint === consumption.configurationLockFingerprint
+      && fingerprintJson(existing.configuration)
+        === fingerprintJson(consumption.configuration)
       && existing.runId === consumption.runId
       && existing.batchId === consumption.batchId
       && existing.batchFingerprint === consumption.batchFingerprint
@@ -385,9 +374,17 @@ export function reserveApprovalConsumption({ root, approval, checkpointId, at })
 export function completeApprovalConsumption({ root, consumption, checkpoint, at }) {
   const resolvedRoot = path.resolve(root);
   assertApprovalConsumptionDocument(resolvedRoot, consumption);
+  revalidateExactConnectedConfiguration({
+    root: resolvedRoot,
+    selection: consumption.configuration,
+    expectedHost: checkpoint.host.id,
+    providerImplementations: batchProviderImplementations(checkpoint.batch)
+  });
   if (consumption.state === 'started') {
     if (consumption.checkpointId !== checkpoint.id
-      || consumption.checkpointFingerprint !== checkpoint.checkpointFingerprint) {
+      || consumption.checkpointFingerprint !== checkpoint.checkpointFingerprint
+      || fingerprintJson(consumption.configuration)
+        !== fingerprintJson(checkpoint.configuration)) {
       throw new Error('Started approval consumption does not match the durable checkpoint.');
     }
     return { consumption, consumptionPath: null };
@@ -397,7 +394,9 @@ export function completeApprovalConsumption({ root, consumption, checkpoint, at 
     || consumption.batchId !== checkpoint.batch.id
     || consumption.batchFingerprint !== checkpoint.batch.batchFingerprint
     || consumption.approval.id !== checkpoint.approval.id
-    || consumption.approval.fingerprint !== checkpoint.approvalFingerprint) {
+    || consumption.approval.fingerprint !== checkpoint.approvalFingerprint
+    || fingerprintJson(consumption.configuration)
+      !== fingerprintJson(checkpoint.configuration)) {
     throw new Error('Approval consumption cannot start an unrelated or already consumed checkpoint.');
   }
   const started = {

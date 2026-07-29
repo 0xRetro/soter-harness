@@ -1,0 +1,41 @@
+{
+  "$contract": "soter://contracts/context-vocabulary/v1",
+  "contractVersion": "1.0.0",
+  "id": "vocabulary.context.crm",
+  "pack": "context.crm",
+  "version": "0.1.0",
+  "subject": "crm.records",
+  "entries": [
+    {
+      "sequence": 1,
+      "id": "org",
+      "term": "org",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "An organization record representing a company, group, or other organizational party, with its own classification, status, references, contacts, and related work.",
+      "domain": "organization",
+      "sourceUris": []
+    },
+    {
+      "sequence": 2,
+      "id": "contact",
+      "term": "contact",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "A person record with grounded identity and relationship facts that may refer to one or more organizations without inheriting provider-specific identity or authority.",
+      "domain": "person",
+      "sourceUris": []
+    }
+  ],
+  "invariants": {
+    "singleDefinitionSource": true,
+    "projectionCopiesAreNonCanonical": true,
+    "providerNeutral": true,
+    "runtimeAuthority": "none"
+  },
+  "limitations": [
+    "This vocabulary owns portable CRM organization, person, and relationship terms only.",
+    "Communication, Project, Task, and Meeting terms are governed by independently selectable Context packs.",
+    "A provider participant is not a CRM person unless a separate governed identity-resolution contract establishes the relationship."
+  ]
+}

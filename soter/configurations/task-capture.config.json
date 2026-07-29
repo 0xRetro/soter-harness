@@ -8,9 +8,14 @@
   },
   "packs": [
     {
-      "id": "context.crm",
+      "id": "context.tasks",
       "source": "dependency",
-      "reason": "Task Capture depends on portable task, project, assignee, date, and policy meaning."
+      "reason": "Task Capture depends on portable Task fields, dates, status, assignment, duplicate, and policy meaning."
+    },
+    {
+      "id": "context.projects",
+      "source": "dependency",
+      "reason": "The selected Project relation resolves through independent portable Project identity."
     },
     {
       "id": "automation.task-capture",
@@ -25,28 +30,65 @@
   ],
   "bindings": [
     {
-      "capability": "crm.records.read",
+      "capability": "tasks.records.read",
       "providerPack": "integration.notion",
-      "authorities": ["authority.crm.definition", "authority.crm.instance"],
+      "authorities": [
+        "authority.tasks.definition",
+        "authority.tasks.instance"
+      ],
       "secretRef": "secret-ref.notion",
-      "reason": "Notion is the configured authority for the normalized task policy, exact project, and bounded duplicate candidates."
+      "reason": "Notion is the configured authority for the Task policy and bounded Task duplicate candidates."
     },
     {
-      "capability": "crm.records.create",
+      "capability": "tasks.schema.read",
       "providerPack": "integration.notion",
-      "authorities": ["authority.crm.instance"],
+      "authorities": [
+        "authority.tasks.instance"
+      ],
       "secretRef": "secret-ref.notion",
-      "reason": "A separately approved exact operation may later create one mapped task through the configured CRM authority."
+      "reason": "Notion supplies one current normalized Task schema observation so provider choice values cannot be assumed from portable Context vocabulary."
+    },
+    {
+      "capability": "projects.records.read",
+      "providerPack": "integration.notion",
+      "authorities": [
+        "authority.projects.definition",
+        "authority.projects.instance"
+      ],
+      "secretRef": "secret-ref.notion",
+      "reason": "Notion resolves the exact selected Project without transferring Project ownership into Task Context."
+    },
+    {
+      "capability": "tasks.records.create",
+      "providerPack": "integration.notion",
+      "authorities": [
+        "authority.tasks.instance"
+      ],
+      "secretRef": "secret-ref.notion",
+      "reason": "A separately approved exact operation may later create one mapped Task through the configured Tasks authority."
+    },
+    {
+      "capability": "workspace.identity.read",
+      "providerPack": "integration.notion",
+      "authorities": [
+        "authority.notion.provider"
+      ],
+      "secretRef": "secret-ref.notion",
+      "reason": "Notion resolves an optional current-user assignee through the exact authenticated workspace identity."
     }
   ],
   "sources": [
     {
       "id": "source.policy.task-capture",
-      "capability": "crm.records.read",
-      "authority": "authority.crm.definition",
+      "capability": "tasks.records.read",
+      "authority": "authority.tasks.definition",
       "input": {
-        "recordTypes": ["task-capture-policy"],
-        "ids": ["policy.task-capture"],
+        "recordTypes": [
+          "task-work-policy"
+        ],
+        "ids": [
+          "policy.tasks"
+        ],
         "limit": 2
       },
       "readiness": {
@@ -56,8 +98,10 @@
       "consumers": [
         {
           "pack": "automation.task-capture",
-          "purpose": "task-capture-policy",
-          "subjects": ["task-capture"],
+          "purpose": "task-work-policy",
+          "subjects": [
+            "task-capture"
+          ],
           "reason": "Task Capture must ground confirmation, deduplication, status, context, and project requirements in one selected definition source."
         }
       ],
@@ -66,24 +110,38 @@
   ],
   "authorities": [
     {
-      "id": "authority.crm.definition",
+      "id": "authority.tasks.definition",
       "role": "definition",
-      "subject": "crm.records",
-      "uri": "notion://configured/policies",
+      "subject": "tasks.records",
+      "uri": "soter-fixture://configuration-template/notion/authority/policies",
       "reason": "The selected normalized Tasks policy defines valid task-create semantics."
     },
     {
-      "id": "authority.crm.instance",
+      "id": "authority.tasks.instance",
       "role": "instance",
-      "subject": "crm.records",
-      "uri": "notion://configured/crm",
-      "reason": "The configured project and task records are authoritative for relation resolution and duplicate review."
+      "subject": "tasks.records",
+      "uri": "soter-fixture://configuration-template/notion/authority/tasks",
+      "reason": "The configured Task records are authoritative for duplicate review and eventual Task creation."
+    },
+    {
+      "id": "authority.projects.definition",
+      "role": "definition",
+      "subject": "projects.records",
+      "uri": "soter-fixture://configuration-template/notion/authority/project-policies",
+      "reason": "The selected Projects Context retains its independent definition authority; Task Capture consumes only the exact Project instance relation."
+    },
+    {
+      "id": "authority.projects.instance",
+      "role": "instance",
+      "subject": "projects.records",
+      "uri": "soter-fixture://configuration-template/notion/authority/projects",
+      "reason": "The configured Project records are authoritative for exact Task relation resolution."
     },
     {
       "id": "authority.notion.provider",
       "role": "provider",
       "subject": "notion.workspace",
-      "uri": "notion://configured-user",
+      "uri": "soter-fixture://configuration-template/notion/account/operator",
       "reason": "The selected Notion account supplies provider identity and permission context."
     },
     {
@@ -126,19 +184,20 @@
   "host": {
     "id": "codex",
     "adapter": "host.codex",
-    "version": "0.1.0",
+    "version": "0.3.1",
     "reason": "This fixture configuration exercises Codex projection while preserving provider-neutral contracts."
   },
   "settings": {
     "integration.notion": {
       "targets": {
-        "policies": "collection://39dd79b5-de38-8042-9d47-000b9293ab47",
-        "organizations": "collection://2b2d79b5-de38-817a-981e-000b27e5575b",
-        "contacts": "collection://2b2d79b5-de38-81d0-852e-000bc3fdf8d2",
-        "projects": "collection://721bfb88-e8d5-4934-ac26-cc82e1afc7a0",
-        "tasks": "collection://2abd79b5-de38-80f8-9470-000b7181b18d",
-        "meetings": "collection://b2550e36-38d5-4d33-86db-bbd0987aeaef",
-        "documents": "collection://2abd79b5-de38-8075-a97b-000b24e99dc1"
+        "policies": "soter-fixture://configuration-template/notion/collection/policies",
+        "organizations": "soter-fixture://configuration-template/notion/collection/organizations",
+        "contacts": "soter-fixture://configuration-template/notion/collection/contacts",
+        "projects": "soter-fixture://configuration-template/notion/collection/projects",
+        "updates": "soter-fixture://configuration-template/notion/collection/updates",
+        "tasks": "soter-fixture://configuration-template/notion/collection/tasks",
+        "meetings": "soter-fixture://configuration-template/notion/collection/meetings",
+        "documents": "soter-fixture://configuration-template/notion/collection/documents"
       }
     }
   }

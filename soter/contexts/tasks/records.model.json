@@ -1,0 +1,207 @@
+{
+  "$contract": "soter://contracts/context-record-model/v1",
+  "contractVersion": "1.0.0",
+  "id": "model.context.tasks.records",
+  "pack": "context.tasks",
+  "version": "0.1.0",
+  "subject": "tasks.records",
+  "recordTypes": [
+    {
+      "id": "task-work-policy",
+      "summary": "Machine-readable Task creation, assignment, date, lifecycle, and Project-promotion rules selected from one definition authority.",
+      "fields": [
+        {
+          "id": "name",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The exact human-readable Tasks policy title."
+        },
+        {
+          "id": "createRequiresConfirmation",
+          "type": "boolean",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "Whether each exact Task create batch requires operator confirmation."
+        },
+        {
+          "id": "duplicateCandidateLimit",
+          "type": "number",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The bounded number of Task candidates inspected before create."
+        },
+        {
+          "id": "duplicateKeyFields",
+          "type": "string-list",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The portable Task fields used for deterministic duplicate review."
+        },
+        {
+          "id": "defaultStatus",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The portable lifecycle state assigned to a newly captured Task."
+        },
+        {
+          "id": "allowedContexts",
+          "type": "string-list",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The closed portable Task context vocabulary."
+        },
+        {
+          "id": "projectRequired",
+          "type": "boolean",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "Whether the selected Task workflow requires one exact Project relation."
+        },
+        {
+          "id": "assigneePolicy",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The portable rule limiting assignment to the authenticated current actor or no assignee."
+        }
+      ],
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "The normalized Tasks rules contain no portable body content."
+      },
+      "deduplicationFields": [
+        "name"
+      ]
+    },
+    {
+      "id": "task",
+      "summary": "A bounded work item that can be related to one or more projects.",
+      "fields": [
+        {
+          "id": "title",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The task title describing the intended work."
+        },
+        {
+          "id": "status",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The portable task lifecycle state."
+        },
+        {
+          "id": "context",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "The configured work-context classification."
+        },
+        {
+          "id": "projectId",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "The exact related project record identity used for bounded project-status queries.",
+          "reference": {
+            "subject": "projects.records.project",
+            "identity": "record-id"
+          }
+        },
+        {
+          "id": "projectUris",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Exact related project resource identities.",
+          "reference": {
+            "subject": "projects.records.project",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "assigneeIds",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Exact provider-scoped person identities for the assigned operators.",
+          "reference": {
+            "subject": "workspace.identity",
+            "identity": "provider-person-id"
+          }
+        },
+        {
+          "id": "nextActionOn",
+          "type": "string",
+          "format": "date",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "The pinned calendar date for the task's next action."
+        },
+        {
+          "id": "sourceMeetingUris",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Exact source meeting resource identities whose grounded work was folded into this task.",
+          "reference": {
+            "subject": "meetings.records.meeting",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "sourceQuotes",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Exact bounded source excerpts supporting the folded task outcome."
+        },
+        {
+          "id": "sourceSummaryFingerprints",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Content fingerprints of private review summaries that grounded the fold without assuming a provider-created record identity."
+        }
+      ],
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "Task records have no portable body content."
+      },
+      "deduplicationFields": [
+        "title"
+      ]
+    }
+  ],
+  "limitations": [
+    "The governed context.tasks vocabulary artifact owns portable Task terminology; compatibility pointers and provider labels are non-canonical projections.",
+    "This model owns portable Tasks, assignees, dates, lifecycle, Task policy, and grounded source relationships; Projects, CRM, and Meetings remain separate selectable Context packs.",
+    "Project and Meeting links are optional typed resource identities. A standalone Task does not require either Context pack.",
+    "A particular Automation policy may require one exact Project even though the portable Task model does not.",
+    "Provider-scoped assignee identifiers remain explicit workspace identity references and never become CRM contacts by implication.",
+    "Task creation and updates require separate Automation, Integration, configuration, approval, checkpoint, and verification authority."
+  ]
+}

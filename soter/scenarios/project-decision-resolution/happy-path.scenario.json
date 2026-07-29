@@ -1,0 +1,56 @@
+{
+  "$contract": "soter://contracts/scenario/v1",
+  "contractVersion": "1.0.0",
+  "id": "project-decision-resolution.happy-path",
+  "automation": "automation.project-decision-resolution",
+  "intent": "operate",
+  "input": {
+    "project": "exact-project-reference",
+    "question": "exact-current-question-reference",
+    "workItem": "exact-unchecked-action",
+    "decision": "private-complete-what-who-why",
+    "visibility": "policy-allowed"
+  },
+  "expected": {
+    "capabilityOrder": [
+      "projects.records.read",
+      "projects.records.read",
+      "projects.records.read",
+      "documents.content.read"
+    ],
+    "effectModes": {
+      "read": "allow",
+      "disclosure": "allow",
+      "write": "confirm",
+      "dispatch": "prohibit",
+      "destructive": "prohibit"
+    },
+    "outcomes": [
+      "projects-policy.grounded",
+      "question.exact-and-unprocessed",
+      "work-item.exact-and-unchecked",
+      "decision-three-surface-group.previewed",
+      "writes-held-for-separate-authority"
+    ],
+    "invariants": [
+      "decision-summary-preserves-exact-what-who-why",
+      "question-only-processed-field-may-change",
+      "work-item-only-exact-checkbox-may-change",
+      "three-actions-proposed-or-held-together",
+      "private-values-excluded-from-inspection",
+      "no-write-or-approval-during-preparation"
+    ],
+    "evidence": [
+      "exact-lock",
+      "policy-source-fingerprint",
+      "question-read-fingerprint",
+      "document-read-fingerprint",
+      "private-review-material",
+      "complete-group-fingerprint",
+      "write-boundary-state"
+    ]
+  },
+  "sourceCases": [
+    ".claude/systems/project-management.md"
+  ]
+}

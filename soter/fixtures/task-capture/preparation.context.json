@@ -1,0 +1,196 @@
+{
+  "$contract": "soter://contracts/context-snapshot/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.task-capture.preparation-fixture",
+  "runId": "run.task-capture.preparation-fixture",
+  "createdAt": "2026-07-16T15:00:00.000Z",
+  "configurationLockFingerprint": "sha256:56ec4abbbc6e05fde52bf201a8b4fe797b8e2a2a17ca1077a15b684bea593908",
+  "graphFingerprint": "sha256:d26b8bbc93e81dcee157108e67ac759d06de147484f6d6dfe2cfb88328a681a8",
+  "containment": "fixture",
+  "entries": [
+    {
+      "id": "context.task-capture.policy",
+      "subject": "tasks.records.task-work-policy",
+      "authority": "authority.tasks.definition",
+      "role": "definition",
+      "capability": "tasks.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-16T15:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.tasks.definition",
+        "mapping": "mapping.integration.notion.tasks-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:8cddeb0070f5fc60fe9a798d329c80c51165bdc7349724b9ae5e139355b9bddd"
+      },
+      "valueFingerprint": "sha256:a6d3de61ae912fe5e38a9321bddb8b27d5bde713c0fa761397c705001ef827b7",
+      "value": {
+        "records": [
+          {
+            "type": "task-work-policy",
+            "id": "policy.tasks",
+            "version": "1",
+            "fields": {
+              "name": "Tasks",
+              "createRequiresConfirmation": true,
+              "duplicateCandidateLimit": 10,
+              "duplicateKeyFields": [
+                "title"
+              ],
+              "defaultStatus": "To Do",
+              "allowedContexts": [
+                "Internal",
+                "Service",
+                "Project",
+                "Client"
+              ],
+              "projectRequired": true,
+              "assigneePolicy": "current-user-or-unassigned"
+            },
+            "identityBinding": {
+              "state": "exact-request",
+              "requestedIdFingerprint": "sha256:6cd51a314791b67027dff3f73feb5c82c7f642f6e4e91858901d09810043b26d"
+            }
+          }
+        ],
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.tasks.definition",
+          "mapping": "mapping.integration.notion.tasks-records",
+          "mappingVersion": "0.2.0",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:8cddeb0070f5fc60fe9a798d329c80c51165bdc7349724b9ae5e139355b9bddd"
+        },
+        "observedAt": "2026-07-16T15:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.task-capture.project",
+      "subject": "projects.records.project",
+      "authority": "authority.projects.instance",
+      "role": "instance",
+      "capability": "projects.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-16T15:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.projects.instance",
+        "mapping": "mapping.integration.notion.projects-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:c70c03079333c68d3f53d04b599349d4a824ad6ea9021fdc1bb3fe529e5d80be"
+      },
+      "valueFingerprint": "sha256:b3e00786691fb400c3ab643538b947c81a48d73d472503ac986f5caaadf3334d",
+      "value": {
+        "records": [
+          {
+            "type": "project",
+            "id": "soter-fixture://projects/project/launch",
+            "version": "1",
+            "fields": {
+              "name": "Acme launch",
+              "status": "active",
+              "organizationUris": [
+                "soter-fixture://crm/organization/acme"
+              ],
+              "taskUris": [
+                "soter-fixture://tasks/task/existing-deck"
+              ]
+            },
+            "identityBinding": {
+              "state": "exact-request",
+              "requestedIdFingerprint": "sha256:8d0f79bee2c2683c2290d65622eea4862d76364b0ba300add965a3a5e071a6ce"
+            }
+          }
+        ],
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.projects.instance",
+          "mapping": "mapping.integration.notion.projects-records",
+          "mappingVersion": "0.2.0",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:c70c03079333c68d3f53d04b599349d4a824ad6ea9021fdc1bb3fe529e5d80be"
+        },
+        "observedAt": "2026-07-16T15:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.task-capture.identity",
+      "subject": "notion.workspace.current-user",
+      "authority": "authority.notion.provider",
+      "role": "provider",
+      "capability": "workspace.identity.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-16T15:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.notion.provider",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:fba96dd124786906deac3173b004cf264261d14806396ade46da4ace8c3e6e77"
+      },
+      "valueFingerprint": "sha256:4c30a8b44ee7c1e9516f854ee003822baf80f497a35ece383ae88e5112532dcc",
+      "value": {
+        "identity": {
+          "kind": "current-user",
+          "providerPersonId": "provider-person.maya",
+          "fingerprint": "sha256:fcfa59de1ec300265f6f8e71d97dfe7413cdfc9c4e6a5e81250a18b693b812ff"
+        },
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.notion.provider",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:fba96dd124786906deac3173b004cf264261d14806396ade46da4ace8c3e6e77"
+        },
+        "observedAt": "2026-07-16T15:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.task-capture.duplicates",
+      "subject": "tasks.records.task-candidates",
+      "authority": "authority.tasks.instance",
+      "role": "instance",
+      "capability": "tasks.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-16T15:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.tasks.instance",
+        "mapping": "mapping.integration.notion.tasks-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:8cddeb0070f5fc60fe9a798d329c80c51165bdc7349724b9ae5e139355b9bddd"
+      },
+      "valueFingerprint": "sha256:2f2743384190a12671e9833485ade5afcfcf95f492a871a3ce259fba815ccdfb",
+      "value": {
+        "candidateCount": 0,
+        "candidateIds": [],
+        "providerOutputFingerprint": "sha256:d652f5d38b0f6b758173a4c3ee8198fa62f99f9505c7293c2b2d4adc2e075511"
+      }
+    }
+  ],
+  "effectIds": [
+    "effect.task-capture.preparation.policy.fixture",
+    "effect.task-capture.preparation.project.fixture",
+    "effect.task-capture.preparation.identity.fixture",
+    "effect.task-capture.preparation.duplicates.fixture"
+  ],
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Provider credentials, raw private inputs, and duplicate candidate field values are excluded."
+    ]
+  }
+}

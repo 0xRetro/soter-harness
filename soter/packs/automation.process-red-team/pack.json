@@ -1,0 +1,57 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "automation.process-red-team",
+  "version": "0.1.0",
+  "layer": "automation",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Prepares one ranked, source-bound, reproduced process review through five governed lenses without editing any source or granting write authority.",
+  "dependencies": [
+    { "pack": "core.runtime", "version": "^0.1.0", "optional": false, "reason": "Preparation requires exact locks, private review companions, effect policy, and no-authority boundaries." },
+    { "pack": "context.process", "version": "^0.1.0", "optional": false, "reason": "Process definitions, runs, policy claims, write-target schemas, review lenses, severity, and report-only meaning belong to Process Context." }
+  ],
+  "capabilities": {
+    "requires": [
+      { "id": "process.records.read", "version": "^1.0.0", "optional": false, "reason": "Preparation reads one exact policy selection, process definition, related policy standards, and one exact run." },
+      { "id": "process.schema.read", "version": "^1.0.0", "optional": false, "reason": "Preparation includes one exact current schema for the process's bounded declared write target." }
+    ],
+    "provides": []
+  },
+  "sourceRequirements": [
+    {
+      "purpose": "process-review-policy",
+      "capability": "process.records.read",
+      "authorityRole": "definition",
+      "authoritySubject": "process.records",
+      "minimum": 1,
+      "maximum": 1,
+      "reason": "Process Red Team requires one configured external selection that binds the exact governed review definition."
+    }
+  ],
+  "authorities": [
+    { "role": "definition", "subject": "process.records", "required": true },
+    { "role": "instance", "subject": "process.records", "required": true },
+    { "role": "evidence", "subject": "runtime.runs", "required": true }
+  ],
+  "effects": ["read", "disclosure"],
+  "operator": {
+    "input": "soter/automations/process-red-team/operator-input.json",
+    "preparation": {
+      "module": "soter/automations/process-red-team/prepare.mjs",
+      "export": "prepareProcessRedTeamRun",
+      "containment": "fixture",
+      "derivedReviewContract": "soter/automations/process-red-team/derived-review.json"
+    }
+  },
+  "artifacts": [
+    { "path": "soter/automations/process-red-team/operator-input.json", "role": "definition" },
+    { "path": "soter/automations/process-red-team/derived-review.json", "role": "definition" },
+    { "path": "soter/automations/process-red-team/prepare.mjs", "role": "implementation" },
+    { "path": "soter/automations/process-red-team/scenario.mjs", "role": "evaluation" },
+    { "path": "soter/automations/process-red-team/process-red-team.selftest.mjs", "role": "evaluation" },
+    { "path": "soter/scenarios/process-red-team/preparation.scenario.json", "role": "evaluation" }
+  ],
+  "compatibility": { "baseContract": "^1.0.0", "hosts": ["codex", "claude"] },
+  "verification": { "maxLevel": "fixture", "scenarios": ["soter/scenarios/process-red-team/preparation.scenario.json"] }
+}

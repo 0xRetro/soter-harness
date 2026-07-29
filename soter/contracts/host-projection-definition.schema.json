@@ -1,16 +1,16 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "soter://contracts/host-projection-definition/v1",
+  "$id": "soter://contracts/host-projection-definition/v2",
   "title": "Soter deterministic host projection definition",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "$contract", "contractVersion", "id", "host", "version", "generator",
-    "target", "ownership", "renderContext", "outputs", "limitations"
+    "target", "ownership", "renderContext", "outputs", "collections", "limitations"
   ],
   "properties": {
-    "$contract": { "const": "soter://contracts/host-projection-definition/v1" },
-    "contractVersion": { "const": "1.0.0" },
+    "$contract": { "const": "soter://contracts/host-projection-definition/v2" },
+    "contractVersion": { "const": "2.0.0" },
     "id": { "type": "string", "pattern": "^host-projection[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
     "host": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
     "version": { "$ref": "#/$defs/version" },
@@ -50,7 +50,11 @@
       "minItems": 1,
       "uniqueItems": true,
       "items": {
-        "enum": ["configuration-id", "host-id", "pack-ids", "capability-ids"]
+        "enum": [
+          "configuration-id", "host-id", "pack-ids", "capability-ids",
+          "workflow-guide-ids", "effect-policy-modes", "provider-requirements",
+          "development-guards"
+        ]
       }
     },
     "outputs": {
@@ -78,7 +82,70 @@
             "minItems": 1,
             "uniqueItems": true,
             "items": {
-              "enum": ["configuration-id", "host-id", "pack-ids", "capability-ids"]
+              "enum": [
+                "configuration-id", "host-id", "pack-ids", "capability-ids",
+                "workflow-guide-ids", "effect-policy-modes", "provider-requirements",
+                "development-guards"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "collections": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id", "role", "sourceContract", "selection", "pathPrefix", "outputs"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^collection[.][a-z0-9]+(?:[.-][a-z0-9]+)*$"
+          },
+          "role": { "const": "skills" },
+          "sourceContract": { "const": "soter://contracts/workflow-guide/v2" },
+          "selection": { "const": "selected-pack-active" },
+          "pathPrefix": {
+            "type": "string",
+            "pattern": "^(?!/)(?!.*(?:^|/)[.][.](?:/|$))[A-Za-z0-9._/-]+/$"
+          },
+          "outputs": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id", "relativePath", "format", "template", "encoding",
+                "newline", "finalNewline", "mode"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+                },
+                "relativePath": {
+                  "type": "string",
+                  "pattern": "^(?!/)(?!.*(?:^|/)[.][.](?:/|$))[A-Za-z0-9._/-]+$"
+                },
+                "format": {
+                  "enum": ["codex-skill-v1", "codex-openai-yaml-v1", "claude-skill-v1"]
+                },
+                "template": {
+                  "type": "string",
+                  "pattern": "^soter/hosts/[a-z0-9-]+/templates/[A-Za-z0-9._-]+$"
+                },
+                "encoding": { "const": "utf-8" },
+                "newline": { "const": "lf" },
+                "finalNewline": { "const": true },
+                "mode": { "const": "0644" }
+              }
             }
           }
         }

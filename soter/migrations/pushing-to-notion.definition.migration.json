@@ -1,0 +1,53 @@
+{
+  "$contract": "soter://contracts/migration/v1",
+  "contractVersion": "1.0.0",
+  "id": "pushing-to-notion.prototype-to-v2-definition",
+  "source": "claude-oriented-prototype",
+  "slice": "automation.pushing-to-notion",
+  "items": [
+    {
+      "sourcePath": ".claude/skills/pushing-to-notion/SKILL.md",
+      "sourceFingerprint": "sha256:c9e71b6397635f3bb5a4ecabf5c40a7210f7320a4f84e266d9a0a7562c2e43eb",
+      "targetPath": "soter/automations/pushing-to-notion/guide.json",
+      "targetPack": "automation.pushing-to-notion",
+      "state": "retired",
+      "bridge": "This exact responsibility is intentionally retired and grants no replacement authority. The final evidence records an intentional behavior change. The legacy source is retained only as an exact fingerprinted tombstone; no operational fallback remains. Scope: Provider-neutral normalized outcome or behavior-expectation responsibility without runtime authority.",
+      "evidence": [
+        "soter/fixtures/harness-development-catalog/pushing-to-notion.intentional-retirement.evidence.json"
+      ]
+    },
+    {
+      "sourcePath": ".claude/evals/pushing-to-notion/happy-path.md",
+      "sourceFingerprint": "sha256:196cfb86af3b474dbc01805e8c633fc5a6997a691fe5e783ea6d5c522d57f9b5",
+      "targetPath": "soter/automations/pushing-to-notion/evaluations.json",
+      "targetPack": "automation.pushing-to-notion",
+      "state": "retired",
+      "bridge": "This exact responsibility is intentionally retired and grants no replacement authority. The final evidence records an intentional behavior change. The legacy source is retained only as an exact fingerprinted tombstone; no operational fallback remains. Scope: Provider-neutral normalized outcome or behavior-expectation responsibility without runtime authority.",
+      "evidence": [
+        "soter/fixtures/harness-development-catalog/pushing-to-notion.intentional-retirement.evidence.json"
+      ]
+    },
+    {
+      "sourcePath": ".claude/evals/pushing-to-notion/invariant-no-overwrite.md",
+      "sourceFingerprint": "sha256:2e0479481d77624a5d18a7bf89ec0c8a947834a59fda527a41842f93a80f3ef1",
+      "targetPath": "soter/automations/pushing-to-notion/evaluations.json",
+      "targetPack": "automation.pushing-to-notion",
+      "state": "retired",
+      "bridge": "This exact responsibility is intentionally retired and grants no replacement authority. The final evidence records an intentional behavior change. The legacy source is retained only as an exact fingerprinted tombstone; no operational fallback remains. Scope: Provider-neutral normalized outcome or behavior-expectation responsibility without runtime authority.",
+      "evidence": [
+        "soter/fixtures/harness-development-catalog/pushing-to-notion.intentional-retirement.evidence.json"
+      ]
+    },
+    {
+      "sourcePath": ".claude/evals/pushing-to-notion/pressure-skip-confirm.md",
+      "sourceFingerprint": "sha256:af74f0bcac441b6772d6af31aa35f9f64916dbc675e494316d8e7b201d085dab",
+      "targetPath": "soter/automations/pushing-to-notion/evaluations.json",
+      "targetPack": "automation.pushing-to-notion",
+      "state": "retired",
+      "bridge": "This exact responsibility is intentionally retired and grants no replacement authority. The final evidence records an intentional behavior change. The legacy source is retained only as an exact fingerprinted tombstone; no operational fallback remains. Scope: Provider-neutral normalized outcome or behavior-expectation responsibility without runtime authority.",
+      "evidence": [
+        "soter/fixtures/harness-development-catalog/pushing-to-notion.intentional-retirement.evidence.json"
+      ]
+    }
+  ]
+}

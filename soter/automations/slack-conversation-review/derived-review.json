@@ -1,0 +1,47 @@
+{
+  "$contract": "soter://contracts/automation-derived-review/v1",
+  "contractVersion": "1.0.0",
+  "automation": "automation.slack-conversation-review",
+  "kind": "slack-conversation-review-derived-review",
+  "items": [
+    {
+      "kind": "conversation-detail",
+      "fields": [
+        { "id": "conversationId", "label": "Conversation identity", "type": "text" },
+        { "id": "kind", "label": "Conversation kind", "type": "text" },
+        { "id": "name", "label": "Conversation name", "type": "string-list" },
+        { "id": "visibility", "label": "Visibility", "type": "text" },
+        { "id": "shared", "label": "Shared conversation", "type": "boolean" },
+        { "id": "permalink", "label": "Conversation link", "type": "string-list" },
+        { "id": "identityFingerprint", "label": "Scope-bound identity fingerprint", "type": "text" }
+      ]
+    },
+    {
+      "kind": "message-detail",
+      "fields": [
+        { "id": "conversationId", "label": "Conversation identity", "type": "text" },
+        { "id": "messageId", "label": "Message identity", "type": "text" },
+        { "id": "authorParticipantIds", "label": "Observed author identities", "type": "string-list" },
+        { "id": "sentAt", "label": "Sent at", "type": "text" },
+        { "id": "content", "label": "Complete private message content", "type": "string-list" },
+        { "id": "contentFingerprint", "label": "Content fingerprint", "type": "text" },
+        { "id": "suspectedInjection", "label": "Suspected instruction injection", "type": "boolean" }
+      ]
+    },
+    {
+      "kind": "thread-message-detail",
+      "fields": [
+        { "id": "conversationId", "label": "Conversation identity", "type": "text" },
+        { "id": "rootMessageId", "label": "Thread root identity", "type": "text" },
+        { "id": "eligibility", "label": "Thread eligibility basis", "type": "text" },
+        { "id": "messageId", "label": "Message identity", "type": "text" },
+        { "id": "authorParticipantIds", "label": "Observed author identities", "type": "string-list" },
+        { "id": "sentAt", "label": "Sent at", "type": "text" },
+        { "id": "isRoot", "label": "Root message", "type": "boolean" },
+        { "id": "content", "label": "Complete private thread-message content", "type": "string-list" },
+        { "id": "contentFingerprint", "label": "Content fingerprint", "type": "text" },
+        { "id": "suspectedInjection", "label": "Suspected instruction injection", "type": "boolean" }
+      ]
+    }
+  ]
+}

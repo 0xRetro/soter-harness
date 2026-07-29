@@ -1,0 +1,159 @@
+{
+  "$contract": "soter://contracts/workflow-definition/v2",
+  "contractVersion": "2.0.0",
+  "id": "automation.writing-adrs",
+  "version": "0.1.0",
+  "title": "Record an architecture decision",
+  "summary": "Records one durable architecture decision as a proposed immutable entry with exact alternatives, consequences, and supersession semantics.",
+  "ownership": {
+    "layer": "automation",
+    "domain": "harness-governance",
+    "legacyLayer": "skill",
+    "responsibility": "outcome-definition"
+  },
+  "lifecycle": {
+    "state": "retired",
+    "retirement": {
+      "state": "complete",
+      "reasonCode": "WORKFLOW_RETIRED",
+      "proceduralAuthority": "none",
+      "fallback": "removed",
+      "evidence": [
+        {
+          "path": "soter/fixtures/harness-development-catalog/writing-adrs.intentional-retirement.evidence.json"
+        }
+      ],
+      "permittedNextAction": "inspect-replacement"
+    },
+    "replacements": [
+      {
+        "id": "decisions",
+        "kind": "historical-archive",
+        "reason": "Existing decision records remain immutable history without becoming mandatory development ceremony.",
+        "limitations": [
+          "Historical decision numbering and indexes grant no runtime or promotion authority."
+        ]
+      },
+      {
+        "id": "development-result.optional-decision-evidence",
+        "kind": "core",
+        "reason": "Development results may reference exact optional decision evidence when a durable rationale is useful.",
+        "limitations": [
+          "No ADR is generated or required automatically."
+        ]
+      }
+    ],
+    "developmentRequest": null,
+    "developmentResult": null
+  },
+  "intent": {
+    "goal": "Preserve the rationale for one genuinely constraining choice without turning task notes, status, or incidental implementation details into permanent law.",
+    "useWhen": [
+      "A confirmed choice among real alternatives constrains future architecture or operation."
+    ],
+    "excludeWhen": [
+      "The material is status, a task, transient context, or an unconfirmed decision produced by implementation work."
+    ]
+  },
+  "procedure": [
+    {
+      "id": "qualify-decision",
+      "sequence": 1,
+      "outcome": "Confirm the choice has real alternatives, durable consequences, and explicit user-owned decision content.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "check-existing-records",
+      "sequence": 2,
+      "outcome": "Inspect current decisions and supersession state before proposing a new identity.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "allocate-stable-identity",
+      "sequence": 3,
+      "outcome": "Allocate a collision-free decision identity across the governed repository state.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "prepare-proposed-record",
+      "sequence": 4,
+      "outcome": "Prepare concise context, decision, consequences, limitations, and revisit trigger as Proposed.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "update-index-and-vocabulary",
+      "sequence": 5,
+      "outcome": "Prepare exact index and vocabulary changes required by the new decision.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "confirm-and-land",
+      "sequence": 6,
+      "outcome": "Only after explicit content confirmation, land the new record or supersession without rewriting accepted history.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    }
+  ],
+  "safeguards": [
+    "Never rewrite accepted decision content; use an explicit superseding record.",
+    "Never infer acceptance from permission to perform adjacent implementation work.",
+    "Never create a decision record for status, notes, or information without a real choice."
+  ],
+  "evaluationSet": {
+    "id": "evaluation-set.writing-adrs",
+    "path": "soter/automations/writing-adrs/evaluations.json"
+  },
+  "guide": {
+    "id": "workflow-guide.writing-adrs",
+    "path": "soter/automations/writing-adrs/guide.json"
+  },
+  "potentialEffects": [
+    "read",
+    "disclosure",
+    "write"
+  ],
+  "source": {
+    "presence": "removed",
+    "legacyPath": ".claude/skills/writing-adrs/SKILL.md",
+    "legacyFingerprint": "sha256:65d04ddff9b9cdcdc3e3c3d7d43edb7cc64029ca8c1326a97fa2d0f6038ae430"
+  },
+  "privacy": {
+    "rawSourceIncluded": false,
+    "workspaceSpecificValuesIncluded": false,
+    "credentialsIncluded": false,
+    "privateInputsIncluded": false
+  },
+  "limitations": [
+    "This normalized definition preserves inspectable intent only; it has no operator runtime, provider binding, effect authority, or behavior parity.",
+    "The fingerprinted legacy source remains canonical until a separate implemented and evidenced runtime migration removes that fallback."
+  ]
+}

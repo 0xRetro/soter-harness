@@ -1,0 +1,106 @@
+{
+  "$contract": "soter://contracts/provider-mapping/v1",
+  "contractVersion": "1.0.0",
+  "id": "mapping.integration.notion.meetings-records",
+  "pack": "integration.notion",
+  "provider": "provider.integration.notion.mcp",
+  "version": "0.2.0",
+  "contextModel": "model.context.meetings.records",
+  "settingsDefinition": "settings.integration.notion",
+  "capabilities": [
+    "meetings.records.read",
+    "meetings.records.create",
+    "meetings.schema.read"
+  ],
+  "recordTypes": [
+    {
+      "id": "meeting",
+      "target": "meetings",
+      "capabilities": [
+        "meetings.records.read",
+        "meetings.schema.read"
+      ],
+      "fields": [
+        {
+          "portable": "title",
+          "provider": "Meeting Name",
+          "providerType": "title",
+          "decode": "scalar"
+        },
+        {
+          "portable": "meetingType",
+          "provider": "Type",
+          "providerType": "select",
+          "valueMapping": "configured-bijection",
+          "decode": "scalar"
+        },
+        {
+          "portable": "occurredOn",
+          "provider": "Date",
+          "providerType": "date",
+          "decode": "scalar"
+        },
+        {
+          "portable": "recordingUri",
+          "provider": "Recording",
+          "providerType": "url",
+          "decode": "scalar"
+        },
+        {
+          "portable": "organizationUris",
+          "provider": "Org",
+          "providerType": "relation",
+          "decode": "json"
+        }
+      ]
+    },
+    {
+      "id": "meeting-summary",
+      "target": "documents",
+      "capabilities": [
+        "meetings.records.read",
+        "meetings.records.create",
+        "meetings.schema.read"
+      ],
+      "fields": [
+        {
+          "portable": "title",
+          "provider": "Name",
+          "providerType": "title",
+          "decode": "scalar"
+        },
+        {
+          "portable": "documentType",
+          "provider": "Type",
+          "providerType": "select",
+          "valueMapping": "configured-bijection",
+          "decode": "scalar"
+        },
+        {
+          "portable": "description",
+          "provider": "Description",
+          "providerType": "text",
+          "decode": "scalar"
+        },
+        {
+          "portable": "link",
+          "provider": "Link",
+          "providerType": "url",
+          "decode": "scalar"
+        }
+      ],
+      "content": {
+        "portable": "body",
+        "provider": "page-content",
+        "providerType": "markdown"
+      }
+    }
+  ],
+  "limitations": [
+    "This mapping translates Meeting and meeting-summary records only; related CRM organizations, Projects, and Tasks are resolved through their independent mappings and capabilities.",
+    "Provider People values are not portable participant resource identities, so participantUris are deliberately unavailable until an explicit participant normalization mapping exists.",
+    "Portable commitment records are derived Meeting meaning and are not independently mapped in this revision.",
+    "Meeting-summary creates require a separately governed exact transaction; this mapping creates no approval, execution, verification, readiness, or health authority.",
+    "Schema compatibility is not established by this declaration; an exact-lock private probe must observe current target schemas."
+  ]
+}

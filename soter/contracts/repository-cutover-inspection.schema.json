@@ -1,0 +1,267 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/repository-cutover-inspection/v1",
+  "title": "Soter sanitized repository cutover inspection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "id", "checkpointFingerprint", "request",
+    "state", "phase", "plan", "progress", "failure", "result", "authority",
+    "privacy", "claimBoundary", "inspectionFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/repository-cutover-inspection/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^repository-cutover[.][a-f0-9]{64}$" },
+    "checkpointFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fingerprint", "createdAt"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^repository-cutover[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "createdAt": { "$ref": "#/$defs/instant" }
+      }
+    },
+    "state": { "enum": ["prepared", "applying", "completed", "rolling-back", "rolled-back", "needs-attention"] },
+    "phase": { "enum": ["prepared", "effects", "verifying", "rollback", "terminal"] },
+    "plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fingerprint", "basisTreeFingerprint", "candidateTreeFingerprint",
+        "operationCount", "fixtureWriteCount", "fixtureRemovalCount", "fixtureState",
+        "fixtureRequestFingerprint", "pendingEvidenceViolationCount",
+        "sourceDeletionCount", "operationalDeletionCount"
+      ],
+      "properties": {
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "basisTreeFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "candidateTreeFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "operationCount": { "type": "integer", "minimum": 1 },
+        "fixtureWriteCount": { "const": 0 },
+        "fixtureRemovalCount": { "const": 0 },
+        "fixtureState": { "const": "pending-evidence-finalization" },
+        "fixtureRequestFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "pendingEvidenceViolationCount": { "type": "integer", "minimum": 0 },
+        "sourceDeletionCount": { "const": 79 },
+        "operationalDeletionCount": { "const": 5 }
+      }
+    },
+    "progress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["completed", "rolledBack", "pending", "currentSequence"],
+      "properties": {
+        "completed": { "type": "integer", "minimum": 0 },
+        "rolledBack": { "type": "integer", "minimum": 0 },
+        "pending": { "type": "integer", "minimum": 0 },
+        "currentSequence": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "failure": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["reasonCode", "summary"],
+          "properties": {
+            "reasonCode": { "type": "string", "pattern": "^REPOSITORY_CUTOVER_[A-Z0-9_]+$" },
+            "summary": {
+              "enum": [
+                "Repository cutover cannot safely continue or roll back without exact checkpoint-bound reconciliation.",
+                "Repository cutover stopped and attempted exact rollback."
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "result": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "repositoryCandidateMaterialized", "evidenceAndFixturesMaterialized"],
+          "properties": {
+            "state": { "const": "rolled-back" },
+            "repositoryCandidateMaterialized": { "const": false },
+            "evidenceAndFixturesMaterialized": { "const": false }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state", "repositoryCandidateMaterialized", "evidenceAndFixturesMaterialized",
+            "pendingEvidenceFinalization", "fixtureFinalizationRequestFingerprint",
+            "candidateTreeFingerprint", "claimBoundary"
+          ],
+          "properties": {
+            "state": { "const": "completed" },
+            "repositoryCandidateMaterialized": { "const": true },
+            "evidenceAndFixturesMaterialized": { "const": false },
+            "pendingEvidenceFinalization": { "const": true },
+            "fixtureFinalizationRequestFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "candidateTreeFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "claimBoundary": { "const": "exact-local-repository-cutover-only" }
+          }
+        }
+      ]
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reusableRequest", "providerEffects", "networkEffects", "hostEffects",
+        "configurationMutation", "repositoryMutation", "requestExpiry", "separateConfirmation"
+      ],
+      "properties": {
+        "reusableRequest": { "const": false },
+        "providerEffects": { "const": false },
+        "networkEffects": { "const": false },
+        "hostEffects": { "const": false },
+        "configurationMutation": { "const": false },
+        "repositoryMutation": { "enum": ["checkpoint-bound", "not-granted-by-inspection"] },
+        "requestExpiry": { "const": "not-used-exact-root-and-create-only-checkpoint" },
+        "separateConfirmation": { "const": "not-required-user-authorized-internal-migration" }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rootPathIncluded", "requestPathsIncluded", "filePathsIncluded", "fileBytesIncluded",
+        "privateStateIncluded", "providerDataIncluded"
+      ],
+      "properties": {
+        "rootPathIncluded": { "const": false },
+        "requestPathsIncluded": { "const": false },
+        "filePathsIncluded": { "const": false },
+        "fileBytesIncluded": { "const": false },
+        "privateStateIncluded": { "const": false },
+        "providerDataIncluded": { "const": false }
+      }
+    },
+    "claimBoundary": { "const": "Exact local repository bytes and modes only; readiness, connected verification, provider behavior, host behavior, and health are not evaluated." },
+    "inspectionFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "allOf": [
+    {
+      "oneOf": [
+        {
+          "properties": {
+            "state": { "const": "prepared" },
+            "phase": { "const": "prepared" },
+            "progress": {
+              "properties": {
+                "completed": { "const": 0 },
+                "rolledBack": { "const": 0 },
+                "pending": { "type": "integer", "minimum": 1 },
+                "currentSequence": { "type": "null" }
+              }
+            },
+            "failure": { "type": "null" },
+            "result": { "type": "null" },
+            "authority": { "properties": { "repositoryMutation": { "const": "checkpoint-bound" } } }
+          }
+        },
+        {
+          "properties": {
+            "state": { "const": "applying" },
+            "phase": { "const": "effects" },
+            "progress": {
+              "properties": {
+                "rolledBack": { "const": 0 },
+                "currentSequence": { "type": "integer", "minimum": 0 }
+              }
+            },
+            "failure": { "type": "null" },
+            "result": { "type": "null" },
+            "authority": { "properties": { "repositoryMutation": { "const": "not-granted-by-inspection" } } }
+          }
+        },
+        {
+          "properties": {
+            "state": { "const": "applying" },
+            "phase": { "const": "verifying" },
+            "progress": {
+              "properties": {
+                "completed": { "type": "integer", "minimum": 1 },
+                "rolledBack": { "const": 0 },
+                "pending": { "const": 0 },
+                "currentSequence": { "type": "null" }
+              }
+            },
+            "failure": { "type": "null" },
+            "result": { "type": "null" },
+            "authority": { "properties": { "repositoryMutation": { "const": "not-granted-by-inspection" } } }
+          }
+        },
+        {
+          "properties": {
+            "state": { "const": "rolling-back" },
+            "phase": { "const": "rollback" },
+            "progress": { "properties": { "currentSequence": { "type": "integer", "minimum": 0 } } },
+            "result": { "type": "null" },
+            "authority": { "properties": { "repositoryMutation": { "const": "not-granted-by-inspection" } } }
+          }
+        },
+        {
+          "properties": {
+            "state": { "const": "completed" },
+            "phase": { "const": "terminal" },
+            "progress": {
+              "properties": {
+                "completed": { "type": "integer", "minimum": 1 },
+                "rolledBack": { "const": 0 },
+                "pending": { "const": 0 },
+                "currentSequence": { "type": "null" }
+              }
+            },
+            "failure": { "type": "null" },
+            "result": { "type": "object", "properties": { "state": { "const": "completed" } } },
+            "authority": { "properties": { "repositoryMutation": { "const": "not-granted-by-inspection" } } }
+          }
+        },
+        {
+          "properties": {
+            "state": { "const": "rolled-back" },
+            "phase": { "const": "terminal" },
+            "progress": {
+              "properties": {
+                "completed": { "const": 0 },
+                "rolledBack": { "type": "integer", "minimum": 1 },
+                "pending": { "const": 0 },
+                "currentSequence": { "type": "null" }
+              }
+            },
+            "failure": { "type": "null" },
+            "result": { "type": "object", "properties": { "state": { "const": "rolled-back" } } },
+            "authority": { "properties": { "repositoryMutation": { "const": "not-granted-by-inspection" } } }
+          }
+        },
+        {
+          "properties": {
+            "state": { "const": "needs-attention" },
+            "phase": { "const": "terminal" },
+            "progress": { "properties": { "currentSequence": { "type": "null" } } },
+            "failure": { "type": "object" },
+            "result": { "type": "null" },
+            "authority": { "properties": { "repositoryMutation": { "const": "not-granted-by-inspection" } } }
+          }
+        }
+      ]
+    }
+  ],
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "instant": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9][.]([0-9]{3})Z$"
+    }
+  }
+}

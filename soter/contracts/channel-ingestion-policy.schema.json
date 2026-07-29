@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/channel-ingestion-policy/v1",
+  "title": "Soter provider-neutral channel-ingestion policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "id", "name", "platform",
+    "maxSweepChannels", "maxSelectedChannels", "maxParticipantsPerChannel",
+    "maxContactCandidates", "maxOrganizationCandidates",
+    "allowedVisibilities", "selectionRequiredForSweep",
+    "participantReadRequiresExplicitSelection", "identityOnlyBeforeSelection",
+    "botsExcluded", "providerParticipantsAreCrmPeople", "participantMatchOrder",
+    "organizationMatchOrder", "identityFingerprintScope",
+    "identityFingerprintAlgorithm", "portableProviderIdsStored",
+    "writesRequireConfirmation", "messagesIncluded", "limitations"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/channel-ingestion-policy/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^policy\\.context\\.communications\\.collaboration\\.[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "name": { "type": "string", "minLength": 3, "maxLength": 120 },
+    "platform": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "maxSweepChannels": { "type": "integer", "minimum": 1, "maximum": 500 },
+    "maxSelectedChannels": { "type": "integer", "minimum": 1, "maximum": 50 },
+    "maxParticipantsPerChannel": { "type": "integer", "minimum": 1, "maximum": 500 },
+    "maxContactCandidates": { "type": "integer", "minimum": 1, "maximum": 500 },
+    "maxOrganizationCandidates": { "type": "integer", "minimum": 1, "maximum": 500 },
+    "allowedVisibilities": {
+      "type": "array", "minItems": 2, "maxItems": 2, "uniqueItems": true,
+      "items": { "enum": ["public", "private"] }
+    },
+    "selectionRequiredForSweep": { "const": true },
+    "participantReadRequiresExplicitSelection": { "const": true },
+    "identityOnlyBeforeSelection": { "const": true },
+    "botsExcluded": { "const": true },
+    "providerParticipantsAreCrmPeople": { "const": false },
+    "participantMatchOrder": {
+      "type": "array", "minItems": 2, "maxItems": 2, "uniqueItems": true,
+      "items": { "enum": ["email-exact", "name-exact-unique"] }
+    },
+    "organizationMatchOrder": {
+      "const": ["channel-name-explicit-exact"]
+    },
+    "identityFingerprintScope": { "const": "platform-workspace-conversation" },
+    "identityFingerprintAlgorithm": { "const": "sha256-canonical-json-v1" },
+    "portableProviderIdsStored": { "const": false },
+    "writesRequireConfirmation": { "const": true },
+    "messagesIncluded": { "const": false },
+    "limitations": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": { "type": "string", "minLength": 12 }
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "$contract": "soter://contracts/context-record-model/v1",
+  "contractVersion": "1.0.0",
+  "id": "model.context.docs.records",
+  "pack": "context.docs",
+  "version": "0.1.0",
+  "subject": "documents.records",
+  "recordTypes": [
+    {
+      "id": "document-index",
+      "summary": "One governed index record for a retained shared document or link.",
+      "fields": [
+        { "id": "name", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The exact human-readable document name." },
+        { "id": "documentType", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The current governed document classification." },
+        { "id": "audiences", "type": "string-list", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The governed audiences permitted or intended to use the document." },
+        { "id": "categories", "type": "string-list", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The current governed subject categories for the artifact." },
+        { "id": "description", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "One factual line explaining what the document is and why it is retained." },
+        { "id": "link", "type": "string", "format": "resource-uri", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The exact canonical artifact link." },
+        { "id": "ownerIds", "type": "string-list", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "Exact provider person identities for the human document owner.", "reference": { "subject": "workspace.identity", "identity": "provider-person-id" } },
+        { "id": "organizationUris", "type": "string-list", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "Exact organization resource identities related to the document.", "reference": { "subject": "crm.records.organization", "identity": "resource-uri" } },
+        { "id": "relatedProjectUris", "type": "string-list", "requiredOnCreate": false, "nullable": false, "mutable": true, "summary": "Exact evidenced Project resource identities related to the document.", "reference": { "subject": "projects.records.project", "identity": "resource-uri" } },
+        { "id": "relatedTaskUris", "type": "string-list", "requiredOnCreate": false, "nullable": false, "mutable": true, "summary": "Exact evidenced Task resource identities related to the document.", "reference": { "subject": "tasks.records.task", "identity": "resource-uri" } },
+        { "id": "relatedOpportunityUris", "type": "string-list", "requiredOnCreate": false, "nullable": false, "mutable": true, "summary": "Exact evidenced opportunity resource identities related to the document.", "reference": { "subject": "crm.records.opportunity", "identity": "resource-uri" } }
+      ],
+      "content": { "kind": "none", "requiredOnCreate": false, "summary": "The shared index row points to the artifact and does not duplicate its content." },
+      "deduplicationFields": ["link", "name"]
+    }
+  ],
+  "limitations": [
+    "This model owns portable document-index meaning only; provider schemas, option sets, relation targets, permissions, and current records require Integration observations.",
+    "The governed context.docs vocabulary artifact owns the exact current doc and private-workspace doc terms and definitions.",
+    "Private-workspace documents and meeting source records are outside this shared index model and must not be promoted into it implicitly."
+  ]
+}

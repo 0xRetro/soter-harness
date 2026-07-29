@@ -8,7 +8,7 @@
     "transcripts": [
     {
       "meetingId": "meeting.fixture-001",
-      "recordingUri": "otter://fixture/meeting.fixture-001",
+        "recordingUri": "https://otter.ai/u/meeting_fixture_001",
       "speakers": [
         { "id": "speaker.retro", "displayName": "Retro" },
         { "id": "speaker.maya", "displayName": "Maya Chen" }
@@ -19,11 +19,16 @@
           "text": "The launch direction is approved. Please send the updated deck Friday.",
           "startSeconds": 12
         },
-        {
-          "speakerId": "speaker.retro",
-          "text": "I will revise the deck and link it to the launch project.",
-          "startSeconds": 26
-        }
+          {
+            "speakerId": "speaker.retro",
+            "text": "I will revise the deck and link it to the launch project.",
+            "startSeconds": 26
+          },
+          {
+            "speakerId": "speaker.maya",
+            "text": "I will send the integration reference after the meeting.",
+            "startSeconds": 41
+          }
       ]
     }
     ]

@@ -93,10 +93,7 @@ export async function selftestPreparedReviewBatches(root = defaultRoot) {
   const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'soter-review-batch-selftest-'));
   try {
     fs.cpSync(path.join(root, 'soter'), path.join(temporaryRoot, 'soter'), { recursive: true });
-    for (const directory of ['.claude', '.codex']) {
-      fs.cpSync(path.join(root, directory), path.join(temporaryRoot, directory), { recursive: true });
-    }
-    for (const file of ['package.json', 'package-lock.json', 'AGENTS.md', 'CLAUDE.md']) {
+    for (const file of ['package.json', 'package-lock.json']) {
       fs.copyFileSync(path.join(root, file), path.join(temporaryRoot, file));
     }
     const canonicalBefore = fingerprintPath(path.join(temporaryRoot, 'soter'));
@@ -105,6 +102,7 @@ export async function selftestPreparedReviewBatches(root = defaultRoot) {
       root: temporaryRoot,
       automationId: 'automation.email-triage',
       configurationName: 'email-triage',
+      configurationBasis: 'tracked-contained',
       input: {
         query: 'in:inbox newer_than:1d',
         scope: 'triage-drafts-handoffs-digest',
@@ -221,6 +219,13 @@ export async function selftestPreparedReviewBatches(root = defaultRoot) {
       () => assertPreparedReviewBatch(temporaryRoot, substitutedBatch, work),
       (error) => error.code === 'PREPARED_REVIEW_BATCH_BINDING_INVALID'
     );
+    const substitutedBatchBasis = structuredClone(batch);
+    substitutedBatchBasis.configuration.configurationBasis = 'private-active';
+    resignBatch(substitutedBatchBasis);
+    assert.throws(
+      () => assertPreparedReviewBatch(temporaryRoot, substitutedBatchBasis, work),
+      (error) => error.code === 'PREPARED_REVIEW_BATCH_BINDING_INVALID'
+    );
     const reorderedBatch = structuredClone(batch);
     reorderedBatch.actions.reverse();
     reorderedBatch.actions.forEach((action, index) => {
@@ -274,6 +279,18 @@ export async function selftestPreparedReviewBatches(root = defaultRoot) {
       () => assertPreparedReviewBatchMaterial(temporaryRoot, falseApplicability, batch, work),
       (error) => error.code === 'PREPARED_REVIEW_BATCH_MATERIAL_BINDING_INVALID'
     );
+    const substitutedConfigurationBasis = structuredClone(material);
+    substitutedConfigurationBasis.configuration.configurationBasis = 'private-active';
+    resignMaterial(substitutedConfigurationBasis);
+    assert.throws(
+      () => assertPreparedReviewBatchMaterial(
+        temporaryRoot,
+        substitutedConfigurationBasis,
+        batch,
+        work
+      ),
+      (error) => error.code === 'PREPARED_REVIEW_BATCH_MATERIAL_BINDING_INVALID'
+    );
     const rawProviderEscape = structuredClone(material);
     rawProviderEscape.actions[0].rawProviderResponse = 'HOSTILE_RAW_PROVIDER_RESPONSE';
     resignMaterial(rawProviderEscape);
@@ -281,6 +298,79 @@ export async function selftestPreparedReviewBatches(root = defaultRoot) {
       () => assertPreparedReviewBatchMaterial(temporaryRoot, rawProviderEscape, batch, work),
       (error) => error.code === 'PREPARED_REVIEW_BATCH_MATERIAL_MALFORMED'
     );
+
+    const taskTitle = 'PRIVATE_TASK_BATCH_TITLE_SENTINEL';
+    const taskDate = '2026-07-29';
+    const taskWork = await prepareAutomationRun({
+      root: temporaryRoot,
+      automationId: 'automation.task-capture',
+      configurationName: 'task-capture',
+      configurationBasis: 'tracked-contained',
+      input: {
+        title: taskTitle,
+        project: 'soter-fixture://projects/project/launch',
+        assignee: 'self',
+        nextActionOn: taskDate,
+        context: 'Project'
+      },
+      createdAt: '2026-07-16T18:02:30.000Z'
+    });
+    const taskAction = taskWork.preview.collections[0].rows[0].actions[0];
+    assert.equal(taskAction.kind, 'task-create');
+    assert.equal(taskAction.state, 'proposed');
+    const taskBatch = createPreparedReviewBatch({
+      root: temporaryRoot,
+      workId: taskWork.id,
+      actionIds: [taskAction.id],
+      createdAt: '2026-07-16T18:03:00.000Z'
+    });
+    assert.equal(taskBatch.scope.availableActionCount, 1);
+    assert.equal(taskBatch.scope.selectedActionCount, 1);
+    assert.equal(taskBatch.scope.partial, false);
+    assert.deepEqual(taskBatch.blockers, [
+      'CONNECTED_PLAN_NOT_COMPILED',
+      'CONNECTED_VERIFICATION_NOT_PROVEN'
+    ]);
+    assert(!JSON.stringify(taskBatch).includes(taskTitle));
+    assert(!JSON.stringify(taskBatch).includes(taskDate));
+    const taskMaterial = inspectPreparedReviewBatchMaterial({
+      root: temporaryRoot,
+      batchId: taskBatch.id
+    });
+    assert.equal(taskMaterial.actions.length, 1);
+    assert.equal(taskMaterial.actions[0].proposed.kind, 'task-create');
+    assert.equal(taskMaterial.actions[0].context.fingerprint,
+      taskMaterial.actions[0].proposed.fingerprint);
+    const taskFields = new Map(taskMaterial.actions[0].proposed.fields.map((field) => {
+      return [field.id, field.reviewValue];
+    }));
+    assert.equal(taskFields.get('title'), taskTitle);
+    assert.deepEqual(taskFields.get('projectUris'), ['soter-fixture://projects/project/launch']);
+    assert.deepEqual(taskFields.get('assigneeIds'), ['provider-person.maya']);
+    assert.deepEqual(taskFields.get('nextActionOn'), [taskDate]);
+    assert.equal(taskMaterial.privacy.authority, 'none');
+    assert.equal(taskMaterial.privacy.approvalAuthorityIncluded, false);
+    assert.equal(taskMaterial.privacy.executionAuthorityIncluded, false);
+
+    const duplicateTaskWork = await prepareAutomationRun({
+      root: temporaryRoot,
+      automationId: 'automation.task-capture',
+      configurationName: 'task-capture',
+      configurationBasis: 'tracked-contained',
+      input: {
+        title: 'Send launch deck',
+        project: 'soter-fixture://projects/project/launch',
+        context: 'Project'
+      },
+      createdAt: '2026-07-16T18:03:30.000Z'
+    });
+    const heldTaskAction = duplicateTaskWork.preview.collections[0].rows[0].actions[0];
+    assert.equal(heldTaskAction.state, 'held');
+    assert.throws(() => createPreparedReviewBatch({
+      root: temporaryRoot,
+      workId: duplicateTaskWork.id,
+      actionIds: [heldTaskAction.id]
+    }), (error) => error.code === 'PREPARED_REVIEW_BATCH_SELECTION_INVALID');
 
     const derivedPath = preparedWorkDerivedReviewMaterialStatePath(temporaryRoot, work.id);
     const heldDerivedPath = derivedPath + '.held';
@@ -298,8 +388,11 @@ export async function selftestPreparedReviewBatches(root = defaultRoot) {
     const workspace = inspectWorkspace({ root: temporaryRoot });
     const serializedWorkspace = JSON.stringify(workspace);
     assert(!serializedWorkspace.includes(batch.id));
+    assert(!serializedWorkspace.includes(taskBatch.id));
     assert(!serializedWorkspace.includes('Thanks for the note.'));
     assert(!serializedWorkspace.includes(focus));
+    assert(!serializedWorkspace.includes(taskTitle));
+    assert(!serializedWorkspace.includes(taskDate));
     assert.equal(fs.existsSync(path.join(temporaryRoot, '.soter', 'state', 'approval-requests')), false);
     assert.equal(fs.existsSync(path.join(temporaryRoot, '.soter', 'state', 'approvals')), false);
     assert.equal(fs.existsSync(path.join(temporaryRoot, '.soter', 'state', 'approval-consumptions')), false);

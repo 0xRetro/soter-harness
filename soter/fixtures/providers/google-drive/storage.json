@@ -1,0 +1,93 @@
+{
+  "$contract": "soter://contracts/provider-fixture/v1",
+  "contractVersion": "1.0.0",
+  "id": "fixture.google-drive.storage",
+  "provider": "provider.integration.google-drive.fixture",
+  "observedAt": "2026-07-21T09:00:00.000Z",
+  "data": {
+    "registries": [
+      {
+        "id": "registry.drive-filing.fixture",
+        "policy": {
+          "name": "Contained Storage Filing Policy",
+          "placementRequiresConfirmation": true,
+          "indexRequired": true,
+          "movesHumanOnly": true,
+          "renameAllowed": false,
+          "deleteAllowed": false,
+          "externalDefaultForm": "shortcut",
+          "snapshotForm": "copy",
+          "unclearHomeKey": "home.inbox",
+          "duplicateCandidateLimit": 20
+        },
+        "locations": [
+          {
+            "key": "home.inbox",
+            "label": "Registered filing inbox",
+            "uri": "soter-fixture://storage/folder/inbox",
+            "driveUri": "soter-fixture://storage/drive/shared",
+            "kind": "inbox",
+            "subjectKeys": [],
+            "documentCategories": ["Unclassified"]
+          },
+          {
+            "key": "home.prime",
+            "label": "Prime workstream",
+            "uri": "soter-fixture://storage/folder/prime",
+            "driveUri": "soter-fixture://storage/drive/shared",
+            "kind": "home",
+            "subjectKeys": ["prime"],
+            "documentCategories": ["Prime"]
+          },
+          {
+            "key": "home.research",
+            "label": "Research and analysis",
+            "uri": "soter-fixture://storage/folder/research",
+            "driveUri": "soter-fixture://storage/drive/shared",
+            "kind": "home",
+            "subjectKeys": ["research"],
+            "documentCategories": ["Research"]
+          }
+        ]
+      }
+    ],
+    "artifacts": [
+      {
+        "name": "External research memo",
+        "uri": "soter-fixture://storage/artifact/external-research",
+        "kind": "file",
+        "ownership": "external",
+        "link": "https://drive.example.invalid/external-research",
+        "parentUris": ["soter-fixture://storage/folder/external-share"],
+        "targetUri": null
+      },
+      {
+        "name": "Ambiguous operating numbers",
+        "uri": "soter-fixture://storage/artifact/ambiguous-root",
+        "kind": "file",
+        "ownership": "organization",
+        "link": "https://drive.example.invalid/ambiguous-root",
+        "parentUris": ["soter-fixture://storage/drive/shared"],
+        "targetUri": null
+      },
+      {
+        "name": "Prime pipeline shortcut",
+        "uri": "soter-fixture://storage/artifact/urgent-shortcut",
+        "kind": "shortcut",
+        "ownership": "organization",
+        "link": "https://drive.example.invalid/urgent-shortcut",
+        "parentUris": ["soter-fixture://storage/drive/shared"],
+        "targetUri": "soter-fixture://storage/artifact/prime-pipeline"
+      },
+      {
+        "name": "Existing reference",
+        "uri": "soter-fixture://storage/artifact/duplicate-reference",
+        "kind": "file",
+        "ownership": "external",
+        "link": "https://drive.example.invalid/existing-reference",
+        "parentUris": ["soter-fixture://storage/folder/external-share"],
+        "targetUri": null
+      }
+    ]
+  }
+}

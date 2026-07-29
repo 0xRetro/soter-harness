@@ -1,0 +1,59 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "documents.records.read",
+  "version": "1.0.0",
+  "purpose": "Reads bounded normalized document-index records for exact identity resolution and deduplication.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["recordType"],
+    "properties": {
+      "recordType": { "const": "document-index" },
+      "ids": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 100,
+        "uniqueItems": true,
+        "items": { "type": "string" }
+      },
+      "filters": {
+        "type": "object",
+        "additionalProperties": { "type": ["string", "number", "boolean"] }
+      },
+      "limit": { "type": "integer", "minimum": 1, "maximum": 100 }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["records", "provenance", "observedAt"],
+    "properties": {
+      "records": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "id", "version", "fields"],
+          "properties": {
+            "type": { "const": "document-index" },
+            "id": { "type": "string" },
+            "version": { "type": "string" },
+            "fields": { "type": "object" }
+          }
+        }
+      },
+      "provenance": { "type": "object" },
+      "observedAt": { "type": "string" }
+    }
+  },
+  "authentication": { "required": true, "minimumScopes": ["records:read"] },
+  "effects": ["read", "disclosure"],
+  "idempotency": { "mode": "not-applicable", "key": null },
+  "retry": { "safe": true, "maxAttempts": 2, "checkpoint": "Persist the exact filter and returned record fingerprints before retry." },
+  "errors": ["authentication", "authorization", "validation", "conflict", "rate-limit", "unavailable", "retryable", "not-found", "unknown"],
+  "freshness": { "returnsProvenance": true, "returnsObservedAt": true, "maxAgeSeconds": 300 },
+  "health": { "check": "Read bounded contained document-index candidates.", "fixture": "soter/fixtures/providers/notion/documents.json", "containedVerification": "Prove exact filtering, bounded results, normalized fields, and raw-response exclusion." },
+  "providerLimitations": ["A zero-row result is an observation at one time and does not establish future uniqueness without an execution-time precondition."]
+}

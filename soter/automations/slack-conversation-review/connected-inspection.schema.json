@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/slack-conversation-review-connected-inspection/v1",
+  "title": "Soter sanitized connected Slack conversation review inspection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "fingerprint", "work", "snapshot",
+    "configuration", "window", "coverage", "injection", "authority", "privacy"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/slack-conversation-review-connected-inspection/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "fingerprint": { "$ref": "#/$defs/fingerprint" },
+    "work": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fingerprint", "privateInputFingerprint"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^work\\.slack-conversation-review\\.[a-f0-9]{24}$" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "privateInputFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fingerprint"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^context\\.slack-conversation-review\\.connected-acquisition\\.[a-f0-9]{24}$" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lockFingerprint", "graphFingerprint", "host"],
+      "properties": {
+        "lockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "host": { "const": "codex" }
+      }
+    },
+    "window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "fingerprint"],
+      "properties": {
+        "kind": { "enum": ["last-24-hours", "last-7-days"] },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "complete", "selectedConversationCount", "conversationObservedCount",
+        "conversationIncludedCount", "conversationExcludedCount", "conversationPagesRead",
+        "messageWindowCount", "messageObservedCount", "messageIncludedCount",
+        "messageExcludedCount", "messagePagesRead", "windowThreadRootCount",
+        "selectedThreadCount", "selectedWindowRootCount", "selectedExplicitCount",
+        "unselectedWindowRootCount", "threadObservedCount", "threadIncludedCount",
+        "threadExcludedCount", "threadMessageCount", "threadPagesRead",
+        "conversationFingerprint", "messageWindowFingerprint", "threadFingerprint",
+        "coverageFingerprint"
+      ],
+      "properties": {
+        "complete": { "const": true },
+        "selectedConversationCount": { "$ref": "#/$defs/count" },
+        "conversationObservedCount": { "$ref": "#/$defs/count" },
+        "conversationIncludedCount": { "$ref": "#/$defs/count" },
+        "conversationExcludedCount": { "$ref": "#/$defs/count" },
+        "conversationPagesRead": { "$ref": "#/$defs/count" },
+        "messageWindowCount": { "$ref": "#/$defs/count" },
+        "messageObservedCount": { "$ref": "#/$defs/count" },
+        "messageIncludedCount": { "$ref": "#/$defs/count" },
+        "messageExcludedCount": { "$ref": "#/$defs/count" },
+        "messagePagesRead": { "$ref": "#/$defs/count" },
+        "windowThreadRootCount": { "$ref": "#/$defs/count" },
+        "selectedThreadCount": { "$ref": "#/$defs/count" },
+        "selectedWindowRootCount": { "$ref": "#/$defs/count" },
+        "selectedExplicitCount": { "$ref": "#/$defs/count" },
+        "unselectedWindowRootCount": { "$ref": "#/$defs/count" },
+        "threadObservedCount": { "$ref": "#/$defs/count" },
+        "threadIncludedCount": { "$ref": "#/$defs/count" },
+        "threadExcludedCount": { "$ref": "#/$defs/count" },
+        "threadMessageCount": { "$ref": "#/$defs/count" },
+        "threadPagesRead": { "$ref": "#/$defs/count" },
+        "conversationFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "messageWindowFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "threadFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "coverageFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "injection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["suspected", "count", "fingerprint"],
+      "properties": {
+        "suspected": { "type": "boolean" },
+        "count": { "$ref": "#/$defs/count" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state", "reasonCode", "approvalIncluded", "continuationIncluded",
+        "providerWriteIncluded", "retryAuthorityIncluded"
+      ],
+      "properties": {
+        "state": { "const": "none" },
+        "reasonCode": { "const": "SLACK_CONNECTED_REVIEW_READ_ONLY" },
+        "approvalIncluded": { "const": false },
+        "continuationIncluded": { "const": false },
+        "providerWriteIncluded": { "const": false },
+        "retryAuthorityIncluded": { "const": false }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "privateValuesIncluded", "conversationReferencesIncluded", "threadReferencesIncluded",
+        "messageBodiesIncluded", "participantValuesIncluded", "rawProviderResponsesIncluded",
+        "paginationCursorsIncluded", "workspaceInspectionIncluded"
+      ],
+      "properties": {
+        "privateValuesIncluded": { "const": false },
+        "conversationReferencesIncluded": { "const": false },
+        "threadReferencesIncluded": { "const": false },
+        "messageBodiesIncluded": { "const": false },
+        "participantValuesIncluded": { "const": false },
+        "rawProviderResponsesIncluded": { "const": false },
+        "paginationCursorsIncluded": { "const": false },
+        "workspaceInspectionIncluded": { "const": false }
+      }
+    }
+  },
+  "$defs": {
+    "count": { "type": "integer", "minimum": 0 },
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+  }
+}

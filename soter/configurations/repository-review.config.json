@@ -1,0 +1,61 @@
+{
+  "$contract": "soter://contracts/configuration/v1",
+  "contractVersion": "1.0.0",
+  "name": "repository-review",
+  "base": { "kernel": "kernel.soter", "core": "core.runtime" },
+  "packs": [
+    { "id": "context.product", "source": "dependency", "reason": "Feature candidates use portable Product identity and duplicate semantics." },
+    { "id": "automation.repository-review", "source": "user", "reason": "The user selected one bounded repository capability review and private Feature Capture handoffs." },
+    { "id": "integration.local-repository", "source": "binding", "reason": "The contained provider supplies one exact normalized repository snapshot." },
+    { "id": "integration.notion", "source": "binding", "reason": "The selected Product board supplies bounded current feature candidates for duplicate review." }
+  ],
+  "bindings": [
+    {
+      "capability": "repository.snapshot.read",
+      "providerPack": "integration.local-repository",
+      "authorities": ["authority.repository.instance"],
+      "reason": "The exact selected repository authority supplies one bounded private review snapshot."
+    },
+    {
+      "capability": "product.records.read",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.product.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "The configured Product board supplies bounded exact-name duplicate candidates."
+    }
+  ],
+  "sources": [],
+  "authorities": [
+    { "id": "authority.repository.instance", "role": "instance", "subject": "repository.source", "uri": "soter-fixture://configuration-template/local-repository/repository/repository-review", "reason": "One exact configured repository identity owns the source snapshot observed during preparation." },
+    { "id": "authority.product.definition", "role": "definition", "subject": "product.records", "uri": "soter-fixture://configuration-template/notion/authority/product-policies", "reason": "Product Context keeps its definition authority explicit even though this preparation performs only instance duplicate reads." },
+    { "id": "authority.product.instance", "role": "instance", "subject": "product.records", "uri": "soter-fixture://configuration-template/notion/authority/feature-board", "reason": "One exact configured Feature Board owns current feature records used only for duplicate comparison." },
+    { "id": "authority.notion.provider", "role": "provider", "subject": "notion.workspace", "uri": "soter-fixture://configuration-template/notion/account/operator", "reason": "The selected provider supplies contained Product translation without becoming Product authority." },
+    { "id": "authority.run.evidence", "role": "evidence", "subject": "runtime.runs", "uri": "soter-state://runs", "reason": "Private local runtime state owns prepared work and review companions." }
+  ],
+  "effectPolicies": {
+    "read": { "mode": "allow", "reason": "The exact repository snapshot and bounded Product duplicate candidates may be read for private preparation." },
+    "disclosure": { "mode": "allow", "reason": "Selected normalized observations may enter private run state with explicit minimization." },
+    "write": { "mode": "confirm", "reason": "The shared selected Notion pack declares write capabilities, but Repository Review requires none, emits no proposed change, and declares no compiler or execution path." },
+    "dispatch": { "mode": "prohibit", "reason": "Repository Review does not send, publish, or dispatch messages." },
+    "destructive": { "mode": "prohibit", "reason": "Repository Review never mutates or deletes repository or Product records." }
+  },
+  "secretRefs": [
+    { "id": "secret-ref.notion", "provider": "host", "key": "NOTION_OAUTH" }
+  ],
+  "host": { "id": "codex", "adapter": "host.codex", "version": "0.3.1", "reason": "This contained configuration exercises Codex projection while provider behavior remains fixture-only." },
+  "settings": {
+    "integration.notion": {
+      "targets": {
+        "policies": "soter-fixture://configuration-template/notion/collection/policies",
+        "organizations": "soter-fixture://configuration-template/notion/collection/organizations",
+        "contacts": "soter-fixture://configuration-template/notion/collection/contacts",
+        "projects": "soter-fixture://configuration-template/notion/collection/projects",
+        "updates": "soter-fixture://configuration-template/notion/collection/updates",
+        "tasks": "soter-fixture://configuration-template/notion/collection/tasks",
+        "meetings": "soter-fixture://configuration-template/notion/collection/meetings",
+        "documents": "soter-fixture://configuration-template/notion/collection/documents",
+        "features": "soter-fixture://configuration-template/notion/collection/features"
+      }
+    }
+  }
+}

@@ -2,8 +2,8 @@ import type { OperatorInputField } from '../types';
 
 export function OperatorInputControl({ field, value, onChange }: {
   field: OperatorInputField;
-  value: string | boolean | undefined;
-  onChange: (value: string | boolean) => void;
+  value: string | boolean | string[] | undefined;
+  onChange: (value: string | boolean | string[]) => void;
 }) {
   const inputId = `operator-input-${field.id}`;
   const descriptionId = `${inputId}-description`;
@@ -31,6 +31,20 @@ export function OperatorInputControl({ field, value, onChange }: {
           required={field.required}
           checked={Boolean(value)}
           onChange={(event) => onChange(event.target.checked)}
+        />
+      ) : field.type === 'string-list' ? (
+        <textarea
+          id={inputId}
+          aria-label={field.label}
+          aria-describedby={describedBy}
+          value={Array.isArray(value) ? value.join('\n') : ''}
+          required={field.required}
+          autoComplete="off"
+          spellCheck={false}
+          onChange={(event) => onChange(event.target.value
+            .split(/\r?\n/)
+            .map((item) => item.trim())
+            .filter(Boolean))}
         />
       ) : field.type === 'string' && field.exposure === 'private' ? (
         <textarea
@@ -68,11 +82,12 @@ export function OperatorInputControl({ field, value, onChange }: {
         {field.constraints?.minLength !== undefined && <span>minimum {field.constraints.minLength} characters</span>}
         {field.constraints?.maxLength !== undefined && <span>maximum {field.constraints.maxLength} characters</span>}
         {field.constraints?.pattern && <span>contract pattern declared · Core validates</span>}
+        {field.type === 'string-list' && <span>{field.constraints?.minItems || 0}–{field.constraints?.maxItems || 'bounded'} unique values · one per line</span>}
         {field.exposure === 'private' && <span className="operator-private-field">Private value · submitted only to local Core preparation · never returned in inspection</span>}
       </div>
       {field.examples?.length ? (
         <div className="operator-examples"><span>Examples</span>{field.examples.map((example) => (
-          <button type="button" key={example} aria-label={`Use ${example} for ${field.label}`} onClick={() => onChange(example)}>{example}</button>
+          <button type="button" key={JSON.stringify(example)} aria-label={`Use ${Array.isArray(example) ? example.join(', ') : example} for ${field.label}`} onClick={() => onChange(example)}>{Array.isArray(example) ? example.join(' · ') : example}</button>
         ))}</div>
       ) : null}
     </div>

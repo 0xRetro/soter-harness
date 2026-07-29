@@ -1,0 +1,101 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "repository.snapshot.read",
+  "version": "1.0.0",
+  "purpose": "Reads one exact repository identity and a bounded normalized capability snapshot for private review preparation.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["uri"],
+    "properties": {
+      "uri": { "type": "string", "minLength": 3, "maxLength": 2000 }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["repository", "capabilities", "provenance", "observedAt"],
+    "properties": {
+      "repository": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["identityFingerprint", "revision", "state", "remoteFingerprint", "sourceFileCount", "readmeObserved"],
+        "properties": {
+          "identityFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+          "revision": { "type": "string", "pattern": "^[0-9a-f]{7,64}$" },
+          "state": { "enum": ["clean", "dirty", "unknown"] },
+          "remoteFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+          "sourceFileCount": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+          "readmeObserved": { "type": "boolean" }
+        }
+      },
+      "capabilities": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 50,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "name", "why", "summary", "currentState", "evidence", "fingerprint"],
+          "properties": {
+            "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+            "name": { "type": "string", "minLength": 2, "maxLength": 200 },
+            "why": { "type": "string", "minLength": 3, "maxLength": 2000 },
+            "summary": { "type": "string", "minLength": 3, "maxLength": 5000 },
+            "currentState": { "type": "string", "minLength": 3, "maxLength": 5000 },
+            "evidence": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 20,
+              "uniqueItems": true,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["relativePath", "contentFingerprint"],
+                "properties": {
+                  "relativePath": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500,
+                    "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)[^\\u0000]+$"
+                  },
+                  "contentFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+                }
+              }
+            },
+            "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+          }
+        }
+      },
+      "provenance": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["provider", "authority", "sourceKind", "sourceReferenceFingerprint"],
+        "properties": {
+          "provider": { "type": "string", "minLength": 3 },
+          "authority": { "type": "string", "minLength": 3 },
+          "sourceKind": { "enum": ["fixture", "connected"] },
+          "sourceReferenceFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        }
+      },
+      "observedAt": { "type": "string", "minLength": 20 }
+    }
+  },
+  "authentication": { "required": false, "minimumScopes": [] },
+  "effects": ["read", "disclosure"],
+  "idempotency": { "mode": "not-applicable", "key": null },
+  "retry": { "safe": true, "maxAttempts": 1, "checkpoint": null },
+  "errors": ["authentication", "authorization", "validation", "conflict", "rate-limit", "unavailable", "retryable", "not-found", "unknown"],
+  "freshness": { "returnsProvenance": true, "returnsObservedAt": true, "maxAgeSeconds": 300 },
+  "health": {
+    "check": "Read one contained normalized repository snapshot.",
+    "fixture": "soter/fixtures/providers/local-repository/repositories.json",
+    "containedVerification": "Prove exact repository selection, source-backed capability observations, path confinement, and private-value exclusion."
+  },
+  "providerLimitations": [
+    "A normalized capability observation is review input, not Product authority or proof that a feature should be created.",
+    "The fixture does not establish connected filesystem access, Git conformance, repository ownership, current revision, readiness, verification, or health."
+  ]
+}

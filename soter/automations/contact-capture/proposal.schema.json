@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://automations/contact-capture/proposal/v1",
+  "title": "Contact Capture review proposal",
+  "type": "object",
+  "required": [
+    "$contract",
+    "id",
+    "automation",
+    "decision",
+    "proposalType",
+    "review"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/automation-proposal/v1" },
+    "id": {
+      "type": "string",
+      "pattern": "^proposal\\.contact-capture\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "automation": {
+      "type": "object",
+      "required": ["id"],
+      "properties": { "id": { "const": "automation.contact-capture" } }
+    },
+    "decision": {
+      "type": "object",
+      "required": ["id", "decisionType"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^decision\\.contact-capture\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "decisionType": { "const": "contact-capture.grounded-create" }
+      }
+    },
+    "proposalType": { "const": "contact-capture.review-proposal" },
+    "review": {
+      "type": "object",
+      "required": ["$contract", "kind", "privateReview"],
+      "properties": {
+        "$contract": { "const": "soter://contracts/automation-review/v1" },
+        "kind": { "const": "contact-capture-review" },
+        "privateReview": {
+          "type": "object",
+          "required": ["state"],
+          "properties": { "state": { "const": "available" } }
+        }
+      }
+    }
+  }
+}

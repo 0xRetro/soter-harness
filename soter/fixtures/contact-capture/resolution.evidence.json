@@ -1,0 +1,145 @@
+{
+  "$contract": "soter://contracts/evidence/v2",
+  "contractVersion": "2.0.0",
+  "id": "evidence.contact-capture.resolution.fixture",
+  "createdAt": "2026-07-21T14:00:00.000Z",
+  "claimFamily": "graph",
+  "claim": "The desired configuration resolves to this exact, internally valid artifact graph.",
+  "subject": {
+    "type": "configuration",
+    "id": "contact-capture",
+    "version": null
+  },
+  "configurationLockFingerprint": "sha256:a599779b29591ba69f17ce8b7d63ecf4318752d8df788f5dd9589cee359faaf8",
+  "graphFingerprint": "sha256:7921dec0ea23e31dad47d550d8c8ba43540269df8c053cfd3a253bc0f7923568",
+  "dependencies": [
+    {
+      "id": "kernel.soter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+    },
+    {
+      "id": "core.runtime",
+      "version": "0.1.0",
+      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+    },
+    {
+      "id": "context.crm",
+      "version": "0.1.0",
+      "fingerprint": "sha256:fa69fc9f796e84b1a2cd7e319c4344dcc44d8dcbea9542e51158eb868d266f44"
+    },
+    {
+      "id": "automation.contact-capture",
+      "version": "0.1.0",
+      "fingerprint": "sha256:f3778a32f7b08aeb70e1b543b5953e069c792daceed2b3ab284e97291713eeea"
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "fingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
+  },
+  "integrations": [
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "manifestFingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5",
+      "evidenceMaturity": "declared"
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.crm.definition",
+      "role": "definition",
+      "subject": "crm.records",
+      "declarationFingerprint": "sha256:b227f74aa9fe340623302d850236b1c1cab271c3ac7999bf6aa7ccacf80954a3"
+    },
+    {
+      "id": "authority.crm.instance",
+      "role": "instance",
+      "subject": "crm.records",
+      "declarationFingerprint": "sha256:e03ee1ca1dba612c75b80ee83b54a38f4a9e61c5ebad54e8a77903c8bd0825ee"
+    },
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "declarationFingerprint": "sha256:cdee230730b0f3c9c6ca06e6578e38324ed0b7f7da89339d7628c70061e960e1"
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "declarationFingerprint": "sha256:460a19b01a4b563273ab8064bb14cbafcacce77a8c9e39130533ebc3bae22546"
+    }
+  ],
+  "evaluator": {
+    "id": "core.resolver",
+    "version": "0.5.0",
+    "level": "graph"
+  },
+  "environment": {
+    "containment": "offline",
+    "runtime": "node"
+  },
+  "acceptanceCriteria": [
+    "Kernel validation reports no graph errors.",
+    "Every selected pack, capability, host projection, authority, and policy is fingerprinted.",
+    "Resolving unchanged inputs produces the same configuration lock fingerprint.",
+    "Credential references and values are absent from the lock."
+  ],
+  "result": "passed",
+  "outcomes": [
+    {
+      "id": "configuration.graph-resolved",
+      "state": "passed"
+    },
+    {
+      "id": "configuration.lock-deterministic",
+      "state": "passed"
+    },
+    {
+      "id": "configuration.lock-secret-free",
+      "state": "passed"
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "configuration",
+      "path": "soter/configurations/contact-capture.config.json",
+      "fingerprint": "sha256:2bb5354c50aa14f5d1549ca449eaf89205f4070007d3bec2da06e50e229963c6"
+    },
+    {
+      "role": "configuration-lock",
+      "fingerprint": "sha256:a599779b29591ba69f17ce8b7d63ecf4318752d8df788f5dd9589cee359faaf8"
+    }
+  ],
+  "effects": [],
+  "failures": [],
+  "warnings": [],
+  "skipped": [
+    "Host authentication and reachability were not checked offline.",
+    "Integration capabilities were not invoked.",
+    "Automation outcomes and external effects were not evaluated."
+  ],
+  "limitations": [
+    "This evidence establishes graph validity and reproducibility only; it does not establish readiness, behavior verification, or live health."
+  ],
+  "freshness": {
+    "policy": "Valid only while every configuration-lock fingerprint remains unchanged.",
+    "validUntil": null
+  },
+  "supersedes": null,
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Credential references and credential values are excluded."
+    ]
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "automation.slack-channel-ingestion",
+  "version": "0.1.0",
+  "layer": "automation",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Separates complete conversation-identity review from exact selected-channel participant enrichment, then prepares deduplicated Communications channel creates or updates with unresolved CRM links held as handoffs.",
+  "dependencies": [
+    {
+      "pack": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Slack ingestion requires exact locks, private review companions, selected subsets, approval, one-time start, checkpoint, and verification boundaries."
+    },
+    {
+      "pack": "context.communications.collaboration",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Collaboration Context owns workspace, channel, participant, channel-directory, duplicate, and ingestion-policy meaning."
+    },
+    {
+      "pack": "context.crm",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "CRM Context owns only the optional exact Person and Organization identities linked after explicit participant review."
+    }
+  ],
+  "capabilities": {
+    "requires": [
+      { "id": "communications.conversations.list", "version": "^1.0.0", "optional": false, "reason": "Preparation must observe a complete public-and-private conversation identity window or exact selected channel set without participant or message data." },
+      { "id": "communications.participants.read", "version": "^1.0.0", "optional": false, "reason": "Participant profiles may be read only after exact selected channel identities are supplied as private operator input." },
+      { "id": "communications.records.read", "version": "^1.0.0", "optional": false, "reason": "Preparation must select one Communications policy and resolve exact current channel-directory candidates." },
+      { "id": "communications.schema.read", "version": "^1.0.0", "optional": false, "reason": "Preparation must observe the current portable Communications channel schema rather than invent provider values." },
+      { "id": "communications.records.create", "version": "^1.0.0", "optional": false, "reason": "A separately authorized exact transaction may create a new mapped Communications channel record." },
+      { "id": "communications.records.update", "version": "^1.0.0", "optional": false, "reason": "A separately authorized exact transaction may update one existing mapped Communications channel record under expected-version preconditions." },
+      { "id": "crm.records.read", "version": "^1.0.0", "optional": false, "reason": "Preparation may resolve explicitly observed provider participants and channel organization hints to exact optional CRM identities." }
+    ],
+    "provides": []
+  },
+  "sourceRequirements": [
+    {
+      "purpose": "channel-ingestion-policy",
+      "capability": "communications.records.read",
+      "authorityRole": "definition",
+      "authoritySubject": "communications.records",
+      "minimum": 1,
+      "maximum": 1,
+      "reason": "Channel ingestion requires one exact configured provider-neutral policy selection for stage ordering, bounds, matching, and confirmation."
+    }
+  ],
+  "authorities": [
+    { "role": "definition", "subject": "communications.records", "required": true },
+    { "role": "instance", "subject": "communications.workspace", "required": true },
+    { "role": "instance", "subject": "communications.records", "required": true },
+    { "role": "instance", "subject": "crm.records", "required": true },
+    { "role": "evidence", "subject": "runtime.runs", "required": true }
+  ],
+  "effects": ["read", "disclosure", "write"],
+  "operator": {
+    "input": "soter/automations/slack-channel-ingestion/operator-input.json",
+    "preparation": {
+      "module": "soter/automations/slack-channel-ingestion/prepare.mjs",
+      "export": "prepareSlackChannelIngestionRun",
+      "containment": "fixture",
+      "derivedReviewContract": "soter/automations/slack-channel-ingestion/derived-review.json"
+    },
+    "connection": {
+      "module": "soter/automations/slack-channel-ingestion/connected.mjs",
+      "compileExport": "compileSlackChannelConnectedOperations",
+      "evaluateExport": "evaluateSlackChannelConnectedVerification",
+      "recordRequirements": [
+        {
+          "capability": "communications.records.create",
+          "recordTypes": ["channel"]
+        },
+        {
+          "capability": "communications.records.update",
+          "recordTypes": ["channel"]
+        }
+      ]
+    }
+  },
+  "artifacts": [
+    { "path": "soter/automations/slack-channel-ingestion/operator-input.json", "role": "definition" },
+    { "path": "soter/automations/slack-channel-ingestion/derived-review.json", "role": "definition" },
+    { "path": "soter/automations/slack-channel-ingestion/prepare.mjs", "role": "implementation" },
+    { "path": "soter/automations/slack-channel-ingestion/connected.mjs", "role": "implementation" },
+    { "path": "soter/automations/slack-channel-ingestion/scenario.mjs", "role": "evaluation" },
+    { "path": "soter/automations/slack-channel-ingestion/slack-channel-ingestion.selftest.mjs", "role": "evaluation" },
+    { "path": "soter/scenarios/slack-channel-ingestion/identity-review.scenario.json", "role": "evaluation" },
+    { "path": "soter/scenarios/slack-channel-ingestion/selected-enrichment.scenario.json", "role": "evaluation" }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": ["codex"],
+    "unavailableHosts": [
+      {
+        "id": "claude",
+        "reasonCode": "STRUCTURED_RESPONSE_PROFILE_UNAVAILABLE",
+        "reason": "The declared Claude Slack route does not expose closed mechanically normalizable conversation and participant response profiles."
+      }
+    ]
+  },
+  "verification": {
+    "maxLevel": "fixture",
+    "scenarios": [
+      "soter/scenarios/slack-channel-ingestion/identity-review.scenario.json",
+      "soter/scenarios/slack-channel-ingestion/selected-enrichment.scenario.json"
+    ]
+  }
+}

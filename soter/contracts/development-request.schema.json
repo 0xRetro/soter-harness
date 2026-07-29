@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/development-request/v1",
+  "title": "Soter private development request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "requestFingerprint",
+    "createdAt",
+    "workflow",
+    "host",
+    "configuration",
+    "workspace",
+    "invocation",
+    "effectBoundary",
+    "authority",
+    "privacy",
+    "limitations"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/development-request/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^development-request[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "requestFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "createdAt": { "$ref": "#/$defs/instant" },
+    "workflow": { "$ref": "#/$defs/workflowBinding" },
+    "host": { "$ref": "#/$defs/hostBinding" },
+    "configuration": { "$ref": "#/$defs/configurationBinding" },
+    "workspace": { "$ref": "#/$defs/workspaceBinding" },
+    "invocation": {
+      "oneOf": [
+        { "$ref": "#/$defs/developInvocation" },
+        { "$ref": "#/$defs/evaluationInvocation" }
+      ]
+    },
+    "effectBoundary": { "$ref": "#/$defs/effectBoundary" },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "providerTransactionAuthority", "approvalAuthority", "publicationAuthority", "mergeAuthority", "hostRealizationAuthority"],
+      "properties": {
+        "kind": { "const": "request-scoped-development" },
+        "providerTransactionAuthority": { "const": "none" },
+        "approvalAuthority": { "const": "none" },
+        "publicationAuthority": { "const": "none" },
+        "mergeAuthority": { "const": "none" },
+        "hostRealizationAuthority": { "const": "none" }
+      }
+    },
+    "privacy": { "$ref": "#/$defs/privacy" },
+    "limitations": { "$ref": "#/$defs/limitations" }
+  },
+  "$defs": {
+    "version": { "type": "string", "pattern": "^(?:0|[1-9][0-9]*)[.](?:0|[1-9][0-9]*)[.](?:0|[1-9][0-9]*)$" },
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "instant": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:[.][0-9]{3})?Z$" },
+    "relativePath": { "type": "string", "minLength": 1, "maxLength": 300, "pattern": "^[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$" },
+    "workflowBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "evaluatedSubjectFingerprint", "definitionPath", "definitionFingerprint", "guideId", "guidePath", "guideContentFingerprint", "guideFingerprint", "evaluationSetId", "evaluationSetPath", "evaluationSetFingerprint"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^automation[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "version": { "$ref": "#/$defs/version" },
+        "evaluatedSubjectFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "definitionPath": { "$ref": "#/$defs/relativePath" },
+        "definitionFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "guideId": { "type": "string", "pattern": "^workflow-guide[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "guidePath": { "$ref": "#/$defs/relativePath" },
+        "guideContentFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "guideFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "evaluationSetId": { "type": "string", "pattern": "^evaluation-set[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "evaluationSetPath": { "$ref": "#/$defs/relativePath" },
+        "evaluationSetFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "hostBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "adapter", "version", "adapterFingerprint", "projectionDefinitionId", "projectionDefinitionFingerprint", "evaluatedInstructionFingerprint", "candidateProjectionFingerprint"],
+      "properties": {
+        "id": { "enum": ["codex", "claude"] },
+        "adapter": { "type": "string", "pattern": "^host[.](?:codex|claude)$" },
+        "version": { "$ref": "#/$defs/version" },
+        "adapterFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "projectionDefinitionId": { "type": "string", "pattern": "^host-projection[.](?:codex|claude)$" },
+        "projectionDefinitionFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "evaluatedInstructionFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "candidateProjectionFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "configurationBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "lockPath", "lockFingerprint", "graphFingerprint"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "lockPath": { "$ref": "#/$defs/relativePath" },
+        "lockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "graphFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "workspaceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rootIdentityFingerprint", "revisionFingerprint", "treeFingerprint", "exactInputState", "policyId", "policyPath", "policyFingerprint", "settingsFingerprint"],
+      "properties": {
+        "rootIdentityFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "revisionFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+        "treeFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "exactInputState": { "enum": ["clean", "dirty", "unknown"] },
+        "policyId": { "const": "settings.kernel.soter.development-workspace" },
+        "policyPath": { "const": "soter/kernel/development-workspace.settings.json" },
+        "policyFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "settingsFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "beforeFingerprint"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "path": { "$ref": "#/$defs/relativePath" },
+        "beforeFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" }
+      }
+    },
+    "developInvocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "profile", "requestedOutcome", "targets"],
+      "properties": {
+        "kind": { "const": "develop" },
+        "profile": { "enum": ["exact", "bounded", "open"] },
+        "requestedOutcome": { "type": "string", "minLength": 12, "maxLength": 2000 },
+        "targets": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/target" }
+        }
+      }
+    },
+    "plannedRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sequence", "caseId", "caseFingerprint", "stimulusFingerprint", "arm", "guideState"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^evaluation-run[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "sequence": { "type": "integer", "minimum": 1, "maximum": 500 },
+        "caseId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "caseFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "stimulusFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "arm": { "enum": ["baseline", "guided"] },
+        "guideState": { "enum": ["withheld", "candidate"] }
+      }
+    },
+    "evaluationInvocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "profile", "freshWorkerPerRun", "expectationsWithheld", "plannedRuns"],
+      "properties": {
+        "kind": { "const": "evaluation-suite" },
+        "profile": { "const": "exact" },
+        "freshWorkerPerRun": { "const": true },
+        "expectationsWithheld": { "const": true },
+        "plannedRuns": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/plannedRun" }
+        }
+      }
+    },
+    "effectBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["localWorkspaceRead", "localWorkspaceWrite", "localCommand", "subagentDispatch", "providerRead", "providerWrite", "publication", "merge", "protectedRootMutation", "hostRealization"],
+      "properties": {
+        "localWorkspaceRead": { "const": "request-scoped" },
+        "localWorkspaceWrite": { "const": "request-scoped" },
+        "localCommand": { "const": "request-scoped" },
+        "subagentDispatch": { "const": "request-scoped" },
+        "providerRead": { "const": "separate-authority" },
+        "providerWrite": { "const": "separate-authority" },
+        "publication": { "const": "separate-authority" },
+        "merge": { "const": "separate-authority" },
+        "protectedRootMutation": { "const": "separate-authority" },
+        "hostRealization": { "const": "separate-authority" }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "workspaceInspectionIncluded", "absolutePathsIncluded", "rawDiffsIncluded", "rawTranscriptsIncluded", "providerResponsesIncluded", "credentialsIncluded"],
+      "properties": {
+        "scope": { "const": "private-runtime" },
+        "workspaceInspectionIncluded": { "const": false },
+        "absolutePathsIncluded": { "const": false },
+        "rawDiffsIncluded": { "const": false },
+        "rawTranscriptsIncluded": { "const": false },
+        "providerResponsesIncluded": { "const": false },
+        "credentialsIncluded": { "const": false }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 12, "maxLength": 500 }
+    }
+  }
+}

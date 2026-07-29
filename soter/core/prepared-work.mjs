@@ -7,6 +7,11 @@ import { createAutomationPreparationEvidence } from './evidence.mjs';
 import { containsCredentialMaterial } from './host-runtime.mjs';
 import { fingerprintJson, readJson, repoRelativePath, resolveRepoPath } from './lib/canonical-json.mjs';
 import { fingerprintLock, lockMatchesResolution, resolveConfiguration } from './resolve.mjs';
+import { prepareRunEnvelope } from './run.mjs';
+import {
+  hasPrivateConfigurationState,
+  privateConfigurationStatePath
+} from './private-configurations.mjs';
 import {
   assertAutomationReviewProjection,
   assertDerivedReviewDeclaration,
@@ -18,12 +23,17 @@ import {
 import {
   createPreparedWorkDerivedReviewMaterialState,
   createPreparedWorkReviewMaterialState,
+  activeConfigurationLockStatePath,
+  hasActiveConfigurationLockState,
   hasPreparedWorkDerivedReviewMaterialState,
   hasPreparedWorkState,
   hasPreparedWorkReviewMaterialState,
   readPreparedWorkDerivedReviewMaterialState,
   readPreparedWorkReviewMaterialState,
   readPreparedWorkState,
+  readActiveConfigurationLockState,
+  readRunState,
+  runStatePath,
   writeContextSnapshotState,
   writePreparedWorkEvidenceState,
   writePreparedWorkState,
@@ -36,7 +46,23 @@ const REVIEW_CONTRACT = 'soter://contracts/prepared-work-review-material/v1';
 const REVIEW_VERSION = '1.0.0';
 const DERIVED_REVIEW_CONTRACT = 'soter://contracts/prepared-work-derived-review-material/v1';
 const DERIVED_REVIEW_VERSION = '1.0.0';
-const PREPARED_STATES = new Set(['draft', 'preparing', 'needs-input', 'ready-for-review']);
+const PREPARED_STATES = new Set([
+  'draft',
+  'preparing',
+  'needs-input',
+  'ready-for-review',
+  'ready-for-acquisition'
+]);
+const CONFIGURATION_BASES = new Set(['tracked-contained', 'private-active']);
+const PREPARATION_MODES = new Set(['contained', 'connected-acquisition']);
+const ACQUISITION_RUN_STATES = new Set([
+  'effects-established',
+  'executing',
+  'verifying',
+  'completed',
+  'failed',
+  'paused'
+]);
 
 function compareText(left, right) {
   return String(left).localeCompare(String(right), 'en');
@@ -109,8 +135,25 @@ function withDerivedReviewMaterialFingerprint(value) {
   return { ...value, fingerprint: derivedReviewMaterialFingerprint(value) };
 }
 
-function identityPayload({ automationId, inputContractFingerprint, fields, lockFingerprint }) {
-  return { automationId, inputContractFingerprint, fields, lockFingerprint };
+function identityPayload({
+  automationId,
+  inputContractFingerprint,
+  fields,
+  configurationBasis,
+  lockFingerprint,
+  preparationMode = 'contained'
+}) {
+  const identity = {
+    automationId,
+    inputContractFingerprint,
+    fields,
+    configurationBasis,
+    lockFingerprint
+  };
+  if (preparationMode === 'connected-acquisition') {
+    identity.preparationMode = preparationMode;
+  }
+  return identity;
 }
 
 function workIdFor(identity) {
@@ -120,6 +163,36 @@ function workIdFor(identity) {
 
 function normalizeScalar(field, value) {
   if (value === undefined || value === null || value === '') return null;
+  if (field.type === 'string-list') {
+    if (!Array.isArray(value)) throw new Error(field.label + ' must be a list of text values.');
+    const normalized = value.map((item) => {
+      if (typeof item !== 'string') throw new Error(field.label + ' contains a non-text value.');
+      return item.trim();
+    });
+    if (normalized.some((item) => !item)) {
+      throw new Error(field.label + ' contains an empty value.');
+    }
+    if (new Set(normalized).size !== normalized.length) {
+      throw new Error(field.label + ' contains duplicate values.');
+    }
+    if (normalized.length < field.constraints.minItems
+      || normalized.length > field.constraints.maxItems) {
+      throw new Error(field.label + ' is outside its declared item-count bounds.');
+    }
+    if (field.constraints.itemMinLength !== undefined
+      && normalized.some((item) => item.length < field.constraints.itemMinLength)) {
+      throw new Error(field.label + ' contains a value shorter than its declared minimum.');
+    }
+    if (field.constraints.itemMaxLength !== undefined
+      && normalized.some((item) => item.length > field.constraints.itemMaxLength)) {
+      throw new Error(field.label + ' contains a value longer than its declared maximum.');
+    }
+    if (field.constraints.itemPattern
+      && normalized.some((item) => !new RegExp(field.constraints.itemPattern).test(item))) {
+      throw new Error(field.label + ' contains a value outside its declared format.');
+    }
+    return normalized.length ? normalized : null;
+  }
   if (field.type === 'boolean') {
     if (typeof value !== 'boolean') throw new Error(field.label + ' must be a boolean.');
     return value;
@@ -253,6 +326,7 @@ function buildReviewMaterial(work, automation, summary) {
     automation: { id: work.automation.id, version: work.automation.version },
     configuration: {
       name: work.configuration.name,
+      configurationBasis: work.configuration.configurationBasis,
       lockFingerprint: work.configuration.lockFingerprint
     },
     inputContractFingerprint: work.inputSummary.inputContractFingerprint,
@@ -286,6 +360,7 @@ function buildDerivedReviewMaterial(work, derivedReview, automation) {
     automation: { id: work.automation.id, version: work.automation.version },
     configuration: {
       name: work.configuration.name,
+      configurationBasis: work.configuration.configurationBasis,
       lockFingerprint: work.configuration.lockFingerprint
     },
     inputContractFingerprint: work.inputSummary.inputContractFingerprint,
@@ -331,6 +406,27 @@ function loadAutomation(root, automationId) {
   if (!artifact || !fs.statSync(modulePath).isFile()) {
     throw new Error('Prepared-work adapter must be a declared Automation implementation artifact.');
   }
+  let acquisition = null;
+  if (pack.operator.acquisition) {
+    const acquisitionPath = resolveRepoPath(root, pack.operator.acquisition.module);
+    const acquisitionArtifact = pack.artifacts.find((item) => {
+      return item.path === pack.operator.acquisition.module && item.role === 'implementation';
+    });
+    if (!acquisitionArtifact || !fs.statSync(acquisitionPath).isFile()) {
+      throw new Error(
+        'Connected-acquisition adapter must be a declared Automation implementation artifact.'
+      );
+    }
+    acquisition = {
+      modulePath: acquisitionPath,
+      prepareExport: pack.operator.acquisition.prepareExport,
+      finalizeExport: pack.operator.acquisition.finalizeExport,
+      availability: structuredClone(
+        pack.operator.acquisition.availability || { state: 'available' }
+      ),
+      recordRequirements: structuredClone(pack.operator.acquisition.recordRequirements)
+    };
+  }
   let derivedReviewDefinition = null;
   const derivedReviewPath = pack.operator.preparation.derivedReviewContract || null;
   if (derivedReviewPath) {
@@ -357,13 +453,121 @@ function loadAutomation(root, automationId) {
     input,
     modulePath,
     exportName: pack.operator.preparation.export,
-    derivedReviewDefinition
+    derivedReviewDefinition,
+    acquisition
   };
 }
 
-function exactConfiguration(root, automationId, configurationName) {
+function assertPreparationMode(preparationMode) {
+  const mode = preparationMode || 'contained';
+  if (!PREPARATION_MODES.has(mode)) {
+    throw new TypeError(
+      'Automation preparation mode must be contained or connected-acquisition.'
+    );
+  }
+  return mode;
+}
+
+function requireConnectedAcquisitionDeclaration(automation) {
+  if (!automation.acquisition) {
+    throw invalidAdapter(
+      automation.pack.id + ' does not declare one exact connected-acquisition adapter.'
+    );
+  }
+  if (automation.acquisition.availability.state !== 'available') {
+    const error = new Error(
+      'Connected acquisition is unavailable for this Automation.'
+    );
+    error.code = /^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$/.test(
+      automation.acquisition.availability.reasonCode || ''
+    )
+      ? automation.acquisition.availability.reasonCode
+      : 'PREPARATION_MODE_UNAVAILABLE';
+    throw error;
+  }
+  return automation.acquisition;
+}
+
+async function assertConnectedAcquisitionDeclaration(automation) {
+  const acquisition = requireConnectedAcquisitionDeclaration(automation);
+  const module = await import(pathToFileURL(automation.acquisition.modulePath).href);
+  if (typeof module[acquisition.prepareExport] !== 'function'
+    || typeof module[acquisition.finalizeExport] !== 'function') {
+    throw invalidAdapter(
+      'Connected-acquisition prepare and finalize exports must both be callable.'
+    );
+  }
+  return acquisition;
+}
+
+function assertConfigurationBasis(configurationBasis) {
+  if (!CONFIGURATION_BASES.has(configurationBasis)) {
+    throw new TypeError(
+      'Prepared work requires configurationBasis tracked-contained or private-active.'
+    );
+  }
+  return configurationBasis;
+}
+
+function configurationStatePair(root, configurationName) {
+  const desired = fs.existsSync(privateConfigurationStatePath(root, configurationName));
+  const activeLock = hasActiveConfigurationLockState(root, configurationName);
+  if (desired !== activeLock) {
+    throw new Error(
+      'Private desired configuration and active exact lock must either both exist or both be absent; tracked fallback is prohibited.'
+    );
+  }
+  return { desired, activeLock };
+}
+
+function exactConfiguration(root, automationId, configurationName, configurationBasis) {
   if (typeof configurationName !== 'string' || !configurationName.trim()) {
     throw new TypeError('Prepared work requires one explicit configuration name.');
+  }
+  const basis = assertConfigurationBasis(configurationBasis);
+  const state = configurationStatePair(root, configurationName);
+  if (basis === 'private-active') {
+    if (!state.desired || !state.activeLock) {
+      throw new Error(
+        'Prepared work with configurationBasis private-active requires private desired configuration and its active exact lock; tracked fallback is prohibited.'
+      );
+    }
+    try {
+      hasPrivateConfigurationState(root, configurationName);
+      const lock = readActiveConfigurationLockState(root, configurationName).lock;
+      const configPath = repoRelativePath(
+        root,
+        privateConfigurationStatePath(root, configurationName)
+      );
+      if (lock.configuration.name !== configurationName
+        || lock.configuration.path !== configPath
+        || !lock.packs.some((pack) => pack.id === automationId)) {
+        throw new Error('Active private configuration does not select the requested Automation.');
+      }
+      const current = lockMatchesResolution({
+        root,
+        lock,
+        configPath,
+        host: lock.host.id
+      });
+      if (!current.matches) {
+        throw new Error('Active private configuration lock is stale.');
+      }
+      return {
+        lock,
+        lockPath: repoRelativePath(
+          root,
+          activeConfigurationLockStatePath(root, configurationName)
+        ),
+        configPath,
+        configurationBasis: basis
+      };
+    } catch (error) {
+      throw new Error(
+        'Prepared work requires a current exact active private configuration; tracked fallback is prohibited.',
+        { cause: error }
+      );
+    }
   }
   const candidates = fs.readdirSync(path.join(root, 'soter', 'configurations'))
     .filter((name) => name.endsWith('.config.json'))
@@ -395,7 +599,8 @@ function exactConfiguration(root, automationId, configurationName) {
   return {
     lock: observed,
     lockPath: repoRelativePath(root, matchingLocks[0].file),
-    configPath
+    configPath,
+    configurationBasis: basis
   };
 }
 
@@ -523,6 +728,7 @@ export function assertAutomationPreparationAdapterResult(
 
 function contextFailure(work, at, reasonCode = 'PREPARATION_CONTEXT_UNAVAILABLE') {
   const adapterInvalid = reasonCode === 'PREPARATION_ADAPTER_INVALID';
+  const inputInvalid = reasonCode === 'PREPARATION_INPUT_INVALID';
   return withFingerprint({
     ...work,
     state: 'needs-input',
@@ -540,9 +746,13 @@ function contextFailure(work, at, reasonCode = 'PREPARATION_CONTEXT_UNAVAILABLE'
         fieldId: null,
         message: adapterInvalid
           ? 'The Automation preparation adapter exceeded or violated its declared provider-neutral contract.'
+          : inputInvalid
+            ? 'The supplied inputs do not form a valid domain preparation request.'
           : 'The declared contained context could not be acquired or validated for this exact work.',
         remediation: adapterInvalid
           ? 'Repair and verify the Automation pack before preparing this work again.'
+          : inputInvalid
+            ? 'Review the declared input combination and prepare a new exact work item.'
           : 'Review the selected identifier, exact lock, and contained fixture records before preparing again.'
       }]
     },
@@ -552,6 +762,8 @@ function contextFailure(work, at, reasonCode = 'PREPARATION_CONTEXT_UNAVAILABLE'
       reasonCode,
       reason: adapterInvalid
         ? 'The declared Automation preparation adapter did not satisfy Core validation.'
+        : inputInvalid
+          ? 'The exact input combination is not valid for this preparation mode.'
         : 'Contained context acquisition or validation did not complete.',
       permittedNextAction: adapterInvalid ? 'repair-automation-pack' : 'review-preparation-inputs'
     }
@@ -559,23 +771,38 @@ function contextFailure(work, at, reasonCode = 'PREPARATION_CONTEXT_UNAVAILABLE'
 }
 
 export function classifyPreparationFailure(error) {
+  if (error?.code === 'PREPARATION_INPUT_INVALID') return 'PREPARATION_INPUT_INVALID';
   return error?.code === 'PREPARATION_ADAPTER_INVALID'
     || error?.code?.startsWith('PREPARED_DERIVED_REVIEW_MATERIAL_')
     ? 'PREPARATION_ADAPTER_INVALID'
     : 'PREPARATION_CONTEXT_UNAVAILABLE';
 }
 
-function baseReceipt({ id, createdAt, automation, configuration, inputSummary, blockers }) {
+function baseReceipt({
+  id,
+  createdAt,
+  automation,
+  configuration,
+  inputSummary,
+  blockers,
+  preparationMode = 'contained'
+}) {
   const state = blockers.length ? 'needs-input' : 'draft';
-  const checkpointFingerprint = fingerprintJson({ id, automation, configuration, inputSummary });
-  return withFingerprint({
+  const automationIdentity = { id: automation.pack.id, version: automation.pack.version };
+  const checkpointFingerprint = fingerprintJson({
+    id,
+    automation: automationIdentity,
+    configuration,
+    inputSummary
+  });
+  const receipt = {
     $contract: CONTRACT,
     contractVersion: VERSION,
     id,
     fingerprint: 'sha256:' + '0'.repeat(64),
     createdAt,
     updatedAt: createdAt,
-    automation: { id: automation.pack.id, version: automation.pack.version },
+    automation: automationIdentity,
     state,
     history: [{ state, at: createdAt, reasonCode: blockers.length ? 'REQUIRED_INPUT_MISSING' : 'PREPARATION_DRAFTED' }],
     configuration,
@@ -592,10 +819,15 @@ function baseReceipt({ id, createdAt, automation, configuration, inputSummary, b
     readiness: {
       state: blockers.length ? 'needs-input' : 'preparing',
       blockers,
-      limitations: [
-        'Preparation is fixture-contained and does not establish connected readiness or provider health.',
-        'The receipt grants no approval, execution, write, verification, proof, maturity, or migration authority.'
-      ]
+      limitations: preparationMode === 'connected-acquisition'
+        ? [
+          'Connected acquisition is staged but no provider call or context acquisition has occurred.',
+          'The receipt grants no approval, continuation, execution, write, readiness, verification, proof, maturity, or migration authority.'
+        ]
+        : [
+          'Preparation is fixture-contained and does not establish connected readiness or provider health.',
+          'The receipt grants no approval, execution, write, verification, proof, maturity, or migration authority.'
+        ]
     },
     preview: emptyPreview(),
     evidence: [],
@@ -612,13 +844,44 @@ function baseReceipt({ id, createdAt, automation, configuration, inputSummary, b
       canonicalArtifactsWritten: false,
       externalWritesPerformed: false
     }
-  });
+  };
+  if (preparationMode === 'connected-acquisition') {
+    receipt.preparationMode = preparationMode;
+  }
+  return withFingerprint(receipt);
 }
 
 export function assertPreparedWork(root, work) {
   const resolvedRoot = path.resolve(root);
   validate(resolvedRoot, work, 'soter/contracts/prepared-work.schema.json', 'Prepared work');
-  if (!PREPARED_STATES.has(work.state) || work.fingerprint !== receiptFingerprint(work)) {
+  const checkpointFingerprint = fingerprintJson({
+    id: work.id,
+    automation: work.automation,
+    configuration: work.configuration,
+    inputSummary: work.inputSummary
+  });
+  const preparationMode = work.preparationMode || 'contained';
+  const readinessForState = {
+    draft: 'preparing',
+    preparing: 'preparing',
+    'needs-input': 'needs-input',
+    'ready-for-review': 'ready-for-review',
+    'ready-for-acquisition': 'ready-for-acquisition'
+  };
+  const crossedModeHistory = work.history.some((entry) => {
+    return preparationMode === 'connected-acquisition'
+      ? entry.state === 'ready-for-review'
+      : entry.state === 'ready-for-acquisition';
+  });
+  if (!PREPARED_STATES.has(work.state)
+    || (preparationMode === 'connected-acquisition' && work.state === 'ready-for-review')
+    || (preparationMode === 'contained' && work.state === 'ready-for-acquisition')
+    || crossedModeHistory
+    || work.history.at(-1)?.state !== work.state
+    || work.checkpoint.state !== work.state
+    || work.readiness.state !== readinessForState[work.state]
+    || work.fingerprint !== receiptFingerprint(work)
+    || work.checkpoint.fingerprint !== checkpointFingerprint) {
     throw new Error('Prepared work fingerprint or lifecycle state is invalid.');
   }
   assertReviewProjectionSemantics(work.preview, (message) => new Error(message));
@@ -626,7 +889,9 @@ export function assertPreparedWork(root, work) {
     automationId: work.automation.id,
     inputContractFingerprint: work.inputSummary.inputContractFingerprint,
     fields: work.inputSummary.fields,
-    lockFingerprint: work.configuration.lockFingerprint
+    configurationBasis: work.configuration.configurationBasis,
+    lockFingerprint: work.configuration.lockFingerprint,
+    preparationMode: work.preparationMode || 'contained'
   });
   if (work.id !== workIdFor(identity) || work.inputSummary.workId !== work.id) {
     throw new Error('Prepared work identity does not match its exact inputs and lock.');
@@ -665,6 +930,8 @@ export function assertPreparedWorkReviewMaterial(root, material, work, loadedAut
     || material.checkpointFingerprint !== validWork.checkpoint.fingerprint
     || fingerprintJson(material.automation) !== fingerprintJson(validWork.automation)
     || material.configuration.name !== validWork.configuration.name
+    || material.configuration.configurationBasis
+      !== validWork.configuration.configurationBasis
     || material.configuration.lockFingerprint !== validWork.configuration.lockFingerprint
     || material.inputContractFingerprint !== validWork.inputSummary.inputContractFingerprint
     || material.inputContractFingerprint !== fingerprintJson(automation.input)
@@ -757,6 +1024,8 @@ export function assertPreparedWorkDerivedReviewMaterial(root, material, work) {
     || material.checkpointFingerprint !== validWork.checkpoint.fingerprint
     || fingerprintJson(material.automation) !== fingerprintJson(validWork.automation)
     || material.configuration.name !== validWork.configuration.name
+    || material.configuration.configurationBasis
+      !== validWork.configuration.configurationBasis
     || material.configuration.lockFingerprint !== validWork.configuration.lockFingerprint
     || material.inputContractFingerprint !== validWork.inputSummary.inputContractFingerprint
     || material.reviewContractId !== automation.derivedReviewDefinition?.$contract
@@ -871,7 +1140,30 @@ export function projectPreparedWorkApplicability(root, work) {
   const valid = structuredClone(assertPreparedWork(resolvedRoot, work));
   let current = false;
   try {
-    const lock = readJson(resolveRepoPath(resolvedRoot, valid.configuration.lockPath));
+    const state = configurationStatePair(resolvedRoot, valid.configuration.name);
+    const privatePath = repoRelativePath(
+      resolvedRoot,
+      privateConfigurationStatePath(resolvedRoot, valid.configuration.name)
+    );
+    const activeLockPath = repoRelativePath(
+      resolvedRoot,
+      activeConfigurationLockStatePath(resolvedRoot, valid.configuration.name)
+    );
+    const basisPathsMatch = valid.configuration.configurationBasis === 'private-active'
+      ? state.desired
+        && state.activeLock
+        && valid.configuration.path === privatePath
+        && valid.configuration.lockPath === activeLockPath
+      : !valid.configuration.path.startsWith('.soter/')
+        && valid.configuration.path.startsWith('soter/configurations/')
+        && valid.configuration.lockPath.startsWith('soter/fixtures/');
+    if (!basisPathsMatch) throw new Error('Prepared-work configuration basis no longer applies.');
+    if (valid.configuration.configurationBasis === 'private-active') {
+      hasPrivateConfigurationState(resolvedRoot, valid.configuration.name);
+    }
+    const lock = valid.configuration.configurationBasis === 'private-active'
+      ? readActiveConfigurationLockState(resolvedRoot, valid.configuration.name).lock
+      : readJson(resolveRepoPath(resolvedRoot, valid.configuration.lockPath));
     const exact = lockMatchesResolution({
       root: resolvedRoot,
       lock,
@@ -1006,6 +1298,134 @@ export function inspectPreparedAutomationDerivedReviewMaterial({ root, workId })
   };
 }
 
+function acquisitionError(code, message, cause = null) {
+  const error = cause ? new Error(message, { cause }) : new Error(message);
+  error.code = code;
+  return error;
+}
+
+export function loadExactPreparedAutomationAcquisition({
+  root,
+  workId,
+  automationId,
+  expectedHost = null
+}) {
+  const resolvedRoot = path.resolve(root);
+  const automation = loadAutomation(resolvedRoot, automationId);
+  if (!automation.acquisition) {
+    throw acquisitionError(
+      'PREPARED_ACQUISITION_DECLARATION_INVALID',
+      'Automation does not declare a connected-acquisition adapter.'
+    );
+  }
+  if (automation.acquisition.availability.state !== 'available') {
+    throw acquisitionError(
+      /^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$/.test(
+        automation.acquisition.availability.reasonCode || ''
+      )
+        ? automation.acquisition.availability.reasonCode
+        : 'PREPARED_ACQUISITION_MODE_UNAVAILABLE',
+      'Connected acquisition is unavailable for this Automation.'
+    );
+  }
+  let work;
+  let material;
+  try {
+    work = inspectPreparedAutomationWork({ root: resolvedRoot, workId });
+    material = inspectPreparedAutomationReviewMaterial({ root: resolvedRoot, workId });
+  } catch (error) {
+    throw acquisitionError(
+      'PREPARED_ACQUISITION_WORK_INVALID',
+      'Connected acquisition prepared work or its private input is unavailable or invalid.',
+      error
+    );
+  }
+  if (work.automation.id !== automationId || material.automation.id !== automationId) {
+    throw acquisitionError(
+      'PREPARED_ACQUISITION_BINDING_INVALID',
+      'Connected acquisition does not match the requested Automation.'
+    );
+  }
+  let lock;
+  let run;
+  try {
+    lock = readJson(resolveRepoPath(resolvedRoot, work.configuration.lockPath));
+    run = readRunState(resolvedRoot, work.checkpoint.runId).run;
+  } catch (error) {
+    throw acquisitionError(
+      'PREPARED_ACQUISITION_BINDING_INVALID',
+      'Connected acquisition exact lock or durable run is unavailable.',
+      error
+    );
+  }
+  const noPreparedReview = fingerprintJson(work.preview) === fingerprintJson(emptyPreview());
+  const exactBinding = work.preparationMode === 'connected-acquisition'
+    && work.state === 'ready-for-acquisition'
+    && work.configuration.configurationBasis === 'private-active'
+    && work.configuration.applicability === 'current'
+    && material.applicability === 'current'
+    && work.configuration.lockFingerprint === fingerprintLock(lock)
+    && work.configuration.graphFingerprint === lock.graphFingerprint
+    && work.configuration.host === lock.host.id
+    && work.configuration.name === lock.configuration.name
+    && work.configuration.path === lock.configuration.path
+    && material.configuration.lockFingerprint === fingerprintLock(lock)
+    && material.preparedWorkFingerprint === work.fingerprint
+    && material.checkpointFingerprint === work.checkpoint.fingerprint
+    && material.inputContractFingerprint === work.inputSummary.inputContractFingerprint
+    && typeof work.checkpoint.runId === 'string'
+    && work.checkpoint.runId
+    && work.checkpoint.contextSnapshotId === null
+    && run.id === work.checkpoint.runId
+    && run.configurationLock.path === work.configuration.lockPath
+    && run.configurationLock.fingerprint === work.configuration.lockFingerprint
+    && run.graphFingerprint === work.configuration.graphFingerprint
+    && run.host.id === work.configuration.host
+    && run.automation.id === automationId
+    && run.automation.version === work.automation.version
+    && ACQUISITION_RUN_STATES.has(run.lifecycleState)
+    && Array.isArray(run.effects)
+    && Array.isArray(run.evidenceIds)
+    && run.evidenceIds.length === 0
+    && work.contextPlan.length === 0
+    && work.outcomes.length === 0
+    && work.capabilities.steps.length === 0
+    && work.capabilities.completedPrefix.length === 0
+    && work.capabilities.current === null
+    && work.capabilities.pending.length === 0
+    && work.effects.length === 0
+    && work.approval.state === 'not-requested'
+    && work.approval.requiredFor.length === 0
+    && work.readiness.state === 'ready-for-acquisition'
+    && work.readiness.blockers.length === 0
+    && noPreparedReview
+    && work.evidence.length === 0
+    && work.resume.classification === 'unavailable'
+    && work.continuationRequest === null
+    && !hasPreparedWorkDerivedReviewMaterialState(resolvedRoot, workId)
+    && (!expectedHost || lock.host.id === expectedHost);
+  if (!exactBinding) {
+    throw acquisitionError(
+      work.configuration.applicability === 'stale'
+        ? 'PREPARED_ACQUISITION_STALE'
+        : 'PREPARED_ACQUISITION_BINDING_INVALID',
+      'Connected acquisition requires current exact staged private-active work, lock, host, and its Core-owned durable run.'
+    );
+  }
+  return {
+    work,
+    material,
+    lock,
+    lockPath: work.configuration.lockPath,
+    run,
+    runPath: repoRelativePath(
+      resolvedRoot,
+      runStatePath(resolvedRoot, run.id)
+    ),
+    acquisition: structuredClone(automation.pack.operator.acquisition)
+  };
+}
+
 function persistPreparedAutomationReviewMaterial({ root, work, automation, summary }) {
   const expected = buildReviewMaterial(work, automation, summary);
   assertPreparedWorkReviewMaterial(root, expected, work, automation);
@@ -1062,13 +1482,36 @@ export async function prepareAutomationRun({
   root,
   automationId,
   configurationName,
+  configurationBasis,
+  preparationMode = 'contained',
+  expectedHost = null,
   input = {},
   createdAt = new Date().toISOString()
 }) {
   const resolvedRoot = path.resolve(root);
   const at = new Date(createdAt).toISOString();
+  const mode = assertPreparationMode(preparationMode);
   const automation = loadAutomation(resolvedRoot, automationId);
-  const exact = exactConfiguration(resolvedRoot, automationId, configurationName);
+  if (mode === 'connected-acquisition') {
+    requireConnectedAcquisitionDeclaration(automation);
+    if (configurationBasis !== 'private-active') {
+      throw new Error(
+        'Connected acquisition staging requires configurationBasis private-active; contained fallback is prohibited.'
+      );
+    }
+  }
+  const exact = exactConfiguration(
+    resolvedRoot,
+    automationId,
+    configurationName,
+    configurationBasis
+  );
+  if (expectedHost && exact.lock.host.id !== expectedHost) {
+    throw new Error('Connected acquisition staging does not match the exact active host.');
+  }
+  if (mode === 'connected-acquisition') {
+    await assertConnectedAcquisitionDeclaration(automation);
+  }
   const summary = summarizeInput(automation.input, input);
   if (containsCredentialMaterial(summary.normalized)) {
     throw reviewMaterialError(
@@ -1081,7 +1524,9 @@ export async function prepareAutomationRun({
     automationId,
     inputContractFingerprint,
     fields: summary.fields,
-    lockFingerprint: fingerprintLock(exact.lock)
+    configurationBasis: exact.configurationBasis,
+    lockFingerprint: fingerprintLock(exact.lock),
+    preparationMode: mode
   });
   const workId = workIdFor(identity);
   if (hasPreparedWorkState(resolvedRoot, workId)) {
@@ -1095,7 +1540,14 @@ export async function prepareAutomationRun({
         'Exact prepared-work re-entry does not match its durable private review material.'
       );
     }
-    if (existing.preview.privateReview.state === 'available') {
+    if (mode === 'connected-acquisition' && existing.state === 'ready-for-acquisition') {
+      loadExactPreparedAutomationAcquisition({
+        root: resolvedRoot,
+        workId,
+        automationId,
+        expectedHost
+      });
+    } else if (mode === 'contained' && existing.preview.privateReview.state === 'available') {
       inspectPreparedAutomationDerivedReviewMaterial({ root: resolvedRoot, workId });
     } else if (hasPreparedWorkDerivedReviewMaterialState(resolvedRoot, workId)) {
       throw derivedReviewMaterialError(
@@ -1118,18 +1570,104 @@ export async function prepareAutomationRun({
     name: exact.lock.configuration.name,
     path: exact.lock.configuration.path,
     lockPath: exact.lockPath,
+    configurationBasis: exact.configurationBasis,
     lockFingerprint: fingerprintLock(exact.lock),
     graphFingerprint: exact.lock.graphFingerprint,
     host: exact.lock.host.id,
     applicability: 'current'
   };
-  let work = baseReceipt({ id: workId, createdAt: at, automation, configuration, inputSummary, blockers: summary.blockers });
+  let work = baseReceipt({
+    id: workId,
+    createdAt: at,
+    automation,
+    configuration,
+    inputSummary,
+    blockers: summary.blockers,
+    preparationMode: mode
+  });
   validate(resolvedRoot, work, 'soter/contracts/prepared-work.schema.json', 'Prepared work');
-  writePreparedWorkState(resolvedRoot, work);
   if (summary.blockers.length) {
+    writePreparedWorkState(resolvedRoot, work);
     work = assertPreparedWork(resolvedRoot, work);
     persistPreparedAutomationReviewMaterial({ root: resolvedRoot, work, automation, summary });
     return work;
+  }
+
+  if (mode === 'connected-acquisition') {
+    const runId = 'run.' + automationId.slice('automation.'.length)
+      + '.connected-acquisition.' + workId.slice(workId.lastIndexOf('.') + 1);
+    const stagedRun = {
+      ...prepareRunEnvelope({
+        root: resolvedRoot,
+        lock: exact.lock,
+        lockPath: exact.lockPath,
+        automationId,
+        runId,
+        createdAt: at,
+        requestedOutcome: 'Stage exact private operator input for a separately checkpointed connected acquisition without calling a provider.',
+        evidenceIds: []
+      }),
+      lifecycleState: 'effects-established',
+      checkpoints: [{
+        id: 'connected-acquisition-staged',
+        state: 'passed',
+        details: 'Exact private input and current lock are staged; no provider call, context snapshot, effect, approval, or continuation exists.'
+      }],
+      outputs: [],
+      effects: [],
+      evidenceIds: []
+    };
+    validate(
+      resolvedRoot,
+      stagedRun,
+      'soter/contracts/run-envelope.schema.json',
+      'Connected-acquisition staged run'
+    );
+    work = withFingerprint({
+      ...work,
+      state: 'ready-for-acquisition',
+      updatedAt: at,
+      history: [
+        ...work.history,
+        {
+          state: 'ready-for-acquisition',
+          at,
+          reasonCode: 'PREPARATION_READY_FOR_ACQUISITION'
+        }
+      ],
+      readiness: {
+        state: 'ready-for-acquisition',
+        blockers: [],
+        limitations: work.readiness.limitations
+      },
+      checkpoint: {
+        ...work.checkpoint,
+        runId,
+        contextSnapshotId: null,
+        state: 'ready-for-acquisition'
+      },
+      resume: {
+        classification: 'unavailable',
+        reasonCode: 'PREPARATION_READY_FOR_ACQUISITION',
+        reason: 'Private input and the exact current lock are staged; connected acquisition has not started.',
+        permittedNextAction: 'prepare-connected-acquisition'
+      }
+    });
+    work = assertPreparedWork(resolvedRoot, work);
+    writeRunState(resolvedRoot, stagedRun);
+    writePreparedWorkState(resolvedRoot, work);
+    persistPreparedAutomationReviewMaterial({
+      root: resolvedRoot,
+      work,
+      automation,
+      summary
+    });
+    return loadExactPreparedAutomationAcquisition({
+      root: resolvedRoot,
+      workId,
+      automationId,
+      expectedHost
+    }).work;
   }
 
   work = withFingerprint({

@@ -1,0 +1,180 @@
+{
+  "$contract": "soter://contracts/workflow-definition/v2",
+  "contractVersion": "2.0.0",
+  "id": "automation.forge",
+  "version": "0.1.0",
+  "title": "Forge a harness artifact",
+  "summary": "Develops one governed harness artifact from a classified need, exact contract shape, adversarial evaluation, and human-reviewed change boundary.",
+  "ownership": {
+    "layer": "automation",
+    "domain": "harness-development",
+    "legacyLayer": "skill",
+    "responsibility": "outcome-definition"
+  },
+  "lifecycle": {
+    "state": "active-host-guided",
+    "activation": {
+      "state": "active",
+      "reasonCode": "WORKFLOW_HOST_GUIDANCE_ACTIVE",
+      "proceduralAuthority": "target",
+      "delivery": "host-skill",
+      "behaviorParity": "passed",
+      "evidence": [
+        {
+          "path": "soter/evidence/development/development-agent-migration-evidence.claude.forge.json",
+          "fingerprint": "sha256:2b28dd9ff0d0b87e14e25bac1e9a7ce535d0982871e3fffa36aec106060f33c1",
+          "host": "claude"
+        },
+        {
+          "path": "soter/evidence/development/development-agent-migration-evidence.codex.forge.json",
+          "fingerprint": "sha256:6b1ca49b3e1ed60cc54f6d974e89e43461f34bf042f93886e96979f9fe6826a9",
+          "host": "codex"
+        }
+      ],
+      "permittedNextAction": "invoke-through-selected-host"
+    },
+    "development": {
+      "requestContract": {
+        "id": "soter://contracts/development-request/v1",
+        "path": "soter/contracts/development-request.schema.json"
+      },
+      "resultContract": {
+        "id": "soter://contracts/development-result/v1",
+        "path": "soter/contracts/development-result.schema.json"
+      },
+      "workspacePolicy": {
+        "id": "settings.kernel.soter.development-workspace",
+        "path": "soter/kernel/development-workspace.settings.json",
+        "fingerprint": "sha256:84ea480a61e67ac271b9cb3bb58ef338f0430d9a04d772d3ec47cad17175bfc1"
+      },
+      "supportedHosts": [
+        "codex",
+        "claude"
+      ]
+    },
+    "effectBoundary": {
+      "localWorkspaceRead": "request-scoped",
+      "localWorkspaceWrite": "request-scoped",
+      "localCommand": "request-scoped",
+      "subagentDispatch": "request-scoped",
+      "providerRead": "separate-authority",
+      "providerWrite": "separate-authority",
+      "publication": "separate-authority",
+      "merge": "separate-authority",
+      "protectedRootMutation": "separate-authority",
+      "hostRealization": "separate-authority",
+      "authority": "development-request-only"
+    }
+  },
+  "intent": {
+    "goal": "Produce one target-owned harness change whose need, ownership, behavior expectations, limitations, and verification are explicit before adoption.",
+    "useWhen": [
+      "A new governed pack, contract, workflow definition, rule, or host-neutral artifact is genuinely required."
+    ],
+    "excludeWhen": [
+      "An existing artifact only needs a bounded edit, a decision note, or an unreviewed bulk rewrite."
+    ]
+  },
+  "procedure": [
+    {
+      "id": "classify-responsibility",
+      "sequence": 1,
+      "outcome": "Classify the requested outcome by Kernel, Core, Context, Automation, Integration, configuration, or host responsibility.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision.",
+        "For every proposed new system namespace, record an explicit birth-decision disposition: link the exact optional decision when durable cross-cutting rationale warrants one, otherwise withhold it and state why the rationale belongs with the owning artifact."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "check-territory",
+      "sequence": 2,
+      "outcome": "Inspect existing owned artifacts and reject or reconcile overlapping responsibility before drafting.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "establish-contained-baseline",
+      "sequence": 3,
+      "outcome": "Record an exact contained failure or missing contract that justifies the new artifact.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "draft-governed-artifacts",
+      "sequence": 4,
+      "outcome": "Prepare the exact definition, ownership, contracts, evaluations, limitations, and migration impact.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "run-adversarial-gates",
+      "sequence": 5,
+      "outcome": "Run static and behavioral checks against the claimed boundary and capture failures without self-approving them.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "present-exact-change",
+      "sequence": 6,
+      "outcome": "Present the complete change and evidence for human review before any adoption, installation, or host realization.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    }
+  ],
+  "safeguards": [
+    "Never create a second source of authority for an existing responsibility.",
+    "Never treat a green schema check as behavior, readiness, verification, or health proof.",
+    "Never publish, install, realize, or merge a drafted artifact without the separate authority required for that effect."
+  ],
+  "evaluationSet": {
+    "id": "evaluation-set.forge",
+    "path": "soter/automations/forge/evaluations.json"
+  },
+  "guide": {
+    "id": "workflow-guide.forge",
+    "path": "soter/automations/forge/guide.json"
+  },
+  "potentialEffects": [
+    "read",
+    "disclosure",
+    "write"
+  ],
+  "source": {
+    "presence": "removed",
+    "legacyPath": ".claude/skills/forge/SKILL.md",
+    "legacyFingerprint": "sha256:f5708137623689d2a44f0864a379c389ec805a845795b05cf94d6c4ea3d22c69"
+  },
+  "privacy": {
+    "rawSourceIncluded": false,
+    "workspaceSpecificValuesIncluded": false,
+    "credentialsIncluded": false,
+    "privateInputsIncluded": false
+  },
+  "limitations": [
+    "This normalized definition preserves inspectable intent only; it has no operator runtime, provider binding, effect authority, or behavior parity.",
+    "The fingerprinted legacy source remains canonical until a separate implemented and evidenced runtime migration removes that fallback."
+  ]
+}

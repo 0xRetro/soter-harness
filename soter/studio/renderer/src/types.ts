@@ -1,5 +1,27 @@
 export type ProofState = 'passed' | 'failed' | 'stale' | 'unknown' | 'skipped' | 'not-applicable' | string;
+export type ScenarioMigrationState = 'current' | 'mapped' | 'bridged' | 'migrated' | 'retired' | 'target-native' | 'unknown';
 export type ViewName = 'operate' | 'explore' | 'config' | 'workflow' | 'runs' | 'distribution';
+export type ConfigurationBasis = 'tracked-contained' | 'private-active';
+export type PreparationMode = 'contained' | 'connected-acquisition';
+export type ModeAvailability =
+  | { state: 'available' }
+  | { state: 'unavailable'; reasonCode: string; reason: string };
+
+export type OperatorPreparationMode =
+  | {
+    id: 'contained';
+    configurationBases: ['tracked-contained', 'private-active'];
+    resultState: 'ready-for-review';
+    availability: { state: 'available' };
+    boundary: string;
+  }
+  | {
+    id: 'connected-acquisition';
+    configurationBases: ['private-active'];
+    resultState: 'ready-for-acquisition';
+    availability: ModeAvailability;
+    boundary: string;
+  };
 
 export interface Diagnostic {
   code: string;
@@ -35,6 +57,7 @@ export interface Configuration {
   name: string;
   status: string;
   lockState: string;
+  configurationBasis: ConfigurationBasis;
   host: string;
   maturity: {
     verified: 'passed' | 'failed' | 'stale' | 'unknown';
@@ -110,7 +133,12 @@ export interface Workflow {
   summary: string;
   version: string;
   configuration: string | null;
+  configurationBasis: ConfigurationBasis | null;
   host: string | null;
+  hostCompatibility: Record<string,
+    | { state: 'compatible' }
+    | { state: 'unavailable'; reasonCode: string; reason: string }
+  >;
   effects: string[];
   requiredCapabilities: string[];
   dependencies: string[];
@@ -122,7 +150,12 @@ export interface Workflow {
       fields: OperatorInputField[];
       additionalInputs: boolean;
     };
-    preparation: { supported: boolean; boundary: string; workStates: string[] };
+    preparation: {
+      supported: boolean;
+      boundary: string;
+      workStates: string[];
+      modes: OperatorPreparationMode[];
+    };
   };
   scenarios: Array<{
     id: string;
@@ -132,7 +165,7 @@ export interface Workflow {
     invariants: string[];
     evidence: string[];
     sourceCases: string[];
-    migrationState: string;
+    migrationState: ScenarioMigrationState;
     execution: null | {
       source: 'fixture';
       result: string;
@@ -188,13 +221,22 @@ export interface OperatorInputField {
   id: string;
   label: string;
   description: string;
-  type: 'reference' | 'string' | 'enum' | 'boolean' | 'date' | 'uri';
+  type: 'reference' | 'string' | 'string-list' | 'enum' | 'boolean' | 'date' | 'uri';
   required: boolean;
   exposure: 'identifier' | 'private';
   reference?: { subject: string; authorityRole: string };
   options?: string[];
-  constraints?: { minLength?: number; maxLength?: number; pattern?: string };
-  examples?: string[];
+  constraints?: {
+    minLength?: number;
+    maxLength?: number;
+    pattern?: string;
+    minItems?: number;
+    maxItems?: number;
+    itemMinLength?: number;
+    itemMaxLength?: number;
+    itemPattern?: string;
+  };
+  examples?: string[] | string[][];
 }
 
 interface OperatorInputSummaryBase {
@@ -216,14 +258,15 @@ export interface OperatorInspection {
     id: string;
     automationId: string | null;
     workId: string;
-    workState: 'awaiting-approval' | 'approval-expired' | 'approved-not-started' | 'running' | 'blocked' | 'verification-failed' | 'rolling-back' | 'rolled-back' | 'completed' | 'failed';
-    phase: 'approval' | 'execution' | 'verification' | 'compensation' | 'complete';
+    workState: 'awaiting-approval' | 'approval-expired' | 'approved-not-started' | 'running' | 'blocked' | 'verification-failed' | 'completed' | 'failed';
+    phase: 'approval' | 'execution' | 'reconciliation' | 'verification' | 'complete';
     runId: string;
   };
   configuration: {
     name: string | null;
     path: string;
     lockPath: string;
+    configurationBasis: ConfigurationBasis | null;
     lockFingerprint: string;
     graphFingerprint: string;
     host: string;
@@ -238,24 +281,35 @@ export interface OperatorInspection {
     changes: Array<{ id: string; recordId: string | null; effect: string; beforeFingerprint: string | null; afterFingerprint: string | null }>;
   };
   approval: {
-    state: 'awaiting' | 'expired' | 'confirmed' | 'consumed' | 'stale';
+    state: 'awaiting' | 'expired' | 'confirmed' | 'consumed';
     request: { id: string; fingerprint: string; requestedAt: string; expiresAt: string };
     confirmation: null | { id: string; fingerprint: string; confirmedAt: string; actor: string };
     consumption: null | { id: string; state: 'reserved' | 'started'; startedAt: string; checkpointId: string; checkpointFingerprint: string | null };
     reasonCode: string;
   };
   capabilities: {
-    steps: Array<{ id: string; sequence: number; capability: string; authority: string; effects: string[]; state: string }>;
+    steps: Array<{ id: string; sequence: number; capability: string; authority: string; effects: string[]; state: 'pending' | 'current' | 'applied' | 'failed' | 'needs-attention' }>;
     completedPrefix: string[];
-    current: null | { stepId: string; stage: string; callId: string; reconciliationId: string | null };
+    current: null | { stepId: string; stage: 'precondition' | 'write' | 'verify' | 'reconcile'; callId: string; reconciliationId: string | null };
     pending: string[];
   };
   blockers: Array<{ reasonCode: string; summary: string; details: Array<{ key: string; value: string | number | boolean | null }>; requiredInputs: string[]; requiredPermissions: string[] }>;
-  checkpoint: null | { id: string; fingerprint: string; state: string; updatedAt: string };
-  resume: { classification: 'safe' | 'requires-review' | 'unavailable'; reasonCode: string; reason: string; permittedNextAction: string };
+  checkpoint: null | { id: string; fingerprint: string; state: 'requested' | 'completed' | 'failed' | 'needs-attention'; updatedAt: string };
+  resume: {
+    classification: 'safe' | 'requires-review' | 'unavailable';
+    reasonCode: string;
+    reason: string;
+    permittedNextAction: 'confirm-approval' | 'renew-approval-request' | 'start-transaction' | 'execute-current-call' | 'prepare-reconciliation' | 'inspect-checkpoint' | 'rebuild-work' | 'none';
+  };
   continuationRequest: null | { kind: 'execute-current-call' | 'prepare-reconciliation'; checkpointId: string; checkpointFingerprint: string; callId: string | null; requestFingerprint: string };
   verification: { state: 'not-started' | 'running' | 'verified' | 'failed' | 'unknown'; criteria: Array<{ id: string; state: string; reasonCode: string; observedFingerprint: string | null }>; observedFingerprint: string | null };
-  compensation: { state: 'not-required' | 'pending' | 'running' | 'verified' | 'failed' | 'unknown'; plan: Array<{ stepId: string; mode: string }>; completedStepIds: string[]; remainingStepIds: string[]; restoredFingerprint: string | null };
+  compensation: {
+    state: 'not-required';
+    plan: Array<{ stepId: string; mode: string }>;
+    completedStepIds: string[];
+    remainingStepIds: string[];
+    restoredFingerprint: null;
+  };
   families: Record<'proof' | 'maturity' | 'migration', { state: 'not-evaluated'; reasonCode: string }>;
   privacy: { scope: 'private-derived'; rawProviderResponseIncluded: false; credentialValuesIncluded: false };
   inspectionFingerprint: string;
@@ -334,10 +388,11 @@ export interface PreparedWork {
   createdAt: string;
   updatedAt: string;
   automation: { id: string; version: string };
-  state: 'draft' | 'preparing' | 'needs-input' | 'ready-for-review';
-  history: Array<{ state: 'draft' | 'preparing' | 'needs-input' | 'ready-for-review'; at: string; reasonCode: string }>;
+  preparationMode?: 'connected-acquisition';
+  state: 'draft' | 'preparing' | 'needs-input' | 'ready-for-review' | 'ready-for-acquisition';
+  history: Array<{ state: 'draft' | 'preparing' | 'needs-input' | 'ready-for-review' | 'ready-for-acquisition'; at: string; reasonCode: string }>;
   configuration: {
-    name: string; path: string; lockPath: string; lockFingerprint: string;
+    name: string; path: string; lockPath: string; configurationBasis: ConfigurationBasis; lockFingerprint: string;
     graphFingerprint: string; host: string; applicability: 'current' | 'stale';
   };
   inputSummary: {
@@ -354,7 +409,7 @@ export interface PreparedWork {
   effects: Array<{ effect: string; mode: EffectMode; state: 'not-executed' | 'completed-contained'; reason: string }>;
   approval: { state: 'not-requested'; requiredFor: string[]; reason: string };
   readiness: {
-    state: 'preparing' | 'needs-input' | 'ready-for-review';
+    state: 'preparing' | 'needs-input' | 'ready-for-review' | 'ready-for-acquisition';
     blockers: Array<{ reasonCode: string; fieldId: string | null; message: string; remediation: string }>;
     limitations: string[];
   };
@@ -396,7 +451,7 @@ export interface PreparedWorkReviewMaterial {
   checkpointId: string;
   checkpointFingerprint: string;
   automation: { id: string; version: string };
-  configuration: { name: string; lockFingerprint: string };
+  configuration: { name: string; configurationBasis: ConfigurationBasis; lockFingerprint: string };
   inputContractFingerprint: string;
   applicability: 'current' | 'stale';
   fields: Array<
@@ -424,6 +479,7 @@ export interface PreparedWorkReviewMaterial {
 
 export interface PreparedWorkReviewError {
   code: string;
+  reasonCode?: string;
   message: string;
 }
 
@@ -497,7 +553,7 @@ export interface PreparedWorkDerivedReviewMaterial {
   checkpointId: string;
   checkpointFingerprint: string;
   automation: { id: string; version: string };
-  configuration: { name: string; lockFingerprint: string };
+  configuration: { name: string; configurationBasis: ConfigurationBasis; lockFingerprint: string };
   inputContractFingerprint: string;
   reviewContractId: 'soter://contracts/automation-derived-review/v1';
   reviewContractFingerprint: string;
@@ -799,6 +855,10 @@ export type ProposalConnectedApprovalResult =
   | { ok: true; inspection: OperatorInspection }
   | { ok: false; error: PreparedWorkReviewError };
 
+export type ConnectedOperatorActionResult =
+  | { ok: true; inspection: OperatorInspection }
+  | { ok: false; error: PreparedWorkReviewError };
+
 export interface ConnectedTransactionCheckpointV2 {
   $contract: 'soter://contracts/connected-transaction-checkpoint/v2';
   contractVersion: '2.0.0';
@@ -886,7 +946,7 @@ export interface PreparedReviewBatch {
     automationId: string; automationVersion: string;
   };
   configuration: {
-    name: string; path: string; lockPath: string; lockFingerprint: string;
+    name: string; path: string; lockPath: string; configurationBasis: ConfigurationBasis; lockFingerprint: string;
     graphFingerprint: string; host: string;
   };
   preview: {
@@ -1036,6 +1096,7 @@ export type EffectMode = 'allow' | 'confirm' | 'prohibit';
 
 export interface ConfigurationPreviewRequest {
   name: string;
+  configurationBasis: ConfigurationBasis;
   draft?: {
     hostAdapter?: string;
     effectPolicies?: Partial<Record<'read' | 'disclosure' | 'write' | 'dispatch' | 'destructive', EffectMode>>;
@@ -1049,6 +1110,7 @@ export interface ConfigurationPreview {
   configuration: {
     name: string;
     sourcePath: string;
+    configurationBasis: ConfigurationBasis;
     host: string;
     lockFingerprint: string;
     graphFingerprint: string;
@@ -1113,7 +1175,7 @@ export interface ConfigurationChangeInspection {
   plan: { id: string; fingerprint: string };
   configuration: {
     name: string;
-    path: string;
+    sourceKind: 'tracked-template' | 'private-active';
     baselineLockFingerprint: string;
     candidateLockFingerprint: string;
     candidateGraphFingerprint: string;
@@ -1674,9 +1736,9 @@ declare global {
         proposal: AutomationProposalRequest;
         preview: ProposalConnectedBatchPreview;
       }): Promise<ProposalConnectedApprovalResult>;
-      prepareAutomationRun(request: { automationId: string; configurationName: string; input: Record<string, string | boolean> }): Promise<PreparedWork>;
-      confirmConnectedApproval(request: { requestId: string; approvalId: string; reason?: string; confirmed: true }): Promise<OperatorInspection>;
-      startConnectedTransaction(request: { approvalId: string }): Promise<OperatorInspection>;
+      prepareAutomationRun(request: { automationId: string; configurationName: string; configurationBasis: ConfigurationBasis; preparationMode: PreparationMode; input: Record<string, string | boolean | string[]> }): Promise<PreparedWork>;
+      confirmConnectedApproval(request: { requestId: string; approvalId: string; reason?: string; confirmed: true }): Promise<ConnectedOperatorActionResult>;
+      startConnectedTransaction(request: { approvalId: string }): Promise<ConnectedOperatorActionResult>;
       prepareConnectedReconciliation(request: { checkpointId: string }): Promise<OperatorInspection>;
       onWorkspaceInvalidated(callback: () => void): () => void;
     };

@@ -1,0 +1,311 @@
+{
+  "$contract": "soter://contracts/context-snapshot/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.process-red-team.preparation-fixture",
+  "runId": "run.process-red-team.preparation-fixture",
+  "createdAt": "2026-07-21T23:00:00.000Z",
+  "configurationLockFingerprint": "sha256:b730a38e52ae8985aa4d521f141ee5464ef28e30c03d66a82efc79e569ced3f2",
+  "graphFingerprint": "sha256:4ead41034d8041a73c6cc0e6790a6f167c8af3f7b7d0631f41014d7325d7ec76",
+  "containment": "fixture",
+  "entries": [
+    {
+      "id": "context.process-review.policy",
+      "subject": "process.records.process-review-policy",
+      "authority": "authority.process.definition",
+      "role": "definition",
+      "capability": "process.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T23:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.process.definition",
+        "mapping": "mapping.integration.notion.process-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:0dc79cd769045b7ac8fd5f816aa75072cc14f85d8881f50f6649c6f27876f77d"
+      },
+      "valueFingerprint": "sha256:2450f9bb9bc912d883f1a0c635b7b0e730a05d38124461968af554156b472d4b",
+      "value": {
+        "record": {
+          "type": "process-review-policy",
+          "id": "policy.process-review",
+          "version": "1",
+          "fields": {
+            "name": "Process Red Team"
+          },
+          "identityBinding": {
+            "state": "exact-request",
+            "requestedIdFingerprint": "sha256:1e4a810c808a13165f90faf9e97dd33c6a2f649823bb3493350a1fee9bd0c59e"
+          }
+        },
+        "definitionFingerprint": "sha256:768dfdbd1f9d73cf64a0d26e890d36cc912ae0a01eed60ce1001a9f115409bb5"
+      }
+    },
+    {
+      "id": "context.process-review.target",
+      "subject": "process.records.process",
+      "authority": "authority.process.instance",
+      "role": "instance",
+      "capability": "process.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T23:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.process.instance",
+        "mapping": "mapping.integration.notion.process-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:0dc79cd769045b7ac8fd5f816aa75072cc14f85d8881f50f6649c6f27876f77d"
+      },
+      "valueFingerprint": "sha256:b93861b0f277fa57b4f7c34aedd33045d953f5d2371d13eb9e389c0aec927ed0",
+      "value": {
+        "records": [
+          {
+            "type": "process",
+            "id": "soter-fixture://process/definition/wallet-penny-test",
+            "version": "1",
+            "fields": {
+              "name": "Wallet Penny Test",
+              "status": "In Review",
+              "frequency": "Ad Hoc",
+              "category": "Operations — Security",
+              "tags": [
+                "Treasury"
+              ],
+              "processLogicOwnerUris": [
+                "soter-fixture://process/role/security-lead"
+              ],
+              "relatedServiceUris": [
+                "soter-fixture://process/service/security-operations"
+              ],
+              "relatedRoleUris": [
+                "soter-fixture://process/role/security-lead"
+              ],
+              "relatedPolicyUris": [
+                "soter-fixture://process/policy/address-verification"
+              ],
+              "writeTargetTypes": [
+                "process-run"
+              ],
+              "declaredClaims": [
+                "destination.label-compared",
+                "destination.penny-transfer-completed",
+                "destination.marked-verified"
+              ]
+            },
+            "body": "# Wallet Penny Test\n\n## Purpose\n\nVerify a destination before a larger transfer.\n\n## Steps\n\n- [ ] Compare the displayed destination label but do not independently re-read the full address.\n- [ ] Mark Verified after one successful penny transfer.",
+            "identityBinding": {
+              "state": "exact-request",
+              "requestedIdFingerprint": "sha256:39f2a47cd87e1b0661135f24bd70bb1e330a9819528ea9a39f376c10df0f5484"
+            }
+          }
+        ],
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.process.instance",
+          "mapping": "mapping.integration.notion.process-records",
+          "mappingVersion": "0.2.0",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:0dc79cd769045b7ac8fd5f816aa75072cc14f85d8881f50f6649c6f27876f77d"
+        },
+        "observedAt": "2026-07-21T23:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.process-review.policy-standards",
+      "subject": "process.records.process-policy-standard",
+      "authority": "authority.process.instance",
+      "role": "instance",
+      "capability": "process.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T23:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.process.instance",
+        "mapping": "mapping.integration.notion.process-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:0dc79cd769045b7ac8fd5f816aa75072cc14f85d8881f50f6649c6f27876f77d"
+      },
+      "valueFingerprint": "sha256:0e7113b7ce0e7478125fb60df6073137d04a6fa586cef1ef9286e28793801d95",
+      "value": {
+        "records": [
+          {
+            "type": "process-policy-standard",
+            "id": "soter-fixture://process/policy/address-verification",
+            "version": "1",
+            "fields": {
+              "name": "Address Verification",
+              "relatedProcessUris": [
+                "soter-fixture://process/definition/wallet-penny-test"
+              ],
+              "requiredClaims": [
+                "destination.full-address-independently-compared",
+                "destination.penny-transfer-completed"
+              ]
+            },
+            "body": "# Address Verification\n\nA Verified destination requires an independent full-address comparison and a successful penny transfer before larger value moves.",
+            "identityBinding": {
+              "state": "exact-request",
+              "requestedIdFingerprint": "sha256:4d621865596bad236f59a8a3ec16b68117f4e95dca7904bb41385f3589581e25"
+            }
+          }
+        ],
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.process.instance",
+          "mapping": "mapping.integration.notion.process-records",
+          "mappingVersion": "0.2.0",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:0dc79cd769045b7ac8fd5f816aa75072cc14f85d8881f50f6649c6f27876f77d"
+        },
+        "observedAt": "2026-07-21T23:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.process-review.write-target-schema",
+      "subject": "process.records.schema",
+      "authority": "authority.process.instance",
+      "role": "instance",
+      "capability": "process.schema.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T23:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.process.instance",
+        "mapping": "mapping.integration.notion.process-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:78ed6072a10e6274f88c92ee311e778194e4bdd0fdda5e5a6a54c8c16401ba5a"
+      },
+      "valueFingerprint": "sha256:fae1d658ff3a1dbad431be0e9f6085531bfc91a8a32986b228378dbda467dca3",
+      "value": {
+        "schema": {
+          "recordType": "process-run",
+          "fields": [
+            {
+              "id": "name",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "observedClaims",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "outcome",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "processUri",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "state",
+              "writable": true,
+              "options": [
+                "Aborted",
+                "Completed",
+                "Failed",
+                "Running"
+              ]
+            }
+          ],
+          "fingerprint": "sha256:a472514a4fd4cf87f34ef249ea44d5b790bc4c7f941ea1ccc84c1ef7616c2840"
+        },
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.process.instance",
+          "mapping": "mapping.integration.notion.process-records",
+          "mappingVersion": "0.2.0",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:78ed6072a10e6274f88c92ee311e778194e4bdd0fdda5e5a6a54c8c16401ba5a"
+        },
+        "observedAt": "2026-07-21T23:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.process-review.runs",
+      "subject": "process.records.process-run",
+      "authority": "authority.process.instance",
+      "role": "instance",
+      "capability": "process.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T23:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.process.instance",
+        "mapping": "mapping.integration.notion.process-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:0dc79cd769045b7ac8fd5f816aa75072cc14f85d8881f50f6649c6f27876f77d"
+      },
+      "valueFingerprint": "sha256:98ed051d562d9c07266040291327f0c505a596e17cf96a396ea357135304c5e6",
+      "value": {
+        "records": [
+          {
+            "type": "process-run",
+            "id": "soter-fixture://process/run/wallet-penny-test-42",
+            "version": "1",
+            "fields": {
+              "name": "Wallet Penny Test run 42",
+              "processUri": "soter-fixture://process/definition/wallet-penny-test",
+              "state": "Completed",
+              "outcome": "Destination marked Verified from label comparison and successful transfer.",
+              "observedClaims": [
+                "destination.label-compared",
+                "destination.penny-transfer-completed",
+                "destination.marked-verified"
+              ]
+            },
+            "body": "# Run 42\n\nThe operator compared only the displayed label, sent one penny transfer, and recorded Verified.",
+            "identityBinding": {
+              "state": "observed",
+              "requestedIdFingerprint": null
+            }
+          }
+        ],
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.process.instance",
+          "mapping": "mapping.integration.notion.process-records",
+          "mappingVersion": "0.2.0",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:0dc79cd769045b7ac8fd5f816aa75072cc14f85d8881f50f6649c6f27876f77d"
+        },
+        "observedAt": "2026-07-21T23:00:00.000Z"
+      }
+    }
+  ],
+  "effectIds": [
+    "effect.process-red-team.preparation.policy.fixture",
+    "effect.process-red-team.preparation.target.fixture",
+    "effect.process-red-team.preparation.policy-standards.fixture",
+    "effect.process-red-team.preparation.write-target-schema.fixture",
+    "effect.process-red-team.preparation.runs.fixture"
+  ],
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Process reference, definition body, policy bodies and claims, run bodies and outcomes, provider targets, native responses, proposed fixes, and credentials are excluded from general inspection."
+    ]
+  }
+}

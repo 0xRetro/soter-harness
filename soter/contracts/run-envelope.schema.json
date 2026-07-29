@@ -146,6 +146,101 @@
       "type": "string",
       "pattern": "^sha256:[a-f0-9]{64}$"
     },
+    "failure": {
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "authentication" },
+            "code": { "const": "HOST_CALL_AUTHENTICATION_FAILED" },
+            "message": { "const": "The exact host operation could not authenticate." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "authorization" },
+            "code": { "const": "HOST_CALL_AUTHORIZATION_FAILED" },
+            "message": { "const": "The exact host operation was not authorized." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "validation" },
+            "code": { "const": "HOST_CALL_VALIDATION_FAILED" },
+            "message": { "const": "The exact host operation failed governed validation." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message", "diagnosticFingerprint"],
+          "properties": {
+            "kind": { "const": "validation" },
+            "code": { "const": "CAPABILITY_SCHEMA_INVALID" },
+            "message": { "const": "The capability data did not satisfy its governed schema." },
+            "diagnosticFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "conflict" },
+            "code": { "const": "HOST_CALL_CONFLICT" },
+            "message": { "const": "The exact host operation encountered a conflict." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "rate-limit" },
+            "code": { "const": "HOST_CALL_RATE_LIMITED" },
+            "message": { "const": "The exact host operation was rate limited." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "unavailable" },
+            "code": { "const": "HOST_CALL_UNAVAILABLE" },
+            "message": { "const": "The exact host operation was unavailable." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "retryable" },
+            "code": { "const": "HOST_CALL_RETRYABLE_FAILURE" },
+            "message": { "const": "The exact host operation reported a retryable failure." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "not-found" },
+            "code": { "const": "HOST_CALL_NOT_FOUND" },
+            "message": { "const": "The exact host operation did not find its governed subject." }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "code", "message"],
+          "properties": {
+            "kind": { "const": "unknown" },
+            "code": { "const": "HOST_CALL_FAILED" },
+            "message": { "const": "The exact host operation failed." }
+          }
+        }
+      ]
+    },
     "resultState": {
       "enum": ["passed", "failed", "stale", "unknown", "skipped", "not-applicable"]
     },
@@ -210,7 +305,10 @@
           "pattern": "^sha256:[a-f0-9]{64}$"
         },
         "error": {
-          "type": ["object", "null"]
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/failure" }
+          ]
         }
       }
     }

@@ -1,0 +1,205 @@
+{
+  "$contract": "soter://contracts/evidence/v2",
+  "contractVersion": "2.0.0",
+  "id": "evidence.project-work-promotion.legacy-project-management-projects-context-migration.fixture",
+  "createdAt": "2026-07-22T13:00:00.000Z",
+  "claimFamily": "migration",
+  "claim": "The exact target becomes canonical for this legacy responsibility and its fallback may be removed under the recorded parity decision; a mixed source artifact may remain only for separately unfinished responsibilities.",
+  "subject": {
+    "type": "pack",
+    "id": "context.projects",
+    "version": "0.1.0"
+  },
+  "configurationLockFingerprint": "sha256:ca6510a5d1729050b18687b583194564b416345dffd4b35cdea096ed0da559b6",
+  "graphFingerprint": "sha256:ef36ff02930b4b52d0881460f2c9f0550719f1eb9eb6e2cc7f778f2323fee494",
+  "dependencies": [
+    {
+      "id": "kernel.soter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+    },
+    {
+      "id": "core.runtime",
+      "version": "0.1.0",
+      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+    },
+    {
+      "id": "context.projects",
+      "version": "0.1.0",
+      "fingerprint": "sha256:e8b68449ec9582d769c56d9b9cdf9ed3a6f220c15593a614ac13e9a656cf0ce5"
+    },
+    {
+      "id": "context.tasks",
+      "version": "0.1.0",
+      "fingerprint": "sha256:5d516369250d03e1a270d7ac6c0dfe3a19d790eafab4a7971e1b11a36d282555"
+    },
+    {
+      "id": "automation.project-work-promotion",
+      "version": "0.1.0",
+      "fingerprint": "sha256:501a7bb4c7a9c4ab24007010d854d789cdebfb01b65171cd3e0824b8101359ce"
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "fingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
+  },
+  "integrations": [
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "manifestFingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5",
+      "evidenceMaturity": "declared"
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "declarationFingerprint": "sha256:b2a6155ddd2cb4f2e5b33b1fc3920d4f8c42aa9b4b33d0f3068de3ba47058138"
+    },
+    {
+      "id": "authority.projects.definition",
+      "role": "definition",
+      "subject": "projects.records",
+      "declarationFingerprint": "sha256:719daf129d6c78450fa24767210cb647c964b5c6cee3bd2885747560353be9a2"
+    },
+    {
+      "id": "authority.projects.instance",
+      "role": "instance",
+      "subject": "projects.records",
+      "declarationFingerprint": "sha256:df30ebaa7ebcc5ffa04afb5837a9fdd9cefeacda1a1f86007e7b4ec28653549b"
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "declarationFingerprint": "sha256:8afe5da5de9d67a21267be3ba143ca970bf2a316ca513dd3146f805613c7ee46"
+    },
+    {
+      "id": "authority.tasks.definition",
+      "role": "definition",
+      "subject": "tasks.records",
+      "declarationFingerprint": "sha256:0ae8d2973a5d482e3a18f733e34776b6d61d334c13580f9543583c79c61dfe00"
+    },
+    {
+      "id": "authority.tasks.instance",
+      "role": "instance",
+      "subject": "tasks.records",
+      "declarationFingerprint": "sha256:6b77c07a3badd1f399c0a6fd6fbcf292bc6b88644b2c1f907c8f8320b816bd28"
+    }
+  ],
+  "evaluator": {
+    "id": "kernel.legacy-migration-completion",
+    "version": "1.0.0",
+    "level": "fixture"
+  },
+  "environment": {
+    "containment": "fixture",
+    "runtime": "node"
+  },
+  "acceptanceCriteria": [
+    "The exact migration target is selected by and fingerprinted in the current configuration lock.",
+    "Every artifact labeled as same-lock supporting evidence passed against the exact configuration lock and stable semantic graph; separately labeled supporting artifacts are fingerprint-bound without a same-lock claim.",
+    "The complete inventory records the exact target authority or retirement, parity decision, fallback removal, evidence reference, and either a completed source tombstone or one completed responsibility inside a retained mixed source.",
+    "The retained mixed source assigns portable projects meaning to its independent Context pack with target authority and leaves only project creation on a separate fallback.",
+    "The independent projects Context owns its closed portable records, policy, and implementation artifacts.",
+    "Before cutover the only retained responsibility is Project Capture; after final cutover the source tombstone has no retained fallback.",
+    "The Context pack requires and provides no capability and declares no effect; Automation and Integration remain responsible for orchestration and provider translation."
+  ],
+  "result": "passed",
+  "outcomes": [
+    {
+      "id": "migration-disposition",
+      "state": "migrated"
+    },
+    {
+      "id": "migration-parity",
+      "state": "intentional-change"
+    },
+    {
+      "id": "target-selected-in-exact-lock",
+      "state": "passed"
+    },
+    {
+      "id": "supporting-evidence-current",
+      "state": "passed"
+    },
+    {
+      "id": "authority-transition-explicit",
+      "state": "passed"
+    },
+    {
+      "id": "legacy-dependencies-cleared",
+      "state": "passed"
+    },
+    {
+      "id": "portable-domain-meaning-owned",
+      "state": "passed"
+    },
+    {
+      "id": "remaining-fallback-is-project-create-only",
+      "state": "passed"
+    },
+    {
+      "id": "context-grants-no-runtime-authority",
+      "state": "passed"
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "migration-source",
+      "path": ".claude/systems/project-management.md",
+      "fingerprint": "sha256:e556ce223ba1e81bbc316b42cd8f2a71c2ec5a77b3df5c779454132368fc7215"
+    },
+    {
+      "role": "migration-target",
+      "path": "soter/contexts/projects/records.model.json",
+      "fingerprint": "sha256:a024d4c835888791a17cbdab52b8da28d13ca9d7127bfee8577cecfddac9be66"
+    },
+    {
+      "role": "supporting-evidence",
+      "path": "soter/fixtures/project-work-promotion/tracked-execution.evidence.json",
+      "fingerprint": "sha256:b5673d19ab819abb6f61e53e0d17f82c3dcc4c5f5278a6ab40de8e1a4b995005"
+    },
+    {
+      "role": "supporting-evidence",
+      "path": "soter/fixtures/project-work-promotion/coordination-only.evidence.json",
+      "fingerprint": "sha256:d52286f1ad359d5160368e239c47a67035e4433614a028d112360318d8db1dad"
+    },
+    {
+      "role": "supporting-evidence",
+      "path": "soter/fixtures/project-work-promotion/duplicate-task.evidence.json",
+      "fingerprint": "sha256:8040f115de43bab84f585dbec825440c8c2f66e6615b26c0fa1259589852a944"
+    }
+  ],
+  "effects": [],
+  "failures": [],
+  "warnings": [],
+  "skipped": [
+    "Connected provider readiness, live behavior verification, and current health were not evaluated.",
+    "Removing a legacy source fallback does not grant provider effect or host execution authority."
+  ],
+  "limitations": [
+    "This migration assigns portable projects meaning only. Project creation and the other project workflows are independently governed without a shared legacy fallback.",
+    "Context ownership establishes no configured provider mapping, live record availability, execution, readiness, verification, or health."
+  ],
+  "freshness": {
+    "policy": "Valid only while every configuration-lock fingerprint remains unchanged.",
+    "validUntil": null
+  },
+  "supersedes": null,
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Credential references and credential values are excluded."
+    ]
+  }
+}

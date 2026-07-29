@@ -1,18 +1,25 @@
 import path from 'node:path';
 
 import { listProviderDeclarations } from '../../core/capabilities.mjs';
-import { fingerprintJson, readJson, resolveRepoPath } from '../../core/lib/canonical-json.mjs';
+import {
+  fingerprintJson,
+  readJson,
+  repoRelativePath,
+  resolveRepoPath
+} from '../../core/lib/canonical-json.mjs';
 import { fingerprintLock } from '../../core/resolve.mjs';
 import {
   commitDurableContextSnapshot,
   getExactDurableHostExecution,
   prepareDurableOperationPlanExecution
 } from '../../core/service.mjs';
+import {
+  loadExactPreparedAutomationAcquisition
+} from '../../core/prepared-work.mjs';
 
-const PLAN_PREFIX = 'plan.meeting-intake.connected-context.';
-const SNAPSHOT_PREFIX = 'context.meeting-intake.connected.';
+const PLAN_PREFIX = 'plan.meeting-intake.connected-acquisition.';
+const SNAPSHOT_PREFIX = 'context.meeting-intake.connected-acquisition.';
 const AUTOMATION_ID = 'automation.meeting-intake';
-const DEFINITION_STEP_ID = 'step.context-definition-index';
 const POLICY_STEP_PREFIX = 'step.context-policy.';
 const TRANSCRIPT_STEP_ID = 'step.context-transcript';
 const MEETING_STEP_ID = 'step.context-meeting-record';
@@ -20,16 +27,20 @@ const ORGANIZATIONS_STEP_ID = 'step.context-organizations';
 const PROJECTS_STEP_ID = 'step.context-projects';
 const TASKS_STEP_ID = 'step.context-tasks';
 
-function snapshotSuffix(snapshotId) {
-  if (typeof snapshotId !== 'string'
-    || !snapshotId.startsWith(SNAPSHOT_PREFIX)
-    || !/^[a-z0-9]+(?:[.-][a-z0-9]+)*$/.test(snapshotId.slice(SNAPSHOT_PREFIX.length))) {
-    throw new Error(
-      'Connected meeting-intake snapshot ID must start with ' + SNAPSHOT_PREFIX
-        + ' and end in a safe unique suffix.'
-    );
+function safeWorkId(workId) {
+  if (typeof workId !== 'string'
+    || !/^work\.meeting-intake\.[a-f0-9]{24}$/.test(workId)) {
+    throw new Error('Connected Meeting Intake acquisition requires one exact prepared-work ID.');
   }
-  return snapshotId.slice(SNAPSHOT_PREFIX.length);
+  return workId;
+}
+
+function suffixForWork(workId) {
+  return safeWorkId(workId).slice('work.meeting-intake.'.length);
+}
+
+function snapshotIdForWork(workId) {
+  return SNAPSHOT_PREFIX + suffixForWork(workId);
 }
 
 function snapshotIdFromPlan(planId) {
@@ -37,10 +48,61 @@ function snapshotIdFromPlan(planId) {
     throw new Error('Checkpoint is not a connected meeting-intake context plan.');
   }
   const suffix = planId.slice(PLAN_PREFIX.length);
-  if (!/^[a-z0-9]+(?:[.-][a-z0-9]+)*$/.test(suffix)) {
-    throw new Error('Connected meeting-intake context plan has an unsafe suffix.');
-  }
+  safeWorkId('work.meeting-intake.' + suffix);
   return SNAPSHOT_PREFIX + suffix;
+}
+
+function workIdFromPlan(planId) {
+  snapshotIdFromPlan(planId);
+  return safeWorkId('work.meeting-intake.' + planId.slice(PLAN_PREFIX.length));
+}
+
+function reviewValue(fields, id, { required = false } = {}) {
+  const matches = fields.filter((field) => field.id === id);
+  if (matches.length !== 1) {
+    throw new Error('Meeting Intake prepared review material must declare field ' + id + ' exactly once.');
+  }
+  const field = matches[0];
+  if (field.state === 'omitted') {
+    if (required) throw new Error('Meeting Intake prepared review material requires field ' + id + '.');
+    return null;
+  }
+  if (field.state !== 'provided'
+    || typeof field.reviewValue !== 'string'
+    || field.fingerprint !== fingerprintJson(field.reviewValue)) {
+    throw new Error('Meeting Intake prepared review field ' + id + ' is not exactly fingerprint-bound.');
+  }
+  return field.reviewValue;
+}
+
+export function loadExactMeetingIntakePreparedInput({
+  root,
+  workId,
+  expectedHost = null
+}) {
+  const resolvedRoot = path.resolve(root);
+  const exactWorkId = safeWorkId(workId);
+  const prepared = loadExactPreparedAutomationAcquisition({
+    root: resolvedRoot,
+    workId: exactWorkId,
+    automationId: AUTOMATION_ID,
+    expectedHost
+  });
+  const { work, material, lock, run, runPath } = prepared;
+  assertSelectedAutomation(lock, run);
+  return {
+    work,
+    material,
+    lock,
+    lockPath: work.configuration.lockPath,
+    run,
+    runPath,
+    input: {
+      meeting: reviewValue(material.fields, 'meeting', { required: true }),
+      recordingUri: reviewValue(material.fields, 'recordingUri', { required: true }),
+      operatorGoal: reviewValue(material.fields, 'operatorGoal')
+    }
+  };
 }
 
 function selectedAuthority(lock, role, subject) {
@@ -91,7 +153,10 @@ function sameJson(left, right) {
 }
 
 function configuredPolicySources(lock) {
-  const definitionAuthority = selectedAuthority(lock, 'definition', 'crm.records');
+  const authoritySubjects = new Map([
+    [selectedAuthority(lock, 'definition', 'meetings.records'), 'meetings.records'],
+    [selectedAuthority(lock, 'definition', 'tasks.records'), 'tasks.records']
+  ]);
   const bindings = (lock.sources || []).flatMap((source) => {
     const consumers = (source.consumers || []).filter((consumer) => {
       return consumer.pack === AUTOMATION_ID && consumer.purpose === 'applicable-policy';
@@ -101,17 +166,19 @@ function configuredPolicySources(lock) {
       || typeof source.id !== 'string'
       || !source.id.startsWith('source.policy.')
       || source.capability !== 'documents.content.read'
-      || source.authority !== definitionAuthority
+      || !authoritySubjects.has(source.authority)
       || source.inputFingerprint !== fingerprintJson(source.input)
       || !sameJson(Object.keys(source.input).sort(), ['expectedTitle', 'uri'])) {
       throw new Error(
-        'Meeting-intake applicable-policy sources require one exact document source consumer under the selected definition authority.'
+        'Meeting-intake applicable-policy sources require one exact document source consumer under its selected Meetings or Tasks definition authority.'
       );
     }
     const consumer = consumers[0];
     return [{
       id: source.id.slice('source.'.length),
       sourceId: source.id,
+      authority: source.authority,
+      authoritySubject: authoritySubjects.get(source.authority),
       subjects: structuredClone(consumer.subjects),
       title: source.input.expectedTitle,
       documentUri: source.input.uri,
@@ -147,18 +214,34 @@ export function createMeetingIntakeConnectedContextPlan({
   root,
   lock,
   runId,
-  snapshotId,
-  meetingId,
-  recordingUri,
-  createdAt
+  workId,
+  createdAt,
+  expectedHost = null
 }) {
   const resolvedRoot = path.resolve(root);
-  const suffix = snapshotSuffix(snapshotId);
-  const definitionAuthority = selectedAuthority(lock, 'definition', 'crm.records');
-  const instanceAuthority = selectedAuthority(lock, 'instance', 'crm.records');
+  const suffix = suffixForWork(workId);
+  const prepared = loadExactMeetingIntakePreparedInput({
+    root: resolvedRoot,
+    workId,
+    expectedHost
+  });
+  if (fingerprintLock(prepared.lock) !== fingerprintLock(lock)
+    || prepared.lock.graphFingerprint !== lock.graphFingerprint
+    || prepared.run.id !== runId) {
+    throw new Error(
+      'Connected Meeting Intake plan does not match its exact prepared work, lock, graph, and run.'
+    );
+  }
+  const crmAuthority = selectedAuthority(lock, 'instance', 'crm.records');
+  const projectsAuthority = selectedAuthority(lock, 'instance', 'projects.records');
+  const tasksAuthority = selectedAuthority(lock, 'instance', 'tasks.records');
+  const meetingsAuthority = selectedAuthority(lock, 'instance', 'meetings.records');
   const transcriptAuthority = selectedAuthority(lock, 'provider', 'meeting.transcript');
   const policySources = configuredPolicySources(lock);
   const crmProvider = connectedProvider(resolvedRoot, lock, 'crm.records.read');
+  const projectsProvider = connectedProvider(resolvedRoot, lock, 'projects.records.read');
+  const tasksProvider = connectedProvider(resolvedRoot, lock, 'tasks.records.read');
+  const meetingsProvider = connectedProvider(resolvedRoot, lock, 'meetings.records.read');
   const documentProvider = connectedProvider(
     resolvedRoot,
     lock,
@@ -177,21 +260,20 @@ export function createMeetingIntakeConnectedContextPlan({
     createdAt,
     mode: 'sequential',
     failurePolicy: 'stop',
-    reason: 'Load the bounded definition index, every explicitly applicable policy body, exact transcript, matching CRM meeting, and only records referenced by prior normalized outputs.',
+    reason: 'Load every explicitly applicable policy body, exact transcript, matching Meeting, and only Organizations, Projects, and Tasks referenced by prior normalized outputs.',
+    configuration: {
+      name: prepared.work.configuration.name,
+      configurationBasis: 'private-active',
+      path: prepared.work.configuration.path,
+      lockPath: prepared.work.configuration.lockPath,
+      lockFingerprint: prepared.work.configuration.lockFingerprint,
+      graphFingerprint: prepared.work.configuration.graphFingerprint
+    },
     steps: [
-      {
-        id: DEFINITION_STEP_ID,
-        capability: 'crm.records.read',
-        authority: definitionAuthority,
-        providerImplementation: crmProvider,
-        input: { recordTypes: ['policy'], limit: 25 },
-        inputBindings: [],
-        reason: 'Load the bounded configured policy index so exact applicable document identities can be cross-checked.'
-      },
       ...policySources.map((binding) => ({
         id: policyStepId(binding),
         capability: 'documents.content.read',
-        authority: definitionAuthority,
+        authority: binding.authority,
         providerImplementation: documentProvider,
         input: {
           uri: binding.documentUri,
@@ -205,27 +287,30 @@ export function createMeetingIntakeConnectedContextPlan({
         capability: 'meeting.transcript.read',
         authority: transcriptAuthority,
         providerImplementation: transcriptProvider,
-        input: { meetingId, recordingUri },
+        input: {
+          meetingId: prepared.input.meeting,
+          recordingUri: prepared.input.recordingUri
+        },
         inputBindings: [],
         reason: 'Load the exact user-selected transcript through its canonical recording URI.'
       },
       {
         id: MEETING_STEP_ID,
-        capability: 'crm.records.read',
-        authority: instanceAuthority,
-        providerImplementation: crmProvider,
+        capability: 'meetings.records.read',
+        authority: meetingsAuthority,
+        providerImplementation: meetingsProvider,
         input: {
           recordTypes: ['meeting'],
-          filters: { recordingUri },
+          filters: { recordingUri: prepared.input.recordingUri },
           limit: 2
         },
         inputBindings: [],
-        reason: 'Resolve exactly one CRM meeting record by the same canonical recording URI.'
+        reason: 'Resolve exactly one Meeting record by the same canonical recording URI.'
       },
       {
         id: ORGANIZATIONS_STEP_ID,
         capability: 'crm.records.read',
-        authority: instanceAuthority,
+        authority: crmAuthority,
         providerImplementation: crmProvider,
         input: { recordTypes: ['organization'], limit: 100 },
         inputBindings: [{
@@ -240,9 +325,9 @@ export function createMeetingIntakeConnectedContextPlan({
       },
       {
         id: PROJECTS_STEP_ID,
-        capability: 'crm.records.read',
-        authority: instanceAuthority,
-        providerImplementation: crmProvider,
+        capability: 'projects.records.read',
+        authority: projectsAuthority,
+        providerImplementation: projectsProvider,
         input: { recordTypes: ['project'], limit: 100 },
         inputBindings: [{
           id: 'binding.context-project-uris',
@@ -256,9 +341,9 @@ export function createMeetingIntakeConnectedContextPlan({
       },
       {
         id: TASKS_STEP_ID,
-        capability: 'crm.records.read',
-        authority: instanceAuthority,
-        providerImplementation: crmProvider,
+        capability: 'tasks.records.read',
+        authority: tasksAuthority,
+        providerImplementation: tasksProvider,
         input: { recordTypes: ['task'], limit: 100 },
         inputBindings: [{
           id: 'binding.context-task-uris',
@@ -275,23 +360,22 @@ export function createMeetingIntakeConnectedContextPlan({
 }
 
 export function assertMeetingIntakeConnectedContextPlan(plan) {
-  const snapshotId = snapshotIdFromPlan(plan.id);
+  const workId = workIdFromPlan(plan.id);
+  const snapshotId = snapshotIdForWork(workId);
   if (plan.$contract !== 'soter://contracts/operation-plan/v2'
     || plan.contractVersion !== '2.0.0'
     || !Array.isArray(plan.steps)) {
     throw new Error('Connected meeting-intake context plan does not preserve its required source order.');
   }
   const transcriptIndex = plan.steps.findIndex((step) => step.id === TRANSCRIPT_STEP_ID);
-  const definition = plan.steps[0];
-  const policies = plan.steps.slice(1, transcriptIndex).map((step) => ({
+  const policies = plan.steps.slice(0, transcriptIndex).map((step) => ({
     id: 'policy.' + step.id.slice(POLICY_STEP_PREFIX.length),
     step
   }));
   const [transcript, meeting, organizations, projects, tasks] = plan.steps.slice(transcriptIndex);
   const orderedPolicyIds = policies.map((item) => item.id);
-  if (transcriptIndex < 2
+  if (transcriptIndex < 1
     || plan.steps.length !== transcriptIndex + 5
-    || definition?.id !== DEFINITION_STEP_ID
     || transcript?.id !== TRANSCRIPT_STEP_ID
     || meeting?.id !== MEETING_STEP_ID
     || organizations?.id !== ORGANIZATIONS_STEP_ID
@@ -311,18 +395,16 @@ export function assertMeetingIntakeConnectedContextPlan(plan) {
     })) {
     throw new Error('Connected meeting-intake context plan does not preserve its required source order.');
   }
-  if (definition.capability !== 'crm.records.read'
-    || !sameJson(definition.input, { recordTypes: ['policy'], limit: 25 })
-    || !sameJson(definition.inputBindings, [])
-    || transcript.capability !== 'meeting.transcript.read'
+  if (transcript.capability !== 'meeting.transcript.read'
     || !sameJson(transcript.inputBindings, [])
-    || meeting.capability !== 'crm.records.read'
+    || meeting.capability !== 'meetings.records.read'
     || !sameJson(meeting.input, {
       recordTypes: ['meeting'],
       filters: { recordingUri: transcript.input.recordingUri },
       limit: 2
     })
     || !sameJson(meeting.inputBindings, [])
+    || organizations.capability !== 'crm.records.read'
     || !sameJson(organizations.input, { recordTypes: ['organization'], limit: 100 })
     || !sameJson(organizations.inputBindings, [{
       id: 'binding.context-organization-uris',
@@ -332,6 +414,7 @@ export function assertMeetingIntakeConnectedContextPlan(plan) {
       transform: 'unique-string-list',
       onEmpty: 'skip-step'
     }])
+    || projects.capability !== 'projects.records.read'
     || !sameJson(projects.input, { recordTypes: ['project'], limit: 100 })
     || !sameJson(projects.inputBindings, [{
       id: 'binding.context-project-uris',
@@ -341,6 +424,7 @@ export function assertMeetingIntakeConnectedContextPlan(plan) {
       transform: 'unique-string-list',
       onEmpty: 'skip-step'
     }])
+    || tasks.capability !== 'tasks.records.read'
     || !sameJson(tasks.input, { recordTypes: ['task'], limit: 100 })
     || !sameJson(tasks.inputBindings, [{
       id: 'binding.context-task-uris',
@@ -354,8 +438,8 @@ export function assertMeetingIntakeConnectedContextPlan(plan) {
     throw new Error('Connected meeting-intake context plan inputs do not preserve exact source identity.');
   }
   return {
+    workId,
     snapshotId,
-    definition,
     policies,
     transcript,
     meeting,
@@ -371,25 +455,6 @@ function completedStep(checkpoint, id) {
     throw new Error('Connected context source ' + id + ' is not completed.');
   }
   return step;
-}
-
-function assertDefinitionOutput(step, policySources) {
-  if (!Array.isArray(step.output.records)
-    || step.output.records.length < 1
-    || step.output.records.some((record) => record.type !== 'policy')) {
-    throw new Error('Connected context requires at least one typed policy index record.');
-  }
-  for (const binding of policySources) {
-    const matches = step.output.records.filter((record) => {
-      return record.id === binding.documentUri && record.fields?.name === binding.title;
-    });
-    if (matches.length !== 1) {
-      throw new Error(
-        'Connected context policy index does not identify exact applicable policy '
-          + binding.id + '.'
-      );
-    }
-  }
 }
 
 function assertPolicyOutput(step, binding) {
@@ -539,35 +604,33 @@ function contextUpdatesForEntries(entries) {
 
 export async function prepareMeetingIntakeConnectedContext({
   root,
-  lockPath,
-  runPath,
-  snapshotId,
-  meetingId,
-  recordingUri,
+  workId,
   at,
   expectedHost
 }) {
   const resolvedRoot = path.resolve(root);
-  const lock = readJson(resolveRepoPath(resolvedRoot, lockPath));
-  const run = readJson(resolveRepoPath(resolvedRoot, runPath));
-  assertSelectedAutomation(lock, run);
+  const prepared = loadExactMeetingIntakePreparedInput({
+    root: resolvedRoot,
+    workId,
+    expectedHost
+  });
   const createdAt = at || new Date().toISOString();
   const plan = createMeetingIntakeConnectedContextPlan({
     root: resolvedRoot,
-    lock,
-    runId: run.id,
-    snapshotId,
-    meetingId,
-    recordingUri,
-    createdAt
+    lock: prepared.lock,
+    runId: prepared.run.id,
+    workId,
+    createdAt,
+    expectedHost
   });
   return prepareDurableOperationPlanExecution({
     root: resolvedRoot,
-    lockPath,
-    runPath,
+    lockPath: prepared.lockPath,
+    runPath: prepared.runPath,
     plan,
     at: createdAt,
-    expectedHost
+    expectedHost,
+    configurationBasis: 'private-active'
   });
 }
 
@@ -587,7 +650,11 @@ export function finalizeMeetingIntakeConnectedContext({
     throw new Error('Connected context can finalize only from a completed operation plan.');
   }
   const planShape = assertMeetingIntakeConnectedContextPlan(checkpoint.plan);
-  const definition = completedStep(checkpoint, DEFINITION_STEP_ID);
+  const prepared = loadExactMeetingIntakePreparedInput({
+    root: resolvedRoot,
+    workId: planShape.workId,
+    expectedHost
+  });
   const policies = planShape.policies.map(({ id, step }) => ({
     id,
     planStep: step,
@@ -599,27 +666,42 @@ export function finalizeMeetingIntakeConnectedContext({
   const projects = terminalRelatedStep(checkpoint, PROJECTS_STEP_ID, 'project');
   const tasks = terminalRelatedStep(checkpoint, TASKS_STEP_ID, 'task');
 
-  const lock = readJson(resolveRepoPath(resolvedRoot, checkpoint.configurationLock.path));
-  if (checkpoint.configurationLock.fingerprint !== fingerprintLock(lock)
-    || checkpoint.graphFingerprint !== lock.graphFingerprint) {
+  const lock = prepared.lock;
+  if (checkpoint.configurationLock.path !== prepared.lockPath
+    || checkpoint.configurationLock.fingerprint !== fingerprintLock(lock)
+    || checkpoint.graphFingerprint !== lock.graphFingerprint
+    || checkpoint.plan.runId !== prepared.run.id
+    || execution.run.id !== prepared.run.id) {
     throw new Error('Connected context checkpoint no longer matches its exact lock and graph.');
   }
   assertSelectedAutomation(lock, execution.run);
+  const expectedPlan = createMeetingIntakeConnectedContextPlan({
+    root: resolvedRoot,
+    lock,
+    runId: checkpoint.plan.runId,
+    workId: planShape.workId,
+    createdAt: checkpoint.plan.createdAt,
+    expectedHost
+  });
+  if (fingerprintJson(expectedPlan) !== fingerprintJson(checkpoint.plan)) {
+    throw new Error('Connected Meeting Intake acquisition drifted from its exact prepared-input basis.');
+  }
   const policySources = configuredPolicySources(lock);
   if (!sameJson(policies.map(({ id, planStep }) => ({
     id,
     sourceId: 'source.' + id,
+    authority: planStep.authority,
     uri: planStep.input.uri,
     title: planStep.input.expectedTitle
   })), policySources.map((binding) => ({
     id: binding.id,
     sourceId: binding.sourceId,
+    authority: binding.authority,
     uri: binding.documentUri,
     title: binding.title
   })))) {
     throw new Error('Connected context plan does not match configured policy applicability.');
   }
-  assertDefinitionOutput(definition, policySources);
   policies.forEach(({ id, runtimeStep }) => {
     const binding = policySources.find((item) => item.id === id);
     assertPolicyOutput(runtimeStep, binding);
@@ -627,10 +709,15 @@ export function finalizeMeetingIntakeConnectedContext({
   assertTranscriptOutput(transcript, planShape.transcript);
   assertMeetingOutput(meeting, planShape.meeting);
   const expectedBindings = {
-    definitionAuthority: selectedAuthority(lock, 'definition', 'crm.records'),
-    instanceAuthority: selectedAuthority(lock, 'instance', 'crm.records'),
+    crmAuthority: selectedAuthority(lock, 'instance', 'crm.records'),
+    projectsAuthority: selectedAuthority(lock, 'instance', 'projects.records'),
+    tasksAuthority: selectedAuthority(lock, 'instance', 'tasks.records'),
+    meetingsAuthority: selectedAuthority(lock, 'instance', 'meetings.records'),
     transcriptAuthority: selectedAuthority(lock, 'provider', 'meeting.transcript'),
     crmProvider: connectedProvider(resolvedRoot, lock, 'crm.records.read'),
+    projectsProvider: connectedProvider(resolvedRoot, lock, 'projects.records.read'),
+    tasksProvider: connectedProvider(resolvedRoot, lock, 'tasks.records.read'),
+    meetingsProvider: connectedProvider(resolvedRoot, lock, 'meetings.records.read'),
     documentProvider: connectedProvider(resolvedRoot, lock, 'documents.content.read'),
     transcriptProvider: connectedProvider(
       resolvedRoot,
@@ -638,38 +725,31 @@ export function finalizeMeetingIntakeConnectedContext({
       'meeting.transcript.read'
     )
   };
-  if (definition.call.authority !== expectedBindings.definitionAuthority
-    || definition.call.provider.implementation !== expectedBindings.crmProvider
-    || policies.some(({ runtimeStep }) => {
-      return runtimeStep.call.authority !== expectedBindings.definitionAuthority
+  if (policies.some(({ id, runtimeStep }) => {
+      const binding = policySources.find((item) => item.id === id);
+      return runtimeStep.call.authority !== binding.authority
         || runtimeStep.call.provider.implementation !== expectedBindings.documentProvider;
     })
     || transcript.call.authority !== expectedBindings.transcriptAuthority
     || transcript.call.provider.implementation !== expectedBindings.transcriptProvider
-    || meeting.call.authority !== expectedBindings.instanceAuthority
-    || meeting.call.provider.implementation !== expectedBindings.crmProvider
-    || [planShape.organizations, planShape.projects, planShape.tasks].some((step) => {
-      return step.authority !== expectedBindings.instanceAuthority
-        || step.providerImplementation !== expectedBindings.crmProvider;
-    })) {
+    || meeting.call.authority !== expectedBindings.meetingsAuthority
+    || meeting.call.provider.implementation !== expectedBindings.meetingsProvider
+    || planShape.organizations.authority !== expectedBindings.crmAuthority
+    || planShape.organizations.providerImplementation !== expectedBindings.crmProvider
+    || planShape.projects.authority !== expectedBindings.projectsAuthority
+    || planShape.projects.providerImplementation !== expectedBindings.projectsProvider
+    || planShape.tasks.authority !== expectedBindings.tasksAuthority
+    || planShape.tasks.providerImplementation !== expectedBindings.tasksProvider) {
     throw new Error('Connected context plan does not match the resolved source bindings and authorities.');
   }
   const createdAt = checkpoint.updatedAt;
   const entries = [
-    snapshotEntry({
-      root: resolvedRoot,
-      id: 'context.crm.definition-index',
-      subject: 'crm.records',
-      role: 'definition',
-      step: definition,
-      at: createdAt
-    }),
     ...policies.map(({ id, runtimeStep }) => {
       const binding = policySources.find((item) => item.id === id);
       return snapshotEntry({
         root: resolvedRoot,
-        id: 'context.crm.' + binding.id,
-        subject: 'crm.records',
+        id: 'context.' + binding.authoritySubject.split('.')[0] + '.' + binding.id,
+        subject: binding.authoritySubject,
         role: 'definition',
         step: runtimeStep,
         at: createdAt,
@@ -691,8 +771,8 @@ export function finalizeMeetingIntakeConnectedContext({
     }),
     snapshotEntry({
       root: resolvedRoot,
-      id: 'context.crm.meeting',
-      subject: 'crm.records',
+      id: 'context.meetings.meeting',
+      subject: 'meetings.records',
       role: 'instance',
       step: meeting,
       at: createdAt
@@ -707,23 +787,22 @@ export function finalizeMeetingIntakeConnectedContext({
     })] : []),
     ...(projects ? [snapshotEntry({
       root: resolvedRoot,
-      id: 'context.crm.projects',
-      subject: 'crm.records',
+      id: 'context.projects.projects',
+      subject: 'projects.records',
       role: 'instance',
       step: projects,
       at: createdAt
     })] : []),
     ...(tasks ? [snapshotEntry({
       root: resolvedRoot,
-      id: 'context.crm.tasks',
-      subject: 'crm.records',
+      id: 'context.tasks.tasks',
+      subject: 'tasks.records',
       role: 'instance',
       step: tasks,
       at: createdAt
     })] : [])
   ];
   const completedSources = [
-    definition,
     ...policies.map((item) => item.runtimeStep),
     transcript,
     meeting,
@@ -749,7 +828,7 @@ export function finalizeMeetingIntakeConnectedContext({
         'Only explicitly configured applicable policy bodies are loaded; unselected registry documents are excluded.',
         'Policy content is authoritative context for host judgment, not an automatically executable rules program.',
         'Organization, project, and task reads follow only normalized relation URIs; absent relations emit no provider request.',
-        'Meeting participant identifiers remain references only and are not treated as CRM contact record URIs.'
+        'Meeting participant identities remain Meetings references only and are not treated as CRM People identities without an explicit normalized link.'
       ]
     }
   };
@@ -759,7 +838,14 @@ export function finalizeMeetingIntakeConnectedContext({
     checkpointId,
     snapshot,
     contextUpdates,
-    checkpointDetails: 'Automation assembled the bounded definition index, every exact configured applicable policy body, exact transcript, exact CRM meeting, and reference-bound related records through Core, then paused before participant resolution, judgment, or writes.',
+    checkpointDetails: 'Automation assembled every exact configured applicable policy body, exact transcript, exact Meeting, and reference-bound CRM Organizations, Projects, and Tasks through Core, then paused before participant resolution, judgment, or writes.',
     expectedHost
   });
+}
+
+export function meetingIntakePreparedWorkIdFromSnapshot(snapshotId) {
+  if (typeof snapshotId !== 'string' || !snapshotId.startsWith(SNAPSHOT_PREFIX)) {
+    throw new Error('Context snapshot is not bound to connected Meeting Intake acquisition.');
+  }
+  return safeWorkId('work.meeting-intake.' + snapshotId.slice(SNAPSHOT_PREFIX.length));
 }

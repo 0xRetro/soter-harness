@@ -42,13 +42,14 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "name", "path", "lockPath", "lockFingerprint", "graphFingerprint",
+        "name", "path", "lockPath", "configurationBasis", "lockFingerprint", "graphFingerprint",
         "host", "applicability"
       ],
       "properties": {
         "name": { "type": "string", "minLength": 1 },
         "path": { "type": "string", "minLength": 1 },
         "lockPath": { "type": "string", "minLength": 1 },
+        "configurationBasis": { "enum": ["tracked-contained", "private-active"] },
         "lockFingerprint": { "$ref": "#/$defs/fingerprint" },
         "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
         "host": { "type": "string", "minLength": 1 },

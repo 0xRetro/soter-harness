@@ -1,0 +1,177 @@
+{
+  "$contract": "soter://contracts/evidence/v2",
+  "contractVersion": "2.0.0",
+  "id": "evidence.organization-capture.legacy-happy-path-migration.fixture",
+  "createdAt": "2026-07-21T12:00:00.000Z",
+  "claimFamily": "migration",
+  "claim": "The exact target becomes canonical for this legacy responsibility and its fallback may be removed under the recorded parity decision; a mixed source artifact may remain only for separately unfinished responsibilities.",
+  "subject": {
+    "type": "pack",
+    "id": "automation.organization-capture",
+    "version": "0.1.0"
+  },
+  "configurationLockFingerprint": "sha256:0db8d8f48ad0d478911cbbdce0cd71dab7a87a7e10e588399d03be15aee2e61e",
+  "graphFingerprint": "sha256:b3cf8233f7cf750a00121582591e1b42f01ae84454b701bbe5d449025bb3c35b",
+  "dependencies": [
+    {
+      "id": "kernel.soter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+    },
+    {
+      "id": "core.runtime",
+      "version": "0.1.0",
+      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+    },
+    {
+      "id": "context.crm",
+      "version": "0.1.0",
+      "fingerprint": "sha256:fa69fc9f796e84b1a2cd7e319c4344dcc44d8dcbea9542e51158eb868d266f44"
+    },
+    {
+      "id": "automation.organization-capture",
+      "version": "0.1.0",
+      "fingerprint": "sha256:7c21af68305d446933c6a273ba21eb53c6cba691c3706252dc579149bd5a7a99"
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "fingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
+  },
+  "integrations": [
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "manifestFingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5",
+      "evidenceMaturity": "declared"
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.crm.definition",
+      "role": "definition",
+      "subject": "crm.records",
+      "declarationFingerprint": "sha256:bb10bba4b4dcf2c57bda37e57fa7f478e3cde8844a6313d005d5cf42d5dccfd7"
+    },
+    {
+      "id": "authority.crm.instance",
+      "role": "instance",
+      "subject": "crm.records",
+      "declarationFingerprint": "sha256:4c3bcd9095ca03632579fdf52648268b377ebfcfa45bf318a9f3adb47ae55d9c"
+    },
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "declarationFingerprint": "sha256:cdee230730b0f3c9c6ca06e6578e38324ed0b7f7da89339d7628c70061e960e1"
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "declarationFingerprint": "sha256:74c8fdd14e981038f959c469d6709fe66186b5f854f5f337f65bc67a6e7926c0"
+    }
+  ],
+  "evaluator": {
+    "id": "kernel.legacy-migration-completion",
+    "version": "1.0.0",
+    "level": "fixture"
+  },
+  "environment": {
+    "containment": "fixture",
+    "runtime": "node"
+  },
+  "acceptanceCriteria": [
+    "The exact migration target is selected by and fingerprinted in the current configuration lock.",
+    "Every artifact labeled as same-lock supporting evidence passed against the exact configuration lock and stable semantic graph; separately labeled supporting artifacts are fingerprint-bound without a same-lock claim.",
+    "The complete inventory records the exact target authority or retirement, parity decision, fallback removal, evidence reference, and either a completed source tombstone or one completed responsibility inside a retained mixed source.",
+    "No retained legacy artifact contains an executable exact-path dependency on this removed Organization evaluation source.",
+    "The canonical scenario retains the exact tombstoned source-case identity and current fixture evidence passes schema matching, sector-tag, alias-dedup, and confirmation invariants.",
+    "The same selected canonical pack manifests pass a contained approval, single-use start, create-result, and verification workflow under a separate private fixture configuration without a live provider effect."
+  ],
+  "result": "passed",
+  "outcomes": [
+    {
+      "id": "migration-disposition",
+      "state": "migrated"
+    },
+    {
+      "id": "migration-parity",
+      "state": "intentional-change"
+    },
+    {
+      "id": "target-selected-in-exact-lock",
+      "state": "passed"
+    },
+    {
+      "id": "supporting-evidence-current",
+      "state": "passed"
+    },
+    {
+      "id": "authority-transition-explicit",
+      "state": "passed"
+    },
+    {
+      "id": "legacy-dependencies-cleared",
+      "state": "passed"
+    },
+    {
+      "id": "exact-source-case-retained",
+      "state": "passed"
+    },
+    {
+      "id": "connected-authority-path-contained",
+      "state": "passed"
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "migration-source",
+      "path": ".claude/evals/capturing-an-org/happy-path.md",
+      "fingerprint": "sha256:c737cd3961d70c34c1433d81b7a5aeaa0a55a8f7b80b8d267c8526f1146ab1e0"
+    },
+    {
+      "role": "migration-target",
+      "path": "soter/scenarios/organization-capture/preparation.scenario.json",
+      "fingerprint": "sha256:b5fb92afaa49c7ae9e21a77772bb1ea7e7da21bf6a3204883321fef48107329b"
+    },
+    {
+      "role": "supporting-evidence",
+      "path": "soter/fixtures/organization-capture/preparation.evidence.json",
+      "fingerprint": "sha256:835bbfc1af92b065465d1de2f84af7d9ec1c245f309913f8b46b3cebd6f8f463"
+    },
+    {
+      "role": "supporting-artifact",
+      "path": "soter/fixtures/organization-capture/connected-workflow.evidence.json",
+      "fingerprint": "sha256:d6efcc674b0815f629a7bca70118a2a5b0d1798108bd7f6c18603c6c52a1cff6"
+    }
+  ],
+  "effects": [],
+  "failures": [],
+  "warnings": [],
+  "skipped": [
+    "Connected provider readiness, live behavior verification, and current health were not evaluated.",
+    "Removing a legacy source fallback does not grant provider effect or host execution authority."
+  ],
+  "limitations": [
+    "The legacy conversational option selection is intentionally replaced by deterministic Context rules intersected with a current normalized schema. Live provider behavior remains not evaluated."
+  ],
+  "freshness": {
+    "policy": "Valid only while every configuration-lock fingerprint remains unchanged.",
+    "validUntil": null
+  },
+  "supersedes": null,
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Credential references and credential values are excluded."
+    ]
+  }
+}

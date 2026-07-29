@@ -1,0 +1,29 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "integration.local-repository",
+  "version": "0.1.0",
+  "layer": "integration",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Provides one portable, bounded repository snapshot read through a deterministic contained fixture provider.",
+  "dependencies": [],
+  "capabilities": {
+    "requires": [],
+    "provides": [
+      { "id": "repository.snapshot.read", "version": "1.0.0" }
+    ]
+  },
+  "authorities": [
+    { "role": "instance", "subject": "repository.source", "required": true }
+  ],
+  "effects": ["read", "disclosure"],
+  "artifacts": [
+    { "path": "soter/capabilities/repository.snapshot.read.json", "role": "definition" },
+    { "path": "soter/providers/provider.integration.local-repository.fixture.json", "role": "implementation" },
+    { "path": "soter/integrations/local-repository/fixture.mjs", "role": "implementation" },
+    { "path": "soter/fixtures/providers/local-repository/repositories.json", "role": "fixture" }
+  ],
+  "compatibility": { "baseContract": "^1.0.0", "hosts": ["codex", "claude"] },
+  "verification": { "maxLevel": "fixture", "scenarios": [] }
+}

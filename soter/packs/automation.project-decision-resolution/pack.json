@@ -1,0 +1,105 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "automation.project-decision-resolution",
+  "version": "0.1.0",
+  "layer": "automation",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Prepares one exact three-surface project Decision resolution: create the Decision, process its matching Question, and complete its exact project work item without inventing a missing why.",
+  "dependencies": [
+    {
+      "pack": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Private review, exact selection, authority boundaries, and evidence are Core responsibilities."
+    },
+    {
+      "pack": "context.projects",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Projects policy, feed-entry, project, and work-item meaning belong to Projects Context."
+    }
+  ],
+  "capabilities": {
+    "requires": [
+      {
+        "id": "projects.records.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation must load the shared Projects policy, exact project, and exact current Question."
+      },
+      {
+        "id": "documents.content.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation must parse the exact current project work-item grammar."
+      },
+      {
+        "id": "projects.records.create",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "The complete reviewed group contains one exact Decision feed-entry create."
+      },
+      {
+        "id": "projects.records.update",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "The complete reviewed group contains one processed-only Question update."
+      },
+      {
+        "id": "documents.content.update",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "The complete reviewed group contains one exact unchecked-to-checked work-item replacement."
+      }
+    ],
+    "provides": []
+  },
+  "sourceRequirements": [
+    {
+      "purpose": "project-work-policy",
+      "capability": "projects.records.read",
+      "authorityRole": "definition",
+      "authoritySubject": "projects.records",
+      "minimum": 1,
+      "maximum": 1,
+      "reason": "Decision grammar, category, visibility, question resolution, work-item binding, and confirmation rules come from one shared Projects policy."
+    }
+  ],
+  "authorities": [
+    { "role": "definition", "subject": "projects.records", "required": true },
+    { "role": "instance", "subject": "projects.records", "required": true },
+    { "role": "evidence", "subject": "runtime.runs", "required": true }
+  ],
+  "effects": ["read", "disclosure", "write"],
+  "operator": {
+    "input": "soter/automations/project-decision-resolution/operator-input.json",
+    "preparation": {
+      "module": "soter/automations/project-decision-resolution/prepare.mjs",
+      "export": "prepareProjectDecisionResolutionRun",
+      "containment": "fixture",
+      "derivedReviewContract": "soter/automations/project-decision-resolution/derived-review.json"
+    }
+  },
+  "artifacts": [
+    { "path": "soter/automations/project-decision-resolution/operator-input.json", "role": "definition" },
+    { "path": "soter/automations/project-decision-resolution/derived-review.json", "role": "definition" },
+    { "path": "soter/automations/project-decision-resolution/prepare.mjs", "role": "implementation" },
+    { "path": "soter/automations/project-decision-resolution/scenario.mjs", "role": "evaluation" },
+    { "path": "soter/automations/project-decision-resolution/project-decision-resolution.selftest.mjs", "role": "evaluation" },
+    { "path": "soter/scenarios/project-decision-resolution/happy-path.scenario.json", "role": "evaluation" },
+    { "path": "soter/scenarios/project-decision-resolution/missing-why.scenario.json", "role": "evaluation" }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": ["codex", "claude"]
+  },
+  "verification": {
+    "maxLevel": "fixture",
+    "scenarios": [
+      "soter/scenarios/project-decision-resolution/happy-path.scenario.json",
+      "soter/scenarios/project-decision-resolution/missing-why.scenario.json"
+    ]
+  }
+}

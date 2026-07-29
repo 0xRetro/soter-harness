@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://automations/project-pulse/proposal/v1",
+  "title": "Project Pulse review proposal",
+  "type": "object",
+  "required": [
+    "$contract",
+    "id",
+    "automation",
+    "decision",
+    "proposalType",
+    "review"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/automation-proposal/v1" },
+    "id": {
+      "type": "string",
+      "pattern": "^proposal\\.project-pulse\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "automation": {
+      "type": "object",
+      "required": ["id"],
+      "properties": { "id": { "const": "automation.project-pulse" } }
+    },
+    "decision": {
+      "type": "object",
+      "required": ["id", "decisionType"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^decision\\.project-pulse\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "decisionType": { "const": "project-pulse.grounded-status" }
+      }
+    },
+    "proposalType": { "const": "project-pulse.review-proposal" },
+    "review": {
+      "type": "object",
+      "required": ["$contract", "kind", "privateReview"],
+      "properties": {
+        "$contract": { "const": "soter://contracts/automation-review/v1" },
+        "kind": { "const": "project-pulse-review" },
+        "privateReview": {
+          "type": "object",
+          "required": ["state"],
+          "properties": { "state": { "const": "available" } }
+        }
+      }
+    }
+  }
+}

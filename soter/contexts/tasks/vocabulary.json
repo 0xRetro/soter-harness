@@ -1,0 +1,18 @@
+{
+  "$contract": "soter://contracts/context-vocabulary/v1",
+  "contractVersion": "1.0.0",
+  "id": "vocabulary.context.tasks",
+  "pack": "context.tasks",
+  "version": "0.1.0",
+  "subject": "tasks.records",
+  "entries": [
+    { "sequence": 1, "id": "task", "term": "task", "aliases": ["todo"], "abbreviation": null, "definition": "An actionable unit of tracked work with portable lifecycle, context, optional assignee and date, and optional typed relationships to Projects and Meetings.", "domain": "tasks", "sourceUris": [] },
+    { "sequence": 2, "id": "assignee", "term": "assignee", "aliases": [], "abbreviation": null, "definition": "An explicitly resolved workspace actor responsible for a Task; it is never inferred from a CRM contact or external participant.", "domain": "tasks", "sourceUris": [] },
+    { "sequence": 3, "id": "next-action-date", "term": "next action date", "aliases": [], "abbreviation": null, "definition": "The exact calendar date selected for the next Task action without implying scheduling, reminder delivery, or Calendar authority.", "domain": "tasks", "sourceUris": [] }
+  ],
+  "invariants": { "singleDefinitionSource": true, "projectionCopiesAreNonCanonical": true, "providerNeutral": true, "runtimeAuthority": "none" },
+  "limitations": [
+    "This vocabulary defines portable Task meaning only; it grants no provider, approval, execution, or health authority.",
+    "Project and Meeting relationships are optional typed resource identities rather than required Context dependencies."
+  ]
+}

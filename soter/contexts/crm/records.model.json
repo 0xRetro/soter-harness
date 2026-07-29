@@ -7,132 +7,292 @@
   "subject": "crm.records",
   "recordTypes": [
     {
-      "id": "policy",
-      "summary": "An index record that names an authoritative policy definition.",
+      "id": "organization-capture-policy",
+      "summary": "An external selection record that binds one governed organization-capture definition.",
       "fields": [
-        { "id": "name", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The exact human-readable policy title." },
-        { "id": "progressRequiresPromotedTasks", "type": "boolean", "requiredOnCreate": false, "nullable": false, "mutable": true, "summary": "Whether reported project progress must be derived from promoted task records." },
-        { "id": "milestoneWorkItemsRemainDistinct", "type": "boolean", "requiredOnCreate": false, "nullable": false, "mutable": true, "summary": "Whether milestone work-item counts must remain distinct from promoted task counts." },
-        { "id": "healthMustBeExplained", "type": "boolean", "requiredOnCreate": false, "nullable": false, "mutable": true, "summary": "Whether every project health statement requires an explicit observed basis." },
-        { "id": "writesRequireConfirmation", "type": "boolean", "requiredOnCreate": false, "nullable": false, "mutable": true, "summary": "Whether project-status and milestone writes require exact user confirmation." }
+        {
+          "id": "name",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The exact human-readable organization policy title."
+        }
       ],
-      "content": { "kind": "none", "requiredOnCreate": false, "summary": "Policy bodies are loaded through explicit portable document sources." },
-      "deduplicationFields": ["name"]
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "The exact governed rules live in the selected Context definition artifact."
+      },
+      "deduplicationFields": [
+        "name"
+      ]
     },
     {
-      "id": "task-capture-policy",
-      "summary": "Machine-readable task creation rules selected from one definition authority.",
+      "id": "contact-capture-policy",
+      "summary": "An external selection record that binds one governed contact-capture definition.",
       "fields": [
-        { "id": "name", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The exact human-readable task policy title." },
-        { "id": "createRequiresConfirmation", "type": "boolean", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "Whether each exact task-create batch requires operator confirmation." },
-        { "id": "duplicateCandidateLimit", "type": "number", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The maximum bounded task candidates inspected before proposing a create." },
-        { "id": "duplicateKeyFields", "type": "string-list", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "Portable task fields used to search for possible duplicates before create." },
-        { "id": "defaultStatus", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The portable lifecycle state assigned to a newly captured task." },
-        { "id": "allowedContexts", "type": "string-list", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The exact task context classifications allowed by the selected policy." },
-        { "id": "projectRequired", "type": "boolean", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "Whether every captured task must resolve one exact project before create." }
+        {
+          "id": "name",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The exact human-readable contact policy title."
+        }
       ],
-      "content": { "kind": "none", "requiredOnCreate": false, "summary": "The normalized task-capture rules contain no portable body content." },
-      "deduplicationFields": ["name"]
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "The exact governed rules live in the selected Context definition artifact."
+      },
+      "deduplicationFields": [
+        "name"
+      ]
     },
     {
       "id": "organization",
       "summary": "An organization participating in CRM relationships and work.",
       "fields": [
-        { "id": "name", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The organization display name." },
-        { "id": "organizationType", "type": "string", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "The configured organization classification." },
-        { "id": "status", "type": "string", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "The portable organization lifecycle state." },
-        { "id": "tags", "type": "string-list", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "Portable organization classification tags." },
-        { "id": "projectUris", "type": "string-list", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "Exact related project resource identities.", "reference": { "subject": "project", "identity": "resource-uri" } },
-        { "id": "contactUris", "type": "string-list", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "Exact related contact resource identities.", "reference": { "subject": "person", "identity": "resource-uri" } }
+        {
+          "id": "name",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The organization display name."
+        },
+        {
+          "id": "organizationType",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "The configured organization classification."
+        },
+        {
+          "id": "status",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "The portable organization lifecycle state."
+        },
+        {
+          "id": "tags",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Portable organization classification tags."
+        },
+        {
+          "id": "website",
+          "type": "string",
+          "format": "resource-uri",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "The normalized canonical organization website."
+        },
+        {
+          "id": "twitter",
+          "type": "string",
+          "format": "resource-uri",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "The normalized organization social profile URI."
+        },
+        {
+          "id": "projectUris",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Exact related project resource identities.",
+          "reference": {
+            "subject": "projects.records.project",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "contactUris",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Exact related contact resource identities.",
+          "reference": {
+            "subject": "crm.records.person",
+            "identity": "resource-uri"
+          }
+        }
       ],
-      "content": { "kind": "none", "requiredOnCreate": false, "summary": "Organization records have no portable body content." },
-      "deduplicationFields": ["name"]
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "Organization records have no portable body content."
+      },
+      "deduplicationFields": [
+        "name"
+      ]
     },
     {
       "id": "person",
       "summary": "A CRM contact whose authority and relationships remain explicit.",
       "fields": [
-        { "id": "name", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The contact display name." },
-        { "id": "email", "type": "string", "format": "email", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "The contact email address when known." },
-        { "id": "role", "type": "string", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "The contact role classification." },
-        { "id": "status", "type": "string", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "The contact lifecycle state." },
-        { "id": "disposition", "type": "string", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "The configured relationship disposition." },
-        { "id": "authority", "type": "string-list", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "Explicit authority labels assigned to this contact." },
-        { "id": "organizationUris", "type": "string-list", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "Exact related organization resource identities.", "reference": { "subject": "organization", "identity": "resource-uri" } }
+        {
+          "id": "name",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The contact display name."
+        },
+        {
+          "id": "email",
+          "type": "string",
+          "format": "email",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "The contact email address when known."
+        },
+        {
+          "id": "role",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "The contact role classification."
+        },
+        {
+          "id": "status",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "The contact lifecycle state."
+        },
+        {
+          "id": "disposition",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "The configured relationship disposition."
+        },
+        {
+          "id": "authority",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Explicit authority labels assigned to this contact."
+        },
+        {
+          "id": "tags",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Current provider-defined contact classification tags."
+        },
+        {
+          "id": "telegram",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "A bounded Telegram contact identity when explicitly supplied."
+        },
+        {
+          "id": "signal",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "A bounded Signal contact identity when explicitly supplied."
+        },
+        {
+          "id": "discordId",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "A bounded Discord identity when explicitly supplied."
+        },
+        {
+          "id": "github",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "A bounded GitHub identity when explicitly supplied."
+        },
+        {
+          "id": "timezoneUtc",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Explicit timezone text; Context does not infer it from location or address."
+        },
+        {
+          "id": "source",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "A factual bounded description of how the contact was encountered."
+        },
+        {
+          "id": "skyForum",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "A bounded Sky Forum identity when explicitly supplied."
+        },
+        {
+          "id": "scheduleAppointment",
+          "type": "string",
+          "format": "resource-uri",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "An explicit appointment-scheduling resource URI."
+        },
+        {
+          "id": "organizationUris",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Exact related organization resource identities.",
+          "reference": {
+            "subject": "crm.records.organization",
+            "identity": "resource-uri"
+          }
+        }
       ],
-      "content": { "kind": "none", "requiredOnCreate": false, "summary": "Contact records have no portable body content." },
-      "deduplicationFields": ["email", "name"]
-    },
-    {
-      "id": "project",
-      "summary": "A bounded body of work related to organizations and tasks.",
-      "fields": [
-        { "id": "name", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The project display name." },
-        { "id": "projectType", "type": "string", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "The configured project classification." },
-        { "id": "status", "type": "string", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "The portable project lifecycle state." },
-        { "id": "organizationUris", "type": "string-list", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "Exact related organization resource identities.", "reference": { "subject": "organization", "identity": "resource-uri" } },
-        { "id": "taskUris", "type": "string-list", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "Exact related task resource identities.", "reference": { "subject": "task", "identity": "resource-uri" } }
-      ],
-      "content": { "kind": "none", "requiredOnCreate": false, "summary": "Project records have no portable body content." },
-      "deduplicationFields": ["name"]
-    },
-    {
-      "id": "task",
-      "summary": "A bounded work item that can be related to one or more projects.",
-      "fields": [
-        { "id": "title", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The task title describing the intended work." },
-        { "id": "status", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The portable task lifecycle state." },
-        { "id": "context", "type": "string", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "The configured work-context classification." },
-        { "id": "projectId", "type": "string", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "The exact related project record identity used for bounded project-status queries.", "reference": { "subject": "project", "identity": "record-id" } },
-        { "id": "projectUris", "type": "string-list", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "Exact related project resource identities.", "reference": { "subject": "project", "identity": "resource-uri" } },
-        { "id": "assigneeIds", "type": "string-list", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "Exact provider-scoped person identities for the assigned operators.", "reference": { "subject": "person", "identity": "provider-person-id" } },
-        { "id": "nextActionOn", "type": "string", "format": "date", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "The pinned calendar date for the task's next action." }
-      ],
-      "content": { "kind": "none", "requiredOnCreate": false, "summary": "Task records have no portable body content." },
-      "deduplicationFields": ["title"]
-    },
-    {
-      "id": "milestone",
-      "summary": "A project milestone whose work-item progress and health remain distinct from promoted tasks.",
-      "fields": [
-        { "id": "projectId", "type": "string", "requiredOnCreate": false, "nullable": false, "mutable": true, "summary": "The exact project record identity that owns this milestone.", "reference": { "subject": "project", "identity": "record-id" } },
-        { "id": "workItemsCompleted", "type": "number", "requiredOnCreate": false, "nullable": false, "mutable": true, "summary": "The observed count of completed milestone work items." },
-        { "id": "workItemsTotal", "type": "number", "requiredOnCreate": false, "nullable": false, "mutable": true, "summary": "The observed total count of milestone work items." },
-        { "id": "progressTag", "type": "string", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "The source-defined qualitative milestone progress classification." },
-        { "id": "healthTag", "type": "string", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "The source-defined qualitative milestone health classification." }
-      ],
-      "content": { "kind": "none", "requiredOnCreate": false, "summary": "Milestone records have no portable body content." },
-      "deduplicationFields": []
-    },
-    {
-      "id": "meeting",
-      "summary": "A meeting record anchored to one canonical recording identity.",
-      "fields": [
-        { "id": "title", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The meeting display title." },
-        { "id": "meetingType", "type": "string", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "The configured meeting classification." },
-        { "id": "recordingUri", "type": "string", "format": "resource-uri", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The exact canonical recording resource identity." },
-        { "id": "organizationUris", "type": "string-list", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "Exact related organization resource identities.", "reference": { "subject": "organization", "identity": "resource-uri" } },
-        { "id": "participantIds", "type": "string-list", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "Provider-scoped participant identities that are not CRM contact IDs.", "reference": { "subject": "meeting.participant", "identity": "provider-person-id" } }
-      ],
-      "content": { "kind": "none", "requiredOnCreate": false, "summary": "Meeting records have no portable body content." },
-      "deduplicationFields": ["recordingUri", "title"]
-    },
-    {
-      "id": "meeting-summary",
-      "summary": "A transcript-grounded document linked to its canonical source meeting.",
-      "fields": [
-        { "id": "title", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The human-readable summary title." },
-        { "id": "documentType", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The document classification for meeting summaries." },
-        { "id": "description", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "A bounded plain-language summary description." },
-        { "id": "link", "type": "string", "format": "resource-uri", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The canonical source recording link used for attribution and deduplication." }
-      ],
-      "content": { "kind": "markdown", "requiredOnCreate": true, "summary": "The transcript-grounded meeting summary body in Markdown." },
-      "deduplicationFields": ["link", "title"]
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "Contact records have no portable body content."
+      },
+      "deduplicationFields": [
+        "email",
+        "name"
+      ]
     }
   ],
   "limitations": [
-    "This model defines portable meaning and shapes; it does not assert that any selected provider maps every record or field.",
-    "Provider-scoped meeting participant identities do not become CRM contact identities without a separate resolution contract.",
-    "Policy bodies remain external canonical sources and are not embedded in policy index records."
+    "The governed context.crm vocabulary artifact owns portable CRM terminology; compatibility pointers and provider labels are non-canonical projections.",
+    "This model owns portable organizations, people, customer relationships, and CRM identity only; Communications, Projects, Tasks, and Meetings are separate selectable Context packs.",
+    "Cross-context project links are typed resource identities; selecting CRM alone does not require or imply that the Projects Context is installed or resolved.",
+    "Provider-scoped workspace actor identities are not CRM contact identities without a separate governed resolution contract.",
+    "Policy bodies remain external canonical sources and are not embedded in CRM records."
   ]
 }

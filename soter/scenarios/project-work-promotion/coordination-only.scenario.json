@@ -1,0 +1,52 @@
+{
+  "$contract": "soter://contracts/scenario/v1",
+  "contractVersion": "1.0.0",
+  "id": "project-work-promotion.coordination-only",
+  "automation": "automation.project-work-promotion",
+  "intent": "operate",
+  "input": {
+    "project": "exact-project-reference",
+    "workItem": "exact-unchecked-action",
+    "disposition": "coordination-only",
+    "assignee": "omitted"
+  },
+  "expected": {
+    "capabilityOrder": [
+      "projects.records.read",
+      "tasks.records.read",
+      "projects.records.read",
+      "documents.content.read"
+    ],
+    "effectModes": {
+      "read": "allow",
+      "disclosure": "allow",
+      "write": "confirm",
+      "dispatch": "prohibit",
+      "destructive": "prohibit"
+    },
+    "outcomes": [
+      "projects-and-tasks-policies.grounded",
+      "work-item.exact-and-unchecked",
+      "coordination-completion.previewed",
+      "no-task-create.previewed",
+      "writes-held-for-separate-authority"
+    ],
+    "invariants": [
+      "operator-explicitly-selects-disposition",
+      "coordination-never-creates-task",
+      "work-item-only-exact-checkbox-may-change",
+      "private-values-excluded-from-inspection",
+      "no-write-or-approval-during-preparation"
+    ],
+    "evidence": [
+      "exact-lock",
+      "policy-source-fingerprints",
+      "document-read-fingerprint",
+      "private-review-material",
+      "write-boundary-state"
+    ]
+  },
+  "sourceCases": [
+    ".claude/systems/project-management.md"
+  ]
+}

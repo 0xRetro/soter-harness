@@ -1,0 +1,566 @@
+{
+  "$contract": "soter://contracts/run-envelope/v1",
+  "contractVersion": "1.0.0",
+  "id": "run.meeting-intake.review-preparation-fixture",
+  "createdAt": "2026-07-15T12:00:00.000Z",
+  "requestedOutcome": "Prepare a grounded Meeting Intake review packet and stop before judgment, approval, or writes.",
+  "initiation": "user-requested",
+  "intent": "operate",
+  "lifecycleState": "paused",
+  "automation": {
+    "id": "automation.meeting-intake",
+    "version": "0.1.0"
+  },
+  "configurationLock": {
+    "path": "soter/fixtures/meeting-intake/meeting-intake.lock.json",
+    "fingerprint": "sha256:5bb9bf587f258e66fc5ce2eb092d61a05e544734c723a8cc209f212a42569df9"
+  },
+  "graphFingerprint": "sha256:cbb99770c57b011bec7b722843a3fdbe536f2989da64f046c8bed3d4cc050638",
+  "context": [
+    {
+      "subject": "crm.records",
+      "authority": "authority.crm.definition",
+      "role": "definition",
+      "uri": "soter-fixture://configuration-template/notion/authority/policies",
+      "declarationFingerprint": "sha256:bb8707ba433f49d40250874f67667e8e3fb9243ba31895b026d530750f2c7b88",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:5bb9bf587f258e66fc5ce2eb092d61a05e544734c723a8cc209f212a42569df9",
+      "freshness": "unknown"
+    },
+    {
+      "subject": "crm.records",
+      "authority": "authority.crm.instance",
+      "role": "instance",
+      "uri": "soter-fixture://configuration-template/notion/authority/crm",
+      "declarationFingerprint": "sha256:23a6dd9d0b3aa51376f36403b34c0e0530399afab401429e72b3a30eddf14e11",
+      "status": "loaded",
+      "provenance": "fixture:sha256:3cf5f0f01d487bca66631a3c1c975dbc32935f7befaed76a9410bd4e739dc8e9",
+      "freshness": "passed"
+    },
+    {
+      "subject": "meetings.records",
+      "authority": "authority.meetings.definition",
+      "role": "definition",
+      "uri": "soter-fixture://configuration-template/notion/authority/meeting-policies",
+      "declarationFingerprint": "sha256:98e080ad675a7d7ba10d62449164df4b2b7774f5fec5a6f8ab8c02213caeb7c6",
+      "status": "loaded",
+      "provenance": "fixture:sha256:59378c900bc9aa49787fca599dcdc68e04be4403540c4d6898ebd4bdb5c2a26b",
+      "freshness": "passed"
+    },
+    {
+      "subject": "meetings.records",
+      "authority": "authority.meetings.instance",
+      "role": "instance",
+      "uri": "soter-fixture://configuration-template/notion/authority/meetings",
+      "declarationFingerprint": "sha256:8abd68d26f22693f3573546c995297998e5655b35ac6c21524e3b548ecddce60",
+      "status": "loaded",
+      "provenance": "fixture:sha256:e7c77e9f3d45d226420f700e8532cb003c9f194331cd0e675a5864b41742eb34",
+      "freshness": "passed"
+    },
+    {
+      "subject": "notion.workspace",
+      "authority": "authority.notion.provider",
+      "role": "provider",
+      "uri": "soter-fixture://configuration-template/notion/account/operator",
+      "declarationFingerprint": "sha256:e3e11d347b7a0109668facaeb7b12311023da39949d1328bfd918c53a406c756",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:5bb9bf587f258e66fc5ce2eb092d61a05e544734c723a8cc209f212a42569df9",
+      "freshness": "unknown"
+    },
+    {
+      "subject": "meeting.transcript",
+      "authority": "authority.otter.provider",
+      "role": "provider",
+      "uri": "soter-fixture://configuration-template/otter/account/operator",
+      "declarationFingerprint": "sha256:b2acdfc57c3b02106dcfe5c7b9e6838548a644c6e8927999d7a051057ba64331",
+      "status": "loaded",
+      "provenance": "fixture:sha256:8cdd2c6e4231dc3b521006298a77aaa8a3c0203f64b6ba61634530a2a74d41bc",
+      "freshness": "passed"
+    },
+    {
+      "subject": "projects.records",
+      "authority": "authority.projects.definition",
+      "role": "definition",
+      "uri": "soter-fixture://configuration-template/notion/authority/project-policies",
+      "declarationFingerprint": "sha256:fce3445f679b41227242b5dbc7fafd2cb86c9a95020d887a50c5df612eee0f83",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:5bb9bf587f258e66fc5ce2eb092d61a05e544734c723a8cc209f212a42569df9",
+      "freshness": "unknown"
+    },
+    {
+      "subject": "projects.records",
+      "authority": "authority.projects.instance",
+      "role": "instance",
+      "uri": "soter-fixture://configuration-template/notion/authority/projects",
+      "declarationFingerprint": "sha256:97b91257bdd2ef42a8ce3efcb23bc86d5a337118c9d81058af64035b7e7a0aa6",
+      "status": "loaded",
+      "provenance": "fixture:sha256:9878c7ee5b91bec730450be1c776e6eec603ffbac10bd3a770a01ffc2d998fdb",
+      "freshness": "passed"
+    },
+    {
+      "subject": "runtime.runs",
+      "authority": "authority.run.evidence",
+      "role": "evidence",
+      "uri": "soter-state://runs",
+      "declarationFingerprint": "sha256:6f39e99f1ebc86fe11ee09cc7170824ac4c11a6fc88371edb673bd2379dacdc8",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:5bb9bf587f258e66fc5ce2eb092d61a05e544734c723a8cc209f212a42569df9",
+      "freshness": "unknown"
+    },
+    {
+      "subject": "tasks.records",
+      "authority": "authority.tasks.definition",
+      "role": "definition",
+      "uri": "soter-fixture://configuration-template/notion/authority/task-policies",
+      "declarationFingerprint": "sha256:88a0f55602be20f6491a2faf0180ed8b16b309f23d937f41878065bd784358bb",
+      "status": "loaded",
+      "provenance": "fixture:sha256:d59015567535fc8b2701d8bbeb0ff862e67691aafdeebb348d4aa7242608424b",
+      "freshness": "passed"
+    },
+    {
+      "subject": "tasks.records",
+      "authority": "authority.tasks.instance",
+      "role": "instance",
+      "uri": "soter-fixture://configuration-template/notion/authority/tasks",
+      "declarationFingerprint": "sha256:dcb3e8d127b4bcc04235daa8426dce206db992719e80880e7fb994f670cf1d8a",
+      "status": "loaded",
+      "provenance": "fixture:sha256:de2ef152f01457857dc8fc4dd1ef42fb08d46b5e4d3512b9aeea795515e4276a",
+      "freshness": "passed"
+    }
+  ],
+  "bindings": [
+    {
+      "capability": "crm.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.crm.definition",
+        "authority.crm.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Notion is the configured CRM authority for exact Organization reads."
+    },
+    {
+      "capability": "documents.content.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.meetings.definition",
+        "authority.meetings.instance",
+        "authority.tasks.definition"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Notion supplies exact configured policy bodies under definition authority and exact Meeting document bodies under instance authority. These are read-only observations and do not establish complete fields-plus-body verification or write authority."
+    },
+    {
+      "capability": "meeting.transcript.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.otter",
+      "providerVersion": "0.1.0",
+      "authorities": [
+        "authority.otter.provider"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Otter implements transcript reading for the configured meeting provider authority."
+    },
+    {
+      "capability": "meetings.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.meetings.definition",
+        "authority.meetings.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Notion is the configured Meetings authority for the exact source Meeting read."
+    },
+    {
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.projects.definition",
+        "authority.projects.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Notion is the configured Projects authority for exact related Project reads."
+    },
+    {
+      "capability": "tasks.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.tasks.definition",
+        "authority.tasks.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Notion is the configured Tasks authority for bounded exact Task reads."
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0",
+    "projectionDefinition": {
+      "id": "host-projection.codex",
+      "version": "0.3.0",
+      "path": "soter/hosts/codex/projection.json",
+      "fingerprint": "sha256:76cd84436a3b5e7f00edcc8a0be3cdff64f53e488b13107a8bf56603b9600490"
+    },
+    "projectionGenerator": {
+      "id": "core.host-projection-generator",
+      "version": "2.1.0"
+    }
+  },
+  "effectPolicies": {
+    "read": {
+      "mode": "allow",
+      "reason": "Selected authorities may be read to perform the requested automation."
+    },
+    "disclosure": {
+      "mode": "allow",
+      "reason": "Selected records may enter the configured private run envelope."
+    },
+    "write": {
+      "mode": "confirm",
+      "reason": "The selected Integration exposes separately governed write capabilities, so any write still requires confirmation. Meeting Intake itself declares no write capability: COMPLETE_MEETING_READBACK_UNAVAILABLE holds the summary-and-task group before proposal selection, batch, approval, one-time start, checkpoint, provider write, or verification authority."
+    },
+    "dispatch": {
+      "mode": "prohibit",
+      "reason": "Meeting intake does not send messages or publish notifications."
+    },
+    "destructive": {
+      "mode": "prohibit",
+      "reason": "Meeting intake never deletes records or performs destructive changes."
+    }
+  },
+  "approvals": [],
+  "checkpoints": [
+    {
+      "id": "effects-established",
+      "state": "passed",
+      "details": "Read and disclosure policies were evaluated before each fixture invocation."
+    },
+    {
+      "id": "review-context-grounded",
+      "state": "passed",
+      "details": "Exact policy sources, transcript, meeting, organizations, projects, and tasks were loaded through their declared relationships for the private preview."
+    },
+    {
+      "id": "judgment-required",
+      "state": "passed",
+      "details": "The run stopped before interpreting summary segments, resolving participants, proposing tasks, or creating a write batch."
+    }
+  ],
+  "outputs": [
+    {
+      "id": "context.meeting-intake.review-preparation-fixture",
+      "type": "context-snapshot",
+      "fingerprint": "sha256:59abbf1c1a333eb52a4c261be8645f6d2179cb63bfd7a3ae98280c20d2b7f0e9"
+    }
+  ],
+  "effects": [
+    {
+      "id": "effect.meeting-intake.preparation.policy.docs.fixture",
+      "capability": "documents.content.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.meetings.definition",
+      "startedAt": "2026-07-15T12:00:00.000Z",
+      "completedAt": "2026-07-15T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected authorities may be read to perform the requested automation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope."
+        }
+      ],
+      "inputFingerprint": "sha256:01127aa949594274e7563fc8f6340492028e41b08a6871fa2ef0b4f33fbb6364",
+      "state": "passed",
+      "outputFingerprint": "sha256:6fb4c800083ccf68c5c703b8a5d1f82e4be3763d92af01f85181188af10c506f",
+      "error": null
+    },
+    {
+      "id": "effect.meeting-intake.preparation.policy.meetings.fixture",
+      "capability": "documents.content.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.meetings.definition",
+      "startedAt": "2026-07-15T12:00:00.000Z",
+      "completedAt": "2026-07-15T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected authorities may be read to perform the requested automation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope."
+        }
+      ],
+      "inputFingerprint": "sha256:3f3311048e2c7bd53d954a861ef55784a3f3b53d445b7951559129a972827e14",
+      "state": "passed",
+      "outputFingerprint": "sha256:8836a91b5778d1a1dfe93bd0a0cd87153a0a38195c4464b7f8e91cddf5b4375d",
+      "error": null
+    },
+    {
+      "id": "effect.meeting-intake.preparation.policy.tasks.fixture",
+      "capability": "documents.content.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.tasks.definition",
+      "startedAt": "2026-07-15T12:00:00.000Z",
+      "completedAt": "2026-07-15T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected authorities may be read to perform the requested automation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope."
+        }
+      ],
+      "inputFingerprint": "sha256:23bbd426bd8e28a188a3e95c18c00224e1bd9d2449dc6a3760b8f39fbdd0afb0",
+      "state": "passed",
+      "outputFingerprint": "sha256:55107f58ed2a0afba4ae3351995fd8f17ea48d560eb47d8ffc7cf7c11b8bea13",
+      "error": null
+    },
+    {
+      "id": "effect.meeting-intake.preparation.transcript.fixture",
+      "capability": "meeting.transcript.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.otter",
+      "providerImplementation": "provider.integration.otter.fixture",
+      "providerVersion": "0.1.0",
+      "containment": "fixture",
+      "authority": "authority.otter.provider",
+      "startedAt": "2026-07-15T12:00:00.000Z",
+      "completedAt": "2026-07-15T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected authorities may be read to perform the requested automation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope."
+        }
+      ],
+      "inputFingerprint": "sha256:d92beb3b8180b86b6b344ef81bdf2a554f5d08bb3904a9d14ef8328f437d37b1",
+      "state": "passed",
+      "outputFingerprint": "sha256:3dba076284e18ee493363cfdd149bb65d53e2055e9e25e63889249a9700b86d7",
+      "error": null
+    },
+    {
+      "id": "effect.meeting-intake.preparation.meeting.fixture",
+      "capability": "meetings.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.meetings.instance",
+      "startedAt": "2026-07-15T12:00:00.000Z",
+      "completedAt": "2026-07-15T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected authorities may be read to perform the requested automation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope."
+        }
+      ],
+      "inputFingerprint": "sha256:9f1f971a89658c1b8655307f6b35d076a7c7ad85d074b34ebcd236692e219b79",
+      "state": "passed",
+      "outputFingerprint": "sha256:33cda97e0e8719a3785584ea9ab9f3f9e2fca50c693e6996edda179f6ff9baf8",
+      "error": null
+    },
+    {
+      "id": "effect.meeting-intake.preparation.organizations.fixture",
+      "capability": "crm.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.crm.instance",
+      "startedAt": "2026-07-15T12:00:00.000Z",
+      "completedAt": "2026-07-15T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected authorities may be read to perform the requested automation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope."
+        }
+      ],
+      "inputFingerprint": "sha256:ff04a22a413d564f1f8a9c30bf97740feb6e7e3974e0c2dda34b7616ea1a15dd",
+      "state": "passed",
+      "outputFingerprint": "sha256:906072707e779459d9efb538ca0a343c3f5b75026e010c1a29d8a3022bacd1a8",
+      "error": null
+    },
+    {
+      "id": "effect.meeting-intake.preparation.projects.fixture",
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.projects.instance",
+      "startedAt": "2026-07-15T12:00:00.000Z",
+      "completedAt": "2026-07-15T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected authorities may be read to perform the requested automation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope."
+        }
+      ],
+      "inputFingerprint": "sha256:40dac14540d6f3b3056e611835bae007dc7d6b9f4cfe20ad05db493da8770234",
+      "state": "passed",
+      "outputFingerprint": "sha256:b662542f221ca468bd5fd4a76e3814a0195a37de4dae495d85e15a7b4a3bb4fd",
+      "error": null
+    },
+    {
+      "id": "effect.meeting-intake.preparation.tasks.fixture",
+      "capability": "tasks.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.tasks.instance",
+      "startedAt": "2026-07-15T12:00:00.000Z",
+      "completedAt": "2026-07-15T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected authorities may be read to perform the requested automation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope."
+        }
+      ],
+      "inputFingerprint": "sha256:d19ab73fb1d5771619f7371637a1bb0577477d6813ce7736c5813c38f411959d",
+      "state": "passed",
+      "outputFingerprint": "sha256:f7988c9c595ad37f79689f3c5cfa85457c53d9472917aa109b66b2e8fd287d3c",
+      "error": null
+    }
+  ],
+  "evidenceIds": [],
+  "scenario": {
+    "id": "meeting-intake.preparation",
+    "path": "soter/scenarios/meeting-intake/preparation.scenario.json",
+    "fingerprint": "sha256:fc98fd4c387a0642e59b1808c75acf375ea5d54264e48b5fb0bd2fa3b37186f0"
+  }
+}

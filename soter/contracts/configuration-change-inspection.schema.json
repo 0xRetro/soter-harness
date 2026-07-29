@@ -14,10 +14,10 @@
     "plan": { "$ref": "#/$defs/reference" },
     "configuration": {
       "type": "object", "additionalProperties": false,
-      "required": ["name", "path", "baselineLockFingerprint", "candidateLockFingerprint", "candidateGraphFingerprint", "observedLockFingerprint", "applicability"],
+      "required": ["name", "sourceKind", "baselineLockFingerprint", "candidateLockFingerprint", "candidateGraphFingerprint", "observedLockFingerprint", "applicability"],
       "properties": {
         "name": { "type": "string" },
-        "path": { "type": "string" },
+        "sourceKind": { "enum": ["tracked-template", "private-active"] },
         "baselineLockFingerprint": { "$ref": "#/$defs/fingerprint" },
         "candidateLockFingerprint": { "$ref": "#/$defs/fingerprint" },
         "candidateGraphFingerprint": { "$ref": "#/$defs/fingerprint" },

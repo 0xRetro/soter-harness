@@ -1,0 +1,33 @@
+{
+  "$contract": "soter://contracts/automation-derived-review/v1",
+  "contractVersion": "1.0.0",
+  "automation": "automation.project-work-promotion",
+  "kind": "project-work-promotion-derived-review",
+  "items": [
+    {
+      "kind": "project-work-task-create",
+      "fields": [
+        { "id": "workItemId", "label": "Source work-item identity", "type": "text" },
+        { "id": "title", "label": "Inherited exact Task title", "type": "text" },
+        { "id": "status", "label": "Task status", "type": "text" },
+        { "id": "context", "label": "Task context", "type": "text" },
+        { "id": "projectUris", "label": "Project identities", "type": "string-list" },
+        { "id": "assigneeIds", "label": "Assignee identities", "type": "string-list" },
+        { "id": "nextActionOn", "label": "Inherited next-action date", "type": "string-list" },
+        { "id": "duplicateCandidateIds", "label": "Exact duplicate candidates", "type": "string-list" }
+      ]
+    },
+    {
+      "kind": "project-work-item-complete",
+      "fields": [
+        { "id": "uri", "label": "Project document identity", "type": "text" },
+        { "id": "expectedTitle", "label": "Expected project title", "type": "text" },
+        { "id": "expectedBodyFingerprint", "label": "Current document fingerprint", "type": "text" },
+        { "id": "afterBodyFingerprint", "label": "Expected document fingerprint", "type": "text" },
+        { "id": "workItemId", "label": "Exact work-item identity", "type": "text" },
+        { "id": "oldText", "label": "Current work-item line", "type": "text" },
+        { "id": "newText", "label": "Completed work-item line", "type": "text" }
+      ]
+    }
+  ]
+}

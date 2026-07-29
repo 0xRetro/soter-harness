@@ -17,12 +17,14 @@
   },
   "expected": {
     "capabilityOrder": [
-      "crm.records.read",
-      "crm.records.read",
+      "documents.content.read",
+      "documents.content.read",
+      "documents.content.read",
       "meeting.transcript.read",
-      "crm.records.update",
-      "crm.records.create",
-      "crm.records.read"
+      "meetings.records.read",
+      "crm.records.read",
+      "projects.records.read",
+      "tasks.records.read"
     ],
     "effectModes": {
       "read": "allow",
@@ -32,27 +34,27 @@
       "destructive": "prohibit"
     },
     "outcomes": [
-      "meeting-summary.created",
-      "grounded-tasks.created-or-folded",
+      "meeting-summary-and-task.private-review-available",
+      "complete-write-group.held",
       "source-meeting.attributed",
-      "landed-records.verified"
+      "no-execution-authority.created"
     ],
     "invariants": [
       "transcript-grounded",
       "deduplicate-before-create",
       "external-commitments-remain-in-summary",
-      "one-batch-confirmation-before-writes",
-      "dependency-ordered-writes",
-      "refetch-after-write"
+      "complete-group-never-partially-executed",
+      "complete-readback-required",
+      "no-write-authority"
     ],
     "evidence": [
       "resolved-configuration",
       "authority-fingerprints",
       "capability-bindings",
       "source-provenance",
-      "confirmation-record",
-      "effect-results",
-      "verification-results"
+      "private-complete-group-review",
+      "complete-meeting-readback-unavailable",
+      "zero-authority-state"
     ]
   },
   "sourceCases": [

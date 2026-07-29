@@ -1,0 +1,19 @@
+{
+  "$contract": "soter://contracts/automation-derived-review/v1",
+  "contractVersion": "1.0.0",
+  "automation": "automation.task-capture",
+  "kind": "task-capture-derived-review",
+  "items": [
+    {
+      "kind": "task-create",
+      "fields": [
+        { "id": "title", "label": "Task title", "type": "text" },
+        { "id": "status", "label": "Task status", "type": "text" },
+        { "id": "context", "label": "Task context", "type": "text" },
+        { "id": "projectUris", "label": "Project identities", "type": "string-list" },
+        { "id": "assigneeIds", "label": "Assignee identities", "type": "string-list" },
+        { "id": "nextActionOn", "label": "Next action date", "type": "string-list" }
+      ]
+    }
+  ]
+}

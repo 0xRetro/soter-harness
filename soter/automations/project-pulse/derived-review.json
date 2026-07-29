@@ -1,0 +1,34 @@
+{
+  "$contract": "soter://contracts/automation-derived-review/v1",
+  "contractVersion": "1.0.0",
+  "automation": "automation.project-pulse",
+  "kind": "project-pulse-derived-review",
+  "items": [
+    {
+      "kind": "project-document-update",
+      "fields": [
+        { "id": "uri", "label": "Project document identity", "type": "text" },
+        { "id": "expectedTitle", "label": "Expected project title", "type": "text" },
+        { "id": "expectedBodyFingerprint", "label": "Current document fingerprint", "type": "text" },
+        { "id": "afterBodyFingerprint", "label": "Expected document fingerprint", "type": "text" },
+        { "id": "updateIds", "label": "Milestone change identities", "type": "string-list" },
+        { "id": "oldTexts", "label": "Current milestone lines", "type": "string-list" },
+        { "id": "newTexts", "label": "Proposed milestone lines", "type": "string-list" },
+        { "id": "batchActionIds", "label": "Required exact batch actions", "type": "string-list" }
+      ]
+    },
+    {
+      "kind": "project-status-create",
+      "fields": [
+        { "id": "headline", "label": "Status headline", "type": "text" },
+        { "id": "category", "label": "Update category", "type": "text" },
+        { "id": "date", "label": "Status date", "type": "text" },
+        { "id": "summary", "label": "Status summary", "type": "text" },
+        { "id": "processed", "label": "Processed", "type": "boolean" },
+        { "id": "visibility", "label": "Visibility", "type": "text" },
+        { "id": "projectIds", "label": "Project identities", "type": "string-list" },
+        { "id": "batchActionIds", "label": "Required exact batch actions", "type": "string-list" }
+      ]
+    }
+  ]
+}

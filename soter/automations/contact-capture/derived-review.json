@@ -1,0 +1,27 @@
+{
+  "$contract": "soter://contracts/automation-derived-review/v1",
+  "contractVersion": "1.0.0",
+  "automation": "automation.contact-capture",
+  "kind": "contact-capture-derived-review",
+  "items": [
+    {
+      "kind": "contact-create",
+      "fields": [
+        { "id": "name", "label": "Contact name", "type": "text" },
+        { "id": "email", "label": "Email", "type": "string-list" },
+        { "id": "role", "label": "Role", "type": "string-list" },
+        { "id": "status", "label": "Status", "type": "string-list" },
+        { "id": "disposition", "label": "Disposition", "type": "string-list" },
+        { "id": "authority", "label": "Authority", "type": "string-list" },
+        { "id": "tags", "label": "Tags", "type": "string-list" },
+        { "id": "telegram", "label": "Telegram", "type": "string-list" },
+        { "id": "signal", "label": "Signal", "type": "string-list" },
+        { "id": "github", "label": "GitHub", "type": "string-list" },
+        { "id": "timezoneUtc", "label": "Timezone (UTC)", "type": "string-list" },
+        { "id": "source", "label": "Source", "type": "string-list" },
+        { "id": "organizationUris", "label": "Resolved organization", "type": "string-list" },
+        { "id": "duplicateSearchValues", "label": "Exact duplicate search values", "type": "string-list" }
+      ]
+    }
+  ]
+}

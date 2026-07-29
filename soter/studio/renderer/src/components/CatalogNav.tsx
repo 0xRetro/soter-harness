@@ -6,6 +6,7 @@ const kindOrder = ['configuration', 'pack', 'capability', 'provider', 'host'];
 const queueSections = [
   { id: 'attention', label: 'Needs attention', states: ['needs-input', 'approval-expired', 'blocked', 'verification-failed', 'rolling-back', 'failed'] },
   { id: 'review', label: 'Ready for review', states: ['ready-for-review'] },
+  { id: 'acquisition', label: 'Staged for acquisition', states: ['ready-for-acquisition'] },
   { id: 'approval', label: 'Approval desk', states: ['awaiting-approval', 'approved-not-started'] },
   { id: 'active', label: 'In progress', states: ['draft', 'preparing', 'running'] },
   { id: 'recent', label: 'Recent', states: ['completed', 'rolled-back'] }
@@ -228,6 +229,7 @@ function OperatorQueueRow({ item, active, onSelect }: { item: Activity; active: 
 }
 
 function readableState(state: string) {
+  if (state === 'ready-for-acquisition') return 'staged input + lock';
   return state.replaceAll('-', ' ');
 }
 

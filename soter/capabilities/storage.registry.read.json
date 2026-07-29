@@ -1,0 +1,89 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "storage.registry.read",
+  "version": "1.0.0",
+  "purpose": "Reads one exact portable storage-filing policy and its closed registered destination set.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["registryId"],
+    "properties": {
+      "registryId": { "type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["registry", "provenance", "observedAt"],
+    "properties": {
+      "registry": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "policy", "locations", "fingerprint"],
+        "properties": {
+          "id": { "type": "string" },
+          "policy": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "placementRequiresConfirmation", "indexRequired", "movesHumanOnly", "renameAllowed", "deleteAllowed", "externalDefaultForm", "snapshotForm", "unclearHomeKey", "duplicateCandidateLimit"],
+            "properties": {
+              "name": { "type": "string" },
+              "placementRequiresConfirmation": { "type": "boolean" },
+              "indexRequired": { "type": "boolean" },
+              "movesHumanOnly": { "type": "boolean" },
+              "renameAllowed": { "type": "boolean" },
+              "deleteAllowed": { "type": "boolean" },
+              "externalDefaultForm": { "enum": ["shortcut"] },
+              "snapshotForm": { "enum": ["copy"] },
+              "unclearHomeKey": { "type": "string" },
+              "duplicateCandidateLimit": { "type": "integer", "minimum": 1, "maximum": 100 }
+            }
+          },
+          "locations": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["key", "label", "uri", "driveUri", "kind", "subjectKeys", "documentCategories"],
+              "properties": {
+                "key": { "type": "string" },
+                "label": { "type": "string" },
+                "uri": { "type": "string" },
+                "driveUri": { "type": "string" },
+                "kind": { "enum": ["home", "inbox"] },
+                "subjectKeys": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+                "documentCategories": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string" } }
+              }
+            }
+          },
+          "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        }
+      },
+      "provenance": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["provider", "authority", "sourceKind", "sourceReferenceFingerprint"],
+        "properties": {
+          "provider": { "type": "string" },
+          "authority": { "type": "string" },
+          "sourceKind": { "enum": ["fixture", "connected"] },
+          "sourceReferenceFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        }
+      },
+      "observedAt": { "type": "string", "minLength": 20 }
+    }
+  },
+  "authentication": { "required": true, "minimumScopes": ["storage:read"] },
+  "effects": ["read", "disclosure"],
+  "idempotency": { "mode": "not-applicable", "key": null },
+  "retry": { "safe": true, "maxAttempts": 2, "checkpoint": "Persist the exact registry identity and returned fingerprint before retry." },
+  "errors": ["authentication", "authorization", "validation", "conflict", "rate-limit", "unavailable", "retryable", "not-found", "unknown"],
+  "freshness": { "returnsProvenance": true, "returnsObservedAt": true, "maxAgeSeconds": 300 },
+  "health": { "check": "Read one contained storage registry.", "fixture": "soter/fixtures/providers/google-drive/storage.json", "containedVerification": "Prove exact registry identity, closed destinations, stable fingerprinting, and no raw provider payload." },
+  "providerLimitations": ["A registry observation does not establish destination permission, provider reachability, or current folder existence outside the selected provider observation."]
+}

@@ -1,0 +1,207 @@
+{
+  "$contract": "soter://contracts/evidence/v2",
+  "contractVersion": "2.0.0",
+  "id": "evidence.drive-filing.resolution.fixture",
+  "createdAt": "2026-07-21T16:00:00.000Z",
+  "claimFamily": "graph",
+  "claim": "The desired configuration resolves to this exact, internally valid artifact graph.",
+  "subject": {
+    "type": "configuration",
+    "id": "drive-filing",
+    "version": null
+  },
+  "configurationLockFingerprint": "sha256:df8f28329703c6a1e20d1314083de36cdacffb7a2bf2e253303f5d5f8bb74560",
+  "graphFingerprint": "sha256:e0e7aa7674b6e53e84e2dd33acc7b8e6d040991bd93a9f368b11824faa84da40",
+  "dependencies": [
+    {
+      "id": "kernel.soter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+    },
+    {
+      "id": "core.runtime",
+      "version": "0.1.0",
+      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+    },
+    {
+      "id": "context.crm",
+      "version": "0.1.0",
+      "fingerprint": "sha256:fa69fc9f796e84b1a2cd7e319c4344dcc44d8dcbea9542e51158eb868d266f44"
+    },
+    {
+      "id": "context.docs",
+      "version": "0.1.0",
+      "fingerprint": "sha256:797718406d1fc25a9639ad6fe1bf7fc077d8f5be6d67b4ba1ed3ddfa1d6c4993"
+    },
+    {
+      "id": "context.storage",
+      "version": "0.1.0",
+      "fingerprint": "sha256:b434913de5e0735f51ca0f190ced4fa310b82b1d9b03ffc5b8d7fe25952aedf1"
+    },
+    {
+      "id": "automation.filing-a-drive-artifact",
+      "version": "0.2.0",
+      "fingerprint": "sha256:fd35e9d1820235b058222de5d7e282bb092edcfb1c6cfafa24f1507012f92a13"
+    },
+    {
+      "id": "integration.google-drive",
+      "version": "0.1.0",
+      "fingerprint": "sha256:13ae555e49db0a4a0beebfca838035c529e0edb1737c9c0bcc718edacade1b25"
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "fingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5"
+    },
+    {
+      "id": "integration.notion-docs",
+      "version": "0.1.0",
+      "fingerprint": "sha256:07bd98eff9308d582ac42541b63017f5885a5581a6ffa9557f394d4c5e35df02"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
+  },
+  "integrations": [
+    {
+      "id": "integration.google-drive",
+      "version": "0.1.0",
+      "manifestFingerprint": "sha256:13ae555e49db0a4a0beebfca838035c529e0edb1737c9c0bcc718edacade1b25",
+      "evidenceMaturity": "declared"
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "manifestFingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5",
+      "evidenceMaturity": "declared"
+    },
+    {
+      "id": "integration.notion-docs",
+      "version": "0.1.0",
+      "manifestFingerprint": "sha256:07bd98eff9308d582ac42541b63017f5885a5581a6ffa9557f394d4c5e35df02",
+      "evidenceMaturity": "declared"
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.crm.definition",
+      "role": "definition",
+      "subject": "crm.records",
+      "declarationFingerprint": "sha256:5dcd7b166e69d5be3bf39ed57adf225ede8a4a2bd73d0d4800b3a38981ebce8d"
+    },
+    {
+      "id": "authority.crm.instance",
+      "role": "instance",
+      "subject": "crm.records",
+      "declarationFingerprint": "sha256:22b1ce681f68bd1f0ca80c9d22975e60bb675940630b26709005d8fd291757de"
+    },
+    {
+      "id": "authority.documents.definition",
+      "role": "definition",
+      "subject": "documents.records",
+      "declarationFingerprint": "sha256:d027693542fce7af4c7f4013a3dd02fe5f4a573bb6b947689ff87da024bce39a"
+    },
+    {
+      "id": "authority.documents.instance",
+      "role": "instance",
+      "subject": "documents.records",
+      "declarationFingerprint": "sha256:3dc2de83ff041a90657b91e404cf3d8774ff8b2afb22b48018b7d951f4137146"
+    },
+    {
+      "id": "authority.google-drive.provider",
+      "role": "provider",
+      "subject": "google-drive.account",
+      "declarationFingerprint": "sha256:01a83215e98a812ba14b9b0e2013835e4165a31cbde2b54c6cdef42094b4f334"
+    },
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "declarationFingerprint": "sha256:0c47198e74dcca8864ee8db6455d280298d10becdc891d023d2dedd771ae19f0"
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "declarationFingerprint": "sha256:8c419343899d33fbd2ef0b1c128c9b04b32ec716905dd04ae0934b803b0b9cad"
+    },
+    {
+      "id": "authority.storage.artifacts",
+      "role": "instance",
+      "subject": "storage.artifacts",
+      "declarationFingerprint": "sha256:2e2f0021b6bb9c8ee161cdee6b0de6143f812a2e0be6c1bcb9eec0c7e03b51f4"
+    },
+    {
+      "id": "authority.storage.locations",
+      "role": "definition",
+      "subject": "storage.locations",
+      "declarationFingerprint": "sha256:0d86e4cff9678e6d47c3225ec0a4db9b861eff82e8c71b2ca07c60ca95fd2d0f"
+    }
+  ],
+  "evaluator": {
+    "id": "core.resolver",
+    "version": "0.5.0",
+    "level": "graph"
+  },
+  "environment": {
+    "containment": "offline",
+    "runtime": "node"
+  },
+  "acceptanceCriteria": [
+    "Kernel validation reports no graph errors.",
+    "Every selected pack, capability, host projection, authority, and policy is fingerprinted.",
+    "Resolving unchanged inputs produces the same configuration lock fingerprint.",
+    "Credential references and values are absent from the lock."
+  ],
+  "result": "passed",
+  "outcomes": [
+    {
+      "id": "configuration.graph-resolved",
+      "state": "passed"
+    },
+    {
+      "id": "configuration.lock-deterministic",
+      "state": "passed"
+    },
+    {
+      "id": "configuration.lock-secret-free",
+      "state": "passed"
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "configuration",
+      "path": "soter/configurations/drive-filing.config.json",
+      "fingerprint": "sha256:d733e2dc715b3a4452c1f6a390b7b9068c131991e1204e5ac816d27d4458c9f4"
+    },
+    {
+      "role": "configuration-lock",
+      "fingerprint": "sha256:df8f28329703c6a1e20d1314083de36cdacffb7a2bf2e253303f5d5f8bb74560"
+    }
+  ],
+  "effects": [],
+  "failures": [],
+  "warnings": [],
+  "skipped": [
+    "Host authentication and reachability were not checked offline.",
+    "Integration capabilities were not invoked.",
+    "Automation outcomes and external effects were not evaluated."
+  ],
+  "limitations": [
+    "This evidence establishes graph validity and reproducibility only; it does not establish readiness, behavior verification, or live health."
+  ],
+  "freshness": {
+    "policy": "Valid only while every configuration-lock fingerprint remains unchanged.",
+    "validUntil": null
+  },
+  "supersedes": null,
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Credential references and credential values are excluded."
+    ]
+  }
+}

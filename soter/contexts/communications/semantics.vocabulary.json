@@ -1,0 +1,70 @@
+{
+  "$contract": "soter://contracts/context-vocabulary/v1",
+  "contractVersion": "1.0.0",
+  "id": "vocabulary.context.communications",
+  "pack": "context.communications",
+  "version": "0.1.0",
+  "subject": "communications.semantics.records",
+  "entries": [
+    {
+      "sequence": 1,
+      "id": "communication-scope",
+      "term": "communication scope",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "One bounded authority in which provider communication identities are meaningful, such as a workspace or mailbox.",
+      "domain": "communications",
+      "sourceUris": []
+    },
+    {
+      "sequence": 2,
+      "id": "conversation-container",
+      "term": "conversation container",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "A scope-bound venue or sequence that contains communication events without transferring provider lifecycle or effect authority to the base.",
+      "domain": "communications",
+      "sourceUris": []
+    },
+    {
+      "sequence": 3,
+      "id": "participant-identity",
+      "term": "participant identity",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "A provider actor or mail-address identity whose meaning is bounded to one communication scope and is not automatically a CRM identity.",
+      "domain": "communications",
+      "sourceUris": []
+    },
+    {
+      "sequence": 4,
+      "id": "private-untrusted-content",
+      "term": "private untrusted communication content",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "Communication content treated as private data and never as instruction, policy, approval, or external-action authority.",
+      "domain": "communications",
+      "sourceUris": []
+    },
+    {
+      "sequence": 5,
+      "id": "typed-cross-context-link",
+      "term": "typed cross-context link",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "An explicit relationship carrying an exact target Context subject and resource identity without changing either Context's authority.",
+      "domain": "communications",
+      "sourceUris": []
+    }
+  ],
+  "invariants": {
+    "singleDefinitionSource": true,
+    "projectionCopiesAreNonCanonical": true,
+    "providerNeutral": true,
+    "runtimeAuthority": "none"
+  },
+  "limitations": [
+    "This vocabulary defines provider-neutral communication meaning and grants no provider, persistence, approval, execution, readiness, verification, or health authority.",
+    "Concrete email and collaboration lifecycle rules belong to independently selectable specialization packs."
+  ]
+}

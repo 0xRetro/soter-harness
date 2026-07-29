@@ -1,0 +1,60 @@
+{
+  "$contract": "soter://contracts/automation-input/v1",
+  "contractVersion": "1.0.0",
+  "id": "input.slack-channel-ingestion",
+  "automation": "automation.slack-channel-ingestion",
+  "version": "1.0.0",
+  "fields": [
+    {
+      "id": "phase",
+      "label": "Preparation phase",
+      "description": "Choose identity review or exact selected-channel enrichment; this is domain input, not execution authority.",
+      "type": "enum",
+      "required": true,
+      "exposure": "identifier",
+      "options": ["identity-review", "selected-enrichment"],
+      "examples": ["identity-review"]
+    },
+    {
+      "id": "workspaceId",
+      "label": "Provider workspace",
+      "description": "Exact private provider workspace identity whose channel identities may be listed.",
+      "type": "string",
+      "required": true,
+      "exposure": "private",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 200,
+        "pattern": "^(?:[A-Za-z0-9._-]+|soter-fixture://configuration-template/slack/workspace/[a-z0-9]+(?:-[a-z0-9]+)*)$"
+      },
+      "examples": ["soter-fixture://configuration-template/slack/workspace/contained"]
+    },
+    {
+      "id": "nameFilter",
+      "label": "Channel name filter",
+      "description": "Optional private literal name fragment used only during identity review; it never authorizes selection.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minLength": 1, "maxLength": 200 },
+      "examples": ["spell-planning"]
+    },
+    {
+      "id": "selectedConversationIds",
+      "label": "Selected channel identities",
+      "description": "Exact private channel conversation identities explicitly selected by the operator before participant data may be read.",
+      "type": "string-list",
+      "required": false,
+      "exposure": "private",
+      "constraints": {
+        "minItems": 1,
+        "maxItems": 20,
+        "itemMinLength": 1,
+        "itemMaxLength": 200,
+        "itemPattern": "^[A-Za-z0-9._-]+$"
+      },
+      "examples": [["C001", "C002"]]
+    }
+  ],
+  "additionalInputs": false
+}

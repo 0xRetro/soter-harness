@@ -1,0 +1,26 @@
+{
+  "$contract": "soter://contracts/automation-input/v1",
+  "contractVersion": "1.0.0",
+  "id": "input.automation.process-capture",
+  "automation": "automation.process-capture",
+  "version": "1.0.0",
+  "fields": [
+    { "id": "name", "label": "Process name", "description": "Private canonical process definition name used for exact duplicate review.", "type": "string", "required": true, "exposure": "private", "constraints": { "minLength": 2, "maxLength": 200 } },
+    { "id": "purpose", "label": "Purpose", "description": "Private explanation of what the process produces or verifies and why it exists.", "type": "string", "required": true, "exposure": "private", "constraints": { "minLength": 3, "maxLength": 5000 } },
+    { "id": "triggerKinds", "label": "Trigger kinds", "description": "Private ordered trigger kinds paired by index with objective trigger conditions.", "type": "string-list", "required": true, "exposure": "private", "constraints": { "minItems": 1, "maxItems": 12, "itemMinLength": 3, "itemMaxLength": 50, "itemPattern": "^(Request|Event|Schedule|Emergency)$" } },
+    { "id": "triggers", "label": "Trigger conditions", "description": "Private ordered objective conditions paired by index with the governed trigger kinds.", "type": "string-list", "required": true, "exposure": "private", "constraints": { "minItems": 1, "maxItems": 12, "itemMinLength": 3, "itemMaxLength": 1000 } },
+    { "id": "frequency", "label": "Frequency", "description": "Private cadence request matched through governed aliases to one exact current schema option.", "type": "string", "required": true, "exposure": "private", "constraints": { "minLength": 2, "maxLength": 100 } },
+    { "id": "processLogicOwner", "label": "Process logic owner", "description": "Private exact role name resolved to one existing role resource identity.", "type": "reference", "required": true, "exposure": "private", "reference": { "subject": "process.records.role", "authorityRole": "instance" }, "constraints": { "minLength": 2, "maxLength": 200 } },
+    { "id": "stepRoles", "label": "Step roles", "description": "Private ordered role names paired by index with step capabilities, objectives, and work-items.", "type": "string-list", "required": true, "exposure": "private", "constraints": { "minItems": 1, "maxItems": 20, "itemMinLength": 2, "itemMaxLength": 200 } },
+    { "id": "stepCapabilities", "label": "Step capabilities", "description": "Private ordered capability keys paired by index with exact role-bounded process steps.", "type": "string-list", "required": true, "exposure": "private", "constraints": { "minItems": 1, "maxItems": 20, "itemMinLength": 2, "itemMaxLength": 200 } },
+    { "id": "stepObjectives", "label": "Step objectives", "description": "Private ordered step objectives; each entry becomes one role-bounded process step.", "type": "string-list", "required": true, "exposure": "private", "constraints": { "minItems": 1, "maxItems": 20, "itemMinLength": 3, "itemMaxLength": 1000 } },
+    { "id": "workItems", "label": "Work-items", "description": "Private ordered definition-level work-items paired one-to-one with the process steps.", "type": "string-list", "required": true, "exposure": "private", "constraints": { "minItems": 1, "maxItems": 20, "itemMinLength": 3, "itemMaxLength": 1000 } },
+    { "id": "exceptionHandling", "label": "Exception handling", "description": "Optional private bounded failure-and-workaround statements for the process definition.", "type": "string-list", "required": false, "exposure": "private", "constraints": { "minItems": 0, "maxItems": 12, "itemMinLength": 3, "itemMaxLength": 1000 } },
+    { "id": "postRunSummaryFields", "label": "Post-run summary fields", "description": "Private ordered facts the closing step must record on each process run.", "type": "string-list", "required": true, "exposure": "private", "constraints": { "minItems": 1, "maxItems": 20, "itemMinLength": 2, "itemMaxLength": 200 } },
+    { "id": "category", "label": "Category", "description": "Optional private category request matched to one exact current schema option or held.", "type": "string", "required": false, "exposure": "private", "constraints": { "minLength": 2, "maxLength": 100 } },
+    { "id": "tags", "label": "Tags", "description": "Optional private tag requests; every value must match the current normalized schema.", "type": "string-list", "required": false, "exposure": "private", "constraints": { "minItems": 0, "maxItems": 12, "itemMinLength": 2, "itemMaxLength": 100 } },
+    { "id": "relatedService", "label": "Related service", "description": "Optional private exact service name resolved to one existing service resource identity.", "type": "reference", "required": false, "exposure": "private", "reference": { "subject": "process.records.service", "authorityRole": "instance" }, "constraints": { "minLength": 2, "maxLength": 200 } },
+    { "id": "spawnTasks", "label": "Create Task records", "description": "Records whether Task creation was requested so the definition-versus-run boundary can be shown explicitly.", "type": "boolean", "required": false, "exposure": "identifier" }
+  ],
+  "additionalInputs": false
+}

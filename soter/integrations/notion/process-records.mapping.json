@@ -1,0 +1,98 @@
+{
+  "$contract": "soter://contracts/provider-mapping/v1",
+  "contractVersion": "1.0.0",
+  "id": "mapping.integration.notion.process-records",
+  "pack": "integration.notion",
+  "provider": "provider.integration.notion.mcp",
+  "version": "0.2.0",
+  "contextModel": "model.context.process.records",
+  "settingsDefinition": "settings.integration.notion",
+  "capabilities": ["process.records.read", "process.records.create", "process.schema.read"],
+  "recordTypes": [
+    {
+      "id": "process-capture-policy",
+      "target": "process-policies",
+      "capabilities": ["process.records.read"],
+      "fields": [
+        { "portable": "name", "provider": "Name", "providerType": "title", "decode": "scalar" }
+      ]
+    },
+    {
+      "id": "process-review-policy",
+      "target": "process-policies",
+      "capabilities": ["process.records.read"],
+      "fields": [
+        { "portable": "name", "provider": "Name", "providerType": "title", "decode": "scalar" }
+      ]
+    },
+    {
+      "id": "process",
+      "target": "processes",
+      "capabilities": ["process.records.read", "process.records.create", "process.schema.read"],
+      "fields": [
+        { "portable": "name", "provider": "Name", "providerType": "title", "decode": "scalar" },
+        { "portable": "status", "provider": "Status", "providerType": "status", "valueMapping": "configured-bijection", "decode": "scalar" },
+        { "portable": "frequency", "provider": "Frequency", "providerType": "select", "valueMapping": "configured-bijection", "decode": "scalar" },
+        { "portable": "category", "provider": "Category", "providerType": "select", "valueMapping": "configured-bijection", "decode": "scalar" },
+        { "portable": "tags", "provider": "Tags", "providerType": "multi_select", "valueMapping": "configured-bijection", "decode": "json" },
+        { "portable": "processOs", "provider": "ProcessOS", "providerType": "select", "valueMapping": "configured-bijection", "decode": "scalar" },
+        { "portable": "priority", "provider": "Prio", "providerType": "select", "valueMapping": "configured-bijection", "decode": "scalar" },
+        { "portable": "processLogicOwnerUris", "provider": "Process Logic Owner", "providerType": "relation", "decode": "json" },
+        { "portable": "relatedServiceUris", "provider": "Related Service", "providerType": "relation", "decode": "json" },
+        { "portable": "relatedRoleUris", "provider": "Related Roles", "providerType": "relation", "decode": "json" },
+        { "portable": "relatedPolicyUris", "provider": "Related Policies", "providerType": "relation", "decode": "json" },
+        { "portable": "writeTargetTypes", "provider": "Write Target Types", "providerType": "multi_select", "valueMapping": "configured-bijection", "decode": "json" },
+        { "portable": "declaredClaims", "provider": "Declared Claims", "providerType": "multi_select", "valueMapping": "configured-bijection", "decode": "json" }
+      ],
+      "content": { "portable": "body", "provider": "page-content", "providerType": "markdown" }
+    },
+    {
+      "id": "role",
+      "target": "roles",
+      "capabilities": ["process.records.read"],
+      "fields": [
+        { "portable": "name", "provider": "Name", "providerType": "title", "decode": "scalar" },
+        { "portable": "capabilities", "provider": "Capabilities", "providerType": "multi_select", "valueMapping": "configured-bijection", "decode": "json" }
+      ],
+      "content": { "portable": "body", "provider": "page-content", "providerType": "markdown" }
+    },
+    {
+      "id": "service",
+      "target": "services",
+      "capabilities": ["process.records.read"],
+      "fields": [
+        { "portable": "name", "provider": "Name", "providerType": "title", "decode": "scalar" }
+      ],
+      "content": { "portable": "body", "provider": "page-content", "providerType": "markdown" }
+    },
+    {
+      "id": "process-run",
+      "target": "process-runs",
+      "capabilities": ["process.records.read", "process.schema.read"],
+      "fields": [
+        { "portable": "name", "provider": "Name", "providerType": "title", "decode": "scalar" },
+        { "portable": "processUri", "provider": "Process", "providerType": "relation", "decode": "scalar" },
+        { "portable": "state", "provider": "State", "providerType": "status", "valueMapping": "configured-bijection", "decode": "scalar" },
+        { "portable": "outcome", "provider": "Outcome", "providerType": "text", "decode": "scalar" },
+        { "portable": "observedClaims", "provider": "Observed Claims", "providerType": "multi_select", "valueMapping": "configured-bijection", "decode": "json" }
+      ],
+      "content": { "portable": "body", "provider": "page-content", "providerType": "markdown" }
+    },
+    {
+      "id": "process-policy-standard",
+      "target": "process-policy-standards",
+      "capabilities": ["process.records.read"],
+      "fields": [
+        { "portable": "name", "provider": "Name", "providerType": "title", "decode": "scalar" },
+        { "portable": "relatedProcessUris", "provider": "Related Processes", "providerType": "relation", "decode": "json" },
+        { "portable": "requiredClaims", "provider": "Required Claims", "providerType": "multi_select", "valueMapping": "configured-bijection", "decode": "json" }
+      ],
+      "content": { "portable": "body", "provider": "page-content", "providerType": "markdown" }
+    }
+  ],
+  "limitations": [
+    "The mapping translates only explicit configured Process targets and never discovers databases, invents relation identities, or treats provider templates as portable authority.",
+    "Process creates require an exact current schema, complete deterministic body, deduplication review, and a separate Core transaction that this migration slice does not declare.",
+    "Task creation, process-run execution, review findings, readiness, verification, and health remain separate responsibilities."
+  ]
+}

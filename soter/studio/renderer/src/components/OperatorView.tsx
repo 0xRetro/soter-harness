@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import lifecycleFixture from '../../../../fixtures/operator-inspection/connected-transaction.lifecycle.json';
-import type { Activity, AutomationProposal, AutomationProposalMaterial, AutomationProposalMaterialResult, AutomationProposalResult, Configuration, ConnectedApprovalReviewMaterial, ConnectedApprovalReviewResult, InspectionSnapshot, OperatorInspection, PreparedWork, PreparedWorkDerivedReviewMaterial, PreparedWorkDerivedReviewResult, PreparedWorkReviewError, PreparedWorkReviewMaterial, PreparedWorkReviewResult, ProposalConnectedApprovalResult, ProposalConnectedBatchPreview, ProposalConnectedBatchResult, Workflow } from '../types';
+import type { Activity, AutomationProposal, AutomationProposalMaterial, AutomationProposalMaterialResult, AutomationProposalResult, Configuration, ConnectedApprovalReviewMaterial, ConnectedApprovalReviewResult, ConnectedOperatorActionResult, InspectionSnapshot, OperatorInspection, OperatorPreparationMode, PreparationMode, PreparedWork, PreparedWorkDerivedReviewMaterial, PreparedWorkDerivedReviewResult, PreparedWorkReviewError, PreparedWorkReviewMaterial, PreparedWorkReviewResult, ProposalConnectedApprovalResult, ProposalConnectedBatchPreview, ProposalConnectedBatchResult, Workflow } from '../types';
 import { AutomationProposalDossier, automationProposalMaterialBound } from './AutomationProposalDossier';
 import { ConnectedApprovalReview } from './ConnectedApprovalReview';
 import { OperatorInputControl } from './OperatorInputControl';
@@ -13,18 +13,16 @@ export function OperatorView({
   snapshot,
   workflow,
   configuration,
-  initialActivity,
-  onChanged
+  initialActivity
 }: {
   snapshot: InspectionSnapshot;
   workflow: Workflow;
   configuration: Configuration | null;
   initialActivity: Activity | null;
-  onChanged: () => void;
 }) {
   const [selectedScenarioId, setSelectedScenarioId] = useState(workflow.scenarios[0]?.id || '');
   const [selectedExampleId, setSelectedExampleId] = useState('awaiting-approval');
-  const [input, setInput] = useState<Record<string, string | boolean>>({});
+  const [input, setInput] = useState<Record<string, string | boolean | string[]>>({});
   const [inspection, setInspection] = useState<OperatorInspection | null>(null);
   const [preparedWork, setPreparedWork] = useState<PreparedWork | null>(null);
   const [reviewMaterial, setReviewMaterial] = useState<PreparedWorkReviewMaterial | null>(null);
@@ -43,9 +41,11 @@ export function OperatorView({
   const [connectedPreviewError, setConnectedPreviewError] = useState<PreparedWorkReviewError | null>(null);
   const [connectedPreviewBusy, setConnectedPreviewBusy] = useState(false);
   const [proposalApprovalBusy, setProposalApprovalBusy] = useState(false);
+  const [connectedActionError, setConnectedActionError] = useState<PreparedWorkReviewError | null>(null);
   const [proposalBusy, setProposalBusy] = useState(false);
   const [loading, setLoading] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
+  const [preparationBusy, setPreparationBusy] = useState<PreparationMode | null>(null);
   const [scopeConfirmed, setScopeConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const proposalEpoch = useRef(0);
@@ -57,6 +57,7 @@ export function OperatorView({
     setConnectedPreviewError(null);
     setConnectedPreviewBusy(false);
     setProposalApprovalBusy(false);
+    setConnectedActionError(null);
   }, []);
 
   useEffect(() => {
@@ -164,8 +165,41 @@ export function OperatorView({
 
   const view = inspection ? inspectionView(inspection) : exampleView(example);
   const currentState = automationProposal?.state || preparedWork?.state || view.workState;
+  const stagedAcquisition = preparedWork?.preparationMode === 'connected-acquisition';
   const confirmingEffects = configuration?.effectPolicies.filter((policy) => policy.mode === 'confirm') || [];
+  const preparedHeldReasonCodes = preparedWork ? [...new Set(preparedWork.preview.collections.flatMap((collection) => (
+    collection.rows.flatMap((row) => row.actions
+      .filter((action) => action.state === 'held')
+      .map((action) => action.reasonCode))
+  )))].sort() : [];
   const fixtureRuns = useMemo(() => workflow.scenarios.filter((item) => item.execution), [workflow.scenarios]);
+  const preparationModes = workflow.operator?.preparation.modes || [];
+  const containedMode = preparationModes.find(isContainedPreparationMode);
+  const connectedMode = preparationModes.find(isConnectedAcquisitionMode);
+  const exactConfigurationBinding = Boolean(
+    workflow.configuration
+    && configuration
+    && workflow.configuration === configuration.name
+    && workflow.configurationBasis === configuration.configurationBasis
+  );
+  const canPrepareContained = Boolean(
+    workflow.operator?.preparation.supported
+    &&
+    containedMode
+    && exactConfigurationBinding
+    && workflow.configurationBasis
+    && containedMode.configurationBases.includes(workflow.configurationBasis)
+  );
+  const canStageConnectedAcquisition = Boolean(
+    workflow.operator?.preparation.supported
+    &&
+    connectedMode
+    && exactConfigurationBinding
+    && workflow.configurationBasis === 'private-active'
+    && configuration?.configurationBasis === 'private-active'
+    && connectedMode.configurationBases.includes('private-active')
+    && connectedMode.availability.state === 'available'
+  );
   const proposalMaterialReady = Boolean(automationProposal && automationProposalMaterial && configuration?.lockFingerprint
     && automationProposalMaterialBound(automationProposal, automationProposalMaterial, configuration.name, configuration.lockFingerprint));
 
@@ -173,24 +207,29 @@ export function OperatorView({
     if (!inspection || inspection.approval.state !== 'awaiting' || !scopeConfirmed) return;
     setActionBusy(true);
     setError(null);
-    try {
-      const approvalId = inspection.approval.request.id.replace(/^approval-request\./, 'approval.');
-      const next = await window.soterStudio.confirmConnectedApproval({
-        requestId: inspection.approval.request.id,
-        approvalId,
-        confirmed: true,
-        reason: 'Approved in Soter Studio after exact-scope review'
-      });
-      setInspection(next);
+    setConnectedActionError(null);
+    const approvalId = inspection.approval.request.id.replace(/^approval-request\./, 'approval.');
+    const result = await window.soterStudio.confirmConnectedApproval({
+      requestId: inspection.approval.request.id,
+      approvalId,
+      confirmed: true,
+      reason: 'Approved in Soter Studio after exact-scope review'
+    }).catch((): ConnectedOperatorActionResult => ({
+      ok: false,
+      error: {
+        code: 'CONNECTED_APPROVAL_CONFIRM_ADAPTER_UNAVAILABLE',
+        message: 'The exact connected approval could not be confirmed.'
+      }
+    }));
+    if (result.ok) {
+      setInspection(result.inspection);
       setApprovalReviewMaterial(null);
       setApprovalReviewError(null);
       setScopeConfirmed(false);
-      onChanged();
-    } catch (reason) {
-      setError(message(reason));
-    } finally {
-      setActionBusy(false);
+    } else {
+      setConnectedActionError(result.error);
     }
+    setActionBusy(false);
   }
 
   async function startTransaction() {
@@ -198,17 +237,23 @@ export function OperatorView({
     if (!approvalId) return;
     setActionBusy(true);
     setError(null);
-    try {
-      const next = await window.soterStudio.startConnectedTransaction({ approvalId });
-      setInspection(next);
+    setConnectedActionError(null);
+    const result = await window.soterStudio.startConnectedTransaction({ approvalId })
+      .catch((): ConnectedOperatorActionResult => ({
+        ok: false,
+        error: {
+          code: 'CONNECTED_TRANSACTION_START_ADAPTER_UNAVAILABLE',
+          message: 'The exact connected transaction could not be started.'
+        }
+      }));
+    if (result.ok) {
+      setInspection(result.inspection);
       setApprovalReviewMaterial(null);
       setApprovalReviewError(null);
-      onChanged();
-    } catch (reason) {
-      setError(message(reason));
-    } finally {
-      setActionBusy(false);
+    } else {
+      setConnectedActionError(result.error);
     }
+    setActionBusy(false);
   }
 
   async function prepareReconciliation() {
@@ -223,7 +268,6 @@ export function OperatorView({
       setInspection(next);
       setApprovalReviewMaterial(null);
       setApprovalReviewError(null);
-      onChanged();
     } catch (reason) {
       setError(message(reason));
     } finally {
@@ -231,8 +275,23 @@ export function OperatorView({
     }
   }
 
-  async function prepareRun() {
-    if (!workflow.operator?.preparation.supported || !workflow.configuration) return;
+  async function prepareRun(preparationMode: PreparationMode) {
+    if (!workflow.operator?.preparation.supported
+      || !workflow.configuration
+      || !workflow.configurationBasis
+      || actionBusy) return;
+    const mode = preparationMode === 'contained'
+      ? workflow.operator.preparation.modes.find(isContainedPreparationMode)
+      : workflow.operator.preparation.modes.find(isConnectedAcquisitionMode);
+    if (!mode
+      || !exactConfigurationBinding
+      || (mode.id === 'contained'
+        ? !mode.configurationBases.includes(workflow.configurationBasis)
+        : workflow.configurationBasis !== 'private-active'
+          || !mode.configurationBases.includes('private-active')
+          || mode.availability.state !== 'available')
+      || (preparationMode === 'connected-acquisition'
+        && workflow.configurationBasis !== 'private-active')) return;
     proposalEpoch.current += 1;
     setAutomationProposal(null);
     setAutomationProposalMaterial(null);
@@ -240,6 +299,7 @@ export function OperatorView({
     setAutomationProposalMaterialError(null);
     clearProposalConnectedState();
     setActionBusy(true);
+    setPreparationBusy(preparationMode);
     setError(null);
     setReviewMaterial(null);
     setReviewError(null);
@@ -251,6 +311,8 @@ export function OperatorView({
       const next = await window.soterStudio.prepareAutomationRun({
         automationId: workflow.id,
         configurationName: workflow.configuration,
+        configurationBasis: workflow.configurationBasis,
+        preparationMode,
         input
       });
       setPreparedWork(next);
@@ -260,11 +322,11 @@ export function OperatorView({
       setReviewError(review.ok ? null : review.error);
       setDerivedReviewMaterial(derived?.ok ? derived.material : null);
       setDerivedReviewError(derived && !derived.ok ? derived.error : null);
-      onChanged();
     } catch (reason) {
       setError(message(reason));
     } finally {
       setActionBusy(false);
+      setPreparationBusy(null);
     }
   }
 
@@ -400,7 +462,6 @@ export function OperatorView({
     setApprovalReviewMaterial(privateReview.ok ? privateReview.material : null);
     setApprovalReviewError(privateReview.ok ? null : privateReview.error);
     setScopeConfirmed(false);
-    onChanged();
   }
 
   function endAutomationProposalReview() {
@@ -427,7 +488,7 @@ export function OperatorView({
         </div>
         <div className="operator-mode-stamp">
           <span>{automationProposal ? 'Selected private proposal' : inspection || preparedWork ? 'Local private activity' : 'Sanitized lifecycle example'}</span>
-          <strong>{currentState.replaceAll('-', ' ')}</strong>
+          <strong>{currentState === 'ready-for-acquisition' ? 'staged for acquisition' : currentState.replaceAll('-', ' ')}</strong>
           <code>{configuration?.name || 'not configured'}</code>
         </div>
       </header>
@@ -435,14 +496,16 @@ export function OperatorView({
       <section className="operator-boundary" aria-label="Operator authority boundary">
         <div>
           <span className="eyebrow">Authority boundary</span>
-          <strong>{automationProposal ? 'Automation and Core own this review-only proposal' : preparedWork ? 'Core owns this private preparation receipt' : inspection ? 'Core owns this exact transaction' : 'Example only · no authority'}</strong>
+          <strong>{automationProposal ? 'Automation and Core own this review-only proposal' : stagedAcquisition ? 'Core owns this private acquisition staging receipt' : preparedWork ? 'Core owns this private preparation receipt' : inspection ? 'Core owns this exact transaction' : 'Example only · no authority'}</strong>
           <p>{automationProposal
             ? 'Studio renders one sanitized Automation review and a separately fetched selected-proposal folio. Neither creates operational authority.'
+            : stagedAcquisition
+              ? 'Studio renders the exact staged input and lock binding. No provider call, context acquisition, approval, continuation, readiness, or execution exists.'
             : preparedWork
-            ? 'Studio renders sanitized input, contained context, preview, and evidence facts. The receipt stops before approval or writes.'
-            : inspection
-              ? 'Studio renders one sanitized operator-inspection snapshot. Approval and one-time start remain separate Core operations.'
-              : 'The lifecycle selector demonstrates supported UI states. It cannot approve, start, continue, or prove provider behavior.'}</p>
+              ? 'Studio renders sanitized input, contained context, preview, and evidence facts. The receipt stops before approval or writes.'
+              : inspection
+                ? 'Studio renders one sanitized operator-inspection snapshot. Approval and one-time start remain separate Core operations.'
+                : 'The lifecycle selector demonstrates supported UI states. It cannot approve, start, continue, or prove provider behavior.'}</p>
         </div>
         <BoundaryFact label="Valid" state={snapshot.proof.states.valid} />
         <BoundaryFact label="Ready" state={snapshot.proof.states.ready} />
@@ -562,9 +625,50 @@ export function OperatorView({
               {workflow.operator.inputContract.fields.map((field) => (
                 <OperatorInputControl key={field.id} field={field} value={input[field.id]} onChange={(value) => setInput((current) => ({ ...current, [field.id]: value }))} />
               ))}
-              <button className="operator-prepare-button" type="button" disabled={!workflow.operator.preparation.supported || !workflow.configuration || actionBusy} onClick={prepareRun}>{actionBusy ? 'Preparing contained run…' : workflow.operator.preparation.supported && workflow.configuration ? 'Prepare contained run' : 'Prepare work unavailable'}</button>
+              <div className="operator-preparation-modes" aria-label="Canonical preparation modes">
+                {containedMode && (
+                  <article>
+                    <header><strong>Contained fixture review</strong><code>{containedMode.resultState}</code></header>
+                    <p>{containedMode.boundary}</p>
+                    <button
+                      className="operator-prepare-button"
+                      type="button"
+                      disabled={!canPrepareContained || actionBusy}
+                      onClick={() => prepareRun('contained')}
+                    >
+                      {preparationBusy === 'contained' ? 'Preparing contained run…' : 'Prepare contained run'}
+                    </button>
+                  </article>
+                )}
+                {connectedMode && (
+                  <article className="connected-acquisition-mode">
+                    <header>
+                      <strong>Connected acquisition staging</strong>
+                      <StateMark state={connectedMode.availability.state} compact />
+                    </header>
+                    <p>{connectedMode.boundary}</p>
+                    {connectedMode.availability.state === 'available' ? (
+                      <button
+                        className="operator-prepare-button operator-stage-button"
+                        type="button"
+                        disabled={!canStageConnectedAcquisition || actionBusy}
+                        onClick={() => prepareRun('connected-acquisition')}
+                      >
+                        {preparationBusy === 'connected-acquisition' ? 'Staging connected acquisition…' : 'Stage connected acquisition'}
+                      </button>
+                    ) : (
+                      <small>
+                        {connectedMode.availability.reasonCode} · {connectedMode.availability.reason}
+                      </small>
+                    )}
+                    {connectedMode.availability.state === 'available' && !canStageConnectedAcquisition && (
+                      <small>Requires this canonical mode and an exact private-active configuration binding.</small>
+                    )}
+                  </article>
+                )}
+              </div>
               <small>{workflow.operator.preparation.supported
-                ? 'Core validates these declared inputs, writes one private receipt, performs fixture-contained reads, and stops before approval or writes.'
+                ? 'Each action names its canonical mode. Studio never infers connected staging from the configuration basis.'
                 : 'This Automation has no canonical prepared-work adapter. Input controls create no transition authority.'}</small>
             </section>
           ) : <section className="operator-input-gap"><span className="operator-desk-index">A</span><div><strong>Input contract unavailable</strong><p>Studio will not invent automation fields.</p></div></section>}
@@ -622,8 +726,10 @@ export function OperatorView({
                 <span>Expires</span><time>{view.approval.expiresAt ? formatTime(view.approval.expiresAt) : 'unavailable'}</time>
               </div>}
               {inspection && <div className="approval-decision-cut"><span>Private review fact</span><i aria-hidden="true" /><strong>Separate Core decision</strong></div>}
-              {preparedWork && preparedWork.preview.proposedChanges.length === 0 && <small>{preparedWork.preview.kind === 'meeting-intake-review'
-                ? '0 proposed changes · judgment not performed'
+              {preparedWork && preparedWork.preview.proposedChanges.length === 0 && <small>{preparedHeldReasonCodes.length
+                ? `0 proposed changes · held · ${preparedHeldReasonCodes.join(' · ')}`
+                : preparedWork.preview.kind === 'meeting-intake-review'
+                  ? '0 proposed changes · judgment not performed'
                 : preparedWork.effects.some((effect) => effect.effect === 'write')
                   ? '0 proposed changes · write not proposed'
                   : '0 proposed changes · read-only review'}</small>}
@@ -637,6 +743,13 @@ export function OperatorView({
                 <button type="button" disabled={actionBusy || inspection.configuration.applicability.state !== 'current'} onClick={startTransaction}>{actionBusy ? 'Creating checkpoint…' : 'Consume approval + start'}</button>
               )}
               {inspection?.approval.confirmation && <small>{inspection.approval.confirmation.id} · {inspection.approval.confirmation.actor}</small>}
+              {connectedActionError && (
+                <div className="proposal-connected-error" role="alert">
+                  <strong>{connectedActionError.code}</strong>
+                  {connectedActionError.reasonCode && <code>{connectedActionError.reasonCode}</code>}
+                  <p>{connectedActionError.message}</p>
+                </div>
+              )}
               {error && <p className="operator-confirmation-error" role="alert">{error}</p>}
             </div>
           </section>}
@@ -733,9 +846,9 @@ function exampleView(example: ExampleState) {
     },
     compensation: {
       state: example.compensationState as OperatorInspection['compensation']['state'],
-      plan: scope.compensationPlan,
+      plan: [],
       completedStepIds: [],
-      remainingStepIds: scope.compensationPlan.map((item) => item.stepId),
+      remainingStepIds: [],
       restoredFingerprint: null
     },
     resume: example.resume,
@@ -758,7 +871,7 @@ function exampleView(example: ExampleState) {
 }
 
 function LifecycleStrip({ state, phase }: { state: string; phase: string }) {
-  const phases = ['preparation', 'approval', 'execution', 'reconciliation', 'verification', 'compensation', 'complete'];
+  const phases = ['preparation', 'approval', 'execution', 'reconciliation', 'verification', 'complete'];
   return <ol className="operator-lifecycle-strip" aria-label="Projected operator lifecycle">{phases.map((item, index) => <li key={item} className={item === phase ? 'current' : ''} aria-current={item === phase ? 'step' : undefined}><span>{String(index + 1).padStart(2, '0')}</span><strong>{item}</strong>{item === phase && <small>{state}</small>}</li>)}</ol>;
 }
 
@@ -860,6 +973,44 @@ function CompensationLedger({ compensation }: { compensation: ReturnType<typeof 
 function approvalTitle(state: string) {
   const titles: Record<string, string> = { awaiting: 'Awaiting exact approval', expired: 'Approval request expired', confirmed: 'Approved · not started', consumed: 'Approval consumed once', 'not-issued': 'Prepared work · request unavailable' };
   return titles[state] || state.replaceAll('-', ' ');
+}
+
+function isContainedPreparationMode(
+  mode: OperatorPreparationMode
+): mode is Extract<OperatorPreparationMode, { id: 'contained' }> {
+  return mode.id === 'contained'
+    && mode.resultState === 'ready-for-review'
+    && exactAvailability(mode.availability, 'available')
+    && mode.configurationBases.length === 2
+    && mode.configurationBases[0] === 'tracked-contained'
+    && mode.configurationBases[1] === 'private-active';
+}
+
+function isConnectedAcquisitionMode(
+  mode: OperatorPreparationMode
+): mode is Extract<OperatorPreparationMode, { id: 'connected-acquisition' }> {
+  return mode.id === 'connected-acquisition'
+    && mode.resultState === 'ready-for-acquisition'
+    && exactAvailability(mode.availability)
+    && mode.configurationBases.length === 1
+    && mode.configurationBases[0] === 'private-active';
+}
+
+function exactAvailability(
+  value: OperatorPreparationMode['availability'],
+  expectedState?: 'available'
+) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  if (value.state === 'available') {
+    return (!expectedState || expectedState === 'available')
+      && Object.keys(value).length === 1;
+  }
+  return !expectedState
+    && value.state === 'unavailable'
+    && Object.keys(value).sort().join(',') === 'reason,reasonCode,state'
+    && /^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$/.test(value.reasonCode)
+    && typeof value.reason === 'string'
+    && value.reason.length >= 20;
 }
 
 function readable(value: string) {

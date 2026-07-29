@@ -62,6 +62,26 @@ Host adapters project one resolved configuration into a host's native
 instructions and tools. Automations remain provider-neutral and never depend on
 host-qualified MCP tool names.
 
+Portable Context ownership follows domain meaning rather than the current layout
+of any provider workspace:
+
+| Context pack | Owns |
+|---|---|
+| `context.crm` | Organizations, people, customer relationships, and CRM identity |
+| `context.projects` | Projects, milestones, embedded work items, status, Decisions, Questions, and Project policy |
+| `context.tasks` | Tasks, assignees, dates, lifecycle, and Task policy |
+| `context.meetings` | Meetings, participants, commitments, summaries, and transcript relationships |
+| `context.communications` | Provider-neutral communication scopes, conversations, participants, private untrusted content, and cross-context links |
+| `context.communications.collaboration` | Workspace, channel, DM, thread, message, channel-directory, and ingestion-policy meaning |
+| `context.email` | Mailbox windows, RFC822 identity, reduction, labels, drafts, triage, and the send-prohibited boundary |
+
+These packs are independently selectable. Optional cross-domain links use typed
+resource identities: a Project may reference an Organization, a Task may reference
+a Project, and a Meeting or communication may reference any of them.
+`integration.notion` maps each selected portable record family to the databases
+configured by the user; Notion's database grouping never decides Context
+ownership. Provider members do not automatically become CRM people.
+
 ## The app
 
 Soter Studio is the developer-launched desktop view of the same contracts used
@@ -128,6 +148,12 @@ system-level truth, not the selected work item's lifecycle state.
   capabilities and records the exact basis used for a run.
 - **Generated operator inputs.** Automation packs declare typed fields that
   Studio renders mechanically instead of receiving workflow-specific UI rules.
+- **Governed development workflows.** Seven retained authoring, evaluation, and
+  promotion workflows use closed `workflow-definition/v2`, `workflow-guide/v2`,
+  evaluation-set, development-request, and development-result contracts. A
+  definition is explicitly `definition-only`, `active-host-guided`, or `retired`;
+  only an evidence-qualified active guide may be realized into a host's private
+  skill directory. A guide never grants provider, approval, or execution authority.
 - **Private prepared work.** Studio and the CLI can validate inputs, perform
   fixture-contained reads, and produce review material without creating write
   authority.
@@ -136,6 +162,10 @@ system-level truth, not the selected work item's lifecycle state.
   verification, recovery, and bounded compensation.
 - **Honest proof states.** Local fixtures, provider probes, scenario evidence,
   readiness, verification, and health remain distinct claims.
+- **Closed legacy migration record.** The final-v1 source inventory is retained
+  only as 143 exact migrated-or-retired tombstones with evidence-bound target
+  authority or explicit retirement. No checked-in host projection, old checker,
+  compatibility reader, or legacy content tree is an operational fallback.
 - **Read-only workbenches.** Studio can inspect configuration changes, host
   realization, local releases, bundles, diagnostics, and evidence boundaries
   without silently obtaining execution authority.
@@ -149,9 +179,19 @@ turn displayed guidance into authority.
 
 | Automation | Demonstrates | Current stop boundary |
 |---|---|---|
-| **Project Pulse** | Grounded project, task, milestone, and policy inspection | Read-only; proposes no changes |
-| **Meeting Intake** | Transcript and CRM grounding, cited judgment, exact task disposition, and approval-bound transaction mechanics | Contained preparation stops before judgment and writes; connected behavior requires separate evidence |
-| **Task Capture** | Pack-owned inputs, exact project resolution, normalized policy, bounded deduplication, and a create preview | Stops before change set, approval, connected call, or provider write |
+| **Project Pulse** | Exact policy/project/task/document grounding, real milestone/work-item grammar, promoted-task progress, human-owned health review, complete-group approval, single-use start, ordered writes, and exact verification | Contained host simulation passes; health is checked rather than inferred, the two writes are ordered but not externally atomic, and live Notion permission, behavior, readiness, verification, and health remain unknown |
+| **Meeting Intake** | Transcript plus independent Meetings, CRM, Projects, and Tasks grounding; cited judgment; exact task disposition; complete-group private review; approval; single-use start; and verified task-fold/summary sequencing | Contained host simulation passes; live transcript/Notion permission, behavior, judgment quality, readiness, verification, and health remain unknown |
+| **Task Capture** | Exact project and authenticated-self resolution, governed policy, bounded deduplication, private proposal review, exact approval, single-use start, and verified create sequencing | Contained simulation passes. One exact Claude canary completed and verified. One Codex canary write was separately read-back verified under the corrected decoder, while its immutable pre-fix checkpoint remains `needs-attention`; these observations do not establish broad readiness or health |
+| **Organization Capture** | Current-schema classification, sector/tag separation, alias-aware deduplication, private proposal review, exact approval, single-use start, and verified organization creation | Contained host simulation passes; live Notion permission, behavior, readiness, verification, and health remain unknown |
+| **Contact Capture** | Current Role/Status/Disposition/Authority/Tag observation, exact option matching, optional organization resolution, email-or-name deduplication, private proposal review, exact approval, single-use start, and verified person creation | Unmatched optional values are omitted and flagged; contained host simulation passes while live Notion permission, behavior, readiness, verification, and health remain unknown |
+| **Drive Filing** | Exact registered-location policy, artifact metadata without content, current document schema, bounded duplicate reads, private placement/index review, provisional inbox handling, and human-only move instructions | Preparation-only: no connected shortcut or cross-provider index compiler, no approval/continuation, and no provider write; live Drive/Notion behavior remains unknown |
+| **Feature Capture** | Required why, exact configured-board policy and current schema, deterministic type-specific body, bounded duplicate review, and private selected-work material | Preparation-only: dynamic embedded-board discovery and connected create authority are intentionally unavailable; live Notion behavior remains unknown |
+| **Feature Definition** | Exact existing feature/body grounding, deterministic governed-section replacement, and mechanical preservation of why, Planned status, and relationships | Preparation-only: arbitrary templates, status mutation, approval/continuation, and connected update authority are unavailable; live Notion behavior remains unknown |
+| **Repository Review** | Bounded source-backed capability review, exact Product duplicate comparison, and private Feature Capture handoffs | Preparation-only: no tooling page, Product write, handoff execution, approval, or continuation; connected repository behavior remains unknown |
+| **Slack Channel Ingestion** | Complete channel identity review followed by exact selected-channel member enrichment, bot exclusion, and grounded CRM handoffs | Preparation and private plan compilation only: no Slack message or mutation capability, and no approval or execution authority is created by preparation |
+| **Slack Conversation Review** | Policy-bounded selected-channel reads, complete pagination, exact rooted or selected threads, injection surfacing, and private selected-work content | Fixture-contained only today. Connected acquisition is mechanically unavailable because current message/thread routes return presentation prose instead of closed records and cursor facts; no Slack write, persistence proposal, approval, continuation, or retry authority exists |
+| **Process Capture** | Exact Process policy and current schema grounding, role/service resolution, governed options, deterministic body construction, duplicate review, and explicit Task separation | Preparation-only: one fingerprint-only create may be reviewed, but no connected compiler, approval, continuation, or provider write exists |
+| **Process Red Team** | Exact process/policy/schema/run grounding, five governed review lenses, reproduced criticals, ranked private findings, and explicit auto-fix refusal | Report-only preparation: no write or dispatch capability, proposal, approval, continuation, or recovery authority exists |
 | **Email Triage** | Bounded mailbox reduction, injection-resistant review, private drafts and handoffs, exact review subsets, and draft-only effects | No send capability; connected writes remain approval- and checkpoint-bound |
 
 These slices use the same generic Core boundary. Their fixture evidence proves
@@ -173,14 +213,55 @@ npm run soter:studio:dev
 The Studio command launches an unbundled developer app against the current
 repository. It is not a packaged installer.
 
+Use the [connected developer-acceptance runbook](soter/acceptance/CONNECTED.md)
+for exact private configuration, host realization, transient provider-call,
+Task Capture, recovery, and claim boundaries. It is interactive by design and
+does not turn host authentication or provider calls into Core-owned authority.
+
+## Work-owned connected acquisition
+
+Connected Context acquisition starts from one exact `operator-prepare` work
+item created against `configurationBasis=private-active`. The seven workflow
+prepare commands accept only that prepared-work ID:
+
+```text
+context-connected-prepare
+email-context-connected-prepare
+task-context-connected-prepare
+organization-context-connected-prepare
+project-capture-context-connected-prepare
+contact-context-connected-prepare
+project-context-connected-prepare
+```
+
+Use `--work WORK_ID`; do not supply a lock, run, mailbox query, provider
+snapshot, or other source selector. Core reloads the selected work and its
+private review material, derives the exact private desired configuration,
+current active lock, host, and Core-owned durable run, and then prepares the
+bounded reads. An internally supplied time or expected-host assertion can
+revalidate that selection but cannot replace it.
+
+The same rule applies below the workflow adapters. Generic capability and
+operation-plan preparation is internal to Core and may reference only the exact
+Core-created `0600` run under `.soter/state/runs`; no public CLI or MCP method
+may originate an arbitrary capability or plan. The fixed provider-probe
+preparation boundary remains public, but it cannot adopt a run document
+authored in the repository or accept a caller-selected run path. Preparation
+creates no approval, one-time start, provider-write, readiness, verification,
+or health claim.
+
 ## Verify the repository
 
-Run the applicable legacy and target checks before treating a change as proven:
+Run the target checks before treating a change as proven:
 
 ```bash
-node .claude/scripts/check.mjs --all
+npm run soter:legacy-transition:selftest
+npm run soter:legacy-transition:check
+npm run soter:legacy-inventory:check
 node soter/kernel/verify.mjs --selftest
 node soter/kernel/verify.mjs
+npm run soter:development-governance:selftest
+npm run soter:legacy-foundations:selftest
 node soter/core/cli.mjs selftest
 node soter/core/cli.mjs fixtures --check
 node soter/core/cli.mjs doctor \
@@ -191,7 +272,9 @@ npm run soter:studio:e2e
 
 The offline doctor may correctly report `ready=unknown`, `verified=unknown`, or
 `healthy=unknown`. Unknown is an honest result, not a generic failure or a green
-claim.
+claim. The two Harness Development Catalog finalization locks are immutable
+historical workflow-evidence bases, so Kernel verifies them but the operational
+doctor and workspace configuration views intentionally exclude them.
 
 For detailed CLI, MCP, probe, operation-plan, connected transaction, and Studio
 developer workflows, see [soter/README.md](./soter/README.md).
@@ -199,7 +282,6 @@ developer workflows, see [soter/README.md](./soter/README.md).
 ## Repository map
 
 ```text
-.claude/                 Working legacy Claude implementation
 soter/
   kernel/                Contract graph validation and verification
   core/                  Resolution, runtime, checkpoints, evidence, CLI, MCP
@@ -218,17 +300,14 @@ Private resumable runtime state lives under `.soter/state`. It is ignored by
 Git and must not be copied into packs, fixtures, commits, or shared
 configurations.
 
-## Migration direction
+## Migration record
 
-The `soter/` tree is the v2 target architecture. The `.claude/` tree remains the
-working legacy implementation until each behavior is explicitly mapped,
-reimplemented or retired, and proven against the target contracts.
-
-The next cleanup line is v2.1: inventory the remaining legacy systems, map each
-one to Kernel, Core, Context, Automation, Integration, or host responsibility,
-standardize it on the target format, and remove a fallback only after its
-replacement has equivalent or intentionally changed evidence. Legacy files are
-inputs to that migration—not additional canonical layers.
+`soter/` is the only operational architecture. `legacy-inventory/v2`, the
+checker-transition catalog, and migration evidence preserve the exact v1 source
+fingerprints and the decision that moved or retired each responsibility. They are
+audit records, not executable fallbacks. Codex and Claude instructions, MCP
+configuration, and active skills are generated into private consumer roots by
+governed host realization; generated outputs never become canonical definitions.
 
 ## Documentation
 
@@ -259,6 +338,13 @@ The target is intentionally conservative:
 - learning produces scoped candidates that must pass their own evidence and
   promotion gates.
 
-The next major proof is a systematic v2.1 migration of legacy behavior onto the
-same target contracts, with fallbacks retired only after explicit parity or an
-intentional behavior change is validated.
+The retired v1 implementation remains recoverable from the external repository
+archive, but it is not consulted at runtime, during configuration resolution, or
+by normal repository verification. The final inventory and migration evidence
+preserve source fingerprints, target bindings, parity or intentional-change
+decisions, and fallback removal without preserving a second executable system.
+
+Private host outputs are deliberately absent from Git. A developer or test
+consumer selects an exact configuration and realizes Codex or Claude files into
+an isolated consumer root. Existing unmanaged files are collisions, not inputs
+to generation, and generated files never become canonical source.

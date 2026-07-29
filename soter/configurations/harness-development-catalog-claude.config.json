@@ -1,0 +1,316 @@
+{
+  "$contract": "soter://contracts/configuration/v1",
+  "contractVersion": "1.0.0",
+  "name": "harness-development-catalog-claude",
+  "base": {
+    "kernel": "kernel.soter",
+    "core": "core.runtime"
+  },
+  "packs": [
+    {
+      "id": "context.crm",
+      "source": "user",
+      "reason": "Select portable CRM organization, person, relationship, and identity meaning without enabling provider or runtime behavior."
+    },
+    {
+      "id": "context.projects",
+      "source": "user",
+      "reason": "Select portable Project, milestone, work-item, Decision, Question, and Project-policy meaning without enabling provider or runtime behavior."
+    },
+    {
+      "id": "context.tasks",
+      "source": "user",
+      "reason": "Select portable Task, assignee, date, lifecycle, and Task-policy meaning without enabling provider or runtime behavior."
+    },
+    {
+      "id": "context.meetings",
+      "source": "user",
+      "reason": "Select portable Meeting, participant, commitment, summary, and transcript-relationship meaning without enabling provider or runtime behavior."
+    },
+    {
+      "id": "context.calendar",
+      "source": "user",
+      "reason": "Select the portable standing-commitment definition without enabling provider or synchronization behavior."
+    },
+    {
+      "id": "context.docs",
+      "source": "user",
+      "reason": "Select the portable document-index definition without enabling provider behavior."
+    },
+    {
+      "id": "context.onchain",
+      "source": "user",
+      "reason": "Select the portable public-account definition without enabling signing or transaction behavior."
+    },
+    {
+      "id": "context.policy",
+      "source": "dependency",
+      "reason": "Policy authoring and schema audit depend on one portable policy-standard shape."
+    },
+    {
+      "id": "context.product",
+      "source": "user",
+      "reason": "Select portable product and feature meaning without enabling provider or runtime behavior."
+    },
+    {
+      "id": "context.resources",
+      "source": "dependency",
+      "reason": "Resource validation depends on one portable resource record model."
+    },
+    {
+      "id": "context.sky",
+      "source": "user",
+      "reason": "Select the portable Sky terminology shape without enabling operational behavior."
+    },
+    {
+      "id": "automation.auditing-a-schema-doc",
+      "source": "user",
+      "reason": "Select the normalized development workflow definition without enabling runtime behavior."
+    },
+    {
+      "id": "automation.authoring-a-policy-standard",
+      "source": "user",
+      "reason": "Select the normalized development workflow definition without enabling runtime behavior."
+    },
+    {
+      "id": "automation.forge",
+      "source": "user",
+      "reason": "Select the normalized development workflow definition without enabling runtime behavior."
+    },
+    {
+      "id": "automation.promoting-pieces",
+      "source": "user",
+      "reason": "Select the normalized development workflow definition without enabling runtime behavior."
+    },
+    {
+      "id": "automation.pushing-to-notion",
+      "source": "user",
+      "reason": "Select the normalized development workflow definition without enabling runtime behavior."
+    },
+    {
+      "id": "automation.reviewing-forge-output",
+      "source": "user",
+      "reason": "Select the normalized development workflow definition without enabling runtime behavior."
+    },
+    {
+      "id": "automation.running-evals",
+      "source": "user",
+      "reason": "Select the normalized development workflow definition without enabling runtime behavior."
+    },
+    {
+      "id": "automation.updating-a-notion-page",
+      "source": "user",
+      "reason": "Select the normalized development workflow definition without enabling runtime behavior."
+    },
+    {
+      "id": "automation.validating-resources",
+      "source": "user",
+      "reason": "Select the normalized development workflow definition without enabling runtime behavior."
+    },
+    {
+      "id": "automation.writing-adrs",
+      "source": "user",
+      "reason": "Select the normalized development workflow definition without enabling runtime behavior."
+    }
+  ],
+  "bindings": [],
+  "sources": [],
+  "authorities": [
+    {
+      "id": "authority.harness-development-catalog.crm-definition",
+      "role": "definition",
+      "subject": "crm.records",
+      "uri": "soter-fixture://configuration-template/harness-development-catalog/crm-definition",
+      "reason": "The contained catalog binds the portable CRM definition only."
+    },
+    {
+      "id": "authority.harness-development-catalog.crm-instance",
+      "role": "instance",
+      "subject": "crm.records",
+      "uri": "soter-fixture://configuration-template/harness-development-catalog/crm-instance",
+      "reason": "The contained catalog supplies no real CRM records or provider authority."
+    },
+    {
+      "id": "authority.harness-development-catalog.projects-definition",
+      "role": "definition",
+      "subject": "projects.records",
+      "uri": "soter-fixture://configuration-template/harness-development-catalog/projects-definition",
+      "reason": "The contained catalog binds the portable Projects definition only."
+    },
+    {
+      "id": "authority.harness-development-catalog.projects-instance",
+      "role": "instance",
+      "subject": "projects.records",
+      "uri": "soter-fixture://configuration-template/harness-development-catalog/projects-instance",
+      "reason": "The contained catalog supplies no real Project records or provider authority."
+    },
+    {
+      "id": "authority.harness-development-catalog.tasks-definition",
+      "role": "definition",
+      "subject": "tasks.records",
+      "uri": "soter-fixture://configuration-template/harness-development-catalog/tasks-definition",
+      "reason": "The contained catalog binds the portable Tasks definition only."
+    },
+    {
+      "id": "authority.harness-development-catalog.tasks-instance",
+      "role": "instance",
+      "subject": "tasks.records",
+      "uri": "soter-fixture://configuration-template/harness-development-catalog/tasks-instance",
+      "reason": "The contained catalog supplies no real Task records or provider authority."
+    },
+    {
+      "id": "authority.harness-development-catalog.meetings-definition",
+      "role": "definition",
+      "subject": "meetings.records",
+      "uri": "soter-fixture://configuration-template/harness-development-catalog/meetings-definition",
+      "reason": "The contained catalog binds the portable Meetings definition only."
+    },
+    {
+      "id": "authority.harness-development-catalog.meetings-instance",
+      "role": "instance",
+      "subject": "meetings.records",
+      "uri": "soter-fixture://configuration-template/harness-development-catalog/meetings-instance",
+      "reason": "The contained catalog supplies no real Meeting records or provider authority."
+    },
+    {
+      "id": "authority.harness-development-catalog.calendar-definition",
+      "role": "definition",
+      "subject": "calendar.records",
+      "uri": "soter-fixture://configuration-template/harness-development-catalog/calendar-definition",
+      "reason": "The contained catalog binds the portable Calendar definition only."
+    },
+    {
+      "id": "authority.harness-development-catalog.calendar-instance",
+      "role": "instance",
+      "subject": "calendar.records",
+      "uri": "soter-fixture://configuration-template/harness-development-catalog/calendar-instance",
+      "reason": "The contained catalog supplies no real commitment records or scheduling authority."
+    },
+    {
+      "id": "authority.harness-development-catalog.docs-definition",
+      "role": "definition",
+      "subject": "documents.records",
+      "uri": "soter-fixture://configuration-template/harness-development-catalog/docs-definition",
+      "reason": "The contained catalog binds the portable Docs definition only."
+    },
+    {
+      "id": "authority.harness-development-catalog.docs-instance",
+      "role": "instance",
+      "subject": "documents.records",
+      "uri": "soter-fixture://configuration-template/harness-development-catalog/docs-instance",
+      "reason": "The contained catalog supplies no real document records or provider authority."
+    },
+    {
+      "id": "authority.harness-development-catalog.onchain-definition",
+      "role": "definition",
+      "subject": "onchain.records",
+      "uri": "soter-fixture://configuration-template/harness-development-catalog/onchain-definition",
+      "reason": "The contained catalog binds the portable Onchain definition only."
+    },
+    {
+      "id": "authority.harness-development-catalog.onchain-instance",
+      "role": "instance",
+      "subject": "onchain.records",
+      "uri": "soter-fixture://configuration-template/harness-development-catalog/onchain-instance",
+      "reason": "The contained catalog supplies no real account records or signing authority."
+    },
+    {
+      "id": "authority.harness-development-catalog.policy-definition",
+      "role": "definition",
+      "subject": "policy.standard",
+      "uri": "soter-fixture://configuration-template/harness-development-catalog/policy-definition",
+      "reason": "The contained catalog binds the portable Policy definition only."
+    },
+    {
+      "id": "authority.harness-development-catalog.policy-instance",
+      "role": "instance",
+      "subject": "policy.standard",
+      "uri": "soter-fixture://configuration-template/harness-development-catalog/policy-instance",
+      "reason": "The contained catalog supplies no real policy-standard records or provider authority."
+    },
+    {
+      "id": "authority.harness-development-catalog.resources-definition",
+      "role": "definition",
+      "subject": "resources.records",
+      "uri": "soter-fixture://configuration-template/harness-development-catalog/resources-definition",
+      "reason": "The contained catalog binds the portable Resources definition only."
+    },
+    {
+      "id": "authority.harness-development-catalog.product-definition",
+      "role": "definition",
+      "subject": "product.records",
+      "uri": "soter-fixture://configuration-template/harness-development-catalog/product-definition",
+      "reason": "The contained catalog binds the portable Product definition only."
+    },
+    {
+      "id": "authority.harness-development-catalog.product-instance",
+      "role": "instance",
+      "subject": "product.records",
+      "uri": "soter-fixture://configuration-template/harness-development-catalog/product-instance",
+      "reason": "The contained catalog supplies no real product records or provider authority."
+    },
+    {
+      "id": "authority.harness-development-catalog.resources-instance",
+      "role": "instance",
+      "subject": "resources.records",
+      "uri": "soter-fixture://configuration-template/harness-development-catalog/resources-instance",
+      "reason": "The contained catalog supplies no real resource records or credential authority."
+    },
+    {
+      "id": "authority.harness-development-catalog.sky-definition",
+      "role": "definition",
+      "subject": "sky.records",
+      "uri": "soter-fixture://configuration-template/harness-development-catalog/sky-definition",
+      "reason": "The contained catalog binds the portable Sky terminology definition only."
+    },
+    {
+      "id": "authority.harness-development-catalog.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "uri": "soter-state://runs",
+      "reason": "Core retains its required evidence authority without granting any definition-only workflow runtime authority."
+    }
+  ],
+  "effectPolicies": {
+    "read": {
+      "mode": "allow",
+      "reason": "Exact private development requests may read their bound contained workspace; this grants no provider-read authority."
+    },
+    "disclosure": {
+      "mode": "prohibit",
+      "reason": "The definition-only development catalog prohibits disclosure effects."
+    },
+    "write": {
+      "mode": "allow",
+      "reason": "Exact private development requests may write only inside their bound contained worker workspace."
+    },
+    "dispatch": {
+      "mode": "allow",
+      "reason": "Exact private evaluation requests may dispatch fresh contained host workers through a separately trusted host executor."
+    },
+    "destructive": {
+      "mode": "prohibit",
+      "reason": "The definition-only development catalog prohibits destructive effects."
+    }
+  },
+  "secretRefs": [],
+  "host": {
+    "id": "claude",
+    "adapter": "host.claude",
+    "version": "0.3.1",
+    "reason": "Bind exact private development evaluations to the governed Claude host without claiming host realization, provider authority, readiness, verification, or health."
+  },
+  "settings": {
+    "kernel.soter": {
+      "sessionIsolation": "one-session-one-worktree-one-branch",
+      "rootCheckout": "main-read-only",
+      "baseRef": "origin/main",
+      "landingPolicy": "merge-commit-after-human-gate",
+      "publicationPolicy": "explicit-user-authorization",
+      "sequentialIdentifierScope": "main-and-all-live-worktrees",
+      "stagingScope": "named-paths-only",
+      "externalStateIsolation": "shared-not-worktree-isolated",
+      "credentialPropagation": "worktreeinclude-local-only"
+    }
+  }
+}

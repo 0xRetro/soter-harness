@@ -1,0 +1,185 @@
+{
+  "$contract": "soter://contracts/evidence/v2",
+  "contractVersion": "2.0.0",
+  "id": "evidence.repository-review.legacy-pressure-dump-all-migration.fixture",
+  "createdAt": "2026-07-21T20:00:00.000Z",
+  "claimFamily": "migration",
+  "claim": "The exact target becomes canonical for this legacy responsibility and its fallback may be removed under the recorded parity decision; a mixed source artifact may remain only for separately unfinished responsibilities.",
+  "subject": {
+    "type": "pack",
+    "id": "automation.repository-review",
+    "version": "0.1.0"
+  },
+  "configurationLockFingerprint": "sha256:f30e15eb72dd6ed664e5b2ee1f29f5802e014180122c5036d2982aece73a7c5a",
+  "graphFingerprint": "sha256:ebc7bc5da6af667182057799821250706c809c390dd1ea57e151c37a5039b754",
+  "dependencies": [
+    {
+      "id": "kernel.soter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+    },
+    {
+      "id": "core.runtime",
+      "version": "0.1.0",
+      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+    },
+    {
+      "id": "context.product",
+      "version": "0.1.0",
+      "fingerprint": "sha256:962e1ee9a1d70e1ffc1e5dd2118c6264817115e1030ece09d50c8700d25525c9"
+    },
+    {
+      "id": "automation.repository-review",
+      "version": "0.1.0",
+      "fingerprint": "sha256:1083a2ff9d155594e9cc9a7ef0f8b76a00af24956c9625bd0207d660430749bb"
+    },
+    {
+      "id": "integration.local-repository",
+      "version": "0.1.0",
+      "fingerprint": "sha256:e25565edcb5907b79742fa83b7b0d8c2248e5fa4edd9656482441cb297e79269"
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "fingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
+  },
+  "integrations": [
+    {
+      "id": "integration.local-repository",
+      "version": "0.1.0",
+      "manifestFingerprint": "sha256:e25565edcb5907b79742fa83b7b0d8c2248e5fa4edd9656482441cb297e79269",
+      "evidenceMaturity": "declared"
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "manifestFingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5",
+      "evidenceMaturity": "declared"
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "declarationFingerprint": "sha256:98fd45b601c22716464315cbbc969b87e603026880645bd7695fcc90029d1d44"
+    },
+    {
+      "id": "authority.product.definition",
+      "role": "definition",
+      "subject": "product.records",
+      "declarationFingerprint": "sha256:b684b06cd81025f9200595cb311a091e023a5dc0226e888c51c92ef47f26fabc"
+    },
+    {
+      "id": "authority.product.instance",
+      "role": "instance",
+      "subject": "product.records",
+      "declarationFingerprint": "sha256:2dda21f1d42f1557b4239048540e7317ff2bf2e4c2a48215c8e1e27878f3c1a1"
+    },
+    {
+      "id": "authority.repository.instance",
+      "role": "instance",
+      "subject": "repository.source",
+      "declarationFingerprint": "sha256:b6e43b564aefec3b03c5db900b13bc2c5225075b03fb130c0f4d902295c765d1"
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "declarationFingerprint": "sha256:74c8fdd14e981038f959c469d6709fe66186b5f854f5f337f65bc67a6e7926c0"
+    }
+  ],
+  "evaluator": {
+    "id": "kernel.legacy-migration-completion",
+    "version": "1.0.0",
+    "level": "fixture"
+  },
+  "environment": {
+    "containment": "fixture",
+    "runtime": "node"
+  },
+  "acceptanceCriteria": [
+    "The exact migration target is selected by and fingerprinted in the current configuration lock.",
+    "Every artifact labeled as same-lock supporting evidence passed against the exact configuration lock and stable semantic graph; separately labeled supporting artifacts are fingerprint-bound without a same-lock claim.",
+    "The complete inventory records the exact target authority or retirement, parity decision, fallback removal, evidence reference, and either a completed source tombstone or one completed responsibility inside a retained mixed source.",
+    "No retained legacy artifact requires this removed Repository Review evaluation by exact path.",
+    "The exact target scenario retains this tombstoned source-case identity and current fixture evidence passes every case-specific outcome, invariant, and evidence check."
+  ],
+  "result": "passed",
+  "outcomes": [
+    {
+      "id": "migration-disposition",
+      "state": "migrated"
+    },
+    {
+      "id": "migration-parity",
+      "state": "intentional-change"
+    },
+    {
+      "id": "target-selected-in-exact-lock",
+      "state": "passed"
+    },
+    {
+      "id": "supporting-evidence-current",
+      "state": "passed"
+    },
+    {
+      "id": "authority-transition-explicit",
+      "state": "passed"
+    },
+    {
+      "id": "legacy-dependencies-cleared",
+      "state": "passed"
+    },
+    {
+      "id": "exact-source-case-proven",
+      "state": "passed"
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "migration-source",
+      "path": ".claude/evals/reviewing-a-repo/pressure-dump-all.md",
+      "fingerprint": "sha256:262158774fbe3bd748d27c0967c85884fc3a2cc8d099796c1f8e1a72f4b55172"
+    },
+    {
+      "role": "migration-target",
+      "path": "soter/scenarios/repository-review/preparation.scenario.json",
+      "fingerprint": "sha256:3c2082a73fe41302f6a585044380efb104b80be479d70f094cc72868c86b6381"
+    },
+    {
+      "role": "supporting-evidence",
+      "path": "soter/fixtures/repository-review/preparation.evidence.json",
+      "fingerprint": "sha256:58e756d3659c08dd3930ed49ad3429ceb31cb90fa827effae24cd082397eb398"
+    }
+  ],
+  "effects": [],
+  "failures": [],
+  "warnings": [],
+  "skipped": [
+    "Connected provider readiness, live behavior verification, and current health were not evaluated.",
+    "Removing a legacy source fallback does not grant provider effect or host execution authority."
+  ],
+  "limitations": [
+    "Fixture inputs intentionally replace conversational repository analysis with one exact normalized contained snapshot and no external writes.",
+    "This proves the intentional review/handoff replacement only; connected repository access, Product execution, readiness, verification, and health remain unknown."
+  ],
+  "freshness": {
+    "policy": "Valid only while every configuration-lock fingerprint remains unchanged.",
+    "validUntil": null
+  },
+  "supersedes": null,
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Credential references and credential values are excluded."
+    ]
+  }
+}

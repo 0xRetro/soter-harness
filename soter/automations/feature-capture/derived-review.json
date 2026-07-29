@@ -1,0 +1,22 @@
+{
+  "$contract": "soter://contracts/automation-derived-review/v1",
+  "contractVersion": "1.0.0",
+  "automation": "automation.feature-capture",
+  "kind": "feature-capture-derived-review",
+  "items": [
+    {
+      "kind": "feature-create",
+      "fields": [
+        { "id": "name", "label": "Feature name", "type": "text" },
+        { "id": "why", "label": "Why", "type": "text" },
+        { "id": "whyState", "label": "Why confidence", "type": "text" },
+        { "id": "status", "label": "Lifecycle status", "type": "text" },
+        { "id": "featureType", "label": "Card type", "type": "text" },
+        { "id": "area", "label": "Area", "type": "string-list" },
+        { "id": "priority", "label": "Priority", "type": "string-list" },
+        { "id": "body", "label": "Complete card body", "type": "text" },
+        { "id": "duplicateCandidateIds", "label": "Exact duplicate candidates", "type": "string-list" }
+      ]
+    }
+  ]
+}

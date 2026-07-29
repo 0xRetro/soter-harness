@@ -313,13 +313,24 @@ export async function inspectPreparedConnectedPlan({ root, planId }) {
   return projected;
 }
 
-export async function evaluatePreparedConnectedVerification({ root, planId, operationId, output }) {
+export async function evaluatePreparedConnectedVerification({
+  root,
+  planId,
+  operationId,
+  output
+}) {
   const plan = await inspectPreparedConnectedPlan({ root, planId });
   const operation = plan.operations.find((item) => item.id === operationId);
   if (!operation) {
     throw codedError(
       'PREPARED_CONNECTED_PLAN_BINDING_INVALID',
       'Prepared connected verification requires one exact plan operation.'
+    );
+  }
+  if (Object.hasOwn(operation.verification, 'inputBindings')) {
+    throw codedError(
+      'PREPARED_CONNECTED_PLAN_VERIFICATION_RECEIPT_REQUIRED',
+      'Write-output-bound verification requires a durable connected transaction receipt.'
     );
   }
   const context = readExactContext(path.resolve(root), plan.source.batchId);

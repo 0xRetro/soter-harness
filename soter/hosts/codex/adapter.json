@@ -1,20 +1,29 @@
 {
-  "$contract": "soter://contracts/host-adapter/v1",
-  "contractVersion": "1.0.0",
+  "$contract": "soter://contracts/host-adapter/v2",
+  "contractVersion": "2.0.0",
   "id": "host.codex",
   "host": "codex",
-  "version": "0.1.0",
+  "version": "0.3.1",
   "releaseStage": "experimental",
   "evidenceMaturity": "declared",
   "summary": "Projects resolved Soter behavior into Codex instructions, skills, tools, lifecycle controls, and structured task workflows.",
   "projectionDefinition": {
     "id": "host-projection.codex",
-    "version": "0.1.0",
+    "version": "0.3.0",
     "path": "soter/hosts/codex/projection.json"
   },
   "projections": [
     { "path": "AGENTS.md", "role": "instructions" },
     { "path": ".codex/config.toml", "role": "tools" }
+  ],
+  "projectionCollections": [
+    {
+      "id": "collection.codex.workflow-guides",
+      "role": "skills",
+      "pathPrefix": ".agents/skills/",
+      "sourceContract": "soter://contracts/workflow-guide/v2",
+      "selection": "selected-pack-active"
+    }
   ],
   "mcpServers": [
     {
@@ -32,19 +41,23 @@
       "toolMappings": [
         {
           "logical": "fetch",
-          "native": "mcp__codex_apps__notion_fetch"
+          "native": "mcp__codex_apps__notion_fetch",
+          "responseProfile": "notion.codex.connector.v1"
         },
         {
           "logical": "query_data_sources",
-          "native": "mcp__codex_apps__notion_notion_query_data_sources"
+          "native": "mcp__codex_apps__notion_query_data_sources",
+          "responseProfile": "notion.codex.connector.v1"
         },
         {
           "logical": "create_pages",
-          "native": "mcp__codex_apps__notion_notion_create_pages"
+          "native": "mcp__codex_apps__notion_notion_create_pages",
+          "responseProfile": "notion.codex.connector.v1"
         },
         {
           "logical": "update_page",
-          "native": "mcp__codex_apps__notion_notion_update_page"
+          "native": "mcp__codex_apps__notion_notion_update_page",
+          "responseProfile": "notion.codex.connector.v1"
         }
       ],
       "reason": "The Notion app connector supplies authenticated workspace tools outside repository configuration."
@@ -56,11 +69,13 @@
       "toolMappings": [
         {
           "logical": "fetch",
-          "native": "mcp__otter__fetch"
+          "native": "mcp__otter__fetch",
+          "responseProfile": "otter.mcp.v1"
         },
         {
           "logical": "get_user_info",
-          "native": "mcp__otter__get_user_info"
+          "native": "mcp__otter__get_user_info",
+          "responseProfile": "otter.mcp.v1"
         }
       ],
       "reason": "The adapter maps the Otter route, but the deterministic projection does not embed provider endpoints or authentication configuration."
@@ -72,31 +87,69 @@
       "toolMappings": [
         {
           "logical": "get_profile",
-          "native": "mcp__codex_apps__gmail_get_profile"
+          "native": "mcp__codex_apps__gmail_get_profile",
+          "responseProfile": "gmail.codex.connector.v1"
         },
         {
           "logical": "search_email_ids",
-          "native": "mcp__codex_apps__gmail_search_email_ids"
+          "native": "mcp__codex_apps__gmail_search_email_ids",
+          "responseProfile": "gmail.codex.connector.v1"
         },
         {
           "logical": "batch_read_email_threads",
-          "native": "mcp__codex_apps__gmail_batch_read_email_threads"
+          "native": "mcp__codex_apps__gmail_batch_read_email_threads",
+          "responseProfile": "gmail.codex.connector.v1"
         },
         {
           "logical": "apply_labels_to_emails",
-          "native": "mcp__codex_apps__gmail_apply_labels_to_emails"
+          "native": "mcp__codex_apps__gmail_apply_labels_to_emails",
+          "responseProfile": "gmail.codex.connector.v1"
         },
         {
           "logical": "batch_read_email",
-          "native": "mcp__codex_apps__gmail_batch_read_email"
+          "native": "mcp__codex_apps__gmail_batch_read_email",
+          "responseProfile": "gmail.codex.connector.v1"
         }
       ],
       "reason": "The installed Gmail connector supplies authenticated message-scoped label tools outside repository configuration; declaration does not establish authentication or behavior."
+    },
+    {
+      "id": "slack",
+      "delivery": "connector",
+      "state": "declared",
+      "toolMappings": [
+        {
+          "logical": "list_workspaces",
+          "native": "mcp__codex_apps__slack_slack_list_workspaces",
+          "responseProfile": "slack.codex.connector.v1"
+        },
+        {
+          "logical": "list_user_conversations",
+          "native": "mcp__codex_apps__slack_slack_list_user_conversations",
+          "responseProfile": "slack.codex.connector.v1"
+        },
+        {
+          "logical": "list_channel_members",
+          "native": "mcp__codex_apps__slack_slack_list_channel_members",
+          "responseProfile": "slack.codex.connector.v1"
+        },
+        {
+          "logical": "read_channel",
+          "native": "mcp__codex_apps__slack_slack_read_channel",
+          "responseProfile": "slack.codex.connector.v1"
+        },
+        {
+          "logical": "read_thread",
+          "native": "mcp__codex_apps__slack_slack_read_thread",
+          "responseProfile": "slack.codex.connector.v1"
+        }
+      ],
+      "reason": "The Slack app connector supplies exact read-only workspace, conversation, participant, message, and thread routes outside repository configuration; declaration does not establish discovery, authentication, pagination conformance, readiness, verification, or health."
     }
   ],
   "mechanisms": {
     "instructions": "available",
-    "skills": "declared",
+    "skills": "available",
     "tools": "available",
     "lifecycle": "declared",
     "compactionRehydration": "declared",
@@ -108,6 +161,6 @@
     "scenarios": []
   },
   "limitations": [
-    "The local Core MCP service durably checkpoints calls and detects post-start governed runtime drift, Otter is configured, and current Notion plus Gmail search, thread-read, and label connector tool names are mapped, but clean Codex startup, connector authentication for another installation, real provider dispatch through Soter, Gmail response compatibility, checkpoint recovery by the host, lifecycle judgment, and end-to-end behavior conformance are not proven."
+    "The adapter can deterministically project selected active workflow guides as explicit-only repository skills, but candidate guides remain excluded; clean Codex startup, skill discovery, connector authentication, real provider dispatch through Soter, lifecycle judgment, and end-to-end behavior conformance are not proven."
   ]
 }

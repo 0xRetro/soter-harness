@@ -1,0 +1,129 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "communications.conversations.list",
+  "version": "1.0.0",
+  "purpose": "Lists a complete bounded set of visible communication conversations for one exact provider workspace without reading participants or message content.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "oneOf": [
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["mode", "workspaceId", "kinds", "maximumConversations"],
+        "properties": {
+          "mode": { "const": "visible" },
+          "workspaceId": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "kinds": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "uniqueItems": true,
+            "items": { "enum": ["public-channel", "private-channel", "direct-message", "group-direct-message"] }
+          },
+          "maximumConversations": { "type": "integer", "minimum": 1, "maximum": 200 },
+          "nameContains": { "type": "string", "minLength": 1, "maxLength": 200 }
+        }
+      },
+      {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["mode", "workspaceId", "conversationIds", "maximumConversations", "maximumObservedConversations"],
+        "properties": {
+          "mode": { "const": "exact" },
+          "workspaceId": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "conversationIds": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 50,
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+          },
+          "maximumConversations": { "type": "integer", "minimum": 1, "maximum": 200 },
+          "maximumObservedConversations": { "type": "integer", "minimum": 1, "maximum": 2000 }
+        }
+      }
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["workspace", "conversations", "coverage", "provenance", "observedAt"],
+    "properties": {
+      "workspace": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["providerWorkspaceId", "displayName", "identityFingerprint"],
+        "properties": {
+          "providerWorkspaceId": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "displayName": { "type": ["string", "null"], "minLength": 1, "maxLength": 300 },
+          "identityFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        }
+      },
+      "conversations": {
+        "type": "array",
+        "maxItems": 200,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["providerConversationId", "kind", "name", "visibility", "shared", "permalink", "identityFingerprint", "fingerprint"],
+          "properties": {
+            "providerConversationId": { "type": "string", "minLength": 1, "maxLength": 200 },
+            "kind": { "enum": ["public-channel", "private-channel", "direct-message", "group-direct-message"] },
+            "name": { "type": ["string", "null"], "minLength": 1, "maxLength": 300 },
+            "visibility": { "enum": ["public", "private"] },
+            "shared": { "type": "boolean" },
+            "permalink": { "type": ["string", "null"], "minLength": 3, "maxLength": 2000 },
+            "identityFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+            "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+          }
+        }
+      },
+      "coverage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["complete", "cursorExhausted", "pagesRead", "observedCount", "includedCount", "excludedCount"],
+        "properties": {
+          "complete": { "const": true },
+          "cursorExhausted": { "const": true },
+          "pagesRead": { "type": "integer", "minimum": 1 },
+          "observedCount": { "type": "integer", "minimum": 0 },
+          "includedCount": { "type": "integer", "minimum": 0 },
+          "excludedCount": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "provenance": { "$ref": "#/$defs/provenance" },
+      "observedAt": { "type": "string", "minLength": 20 }
+    },
+    "$defs": {
+      "provenance": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["provider", "authority", "sourceKind", "sourceReferenceFingerprint"],
+        "properties": {
+          "provider": { "type": "string", "minLength": 3 },
+          "authority": { "type": "string", "minLength": 3 },
+          "sourceKind": { "enum": ["fixture", "connected"] },
+          "sourceReferenceFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        }
+      }
+    }
+  },
+  "authentication": { "required": true, "minimumScopes": ["conversations:read"] },
+  "effects": ["read", "disclosure"],
+  "idempotency": { "mode": "not-applicable", "key": null },
+  "retry": { "safe": true, "maxAttempts": 2, "checkpoint": "Persist the exact workspace, selection, and coverage fingerprint before retry." },
+  "errors": ["authentication", "authorization", "validation", "conflict", "rate-limit", "unavailable", "retryable", "not-found", "unknown"],
+  "freshness": { "returnsProvenance": true, "returnsObservedAt": true, "maxAgeSeconds": 300 },
+  "health": {
+    "check": "List one bounded complete contained workspace conversation window.",
+    "fixture": "soter/fixtures/providers/slack/workspace.json",
+    "containedVerification": "Prove exact workspace confinement, kind filtering, exact selection, complete coverage, and structural absence of participant and message content."
+  },
+  "providerLimitations": [
+    "Conversation identities and display metadata are private runtime data and do not authorize participant or message reads.",
+    "Exact selection separates the selected-result bound from a policy-bounded provider-observation allowance so later pages may resolve an exact conversation without silently treating the first page as complete.",
+    "Continuation cursors remain private to Core's bounded page checkpoint; any unaccounted result fails closed instead of being represented as complete."
+  ]
+}

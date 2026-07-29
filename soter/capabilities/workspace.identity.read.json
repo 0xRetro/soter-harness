@@ -1,0 +1,82 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "workspace.identity.read",
+  "version": "1.0.0",
+  "purpose": "Reads the authenticated current workspace-user identity as a private provider-scoped person reference.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["identity"],
+    "properties": {
+      "identity": { "const": "current-user" }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["identity", "provenance", "observedAt"],
+    "properties": {
+      "identity": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "providerPersonId", "fingerprint"],
+        "properties": {
+          "kind": { "const": "current-user" },
+          "providerPersonId": { "type": "string", "minLength": 1, "maxLength": 500 },
+          "fingerprint": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        }
+      },
+      "provenance": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["provider", "authority", "sourceKind", "sourceReferenceFingerprint"],
+        "properties": {
+          "provider": { "type": "string", "minLength": 1 },
+          "authority": { "type": "string", "minLength": 1 },
+          "sourceKind": { "enum": ["fixture", "connected"] },
+          "sourceReferenceFingerprint": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        }
+      },
+      "observedAt": { "type": "string", "minLength": 20 }
+    }
+  },
+  "authentication": {
+    "required": true,
+    "minimumScopes": ["identity:read"]
+  },
+  "effects": ["read", "disclosure"],
+  "idempotency": { "mode": "not-applicable", "key": null },
+  "retry": { "safe": true, "maxAttempts": 3, "checkpoint": null },
+  "errors": [
+    "authentication",
+    "authorization",
+    "validation",
+    "conflict",
+    "rate-limit",
+    "unavailable",
+    "retryable",
+    "not-found",
+    "unknown"
+  ],
+  "freshness": {
+    "returnsProvenance": true,
+    "returnsObservedAt": true,
+    "maxAgeSeconds": 300
+  },
+  "health": {
+    "check": "Read the authenticated current-user identity through a contained provider fixture.",
+    "fixture": "soter/scenarios/task-capture/preparation.scenario.json",
+    "containedVerification": "Prove exact current-user normalization, private provider-person identity, provenance, and freshness."
+  },
+  "providerLimitations": [
+    "Version 1 resolves only the authenticated current user. Arbitrary workspace-user search requires a separate bounded directory capability."
+  ]
+}

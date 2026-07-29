@@ -13,7 +13,11 @@ function selectedAuthority(lock, role, subject) {
   return matches[0].id;
 }
 
-function policySources(lock, definitionAuthority) {
+function policySources(lock) {
+  const definitionAuthorities = new Set([
+    selectedAuthority(lock, 'definition', 'meetings.records'),
+    selectedAuthority(lock, 'definition', 'tasks.records')
+  ]);
   const sources = lock.sources.flatMap((source) => {
     const consumers = source.consumers.filter((consumer) => {
       return consumer.pack === AUTOMATION_ID && consumer.purpose === 'applicable-policy';
@@ -28,7 +32,7 @@ function policySources(lock, definitionAuthority) {
     return typeof source.id !== 'string'
       || !/^source\.policy\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/.test(source.id)
       || source.capability !== 'documents.content.read'
-      || source.authority !== definitionAuthority
+      || !definitionAuthorities.has(source.authority)
       || source.inputFingerprint !== fingerprintJson(source.input)
       || fingerprintJson(Object.keys(source.input).sort()) !== fingerprintJson(['expectedTitle', 'uri'])
       || typeof source.input?.uri !== 'string'
@@ -90,7 +94,6 @@ function records(result, type) {
 
 function contextStep(entry, invocation, sequence) {
   const labels = {
-    'context.meeting-intake.policy-index': 'Load meeting policy index',
     'context.meeting-intake.transcript': 'Load exact meeting transcript',
     'context.meeting-intake.meeting': 'Resolve matching meeting record',
     'context.meeting-intake.organizations': 'Load referenced organizations',
@@ -197,19 +200,22 @@ export async function prepareMeetingIntakeRun({
   lockPath,
   workId,
   input,
-  createdAt
+  createdAt,
+  scenarioPath = null
 }) {
   const runId = 'run.' + workId.slice('work.'.length);
   const snapshotId = 'context.' + workId.slice('work.'.length);
-  const definitionAuthority = selectedAuthority(lock, 'definition', 'crm.records');
-  const instanceAuthority = selectedAuthority(lock, 'instance', 'crm.records');
+  const crmAuthority = selectedAuthority(lock, 'instance', 'crm.records');
+  const projectsAuthority = selectedAuthority(lock, 'instance', 'projects.records');
+  const tasksAuthority = selectedAuthority(lock, 'instance', 'tasks.records');
+  const meetingsAuthority = selectedAuthority(lock, 'instance', 'meetings.records');
   const transcriptAuthority = selectedAuthority(lock, 'provider', 'meeting.transcript');
-  const configuredPolicies = policySources(lock, definitionAuthority);
+  const configuredPolicies = policySources(lock);
   const envelope = prepareRunEnvelope({
     root,
     lock,
     lockPath,
-    scenarioPath: null,
+    scenarioPath,
     automationId: AUTOMATION_ID,
     runId,
     createdAt,
@@ -218,18 +224,6 @@ export async function prepareMeetingIntakeRun({
   });
 
   const acquired = [];
-  const policyIndex = await fixtureRead({
-    root, lock, capability: 'crm.records.read', authority: definitionAuthority,
-    input: { recordTypes: ['policy'], limit: 25 },
-    effectId: 'effect.meeting-intake.preparation.policy-index.fixture', at: createdAt
-  });
-  acquired.push({
-    result: policyIndex,
-    entry: snapshotEntry({
-      id: 'context.meeting-intake.policy-index', subject: 'crm.records.policy-index',
-      authority: definitionAuthority, role: 'definition', result: policyIndex
-    })
-  });
   for (const source of configuredPolicies) {
     const suffix = source.id.slice('source.'.length);
     const result = await fixtureRead({
@@ -261,7 +255,7 @@ export async function prepareMeetingIntakeRun({
   });
 
   const meetingResult = await fixtureRead({
-    root, lock, capability: 'crm.records.read', authority: instanceAuthority,
+    root, lock, capability: 'meetings.records.read', authority: meetingsAuthority,
     input: { recordTypes: ['meeting'], filters: { recordingUri: input.recordingUri }, limit: 2 },
     effectId: 'effect.meeting-intake.preparation.meeting.fixture', at: createdAt
   });
@@ -278,8 +272,8 @@ export async function prepareMeetingIntakeRun({
   acquired.push({
     result: meetingResult,
     entry: snapshotEntry({
-      id: 'context.meeting-intake.meeting', subject: 'crm.records.meeting',
-      authority: instanceAuthority, role: 'instance', result: meetingResult
+      id: 'context.meeting-intake.meeting', subject: 'meetings.records.meeting',
+      authority: meetingsAuthority, role: 'instance', result: meetingResult
     })
   });
 
@@ -288,7 +282,7 @@ export async function prepareMeetingIntakeRun({
     throw new Error('Meeting Intake preparation exceeds the bounded organization relationship limit.');
   }
   const organizationResult = await fixtureRead({
-    root, lock, capability: 'crm.records.read', authority: instanceAuthority,
+    root, lock, capability: 'crm.records.read', authority: crmAuthority,
     input: { recordTypes: ['organization'], ids: organizationIds, limit: 100 },
     effectId: 'effect.meeting-intake.preparation.organizations.fixture', at: createdAt
   });
@@ -300,7 +294,7 @@ export async function prepareMeetingIntakeRun({
     result: organizationResult,
     entry: snapshotEntry({
       id: 'context.meeting-intake.organizations', subject: 'crm.records.organization',
-      authority: instanceAuthority, role: 'instance', result: organizationResult
+      authority: crmAuthority, role: 'instance', result: organizationResult
     })
   });
 
@@ -311,7 +305,7 @@ export async function prepareMeetingIntakeRun({
     throw new Error('Meeting Intake preparation exceeds the bounded project relationship limit.');
   }
   const projectResult = await fixtureRead({
-    root, lock, capability: 'crm.records.read', authority: instanceAuthority,
+    root, lock, capability: 'projects.records.read', authority: projectsAuthority,
     input: { recordTypes: ['project'], ids: projectIds, limit: 100 },
     effectId: 'effect.meeting-intake.preparation.projects.fixture', at: createdAt
   });
@@ -323,8 +317,8 @@ export async function prepareMeetingIntakeRun({
   acquired.push({
     result: projectResult,
     entry: snapshotEntry({
-      id: 'context.meeting-intake.projects', subject: 'crm.records.project',
-      authority: instanceAuthority, role: 'instance', result: projectResult
+      id: 'context.meeting-intake.projects', subject: 'projects.records.project',
+      authority: projectsAuthority, role: 'instance', result: projectResult
     })
   });
 
@@ -335,7 +329,7 @@ export async function prepareMeetingIntakeRun({
     throw new Error('Meeting Intake preparation exceeds the bounded task relationship limit.');
   }
   const taskResult = await fixtureRead({
-    root, lock, capability: 'crm.records.read', authority: instanceAuthority,
+    root, lock, capability: 'tasks.records.read', authority: tasksAuthority,
     input: { recordTypes: ['task'], ids: taskIds, limit: 100 },
     effectId: 'effect.meeting-intake.preparation.tasks.fixture', at: createdAt
   });
@@ -347,8 +341,8 @@ export async function prepareMeetingIntakeRun({
   acquired.push({
     result: taskResult,
     entry: snapshotEntry({
-      id: 'context.meeting-intake.tasks', subject: 'crm.records.task',
-      authority: instanceAuthority, role: 'instance', result: taskResult
+      id: 'context.meeting-intake.tasks', subject: 'tasks.records.task',
+      authority: tasksAuthority, role: 'instance', result: taskResult
     })
   });
 

@@ -41,7 +41,27 @@
           "sourceReferenceFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
         }
       },
-      "observedAt": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z$" }
+      "observedAt": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z$" },
+      "coverage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "complete",
+          "cursorExhausted",
+          "pagesRead",
+          "observedCount",
+          "includedCount",
+          "excludedCount"
+        ],
+        "properties": {
+          "complete": { "const": true },
+          "cursorExhausted": { "const": true },
+          "pagesRead": { "type": "integer", "minimum": 1, "maximum": 100 },
+          "observedCount": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "includedCount": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "excludedCount": { "type": "integer", "minimum": 0, "maximum": 100 }
+        }
+      }
     }
   },
   "authentication": { "required": true, "minimumScopes": ["mail:read"] },

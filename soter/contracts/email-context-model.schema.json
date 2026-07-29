@@ -5,7 +5,7 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "$contract", "contractVersion", "id", "version", "window", "identity",
+    "$contract", "contractVersion", "id", "version", "specialization", "window", "identity",
     "labels", "buckets", "handoffs", "invariants"
   ],
   "properties": {
@@ -13,6 +13,22 @@
     "contractVersion": { "const": "1.0.0" },
     "id": { "const": "context.email.processing" },
     "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "specialization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "basePack", "baseSubject", "scopeKind", "containerKind",
+        "participantKind", "contentClassification"
+      ],
+      "properties": {
+        "basePack": { "const": "context.communications" },
+        "baseSubject": { "const": "communications.semantics.records" },
+        "scopeKind": { "const": "mailbox" },
+        "containerKind": { "const": "mail-thread" },
+        "participantKind": { "const": "mail-address" },
+        "contentClassification": { "const": "private-untrusted" }
+      }
+    },
     "window": {
       "type": "object", "additionalProperties": false,
       "required": ["maximumThreads", "queryRequired", "exactThreadSelectionSupported"],

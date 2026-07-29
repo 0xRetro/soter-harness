@@ -1,0 +1,241 @@
+{
+  "$contract": "soter://contracts/evidence/v2",
+  "contractVersion": "2.0.0",
+  "id": "evidence.meeting-intake.legacy-notion-targets-tasks-context.migration.fixture",
+  "createdAt": "2026-07-15T12:00:00.000Z",
+  "claimFamily": "migration",
+  "claim": "The exact target becomes canonical for this legacy responsibility and its fallback may be removed under the recorded parity decision; a mixed source artifact may remain only for separately unfinished responsibilities.",
+  "subject": {
+    "type": "pack",
+    "id": "context.tasks",
+    "version": "0.1.0"
+  },
+  "configurationLockFingerprint": "sha256:5bb9bf587f258e66fc5ce2eb092d61a05e544734c723a8cc209f212a42569df9",
+  "graphFingerprint": "sha256:cbb99770c57b011bec7b722843a3fdbe536f2989da64f046c8bed3d4cc050638",
+  "dependencies": [
+    {
+      "id": "kernel.soter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+    },
+    {
+      "id": "core.runtime",
+      "version": "0.1.0",
+      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+    },
+    {
+      "id": "context.crm",
+      "version": "0.1.0",
+      "fingerprint": "sha256:fa69fc9f796e84b1a2cd7e319c4344dcc44d8dcbea9542e51158eb868d266f44"
+    },
+    {
+      "id": "context.meetings",
+      "version": "0.1.0",
+      "fingerprint": "sha256:151852f16515b5d3b48508ff15bbf38107a1333f3ee10a6b6579fadb4ee64164"
+    },
+    {
+      "id": "context.projects",
+      "version": "0.1.0",
+      "fingerprint": "sha256:e8b68449ec9582d769c56d9b9cdf9ed3a6f220c15593a614ac13e9a656cf0ce5"
+    },
+    {
+      "id": "context.tasks",
+      "version": "0.1.0",
+      "fingerprint": "sha256:5d516369250d03e1a270d7ac6c0dfe3a19d790eafab4a7971e1b11a36d282555"
+    },
+    {
+      "id": "automation.meeting-intake",
+      "version": "0.1.0",
+      "fingerprint": "sha256:4f39b7bae165899b915085db78ceb67efb86d72f6624879b9571d90e6a017fae"
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "fingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5"
+    },
+    {
+      "id": "integration.otter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:2b026b4426d72cab08f667f36e219be74664913634b175ab79b0f040f192e07b"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
+  },
+  "integrations": [
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "manifestFingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5",
+      "evidenceMaturity": "declared"
+    },
+    {
+      "id": "integration.otter",
+      "version": "0.1.0",
+      "manifestFingerprint": "sha256:2b026b4426d72cab08f667f36e219be74664913634b175ab79b0f040f192e07b",
+      "evidenceMaturity": "declared"
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.crm.definition",
+      "role": "definition",
+      "subject": "crm.records",
+      "declarationFingerprint": "sha256:bb8707ba433f49d40250874f67667e8e3fb9243ba31895b026d530750f2c7b88"
+    },
+    {
+      "id": "authority.crm.instance",
+      "role": "instance",
+      "subject": "crm.records",
+      "declarationFingerprint": "sha256:23a6dd9d0b3aa51376f36403b34c0e0530399afab401429e72b3a30eddf14e11"
+    },
+    {
+      "id": "authority.meetings.definition",
+      "role": "definition",
+      "subject": "meetings.records",
+      "declarationFingerprint": "sha256:98e080ad675a7d7ba10d62449164df4b2b7774f5fec5a6f8ab8c02213caeb7c6"
+    },
+    {
+      "id": "authority.meetings.instance",
+      "role": "instance",
+      "subject": "meetings.records",
+      "declarationFingerprint": "sha256:8abd68d26f22693f3573546c995297998e5655b35ac6c21524e3b548ecddce60"
+    },
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "declarationFingerprint": "sha256:e3e11d347b7a0109668facaeb7b12311023da39949d1328bfd918c53a406c756"
+    },
+    {
+      "id": "authority.otter.provider",
+      "role": "provider",
+      "subject": "meeting.transcript",
+      "declarationFingerprint": "sha256:b2acdfc57c3b02106dcfe5c7b9e6838548a644c6e8927999d7a051057ba64331"
+    },
+    {
+      "id": "authority.projects.definition",
+      "role": "definition",
+      "subject": "projects.records",
+      "declarationFingerprint": "sha256:fce3445f679b41227242b5dbc7fafd2cb86c9a95020d887a50c5df612eee0f83"
+    },
+    {
+      "id": "authority.projects.instance",
+      "role": "instance",
+      "subject": "projects.records",
+      "declarationFingerprint": "sha256:97b91257bdd2ef42a8ce3efcb23bc86d5a337118c9d81058af64035b7e7a0aa6"
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "declarationFingerprint": "sha256:6f39e99f1ebc86fe11ee09cc7170824ac4c11a6fc88371edb673bd2379dacdc8"
+    },
+    {
+      "id": "authority.tasks.definition",
+      "role": "definition",
+      "subject": "tasks.records",
+      "declarationFingerprint": "sha256:88a0f55602be20f6491a2faf0180ed8b16b309f23d937f41878065bd784358bb"
+    },
+    {
+      "id": "authority.tasks.instance",
+      "role": "instance",
+      "subject": "tasks.records",
+      "declarationFingerprint": "sha256:dcb3e8d127b4bcc04235daa8426dce206db992719e80880e7fb994f670cf1d8a"
+    }
+  ],
+  "evaluator": {
+    "id": "kernel.legacy-migration-completion",
+    "version": "1.0.0",
+    "level": "fixture"
+  },
+  "environment": {
+    "containment": "fixture",
+    "runtime": "node"
+  },
+  "acceptanceCriteria": [
+    "The exact migration target is selected by and fingerprinted in the current configuration lock.",
+    "Every artifact labeled as same-lock supporting evidence passed against the exact configuration lock and stable semantic graph; separately labeled supporting artifacts are fingerprint-bound without a same-lock claim.",
+    "The complete inventory records the exact target authority or retirement, parity decision, fallback removal, evidence reference, and either a completed source tombstone or one completed responsibility inside a retained mixed source.",
+    "The exact legacy source is a fingerprinted tombstone, no operational file or dependent remains, and the target contains no executable or runtime path reference beyond closed provenance declarations.",
+    "The exact portable tasks Context model owns its bounded record meaning independently of provider layout."
+  ],
+  "result": "passed",
+  "outcomes": [
+    {
+      "id": "migration-disposition",
+      "state": "migrated"
+    },
+    {
+      "id": "migration-parity",
+      "state": "intentional-change"
+    },
+    {
+      "id": "target-selected-in-exact-lock",
+      "state": "passed"
+    },
+    {
+      "id": "supporting-evidence-current",
+      "state": "passed"
+    },
+    {
+      "id": "authority-transition-explicit",
+      "state": "passed"
+    },
+    {
+      "id": "legacy-dependencies-cleared",
+      "state": "passed"
+    },
+    {
+      "id": "portable-target-meaning-final",
+      "state": "passed"
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "migration-source",
+      "path": ".claude/skills/pushing-to-notion/targets.md",
+      "fingerprint": "sha256:00cfed74ae66ae7414561dfa0857a41fdfbfea1598675adc0471cd55661c4a17"
+    },
+    {
+      "role": "migration-target",
+      "path": "soter/contexts/tasks/records.model.json",
+      "fingerprint": "sha256:c1765c2dc1307b1d1abd163e377e9b7eee14b62fd669c57132a5cf0a91a79232"
+    },
+    {
+      "role": "supporting-evidence",
+      "path": "soter/fixtures/meeting-intake/review-preparation.evidence.json",
+      "fingerprint": "sha256:47ec70da6c8b879b5bcf7e902b9cf235e55d3088df257298ee44b913dd261a61"
+    },
+    {
+      "role": "supporting-artifact",
+      "path": "soter/fixtures/meeting-intake/connected-review.evidence.json",
+      "fingerprint": "sha256:11588de8a6a0bb19d1cf0138bb1a21ddc40d64ecbca3a7089be127400fd1d348"
+    }
+  ],
+  "effects": [],
+  "failures": [],
+  "warnings": [],
+  "skipped": [
+    "Connected provider readiness, live behavior verification, and current health were not evaluated.",
+    "Removing a legacy source fallback does not grant provider effect or host execution authority."
+  ],
+  "limitations": [
+    "This completion establishes the intentionally bounded portable tasks model only; unsupported provider fields and behavior are unavailable rather than retained as fallback.",
+    "Live provider schema, authentication, permission, connected behavior, readiness, verification, and health remain not evaluated."
+  ],
+  "freshness": {
+    "policy": "Valid only while every configuration-lock fingerprint remains unchanged.",
+    "validUntil": null
+  },
+  "supersedes": null,
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Credential references and credential values are excluded."
+    ]
+  }
+}

@@ -1,0 +1,456 @@
+{
+  "$contract": "soter://contracts/context-record-model/v1",
+  "contractVersion": "1.0.0",
+  "id": "model.context.communications.collaboration.records",
+  "pack": "context.communications.collaboration",
+  "version": "0.1.0",
+  "subject": "communications.records",
+  "recordTypes": [
+    {
+      "id": "channel-ingestion-policy",
+      "summary": "An external selection record binding one governed collaboration channel-ingestion definition.",
+      "fields": [
+        {
+          "id": "name",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The exact human-readable channel-ingestion policy title."
+        }
+      ],
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "The exact governed rules live in the selected Context definition artifact."
+      },
+      "deduplicationFields": ["name"]
+    },
+    {
+      "id": "conversation-review-policy",
+      "summary": "An external selection record binding one governed bounded conversation-review definition.",
+      "fields": [
+        {
+          "id": "name",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The exact human-readable conversation-review policy title."
+        }
+      ],
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "The exact bounded window, privacy, thread, coverage, and no-write rules live in the selected Context definition artifact."
+      },
+      "deduplicationFields": ["name"]
+    },
+    {
+      "id": "workspace",
+      "summary": "One provider collaboration workspace that scopes all contained conversation and participant identities.",
+      "fields": [
+        {
+          "id": "name",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The current provider-observed workspace display name."
+        },
+        {
+          "id": "platform",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The portable collaboration platform classification."
+        },
+        {
+          "id": "workspaceIdentityFingerprint",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "An opaque scope-bound fingerprint of the normalized platform and private provider workspace identity."
+        }
+      ],
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "Workspace records contain no message content."
+      },
+      "deduplicationFields": ["workspaceIdentityFingerprint"]
+    },
+    {
+      "id": "channel",
+      "summary": "A workspace-scoped collaboration channel whose identity, visibility, and typed Context links remain explicit.",
+      "fields": [
+        {
+          "id": "name",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The current provider-observed channel display name."
+        },
+        {
+          "id": "platform",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The portable collaboration platform classification."
+        },
+        {
+          "id": "workspaceUri",
+          "type": "string",
+          "format": "resource-uri",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The exact portable workspace resource identity that scopes this channel.",
+          "reference": {
+            "subject": "communications.records.workspace",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "workspaceIdentityFingerprint",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The opaque workspace identity fingerprint from which workspaceUri is derived."
+        },
+        {
+          "id": "conversationIdentityFingerprint",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "An opaque workspace-scoped fingerprint derived from private provider workspace and conversation identities."
+        },
+        {
+          "id": "hostWorkspaceName",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The provider-observed workspace display name that hosts the channel."
+        },
+        {
+          "id": "visibility",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The portable public or private channel visibility classification."
+        },
+        {
+          "id": "shared",
+          "type": "boolean",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "Whether the provider reports that the channel crosses workspace boundaries."
+        },
+        {
+          "id": "personUris",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Exact CRM person resource identities established by a separate governed participant-resolution step.",
+          "reference": {
+            "subject": "crm.records.person",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "organizationUris",
+          "type": "string-list",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "Exact CRM organization resource identities established by a separate governed relationship decision.",
+          "reference": {
+            "subject": "crm.records.organization",
+            "identity": "resource-uri"
+          }
+        }
+      ],
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "The durable channel directory contains no message or thread content."
+      },
+      "deduplicationFields": ["conversationIdentityFingerprint"]
+    },
+    {
+      "id": "direct-message",
+      "summary": "A workspace-scoped direct-message conversation whose exact provider identity and participants remain private.",
+      "fields": [
+        {
+          "id": "platform",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The portable collaboration platform classification."
+        },
+        {
+          "id": "workspaceUri",
+          "type": "string",
+          "format": "resource-uri",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The exact workspace resource identity that scopes this direct message.",
+          "reference": {
+            "subject": "communications.records.workspace",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "conversationIdentityFingerprint",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The opaque workspace-scoped conversation identity fingerprint."
+        },
+        {
+          "id": "participantUris",
+          "type": "string-list",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The exact collaboration participant resource identities, without inferred CRM identities.",
+          "reference": {
+            "subject": "communications.records.participant",
+            "identity": "resource-uri"
+          }
+        }
+      ],
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "Direct-message content is private and absent from this portable identity record."
+      },
+      "deduplicationFields": ["conversationIdentityFingerprint"]
+    },
+    {
+      "id": "thread",
+      "summary": "A conversation-bound reply sequence rooted in one exact provider message inside the same workspace scope.",
+      "fields": [
+        {
+          "id": "workspaceUri",
+          "type": "string",
+          "format": "resource-uri",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The exact workspace resource identity that scopes the thread.",
+          "reference": {
+            "subject": "communications.records.workspace",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "conversationUri",
+          "type": "string",
+          "format": "resource-uri",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The exact channel or direct-message resource identity containing the thread."
+        },
+        {
+          "id": "threadIdentityFingerprint",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "An opaque fingerprint over the workspace, conversation, and thread identity basis."
+        },
+        {
+          "id": "rootMessageUri",
+          "type": "string",
+          "format": "resource-uri",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The exact root message resource identity that permits bounded thread expansion.",
+          "reference": {
+            "subject": "communications.records.message",
+            "identity": "resource-uri"
+          }
+        }
+      ],
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "Thread content remains private and is not copied into the portable thread identity."
+      },
+      "deduplicationFields": ["threadIdentityFingerprint"]
+    },
+    {
+      "id": "message",
+      "summary": "One private untrusted communication event bound to an exact workspace and conversation identity.",
+      "fields": [
+        {
+          "id": "workspaceUri",
+          "type": "string",
+          "format": "resource-uri",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The exact workspace resource identity that scopes this message.",
+          "reference": {
+            "subject": "communications.records.workspace",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "conversationUri",
+          "type": "string",
+          "format": "resource-uri",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The exact channel or direct-message resource identity containing the message."
+        },
+        {
+          "id": "threadUri",
+          "type": "string",
+          "format": "resource-uri",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": false,
+          "summary": "The exact thread resource identity when this message belongs to a thread.",
+          "reference": {
+            "subject": "communications.records.thread",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "participantUri",
+          "type": "string",
+          "format": "resource-uri",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": false,
+          "summary": "The exact provider participant identity for the sender when available.",
+          "reference": {
+            "subject": "communications.records.participant",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "messageIdentityFingerprint",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "An opaque fingerprint over the exact scope, conversation, and message identity basis."
+        },
+        {
+          "id": "contentFingerprint",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "An opaque fingerprint over normalized private message content retained outside inspection."
+        },
+        {
+          "id": "sentAt",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The exact provider-observed message time expressed as a normalized instant."
+        },
+        {
+          "id": "privacyClassification",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The private classification required for collaboration message content."
+        },
+        {
+          "id": "trustClassification",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The untrusted-data classification that prevents message text from becoming instructions."
+        }
+      ],
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "Raw message content is available only through a selected-work private review boundary."
+      },
+      "deduplicationFields": ["messageIdentityFingerprint"]
+    },
+    {
+      "id": "participant",
+      "summary": "A provider workspace actor whose collaboration identity remains separate from CRM person identity.",
+      "fields": [
+        {
+          "id": "workspaceUri",
+          "type": "string",
+          "format": "resource-uri",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "The exact workspace resource identity that scopes this participant.",
+          "reference": {
+            "subject": "communications.records.workspace",
+            "identity": "resource-uri"
+          }
+        },
+        {
+          "id": "participantIdentityFingerprint",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": false,
+          "summary": "An opaque fingerprint over the exact workspace and provider participant identity."
+        },
+        {
+          "id": "displayName",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "A provider-observed display name that is not portable identity authority."
+        },
+        {
+          "id": "bot",
+          "type": "boolean",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "Whether the provider identifies this participant as an automated actor."
+        }
+      ],
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "Participant records contain identity metadata only and no message content."
+      },
+      "deduplicationFields": ["participantIdentityFingerprint"]
+    }
+  ],
+  "limitations": [
+    "This model specializes context.communications and grants no provider capability, approval, execution, readiness, verification, or health authority.",
+    "Only channel and channel-ingestion-policy are durable directory records in the first provider mapping; workspace, direct-message, thread, message, and participant remain portable semantics for bounded reads.",
+    "Every provider identity is reduced to an opaque scope-bound fingerprint before any portable Context record or Notion directory value is formed; raw provider workspace, conversation, thread, message, and participant IDs remain private runtime data.",
+    "Message content is private untrusted data and is never represented in the durable channel directory, general workspace inspection, evidence, fixtures, or logs.",
+    "A provider participant never becomes a CRM person or organization without a separate exact governed resolution; personUris and organizationUris contain only resolved Context resource identities.",
+    "Direct messages are modeled but excluded from the first collaboration conversation-review workflow."
+  ]
+}

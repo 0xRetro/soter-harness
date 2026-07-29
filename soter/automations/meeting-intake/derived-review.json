@@ -1,0 +1,45 @@
+{
+  "$contract": "soter://contracts/automation-derived-review/v1",
+  "contractVersion": "1.0.0",
+  "automation": "automation.meeting-intake",
+  "kind": "meeting-intake-derived-review",
+  "items": [
+    {
+      "kind": "meeting-summary-create",
+      "fields": [
+        { "id": "title", "label": "Summary title", "type": "text" },
+        { "id": "documentType", "label": "Document type", "type": "text" },
+        { "id": "description", "label": "Summary description", "type": "text" },
+        { "id": "link", "label": "Source recording", "type": "text" },
+        { "id": "body", "label": "Complete summary body", "type": "text" },
+        { "id": "projectIds", "label": "Related project identities", "type": "string-list" },
+        { "id": "ourCommitments", "label": "Our commitments", "type": "string-list" },
+        { "id": "theirCommitments", "label": "Their commitments", "type": "string-list" },
+        { "id": "completeGroupActionIds", "label": "Exact complete-group action identities", "type": "string-list" }
+      ]
+    },
+    {
+      "kind": "meeting-task-fold",
+      "fields": [
+        { "id": "recordId", "label": "Existing task identity", "type": "text" },
+        { "id": "expectedVersion", "label": "Expected task version", "type": "text" },
+        { "id": "title", "label": "Task title", "type": "text" },
+        { "id": "status", "label": "Task status", "type": "text" },
+        { "id": "context", "label": "Task context", "type": "text" },
+        { "id": "projectUris", "label": "Project identities", "type": "string-list" },
+        { "id": "assigneeIds", "label": "Assignee identities", "type": "string-list" },
+        { "id": "nextActionOn", "label": "Next action date", "type": "text" },
+        { "id": "sourceMeetingUris", "label": "Source meeting identities", "type": "string-list" },
+        { "id": "sourceQuotes", "label": "Exact grounding excerpts", "type": "string-list" },
+        { "id": "sourceSummaryFingerprints", "label": "Grounded summary fingerprints", "type": "string-list" },
+        { "id": "completeGroupActionIds", "label": "Exact complete-group action identities", "type": "string-list" }
+      ]
+    },
+    {
+      "kind": "meeting-intake-boundary",
+      "fields": [
+        { "id": "notCreated", "label": "Deliberately not created", "type": "string-list" }
+      ]
+    }
+  ]
+}

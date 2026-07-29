@@ -1,0 +1,31 @@
+{
+  "$contract": "soter://contracts/context-record-model/v1",
+  "contractVersion": "1.0.0",
+  "id": "model.context.calendar.records",
+  "pack": "context.calendar",
+  "version": "0.1.0",
+  "subject": "calendar.records",
+  "recordTypes": [
+    {
+      "id": "commitment",
+      "summary": "One governed standing commitment whose meaning and relations remain distinct from its configured scheduling source.",
+      "fields": [
+        { "id": "name", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The exact human-readable commitment name." },
+        { "id": "commitmentKind", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The governed series, event, or obligation-window classification." },
+        { "id": "purpose", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The factual purpose that gives the commitment organizational meaning." },
+        { "id": "participantIds", "type": "string-list", "requiredOnCreate": false, "nullable": false, "mutable": true, "reference": { "subject": "workspace.identity", "identity": "provider-person-id" }, "summary": "Exact configured participant identities when they are available." },
+        { "id": "organizationUris", "type": "string-list", "requiredOnCreate": false, "nullable": false, "mutable": true, "reference": { "subject": "crm.records.organization", "identity": "resource-uri" }, "summary": "Exact related organization resource identities." },
+        { "id": "projectUris", "type": "string-list", "requiredOnCreate": false, "nullable": false, "mutable": true, "reference": { "subject": "projects.records.project", "identity": "resource-uri" }, "summary": "Exact related Project resource identities." },
+        { "id": "processUris", "type": "string-list", "requiredOnCreate": false, "nullable": false, "mutable": true, "reference": { "subject": "process.records.process-definition", "identity": "resource-uri" }, "summary": "Exact related process-definition resource identities." },
+        { "id": "timeSourceEventId", "type": "string", "requiredOnCreate": false, "nullable": true, "mutable": true, "summary": "The exact external event identity used only to join the configured time authority." }
+      ],
+      "content": { "kind": "none", "requiredOnCreate": false, "summary": "Commitment meaning is represented by normalized fields and does not duplicate scheduling content." },
+      "deduplicationFields": ["name", "timeSourceEventId"]
+    }
+  ],
+  "limitations": [
+    "This model owns portable commitment meaning and relations only; event time and recurrence remain authoritative in the configured scheduling source.",
+    "The governed context.calendar vocabulary artifact owns the exact current commitment term and definition.",
+    "The model grants no calendar read, reconciliation, event creation, meeting creation, provider write, or synchronization authority."
+  ]
+}

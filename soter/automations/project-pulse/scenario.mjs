@@ -7,15 +7,11 @@ import {
   repoRelativePath,
   resolveRepoPath
 } from '../../core/lib/canonical-json.mjs';
+import { fingerprintLegacySource } from '../../kernel/legacy-inventory.mjs';
+import { analyzeProjectPulse } from './analysis.mjs';
 import { assembleProjectPulseContext } from './context.mjs';
 
 const AUTOMATION_ID = 'automation.project-pulse';
-const REQUIRED_POLICY_ASSERTIONS = Object.freeze({
-  progressRequiresPromotedTasks: true,
-  milestoneWorkItemsRemainDistinct: true,
-  healthMustBeExplained: true,
-  writesRequireConfirmation: true
-});
 
 function loadScenario(root, scenarioPath) {
   const file = resolveRepoPath(root, scenarioPath);
@@ -35,67 +31,72 @@ function records(snapshot) {
   return snapshot.entries.flatMap((entry) => entry.value.records || []);
 }
 
-export function observeProjectPulseContext(snapshot, { projectId, requestedHealth = null }) {
+export function observeProjectPulseContext(snapshot, {
+  projectId,
+  health,
+  healthMilestones = []
+}) {
   const all = records(snapshot);
-  const policies = all.filter((item) => item.type === 'policy');
+  const policies = all.filter((item) => item.type === 'project-work-policy');
   if (policies.length !== 1) {
-    throw new Error('Project Pulse requires exactly one configured project-status policy record.');
+    throw new Error('Project Pulse requires exactly one configured Projects policy record.');
   }
   const policy = policies[0];
-  const drift = Object.entries(REQUIRED_POLICY_ASSERTIONS)
-    .filter(([field, expected]) => policy.fields?.[field] !== expected)
-    .map(([field]) => field);
-  if (drift.length) {
-    throw new Error('Project Pulse policy assertions are missing or changed: ' + drift.join(', ') + '.');
-  }
   const project = all.find((item) => item.type === 'project' && item.id === projectId);
-  const tasks = all.filter((item) => item.type === 'task' && item.fields.projectId === projectId);
-  const milestones = all.filter((item) => item.type === 'milestone' && item.fields.projectId === projectId);
-  const doneTasks = tasks.filter((item) => ['done', 'closed'].includes(item.fields.status));
-  const blockedTasks = tasks.filter((item) => item.fields.status === 'blocked');
-  const taskCompletionPercent = tasks.length
-    ? Math.round((doneTasks.length / tasks.length) * 100)
-    : null;
-  const riskMilestones = milestones.filter((item) => ['at-risk', 'off-track'].includes(item.fields.healthTag));
-  const health = blockedTasks.length || riskMilestones.length
-    ? 'at-risk'
-    : tasks.length ? 'on-track' : 'unknown';
-  const milestoneProgress = milestones.map((item) => ({
-    id: item.id,
-    completed: item.fields.workItemsCompleted,
-    total: item.fields.workItemsTotal,
-    progressTag: item.fields.progressTag,
-    healthTag: item.fields.healthTag
-  }));
-  const milestoneDiff = milestones.map((item) => ({
-    id: item.id,
-    currentHealth: item.fields.healthTag,
-    proposedHealth: health === 'unknown' ? item.fields.healthTag : health,
-    changed: health !== 'unknown' && item.fields.healthTag !== health
-  }));
+  if (!project) throw new Error('Project Pulse requires the exact selected project record.');
+  const taskIds = new Set(project.fields.taskUris || []);
+  const tasks = all.filter((item) => item.type === 'task' && taskIds.has(item.id));
+  const documentEntries = snapshot.entries.filter((entry) => {
+    return entry.id === 'context.project-pulse.document';
+  });
+  if (documentEntries.length !== 1) {
+    throw new Error('Project Pulse requires one exact project document Context entry.');
+  }
+  const analysis = analyzeProjectPulse({
+    policy: policy.fields,
+    project,
+    tasks,
+    document: documentEntries[0].value.document,
+    statusDate: '2026-07-15',
+    visibility: 'Internal',
+    health,
+    healthMilestones
+  });
   return {
-    project: project ? { id: project.id, version: project.version } : null,
-    policy: { id: policy.id, version: policy.version, assertionsFingerprint: fingerprintJson(REQUIRED_POLICY_ASSERTIONS) },
+    state: analysis.state,
+    issues: [...analysis.issues],
+    project: { id: project.id, version: project.version },
+    policy: {
+      id: policy.id,
+      version: policy.version,
+      assertionsFingerprint: fingerprintJson(policy.fields)
+    },
     taskProgress: {
-      total: tasks.length,
-      done: doneTasks.length,
-      blocked: blockedTasks.length,
-      completionPercent: taskCompletionPercent
+      total: analysis.tasks.total,
+      done: analysis.tasks.done,
+      blocked: analysis.tasks.blocked,
+      completionPercent: analysis.tasks.completionPercent
     },
-    milestoneProgress,
-    health: {
-      state: health,
-      requested: requestedHealth,
-      contradicted: Boolean(requestedHealth && requestedHealth !== health && health !== 'unknown'),
-      basis: blockedTasks.map((item) => item.id).concat(riskMilestones.map((item) => item.id))
-    },
+    milestoneProgress: analysis.milestones.map((milestone) => ({
+      id: milestone.id,
+      completed: milestone.completed,
+      total: milestone.total,
+      progressTag: milestone.proposedProgressTag,
+      healthTag: milestone.proposedHealthTag
+    })),
+    health: structuredClone(analysis.health),
     preview: {
       statusRecord: {
         projectId,
-        headline: health === 'unknown' ? 'Progress is not yet measurable from promoted tasks' : 'Project is ' + health,
-        taskCompletionPercent
+        headline: analysis.status.fields.headline,
+        taskCompletionPercent: analysis.tasks.completionPercent
       },
-      milestoneDiff
+      milestoneDiff: analysis.milestones.map((milestone) => ({
+        id: milestone.id,
+        currentHealth: milestone.currentHealthTag,
+        proposedHealth: milestone.proposedHealthTag,
+        changed: milestone.changed
+      }))
     }
   };
 }
@@ -103,7 +104,8 @@ export function observeProjectPulseContext(snapshot, { projectId, requestedHealt
 function observe(snapshot, scenario) {
   return observeProjectPulseContext(snapshot, {
     projectId: scenario.input.project.fixtureId,
-    requestedHealth: scenario.input.pressure?.requestedHealth || null
+    health: scenario.input.healthJudgment || scenario.input.pressure?.requestedHealth,
+    healthMilestones: scenario.input.healthMilestones || []
   });
 }
 
@@ -132,11 +134,12 @@ function factsFor(scenario, envelope, observation) {
         'no-fabricated-percentage': observation.taskProgress.completionPercent === null,
         'work-items-not-presented-as-tasks': observation.taskProgress.total === 0
           && observation.milestoneProgress.some((item) => item.total > 0),
-        'missing-data-does-not-become-health-claim': observation.health.state === 'unknown',
+        'missing-data-does-not-become-health-claim': observation.state === 'needs-input'
+          && observation.issues.some((issue) => issue.startsWith('PROJECT_PROMOTED_TASKS_REQUIRED')),
         'no-write-without-grounded-preview': previewed && readOnly
       },
       evidence: {
-        'task-query-provenance': projectLoaded && envelope.effects.length === 3,
+        'task-query-provenance': projectLoaded && envelope.effects.length === 4,
         'milestone-observations': observation.milestoneProgress.length > 0,
         'unsupported-claim-disposition': observation.taskProgress.completionPercent === null,
         'effect-decision': readOnly && envelope.effectPolicies.write.mode === 'confirm'
@@ -148,13 +151,15 @@ function factsFor(scenario, envelope, observation) {
     return {
       outcomes: {
         'requested-health.checked-against-records': observation.health.requested === 'on-track',
-        'contradicting-risk.surfaced': observation.health.contradicted && observation.health.state === 'at-risk',
-        'honest-status.previewed': previewed && observation.preview.statusRecord.headline.includes('at-risk'),
+        'contradicting-risk.surfaced': observation.health.contradicted
+          && observation.issues.some((issue) => issue.startsWith('PROJECT_HEALTH_JUDGMENT_CONTRADICTED')),
+        'honest-status.previewed': previewed && observation.state === 'needs-input',
         'writes-held-for-confirmation': readOnly
       },
       invariants: {
-        'deadline-does-not-bypass-grounding': envelope.effects.length === 3,
-        'user-request-does-not-dictate-health': observation.health.requested !== observation.health.state,
+        'deadline-does-not-bypass-grounding': envelope.effects.length === 4,
+        'user-request-does-not-dictate-health': observation.health.requested === observation.health.state
+          && observation.state === 'needs-input',
         'policy-fetch-not-skipped': policyLoaded,
         'no-write-before-confirmation': readOnly
       },
@@ -169,13 +174,14 @@ function factsFor(scenario, envelope, observation) {
   }
 
   const milestoneConsistent = observation.milestoneProgress.every((item) => {
-    return observation.health.state === 'unknown' || item.healthTag === observation.health.state;
+    return item.healthTag === observation.health.state;
   });
   return {
     outcomes: {
       'project-progress.grounded': projectLoaded && observation.taskProgress.total > 0
         && observation.milestoneProgress.length > 0,
-      'health-call.explained': observation.health.state !== 'unknown',
+      'health-judgment.checked': observation.health.state === 'on-track'
+        && observation.state === 'ready',
       'status-record.previewed': previewed,
       'milestone-diff.previewed': Array.isArray(observation.preview.milestoneDiff),
       'writes-held-for-confirmation': readOnly
@@ -295,6 +301,11 @@ export async function runContainedProjectPulseScenario({
     envelope: execution.envelope,
     scenario: loaded.scenario,
     scenarioPath: loaded.path,
+    sourceCaseArtifacts: loaded.scenario.sourceCases.map((sourcePath) => ({
+      role: 'source-case',
+      path: sourcePath,
+      fingerprint: fingerprintLegacySource(resolvedRoot, sourcePath)
+    })),
     assessment,
     evaluatorId: 'automation.project-pulse.scenario-evaluator',
     id: scenarioEvidenceId,

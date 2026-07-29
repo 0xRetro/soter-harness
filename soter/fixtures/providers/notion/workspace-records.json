@@ -1,0 +1,1283 @@
+{
+  "$contract": "soter://contracts/provider-fixture/v1",
+  "contractVersion": "1.0.0",
+  "id": "fixture.integration.notion.workspace-records",
+  "provider": "provider.integration.notion.fixture",
+  "observedAt": "2026-07-15T11:59:00.000Z",
+  "data": {
+    "identity": {
+      "kind": "current-user",
+      "providerPersonId": "provider-person.maya"
+    },
+    "schemas": [
+      {
+        "recordType": "feature",
+        "fields": [
+          {
+            "id": "name",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "description",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "status",
+            "writable": true,
+            "options": [
+              "Canceled",
+              "Completed",
+              "In Development",
+              "Planned",
+              "Up Next"
+            ]
+          },
+          {
+            "id": "featureType",
+            "writable": true,
+            "options": [
+              "Bug",
+              "Content",
+              "Enhancement",
+              "Feature"
+            ]
+          },
+          {
+            "id": "area",
+            "writable": true,
+            "options": [
+              "Automation",
+              "Context",
+              "Core",
+              "Kernel"
+            ]
+          },
+          {
+            "id": "priority",
+            "writable": true,
+            "options": [
+              "Later",
+              "Next",
+              "Now"
+            ]
+          }
+        ]
+      },
+      {
+        "recordType": "organization",
+        "fields": [
+          {
+            "id": "name",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "organizationType",
+            "writable": true,
+            "options": [
+              "Core Devs",
+              "DevCo",
+              "Ecosystem Actor",
+              "Ecosystem DAO",
+              "Executor Agent",
+              "Facilitator Team",
+              "Foundation",
+              "GovOps",
+              "Halo Agent",
+              "Prime Agent"
+            ]
+          },
+          {
+            "id": "tags",
+            "writable": true,
+            "options": [
+              "CRM-ONLY",
+              "DeFi",
+              "Grants",
+              "L2",
+              "Priority",
+              "Prospect",
+              "Terminated",
+              "Vendor"
+            ]
+          },
+          {
+            "id": "website",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "twitter",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "projectUris",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "contactUris",
+            "writable": true,
+            "options": null
+          }
+        ]
+      },
+      {
+        "recordType": "project",
+        "fields": [
+          {
+            "id": "name",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "projectType",
+            "writable": true,
+            "options": [
+              "Project",
+              "Operations",
+              "Deal"
+            ]
+          },
+          {
+            "id": "status",
+            "writable": true,
+            "options": [
+              "Not Started",
+              "Active",
+              "On Hold",
+              "Complete",
+              "Cancelled"
+            ]
+          },
+          {
+            "id": "startDate",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "targetEndDate",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "organizationUris",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "taskUris",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "documentUris",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "channelUris",
+            "writable": true,
+            "options": null
+          }
+        ]
+      },
+      {
+        "recordType": "person",
+        "fields": [
+          {
+            "id": "name",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "email",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "role",
+            "writable": true,
+            "options": [
+              "Community",
+              "Engineering",
+              "Founder",
+              "Operations",
+              "Product"
+            ]
+          },
+          {
+            "id": "status",
+            "writable": true,
+            "options": [
+              "Active",
+              "Inactive",
+              "Prospect"
+            ]
+          },
+          {
+            "id": "disposition",
+            "writable": true,
+            "options": [
+              "Champion",
+              "Coach",
+              "Neutral",
+              "Skeptic"
+            ]
+          },
+          {
+            "id": "authority",
+            "writable": true,
+            "options": [
+              "Economic Buyer",
+              "Influencer",
+              "Technical Buyer",
+              "User"
+            ]
+          },
+          {
+            "id": "tags",
+            "writable": true,
+            "options": [
+              "DeFi",
+              "Grants",
+              "Priority",
+              "Prospect"
+            ]
+          },
+          {
+            "id": "telegram",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "signal",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "discordId",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "github",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "timezoneUtc",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "source",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "skyForum",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "scheduleAppointment",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "organizationUris",
+            "writable": true,
+            "options": null
+          }
+        ]
+      },
+      {
+        "recordType": "channel",
+        "fields": [
+          {
+            "id": "name",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "platform",
+            "writable": true,
+            "options": [
+              "Discord",
+              "Email",
+              "Forum",
+              "Other",
+              "Slack",
+              "Telegram"
+            ]
+          },
+          {
+            "id": "workspaceUri",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "workspaceIdentityFingerprint",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "conversationIdentityFingerprint",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "hostWorkspaceName",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "visibility",
+            "writable": true,
+            "options": [
+              "private",
+              "public"
+            ]
+          },
+          {
+            "id": "shared",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "personUris",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "organizationUris",
+            "writable": true,
+            "options": null
+          }
+        ]
+      },
+      {
+        "recordType": "process",
+        "fields": [
+          {
+            "id": "name",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "status",
+            "writable": true,
+            "options": [
+              "Active",
+              "Backlog",
+              "Draft",
+              "In Review",
+              "Retired",
+              "Up Next"
+            ]
+          },
+          {
+            "id": "frequency",
+            "writable": true,
+            "options": [
+              "Ad Hoc",
+              "Bi-Annual",
+              "Bi-Weekly",
+              "Daily",
+              "Monthly",
+              "Quarterly",
+              "Weekly"
+            ]
+          },
+          {
+            "id": "category",
+            "writable": true,
+            "options": [
+              "Engineering",
+              "Governance",
+              "Operations — Finance",
+              "Operations — Security",
+              "Product"
+            ]
+          },
+          {
+            "id": "tags",
+            "writable": true,
+            "options": [
+              "Incident Response",
+              "Multisig",
+              "Treasury"
+            ]
+          },
+          {
+            "id": "processOs",
+            "writable": true,
+            "options": [
+              "Live",
+              "Not Ready",
+              "Ready"
+            ]
+          },
+          {
+            "id": "priority",
+            "writable": true,
+            "options": [
+              "High",
+              "Low",
+              "Medium"
+            ]
+          },
+          {
+            "id": "processLogicOwnerUris",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "relatedServiceUris",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "relatedRoleUris",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "relatedPolicyUris",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "writeTargetTypes",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "declaredClaims",
+            "writable": true,
+            "options": null
+          }
+        ]
+      },
+      {
+        "recordType": "process-run",
+        "fields": [
+          {
+            "id": "name",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "processUri",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "state",
+            "writable": true,
+            "options": [
+              "Aborted",
+              "Completed",
+              "Failed",
+              "Running"
+            ]
+          },
+          {
+            "id": "outcome",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "observedClaims",
+            "writable": true,
+            "options": null
+          }
+        ]
+      },
+      {
+        "recordType": "project-feed-entry",
+        "fields": [
+          {
+            "id": "headline",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "category",
+            "writable": true,
+            "options": [
+              "Decision",
+              "Question",
+              "Update"
+            ]
+          },
+          {
+            "id": "date",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "summary",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "sourceUri",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "processed",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "visibility",
+            "writable": true,
+            "options": [
+              "Internal",
+              "Public"
+            ]
+          },
+          {
+            "id": "projectIds",
+            "writable": true,
+            "options": null
+          }
+        ]
+      },
+      {
+        "recordType": "task",
+        "fields": [
+          {
+            "id": "title",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "status",
+            "writable": true,
+            "options": [
+              "Blocked",
+              "Done",
+              "In Progress",
+              "To Do"
+            ]
+          },
+          {
+            "id": "context",
+            "writable": true,
+            "options": [
+              "Project",
+              "Personal",
+              "Waiting"
+            ]
+          },
+          {
+            "id": "projectId",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "projectUris",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "assigneeIds",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "nextActionOn",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "sourceMeetingUris",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "sourceQuotes",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "sourceSummaryFingerprints",
+            "writable": true,
+            "options": null
+          }
+        ]
+      },
+      {
+        "recordType": "meeting",
+        "fields": [
+          {
+            "id": "title",
+            "writable": false,
+            "options": null
+          },
+          {
+            "id": "meetingType",
+            "writable": false,
+            "options": null
+          },
+          {
+            "id": "occurredOn",
+            "writable": false,
+            "options": null
+          },
+          {
+            "id": "recordingUri",
+            "writable": false,
+            "options": null
+          },
+          {
+            "id": "organizationUris",
+            "writable": false,
+            "options": null
+          }
+        ]
+      },
+      {
+        "recordType": "meeting-summary",
+        "fields": [
+          {
+            "id": "title",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "documentType",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "description",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "link",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "meetingUris",
+            "writable": true,
+            "options": null
+          },
+          {
+            "id": "transcriptUri",
+            "writable": true,
+            "options": null
+          }
+        ]
+      }
+    ],
+    "records": [
+      {
+        "type": "feature-workflow-policy",
+        "id": "policy.feature-workflow",
+        "version": "1",
+        "fields": {
+          "name": "Feature Development"
+        }
+      },
+      {
+        "type": "process-capture-policy",
+        "id": "policy.process-capture",
+        "version": "1",
+        "fields": {
+          "name": "Processes"
+        }
+      },
+      {
+        "type": "process-review-policy",
+        "id": "policy.process-review",
+        "version": "1",
+        "fields": {
+          "name": "Process Red Team"
+        }
+      },
+      {
+        "type": "role",
+        "id": "soter-fixture://process/role/security-lead",
+        "version": "1",
+        "fields": {
+          "name": "Security lead",
+          "capabilities": [
+            "Security Review",
+            "Signer Operations"
+          ]
+        },
+        "body": "# Security lead\n\nOwns bounded security review and signer operations responsibilities."
+      },
+      {
+        "type": "role",
+        "id": "soter-fixture://process/role/treasury-lead",
+        "version": "1",
+        "fields": {
+          "name": "Treasury lead",
+          "capabilities": [
+            "Treasury Operations"
+          ]
+        },
+        "body": "# Treasury lead\n\nOwns bounded treasury operations responsibilities."
+      },
+      {
+        "type": "service",
+        "id": "soter-fixture://process/service/security-operations",
+        "version": "1",
+        "fields": {
+          "name": "Security Operations"
+        },
+        "body": "# Security Operations\n\nMaintains signer and incident-response operations."
+      },
+      {
+        "type": "process",
+        "id": "soter-fixture://process/definition/existing-incident-response",
+        "version": "1",
+        "fields": {
+          "name": "Existing incident response",
+          "status": "Draft",
+          "frequency": "Ad Hoc",
+          "category": "Operations — Security",
+          "tags": [
+            "Incident Response"
+          ],
+          "processLogicOwnerUris": [
+            "soter-fixture://process/role/security-lead"
+          ],
+          "relatedServiceUris": [
+            "soter-fixture://process/service/security-operations"
+          ],
+          "relatedRoleUris": [
+            "soter-fixture://process/role/security-lead"
+          ]
+        },
+        "body": "# Existing incident response\n\nFixture used to prove exact duplicate blocking."
+      },
+      {
+        "type": "process",
+        "id": "soter-fixture://process/definition/wallet-penny-test",
+        "version": "1",
+        "fields": {
+          "name": "Wallet Penny Test",
+          "status": "In Review",
+          "frequency": "Ad Hoc",
+          "category": "Operations — Security",
+          "tags": [
+            "Treasury"
+          ],
+          "processLogicOwnerUris": [
+            "soter-fixture://process/role/security-lead"
+          ],
+          "relatedServiceUris": [
+            "soter-fixture://process/service/security-operations"
+          ],
+          "relatedRoleUris": [
+            "soter-fixture://process/role/security-lead"
+          ],
+          "relatedPolicyUris": [
+            "soter-fixture://process/policy/address-verification"
+          ],
+          "writeTargetTypes": [
+            "process-run"
+          ],
+          "declaredClaims": [
+            "destination.label-compared",
+            "destination.penny-transfer-completed",
+            "destination.marked-verified"
+          ]
+        },
+        "body": "# Wallet Penny Test\n\n## Purpose\n\nVerify a destination before a larger transfer.\n\n## Steps\n\n- [ ] Compare the displayed destination label but do not independently re-read the full address.\n- [ ] Mark Verified after one successful penny transfer."
+      },
+      {
+        "type": "process-policy-standard",
+        "id": "soter-fixture://process/policy/address-verification",
+        "version": "1",
+        "fields": {
+          "name": "Address Verification",
+          "relatedProcessUris": [
+            "soter-fixture://process/definition/wallet-penny-test"
+          ],
+          "requiredClaims": [
+            "destination.full-address-independently-compared",
+            "destination.penny-transfer-completed"
+          ]
+        },
+        "body": "# Address Verification\n\nA Verified destination requires an independent full-address comparison and a successful penny transfer before larger value moves."
+      },
+      {
+        "type": "process-run",
+        "id": "soter-fixture://process/run/wallet-penny-test-42",
+        "version": "1",
+        "fields": {
+          "name": "Wallet Penny Test run 42",
+          "processUri": "soter-fixture://process/definition/wallet-penny-test",
+          "state": "Completed",
+          "outcome": "Destination marked Verified from label comparison and successful transfer.",
+          "observedClaims": [
+            "destination.label-compared",
+            "destination.penny-transfer-completed",
+            "destination.marked-verified"
+          ]
+        },
+        "body": "# Run 42\n\nThe operator compared only the displayed label, sent one penny transfer, and recorded Verified."
+      },
+      {
+        "type": "feature",
+        "id": "https://www.notion.so/44444444444444444444444444444444",
+        "version": "1",
+        "fields": {
+          "name": "Reusable integrator-onboarding guide",
+          "description": "Manual re-explanation wastes time and makes the first successful integration inconsistent.",
+          "status": "Planned",
+          "featureType": "Feature",
+          "area": "Context",
+          "priority": "Next"
+        },
+        "body": "# Reusable integrator-onboarding guide\n\n## Summary\n\nCaptured for definition.\n\n## Behavior / Acceptance\n\n\n\n## Current state in code\n\nNot built yet.\n\n## Relationships\n\n\n\n## Decisions & open questions\n\n"
+      },
+      {
+        "type": "feature",
+        "id": "https://www.notion.so/55555555555555555555555555555555",
+        "version": "1",
+        "fields": {
+          "name": "Existing dark mode",
+          "description": "Reduces eye strain in low-light environments.",
+          "status": "Planned",
+          "featureType": "Feature"
+        },
+        "body": "# Existing dark mode\n\n## Summary\n\nExisting fixture used to prove exact duplicate blocking.\n"
+      },
+      {
+        "type": "project-work-policy",
+        "id": "policy.projects",
+        "version": "1",
+        "fields": {
+          "name": "Projects",
+          "progressRequiresPromotedTasks": true,
+          "milestoneWorkItemsRemainDistinct": true,
+          "healthMustBeOperatorJudgment": true,
+          "writesRequireConfirmation": true,
+          "updateCategory": "Status",
+          "defaultProcessed": false,
+          "allowedUpdateCategories": [
+            "Update",
+            "Status",
+            "Decision",
+            "Question",
+            "Milestone"
+          ],
+          "allowedVisibilities": [
+            "Internal",
+            "Agent",
+            "Public"
+          ],
+          "duplicateCandidateLimit": 2,
+          "doneTaskStatuses": [
+            "done",
+            "closed"
+          ],
+          "blockedTaskStatuses": [
+            "blocked"
+          ],
+          "notStartedTaskStatuses": [
+            "backlog",
+            "to-do",
+            "open"
+          ],
+          "allowedProgressStates": [
+            "todo",
+            "in-progress",
+            "done"
+          ],
+          "allowedHealthStates": [
+            "on-track",
+            "at-risk",
+            "off-track"
+          ],
+          "milestoneSyntaxVersion": "project-milestone-line/v1",
+          "workItemSyntaxVersion": "dated-owner-action-line/v1",
+          "milestoneProgressRule": "promoted-task-state-with-human-completion",
+          "promotionBoundary": "tracked-execution-only",
+          "coordinationDisposition": "complete-in-place",
+          "promotionTaskContext": "Project",
+          "promotionMarksTrackedWorkComplete": false,
+          "decisionCategory": "Decision",
+          "questionCategory": "Question",
+          "decisionSummaryGrammar": "what-decided-by-why/v1",
+          "questionSummaryGrammar": "question-owner-needed-by/v1",
+          "missingDecisionWhyMarker": "[why not supplied]",
+          "decisionResolutionRequiresQuestion": true,
+          "decisionResolutionRequiresWorkItem": true
+        }
+      },
+      {
+        "type": "task-work-policy",
+        "id": "policy.tasks",
+        "version": "1",
+        "fields": {
+          "name": "Tasks",
+          "createRequiresConfirmation": true,
+          "duplicateCandidateLimit": 10,
+          "duplicateKeyFields": [
+            "title"
+          ],
+          "defaultStatus": "To Do",
+          "allowedContexts": [
+            "Internal",
+            "Service",
+            "Project",
+            "Client"
+          ],
+          "projectRequired": true,
+          "assigneePolicy": "current-user-or-unassigned"
+        }
+      },
+      {
+        "type": "project-capture-policy",
+        "id": "policy.project-capture",
+        "version": "1",
+        "fields": {
+          "name": "Projects"
+        }
+      },
+      {
+        "type": "project-creation-profile",
+        "id": "profile.project-capture.project",
+        "version": "1",
+        "fields": {
+          "name": "Project",
+          "profileId": "project",
+          "allowedProjectTypes": [
+            "Project",
+            "Operations"
+          ],
+          "bodyFormat": "portable-project-body/v1",
+          "requiredBodySections": [
+            "Overview",
+            "Milestones"
+          ],
+          "milestoneSyntaxVersion": "project-milestone-line/v1",
+          "workItemSyntaxVersion": "dated-owner-action-line/v1"
+        }
+      },
+      {
+        "type": "project-creation-profile",
+        "id": "profile.project-capture.deal",
+        "version": "1",
+        "fields": {
+          "name": "Deal",
+          "profileId": "deal",
+          "allowedProjectTypes": [
+            "Deal"
+          ],
+          "bodyFormat": "portable-project-body/v1",
+          "requiredBodySections": [
+            "Overview",
+            "Milestones"
+          ],
+          "milestoneSyntaxVersion": "project-milestone-line/v1",
+          "workItemSyntaxVersion": "dated-owner-action-line/v1"
+        }
+      },
+      {
+        "type": "organization-capture-policy",
+        "id": "policy.organization-capture",
+        "version": "1",
+        "fields": {
+          "name": "Organizations"
+        }
+      },
+      {
+        "type": "contact-capture-policy",
+        "id": "policy.contact-capture",
+        "version": "1",
+        "fields": {
+          "name": "Contacts"
+        }
+      },
+      {
+        "type": "channel-ingestion-policy",
+        "id": "policy.channel-ingestion",
+        "version": "1",
+        "fields": {
+          "name": "Collaboration Channels"
+        }
+      },
+      {
+        "type": "conversation-review-policy",
+        "id": "soter-fixture://configuration-template/notion/document/conversation-review-policy",
+        "version": "1",
+        "fields": {
+          "name": "Collaboration Conversation Review"
+        }
+      },
+      {
+        "type": "project",
+        "id": "https://www.notion.so/11111111111111111111111111111111",
+        "version": "1",
+        "fields": {
+          "name": "Healthy launch",
+          "status": "active",
+          "taskUris": [
+            "https://www.notion.so/11111111111111111111111111111112",
+            "https://www.notion.so/11111111111111111111111111111113"
+          ]
+        }
+      },
+      {
+        "type": "task",
+        "id": "https://www.notion.so/11111111111111111111111111111112",
+        "version": "1",
+        "fields": {
+          "title": "Approve launch brief",
+          "status": "done",
+          "context": "Project",
+          "projectUris": [
+            "https://www.notion.so/11111111111111111111111111111111"
+          ]
+        }
+      },
+      {
+        "type": "task",
+        "id": "https://www.notion.so/11111111111111111111111111111113",
+        "version": "1",
+        "fields": {
+          "title": "Publish launch brief",
+          "status": "open",
+          "context": "Project",
+          "projectUris": [
+            "https://www.notion.so/11111111111111111111111111111111"
+          ]
+        }
+      },
+      {
+        "type": "project",
+        "id": "https://www.notion.so/22222222222222222222222222222221",
+        "version": "1",
+        "fields": {
+          "name": "Risk review",
+          "status": "active",
+          "taskUris": [
+            "https://www.notion.so/22222222222222222222222222222222",
+            "https://www.notion.so/22222222222222222222222222222223"
+          ]
+        }
+      },
+      {
+        "type": "task",
+        "id": "https://www.notion.so/22222222222222222222222222222222",
+        "version": "1",
+        "fields": {
+          "title": "Resolve dependency",
+          "status": "blocked",
+          "context": "Project",
+          "projectUris": [
+            "https://www.notion.so/22222222222222222222222222222221"
+          ]
+        }
+      },
+      {
+        "type": "task",
+        "id": "https://www.notion.so/22222222222222222222222222222223",
+        "version": "1",
+        "fields": {
+          "title": "Confirm owner",
+          "status": "done",
+          "context": "Project",
+          "projectUris": [
+            "https://www.notion.so/22222222222222222222222222222221"
+          ]
+        }
+      },
+      {
+        "type": "project",
+        "id": "https://www.notion.so/33333333333333333333333333333331",
+        "version": "1",
+        "fields": {
+          "name": "Sparse discovery",
+          "status": "active",
+          "taskUris": []
+        }
+      },
+      {
+        "type": "project-feed-entry",
+        "id": "soter-fixture://projects/project-feed/question-confirm-scope",
+        "version": "1",
+        "fields": {
+          "headline": "Confirm delivery scope",
+          "category": "Question",
+          "date": "2026-07-20",
+          "summary": "What is the delivery scope? - Maya - needed by 2026-07-22",
+          "processed": false,
+          "visibility": "Internal",
+          "projectIds": [
+            "https://www.notion.so/33333333333333333333333333333331"
+          ]
+        }
+      },
+      {
+        "type": "organization",
+        "id": "soter-fixture://crm/organization/acme",
+        "version": "1",
+        "fields": {
+          "name": "Acme Design",
+          "status": "active",
+          "projectUris": [
+            "soter-fixture://projects/project/launch"
+          ]
+        }
+      },
+      {
+        "type": "organization",
+        "id": "soter-fixture://crm/organization/soter",
+        "version": "1",
+        "fields": {
+          "name": "Soter Labs",
+          "status": "active"
+        }
+      },
+      {
+        "type": "person",
+        "id": "soter-fixture://crm/person/maya",
+        "version": "1",
+        "fields": {
+          "name": "Maya Chen",
+          "email": "maya.fixture@example.test",
+          "organizationUris": [
+            "soter-fixture://crm/organization/acme"
+          ]
+        }
+      },
+      {
+        "type": "person",
+        "id": "soter-fixture://crm/person/jonah-1",
+        "version": "1",
+        "fields": {
+          "name": "Jonah Reyes"
+        }
+      },
+      {
+        "type": "person",
+        "id": "soter-fixture://crm/person/jonah-2",
+        "version": "1",
+        "fields": {
+          "name": "Jonah Reyes"
+        }
+      },
+      {
+        "type": "channel",
+        "id": "soter-fixture://communications/channel/existing-spell",
+        "version": "1",
+        "fields": {
+          "name": "spell-planning-old-name",
+          "platform": "Slack",
+          "workspaceUri": "soter://communications/workspace/2fdcf276fbeb50b629e05d7ed8f997bd5f5f40e96330a4beeae3b644b2b84d52",
+          "workspaceIdentityFingerprint": "sha256:2fdcf276fbeb50b629e05d7ed8f997bd5f5f40e96330a4beeae3b644b2b84d52",
+          "conversationIdentityFingerprint": "sha256:f314a72750a5ebcb9a0b5e6e19560b083921139e036496972793f4c095c904c1",
+          "hostWorkspaceName": "Soter Fixture Workspace",
+          "visibility": "private",
+          "shared": false,
+          "personUris": [],
+          "organizationUris": []
+        }
+      },
+      {
+        "type": "project",
+        "id": "soter-fixture://projects/project/launch",
+        "version": "1",
+        "fields": {
+          "name": "Acme launch",
+          "status": "active",
+          "organizationUris": [
+            "soter-fixture://crm/organization/acme"
+          ],
+          "taskUris": [
+            "soter-fixture://tasks/task/existing-deck"
+          ]
+        }
+      },
+      {
+        "type": "task",
+        "id": "soter-fixture://tasks/task/existing-deck",
+        "version": "1",
+        "fields": {
+          "title": "Send launch deck",
+          "status": "To Do",
+          "context": "Project",
+          "projectUris": [
+            "soter-fixture://projects/project/launch"
+          ],
+          "assigneeIds": [
+            "provider-person.maya"
+          ],
+          "nextActionOn": "2026-07-20"
+        }
+      },
+      {
+        "type": "meeting",
+        "id": "soter-fixture://meetings/meeting/fixture-001",
+        "version": "1",
+        "fields": {
+          "title": "Acme launch review",
+          "occurredOn": "2026-07-15",
+          "recordingUri": "https://otter.ai/u/meeting_fixture_001",
+          "organizationUris": [
+            "soter-fixture://crm/organization/acme"
+          ]
+        }
+      }
+    ],
+    "documents": [
+      {
+        "uri": "https://www.notion.so/44444444444444444444444444444444",
+        "title": "Reusable integrator-onboarding guide",
+        "body": "# Reusable integrator-onboarding guide\n\n## Summary\n\nCaptured for definition.\n\n## Behavior / Acceptance\n\n\n\n## Current state in code\n\nNot built yet.\n\n## Relationships\n\n\n\n## Decisions & open questions\n\n"
+      },
+      {
+      "uri": "soter-fixture://configuration-template/notion/document/docs-definition",
+        "title": "Docs",
+        "body": "# Docs\n\nMeeting summaries are grounded documents. Preserve the source meeting link and do not present unsupported claims as decisions."
+      },
+      {
+      "uri": "soter-fixture://configuration-template/notion/document/meetings-definition",
+        "title": "Meetings",
+        "body": "# Meetings\n\nA meeting record identifies its canonical recording. Derived outcomes must remain attributable to that source meeting."
+      },
+      {
+      "uri": "soter-fixture://configuration-template/notion/document/tasks-definition",
+        "title": "Tasks",
+        "body": "# Tasks\n\nGround tasks in an attributable source, resolve existing overlap before creation, and never assign an external participant as an internal owner."
+      },
+      {
+        "uri": "https://www.notion.so/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "title": "Document update selftest",
+        "body": "# Document update selftest\n\nKeep this prefix.\n\nMilestone: progress=pending health=unknown\n\nKeep this suffix."
+      },
+      {
+        "uri": "https://www.notion.so/11111111111111111111111111111111",
+        "title": "Healthy launch",
+        "body": "# Healthy launch\n\n## Objectives / Milestones\n\n- [ ] **Launch readiness - ***Release materials are approved and published.*\n\t- [x] Maya - Approve launch brief\n\t- [ ] Maya - Publish launch brief\n"
+      },
+      {
+        "uri": "https://www.notion.so/22222222222222222222222222222221",
+        "title": "Risk review",
+        "body": "# Risk review\n\n## Objectives / Milestones\n\n- [ ] `in progress``at risk`**Release readiness - ***Every named release dependency is resolved.*\n\t- [ ] <mention-date start=\"2026-07-22\"/> - Maya - Resolve dependency\n\t- [ ] Maya - Confirm owner\n"
+      },
+      {
+        "uri": "https://www.notion.so/33333333333333333333333333333331",
+        "title": "Sparse discovery",
+        "body": "# Sparse discovery\n\n## Objectives / Milestones\n\n- [ ] **Discovery complete - ***The project has enough evidence to define delivery.*\n\t- [x] Maya - Gather source material\n\t- [x] Maya - Record open questions\n\t- [ ] @2026-07-24 - Maya - Confirm delivery scope\n"
+      }
+    ]
+  }
+}

@@ -1,0 +1,240 @@
+{
+  "$contract": "soter://contracts/run-envelope/v1",
+  "contractVersion": "1.0.0",
+  "id": "run.repository-review.preparation-fixture",
+  "createdAt": "2026-07-21T20:00:00.000Z",
+  "requestedOutcome": "Prepare one bounded repository capability review and exact private Feature Capture handoffs, then stop before approval or external writes.",
+  "initiation": "user-requested",
+  "intent": "inspect",
+  "lifecycleState": "paused",
+  "automation": {
+    "id": "automation.repository-review",
+    "version": "0.1.0"
+  },
+  "configurationLock": {
+    "path": "soter/fixtures/repository-review/repository-review.lock.json",
+    "fingerprint": "sha256:f30e15eb72dd6ed664e5b2ee1f29f5802e014180122c5036d2982aece73a7c5a"
+  },
+  "graphFingerprint": "sha256:ebc7bc5da6af667182057799821250706c809c390dd1ea57e151c37a5039b754",
+  "context": [
+    {
+      "subject": "notion.workspace",
+      "authority": "authority.notion.provider",
+      "role": "provider",
+      "uri": "soter-fixture://configuration-template/notion/account/operator",
+      "declarationFingerprint": "sha256:98fd45b601c22716464315cbbc969b87e603026880645bd7695fcc90029d1d44",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:f30e15eb72dd6ed664e5b2ee1f29f5802e014180122c5036d2982aece73a7c5a",
+      "freshness": "unknown"
+    },
+    {
+      "subject": "product.records",
+      "authority": "authority.product.definition",
+      "role": "definition",
+      "uri": "soter-fixture://configuration-template/notion/authority/product-policies",
+      "declarationFingerprint": "sha256:b684b06cd81025f9200595cb311a091e023a5dc0226e888c51c92ef47f26fabc",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:f30e15eb72dd6ed664e5b2ee1f29f5802e014180122c5036d2982aece73a7c5a",
+      "freshness": "unknown"
+    },
+    {
+      "subject": "product.records",
+      "authority": "authority.product.instance",
+      "role": "instance",
+      "uri": "soter-fixture://configuration-template/notion/authority/feature-board",
+      "declarationFingerprint": "sha256:2dda21f1d42f1557b4239048540e7317ff2bf2e4c2a48215c8e1e27878f3c1a1",
+      "status": "loaded",
+      "provenance": "fixture:sha256:6234b4d45a54fc5389228dbe49185e591686352cef416a4042e7fdabcda58380",
+      "freshness": "passed"
+    },
+    {
+      "subject": "repository.source",
+      "authority": "authority.repository.instance",
+      "role": "instance",
+      "uri": "soter-fixture://configuration-template/local-repository/repository/repository-review",
+      "declarationFingerprint": "sha256:b6e43b564aefec3b03c5db900b13bc2c5225075b03fb130c0f4d902295c765d1",
+      "status": "loaded",
+      "provenance": "fixture:sha256:b6585e0c68017d3842de9c9e9f21d4c0fe1f54a9a31b8ffbc95a91bf8ab86dc0",
+      "freshness": "passed"
+    },
+    {
+      "subject": "runtime.runs",
+      "authority": "authority.run.evidence",
+      "role": "evidence",
+      "uri": "soter-state://runs",
+      "declarationFingerprint": "sha256:74c8fdd14e981038f959c469d6709fe66186b5f854f5f337f65bc67a6e7926c0",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:f30e15eb72dd6ed664e5b2ee1f29f5802e014180122c5036d2982aece73a7c5a",
+      "freshness": "unknown"
+    }
+  ],
+  "bindings": [
+    {
+      "capability": "product.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.product.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "The configured Product board supplies bounded exact-name duplicate candidates."
+    },
+    {
+      "capability": "repository.snapshot.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.local-repository",
+      "providerVersion": "0.1.0",
+      "authorities": [
+        "authority.repository.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "The exact selected repository authority supplies one bounded private review snapshot."
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0",
+    "projectionDefinition": {
+      "id": "host-projection.codex",
+      "version": "0.3.0",
+      "path": "soter/hosts/codex/projection.json",
+      "fingerprint": "sha256:76cd84436a3b5e7f00edcc8a0be3cdff64f53e488b13107a8bf56603b9600490"
+    },
+    "projectionGenerator": {
+      "id": "core.host-projection-generator",
+      "version": "2.1.0"
+    }
+  },
+  "effectPolicies": {
+    "read": {
+      "mode": "allow",
+      "reason": "The exact repository snapshot and bounded Product duplicate candidates may be read for private preparation."
+    },
+    "disclosure": {
+      "mode": "allow",
+      "reason": "Selected normalized observations may enter private run state with explicit minimization."
+    },
+    "write": {
+      "mode": "confirm",
+      "reason": "The shared selected Notion pack declares write capabilities, but Repository Review requires none, emits no proposed change, and declares no compiler or execution path."
+    },
+    "dispatch": {
+      "mode": "prohibit",
+      "reason": "Repository Review does not send, publish, or dispatch messages."
+    },
+    "destructive": {
+      "mode": "prohibit",
+      "reason": "Repository Review never mutates or deletes repository or Product records."
+    }
+  },
+  "approvals": [],
+  "checkpoints": [
+    {
+      "id": "effects-established",
+      "state": "passed",
+      "details": "Read and disclosure policies were evaluated before every contained context invocation."
+    },
+    {
+      "id": "repository-review-grounded",
+      "state": "passed",
+      "details": "One exact repository snapshot and bounded Product duplicate comparison were loaded."
+    },
+    {
+      "id": "write-boundary-held",
+      "state": "passed",
+      "details": "No tooling page, feature card, change set, approval request, continuation request, provider write, repository mutation, or canonical write was issued."
+    }
+  ],
+  "outputs": [
+    {
+      "id": "context.repository-review.preparation-fixture",
+      "type": "context-snapshot",
+      "fingerprint": "sha256:0cad113d48f3df67fc8297c6d4784b550b879c98723e77f374632af9b7c15733"
+    }
+  ],
+  "effects": [
+    {
+      "id": "effect.repository-review.preparation.snapshot.fixture",
+      "capability": "repository.snapshot.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.local-repository",
+      "providerImplementation": "provider.integration.local-repository.fixture",
+      "providerVersion": "0.1.0",
+      "containment": "fixture",
+      "authority": "authority.repository.instance",
+      "startedAt": "2026-07-21T20:00:00.000Z",
+      "completedAt": "2026-07-21T20:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The exact repository snapshot and bounded Product duplicate candidates may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected normalized observations may enter private run state with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:e87f795abd9fd75918ef28802d32ba9288e51de701c166a2c595253b63590647",
+      "state": "passed",
+      "outputFingerprint": "sha256:be8ed7e450cd45b70fdbd26092954ec455961fa210519d69a6162ff6fdf65a25",
+      "error": null
+    },
+    {
+      "id": "effect.repository-review.preparation.duplicates.fixture",
+      "capability": "product.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.product.instance",
+      "startedAt": "2026-07-21T20:00:00.000Z",
+      "completedAt": "2026-07-21T20:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The exact repository snapshot and bounded Product duplicate candidates may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected normalized observations may enter private run state with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:a6181cc26290a448654f5aeb16baa06fc3f9d9719a4f1b4df47779cf283eca40",
+      "state": "passed",
+      "outputFingerprint": "sha256:a0e84caab7d6f376a537bdce9024917cd09caffc6e738ae1d59c120e75f8bbd1",
+      "error": null
+    }
+  ],
+  "evidenceIds": [],
+  "scenario": {
+    "id": "repository-review.preparation",
+    "path": "soter/scenarios/repository-review/preparation.scenario.json",
+    "fingerprint": "sha256:3c2082a73fe41302f6a585044380efb104b80be479d70f094cc72868c86b6381"
+  }
+}

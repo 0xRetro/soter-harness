@@ -1,0 +1,56 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "storage.artifacts.read",
+  "version": "1.0.0",
+  "purpose": "Reads one exact stored artifact identity and placement metadata without loading its content.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["uri"],
+    "properties": { "uri": { "type": "string", "minLength": 3 } }
+  },
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["artifact", "provenance", "observedAt"],
+    "properties": {
+      "artifact": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "uri", "kind", "ownership", "link", "parentUris", "targetUri", "fingerprint"],
+        "properties": {
+          "name": { "type": "string" },
+          "uri": { "type": "string" },
+          "kind": { "enum": ["file", "folder", "shortcut"] },
+          "ownership": { "enum": ["organization", "external"] },
+          "link": { "type": "string" },
+          "parentUris": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string" } },
+          "targetUri": { "type": ["string", "null"] },
+          "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        }
+      },
+      "provenance": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["provider", "authority", "sourceKind", "sourceReferenceFingerprint"],
+        "properties": {
+          "provider": { "type": "string" },
+          "authority": { "type": "string" },
+          "sourceKind": { "enum": ["fixture", "connected"] },
+          "sourceReferenceFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        }
+      },
+      "observedAt": { "type": "string", "minLength": 20 }
+    }
+  },
+  "authentication": { "required": true, "minimumScopes": ["storage:read"] },
+  "effects": ["read", "disclosure"],
+  "idempotency": { "mode": "not-applicable", "key": null },
+  "retry": { "safe": true, "maxAttempts": 2, "checkpoint": "Persist the exact artifact URI and observed fingerprint before retry." },
+  "errors": ["authentication", "authorization", "validation", "conflict", "rate-limit", "unavailable", "retryable", "not-found", "unknown"],
+  "freshness": { "returnsProvenance": true, "returnsObservedAt": true, "maxAgeSeconds": 300 },
+  "health": { "check": "Read one contained artifact metadata record.", "fixture": "soter/fixtures/providers/google-drive/storage.json", "containedVerification": "Prove exact identity, metadata-only projection, and raw-content exclusion." },
+  "providerLimitations": ["Metadata does not establish retention judgment, destination suitability, write permission, or the truth of unobserved artifact content."]
+}

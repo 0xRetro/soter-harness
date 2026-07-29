@@ -10,8 +10,10 @@
     "module": "soter/integrations/gmail/mcp.mjs",
     "prepareExport": "prepareMcp",
     "completeExport": "completeMcp",
-    "probePrepareExport": "prepareProbeMcp",
-    "probeCompleteExport": "completeProbeMcp",
+    "probePlanExport": "prepareProbePlanMcp",
+    "probeStepCompleteExport": "completeProbePlanStepMcp",
+    "probeFinalizeExport": "finalizeProbePlanMcp",
+    "responseProfiles": ["gmail.codex.connector.v1"],
     "server": "gmail",
     "tools": [
       "get_profile", "search_email_ids", "batch_read_email_threads",
@@ -34,7 +36,7 @@
   "fixtures": [],
   "limitations": [
     "The connector route is declared for Codex only. It is not connected evidence and does not establish authentication, permission, tool availability, response compatibility, readiness, verification, or health for an installation.",
-    "Message search and thread expansion have synthetic normalizer proof only. Exact connector response compatibility, pagination behavior, RFC822 Message-ID availability, and connected readiness remain unknown until expiring exact-lock evidence exists.",
+    "Message search, thread expansion, label acknowledgement, and label read-back accept only the declared gmail.codex.connector.v1 response profile. Static tests prove fail-closed normalization; live connector compatibility, pagination behavior, RFC822 Message-ID availability, and connected readiness remain unknown until expiring exact-lock evidence exists.",
     "Label writes use exact Gmail message IDs and existing label display names with create_missing_labels=false. The write result is only an acknowledged request scope; exact read-back through batch_read_email is still required.",
     "Draft creation is intentionally absent because the installed connector exposes no exact idempotency-key lookup or bounded draft read-back sufficient for ambiguity reconciliation.",
     "No mail send, archive, trash, forwarding, label creation, or destructive capability is declared. Native provider responses and account identity values remain private and are never persisted by Core."

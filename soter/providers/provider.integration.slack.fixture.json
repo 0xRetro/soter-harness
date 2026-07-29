@@ -1,0 +1,30 @@
+{
+  "$contract": "soter://contracts/capability-provider/v1",
+  "contractVersion": "1.0.0",
+  "id": "provider.integration.slack.fixture",
+  "pack": "integration.slack",
+  "version": "0.1.0",
+  "containment": "fixture",
+  "runtime": {
+    "engine": "node",
+    "module": "soter/integrations/slack/fixture.mjs",
+    "export": "invoke"
+  },
+  "capabilities": [
+    { "id": "communications.conversations.list", "version": "1.0.0" },
+    { "id": "communications.participants.read", "version": "1.0.0" },
+    { "id": "communications.messages.read", "version": "1.0.0" },
+    { "id": "communications.thread.read", "version": "1.0.0" }
+  ],
+  "authorities": [
+    { "role": "instance", "subject": "communications.workspace" },
+    { "role": "provider", "subject": "slack.workspace" }
+  ],
+  "effects": ["read", "disclosure"],
+  "mappings": [],
+  "fixtures": ["soter/fixtures/providers/slack/workspace.json"],
+  "limitations": [
+    "Uses deterministic synthetic workspace, conversation, participant, message, and thread data only; it does not authenticate to or establish the current state of a Slack workspace.",
+    "Normalized message content is private untrusted data. No write, dispatch, archive, or destructive capability exists."
+  ]
+}

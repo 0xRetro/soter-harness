@@ -1,0 +1,51 @@
+{
+  "$contract": "soter://contracts/configuration/v1",
+  "contractVersion": "1.0.0",
+  "name": "claude-host-projection",
+  "base": {
+    "kernel": "kernel.soter",
+    "core": "core.runtime"
+  },
+  "packs": [],
+  "bindings": [],
+  "sources": [],
+  "authorities": [
+    {
+      "id": "authority.claude-host-projection.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "uri": "soter-state://runs",
+      "reason": "Core retains its required local evidence authority without granting host launch or tool authority."
+    }
+  ],
+  "effectPolicies": {
+    "read": {
+      "mode": "prohibit",
+      "reason": "The static Claude host-projection fixture performs no provider, workspace, or private-state read."
+    },
+    "disclosure": {
+      "mode": "prohibit",
+      "reason": "The static Claude host-projection fixture discloses no provider or private workspace content."
+    },
+    "write": {
+      "mode": "prohibit",
+      "reason": "The static Claude host-projection fixture performs no host realization or file write."
+    },
+    "dispatch": {
+      "mode": "prohibit",
+      "reason": "The static Claude host-projection fixture launches no host task, agent, plugin, or external operation."
+    },
+    "destructive": {
+      "mode": "prohibit",
+      "reason": "The static Claude host-projection fixture performs no deletion, replacement, or configuration mutation."
+    }
+  },
+  "secretRefs": [],
+  "host": {
+    "id": "claude",
+    "adapter": "host.claude",
+    "version": "0.3.1",
+    "reason": "Select the governed Claude adapter for exact static projection inspection without launching or realizing it."
+  },
+  "settings": {}
+}

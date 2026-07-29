@@ -1,0 +1,26 @@
+{
+  "$contract": "soter://contracts/capability-provider/v1",
+  "contractVersion": "1.0.0",
+  "id": "provider.integration.local-repository.fixture",
+  "pack": "integration.local-repository",
+  "version": "0.1.0",
+  "containment": "fixture",
+  "runtime": {
+    "engine": "node",
+    "module": "soter/integrations/local-repository/fixture.mjs",
+    "export": "invoke"
+  },
+  "capabilities": [
+    { "id": "repository.snapshot.read", "version": "1.0.0" }
+  ],
+  "authorities": [
+    { "role": "instance", "subject": "repository.source" }
+  ],
+  "effects": ["read", "disclosure"],
+  "mappings": [],
+  "fixtures": ["soter/fixtures/providers/local-repository/repositories.json"],
+  "limitations": [
+    "Uses deterministic normalized local fixture observations only; it does not open a user repository or execute Git.",
+    "Capability observations remain private review inputs and create no Product record, approval, execution, readiness, verification, or health authority."
+  ]
+}

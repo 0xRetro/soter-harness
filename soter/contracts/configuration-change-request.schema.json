@@ -17,10 +17,10 @@
     "plan": { "$ref": "#/$defs/reference" },
     "configuration": {
       "type": "object", "additionalProperties": false,
-      "required": ["name", "path", "currentLockFingerprint", "candidateLockFingerprint", "candidateGraphFingerprint"],
+      "required": ["name", "sourceKind", "currentLockFingerprint", "candidateLockFingerprint", "candidateGraphFingerprint"],
       "properties": {
         "name": { "type": "string" },
-        "path": { "type": "string" },
+        "sourceKind": { "const": "private-active" },
         "currentLockFingerprint": { "$ref": "#/$defs/fingerprint" },
         "candidateLockFingerprint": { "$ref": "#/$defs/fingerprint" },
         "candidateGraphFingerprint": { "$ref": "#/$defs/fingerprint" }

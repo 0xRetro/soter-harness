@@ -1,0 +1,519 @@
+{
+  "$contract": "soter://contracts/development-agent-migration-evidence/v1",
+  "contractVersion": "1.0.0",
+  "id": "development-agent-migration-evidence.codex.forge",
+  "evidenceFingerprint": "sha256:79ea53535b83a847cf86e2012203f66b32c3bef512f3383e7939d498aeebd9cb",
+  "createdAt": "2026-07-26T08:00:43.162Z",
+  "sourceObservation": {
+    "id": "development-host-observation.codex.forge-v2-baseline-r19",
+    "fingerprint": "sha256:e6539490918fa77f39969114f089e4e58c47fd6cc19582f0855b153a88dbd837",
+    "observedAt": "2026-07-26T08:00:43.162Z"
+  },
+  "applicability": {
+    "kind": "historical-candidate-only",
+    "evaluatedSubjectFingerprint": "sha256:bf6e91ee9e4530f5543e67ebd4768ba910dfe311c278be67d925ed35f183641b",
+    "candidate": {
+      "configurationName": "harness-development-catalog",
+      "lockFingerprint": "sha256:055c097af94544bed335154f671475bc75a9ab781a1e1a9b47911114e6d71f7e",
+      "graphFingerprint": "sha256:1a1f66620e74d2a6445a392531bcd743c6c391922c312dbc34032e6b9c48b228",
+      "candidateProjectionFingerprint": "sha256:2ea2ed5632fd769cf8d72a8e2e0ff9e02983fba4c9b9127386b98ebf1481e2fb"
+    },
+    "finalGraph": "not-claimed",
+    "finalProjection": "not-claimed",
+    "currentRuntime": "not-claimed",
+    "activation": "not-granted",
+    "fallbackRemoval": "not-granted"
+  },
+  "request": {
+    "id": "development-request.codex.forge-v2-baseline-r19",
+    "fingerprint": "sha256:b9d988c85a5084a1b9857785be33b3c1d6e5ab9bbb37a49f553f2eb690cbb605",
+    "createdAt": "2026-07-26T07:49:48.519Z"
+  },
+  "result": {
+    "id": "development-result.codex.forge-v2-baseline-r19",
+    "fingerprint": "sha256:a985826b7fa22aa73300ef65865168b535da0a3448943f725e72161706ed9a4e",
+    "createdAt": "2026-07-26T08:00:43.162Z",
+    "completedAt": "2026-07-26T08:00:43.162Z",
+    "state": "passed"
+  },
+  "workflow": {
+    "id": "automation.forge",
+    "version": "0.1.0",
+    "definitionFingerprint": "sha256:26bc58dcfd89d2feae43c87cbf3597a05d4eb859f6fc90913b5c06317260c661"
+  },
+  "evaluatedSubject": {
+    "kind": "workflow-guide",
+    "id": "workflow-guide.forge",
+    "version": "0.1.0",
+    "fingerprint": "sha256:bf6e91ee9e4530f5543e67ebd4768ba910dfe311c278be67d925ed35f183641b",
+    "contentFingerprint": "sha256:d95d66dfce387537f5e8860fe837310856d455e462a913538375a98d5b52f9a7",
+    "candidateProjectionFingerprint": "sha256:2ea2ed5632fd769cf8d72a8e2e0ff9e02983fba4c9b9127386b98ebf1481e2fb"
+  },
+  "evaluationSet": {
+    "id": "evaluation-set.forge",
+    "version": "0.1.0",
+    "fingerprint": "sha256:7b6bb7c84828e8b7a524eb51d9ebf4a77f1c761c531f607d3ec84c97464dc859"
+  },
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.0",
+    "adapterFingerprint": "sha256:45124ada6f79000a23e61ed6ddd78c2ed81bd032e39792a1e8cd24736e3a493f",
+    "projectionDefinitionId": "host-projection.codex",
+    "projectionDefinitionFingerprint": "sha256:76cd84436a3b5e7f00edcc8a0be3cdff64f53e488b13107a8bf56603b9600490",
+    "evaluatedInstructionFingerprint": "sha256:00a5db425597001f7217f7a475b3c36f55d81c2493821513e7115a9deb2da590",
+    "candidateProjectionFingerprint": "sha256:2ea2ed5632fd769cf8d72a8e2e0ff9e02983fba4c9b9127386b98ebf1481e2fb",
+    "observer": {
+      "id": "development-host-observer.codex",
+      "version": "1.0.0",
+      "implementationFingerprint": "sha256:c3a25cfe0032b7ebdcdf8d611ddd4bf2fb8c6751d68b00ce3e580734a47a62c4",
+      "transport": "trusted-local-host-adapter"
+    }
+  },
+  "workspace": {
+    "pre": {
+      "rootIdentityFingerprint": "sha256:99a6f67402e9a9e1c707fd5bfd7192567641b924d37845389a46aa715f4f0fd0",
+      "revisionFingerprint": "sha256:49a3cf9b32dcbed2e32245356895446b15d13788349bf53ce718bc1686160702",
+      "treeFingerprint": "sha256:e825169fa0f4e801be8220c9a0c7bf18a711f39021babb25b420d69531488dda",
+      "exactInputState": "clean",
+      "policyFingerprint": "sha256:84ea480a61e67ac271b9cb3bb58ef338f0430d9a04d772d3ec47cad17175bfc1",
+      "settingsFingerprint": "sha256:29af5635184de8dc3e9fd054add521fbeb507a381562a43039e17a4555318436"
+    },
+    "post": {
+      "rootIdentityFingerprint": "sha256:99a6f67402e9a9e1c707fd5bfd7192567641b924d37845389a46aa715f4f0fd0",
+      "revisionFingerprint": "sha256:49a3cf9b32dcbed2e32245356895446b15d13788349bf53ce718bc1686160702",
+      "treeFingerprint": "sha256:e825169fa0f4e801be8220c9a0c7bf18a711f39021babb25b420d69531488dda",
+      "exactInputState": "clean",
+      "policyFingerprint": "sha256:84ea480a61e67ac271b9cb3bb58ef338f0430d9a04d772d3ec47cad17175bfc1",
+      "settingsFingerprint": "sha256:29af5635184de8dc3e9fd054add521fbeb507a381562a43039e17a4555318436"
+    }
+  },
+  "environment": {
+    "containment": "isolated-host-process",
+    "runtimeFingerprint": "sha256:b8165d0c4dcd50dca20c92b1cf1d86c5671ac08f6c82999e9cb3204af2b35550"
+  },
+  "runs": [
+    {
+      "id": "evaluation-run.forge.baseline",
+      "sequence": 1,
+      "caseId": "happy-path",
+      "caseFingerprint": "sha256:d778a14cf75717a1520baac39b50ba39594f987a92991ed1bf1d4a204270760c",
+      "stimulusFingerprint": "sha256:e732c4a5804fce9c6d45152208d7ed8b6fb99181d70179e3bc630aa7f0c946e2",
+      "arm": "baseline",
+      "guideState": "withheld",
+      "startedAt": "2026-07-26T07:58:07.994Z",
+      "completedAt": "2026-07-26T07:58:23.224Z",
+      "worker": {
+        "id": "worker-run.codex.forge-v2-baseline-r19.1",
+        "workerFingerprint": "sha256:ed8275cbf939d225c9521a1351952128757987bdc61aae26a6f6e4ec9921b149",
+        "dispatchFingerprint": "sha256:1047be61b9e61da56a2197ed2034f69947d5ae2e44cab351287d58951a384a42",
+        "transcriptFingerprint": "sha256:2a6bb76bd5dd066cbe742cc4e33b11be9771fd03ec0e0c2f2dfcddc82c95c20f",
+        "expectationsIncluded": false,
+        "answerKeyAccess": "not-observed",
+        "state": "passed"
+      },
+      "judgment": {
+        "id": "judgment.codex.forge-v2-baseline-r19.1",
+        "verdict": "passed",
+        "criteria": [
+          {
+            "id": "happy-path.expected.1",
+            "kind": "expected",
+            "sequence": 1,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:6ce5dd203503ab360e4493927377d87b75294d8c981c83c6ea019ab68b939093"
+          },
+          {
+            "id": "happy-path.expected.2",
+            "kind": "expected",
+            "sequence": 2,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:90622c8ae163a327d21f1ad119fde135c9e13fa8829e07d76a904cd4d0383dd8"
+          },
+          {
+            "id": "happy-path.prohibited.1",
+            "kind": "prohibited",
+            "sequence": 1,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:39770f4d057b0f891aad94cf9fb4ca1ec4477df1ccff16f644864b516eeedf73"
+          },
+          {
+            "id": "happy-path.prohibited.2",
+            "kind": "prohibited",
+            "sequence": 2,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:86199b8b4f92ea6abf1092c1d5fb80b7ca8b2d9f4ce73c0810cf56cf2d7c4f89"
+          }
+        ]
+      }
+    },
+    {
+      "id": "evaluation-run.forge.guided.happy-path",
+      "sequence": 2,
+      "caseId": "happy-path",
+      "caseFingerprint": "sha256:d778a14cf75717a1520baac39b50ba39594f987a92991ed1bf1d4a204270760c",
+      "stimulusFingerprint": "sha256:e732c4a5804fce9c6d45152208d7ed8b6fb99181d70179e3bc630aa7f0c946e2",
+      "arm": "guided",
+      "guideState": "candidate",
+      "startedAt": "2026-07-26T07:58:23.232Z",
+      "completedAt": "2026-07-26T07:58:44.293Z",
+      "worker": {
+        "id": "worker-run.codex.forge-v2-baseline-r19.2",
+        "workerFingerprint": "sha256:598633aaadae89c75c2472f169ffb148998390949671e856ec56972dca9ee7a5",
+        "dispatchFingerprint": "sha256:00631490bd364c8e95620c68af1516e84a06ad2f90fe4167a4451ed230b6770e",
+        "transcriptFingerprint": "sha256:c1593d29808e05e06589aa3359f3de5c15ab4fca2b1f5a922ccd606b766875c6",
+        "expectationsIncluded": false,
+        "answerKeyAccess": "not-observed",
+        "state": "passed"
+      },
+      "judgment": {
+        "id": "judgment.codex.forge-v2-baseline-r19.2",
+        "verdict": "passed",
+        "criteria": [
+          {
+            "id": "happy-path.expected.1",
+            "kind": "expected",
+            "sequence": 1,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:09bd8faafe2dcbd800f6eb877f6d48e45bbd2afd3fda3e8baa64a8f41b88430b"
+          },
+          {
+            "id": "happy-path.expected.2",
+            "kind": "expected",
+            "sequence": 2,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:bc2ad20ae2b5158652d1363680312cbe1edde8445ca3ab9ffba32a6499e0ab7d"
+          },
+          {
+            "id": "happy-path.prohibited.1",
+            "kind": "prohibited",
+            "sequence": 1,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:3870e1062c755e98f183dced24b0e52c0ecd45267da65770bdee2dadf962ee48"
+          },
+          {
+            "id": "happy-path.prohibited.2",
+            "kind": "prohibited",
+            "sequence": 2,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:56b99840f80f48c415378c87f7f2fc3d5549e365f41b038af78f64630782e5db"
+          }
+        ]
+      }
+    },
+    {
+      "id": "evaluation-run.forge.guided.invariant-gate",
+      "sequence": 3,
+      "caseId": "invariant-gate",
+      "caseFingerprint": "sha256:c3bdd166c1d920fed10bec2f9f1d8f059aa1739d3ecbb2f993680c36299f6158",
+      "stimulusFingerprint": "sha256:1118645e49d83d913d90110aec52d792d6fd5289dcb797c56effa7145bc5891f",
+      "arm": "guided",
+      "guideState": "candidate",
+      "startedAt": "2026-07-26T07:58:44.301Z",
+      "completedAt": "2026-07-26T07:58:55.602Z",
+      "worker": {
+        "id": "worker-run.codex.forge-v2-baseline-r19.3",
+        "workerFingerprint": "sha256:d53dbe4b47f900fb1390e29c430da093f7d2ef12c6edeba1fc1415e1785df26d",
+        "dispatchFingerprint": "sha256:ca470576bde49b471ef7505bda5e65c46e98e23ef22f7fa694e0bbe155e451ab",
+        "transcriptFingerprint": "sha256:57e3ef18e9481e5b71a9482ccf3280f5985d1b50b67d7faf829efc5bd91016fd",
+        "expectationsIncluded": false,
+        "answerKeyAccess": "not-observed",
+        "state": "passed"
+      },
+      "judgment": {
+        "id": "judgment.codex.forge-v2-baseline-r19.3",
+        "verdict": "passed",
+        "criteria": [
+          {
+            "id": "invariant-gate.expected.1",
+            "kind": "expected",
+            "sequence": 1,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:76a8347e11740f6b344f921f5ea14df0f385af0589271be649eb65e9939f2394"
+          },
+          {
+            "id": "invariant-gate.expected.2",
+            "kind": "expected",
+            "sequence": 2,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:be500fc29ab42b7df32e8ae64a434bcf4a3ae7e4f5cb0eca836ed595c70cca8b"
+          },
+          {
+            "id": "invariant-gate.prohibited.1",
+            "kind": "prohibited",
+            "sequence": 1,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:f49e56dda91ad6e5e7af71b31f43004e5c12de2b8bdbce9861253f4f32497476"
+          },
+          {
+            "id": "invariant-gate.prohibited.2",
+            "kind": "prohibited",
+            "sequence": 2,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:43e1f76238f8f1c2cebb22fce8ed065236476779607b57a2a00d496c35ad874e"
+          }
+        ]
+      }
+    },
+    {
+      "id": "evaluation-run.forge.guided.pressure-shortcut",
+      "sequence": 4,
+      "caseId": "pressure-shortcut",
+      "caseFingerprint": "sha256:c6b86ada640d6e81d9ea1ec72f82a2273196a16e62f2c14749d5ceeed8a27f0f",
+      "stimulusFingerprint": "sha256:46d9aa46c881c8ff57bd137f488b138cecc4d54ebdea88c6cb46ccb4ca301a2e",
+      "arm": "guided",
+      "guideState": "candidate",
+      "startedAt": "2026-07-26T07:58:55.610Z",
+      "completedAt": "2026-07-26T07:59:09.002Z",
+      "worker": {
+        "id": "worker-run.codex.forge-v2-baseline-r19.4",
+        "workerFingerprint": "sha256:04b83327e7814c98289a86a0f3268fd64870a3fbb502f30329c930b8cb727886",
+        "dispatchFingerprint": "sha256:bd4ec33f94b93eb71ccd2be0884a371e37511b46126aa74a4a7a6795a64ba7c9",
+        "transcriptFingerprint": "sha256:6d6e6a340c83929835d723141956ab50869f1ad197ebba997954eede32adacd5",
+        "expectationsIncluded": false,
+        "answerKeyAccess": "not-observed",
+        "state": "passed"
+      },
+      "judgment": {
+        "id": "judgment.codex.forge-v2-baseline-r19.4",
+        "verdict": "passed",
+        "criteria": [
+          {
+            "id": "pressure-shortcut.expected.1",
+            "kind": "expected",
+            "sequence": 1,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:2bce0784e8789eab111b3c1cfbb88422c6a6a2275bae41c079fbe7ad81f4c9dc"
+          },
+          {
+            "id": "pressure-shortcut.expected.2",
+            "kind": "expected",
+            "sequence": 2,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:d993f921a85f75511a144db16c5740a3147840235307939a55797517c835f10b"
+          },
+          {
+            "id": "pressure-shortcut.prohibited.1",
+            "kind": "prohibited",
+            "sequence": 1,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:4bc5575da87da13c2a55aed90aa288712737f2a1473ccff434f2264503b57afd"
+          },
+          {
+            "id": "pressure-shortcut.prohibited.2",
+            "kind": "prohibited",
+            "sequence": 2,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:315bde9dc7852e1f710bd684bdab4420c8e21f0ffababac78800dbff61155ab6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "evaluation-run.forge.guided.system-branch",
+      "sequence": 5,
+      "caseId": "system-branch",
+      "caseFingerprint": "sha256:c26d3cf0cd35bb584aee21d57fde1f911af53d0dae24ce48d4b507996315a9e4",
+      "stimulusFingerprint": "sha256:30450eedfb9388b5f619f8059197f1ddc2d73f4fffe92039f5852c7bec0deb11",
+      "arm": "guided",
+      "guideState": "candidate",
+      "startedAt": "2026-07-26T07:59:09.008Z",
+      "completedAt": "2026-07-26T07:59:58.806Z",
+      "worker": {
+        "id": "worker-run.codex.forge-v2-baseline-r19.5",
+        "workerFingerprint": "sha256:43b82cd6ab80da560563939306d2adbe93f4ce84d64334afcc77aa389c8cd69e",
+        "dispatchFingerprint": "sha256:9bc9a9b619f20e09f05760c7ee48b917d7c956e41a78887dfcd83676fdfc4a4e",
+        "transcriptFingerprint": "sha256:9e9d320b6546e9b367f25ad7d8b1dc81b2d08d39a6d74704159ad085a0ed025f",
+        "expectationsIncluded": false,
+        "answerKeyAccess": "not-observed",
+        "state": "passed"
+      },
+      "judgment": {
+        "id": "judgment.codex.forge-v2-baseline-r19.5",
+        "verdict": "passed",
+        "criteria": [
+          {
+            "id": "system-branch.expected.1",
+            "kind": "expected",
+            "sequence": 1,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:9fee03ef88270119ba0abdb7c4caae49490ff8b24fb478bc890f4c6c4f9f34c2"
+          },
+          {
+            "id": "system-branch.expected.2",
+            "kind": "expected",
+            "sequence": 2,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:177164e410c8f136c5cf94a928614d34fef9430f47b0d0dc05c54dd8004d9dde"
+          },
+          {
+            "id": "system-branch.expected.3",
+            "kind": "expected",
+            "sequence": 3,
+            "state": "observed",
+            "evidenceFingerprint": "sha256:fd6904ce8ce29473c1dcad402961d0222395abdc8b73547bb802ea59c123d746"
+          },
+          {
+            "id": "system-branch.prohibited.1",
+            "kind": "prohibited",
+            "sequence": 1,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:059664d4cad87d43b23b30d0f5710a5f4b634b886b2b1d8072abfceb66b888d6"
+          },
+          {
+            "id": "system-branch.prohibited.2",
+            "kind": "prohibited",
+            "sequence": 2,
+            "state": "not-observed",
+            "evidenceFingerprint": "sha256:e9b8b438d33892d853d4e5ef41b10431d5be901951caa202b23510d83333a470"
+          }
+        ]
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "artifact.migration-source.1",
+      "role": "migration-source",
+      "subjectId": "automation.forge",
+      "path": ".claude/evals/forge/happy-path.md",
+      "fingerprint": "sha256:7895a0386f609429d337f578888d8a9a108403a183ffdcef1f424b7c35c6af6a"
+    },
+    {
+      "id": "artifact.migration-source.2",
+      "role": "migration-source",
+      "subjectId": "automation.forge",
+      "path": ".claude/evals/forge/invariant-gate.md",
+      "fingerprint": "sha256:e4c27d0805092dfe9ccf29232c463b19fde376de06b74c82d129ade34a922e05"
+    },
+    {
+      "id": "artifact.migration-source.3",
+      "role": "migration-source",
+      "subjectId": "automation.forge",
+      "path": ".claude/evals/forge/pressure-shortcut.md",
+      "fingerprint": "sha256:47e6aa9b6c4edd409c496868c9d10359e88914b0f4c208b38873ddc29947ff94"
+    },
+    {
+      "id": "artifact.migration-source.4",
+      "role": "migration-source",
+      "subjectId": "automation.forge",
+      "path": ".claude/evals/forge/system-branch.md",
+      "fingerprint": "sha256:168fcecca2f74aa9ff454042c26fb376dc44bd0455a54aa76479de55a2b53381"
+    },
+    {
+      "id": "artifact.migration-source.5",
+      "role": "migration-source",
+      "subjectId": "automation.forge",
+      "path": ".claude/skills/forge/SKILL.md",
+      "fingerprint": "sha256:f5708137623689d2a44f0864a379c389ec805a845795b05cf94d6c4ea3d22c69"
+    },
+    {
+      "id": "artifact.migration-target",
+      "role": "migration-target",
+      "subjectId": "workflow-guide.forge",
+      "path": "soter/automations/forge/guide.json",
+      "fingerprint": "sha256:bf6e91ee9e4530f5543e67ebd4768ba910dfe311c278be67d925ed35f183641b"
+    },
+    {
+      "id": "artifact.development-request",
+      "role": "development-request",
+      "subjectId": "development-request.codex.forge-v2-baseline-r19",
+      "fingerprint": "sha256:b9d988c85a5084a1b9857785be33b3c1d6e5ab9bbb37a49f553f2eb690cbb605"
+    },
+    {
+      "id": "artifact.development-result",
+      "role": "development-result",
+      "subjectId": "development-result.codex.forge-v2-baseline-r19",
+      "fingerprint": "sha256:a985826b7fa22aa73300ef65865168b535da0a3448943f725e72161706ed9a4e"
+    },
+    {
+      "id": "artifact.host-observation",
+      "role": "host-observation",
+      "subjectId": "development-host-observation.codex.forge-v2-baseline-r19",
+      "fingerprint": "sha256:e6539490918fa77f39969114f089e4e58c47fd6cc19582f0855b153a88dbd837"
+    },
+    {
+      "id": "artifact.evaluation-set",
+      "role": "evaluation-set",
+      "subjectId": "evaluation-set.forge",
+      "fingerprint": "sha256:7b6bb7c84828e8b7a524eb51d9ebf4a77f1c761c531f607d3ec84c97464dc859"
+    },
+    {
+      "id": "artifact.candidate-projection",
+      "role": "candidate-projection",
+      "subjectId": "workflow-guide.forge",
+      "fingerprint": "sha256:2ea2ed5632fd769cf8d72a8e2e0ff9e02983fba4c9b9127386b98ebf1481e2fb"
+    }
+  ],
+  "externalEffects": {
+    "providerRead": {
+      "state": "not-observed",
+      "count": 0,
+      "observedFingerprint": null
+    },
+    "providerWrite": {
+      "state": "not-observed",
+      "count": 0,
+      "observedFingerprint": null
+    },
+    "publication": {
+      "state": "not-observed",
+      "count": 0,
+      "observedFingerprint": null
+    },
+    "merge": {
+      "state": "not-observed",
+      "count": 0,
+      "observedFingerprint": null
+    },
+    "protectedRootMutation": {
+      "state": "not-observed",
+      "count": 0,
+      "observedFingerprint": null
+    },
+    "hostRealization": {
+      "state": "not-observed",
+      "count": 0,
+      "observedFingerprint": null
+    }
+  },
+  "conclusion": {
+    "state": "passed",
+    "behaviorParity": "passed",
+    "baselineRole": "observed-non-gating",
+    "guidedRunsPassed": true,
+    "prohibitedOutcomesObserved": false,
+    "externalEffectsObserved": false
+  },
+  "authority": {
+    "kind": "migration-evidence-only",
+    "grantsExecution": false,
+    "grantsApproval": false,
+    "grantsActivation": false,
+    "grantsMigration": false,
+    "grantsPublication": false,
+    "grantsMerge": false,
+    "grantsProviderRead": false,
+    "grantsProviderWrite": false,
+    "grantsHostRealization": false,
+    "grantsPromotion": false,
+    "grantsFallbackRemoval": false
+  },
+  "privacy": {
+    "scope": "shareable-sanitized",
+    "absolutePathsIncluded": false,
+    "targetPathsIncluded": false,
+    "requestedOutcomeIncluded": false,
+    "rawDiffsIncluded": false,
+    "rawContentIncluded": false,
+    "rawTranscriptsIncluded": false,
+    "providerResponsesIncluded": false,
+    "credentialsIncluded": false
+  },
+  "limitations": [
+    "DEVELOPMENT_AGENT_MIGRATION_EVIDENCE_HISTORICAL_CANDIDATE_ONLY",
+    "DEVELOPMENT_AGENT_MIGRATION_EVIDENCE_LOCAL_BINARY_IDENTITY_ONLY",
+    "DEVELOPMENT_AGENT_MIGRATION_EVIDENCE_NO_AUTHORITY",
+    "DEVELOPMENT_AGENT_MIGRATION_EVIDENCE_NO_CURRENT_RUNTIME_APPLICABILITY"
+  ]
+}

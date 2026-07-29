@@ -1,0 +1,168 @@
+{
+  "$contract": "soter://contracts/workflow-definition/v2",
+  "contractVersion": "2.0.0",
+  "id": "automation.reviewing-forge-output",
+  "version": "0.1.0",
+  "title": "Review a harness artifact",
+  "summary": "Reviews one exact drafted harness change for ownership, contract shape, behavior evidence, privacy, authority, and claim boundaries before adoption.",
+  "ownership": {
+    "layer": "automation",
+    "domain": "harness-development",
+    "legacyLayer": "skill",
+    "responsibility": "outcome-definition"
+  },
+  "lifecycle": {
+    "state": "active-host-guided",
+    "activation": {
+      "state": "active",
+      "reasonCode": "WORKFLOW_HOST_GUIDANCE_ACTIVE",
+      "proceduralAuthority": "target",
+      "delivery": "host-skill",
+      "behaviorParity": "passed",
+      "evidence": [
+        {
+          "path": "soter/evidence/development/development-agent-migration-evidence.claude.reviewing-forge-output.json",
+          "fingerprint": "sha256:b097bb24168d2f99fe257155d618b61d49d0ffe24fdea13a4a4e59c1d47ae6aa",
+          "host": "claude"
+        },
+        {
+          "path": "soter/evidence/development/development-agent-migration-evidence.codex.reviewing-forge-output.json",
+          "fingerprint": "sha256:321e16445084b0e5661e4edf15047ae34fe224a56d3a76ddc0acecb96978f909",
+          "host": "codex"
+        }
+      ],
+      "permittedNextAction": "invoke-through-selected-host"
+    },
+    "development": {
+      "requestContract": {
+        "id": "soter://contracts/development-request/v1",
+        "path": "soter/contracts/development-request.schema.json"
+      },
+      "resultContract": {
+        "id": "soter://contracts/development-result/v1",
+        "path": "soter/contracts/development-result.schema.json"
+      },
+      "workspacePolicy": {
+        "id": "settings.kernel.soter.development-workspace",
+        "path": "soter/kernel/development-workspace.settings.json",
+        "fingerprint": "sha256:84ea480a61e67ac271b9cb3bb58ef338f0430d9a04d772d3ec47cad17175bfc1"
+      },
+      "supportedHosts": [
+        "codex",
+        "claude"
+      ]
+    },
+    "effectBoundary": {
+      "localWorkspaceRead": "request-scoped",
+      "localWorkspaceWrite": "request-scoped",
+      "localCommand": "request-scoped",
+      "subagentDispatch": "request-scoped",
+      "providerRead": "separate-authority",
+      "providerWrite": "separate-authority",
+      "publication": "separate-authority",
+      "merge": "separate-authority",
+      "protectedRootMutation": "separate-authority",
+      "hostRealization": "separate-authority",
+      "authority": "development-request-only"
+    }
+  },
+  "intent": {
+    "goal": "Produce an unreviewed pre-verdict disposition when the exact basis is unavailable; otherwise produce an evidence-grounded adopt, revise, or reject recommendation.",
+    "useWhen": [
+      "One drafted governed artifact or change set is ready for independent review."
+    ],
+    "excludeWhen": [
+      "The artifact still needs initial authoring, promotion after real use, or an unrelated repository-wide audit."
+    ]
+  },
+  "procedure": [
+    {
+      "id": "bind-exact-draft",
+      "sequence": 1,
+      "outcome": "Bind review to one exact draft tree, target responsibility, and claimed behavior, or return the draft unreviewed when that exact basis is unavailable.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Return the unreviewed pre-verdict disposition and stop when the exact draft basis or required mechanical floor is unavailable."
+      ]
+    },
+    {
+      "id": "inspect-contract-and-ownership",
+      "sequence": 2,
+      "outcome": "Check canonical path, owner, layer direction, dependencies, privacy, and authority declarations.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "inspect-behavior-evidence",
+      "sequence": 3,
+      "outcome": "Compare claimed outcomes to exact scenarios, adversarial cases, and current verifier coverage.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "report-findings",
+      "sequence": 4,
+      "outcome": "Rank actionable correctness, security, migration, and claim-boundary findings with exact evidence.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "hold-adoption",
+      "sequence": 5,
+      "outcome": "Return unreviewed when the exact draft or required mechanical floor is unavailable. Only for an exact bound draft and evidence set return adopt, revise, or reject; use revise only for evidenced candidate changes, never missing review inputs.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    }
+  ],
+  "safeguards": [
+    "Never substitute checker success or author testimony for behavior evidence.",
+    "Never rubber-stamp a draft with unresolved correctness or authority findings.",
+    "Never label an unavailable or unbound review basis adopt, revise, or reject; return it unreviewed with the missing basis instead.",
+    "Never merge, publish, install, or realize a reviewed draft merely because review completed."
+  ],
+  "evaluationSet": {
+    "id": "evaluation-set.reviewing-forge-output",
+    "path": "soter/automations/reviewing-forge-output/evaluations.json"
+  },
+  "guide": {
+    "id": "workflow-guide.reviewing-forge-output",
+    "path": "soter/automations/reviewing-forge-output/guide.json"
+  },
+  "potentialEffects": [
+    "read",
+    "disclosure"
+  ],
+  "source": {
+    "presence": "removed",
+    "legacyPath": ".claude/skills/reviewing-forge-output/SKILL.md",
+    "legacyFingerprint": "sha256:503fa0b867edab40e1996d7d3329a49358f281bc482bda66f6b0dbd8cee85370"
+  },
+  "privacy": {
+    "rawSourceIncluded": false,
+    "workspaceSpecificValuesIncluded": false,
+    "credentialsIncluded": false,
+    "privateInputsIncluded": false
+  },
+  "limitations": [
+    "This normalized definition preserves inspectable intent only; it has no operator runtime, provider binding, effect authority, or behavior parity.",
+    "The fingerprinted legacy source remains canonical until a separate implemented and evidenced runtime migration removes that fallback."
+  ]
+}

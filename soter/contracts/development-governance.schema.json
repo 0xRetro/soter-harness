@@ -1,0 +1,263 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/development-governance/v1",
+  "title": "Soter develop-intent governance policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "version",
+    "intent",
+    "ownership",
+    "artifactModel",
+    "lifecycle",
+    "instructionProfiles",
+    "qualityRequirements",
+    "evaluationPolicy",
+    "governance",
+    "intentionalChanges",
+    "privacy",
+    "limitations"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/development-governance/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "const": "kernel.development-governance" },
+    "version": { "$ref": "#/$defs/version" },
+    "intent": { "const": "develop" },
+    "ownership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kernel", "core", "automation", "integration", "host", "configuration"],
+      "properties": {
+        "kernel": { "$ref": "#/$defs/responsibilities" },
+        "core": { "$ref": "#/$defs/responsibilities" },
+        "automation": { "$ref": "#/$defs/responsibilities" },
+        "integration": { "$ref": "#/$defs/responsibilities" },
+        "host": { "$ref": "#/$defs/responsibilities" },
+        "configuration": { "$ref": "#/$defs/responsibilities" }
+      }
+    },
+    "artifactModel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonicalAuthority",
+        "roles",
+        "scaffolding",
+        "legacyMarkdownTemplates",
+        "providerSpecificBehavior",
+        "privateMaterial",
+        "governingContracts"
+      ],
+      "properties": {
+        "canonicalAuthority": { "const": "one-exact-contract-or-definition" },
+        "roles": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["definition", "implementation", "projection", "evaluation", "fixture", "migration"]
+          }
+        },
+        "scaffolding": { "const": "derived-from-governing-contract" },
+        "legacyMarkdownTemplates": { "const": "compatibility-only" },
+        "providerSpecificBehavior": { "const": "integration-or-host-owned" },
+        "privateMaterial": { "const": "references-and-fingerprints-only" },
+        "governingContracts": {
+          "type": "array",
+          "minItems": 8,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^soter://contracts/[a-z0-9-]+/v[0-9]+$" }
+        }
+      }
+    },
+    "lifecycle": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "sequence", "outcome", "requiredEvidence"],
+        "properties": {
+          "id": {
+            "enum": [
+              "observe",
+              "classify",
+              "reproduce",
+              "specify",
+              "implement",
+              "evaluate",
+              "review",
+              "promote",
+              "monitor"
+            ]
+          },
+          "sequence": { "type": "integer", "minimum": 1, "maximum": 9 },
+          "outcome": { "$ref": "#/$defs/text" },
+          "requiredEvidence": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "$ref": "#/$defs/identifier" }
+          }
+        }
+      }
+    },
+    "instructionProfiles": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "useWhen", "form"],
+        "properties": {
+          "id": { "enum": ["exact", "bounded", "open"] },
+          "useWhen": { "$ref": "#/$defs/text" },
+          "form": { "$ref": "#/$defs/text" }
+        }
+      }
+    },
+    "qualityRequirements": {
+      "type": "array",
+      "minItems": 10,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "enforcement", "requirement"],
+        "properties": {
+          "id": { "$ref": "#/$defs/identifier" },
+          "enforcement": { "enum": ["kernel-static", "fixture-evidence", "operator-review"] },
+          "requirement": { "$ref": "#/$defs/text" }
+        }
+      }
+    },
+    "evaluationPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "caseKinds",
+        "workerContext",
+        "verdictBasis",
+        "selfReportSufficient",
+        "externalEffects",
+        "localEffects",
+        "goldenBinding",
+        "resultStates"
+      ],
+      "properties": {
+        "caseKinds": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": { "enum": ["baseline", "happy-path", "pressure", "invariant"] }
+        },
+        "workerContext": { "const": "fresh-and-expectations-withheld" },
+        "verdictBasis": { "const": "observable-artifacts-and-effects" },
+        "selfReportSufficient": { "const": false },
+        "externalEffects": { "const": "prohibited-unless-explicitly-contained" },
+        "localEffects": { "const": "declared-and-contained" },
+        "goldenBinding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source", "graph", "configuration", "host", "freshness"],
+          "properties": {
+            "source": { "const": "fingerprinted" },
+            "graph": { "const": "fingerprinted" },
+            "configuration": { "const": "fingerprinted" },
+            "host": { "const": "fingerprinted" },
+            "freshness": { "const": "invalidated-on-applicable-change" }
+          }
+        },
+        "resultStates": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "uniqueItems": true,
+          "items": { "enum": ["passed", "failed", "stale", "unknown", "skipped", "not-applicable"] }
+        }
+      }
+    },
+    "governance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authorityExpansion",
+        "definitionChange",
+        "promotion",
+        "decisionRecords",
+        "fallbackRemoval"
+      ],
+      "properties": {
+        "authorityExpansion": { "const": "explicit-grant-or-confirmation" },
+        "definitionChange": { "const": "separate-develop-run" },
+        "promotion": { "const": "evidence-and-policy-gated" },
+        "decisionRecords": { "const": "optional-for-ordinary-development" },
+        "fallbackRemoval": { "const": "exact-parity-or-intentional-change-evidence" }
+      }
+    },
+    "intentionalChanges": {
+      "type": "array",
+      "minItems": 6,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "decision"],
+        "properties": {
+          "id": {
+            "enum": [
+              "markdown-classification-retired",
+              "copy-template-authority-retired",
+              "mandatory-adr-ceremony-retired",
+              "host-line-budgets-host-scoped",
+              "human-only-merge-not-runtime-authority",
+              "definition-only-not-executable"
+            ]
+          },
+          "decision": { "$ref": "#/$defs/text" }
+        }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "credentialsIncluded",
+        "privateInputsIncluded",
+        "rawProviderResponsesIncluded",
+        "absoluteWorkspacePathsIncluded"
+      ],
+      "properties": {
+        "credentialsIncluded": { "const": false },
+        "privateInputsIncluded": { "const": false },
+        "rawProviderResponsesIncluded": { "const": false },
+        "absoluteWorkspacePathsIncluded": { "const": false }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 3,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/text" }
+    }
+  },
+  "$defs": {
+    "version": { "type": "string", "pattern": "^(0|[1-9][0-9]*)[.](0|[1-9][0-9]*)[.](0|[1-9][0-9]*)$" },
+    "identifier": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "text": { "type": "string", "minLength": 12 },
+    "responsibilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/identifier" }
+    }
+  }
+}

@@ -6,7 +6,7 @@
   "layer": "context",
   "releaseStage": "experimental",
   "evidenceMaturity": "declared",
-  "summary": "Defines CRM organizations, contacts, channels, meetings, relationships, policies, and authority boundaries.",
+  "summary": "Defines portable CRM organizations, people, customer relationships, and CRM identity without owning communications, Projects, Tasks, or Meetings.",
   "dependencies": [
     {
       "pack": "core.runtime",
@@ -27,6 +27,26 @@
   "artifacts": [
     {
       "path": "soter/contexts/crm/records.model.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/contexts/crm/vocabulary.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/contracts/organization-capture-policy.schema.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/contexts/crm/organization-capture.policy.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/contracts/contact-capture-policy.schema.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/contexts/crm/contact-capture.policy.json",
       "role": "definition"
     }
   ],

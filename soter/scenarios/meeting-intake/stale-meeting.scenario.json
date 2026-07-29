@@ -18,9 +18,9 @@
   },
   "expected": {
     "capabilityOrder": [
-      "crm.records.read",
+      "meetings.records.read",
       "meeting.transcript.read",
-      "crm.records.read"
+      "tasks.records.read"
     ],
     "effectModes": {
       "read": "allow",
@@ -33,14 +33,14 @@
       "intervening-history.reviewed",
       "overtaken-items.recorded-as-history",
       "past-dates.not-promoted",
-      "surviving-items.proposed-with-fresh-or-empty-date"
+      "surviving-items.private-review-only"
     ],
     "invariants": [
       "staleness-before-derivation",
       "closed-and-open-records-checked",
       "newer-meetings-checked",
       "expired-items-not-created",
-      "writes-remain-gated-if-any-survive"
+      "complete-write-group-remains-unavailable"
     ],
     "evidence": [
       "meeting-age-classification",

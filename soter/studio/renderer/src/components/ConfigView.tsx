@@ -24,6 +24,7 @@ export function ConfigView({ snapshot, configuration }: {
     setLoading(true);
     window.soterStudio.previewConfiguration({
       name: configuration.name,
+      configurationBasis: configuration.configurationBasis,
       draft: {
         hostAdapter,
         effectPolicies: policies,
@@ -40,7 +41,7 @@ export function ConfigView({ snapshot, configuration }: {
       if (active) setLoading(false);
     });
     return () => { active = false; };
-  }, [configuration.name, hostAdapter, policies, addPacks]);
+  }, [configuration.name, configuration.configurationBasis, hostAdapter, policies, addPacks]);
 
   const reset = () => {
     setHostAdapter(currentHostAdapter || '');

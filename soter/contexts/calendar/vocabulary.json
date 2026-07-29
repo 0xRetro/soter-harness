@@ -1,0 +1,30 @@
+{
+  "$contract": "soter://contracts/context-vocabulary/v1",
+  "contractVersion": "1.0.0",
+  "id": "vocabulary.context.calendar",
+  "pack": "context.calendar",
+  "version": "0.1.0",
+  "subject": "calendar.records",
+  "entries": [
+    {
+      "sequence": 1,
+      "id": "commitment",
+      "term": "commitment",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "A standing engagement of organizational time, classified as a series, event, or obligation window, whose meaning and relations remain separate from time and recurrence in the configured scheduling source and may be joined through an exact external event identity.",
+      "domain": "scheduling",
+      "sourceUris": []
+    }
+  ],
+  "invariants": {
+    "singleDefinitionSource": true,
+    "projectionCopiesAreNonCanonical": true,
+    "providerNeutral": true,
+    "runtimeAuthority": "none"
+  },
+  "limitations": [
+    "This vocabulary defines portable standing-commitment meaning only; it does not observe calendars, resolve provider identities, reconcile events, or grant scheduling authority.",
+    "Provider and policy projections must bind this exact artifact and fail visibly on drift; copied definitions never become canonical."
+  ]
+}

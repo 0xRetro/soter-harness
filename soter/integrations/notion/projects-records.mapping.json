@@ -1,0 +1,276 @@
+{
+  "$contract": "soter://contracts/provider-mapping/v1",
+  "contractVersion": "1.0.0",
+  "id": "mapping.integration.notion.projects-records",
+  "pack": "integration.notion",
+  "provider": "provider.integration.notion.mcp",
+  "version": "0.2.0",
+  "contextModel": "model.context.projects.records",
+  "settingsDefinition": "settings.integration.notion",
+  "capabilities": [
+    "projects.records.read",
+    "projects.records.create",
+    "projects.records.update",
+    "projects.schema.read"
+  ],
+  "recordTypes": [
+    {
+      "id": "project-work-policy",
+      "target": "policies",
+      "capabilities": [
+        "projects.records.read"
+      ],
+      "fields": [
+        {
+          "portable": "name",
+          "provider": "Name",
+          "providerType": "title",
+          "decode": "scalar"
+        }
+      ]
+    },
+    {
+      "id": "project-capture-policy",
+      "target": "policies",
+      "capabilities": [
+        "projects.records.read"
+      ],
+      "fields": [
+        {
+          "portable": "name",
+          "provider": "Name",
+          "providerType": "title",
+          "decode": "scalar"
+        }
+      ]
+    },
+    {
+      "id": "project-creation-profile",
+      "target": "policies",
+      "capabilities": [
+        "projects.records.read"
+      ],
+      "fields": [
+        {
+          "portable": "name",
+          "provider": "Name",
+          "providerType": "title",
+          "decode": "scalar"
+        },
+        {
+          "portable": "profileId",
+          "provider": "Profile",
+          "providerType": "select",
+          "valueMapping": "configured-bijection",
+          "decode": "scalar"
+        },
+        {
+          "portable": "allowedProjectTypes",
+          "provider": "Allowed Project Types",
+          "providerType": "multi_select",
+          "valueMapping": "configured-bijection",
+          "decode": "json"
+        },
+        {
+          "portable": "bodyFormat",
+          "provider": "Body Format",
+          "providerType": "select",
+          "valueMapping": "configured-bijection",
+          "decode": "scalar"
+        },
+        {
+          "portable": "requiredBodySections",
+          "provider": "Required Body Sections",
+          "providerType": "multi_select",
+          "valueMapping": "configured-bijection",
+          "decode": "json"
+        },
+        {
+          "portable": "milestoneSyntaxVersion",
+          "provider": "Milestone Syntax",
+          "providerType": "select",
+          "valueMapping": "configured-bijection",
+          "decode": "scalar"
+        },
+        {
+          "portable": "workItemSyntaxVersion",
+          "provider": "Work Item Syntax",
+          "providerType": "select",
+          "valueMapping": "configured-bijection",
+          "decode": "scalar"
+        }
+      ]
+    },
+    {
+      "id": "project",
+      "target": "projects",
+      "capabilities": [
+        "projects.records.read",
+        "projects.records.create",
+        "projects.schema.read"
+      ],
+      "fields": [
+        {
+          "portable": "name",
+          "provider": "Name",
+          "providerType": "title",
+          "decode": "scalar",
+          "writeOperations": [
+            "create"
+          ]
+        },
+        {
+          "portable": "projectType",
+          "provider": "Type",
+          "providerType": "select",
+          "valueMapping": "configured-bijection",
+          "decode": "scalar",
+          "writeOperations": [
+            "create"
+          ]
+        },
+        {
+          "portable": "status",
+          "provider": "Status",
+          "providerType": "status",
+          "valueMapping": "configured-bijection",
+          "decode": "scalar",
+          "writeOperations": [
+            "create"
+          ]
+        },
+        {
+          "portable": "startDate",
+          "provider": "Start Date",
+          "providerType": "date",
+          "decode": "scalar",
+          "writeOperations": [
+            "create"
+          ]
+        },
+        {
+          "portable": "targetEndDate",
+          "provider": "Target End Date",
+          "providerType": "date",
+          "decode": "scalar",
+          "writeOperations": [
+            "create"
+          ]
+        },
+        {
+          "portable": "organizationUris",
+          "provider": "Organization",
+          "providerType": "relation",
+          "decode": "json",
+          "writeOperations": [
+            "create"
+          ]
+        },
+        {
+          "portable": "taskUris",
+          "provider": "Tasks",
+          "providerType": "relation",
+          "decode": "json"
+        }
+      ],
+      "content": {
+        "portable": "body",
+        "provider": "page-content",
+        "providerType": "markdown"
+      }
+    },
+    {
+      "id": "project-feed-entry",
+      "target": "updates",
+      "capabilities": [
+        "projects.records.read",
+        "projects.records.create",
+        "projects.records.update",
+        "projects.schema.read"
+      ],
+      "fields": [
+        {
+          "portable": "headline",
+          "provider": "Update",
+          "providerType": "title",
+          "decode": "scalar",
+          "writeOperations": [
+            "create"
+          ]
+        },
+        {
+          "portable": "category",
+          "provider": "Category",
+          "providerType": "select",
+          "valueMapping": "configured-bijection",
+          "decode": "scalar",
+          "writeOperations": [
+            "create"
+          ]
+        },
+        {
+          "portable": "date",
+          "provider": "Date",
+          "providerType": "date",
+          "decode": "scalar",
+          "writeOperations": [
+            "create"
+          ]
+        },
+        {
+          "portable": "summary",
+          "provider": "Summary",
+          "providerType": "text",
+          "decode": "scalar",
+          "writeOperations": [
+            "create"
+          ]
+        },
+        {
+          "portable": "sourceUri",
+          "provider": "Source",
+          "providerType": "url",
+          "decode": "scalar",
+          "writeOperations": [
+            "create"
+          ]
+        },
+        {
+          "portable": "processed",
+          "provider": "Processed",
+          "providerType": "checkbox",
+          "decode": "scalar",
+          "writeOperations": [
+            "create",
+            "update"
+          ]
+        },
+        {
+          "portable": "visibility",
+          "provider": "Visibility",
+          "providerType": "select",
+          "valueMapping": "configured-bijection",
+          "decode": "scalar",
+          "writeOperations": [
+            "create"
+          ]
+        },
+        {
+          "portable": "projectIds",
+          "provider": "📁 [DB] Projects",
+          "providerType": "relation",
+          "decode": "json",
+          "writeOperations": [
+            "create"
+          ]
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "This mapping translates Project definitions and records only; CRM, Tasks, and Meetings retain independent Context ownership even when the configured Notion databases contain relations among them.",
+    "Portable milestones remain embedded project work meaning in this revision and are not independently mapped to a Notion target.",
+    "Project milestone checklist tags live in project page content rather than mapped database properties; this mapping does not expose them as projects.records.update fields.",
+    "Schema compatibility is not established by this declaration; an exact-lock private probe must observe current target schemas."
+  ]
+}

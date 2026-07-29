@@ -1,5 +1,6 @@
 import { fingerprintJson } from './lib/canonical-json.mjs';
 import { fingerprintLock, RESOLVER_VERSION } from './resolve.mjs';
+import { fingerprintPrivateContainedBasis } from '../kernel/private-contained-evidence.mjs';
 
 const DEFAULT_RUNTIME = 'node';
 
@@ -57,7 +58,8 @@ function baseEvidence({
   failures = [],
   warnings = [],
   skipped = [],
-  limitations = []
+  limitations = [],
+  privateContainedBasis = null
 }) {
   return {
     $contract: 'soter://contracts/evidence/v2',
@@ -92,7 +94,8 @@ function baseEvidence({
     privacy: {
       scope: 'private',
       redactions: ['Credential references and credential values are excluded.']
-    }
+    },
+    ...(privateContainedBasis === null ? {} : { privateContainedBasis })
   };
 }
 
@@ -374,17 +377,330 @@ export function createContainedTransactionEvidence({
   });
 }
 
+export function createContainedConnectedWorkflowEvidence({
+  lock,
+  privateContainedBasis,
+  id,
+  createdAt,
+  automationId,
+  runId,
+  work,
+  decision,
+  proposal,
+  changeSet,
+  batch,
+  approval,
+  approvalConsumption,
+  checkpoint
+}) {
+  const lockFingerprint = fingerprintLock(lock);
+  if (!privateContainedBasis
+    || privateContainedBasis.kind !== 'private-active-contained'
+    || privateContainedBasis.privateConfigurationFingerprint
+      !== lock.configuration.fingerprint
+    || privateContainedBasis.privateLockFingerprint !== lockFingerprint
+    || privateContainedBasis.privateGraphFingerprint !== lock.graphFingerprint
+    || privateContainedBasis.basisFingerprint
+      !== fingerprintPrivateContainedBasis(privateContainedBasis)) {
+    throw new Error(
+      'Contained connected workflow evidence requires one exact private-contained lock basis.'
+    );
+  }
+  const lockReferences = [
+    work?.configuration?.lockFingerprint,
+    decision?.configurationLockFingerprint,
+    proposal?.configurationLockFingerprint,
+    changeSet?.configurationLockFingerprint,
+    batch?.configurationLockFingerprint,
+    approval?.scope?.configurationLockFingerprint,
+    approvalConsumption?.configurationLockFingerprint,
+    checkpoint?.configurationLock?.fingerprint
+  ];
+  const graphReferences = [
+    work?.configuration?.graphFingerprint,
+    decision?.graphFingerprint,
+    proposal?.graphFingerprint,
+    checkpoint?.graphFingerprint
+  ];
+  const runReferences = [
+    work?.checkpoint?.runId,
+    decision?.runId,
+    proposal?.runId,
+    changeSet?.runId,
+    batch?.runId,
+    approval?.runId,
+    approvalConsumption?.runId,
+    checkpoint?.run?.id
+  ];
+  if (lockReferences.some((fingerprint) => fingerprint !== lockFingerprint)
+    || graphReferences.some((fingerprint) => fingerprint !== lock.graphFingerprint)
+    || runReferences.some((candidate) => candidate !== runId)
+    || work?.configuration?.configurationBasis !== 'private-active'
+    || approvalConsumption?.configuration?.configurationBasis !== 'private-active'
+    || checkpoint?.configuration?.configurationBasis !== 'private-active') {
+    throw new Error(
+      'Contained connected workflow artifacts do not share the exact private execution basis.'
+    );
+  }
+  const preparedState = (
+    work?.state === 'ready-for-review'
+      && !Object.hasOwn(work, 'preparationMode')
+  ) || (
+    work?.state === 'ready-for-acquisition'
+      && work?.preparationMode === 'connected-acquisition'
+  );
+  const completed = preparedState
+    && decision?.state === 'ready'
+    && proposal?.state === 'ready-for-review'
+    && approvalConsumption?.state === 'started'
+    && checkpoint?.state === 'completed'
+    && checkpoint?.result?.state === 'completed'
+    && checkpoint.operations?.length === batch?.operations?.length
+    && checkpoint.operations.every((operation) => operation.state === 'applied');
+  return baseEvidence({
+    id,
+    createdAt,
+    claimFamily: 'transaction',
+    claim: 'One fixture-contained connected-route workflow preserved exact private review, approval, single-use start, write, and read-after-write verification boundaries without a live provider effect.',
+    subject: { type: 'run', id: runId, version: null },
+    lock,
+    evaluator: {
+      id: automationId + '.contained-connected-workflow',
+      version: RESOLVER_VERSION,
+      level: 'fixture'
+    },
+    environment: { containment: 'fixture', runtime: DEFAULT_RUNTIME },
+    acceptanceCriteria: [
+      'One current prepared-work basis produces a deterministic grounded decision and private review proposal.',
+      'No write request exists before an expiring exact-scope request is confirmed.',
+      'The exact approval is consumed once into one durable checkpoint rather than retained as reusable authority.',
+      'The checkpoint observes its declared precondition, one approved write result, and exact read-after-write verification in order.',
+      'The private execution lock derives only from the exact portable tracked template through a closed contained provider substitution.',
+      'Only normalized provider outputs and fingerprints enter durable state or this evidence record.'
+    ],
+    result: completed ? 'passed' : 'failed',
+    outcomes: [
+      { id: 'connected-workflow.prepared', state: preparedState ? 'passed' : 'failed' },
+      { id: 'connected-workflow.decision-grounded', state: decision?.state === 'ready' ? 'passed' : 'failed' },
+      { id: 'connected-workflow.proposal-reviewed', state: proposal?.state === 'ready-for-review' ? 'passed' : 'failed' },
+      { id: 'connected-workflow.approval-consumed-once', state: approvalConsumption?.state === 'started' ? 'passed' : 'failed' },
+      { id: 'connected-workflow.verified', state: checkpoint?.state === 'completed' ? 'passed' : 'failed' },
+      { id: 'connected-workflow.private-contained-basis', state: 'passed' },
+      { id: 'connected-workflow.live-provider-effect', state: 'not-applicable' }
+    ],
+    artifacts: [
+      { role: 'prepared-work', id: work.id, fingerprint: work.fingerprint },
+      {
+        role: 'automation-decision',
+        id: decision.id,
+        fingerprint: decision.decisionFingerprint
+      },
+      {
+        role: 'automation-proposal',
+        id: proposal.id,
+        fingerprint: proposal.proposalFingerprint
+      },
+      { role: 'connected-change-set', id: changeSet.id, fingerprint: fingerprintJson(changeSet) },
+      { role: 'connected-operation-batch', id: batch.id, fingerprint: fingerprintJson(batch) },
+      { role: 'approval', id: approval.id, fingerprint: fingerprintJson(approval) },
+      {
+        role: 'approval-consumption',
+        id: approvalConsumption.id,
+        fingerprint: fingerprintJson(approvalConsumption)
+      },
+      {
+        role: 'connected-transaction-checkpoint',
+        id: checkpoint.id,
+        fingerprint: checkpoint.checkpointFingerprint
+      }
+    ],
+    effects: [],
+    failures: completed ? [] : ['The contained connected-route workflow did not complete.'],
+    skipped: [
+      'No live provider authentication, permission, reachability, write, or health was evaluated.',
+      'No readiness, connected verification, health, proof maturity, or migration state is promoted by this transaction evidence alone.'
+    ],
+    limitations: [
+      'Host responses are deterministic contained fixtures passed through the connected provider translators; this proves local transaction behavior only.',
+      'The exact private execution lock remains private; this record exposes only its fingerprints and mechanically checked portable applicability projection.'
+    ],
+    privateContainedBasis
+  });
+}
+
+export function createContainedConnectedReviewEvidence({
+  lock,
+  privateContainedBasis,
+  id,
+  createdAt,
+  automationId,
+  runId,
+  work,
+  decision,
+  proposal,
+  heldReasonCode
+}) {
+  const lockFingerprint = fingerprintLock(lock);
+  if (!privateContainedBasis
+    || privateContainedBasis.kind !== 'private-active-contained'
+    || privateContainedBasis.privateConfigurationFingerprint
+      !== lock.configuration.fingerprint
+    || privateContainedBasis.privateLockFingerprint !== lockFingerprint
+    || privateContainedBasis.privateGraphFingerprint !== lock.graphFingerprint
+    || privateContainedBasis.basisFingerprint
+      !== fingerprintPrivateContainedBasis(privateContainedBasis)) {
+    throw new Error(
+      'Contained connected review evidence requires one exact private-contained lock basis.'
+    );
+  }
+  const lockReferences = [
+    work?.configuration?.lockFingerprint,
+    decision?.configurationLockFingerprint,
+    proposal?.configurationLockFingerprint
+  ];
+  const graphReferences = [
+    work?.configuration?.graphFingerprint,
+    decision?.graphFingerprint,
+    proposal?.graphFingerprint
+  ];
+  const runReferences = [
+    work?.checkpoint?.runId,
+    decision?.runId,
+    proposal?.runId
+  ];
+  const reviewActions = proposal?.review?.collections
+    ?.flatMap((collection) => collection.rows)
+    .flatMap((row) => row.actions) || [];
+  const heldActions = reviewActions.filter((action) => {
+    return action.state === 'held' && action.reasonCode === heldReasonCode;
+  });
+  const preparedState = (
+    work?.state === 'ready-for-review'
+      && !Object.hasOwn(work, 'preparationMode')
+  ) || (
+    work?.state === 'ready-for-acquisition'
+      && work?.preparationMode === 'connected-acquisition'
+  );
+  const completed = preparedState
+    && decision?.state === 'ready'
+    && proposal?.state === 'ready-for-review'
+    && proposal?.review?.privateReview?.state === 'available'
+    && proposal?.review?.proposedChanges?.length === 0
+    && heldActions.length > 0
+    && reviewActions.every((action) => action.state !== 'proposed')
+    && proposal?.authority?.state === 'none';
+  if (lockReferences.some((fingerprint) => fingerprint !== lockFingerprint)
+    || graphReferences.some((fingerprint) => fingerprint !== lock.graphFingerprint)
+    || runReferences.some((candidate) => candidate !== runId)
+    || work?.configuration?.configurationBasis !== 'private-active') {
+    throw new Error(
+      'Contained connected review artifacts do not share the exact private execution basis.'
+    );
+  }
+  return baseEvidence({
+    id,
+    createdAt,
+    claimFamily: 'behavior',
+    claim: 'One fixture-contained connected acquisition produced a grounded private review whose incomplete write-verification boundary remained mechanically held without creating execution authority.',
+    subject: { type: 'run', id: runId, version: null },
+    lock,
+    evaluator: {
+      id: automationId + '.contained-connected-review',
+      version: RESOLVER_VERSION,
+      level: 'fixture'
+    },
+    environment: { containment: 'fixture', runtime: DEFAULT_RUNTIME },
+    acceptanceCriteria: [
+      'One current prepared-work basis produces a deterministic grounded decision and private review proposal.',
+      'Every incomplete write action is held under the exact stable reason code.',
+      'The sanitized proposal contains no proposed change or reusable execution authority.',
+      'No batch, approval request, confirmation, start authorization, checkpoint, provider write, or retry authority is created.',
+      'Only normalized provider outputs and fingerprints enter durable state or this evidence record.'
+    ],
+    result: completed ? 'passed' : 'failed',
+    outcomes: [
+      { id: 'connected-review.prepared', state: preparedState ? 'passed' : 'failed' },
+      {
+        id: 'connected-review.decision-grounded',
+        state: decision?.state === 'ready' ? 'passed' : 'failed'
+      },
+      {
+        id: 'connected-review.private-material-available',
+        state: proposal?.review?.privateReview?.state === 'available' ? 'passed' : 'failed'
+      },
+      {
+        id: 'connected-review.write-authority-held',
+        state: completed ? 'passed' : 'failed',
+        reasonCode: heldReasonCode
+      },
+      { id: 'connected-review.private-contained-basis', state: 'passed' },
+      { id: 'connected-review.live-provider-effect', state: 'not-applicable' }
+    ],
+    artifacts: [
+      { role: 'prepared-work', id: work.id, fingerprint: work.fingerprint },
+      {
+        role: 'automation-decision',
+        id: decision.id,
+        fingerprint: decision.decisionFingerprint
+      },
+      {
+        role: 'automation-proposal',
+        id: proposal.id,
+        fingerprint: proposal.proposalFingerprint
+      }
+    ],
+    effects: [],
+    failures: completed ? [] : ['The contained connected review did not preserve its held boundary.'],
+    skipped: [
+      'No batch, approval request, confirmation, one-time start, checkpoint, or provider write was created.',
+      'No live provider authentication, permission, reachability, write, or health was evaluated.',
+      'Complete multi-observation read-back verification is unavailable in Core v2.'
+    ],
+    limitations: [
+      'This proves connected acquisition, grounded decision support, private review, and the exact held boundary against contained normalized responses.',
+      'It does not prove connected write readiness, behavior verification, recovery, or health.'
+    ],
+    privateContainedBasis
+  });
+}
+
 export function createScenarioExecutionEvidence({
   lock,
   envelope,
   scenario,
   scenarioPath,
+  sourceCaseArtifacts,
   assessment,
   evaluatorId,
   id,
   createdAt
 }) {
   const scenarioFingerprint = fingerprintJson(scenario);
+  if (!Array.isArray(sourceCaseArtifacts)
+    || sourceCaseArtifacts.length !== scenario.sourceCases.length) {
+    throw new Error('Scenario evidence requires one exact source-case artifact for every declared source case.');
+  }
+  const sourceArtifactsByPath = new Map();
+  for (const artifact of sourceCaseArtifacts) {
+    if (artifact?.role !== 'source-case'
+      || !scenario.sourceCases.includes(artifact.path)
+      || !/^sha256:[a-f0-9]{64}$/.test(artifact.fingerprint || '')
+      || sourceArtifactsByPath.has(artifact.path)) {
+      throw new Error('Scenario evidence source-case artifacts must uniquely fingerprint the exact declared source cases.');
+    }
+    sourceArtifactsByPath.set(artifact.path, artifact);
+  }
+  const exactSourceCaseArtifacts = scenario.sourceCases.map((sourcePath) => {
+    const artifact = sourceArtifactsByPath.get(sourcePath);
+    if (!artifact) {
+      throw new Error('Scenario evidence source-case artifacts omit a declared source case.');
+    }
+    return {
+      role: 'source-case',
+      path: sourcePath,
+      fingerprint: artifact.fingerprint
+    };
+  });
   if (envelope.automation.id !== scenario.automation
     || envelope.scenario?.id !== scenario.id
     || envelope.scenario?.path !== scenarioPath
@@ -462,6 +778,7 @@ export function createScenarioExecutionEvidence({
         path: scenarioPath,
         fingerprint: scenarioFingerprint
       },
+      ...exactSourceCaseArtifacts,
       {
         role: 'scenario-assessment',
         runId: envelope.id,
@@ -477,5 +794,185 @@ export function createScenarioExecutionEvidence({
     limitations: [
       'This is deterministic fixture evidence. It does not establish connected credentials, provider reachability, host conformance, or live behavior.'
     ]
+  });
+}
+
+export function createMigrationBridgeEvidence({
+  lock,
+  id,
+  createdAt,
+  subject,
+  source,
+  target,
+  supportingArtifacts,
+  checks,
+  limitations
+}) {
+  if (!source
+    || source.role !== 'migration-source'
+    || typeof source.path !== 'string'
+    || !/^sha256:[a-f0-9]{64}$/.test(source.fingerprint || '')) {
+    throw new Error('Migration bridge evidence requires one exact migration-source artifact.');
+  }
+  if (!target
+    || target.role !== 'migration-target'
+    || typeof target.path !== 'string'
+    || !/^sha256:[a-f0-9]{64}$/.test(target.fingerprint || '')) {
+    throw new Error('Migration bridge evidence requires one exact migration-target artifact.');
+  }
+  const exactSubject = subject
+    && typeof subject.id === 'string'
+    && (['pack', 'host'].includes(subject.type)
+      ? typeof subject.version === 'string'
+      : subject.type === 'configuration' && subject.version === null);
+  if (!exactSubject) {
+    throw new Error('Migration bridge evidence requires one exact target pack, host, or configuration subject.');
+  }
+  if (!Array.isArray(supportingArtifacts)
+    || supportingArtifacts.length < 1
+    || !supportingArtifacts.some((artifact) => artifact?.role === 'supporting-evidence')
+    || supportingArtifacts.some((artifact) => {
+      return !['supporting-evidence', 'supporting-artifact'].includes(artifact?.role)
+        || typeof artifact.path !== 'string'
+        || !/^sha256:[a-f0-9]{64}$/.test(artifact.fingerprint || '');
+    })) {
+    throw new Error('Migration bridge evidence requires fingerprinted supporting evidence or governed artifacts.');
+  }
+  if (!Array.isArray(checks)
+    || checks.length < 1
+    || checks.some((check) => {
+      return typeof check?.id !== 'string'
+        || typeof check.description !== 'string'
+        || !['passed', 'failed'].includes(check.state);
+    })
+    || new Set(checks.map((check) => check.id)).size !== checks.length) {
+    throw new Error('Migration bridge evidence requires unique passed-or-failed checks.');
+  }
+  if (!Array.isArray(limitations) || limitations.length < 1) {
+    throw new Error('Migration bridge evidence must state its remaining parity limitations.');
+  }
+  const failures = checks.filter((check) => check.state !== 'passed');
+  return baseEvidence({
+    id,
+    createdAt,
+    claimFamily: 'migration',
+    claim: 'The exact legacy source is bound to this exact target artifact, same-lock contained evidence, and any separately fingerprinted supporting artifacts as a partial migration bridge only.',
+    subject,
+    lock,
+    evaluator: {
+      id: 'kernel.legacy-migration-bridge',
+      version: '1.0.0',
+      level: 'fixture'
+    },
+    environment: { containment: 'fixture', runtime: DEFAULT_RUNTIME },
+    acceptanceCriteria: checks.map((check) => check.description),
+    result: failures.length ? 'failed' : 'passed',
+    outcomes: checks.map((check) => ({ id: check.id, state: check.state })),
+    artifacts: [source, target, ...supportingArtifacts],
+    failures: failures.map((check) => check.id),
+    skipped: [
+      'Interactive host delivery and connected provider behavior were not evaluated.',
+      'Workflow parity, fallback removal, readiness, verification, and health were not promoted.'
+    ],
+    limitations
+  });
+}
+
+export function createMigrationCompletionEvidence({
+  lock,
+  id,
+  createdAt,
+  subject,
+  source,
+  target,
+  supportingArtifacts,
+  disposition,
+  parity,
+  checks,
+  limitations
+}) {
+  if (!source
+    || source.role !== 'migration-source'
+    || typeof source.path !== 'string'
+    || !/^sha256:[a-f0-9]{64}$/.test(source.fingerprint || '')) {
+    throw new Error('Migration completion evidence requires one exact migration-source artifact.');
+  }
+  if (!target
+    || target.role !== 'migration-target'
+    || typeof target.path !== 'string'
+    || !/^sha256:[a-f0-9]{64}$/.test(target.fingerprint || '')) {
+    throw new Error('Migration completion evidence requires one exact migration-target artifact.');
+  }
+  const exactSubject = subject
+    && typeof subject.id === 'string'
+    && (['pack', 'host'].includes(subject.type)
+      ? typeof subject.version === 'string'
+      : subject.type === 'configuration' && subject.version === null);
+  if (!exactSubject) {
+    throw new Error('Migration completion evidence requires one exact target pack, host, or configuration subject.');
+  }
+  if (!['migrated', 'retired'].includes(disposition)
+    || !['proven', 'intentional-change'].includes(parity)) {
+    throw new Error('Migration completion evidence requires an exact disposition and parity decision.');
+  }
+  if (!Array.isArray(supportingArtifacts)
+    || supportingArtifacts.length < 1
+    || supportingArtifacts.some((artifact) => {
+      return !['supporting-evidence', 'supporting-artifact'].includes(artifact?.role)
+        || typeof artifact.path !== 'string'
+        || !/^sha256:[a-f0-9]{64}$/.test(artifact.fingerprint || '');
+    })) {
+    throw new Error('Migration completion evidence requires fingerprinted supporting evidence or governed artifacts.');
+  }
+  const requiredChecks = [
+    'target-selected-in-exact-lock',
+    'supporting-evidence-current',
+    'legacy-dependencies-cleared',
+    'authority-transition-explicit'
+  ];
+  if (!Array.isArray(checks)
+    || checks.some((check) => {
+      return typeof check?.id !== 'string'
+        || typeof check.description !== 'string'
+        || !['passed', 'failed'].includes(check.state);
+    })
+    || new Set(checks.map((check) => check.id)).size !== checks.length
+    || requiredChecks.some((idValue) => !checks.some((check) => check.id === idValue))) {
+    throw new Error('Migration completion evidence ' + id
+      + ' requires unique checks for exact target, current support, cleared dependencies, and authority transition.');
+  }
+  if (!Array.isArray(limitations) || limitations.length < 1) {
+    throw new Error('Migration completion evidence must retain its proof limitations.');
+  }
+  const failures = checks.filter((check) => check.state !== 'passed');
+  return baseEvidence({
+    id,
+    createdAt,
+    claimFamily: 'migration',
+    claim: disposition === 'migrated'
+      ? 'The exact target becomes canonical for this legacy responsibility and its fallback may be removed under the recorded parity decision; a mixed source artifact may remain only for separately unfinished responsibilities.'
+      : 'The exact legacy responsibility has no remaining configured authority and its fallback may be removed under the recorded retirement decision; a mixed source artifact may remain only for separately unfinished responsibilities.',
+    subject,
+    lock,
+    evaluator: {
+      id: 'kernel.legacy-migration-completion',
+      version: '1.0.0',
+      level: 'fixture'
+    },
+    environment: { containment: 'fixture', runtime: DEFAULT_RUNTIME },
+    acceptanceCriteria: checks.map((check) => check.description),
+    result: failures.length ? 'failed' : 'passed',
+    outcomes: [
+      { id: 'migration-disposition', state: disposition },
+      { id: 'migration-parity', state: parity },
+      ...checks.map((check) => ({ id: check.id, state: check.state }))
+    ],
+    artifacts: [source, target, ...supportingArtifacts],
+    failures: failures.map((check) => check.id),
+    skipped: [
+      'Connected provider readiness, live behavior verification, and current health were not evaluated.',
+      'Removing a legacy source fallback does not grant provider effect or host execution authority.'
+    ],
+    limitations
   });
 }

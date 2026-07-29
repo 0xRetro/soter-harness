@@ -1,0 +1,41 @@
+{
+  "$contract": "soter://contracts/provider-fixture/v1",
+  "contractVersion": "1.0.0",
+  "id": "fixture.integration.notion-docs.records",
+  "provider": "provider.integration.notion-docs.fixture",
+  "observedAt": "2026-07-21T09:00:00.000Z",
+  "data": {
+    "schemas": [
+      {
+        "recordType": "document-index",
+        "fields": [
+          { "id": "name", "writable": true, "options": null },
+          { "id": "documentType", "writable": true, "options": ["Guide", "Reference", "Report", "Research", "Working Doc"] },
+          { "id": "categories", "writable": true, "options": ["Prime", "Research", "Unclassified"] },
+          { "id": "description", "writable": true, "options": null },
+          { "id": "link", "writable": true, "options": null },
+          { "id": "ownerIds", "writable": true, "options": null },
+          { "id": "organizationUris", "writable": true, "options": null },
+          { "id": "relatedProjectUris", "writable": true, "options": null }
+        ]
+      }
+    ],
+    "records": [
+      {
+        "type": "document-index",
+        "id": "soter-fixture://docs/record/reference-existing",
+        "version": "1",
+        "fields": {
+          "name": "Existing reference",
+          "documentType": "Reference",
+          "categories": ["Research"],
+          "description": "An existing contained reference used to prove bounded document-index reads.",
+          "link": "https://drive.example.invalid/existing-reference",
+          "ownerIds": ["provider-person.maya"],
+          "organizationUris": ["soter-fixture://crm/organization/acme"],
+          "relatedProjectUris": []
+        }
+      }
+    ]
+  }
+}

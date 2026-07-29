@@ -1,0 +1,42 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "automation.running-evals",
+  "version": "0.1.0",
+  "layer": "automation",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Run workflow evaluations is preserved as a provider-neutral definition with no runtime or effect authority.",
+  "dependencies": [],
+  "capabilities": {
+    "requires": [],
+    "provides": []
+  },
+  "authorities": [],
+  "effects": [],
+  "artifacts": [
+    {
+      "path": "soter/automations/running-evals/definition.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/running-evals/guide.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/running-evals/evaluations.json",
+      "role": "evaluation"
+    }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": [
+      "codex",
+      "claude"
+    ]
+  },
+  "verification": {
+    "maxLevel": "static",
+    "scenarios": []
+  }
+}

@@ -18,14 +18,18 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "name", "path", "activeLockPath", "currentDocumentFingerprint",
+        "name", "templatePath", "desiredStatePath", "activeLockPath",
+        "templateFingerprint", "currentSourceKind", "currentDocumentFingerprint",
         "currentLockFingerprint", "currentGraphFingerprint", "candidateDocumentFingerprint",
         "candidateLockFingerprint", "candidateGraphFingerprint", "projectionFingerprint"
       ],
       "properties": {
         "name": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
-        "path": { "type": "string", "pattern": "^soter/configurations/.+\\.config\\.json$" },
-        "activeLockPath": { "type": "string", "pattern": "^\\.soter/state/configuration-locks/.+\\.json$" },
+        "templatePath": { "type": "string", "pattern": "^soter/configurations/[a-z0-9]+(?:-[a-z0-9]+)*\\.config\\.json$" },
+        "desiredStatePath": { "type": "string", "pattern": "^\\.soter/state/configurations/[a-z0-9]+(?:-[a-z0-9]+)*\\.json$" },
+        "activeLockPath": { "type": "string", "pattern": "^\\.soter/state/configuration-locks/[a-z0-9]+(?:-[a-z0-9]+)*\\.json$" },
+        "templateFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "currentSourceKind": { "enum": ["tracked-template", "private-active"] },
         "currentDocumentFingerprint": { "$ref": "#/$defs/fingerprint" },
         "currentLockFingerprint": { "$ref": "#/$defs/fingerprint" },
         "currentGraphFingerprint": { "$ref": "#/$defs/fingerprint" },

@@ -1,0 +1,109 @@
+{
+  "$contract": "soter://contracts/automation-input/v1",
+  "contractVersion": "1.0.0",
+  "id": "input.automation.feature-capture",
+  "automation": "automation.feature-capture",
+  "version": "1.0.0",
+  "fields": [
+    {
+      "id": "name",
+      "label": "Feature name",
+      "description": "Private concise feature name, kept distinct from the value or problem statement.",
+      "type": "string",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minLength": 2, "maxLength": 200 }
+    },
+    {
+      "id": "why",
+      "label": "Why this matters",
+      "description": "Private value created or problem removed; it becomes Description and is never folded into the name.",
+      "type": "string",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minLength": 3, "maxLength": 2000 }
+    },
+    {
+      "id": "whyState",
+      "label": "Why confidence",
+      "description": "Whether the why is confirmed or a provisional inference that must be reviewed before any create can proceed.",
+      "type": "enum",
+      "required": true,
+      "exposure": "identifier",
+      "options": ["confirmed", "provisional"]
+    },
+    {
+      "id": "featureType",
+      "label": "Card type",
+      "description": "Portable body-shape classification that must also match one current board option.",
+      "type": "enum",
+      "required": true,
+      "exposure": "identifier",
+      "options": ["Bug", "Content", "Enhancement", "Feature"]
+    },
+    {
+      "id": "summary",
+      "label": "Summary",
+      "description": "Private concise explanation written into the body Summary section.",
+      "type": "string",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minLength": 3, "maxLength": 5000 }
+    },
+    {
+      "id": "sectionTwo",
+      "label": "Type-specific behavior",
+      "description": "Private exact behavior, acceptance, scope, desired-state, or repro facts for the type-specific second section.",
+      "type": "string-list",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minItems": 1, "maxItems": 20, "itemMinLength": 2, "itemMaxLength": 1000 }
+    },
+    {
+      "id": "currentState",
+      "label": "Current state in code",
+      "description": "Optional private factual current-state note, including exact file references only when actually observed.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minLength": 2, "maxLength": 5000 }
+    },
+    {
+      "id": "relationships",
+      "label": "Relationships",
+      "description": "Optional private exact related tool or card references; preparation never invents missing relationships.",
+      "type": "string-list",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minItems": 0, "maxItems": 20, "itemMinLength": 2, "itemMaxLength": 1000 }
+    },
+    {
+      "id": "openQuestions",
+      "label": "Decisions and open questions",
+      "description": "Optional private unresolved decisions or questions kept visible in the deterministic body.",
+      "type": "string-list",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minItems": 0, "maxItems": 20, "itemMinLength": 2, "itemMaxLength": 1000 }
+    },
+    {
+      "id": "area",
+      "label": "Board area",
+      "description": "Optional private exact Area request accepted only when the configured board currently declares it.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minLength": 1, "maxLength": 200 }
+    },
+    {
+      "id": "priority",
+      "label": "Board priority",
+      "description": "Optional private exact Priority request accepted only when the configured board currently declares it.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minLength": 1, "maxLength": 200 }
+    }
+  ],
+  "additionalInputs": false
+}

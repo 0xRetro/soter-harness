@@ -1,0 +1,61 @@
+{
+  "$contract": "soter://contracts/capability-provider/v1",
+  "contractVersion": "1.0.0",
+  "id": "provider.integration.slack.mcp",
+  "pack": "integration.slack",
+  "version": "0.1.0",
+  "containment": "connected",
+  "runtime": {
+    "engine": "mcp",
+    "module": "soter/integrations/slack/mcp.mjs",
+    "prepareExport": "prepareMcp",
+    "completeExport": "completeMcp",
+    "probePlanExport": "prepareProbePlanMcp",
+    "probeStepCompleteExport": "completeProbePlanStepMcp",
+    "probeFinalizeExport": "finalizeProbePlanMcp",
+    "responseProfiles": [
+      "slack.codex.connector.v1"
+    ],
+    "pagination": {
+      "capabilities": [
+        "communications.conversations.list",
+        "communications.messages.read",
+        "communications.participants.read",
+        "communications.thread.read"
+      ],
+      "completePageExport": "completeMcpPage",
+      "finalizeExport": "finalizeMcpPages",
+      "maximumPages": 20
+    },
+    "server": "slack",
+    "tools": [
+      "list_workspaces",
+      "list_user_conversations",
+      "list_channel_members",
+      "read_channel",
+      "read_thread"
+    ],
+    "probeTools": ["list_workspaces"]
+  },
+  "capabilities": [
+    { "id": "communications.conversations.list", "version": "1.0.0" },
+    { "id": "communications.participants.read", "version": "1.0.0" },
+    { "id": "communications.messages.read", "version": "1.0.0" },
+    { "id": "communications.thread.read", "version": "1.0.0" }
+  ],
+  "authorities": [
+    { "role": "instance", "subject": "communications.workspace" },
+    { "role": "provider", "subject": "slack.workspace" }
+  ],
+  "effects": ["read", "disclosure"],
+  "mappings": [],
+  "fixtures": [],
+  "limitations": [
+    "The closed Codex response profile is a parser contract for mechanically structured payloads, not a current live-route claim. Current Codex and Claude Slack message and thread routes expose formatted prose, so Slack Conversation Review connected acquisition is unavailable and prose is never parsed.",
+    "Slack Channel Ingestion uses separate conversation-identity and participant capabilities. Those live routes remain declared but unverified; this correction neither promotes nor disables them.",
+    "Connected reads use a Core-checkpointed bounded cursor sequence. Only cursor-exhausted aggregates become portable capability output; page cursors remain private current-call arguments.",
+    "Direct messages are modeled by the portable conversation contract but excluded by the first Slack Conversation Review Automation policy.",
+    "Native provider responses, cursors, workspace values, participant data, and message content remain private and are never persisted as canonical artifacts or general inspection data.",
+    "No Slack write, reaction, reply, send, archive, dispatch, or destructive capability is declared."
+  ]
+}

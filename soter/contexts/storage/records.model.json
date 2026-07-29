@@ -1,0 +1,62 @@
+{
+  "$contract": "soter://contracts/context-record-model/v1",
+  "contractVersion": "1.0.0",
+  "id": "model.context.storage.records",
+  "pack": "context.storage",
+  "version": "0.1.0",
+  "subject": "storage.records",
+  "recordTypes": [
+    {
+      "id": "storage-filing-policy",
+      "summary": "Portable rules governing one retained artifact placement and its required index record.",
+      "fields": [
+        { "id": "name", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The exact human-readable storage policy title." },
+        { "id": "placementRequiresConfirmation", "type": "boolean", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "Whether every exact placement batch requires operator confirmation." },
+        { "id": "indexRequired", "type": "boolean", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "Whether every retained shared artifact requires one document-index record." },
+        { "id": "movesHumanOnly", "type": "boolean", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "Whether existing artifact moves remain exact human instructions rather than Automation effects." },
+        { "id": "renameAllowed", "type": "boolean", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "Whether Automation may rename an existing stored artifact." },
+        { "id": "deleteAllowed", "type": "boolean", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "Whether Automation may delete an existing artifact or shortcut." },
+        { "id": "externalDefaultForm", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The default filed form for externally owned artifacts." },
+        { "id": "snapshotForm", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The filed form used only when a frozen snapshot is explicitly required." },
+        { "id": "unclearHomeKey", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The registered provisional destination used when no defensible home is selected." },
+        { "id": "duplicateCandidateLimit", "type": "number", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The maximum bounded document-index candidates inspected before create." }
+      ],
+      "content": { "kind": "none", "requiredOnCreate": false, "summary": "The normalized filing rules contain no portable body content." },
+      "deduplicationFields": ["name"]
+    },
+    {
+      "id": "storage-location",
+      "summary": "One exact registered storage destination that Automation may name but never invent.",
+      "fields": [
+        { "id": "key", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The stable configuration-scoped destination key." },
+        { "id": "label", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The human-readable destination label." },
+        { "id": "uri", "type": "string", "format": "resource-uri", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The exact provider-neutral folder resource identity." },
+        { "id": "driveUri", "type": "string", "format": "resource-uri", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The exact provider-neutral containing drive identity." },
+        { "id": "kind", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "Whether this is a normal home or the explicit provisional inbox." },
+        { "id": "subjectKeys", "type": "string-list", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The closed subject-area keys that may resolve to this location." },
+        { "id": "documentCategories", "type": "string-list", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The exact document categories associated with this location." }
+      ],
+      "content": { "kind": "none", "requiredOnCreate": false, "summary": "Storage locations contain identity and classification facts only." },
+      "deduplicationFields": ["key", "uri"]
+    },
+    {
+      "id": "storage-artifact",
+      "summary": "One exact stored artifact observed before any placement or human move decision.",
+      "fields": [
+        { "id": "name", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The exact observed artifact name." },
+        { "id": "uri", "type": "string", "format": "resource-uri", "requiredOnCreate": true, "nullable": false, "mutable": false, "summary": "The exact provider-neutral artifact resource identity." },
+        { "id": "kind", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": false, "summary": "The observed file, folder, or shortcut kind." },
+        { "id": "ownership", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": false, "summary": "Whether the artifact is organization-owned or externally owned." },
+        { "id": "link", "type": "string", "format": "resource-uri", "requiredOnCreate": true, "nullable": false, "mutable": false, "summary": "The exact canonical artifact link used by the document index." },
+        { "id": "parentUris", "type": "string-list", "requiredOnCreate": true, "nullable": false, "mutable": false, "summary": "The exact currently observed parent locations." },
+        { "id": "targetUri", "type": "string", "format": "resource-uri", "requiredOnCreate": false, "nullable": true, "mutable": false, "summary": "The exact target of a shortcut when the artifact is a shortcut." }
+      ],
+      "content": { "kind": "none", "requiredOnCreate": false, "summary": "Artifact content is outside the filing decision and is never loaded by this model." },
+      "deduplicationFields": ["uri"]
+    }
+  ],
+  "limitations": [
+    "This model defines portable storage meaning only; provider identifiers, current location membership, permissions, and connected behavior require an Integration observation.",
+    "Retention judgment remains human-owned, and no record type grants move, rename, delete, placement, approval, or execution authority."
+  ]
+}

@@ -1,0 +1,267 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/connected-acceptance-inspection/v1",
+  "title": "Soter sanitized connected acceptance inspection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "generatedAt",
+    "slackConversationReview",
+    "transactions",
+    "authority",
+    "privacy",
+    "claims",
+    "claimBoundary",
+    "inspectionFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/connected-acceptance-inspection/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "generatedAt": { "$ref": "#/$defs/instant" },
+    "slackConversationReview": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "reasonCode", "reason"],
+          "properties": {
+            "state": { "const": "unavailable" },
+            "reasonCode": { "$ref": "#/$defs/reasonCode" },
+            "reason": { "type": "string", "minLength": 20 }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "reasonCode", "reason"],
+          "properties": {
+            "state": { "const": "not-evaluated" },
+            "reasonCode": { "const": "SLACK_CONNECTED_ACCEPTANCE_NOT_EVALUATED" },
+            "reason": {
+              "const": "Slack connected acquisition is declared available, but this inspection received no exact sanitized acceptance observation."
+            }
+          }
+        }
+      ]
+    },
+    "transactions": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "reasonCode", "observations"],
+          "properties": {
+            "state": { "const": "not-evaluated" },
+            "reasonCode": { "const": "CONNECTED_TRANSACTION_CHECKPOINT_NOT_SUPPLIED" },
+            "observations": { "type": "array", "maxItems": 0 }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "reasonCode", "observations"],
+          "properties": {
+            "state": { "const": "observed" },
+            "reasonCode": { "const": "CONNECTED_TRANSACTION_CHECKPOINTS_INSPECTED" },
+            "observations": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/transactionObservation" }
+            }
+          }
+        }
+      ]
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "grants",
+        "providerCallsPermitted",
+        "writesPermitted",
+        "approvalAuthorityIncluded",
+        "continuationAuthorityIncluded"
+      ],
+      "properties": {
+        "grants": { "const": "none" },
+        "providerCallsPermitted": { "const": false },
+        "writesPermitted": { "const": false },
+        "approvalAuthorityIncluded": { "const": false },
+        "continuationAuthorityIncluded": { "const": false }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rawProviderResponseIncluded",
+        "messageContentIncluded",
+        "credentialValuesIncluded",
+        "privateInputsIncluded",
+        "privateStateIncluded",
+        "localPathsIncluded"
+      ],
+      "properties": {
+        "rawProviderResponseIncluded": { "const": false },
+        "messageContentIncluded": { "const": false },
+        "credentialValuesIncluded": { "const": false },
+        "privateInputsIncluded": { "const": false },
+        "privateStateIncluded": { "const": false },
+        "localPathsIncluded": { "const": false }
+      }
+    },
+    "claims": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["acceptance", "ready", "verified", "healthy"],
+      "properties": {
+        "acceptance": { "const": "not-evaluated" },
+        "ready": { "const": "unknown" },
+        "verified": { "const": "unknown" },
+        "healthy": { "const": "unknown" }
+      }
+    },
+    "claimBoundary": {
+      "const": "This projection composes existing sanitized observations only; it does not run connected acceptance, grant authority, or establish readiness, verification, or health."
+    },
+    "inspectionFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "nullableFingerprint": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "reasonCode": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$"
+    },
+    "instant": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])T(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9][.]([0-9]{3})Z$"
+    },
+    "resume": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["classification", "reasonCode", "permittedNextAction"],
+      "properties": {
+        "classification": { "enum": ["safe", "requires-review", "unavailable"] },
+        "reasonCode": { "$ref": "#/$defs/reasonCode" },
+        "permittedNextAction": {
+          "enum": [
+            "confirm-approval",
+            "renew-approval-request",
+            "start-transaction",
+            "execute-current-call",
+            "prepare-reconciliation",
+            "inspect-checkpoint",
+            "rebuild-work",
+            "none"
+          ]
+        }
+      }
+    },
+    "transactionObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "host",
+        "checkpoint",
+        "automationId",
+        "workId",
+        "workState",
+        "phase",
+        "configuration",
+        "approval",
+        "verification",
+        "resume",
+        "blockerReasonCodes"
+      ],
+      "properties": {
+        "host": { "enum": ["codex", "claude"] },
+        "checkpoint": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "fingerprint", "state", "updatedAt"],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^checkpoint[.]transaction[.][a-z0-9]+(?:[.-][a-z0-9]+)*$"
+            },
+            "fingerprint": { "$ref": "#/$defs/fingerprint" },
+            "state": { "enum": ["requested", "completed", "failed", "needs-attention"] },
+            "updatedAt": { "$ref": "#/$defs/instant" }
+          }
+        },
+        "automationId": { "type": ["string", "null"], "minLength": 1 },
+        "workId": {
+          "type": "string",
+          "pattern": "^work[.][a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "workState": {
+          "enum": [
+            "awaiting-approval",
+            "approval-expired",
+            "approved-not-started",
+            "running",
+            "blocked",
+            "verification-failed",
+            "completed",
+            "failed"
+          ]
+        },
+        "phase": {
+          "enum": ["approval", "execution", "reconciliation", "verification", "complete"]
+        },
+        "configuration": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "lockFingerprint",
+            "graphFingerprint",
+            "applicability",
+            "reasonCode"
+          ],
+          "properties": {
+            "name": { "type": ["string", "null"], "minLength": 1 },
+            "lockFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "applicability": { "enum": ["current", "stale", "unknown"] },
+            "reasonCode": { "$ref": "#/$defs/reasonCode" }
+          }
+        },
+        "approval": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "reasonCode"],
+          "properties": {
+            "state": { "enum": ["awaiting", "expired", "confirmed", "consumed"] },
+            "reasonCode": { "$ref": "#/$defs/reasonCode" }
+          }
+        },
+        "verification": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "observedFingerprint"],
+          "properties": {
+            "state": { "enum": ["not-started", "running", "verified", "failed", "unknown"] },
+            "observedFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
+          }
+        },
+        "resume": { "$ref": "#/$defs/resume" },
+        "blockerReasonCodes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/reasonCode" }
+        }
+      }
+    }
+  }
+}

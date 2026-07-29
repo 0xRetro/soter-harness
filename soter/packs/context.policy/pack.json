@@ -1,0 +1,24 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.policy",
+  "version": "0.1.0",
+  "layer": "context",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Defines provider-neutral policy-standard identity, ordered shape, coverage, lifecycle, representation, and change-control meaning.",
+  "dependencies": [],
+  "capabilities": { "requires": [], "provides": [] },
+  "authorities": [
+    { "role": "definition", "subject": "policy.standard", "required": true },
+    { "role": "instance", "subject": "policy.standard", "required": true }
+  ],
+  "effects": [],
+  "artifacts": [
+    { "path": "soter/contracts/policy-standard-model.schema.json", "role": "definition" },
+    { "path": "soter/contexts/policy/standard.model.json", "role": "definition" },
+    { "path": "soter/contexts/policy/vocabulary.json", "role": "definition" }
+  ],
+  "compatibility": { "baseContract": "^1.0.0", "hosts": ["codex", "claude"] },
+  "verification": { "maxLevel": "static", "scenarios": [] }
+}

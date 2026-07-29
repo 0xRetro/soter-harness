@@ -1,0 +1,208 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "automation.project-capture",
+  "version": "0.1.0",
+  "layer": "automation",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Grounds one private Project or Deal candidate against an exact portable creation profile, current policy, schema, organization, and duplicate observations, then stops at a private held review. Project creation is intentionally unavailable because Core currently supports only one verification observation per operation and cannot prove the required complete fields-and-body read-back.",
+  "dependencies": [
+    {
+      "pack": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Project preparation requires exact locks, private review material, effect policy, and evidence boundaries."
+    },
+    {
+      "pack": "context.projects",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Project fields, milestones, body semantics, policy, schema, and duplicate meaning belong to Projects Context."
+    },
+    {
+      "pack": "context.crm",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "The selected Organization relation resolves through independently owned CRM identity."
+    }
+  ],
+  "capabilities": {
+    "requires": [
+      {
+        "id": "projects.records.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation must load one exact policy, the complete creation-profile set, and bounded duplicate Project candidates."
+      },
+      {
+        "id": "crm.records.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation must resolve one exact CRM Organization without treating Projects Context as its owner."
+      },
+      {
+        "id": "projects.schema.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation must observe current project fields and exact Type and Status options before a candidate can be reviewed."
+      }
+    ],
+    "provides": []
+  },
+  "sourceRequirements": [
+    {
+      "purpose": "project-capture-policy",
+      "capability": "projects.records.read",
+      "authorityRole": "definition",
+      "authoritySubject": "projects.records",
+      "minimum": 1,
+      "maximum": 1,
+      "reason": "Project Capture requires one configured normalized Projects policy source for naming, type, organization, portable body, milestone, work-item, deduplication, relation, and confirmation rules."
+    },
+    {
+      "purpose": "project-creation-profiles",
+      "capability": "projects.records.read",
+      "authorityRole": "definition",
+      "authoritySubject": "projects.records",
+      "minimum": 1,
+      "maximum": 1,
+      "reason": "Project Capture requires one configured source containing the complete exact portable Project and Deal creation-profile set."
+    }
+  ],
+  "authorities": [
+    {
+      "role": "definition",
+      "subject": "projects.records",
+      "required": true
+    },
+    {
+      "role": "instance",
+      "subject": "projects.records",
+      "required": true
+    },
+    {
+      "role": "instance",
+      "subject": "crm.records",
+      "required": true
+    },
+    {
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "required": true
+    }
+  ],
+  "effects": [
+    "read",
+    "disclosure"
+  ],
+  "operator": {
+    "input": "soter/automations/project-capture/operator-input.json",
+    "preparation": {
+      "module": "soter/automations/project-capture/prepare.mjs",
+      "export": "prepareProjectCaptureRun",
+      "containment": "fixture",
+      "derivedReviewContract": "soter/automations/project-capture/derived-review.json"
+    },
+    "acquisition": {
+      "module": "soter/automations/project-capture/context.mjs",
+      "prepareExport": "prepareProjectCaptureConnectedAcquisition",
+      "finalizeExport": "finalizeProjectCaptureConnectedAcquisition",
+      "containment": "connected",
+      "recordRequirements": [
+        {
+          "capability": "projects.records.read",
+          "recordTypes": [
+            "project-capture-policy",
+            "project-creation-profile",
+            "project"
+          ]
+        },
+        { "capability": "crm.records.read", "recordTypes": ["organization"] },
+        { "capability": "projects.schema.read", "recordTypes": ["project"] }
+      ]
+    },
+    "proposal": {
+      "module": "soter/automations/project-capture/proposal.mjs",
+      "export": "createProjectCaptureProposal",
+      "schema": "soter/automations/project-capture/proposal.schema.json",
+      "inputSchema": "soter/automations/project-capture/proposal-input.schema.json",
+      "derivedReviewContract": "soter/automations/project-capture/derived-review.json"
+    }
+  },
+  "artifacts": [
+    {
+      "path": "soter/automations/project-capture/operator-input.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/project-capture/derived-review.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/project-capture/decision.schema.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/project-capture/proposal-input.schema.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/project-capture/proposal.schema.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/project-capture/schema.mjs",
+      "role": "implementation"
+    },
+    {
+      "path": "soter/automations/project-capture/project.mjs",
+      "role": "implementation"
+    },
+    {
+      "path": "soter/automations/project-capture/prepare.mjs",
+      "role": "implementation"
+    },
+    {
+      "path": "soter/automations/project-capture/context.mjs",
+      "role": "implementation"
+    },
+    {
+      "path": "soter/automations/project-capture/decision.mjs",
+      "role": "implementation"
+    },
+    {
+      "path": "soter/automations/project-capture/proposal.mjs",
+      "role": "implementation"
+    },
+    {
+      "path": "soter/automations/project-capture/scenario.mjs",
+      "role": "evaluation"
+    },
+    {
+      "path": "soter/automations/project-capture/project-capture.selftest.mjs",
+      "role": "evaluation"
+    },
+    {
+      "path": "soter/automations/project-capture/connected-context.selftest.mjs",
+      "role": "evaluation"
+    },
+    {
+      "path": "soter/scenarios/project-capture/preparation.scenario.json",
+      "role": "evaluation"
+    }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": [
+      "codex",
+      "claude"
+    ]
+  },
+  "verification": {
+    "maxLevel": "fixture",
+    "scenarios": [
+      "soter/scenarios/project-capture/preparation.scenario.json"
+    ]
+  }
+}

@@ -1,27 +1,36 @@
 {
-  "$contract": "soter://contracts/host-adapter/v1",
-  "contractVersion": "1.0.0",
+  "$contract": "soter://contracts/host-adapter/v2",
+  "contractVersion": "2.0.0",
   "id": "host.claude",
   "host": "claude",
-  "version": "0.1.0",
+  "version": "0.3.1",
   "releaseStage": "experimental",
   "evidenceMaturity": "declared",
   "summary": "Maps the working Claude-oriented prototype into the target host-adapter boundary for later behavior-level conformance.",
   "projectionDefinition": {
     "id": "host-projection.claude",
-    "version": "0.1.0",
+    "version": "0.3.1",
     "path": "soter/hosts/claude/projection.json"
   },
   "projections": [
     { "path": "CLAUDE.md", "role": "instructions" },
-    { "path": ".claude/.mcp.json", "role": "tools" }
+    { "path": ".mcp.json", "role": "tools" }
+  ],
+  "projectionCollections": [
+    {
+      "id": "collection.claude.workflow-guides",
+      "role": "skills",
+      "pathPrefix": ".claude/skills/",
+      "sourceContract": "soter://contracts/workflow-guide/v2",
+      "selection": "selected-pack-active"
+    }
   ],
   "mcpServers": [
     {
       "id": "soter",
       "delivery": "project",
       "state": "configured",
-      "configurationPath": ".claude/.mcp.json",
+      "configurationPath": ".mcp.json",
       "toolMappings": [],
       "reason": "The project config exposes the provider-neutral Core service through a local stdio MCP server."
     },
@@ -32,19 +41,23 @@
       "toolMappings": [
         {
           "logical": "fetch",
-          "native": "Notion:notion-fetch"
+          "native": "Notion:notion-fetch",
+          "responseProfile": "notion.claude.plugin.v1"
         },
         {
           "logical": "query_data_sources",
-          "native": "Notion:notion-query-data-sources"
+          "native": "Notion:notion-query-data-sources",
+          "responseProfile": "notion.claude.plugin.v1"
         },
         {
           "logical": "create_pages",
-          "native": "Notion:notion-create-pages"
+          "native": "Notion:notion-create-pages",
+          "responseProfile": "notion.claude.plugin.v1"
         },
         {
           "logical": "update_page",
-          "native": "Notion:notion-update-page"
+          "native": "Notion:notion-update-page",
+          "responseProfile": "notion.claude.plugin.v1"
         }
       ],
       "reason": "The legacy plugin maps Notion, but it is not silently adopted by the deterministic host projection."
@@ -56,19 +69,54 @@
       "toolMappings": [
         {
           "logical": "fetch",
-          "native": "mcp__otter__fetch"
+          "native": "mcp__otter__fetch",
+          "responseProfile": "otter.mcp.v1"
         },
         {
           "logical": "get_user_info",
-          "native": "mcp__otter__get_user_info"
+          "native": "mcp__otter__get_user_info",
+          "responseProfile": "otter.mcp.v1"
         }
       ],
       "reason": "The adapter maps the Otter route, but the deterministic projection does not embed provider endpoints or authentication configuration."
+    },
+    {
+      "id": "slack",
+      "delivery": "plugin",
+      "state": "declared",
+      "toolMappings": [
+        {
+          "logical": "list_workspaces",
+          "native": "mcp__plugin_slack_slack__slack_list_workspaces",
+          "responseProfile": "slack.claude.plugin.v1"
+        },
+        {
+          "logical": "list_user_conversations",
+          "native": "mcp__plugin_slack_slack__slack_list_user_conversations",
+          "responseProfile": "slack.claude.plugin.v1"
+        },
+        {
+          "logical": "list_channel_members",
+          "native": "mcp__plugin_slack_slack__slack_list_channel_members",
+          "responseProfile": "slack.claude.plugin.v1"
+        },
+        {
+          "logical": "read_channel",
+          "native": "mcp__plugin_slack_slack__slack_read_channel",
+          "responseProfile": "slack.claude.plugin.v1"
+        },
+        {
+          "logical": "read_thread",
+          "native": "mcp__plugin_slack_slack__slack_read_thread",
+          "responseProfile": "slack.claude.plugin.v1"
+        }
+      ],
+      "reason": "The declared Slack plugin route supplies exact read-only workspace, conversation, participant, message, and thread tools; it is not silently adopted by host realization and does not prove launch, discovery, authentication, pagination conformance, readiness, verification, or health."
     }
   ],
   "mechanisms": {
     "instructions": "available",
-    "skills": "declared",
+    "skills": "available",
     "tools": "available",
     "lifecycle": "declared",
     "compactionRehydration": "declared",
@@ -80,6 +128,6 @@
     "scenarios": []
   },
   "limitations": [
-    "The deterministic projection owns only CLAUDE.md and .claude/.mcp.json. Legacy skills, settings, hooks, and plugin files remain mapped migration inputs rather than generated authority; host launch, discovery, authentication, connected behavior, and health are not proven."
+    "The adapter can deterministically project selected active workflow guides as explicit-only skills, while candidate guides and retained legacy skills remain excluded from generated ownership; host launch, discovery, authentication, connected behavior, and health are not proven."
   ]
 }

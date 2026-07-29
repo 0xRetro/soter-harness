@@ -1,0 +1,36 @@
+{
+  "$contract": "soter://contracts/automation-input/v1",
+  "contractVersion": "1.0.0",
+  "id": "input.automation.repository-review",
+  "automation": "automation.repository-review",
+  "version": "1.0.0",
+  "fields": [
+    {
+      "id": "repositoryUri",
+      "label": "Repository reference",
+      "description": "Private exact repository reference resolved only through the selected repository authority.",
+      "type": "uri",
+      "required": true,
+      "exposure": "private"
+    },
+    {
+      "id": "scope",
+      "label": "Review scope",
+      "description": "Portable review altitude; this milestone supports product-capability candidates only.",
+      "type": "enum",
+      "required": true,
+      "exposure": "identifier",
+      "options": ["product-capabilities"]
+    },
+    {
+      "id": "focus",
+      "label": "Review focus",
+      "description": "Optional private focus terms that constrain review without becoming repository or Product authority.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": { "minLength": 2, "maxLength": 1000 }
+    }
+  ],
+  "additionalInputs": false
+}

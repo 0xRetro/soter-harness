@@ -1,0 +1,67 @@
+{
+  "$contract": "soter://contracts/scenario/v1",
+  "contractVersion": "1.0.0",
+  "id": "project-capture.preparation",
+  "automation": "automation.project-capture",
+  "intent": "operate",
+  "input": {
+    "project": {
+      "nameState": "private-policy-shaped",
+      "shortNameState": "private-exact",
+      "organizationState": "exactly-resolvable",
+      "profileState": "portable-project-selected",
+      "typeState": "policy-and-schema-current",
+      "bodyState": "private-overview-and-parallel-milestone-work-fields",
+      "managerState": "unavailable",
+      "dateState": "optional-pinned-range"
+    }
+  },
+  "expected": {
+    "capabilityOrder": [
+      "projects.records.read",
+      "projects.records.read",
+      "projects.schema.read",
+      "crm.records.read",
+      "projects.records.read"
+    ],
+    "effectModes": {
+      "read": "allow",
+      "disclosure": "allow",
+      "write": "confirm",
+      "dispatch": "prohibit",
+      "destructive": "prohibit"
+    },
+    "outcomes": [
+      "project-policy.grounded",
+      "project-profile.grounded",
+      "project-schema.observed",
+      "organization.exactly-resolved",
+      "duplicates.bounded",
+      "project-create.candidate-reviewable",
+      "project-create.write-authority-unavailable"
+    ],
+    "invariants": [
+      "private-project-material-excluded-from-inspection",
+      "calendar-range-pinned",
+      "project-name-policy-exact",
+      "milestone-grammar-exact",
+      "relations-never-fabricated",
+      "deduplicate-before-create",
+      "no-write-or-approval-during-preparation"
+    ],
+    "evidence": [
+      "exact-lock",
+      "policy-source-fingerprint",
+      "profile-source-fingerprint",
+      "schema-read-fingerprint",
+      "organization-read-fingerprint",
+      "duplicate-query-fingerprint",
+      "private-project-material-sanitized",
+      "write-boundary-state",
+      "source-cases-exactly-fingerprinted"
+    ]
+  },
+  "sourceCases": [
+    ".claude/systems/project-management.md"
+  ]
+}

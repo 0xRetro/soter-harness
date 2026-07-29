@@ -1,0 +1,24 @@
+{
+  "$contract": "soter://contracts/automation-derived-review/v1",
+  "contractVersion": "1.0.0",
+  "automation": "automation.process-capture",
+  "kind": "process-capture-derived-review",
+  "items": [
+    {
+      "kind": "process-create",
+      "fields": [
+        { "id": "name", "label": "Process name", "type": "text" },
+        { "id": "status", "label": "Definition status", "type": "text" },
+        { "id": "frequency", "label": "Frequency", "type": "text" },
+        { "id": "category", "label": "Category", "type": "string-list" },
+        { "id": "tags", "label": "Tags", "type": "string-list" },
+        { "id": "processLogicOwnerUris", "label": "Process logic owner identities", "type": "string-list" },
+        { "id": "relatedServiceUris", "label": "Related service identities", "type": "string-list" },
+        { "id": "relatedRoleUris", "label": "Related role identities", "type": "string-list" },
+        { "id": "body", "label": "Complete process body", "type": "text" },
+        { "id": "duplicateCandidateIds", "label": "Exact duplicate candidates", "type": "string-list" },
+        { "id": "taskSpawnDisposition", "label": "Task spawn disposition", "type": "text" }
+      ]
+    }
+  ]
+}

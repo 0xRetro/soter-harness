@@ -24,6 +24,11 @@ export function PreparedReviewCollections({ work, material, error }: PreparedRev
   const proposedActions = useMemo(() => work.preview.collections.flatMap((collection) => (
     collection.rows.flatMap((row) => row.actions.filter((action) => action.state === 'proposed'))
   )), [work.preview.collections]);
+  const heldReasonCodes = useMemo(() => [...new Set(work.preview.collections.flatMap((collection) => (
+    collection.rows.flatMap((row) => row.actions
+      .filter((action) => action.state === 'held')
+      .map((action) => action.reasonCode))
+  )))].sort(), [work.preview.collections]);
   const [selectedActionIds, setSelectedActionIds] = useState<string[]>([]);
   const [batch, setBatch] = useState<PreparedReviewBatch | null>(null);
   const [batchMaterial, setBatchMaterial] = useState<PreparedReviewBatchMaterial | null>(null);
@@ -173,6 +178,12 @@ export function PreparedReviewCollections({ work, material, error }: PreparedRev
         <StateMark state={coverageComplete ? 'passed' : 'failed'} />
       </header>
       {!coverageComplete && <div className="review-coverage-blocker" role="alert"><strong>Coverage incomplete</strong><span>No proposed batch is available until every collection reports complete coverage.</span></div>}
+      {proposedActions.length === 0 && heldReasonCodes.length > 0 && (
+        <div className="review-coverage-blocker" aria-label="Held review boundary">
+          <strong>No selectable actions</strong>
+          <span>{heldReasonCodes.join(' · ')}</span>
+        </div>
+      )}
 
       {proposedActions.length > 0 && (
         <section className="review-batch-selector" aria-label="Review-only action selection">

@@ -253,6 +253,14 @@ export function activeConfigurationLockStatePath(root, configurationName) {
   );
 }
 
+export function developmentRequestStatePath(root, requestId) {
+  return stateFile(root, 'development-requests', safeId(requestId, 'development request id'));
+}
+
+export function developmentResultStatePath(root, resultId) {
+  return stateFile(root, 'development-results', safeId(resultId, 'development result id'));
+}
+
 export function hasHostCallCheckpoint(root, checkpointId) {
   return fs.existsSync(hostCallCheckpointPath(root, checkpointId));
 }
@@ -379,6 +387,14 @@ export function hasPackInstallManagedManifestState(root) {
 
 export function hasActiveConfigurationLockState(root, configurationName) {
   return fs.existsSync(activeConfigurationLockStatePath(root, configurationName));
+}
+
+export function hasDevelopmentRequestState(root, requestId) {
+  return fs.existsSync(developmentRequestStatePath(root, requestId));
+}
+
+export function hasDevelopmentResultState(root, resultId) {
+  return fs.existsSync(developmentResultStatePath(root, resultId));
 }
 
 export function readRunState(root, runId) {
@@ -672,6 +688,28 @@ export function writeActiveConfigurationLockState(root, configurationName, lock)
 export function removeActiveConfigurationLockState(root, configurationName) {
   const file = activeConfigurationLockStatePath(root, configurationName);
   if (fs.existsSync(file)) fs.rmSync(file);
+  return { file, path: repoRelativePath(root, file) };
+}
+
+export function readDevelopmentRequestState(root, requestId) {
+  const file = developmentRequestStatePath(root, requestId);
+  return readRequiredState(file, 'Private development request', requestId, 'request');
+}
+
+export function createDevelopmentRequestState(root, request) {
+  const file = developmentRequestStatePath(root, request.id);
+  atomicCreateJson(file, request);
+  return { file, path: repoRelativePath(root, file) };
+}
+
+export function readDevelopmentResultState(root, resultId) {
+  const file = developmentResultStatePath(root, resultId);
+  return readRequiredState(file, 'Private development result', resultId, 'result');
+}
+
+export function createDevelopmentResultState(root, result) {
+  const file = developmentResultStatePath(root, result.id);
+  atomicCreateJson(file, result);
   return { file, path: repoRelativePath(root, file) };
 }
 

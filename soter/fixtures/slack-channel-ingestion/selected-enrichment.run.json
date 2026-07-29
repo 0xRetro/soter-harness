@@ -1,0 +1,553 @@
+{
+  "$contract": "soter://contracts/run-envelope/v1",
+  "contractVersion": "1.0.0",
+  "id": "run.slack-channel-ingestion.preparation-fixture.selected",
+  "createdAt": "2026-07-21T21:00:00.000Z",
+  "requestedOutcome": "Prepare exact selected-channel participant and optional CRM-link review, then stop before approval or writes.",
+  "initiation": "user-requested",
+  "intent": "operate",
+  "lifecycleState": "paused",
+  "automation": {
+    "id": "automation.slack-channel-ingestion",
+    "version": "0.1.0"
+  },
+  "configurationLock": {
+    "path": "soter/fixtures/slack-channel-ingestion/slack-channel-ingestion.lock.json",
+    "fingerprint": "sha256:51acc8121ec5dcd6e9778460f4db91382885a924644c9a1505740b1ec3a3fd9d"
+  },
+  "graphFingerprint": "sha256:2136077a1ebf7d12e0b047e2cd3f9ec905fb9796766c8f1cb331e5c85cb4c85e",
+  "context": [
+    {
+      "subject": "communications.records",
+      "authority": "authority.communications.definition",
+      "role": "definition",
+      "uri": "soter-fixture://configuration-template/notion/authority/policies",
+      "declarationFingerprint": "sha256:02f254cc47a3ceb005c4946aaee52c987f582151699be15ae513a45f875ffeaa",
+      "status": "loaded",
+      "provenance": "fixture:sha256:c9aa58341dda38ce825e01508f3c3347e167789657049808877ee1a572c1e05d",
+      "freshness": "passed"
+    },
+    {
+      "subject": "communications.records",
+      "authority": "authority.communications.instance",
+      "role": "instance",
+      "uri": "soter-fixture://configuration-template/notion/authority/communications",
+      "declarationFingerprint": "sha256:e0b59be35ed05fb19540e2ad0d565fa70066a1434adf4677421d1abe17357012",
+      "status": "loaded",
+      "provenance": "fixture:sha256:ba6dae553b2e462ae5c97c6d82b8c76d73fd4c92cf01f3cb5ad7f08ed40080c5",
+      "freshness": "passed"
+    },
+    {
+      "subject": "communications.semantics.records",
+      "authority": "authority.communications.semantics.definition",
+      "role": "definition",
+      "uri": "soter://context/communications",
+      "declarationFingerprint": "sha256:0b465d80100b2ccb7a4a6486fe2b4a6844b1f43eb18dad379d82b8af79ac93c9",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:51acc8121ec5dcd6e9778460f4db91382885a924644c9a1505740b1ec3a3fd9d",
+      "freshness": "unknown"
+    },
+    {
+      "subject": "crm.records",
+      "authority": "authority.crm.definition",
+      "role": "definition",
+      "uri": "soter://context/crm",
+      "declarationFingerprint": "sha256:502352d07fedd267c13487a51fa06ebb3bee5550c6b5aa168e59899dba62aba2",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:51acc8121ec5dcd6e9778460f4db91382885a924644c9a1505740b1ec3a3fd9d",
+      "freshness": "unknown"
+    },
+    {
+      "subject": "crm.records",
+      "authority": "authority.crm.instance",
+      "role": "instance",
+      "uri": "soter-fixture://configuration-template/notion/authority/crm",
+      "declarationFingerprint": "sha256:0a64464ffcf631127f54283b034ea5ea4ee7d136e4740880d427261bf61c8b6e",
+      "status": "loaded",
+      "provenance": "fixture:sha256:b7817f4a7585ecea05047f44c8cea24bd9813afc77642a1ad21d9bab9c9916f0",
+      "freshness": "passed"
+    },
+    {
+      "subject": "notion.workspace",
+      "authority": "authority.notion.provider",
+      "role": "provider",
+      "uri": "soter-fixture://configuration-template/notion/account/operator",
+      "declarationFingerprint": "sha256:cdee230730b0f3c9c6ca06e6578e38324ed0b7f7da89339d7628c70061e960e1",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:51acc8121ec5dcd6e9778460f4db91382885a924644c9a1505740b1ec3a3fd9d",
+      "freshness": "unknown"
+    },
+    {
+      "subject": "runtime.runs",
+      "authority": "authority.run.evidence",
+      "role": "evidence",
+      "uri": "soter-state://runs",
+      "declarationFingerprint": "sha256:9d785399ed6214659b768c25bec1cbb10b5e1fac5b42d9bbd7908d0529a9d6e7",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:51acc8121ec5dcd6e9778460f4db91382885a924644c9a1505740b1ec3a3fd9d",
+      "freshness": "unknown"
+    },
+    {
+      "subject": "communications.workspace",
+      "authority": "authority.slack.instance",
+      "role": "instance",
+      "uri": "soter-fixture://configuration-template/slack/workspace/review",
+      "declarationFingerprint": "sha256:dfadf6558bc22a7a49fb8c18f6c9dd7f52fc3f3db57b7028131082a4074889ae",
+      "status": "loaded",
+      "provenance": "fixture:sha256:7e225f2e32b9ec323045787b7b243295eb61b1c674f8550d5039ce9980151d2d",
+      "freshness": "passed"
+    },
+    {
+      "subject": "slack.workspace",
+      "authority": "authority.slack.provider",
+      "role": "provider",
+      "uri": "soter-fixture://configuration-template/slack/account/operator",
+      "declarationFingerprint": "sha256:2558293ca5572f625738bf204fe52e651f3254e2e7478474d75dde0895967382",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:51acc8121ec5dcd6e9778460f4db91382885a924644c9a1505740b1ec3a3fd9d",
+      "freshness": "unknown"
+    }
+  ],
+  "bindings": [
+    {
+      "capability": "communications.conversations.list",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.slack",
+      "providerVersion": "0.1.0",
+      "authorities": [
+        "authority.slack.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Slack supplies one exact complete conversation identity window or exact selected channel set without participant or message data."
+    },
+    {
+      "capability": "communications.participants.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.slack",
+      "providerVersion": "0.1.0",
+      "authorities": [
+        "authority.slack.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Slack supplies bounded human participant profiles only for exact operator-selected channel identities."
+    },
+    {
+      "capability": "communications.records.create",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.communications.instance"
+      ],
+      "effects": [
+        "write"
+      ],
+      "reason": "A separately governed exact transaction may create a mapped Communications channel."
+    },
+    {
+      "capability": "communications.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.communications.definition",
+        "authority.communications.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Notion supplies one exact channel-ingestion policy selection plus bounded current Communications channel-directory candidates."
+    },
+    {
+      "capability": "communications.records.update",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.communications.instance"
+      ],
+      "effects": [
+        "write"
+      ],
+      "reason": "A separately governed exact transaction may update a mapped Communications channel under expected-version checks."
+    },
+    {
+      "capability": "communications.schema.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.communications.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Notion supplies one current portable Communications channel schema observation."
+    },
+    {
+      "capability": "crm.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.crm.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Notion supplies bounded Person and Organization candidates only for optional typed links."
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0",
+    "projectionDefinition": {
+      "id": "host-projection.codex",
+      "version": "0.3.0",
+      "path": "soter/hosts/codex/projection.json",
+      "fingerprint": "sha256:76cd84436a3b5e7f00edcc8a0be3cdff64f53e488b13107a8bf56603b9600490"
+    },
+    "projectionGenerator": {
+      "id": "core.host-projection-generator",
+      "version": "2.1.0"
+    }
+  },
+  "effectPolicies": {
+    "read": {
+      "mode": "allow",
+      "reason": "Exact policy, identity, schema, candidate, and selected participant reads may run inside the declared private preparation phase."
+    },
+    "disclosure": {
+      "mode": "allow",
+      "reason": "Bounded normalized channel and selected member observations may enter private runtime state with strict minimization."
+    },
+    "write": {
+      "mode": "confirm",
+      "reason": "Every exact selected channel create or update requires fresh confirmation and separately consumed one-time start authority."
+    },
+    "dispatch": {
+      "mode": "prohibit",
+      "reason": "Slack channel ingestion sends or publishes no messages."
+    },
+    "destructive": {
+      "mode": "prohibit",
+      "reason": "Slack channel ingestion never deletes, archives, leaves, or destructively mutates channels or CRM records."
+    }
+  },
+  "approvals": [],
+  "checkpoints": [
+    {
+      "id": "effects-established",
+      "state": "passed",
+      "details": "Read and disclosure policies were evaluated before each contained context invocation."
+    },
+    {
+      "id": "selected-channels-enriched",
+      "state": "passed",
+      "details": "Only exact operator-selected channel participant profiles were read and optionally grounded to current CRM candidates."
+    },
+    {
+      "id": "write-boundary-held",
+      "state": "passed",
+      "details": "No approval, continuation, provider write, Slack mutation, Communications mutation, CRM mutation, or canonical write was issued during preparation."
+    }
+  ],
+  "outputs": [
+    {
+      "id": "context.slack-channel-ingestion.preparation-fixture.selected",
+      "type": "context-snapshot",
+      "fingerprint": "sha256:3a17928269d63ac07b44b10fc90700adfaf006e0534a3dd34510ec22d13293a5"
+    }
+  ],
+  "effects": [
+    {
+      "id": "effect.slack-channel-ingestion.policy.fixture",
+      "capability": "communications.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.communications.definition",
+      "startedAt": "2026-07-21T21:00:00.000Z",
+      "completedAt": "2026-07-21T21:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact policy, identity, schema, candidate, and selected participant reads may run inside the declared private preparation phase."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Bounded normalized channel and selected member observations may enter private runtime state with strict minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:3ae3da867127bbe47f7e2206bdadd81bd34ea4840a3417ec644ef977688f4d41",
+      "state": "passed",
+      "outputFingerprint": "sha256:d7bb68d1712106fb59e267eee65d0fbe1defaa6d068ac7649fab07a0fc8c9b5c",
+      "error": null
+    },
+    {
+      "id": "effect.slack-channel-ingestion.identities.fixture",
+      "capability": "communications.conversations.list",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.slack",
+      "providerImplementation": "provider.integration.slack.fixture",
+      "providerVersion": "0.1.0",
+      "containment": "fixture",
+      "authority": "authority.slack.instance",
+      "startedAt": "2026-07-21T21:00:00.000Z",
+      "completedAt": "2026-07-21T21:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact policy, identity, schema, candidate, and selected participant reads may run inside the declared private preparation phase."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Bounded normalized channel and selected member observations may enter private runtime state with strict minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:9c6e74631beff46ff91e87e0f170df3791e3287144f98e6db01b27e77d2aa29a",
+      "state": "passed",
+      "outputFingerprint": "sha256:887a94d1cd81d2b7ecc96103d76642c57870178d3e3febffb5bd61b0a18e44e3",
+      "error": null
+    },
+    {
+      "id": "effect.slack-channel-ingestion.schema.fixture",
+      "capability": "communications.schema.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.communications.instance",
+      "startedAt": "2026-07-21T21:00:00.000Z",
+      "completedAt": "2026-07-21T21:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact policy, identity, schema, candidate, and selected participant reads may run inside the declared private preparation phase."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Bounded normalized channel and selected member observations may enter private runtime state with strict minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:f4f49293523c02863a7912f37d68bf9d67b6223c131f5bd9ffbf2ff5ffdb3fcf",
+      "state": "passed",
+      "outputFingerprint": "sha256:74660a8c15889aba4e6e9e7f7ac06651fc599c2a93112fc664e4199c9dd93e57",
+      "error": null
+    },
+    {
+      "id": "effect.slack-channel-ingestion.channels.fixture",
+      "capability": "communications.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.communications.instance",
+      "startedAt": "2026-07-21T21:00:00.000Z",
+      "completedAt": "2026-07-21T21:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact policy, identity, schema, candidate, and selected participant reads may run inside the declared private preparation phase."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Bounded normalized channel and selected member observations may enter private runtime state with strict minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:4c4ee45ecbc0afd6998f3f29925ec571a2b643b596f8c3a79faa8ee6e1290656",
+      "state": "passed",
+      "outputFingerprint": "sha256:a98c47f4c0abb12902669e3a252f442272f2dfb84484784c7553d43dce04fbb4",
+      "error": null
+    },
+    {
+      "id": "effect.slack-channel-ingestion.participants.1.fixture",
+      "capability": "communications.participants.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.slack",
+      "providerImplementation": "provider.integration.slack.fixture",
+      "providerVersion": "0.1.0",
+      "containment": "fixture",
+      "authority": "authority.slack.instance",
+      "startedAt": "2026-07-21T21:00:00.000Z",
+      "completedAt": "2026-07-21T21:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact policy, identity, schema, candidate, and selected participant reads may run inside the declared private preparation phase."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Bounded normalized channel and selected member observations may enter private runtime state with strict minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:a037d9fa6c1544681416026660d283d41fdc9fd95a14cd82d02a3fbab4cddfed",
+      "state": "passed",
+      "outputFingerprint": "sha256:5e1b372ee5aa11fc0b7708d809f88cc270d48c1c84ad78027334d70393ccb4b9",
+      "error": null
+    },
+    {
+      "id": "effect.slack-channel-ingestion.participants.2.fixture",
+      "capability": "communications.participants.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.slack",
+      "providerImplementation": "provider.integration.slack.fixture",
+      "providerVersion": "0.1.0",
+      "containment": "fixture",
+      "authority": "authority.slack.instance",
+      "startedAt": "2026-07-21T21:00:00.000Z",
+      "completedAt": "2026-07-21T21:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact policy, identity, schema, candidate, and selected participant reads may run inside the declared private preparation phase."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Bounded normalized channel and selected member observations may enter private runtime state with strict minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:e722b5b5d6c5eb7359b2294f7b206ebb6d7819c589beefb75b1642144c69df24",
+      "state": "passed",
+      "outputFingerprint": "sha256:038e56a66388419b272e572c3af546149cd1b3da95e4fb2d601e9c88ddc389cc",
+      "error": null
+    },
+    {
+      "id": "effect.slack-channel-ingestion.contacts.1.fixture",
+      "capability": "crm.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.crm.instance",
+      "startedAt": "2026-07-21T21:00:00.000Z",
+      "completedAt": "2026-07-21T21:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact policy, identity, schema, candidate, and selected participant reads may run inside the declared private preparation phase."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Bounded normalized channel and selected member observations may enter private runtime state with strict minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:10cb13f32c0593c4c5cfd437faa7bb3c6fd705abeccfd11ff76798eb25653be4",
+      "state": "passed",
+      "outputFingerprint": "sha256:089d940051d78a907039bf975d3686ec611a25a548088e4ace5dc5a503430795",
+      "error": null
+    },
+    {
+      "id": "effect.slack-channel-ingestion.organizations.fixture",
+      "capability": "crm.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.crm.instance",
+      "startedAt": "2026-07-21T21:00:00.000Z",
+      "completedAt": "2026-07-21T21:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact policy, identity, schema, candidate, and selected participant reads may run inside the declared private preparation phase."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Bounded normalized channel and selected member observations may enter private runtime state with strict minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:ccec5b7ea3270566a6c78fb204eb6206e0603533e943b2aca7556545fc87873c",
+      "state": "passed",
+      "outputFingerprint": "sha256:6739de3b3182a6f1281c93f96b78e88bcdd2946da44c1dfd6b7361b6e6c091e4",
+      "error": null
+    }
+  ],
+  "evidenceIds": [],
+  "scenario": {
+    "id": "slack-channel-ingestion.selected-enrichment",
+    "path": "soter/scenarios/slack-channel-ingestion/selected-enrichment.scenario.json",
+    "fingerprint": "sha256:eb337f977607c4f3b9c5549c9c8dff5665afa8e8f7a3b2431bbda32d75077039"
+  }
+}

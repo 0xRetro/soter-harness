@@ -2,11 +2,11 @@
   "$contract": "soter://contracts/pack/v1",
   "contractVersion": "1.0.0",
   "id": "automation.task-capture",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "layer": "automation",
   "releaseStage": "experimental",
   "evidenceMaturity": "declared",
-  "summary": "Prepares one policy-grounded, deduplicated task-create scope for private review and stops before authority is issued.",
+  "summary": "Grounds one exact Task create, projects private review, and compiles an exact selected action for Core-governed approval, single-use start, and verified connected execution.",
   "dependencies": [
     {
       "pack": "core.runtime",
@@ -15,65 +15,214 @@
       "reason": "Task preparation requires exact locks, private review material, effect policy, and evidence boundaries."
     },
     {
-      "pack": "context.crm",
+      "pack": "context.tasks",
       "version": "^0.1.0",
       "optional": false,
-      "reason": "Task, project, assignee, date, and policy meaning belong to shared CRM context."
+      "reason": "Task fields, status, dates, assignment rules, duplicate policy, and create semantics belong to Tasks Context."
+    },
+    {
+      "pack": "context.projects",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "The selected optional or required Project relation resolves through independently owned Project identity."
     }
   ],
   "capabilities": {
     "requires": [
       {
-        "id": "crm.records.read",
+        "id": "tasks.records.read",
         "version": "^1.0.0",
         "optional": false,
         "reason": "Preparation must load one exact policy, resolve the project, and inspect bounded duplicate candidates."
       },
       {
-        "id": "crm.records.create",
+        "id": "tasks.schema.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation must observe the exact normalized writable Task option vocabulary before a create can become approval-capable."
+      },
+      {
+        "id": "projects.records.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation must resolve the exact selected Project without treating Task Context as its owner."
+      },
+      {
+        "id": "tasks.records.create",
         "version": "^1.0.0",
         "optional": false,
         "reason": "The reviewed outcome may later become one exact task-create operation through Core's separate transaction authority."
+      },
+      {
+        "id": "workspace.identity.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "An optional assign-to-me request must resolve the authenticated current workspace user instead of accepting an unverified person identifier."
       }
     ],
     "provides": []
   },
   "sourceRequirements": [
     {
-      "purpose": "task-capture-policy",
-      "capability": "crm.records.read",
+      "purpose": "task-work-policy",
+      "capability": "tasks.records.read",
       "authorityRole": "definition",
-      "authoritySubject": "crm.records",
+      "authoritySubject": "tasks.records",
       "minimum": 1,
       "maximum": 1,
-      "reason": "Task Capture requires one configured normalized policy source for confirmation, deduplication, default status, allowed contexts, and project requirements."
+      "reason": "Task Capture requires the shared configured Tasks policy for confirmation, deduplication, default status, allowed contexts, and project requirements."
     }
   ],
   "authorities": [
-    { "role": "definition", "subject": "crm.records", "required": true },
-    { "role": "instance", "subject": "crm.records", "required": true },
-    { "role": "evidence", "subject": "runtime.runs", "required": true }
+    {
+      "role": "definition",
+      "subject": "tasks.records",
+      "required": true
+    },
+    {
+      "role": "instance",
+      "subject": "tasks.records",
+      "required": true
+    },
+    {
+      "role": "instance",
+      "subject": "projects.records",
+      "required": true
+    },
+    {
+      "role": "provider",
+      "subject": "notion.workspace",
+      "required": true
+    },
+    {
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "required": true
+    }
   ],
-  "effects": ["read", "disclosure", "write"],
+  "effects": [
+    "read",
+    "disclosure",
+    "write"
+  ],
   "operator": {
     "input": "soter/automations/task-capture/operator-input.json",
     "preparation": {
       "module": "soter/automations/task-capture/prepare.mjs",
       "export": "prepareTaskCaptureRun",
-      "containment": "fixture"
+      "containment": "fixture",
+      "derivedReviewContract": "soter/automations/task-capture/derived-review.json"
+    },
+    "acquisition": {
+      "module": "soter/automations/task-capture/context.mjs",
+      "prepareExport": "prepareTaskCaptureConnectedAcquisition",
+      "finalizeExport": "finalizeTaskCaptureConnectedAcquisition",
+      "containment": "connected",
+      "recordRequirements": [
+        {
+          "capability": "tasks.records.read",
+          "recordTypes": ["task-work-policy", "task"]
+        },
+        {
+          "capability": "tasks.schema.read",
+          "recordTypes": ["task"]
+        },
+        { "capability": "projects.records.read", "recordTypes": ["project"] }
+      ]
+    },
+    "connection": {
+      "module": "soter/automations/task-capture/connected.mjs",
+      "compileExport": "compileTaskCaptureConnectedOperations",
+      "evaluateExport": "evaluateTaskCaptureConnectedVerification",
+      "recordRequirements": [
+        {
+          "capability": "tasks.records.create",
+          "recordTypes": ["task"]
+        }
+      ]
+    },
+    "proposal": {
+      "module": "soter/automations/task-capture/proposal.mjs",
+      "export": "createTaskCaptureProposal",
+      "schema": "soter/automations/task-capture/proposal.schema.json",
+      "inputSchema": "soter/automations/task-capture/proposal-input.schema.json",
+      "derivedReviewContract": "soter/automations/task-capture/derived-review.json"
     }
   },
   "artifacts": [
-    { "path": "soter/automations/task-capture/operator-input.json", "role": "definition" },
-    { "path": "soter/automations/task-capture/prepare.mjs", "role": "implementation" },
-    { "path": "soter/scenarios/task-capture/happy-path.scenario.json", "role": "evaluation" }
+    {
+      "path": "soter/automations/task-capture/operator-input.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/task-capture/derived-review.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/task-capture/decision.schema.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/task-capture/proposal-input.schema.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/task-capture/proposal.schema.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/automations/task-capture/prepare.mjs",
+      "role": "implementation"
+    },
+    {
+      "path": "soter/automations/task-capture/context.mjs",
+      "role": "implementation"
+    },
+    {
+      "path": "soter/automations/task-capture/schema.mjs",
+      "role": "implementation"
+    },
+    {
+      "path": "soter/automations/task-capture/decision.mjs",
+      "role": "implementation"
+    },
+    {
+      "path": "soter/automations/task-capture/proposal.mjs",
+      "role": "implementation"
+    },
+    {
+      "path": "soter/automations/task-capture/connected.mjs",
+      "role": "implementation"
+    },
+    {
+      "path": "soter/automations/task-capture/scenario.mjs",
+      "role": "evaluation"
+    },
+    {
+      "path": "soter/automations/task-capture/connected-context.selftest.mjs",
+      "role": "evaluation"
+    },
+    {
+      "path": "soter/scenarios/task-capture/happy-path.scenario.json",
+      "role": "evaluation"
+    },
+    {
+      "path": "soter/scenarios/task-capture/preparation.scenario.json",
+      "role": "evaluation"
+    }
   ],
   "compatibility": {
     "baseContract": "^1.0.0",
-    "hosts": ["codex", "claude"]
+    "hosts": [
+      "codex",
+      "claude"
+    ]
   },
   "verification": {
     "maxLevel": "fixture",
-    "scenarios": ["soter/scenarios/task-capture/happy-path.scenario.json"]
+    "scenarios": [
+      "soter/scenarios/task-capture/happy-path.scenario.json",
+      "soter/scenarios/task-capture/preparation.scenario.json"
+    ]
   }
 }

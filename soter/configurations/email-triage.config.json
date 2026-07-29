@@ -4,6 +4,7 @@
   "name": "email-triage",
   "base": { "kernel": "kernel.soter", "core": "core.runtime" },
   "packs": [
+    { "id": "context.communications", "source": "dependency", "reason": "Email specializes the provider-neutral communication scope, container, participant, private-content, and typed-link foundation." },
     {
       "id": "context.email",
       "source": "dependency",
@@ -73,6 +74,7 @@
   ],
   "sources": [],
   "authorities": [
+    { "id": "authority.communications.semantics.definition", "role": "definition", "subject": "communications.semantics.records", "uri": "soter://context/communications", "reason": "The selected base Context owns provider-neutral communication scope, identity, privacy, and typed-link meaning." },
     {
       "id": "authority.mail.definition",
       "role": "definition",
@@ -84,14 +86,14 @@
       "id": "authority.mailbox.instance",
       "role": "instance",
       "subject": "mail.mailbox",
-      "uri": "gmail://configured-user/inbox",
+      "uri": "soter-fixture://configuration-template/gmail/mailbox/inbox",
       "reason": "The configured mailbox is authoritative for live thread and message instances."
     },
     {
       "id": "authority.gmail.provider",
       "role": "provider",
       "subject": "gmail.account",
-      "uri": "gmail://configured-user",
+      "uri": "soter-fixture://configuration-template/gmail/account/operator",
       "reason": "The selected Gmail account supplies provider identity and permission context."
     },
     {
@@ -115,12 +117,12 @@
   "host": {
     "id": "codex",
     "adapter": "host.codex",
-    "version": "0.1.0",
+    "version": "0.3.1",
     "reason": "This fixture configuration exercises Codex projection while preserving provider-neutral contracts."
   },
   "settings": {
     "integration.gmail": {
-      "selfAddresses": ["retro@soterlabs.com", "retro+soter@soterlabs.com"],
+      "selfAddresses": ["operator@soter.example", "operator+alias@soter.example"],
       "labels": {
         "needsYou": "AI/Needs You",
         "highStakes": "AI/High Stakes",

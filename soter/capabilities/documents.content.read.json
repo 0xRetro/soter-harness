@@ -67,7 +67,7 @@
   },
   "health": {
     "check": "Read one exact contained document fixture through the selected provider binding.",
-    "fixture": "soter/fixtures/providers/notion/crm-records.json",
+    "fixture": "soter/fixtures/providers/notion/workspace-records.json",
     "containedVerification": "Prove exact identity, title, bounded normalized body, provenance, and mismatch rejection."
   },
   "providerLimitations": [

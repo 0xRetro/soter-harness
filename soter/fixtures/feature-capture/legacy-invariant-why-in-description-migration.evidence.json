@@ -1,0 +1,167 @@
+{
+  "$contract": "soter://contracts/evidence/v2",
+  "contractVersion": "2.0.0",
+  "id": "evidence.feature-capture.legacy-invariant-why-in-description-migration.fixture",
+  "createdAt": "2026-07-21T18:00:00.000Z",
+  "claimFamily": "migration",
+  "claim": "The exact target becomes canonical for this legacy responsibility and its fallback may be removed under the recorded parity decision; a mixed source artifact may remain only for separately unfinished responsibilities.",
+  "subject": {
+    "type": "pack",
+    "id": "automation.feature-capture",
+    "version": "0.1.0"
+  },
+  "configurationLockFingerprint": "sha256:034d338223e780aff0222e20ff28da470bc004c9cdd965325ffeae7bfe5bf340",
+  "graphFingerprint": "sha256:2c6d74e71a6f75286f22ec03a32c26122f8582d1aeca0e2e228e0ae14133d114",
+  "dependencies": [
+    {
+      "id": "kernel.soter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+    },
+    {
+      "id": "core.runtime",
+      "version": "0.1.0",
+      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+    },
+    {
+      "id": "context.product",
+      "version": "0.1.0",
+      "fingerprint": "sha256:962e1ee9a1d70e1ffc1e5dd2118c6264817115e1030ece09d50c8700d25525c9"
+    },
+    {
+      "id": "automation.feature-capture",
+      "version": "0.1.0",
+      "fingerprint": "sha256:4a71d330eeb34b79d8ba2c5f75230b9ca5eb5d0609f855507f96437fb4058b80"
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "fingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
+  },
+  "integrations": [
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "manifestFingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5",
+      "evidenceMaturity": "declared"
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "declarationFingerprint": "sha256:fe87c2d43c694fc63f3350b4027335b79120041e7dc2d343f14cc12f0f672a0c"
+    },
+    {
+      "id": "authority.product.definition",
+      "role": "definition",
+      "subject": "product.records",
+      "declarationFingerprint": "sha256:ed518e64a3106cdecb49fa22e4afd340b5b92d0f7e1cd82bf42e71460688dac3"
+    },
+    {
+      "id": "authority.product.instance",
+      "role": "instance",
+      "subject": "product.records",
+      "declarationFingerprint": "sha256:2f32c08c2c5212765a146bd109195570fe8e6f79f577ff0b4a97d4e878810159"
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "declarationFingerprint": "sha256:74c8fdd14e981038f959c469d6709fe66186b5f854f5f337f65bc67a6e7926c0"
+    }
+  ],
+  "evaluator": {
+    "id": "kernel.legacy-migration-completion",
+    "version": "1.0.0",
+    "level": "fixture"
+  },
+  "environment": {
+    "containment": "fixture",
+    "runtime": "node"
+  },
+  "acceptanceCriteria": [
+    "The exact migration target is selected by and fingerprinted in the current configuration lock.",
+    "Every artifact labeled as same-lock supporting evidence passed against the exact configuration lock and stable semantic graph; separately labeled supporting artifacts are fingerprint-bound without a same-lock claim.",
+    "The complete inventory records the exact target authority or retirement, parity decision, fallback removal, evidence reference, and either a completed source tombstone or one completed responsibility inside a retained mixed source.",
+    "No retained legacy artifact requires this removed Feature Capture evaluation by exact path.",
+    "The canonical scenario retains the exact tombstoned source-case identity and current evidence passes its why, board, body, pressure, privacy, and no-write invariants."
+  ],
+  "result": "passed",
+  "outcomes": [
+    {
+      "id": "migration-disposition",
+      "state": "migrated"
+    },
+    {
+      "id": "migration-parity",
+      "state": "intentional-change"
+    },
+    {
+      "id": "target-selected-in-exact-lock",
+      "state": "passed"
+    },
+    {
+      "id": "supporting-evidence-current",
+      "state": "passed"
+    },
+    {
+      "id": "authority-transition-explicit",
+      "state": "passed"
+    },
+    {
+      "id": "legacy-dependencies-cleared",
+      "state": "passed"
+    },
+    {
+      "id": "exact-source-case-retained",
+      "state": "passed"
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "migration-source",
+      "path": ".claude/evals/capturing-a-feature/invariant-why-in-description.md",
+      "fingerprint": "sha256:78a64093e3e977dc57122441568c6dd0896beaf2bb64217d890a5fd5239b79fa"
+    },
+    {
+      "role": "migration-target",
+      "path": "soter/scenarios/feature-capture/preparation.scenario.json",
+      "fingerprint": "sha256:8ec0bd39946d39d4774de66b9fc1bd86760fae93464f1e9521c1fe64631a152e"
+    },
+    {
+      "role": "supporting-evidence",
+      "path": "soter/fixtures/feature-capture/preparation.evidence.json",
+      "fingerprint": "sha256:a7e624fbe0d83a10567087f53c62647a4e10d49b39e59a1a762cb30bfe5fc470"
+    }
+  ],
+  "effects": [],
+  "failures": [],
+  "warnings": [],
+  "skipped": [
+    "Connected provider readiness, live behavior verification, and current health were not evaluated.",
+    "Removing a legacy source fallback does not grant provider effect or host execution authority."
+  ],
+  "limitations": [
+    "Fixture inputs intentionally replace conversational inference with explicit typed values and one exact configured board; connected provider behavior remains unavailable and not evaluated."
+  ],
+  "freshness": {
+    "policy": "Valid only while every configuration-lock fingerprint remains unchanged.",
+    "validUntil": null
+  },
+  "supersedes": null,
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Credential references and credential values are excluded."
+    ]
+  }
+}

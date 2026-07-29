@@ -1,0 +1,404 @@
+{
+  "$contract": "soter://contracts/evidence/v2",
+  "contractVersion": "2.0.0",
+  "id": "evidence.project-decision-resolution.happy-path.fixture",
+  "createdAt": "2026-07-22T12:00:00.000Z",
+  "claimFamily": "behavior",
+  "claim": "The exact declared scenario was executed against fixture providers and assessed from observed capability, policy, outcome, invariant, and evidence states.",
+  "subject": {
+    "type": "run",
+    "id": "run.project-decision-resolution.happy-path-fixture",
+    "version": null
+  },
+  "configurationLockFingerprint": "sha256:3cceb56bdd08b4cab872711f6972927773d78810beb5c845e741c6b1ad3de558",
+  "graphFingerprint": "sha256:1a9d3a912a2a697928cc2bdb7921fb4669a66a3e27cab43346ec706467394242",
+  "dependencies": [
+    {
+      "id": "kernel.soter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+    },
+    {
+      "id": "core.runtime",
+      "version": "0.1.0",
+      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+    },
+    {
+      "id": "context.projects",
+      "version": "0.1.0",
+      "fingerprint": "sha256:e8b68449ec9582d769c56d9b9cdf9ed3a6f220c15593a614ac13e9a656cf0ce5"
+    },
+    {
+      "id": "automation.project-decision-resolution",
+      "version": "0.1.0",
+      "fingerprint": "sha256:d709c8d13e9fe4561507f9402bbc72ac088d02fd5e73e2f4677ad359a5035592"
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "fingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
+  },
+  "integrations": [
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "manifestFingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5",
+      "evidenceMaturity": "declared"
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "declarationFingerprint": "sha256:e3e11d347b7a0109668facaeb7b12311023da39949d1328bfd918c53a406c756"
+    },
+    {
+      "id": "authority.projects.definition",
+      "role": "definition",
+      "subject": "projects.records",
+      "declarationFingerprint": "sha256:22e894767d6cefa5fa1acbbb783984b3c17576924322b91b971909ce612b5757"
+    },
+    {
+      "id": "authority.projects.instance",
+      "role": "instance",
+      "subject": "projects.records",
+      "declarationFingerprint": "sha256:5b92f29a8e62e3a32482298ff81513c035feb14a8e15742d3759da903784b63d"
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "declarationFingerprint": "sha256:8afe5da5de9d67a21267be3ba143ca970bf2a316ca513dd3146f805613c7ee46"
+    }
+  ],
+  "evaluator": {
+    "id": "automation.project-decision-resolution.scenario-evaluator",
+    "version": "0.1.0",
+    "level": "fixture"
+  },
+  "environment": {
+    "containment": "fixture",
+    "runtime": "node"
+  },
+  "acceptanceCriteria": [
+    "The scenario fingerprint and configuration lock exactly match the assessed run.",
+    "Observed capability order exactly matches the declared capability order.",
+    "Resolved effect policy modes exactly match the declared scenario modes.",
+    "Every declared outcome, invariant, and evidence requirement has an observed assessment."
+  ],
+  "result": "passed",
+  "outcomes": [
+    {
+      "id": "projects-policy.grounded",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "question.exact-and-unprocessed",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "work-item.exact-and-unchecked",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "decision-three-surface-group.previewed",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "writes-held-for-separate-authority",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "decision-summary-preserves-exact-what-who-why",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "question-only-processed-field-may-change",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "work-item-only-exact-checkbox-may-change",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "three-actions-proposed-or-held-together",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "private-values-excluded-from-inspection",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "no-write-or-approval-during-preparation",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "exact-lock",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "policy-source-fingerprint",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "question-read-fingerprint",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "document-read-fingerprint",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "private-review-material",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "complete-group-fingerprint",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "write-boundary-state",
+      "category": "evidence",
+      "state": "passed"
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "scenario",
+      "id": "project-decision-resolution.happy-path",
+      "path": "soter/scenarios/project-decision-resolution/happy-path.scenario.json",
+      "fingerprint": "sha256:6572f5428626af685b0c654805c72a8d26652e6447f7f786e53ee09738084f46"
+    },
+    {
+      "role": "source-case",
+      "path": ".claude/systems/project-management.md",
+      "fingerprint": "sha256:e556ce223ba1e81bbc316b42cd8f2a71c2ec5a77b3df5c779454132368fc7215"
+    },
+    {
+      "role": "scenario-assessment",
+      "runId": "run.project-decision-resolution.happy-path-fixture",
+      "capabilityOrder": {
+        "expected": [
+          "projects.records.read",
+          "projects.records.read",
+          "projects.records.read",
+          "documents.content.read"
+        ],
+        "observed": [
+          "projects.records.read",
+          "projects.records.read",
+          "projects.records.read",
+          "documents.content.read"
+        ],
+        "state": "passed"
+      },
+      "effectModes": {
+        "expected": {
+          "read": "allow",
+          "disclosure": "allow",
+          "write": "confirm",
+          "dispatch": "prohibit",
+          "destructive": "prohibit"
+        },
+        "observed": {
+          "destructive": "prohibit",
+          "disclosure": "allow",
+          "dispatch": "prohibit",
+          "read": "allow",
+          "write": "confirm"
+        },
+        "state": "passed"
+      },
+      "observationFingerprint": "sha256:597aacd1163eef1f69364c661b13d20d7dfaa7e496cf21bf2496620d167b308d"
+    },
+    {
+      "role": "context-snapshot",
+      "id": "context.project-decision-resolution.happy-path-fixture",
+      "fingerprint": "sha256:d27b3baaaa67d46921a132e750c9efdf862673ef9bd76f565852a746e8b5a4ea"
+    },
+    {
+      "role": "project-decision-resolution-preview",
+      "fingerprint": "sha256:f40fca67f7fdb937de6e298845dfe8fa46254d89af8a48a38223120a5ae41b1d"
+    }
+  ],
+  "effects": [
+    {
+      "id": "effect.project-decision-resolution.policy.fixture",
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.projects.definition",
+      "startedAt": "2026-07-22T12:00:00.000Z",
+      "completedAt": "2026-07-22T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The exact policy, project, Question, and project document may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:7926a96bd072cf583c91ebd9105ecf2d29785d3c39ef5156e41487cfac8c6d3b",
+      "state": "passed",
+      "outputFingerprint": "sha256:7bb503412a10c4d4245c2ac6643caa39c41056ea378c21e8f8b1a4fe8926720c",
+      "error": null
+    },
+    {
+      "id": "effect.project-decision-resolution.project.fixture",
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.projects.instance",
+      "startedAt": "2026-07-22T12:00:00.000Z",
+      "completedAt": "2026-07-22T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The exact policy, project, Question, and project document may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:8bea1e88c754214cb9b67965b8b558e8ec0a77539c367d7a506ac4835dfbb6d4",
+      "state": "passed",
+      "outputFingerprint": "sha256:2882c75de083b34a9c1f86f5bb74585063172f00de251d478bf70ea3a0e4017a",
+      "error": null
+    },
+    {
+      "id": "effect.project-decision-resolution.question.fixture",
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.projects.instance",
+      "startedAt": "2026-07-22T12:00:00.000Z",
+      "completedAt": "2026-07-22T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The exact policy, project, Question, and project document may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:c2f8b3e2c98bd6384d81ca8d949d5a6df3d08a6f7c5ac1f63489e8e143b948ad",
+      "state": "passed",
+      "outputFingerprint": "sha256:307e162457f6e519cdfd3e189a0b8aa7687f6ed8ad6f4ad5d9fcda0ef402af13",
+      "error": null
+    },
+    {
+      "id": "effect.project-decision-resolution.document.fixture",
+      "capability": "documents.content.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.projects.instance",
+      "startedAt": "2026-07-22T12:00:00.000Z",
+      "completedAt": "2026-07-22T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The exact policy, project, Question, and project document may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:72fcd9cc7c4082211bf4dc354a1a0115518a122798e8032a3be3a1f20d66ed49",
+      "state": "passed",
+      "outputFingerprint": "sha256:6d0ee7b37ea319f0b8414f9a594125ae9e4191cb3a5e78946f12aec95be27aba",
+      "error": null
+    }
+  ],
+  "failures": [],
+  "warnings": [],
+  "skipped": [],
+  "limitations": [
+    "This is deterministic fixture evidence. It does not establish connected credentials, provider reachability, host conformance, or live behavior."
+  ],
+  "freshness": {
+    "policy": "Valid only while every configuration-lock fingerprint remains unchanged.",
+    "validUntil": null
+  },
+  "supersedes": null,
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Credential references and credential values are excluded."
+    ]
+  }
+}

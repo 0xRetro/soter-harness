@@ -1,0 +1,195 @@
+{
+  "$contract": "soter://contracts/evidence/v2",
+  "contractVersion": "2.0.0",
+  "id": "evidence.project-capture.legacy-notion-targets-configuration-migration.fixture",
+  "createdAt": "2026-07-21T15:00:00.000Z",
+  "claimFamily": "migration",
+  "claim": "The exact target becomes canonical for this legacy responsibility and its fallback may be removed under the recorded parity decision; a mixed source artifact may remain only for separately unfinished responsibilities.",
+  "subject": {
+    "type": "configuration",
+    "id": "configuration.project-capture",
+    "version": null
+  },
+  "configurationLockFingerprint": "sha256:97b5f6583d39c359bcf015cf9a02a21a570ec807e5b227a80b54e856a2580406",
+  "graphFingerprint": "sha256:30f58f330453c88c3a963b1f7115d7ce1b17617f023751867d82ec65c97ddfcf",
+  "dependencies": [
+    {
+      "id": "kernel.soter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+    },
+    {
+      "id": "core.runtime",
+      "version": "0.1.0",
+      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+    },
+    {
+      "id": "context.crm",
+      "version": "0.1.0",
+      "fingerprint": "sha256:fa69fc9f796e84b1a2cd7e319c4344dcc44d8dcbea9542e51158eb868d266f44"
+    },
+    {
+      "id": "context.projects",
+      "version": "0.1.0",
+      "fingerprint": "sha256:e8b68449ec9582d769c56d9b9cdf9ed3a6f220c15593a614ac13e9a656cf0ce5"
+    },
+    {
+      "id": "automation.project-capture",
+      "version": "0.1.0",
+      "fingerprint": "sha256:df38e19950fa21824b329cce2a27f3899494eb881bc6032f1c75c812022982cf"
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "fingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
+  },
+  "integrations": [
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "manifestFingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5",
+      "evidenceMaturity": "declared"
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.crm.definition",
+      "role": "definition",
+      "subject": "crm.records",
+      "declarationFingerprint": "sha256:3d57e543eb317047a3dd1e66c7ebc375a14da087d8d149eb037df7598d6b2484"
+    },
+    {
+      "id": "authority.crm.instance",
+      "role": "instance",
+      "subject": "crm.records",
+      "declarationFingerprint": "sha256:0edb7b21a2e593cfa664cb28593a14be80d1f7a1b22a60ec1e31590d346d4e0b"
+    },
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "declarationFingerprint": "sha256:ac5069cd8caaa12d0875e257a94dfe28297822278cb3eaab9dcbe9fa112517d5"
+    },
+    {
+      "id": "authority.projects.definition",
+      "role": "definition",
+      "subject": "projects.records",
+      "declarationFingerprint": "sha256:4a961816259ea34ff12258c4d1b9067b344b617f72a1ad918d20d77d1b2dea00"
+    },
+    {
+      "id": "authority.projects.instance",
+      "role": "instance",
+      "subject": "projects.records",
+      "declarationFingerprint": "sha256:44a2e8e607b9d5daba783d081ed12d0049201922355964a4c9300dd7c8f5f9f7"
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "declarationFingerprint": "sha256:b6e3b94a81e9cf35143a6c5e6e686a4ea26b27bbdd09eaa5ccb559a361a45a5e"
+    }
+  ],
+  "evaluator": {
+    "id": "kernel.legacy-migration-completion",
+    "version": "1.0.0",
+    "level": "fixture"
+  },
+  "environment": {
+    "containment": "fixture",
+    "runtime": "node"
+  },
+  "acceptanceCriteria": [
+    "The exact migration target is selected by and fingerprinted in the current configuration lock.",
+    "Every artifact labeled as same-lock supporting evidence passed against the exact configuration lock and stable semantic graph; separately labeled supporting artifacts are fingerprint-bound without a same-lock claim.",
+    "The complete inventory records the exact target authority or retirement, parity decision, fallback removal, evidence reference, and either a completed source tombstone or one completed responsibility inside a retained mixed source.",
+    "The exact Project Capture configuration and resolved lock contain no runtime dependency on the legacy Notion target catalog.",
+    "The exact Project Capture configuration binding is target-owned and no runtime path reads the legacy target catalog.",
+    "Configuration explicitly selects Projects policy and exact Project and CRM Organization read authorities while the incomplete Project create remains prohibited."
+  ],
+  "result": "passed",
+  "outcomes": [
+    {
+      "id": "migration-disposition",
+      "state": "migrated"
+    },
+    {
+      "id": "migration-parity",
+      "state": "intentional-change"
+    },
+    {
+      "id": "target-selected-in-exact-lock",
+      "state": "passed"
+    },
+    {
+      "id": "supporting-evidence-current",
+      "state": "passed"
+    },
+    {
+      "id": "authority-transition-explicit",
+      "state": "passed"
+    },
+    {
+      "id": "legacy-dependencies-cleared",
+      "state": "passed"
+    },
+    {
+      "id": "configuration-authority-switched",
+      "state": "passed"
+    },
+    {
+      "id": "exact-targets-and-authorities-declared",
+      "state": "passed"
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "migration-source",
+      "path": ".claude/skills/pushing-to-notion/targets.md",
+      "fingerprint": "sha256:00cfed74ae66ae7414561dfa0857a41fdfbfea1598675adc0471cd55661c4a17"
+    },
+    {
+      "role": "migration-target",
+      "path": "soter/configurations/project-capture.config.json",
+      "fingerprint": "sha256:e25f5dfdf4ba0644671e5371c22785115ccd646895432df76e1666741caba1b2"
+    },
+    {
+      "role": "supporting-evidence",
+      "path": "soter/fixtures/project-capture/preparation.evidence.json",
+      "fingerprint": "sha256:b4e0f82362b55ec77a9a36071c190cc9aa42d31c6e3f30ad57b02142315d9c26"
+    },
+    {
+      "role": "supporting-artifact",
+      "path": "soter/fixtures/project-capture/connected-review.evidence.json",
+      "fingerprint": "sha256:e750f4bf086a852ded497535d3664eea49666e36bea86f270182ffcbe662124e"
+    }
+  ],
+  "effects": [],
+  "failures": [],
+  "warnings": [],
+  "skipped": [
+    "Connected provider readiness, live behavior verification, and current health were not evaluated.",
+    "Removing a legacy source fallback does not grant provider effect or host execution authority."
+  ],
+  "limitations": [
+    "Project Capture configuration values are target-owned; the removed target catalog survives only as an exact source tombstone.",
+    "Configuration ownership does not establish live target existence, authentication, permission, provider conformance, readiness, verification, or health."
+  ],
+  "freshness": {
+    "policy": "Valid only while every configuration-lock fingerprint remains unchanged.",
+    "validUntil": null
+  },
+  "supersedes": null,
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Credential references and credential values are excluded."
+    ]
+  }
+}

@@ -1,0 +1,397 @@
+{
+  "$contract": "soter://contracts/context-snapshot/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.meeting-intake.review-preparation-fixture",
+  "runId": "run.meeting-intake.review-preparation-fixture",
+  "createdAt": "2026-07-15T12:00:00.000Z",
+  "configurationLockFingerprint": "sha256:5bb9bf587f258e66fc5ce2eb092d61a05e544734c723a8cc209f212a42569df9",
+  "graphFingerprint": "sha256:cbb99770c57b011bec7b722843a3fdbe536f2989da64f046c8bed3d4cc050638",
+  "containment": "fixture",
+  "entries": [
+    {
+      "id": "context.meeting-intake.policy.docs",
+      "subject": "meeting-summary",
+      "authority": "authority.meetings.definition",
+      "role": "definition",
+      "capability": "documents.content.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-15T12:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.meetings.definition",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:f915e63efa5409d66397ad849f0a44a01ceeb42cade6ca1e921f4cdd14ef0431"
+      },
+      "valueFingerprint": "sha256:6fb4c800083ccf68c5c703b8a5d1f82e4be3763d92af01f85181188af10c506f",
+      "value": {
+        "document": {
+          "uri": "soter-fixture://configuration-template/notion/document/docs-definition",
+          "title": "Docs",
+          "format": "markdown",
+          "body": "# Docs\n\nMeeting summaries are grounded documents. Preserve the source meeting link and do not present unsupported claims as decisions.",
+          "bodyFingerprint": "sha256:2729333f5681663b020fb1243bb0857acd2242c06f4569ee8c272a2ebb0bc845"
+        },
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.meetings.definition",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:f915e63efa5409d66397ad849f0a44a01ceeb42cade6ca1e921f4cdd14ef0431"
+        },
+        "observedAt": "2026-07-15T12:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.meeting-intake.policy.meetings",
+      "subject": "meeting",
+      "authority": "authority.meetings.definition",
+      "role": "definition",
+      "capability": "documents.content.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-15T12:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.meetings.definition",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:f915e63efa5409d66397ad849f0a44a01ceeb42cade6ca1e921f4cdd14ef0431"
+      },
+      "valueFingerprint": "sha256:8836a91b5778d1a1dfe93bd0a0cd87153a0a38195c4464b7f8e91cddf5b4375d",
+      "value": {
+        "document": {
+          "uri": "soter-fixture://configuration-template/notion/document/meetings-definition",
+          "title": "Meetings",
+          "format": "markdown",
+          "body": "# Meetings\n\nA meeting record identifies its canonical recording. Derived outcomes must remain attributable to that source meeting.",
+          "bodyFingerprint": "sha256:f9570bd99f36446fe6bc319dc272df9bc2ff7f52786fea3646f23eba4825ec4d"
+        },
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.meetings.definition",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:f915e63efa5409d66397ad849f0a44a01ceeb42cade6ca1e921f4cdd14ef0431"
+        },
+        "observedAt": "2026-07-15T12:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.meeting-intake.policy.tasks",
+      "subject": "task",
+      "authority": "authority.tasks.definition",
+      "role": "definition",
+      "capability": "documents.content.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-15T12:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.tasks.definition",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:f915e63efa5409d66397ad849f0a44a01ceeb42cade6ca1e921f4cdd14ef0431"
+      },
+      "valueFingerprint": "sha256:55107f58ed2a0afba4ae3351995fd8f17ea48d560eb47d8ffc7cf7c11b8bea13",
+      "value": {
+        "document": {
+          "uri": "soter-fixture://configuration-template/notion/document/tasks-definition",
+          "title": "Tasks",
+          "format": "markdown",
+          "body": "# Tasks\n\nGround tasks in an attributable source, resolve existing overlap before creation, and never assign an external participant as an internal owner.",
+          "bodyFingerprint": "sha256:bded2d0e10fba263d48e45d24fb278052c6e6196d9605bff35d260a52b0e0562"
+        },
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.tasks.definition",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:f915e63efa5409d66397ad849f0a44a01ceeb42cade6ca1e921f4cdd14ef0431"
+        },
+        "observedAt": "2026-07-15T12:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.meeting-intake.transcript",
+      "subject": "meeting.transcript",
+      "authority": "authority.otter.provider",
+      "role": "provider",
+      "capability": "meeting.transcript.read",
+      "providerPack": "integration.otter",
+      "providerImplementation": "provider.integration.otter.fixture",
+      "providerVersion": "0.1.0",
+      "observedAt": "2026-07-15T11:59:30.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "otter-fixture",
+        "authority": "authority.otter.provider",
+        "fixture": "soter/fixtures/providers/otter/transcripts.json"
+      },
+      "valueFingerprint": "sha256:3dba076284e18ee493363cfdd149bb65d53e2055e9e25e63889249a9700b86d7",
+      "value": {
+        "meetingId": "meeting.fixture-001",
+        "recordingUri": "https://otter.ai/u/meeting_fixture_001",
+        "speakers": [
+          {
+            "id": "speaker.retro",
+            "displayName": "Retro"
+          },
+          {
+            "id": "speaker.maya",
+            "displayName": "Maya Chen"
+          }
+        ],
+        "segments": [
+          {
+            "speakerId": "speaker.maya",
+            "text": "The launch direction is approved. Please send the updated deck Friday.",
+            "startSeconds": 12
+          },
+          {
+            "speakerId": "speaker.retro",
+            "text": "I will revise the deck and link it to the launch project.",
+            "startSeconds": 26
+          },
+          {
+            "speakerId": "speaker.maya",
+            "text": "I will send the integration reference after the meeting.",
+            "startSeconds": 41
+          }
+        ],
+        "provenance": {
+          "provider": "otter-fixture",
+          "authority": "authority.otter.provider",
+          "fixture": "soter/fixtures/providers/otter/transcripts.json"
+        },
+        "observedAt": "2026-07-15T11:59:30.000Z"
+      }
+    },
+    {
+      "id": "context.meeting-intake.meeting",
+      "subject": "meetings.records.meeting",
+      "authority": "authority.meetings.instance",
+      "role": "instance",
+      "capability": "meetings.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-15T12:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.meetings.instance",
+        "mapping": "mapping.integration.notion.meetings-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:140f4b320e1693d3cdb4e30478c94a7d3a57f392b048ef02ca34d52455368e81"
+      },
+      "valueFingerprint": "sha256:33cda97e0e8719a3785584ea9ab9f3f9e2fca50c693e6996edda179f6ff9baf8",
+      "value": {
+        "records": [
+          {
+            "type": "meeting",
+            "id": "soter-fixture://meetings/meeting/fixture-001",
+            "version": "1",
+            "fields": {
+              "title": "Acme launch review",
+              "occurredOn": "2026-07-15",
+              "recordingUri": "https://otter.ai/u/meeting_fixture_001",
+              "organizationUris": [
+                "soter-fixture://crm/organization/acme"
+              ]
+            },
+            "identityBinding": {
+              "state": "observed",
+              "requestedIdFingerprint": null
+            }
+          }
+        ],
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.meetings.instance",
+          "mapping": "mapping.integration.notion.meetings-records",
+          "mappingVersion": "0.2.0",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:140f4b320e1693d3cdb4e30478c94a7d3a57f392b048ef02ca34d52455368e81"
+        },
+        "observedAt": "2026-07-15T12:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.meeting-intake.organizations",
+      "subject": "crm.records.organization",
+      "authority": "authority.crm.instance",
+      "role": "instance",
+      "capability": "crm.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-15T12:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.crm.instance",
+        "mapping": "mapping.integration.notion.crm-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:fd85f9564b1ed60751a76a06a093dff0cdbc9be8ffc3d947da190bd90e15f95d"
+      },
+      "valueFingerprint": "sha256:906072707e779459d9efb538ca0a343c3f5b75026e010c1a29d8a3022bacd1a8",
+      "value": {
+        "records": [
+          {
+            "type": "organization",
+            "id": "soter-fixture://crm/organization/acme",
+            "version": "1",
+            "fields": {
+              "name": "Acme Design",
+              "status": "active",
+              "projectUris": [
+                "soter-fixture://projects/project/launch"
+              ]
+            },
+            "identityBinding": {
+              "state": "exact-request",
+              "requestedIdFingerprint": "sha256:15435bbfb3ba596e83959a6bc1a9fc8935affe9cd8779525f7b2686f5654560c"
+            }
+          }
+        ],
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.crm.instance",
+          "mapping": "mapping.integration.notion.crm-records",
+          "mappingVersion": "0.2.0",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:fd85f9564b1ed60751a76a06a093dff0cdbc9be8ffc3d947da190bd90e15f95d"
+        },
+        "observedAt": "2026-07-15T12:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.meeting-intake.projects",
+      "subject": "projects.records.project",
+      "authority": "authority.projects.instance",
+      "role": "instance",
+      "capability": "projects.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-15T12:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.projects.instance",
+        "mapping": "mapping.integration.notion.projects-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:c70c03079333c68d3f53d04b599349d4a824ad6ea9021fdc1bb3fe529e5d80be"
+      },
+      "valueFingerprint": "sha256:b662542f221ca468bd5fd4a76e3814a0195a37de4dae495d85e15a7b4a3bb4fd",
+      "value": {
+        "records": [
+          {
+            "type": "project",
+            "id": "soter-fixture://projects/project/launch",
+            "version": "1",
+            "fields": {
+              "name": "Acme launch",
+              "status": "active",
+              "organizationUris": [
+                "soter-fixture://crm/organization/acme"
+              ],
+              "taskUris": [
+                "soter-fixture://tasks/task/existing-deck"
+              ]
+            },
+            "identityBinding": {
+              "state": "exact-request",
+              "requestedIdFingerprint": "sha256:8d0f79bee2c2683c2290d65622eea4862d76364b0ba300add965a3a5e071a6ce"
+            }
+          }
+        ],
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.projects.instance",
+          "mapping": "mapping.integration.notion.projects-records",
+          "mappingVersion": "0.2.0",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:c70c03079333c68d3f53d04b599349d4a824ad6ea9021fdc1bb3fe529e5d80be"
+        },
+        "observedAt": "2026-07-15T12:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.meeting-intake.tasks",
+      "subject": "tasks.records.task",
+      "authority": "authority.tasks.instance",
+      "role": "instance",
+      "capability": "tasks.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-15T12:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.tasks.instance",
+        "mapping": "mapping.integration.notion.tasks-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:8cddeb0070f5fc60fe9a798d329c80c51165bdc7349724b9ae5e139355b9bddd"
+      },
+      "valueFingerprint": "sha256:f7988c9c595ad37f79689f3c5cfa85457c53d9472917aa109b66b2e8fd287d3c",
+      "value": {
+        "records": [
+          {
+            "type": "task",
+            "id": "soter-fixture://tasks/task/existing-deck",
+            "version": "1",
+            "fields": {
+              "title": "Send launch deck",
+              "status": "To Do",
+              "context": "Project",
+              "projectUris": [
+                "soter-fixture://projects/project/launch"
+              ],
+              "assigneeIds": [
+                "provider-person.maya"
+              ],
+              "nextActionOn": "2026-07-20"
+            },
+            "identityBinding": {
+              "state": "exact-request",
+              "requestedIdFingerprint": "sha256:40576447aa06a63dc7a5fc47b433a3f44ddd1e635e6736f738f1cb62cf22e979"
+            }
+          }
+        ],
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.tasks.instance",
+          "mapping": "mapping.integration.notion.tasks-records",
+          "mappingVersion": "0.2.0",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:8cddeb0070f5fc60fe9a798d329c80c51165bdc7349724b9ae5e139355b9bddd"
+        },
+        "observedAt": "2026-07-15T12:00:00.000Z"
+      }
+    }
+  ],
+  "effectIds": [
+    "effect.meeting-intake.preparation.policy.docs.fixture",
+    "effect.meeting-intake.preparation.policy.meetings.fixture",
+    "effect.meeting-intake.preparation.policy.tasks.fixture",
+    "effect.meeting-intake.preparation.transcript.fixture",
+    "effect.meeting-intake.preparation.meeting.fixture",
+    "effect.meeting-intake.preparation.organizations.fixture",
+    "effect.meeting-intake.preparation.projects.fixture",
+    "effect.meeting-intake.preparation.tasks.fixture"
+  ],
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Provider credentials, secret references, and raw operator notes are excluded."
+    ]
+  }
+}

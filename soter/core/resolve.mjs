@@ -10,7 +10,16 @@ import {
   repoRelativePath,
   resolveRepoPath
 } from './lib/canonical-json.mjs';
-import { renderHostProjectionCandidates } from './host-projections.mjs';
+import {
+  renderHostProjectionCandidates,
+  renderHostProjectionCandidatesForEvidenceFinalization
+} from './host-projections.mjs';
+import { assertLegacyFinalizationCandidateBasis } from './legacy-finalization.mjs';
+import { assertLegacyInventoryStructureCurrent } from '../kernel/legacy-inventory.mjs';
+import {
+  isPrivateConfigurationPath,
+  readPrivateConfigurationState
+} from './private-configurations.mjs';
 
 export const RESOLVER_ID = 'core.resolver';
 export const RESOLVER_VERSION = '0.5.0';
@@ -44,6 +53,43 @@ function configurationFile(root, requestedPath) {
     return findDefaultConfiguration(root);
   }
   return resolveRepoPath(root, requestedPath);
+}
+
+export function findConfigurationTemplate(root, name) {
+  if (typeof name !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name)) {
+    throw new Error('Configuration name is invalid.');
+  }
+  const directory = path.join(root, 'soter', 'configurations');
+  const matches = fs.readdirSync(directory)
+    .filter((entry) => entry.endsWith('.config.json'))
+    .sort()
+    .map((entry) => path.join(directory, entry))
+    .filter((file) => {
+      try {
+        const value = readJson(file);
+        return value.$contract === 'soter://contracts/configuration/v1' && value.name === name;
+      } catch {
+        return false;
+      }
+    });
+  if (matches.length !== 1) {
+    throw new Error('Expected one portable configuration template named ' + name + '; found ' + matches.length + '.');
+  }
+  return matches[0];
+}
+
+function candidateVerification(resolvedRoot, file, configuration) {
+  const template = isPrivateConfigurationPath(resolvedRoot, file)
+    ? findConfigurationTemplate(resolvedRoot, configuration.name)
+    : file;
+  if (isPrivateConfigurationPath(resolvedRoot, file)
+    && path.basename(file) !== configuration.name + '.json') {
+    throw new Error('Private desired configuration path does not match its configuration name.');
+  }
+  return verifyConfigurationCandidate(resolvedRoot, {
+    configPath: template,
+    configuration
+  });
 }
 
 function requireCleanGraph(verification) {
@@ -86,7 +132,14 @@ export function fingerprintLock(lock) {
   return fingerprintJson(lock);
 }
 
-function resolveConfigurationValue({ resolvedRoot, file, configuration, verification, host }) {
+function resolveConfigurationValue({
+  resolvedRoot,
+  file,
+  configuration,
+  verification,
+  host,
+  evidenceFinalizationWorkflowIds = null
+}) {
   const resolution = selectedResolution(verification, configuration.name);
 
   const selectedHost = host || configuration.host.id;
@@ -99,7 +152,7 @@ function resolveConfigurationValue({ resolvedRoot, file, configuration, verifica
     throw new Error('Unknown Soter host ' + selectedHost + '.');
   }
   const hostAdapter = readJson(selectedHostPath);
-  if (hostAdapter.$contract !== 'soter://contracts/host-adapter/v1'
+  if (hostAdapter.$contract !== 'soter://contracts/host-adapter/v2'
     || hostAdapter.host !== selectedHost) {
     throw new Error('Host adapter does not match selected host ' + selectedHost + '.');
   }
@@ -189,12 +242,19 @@ function resolveConfigurationValue({ resolvedRoot, file, configuration, verifica
         + incompatiblePacks.join(', ') + '.'
     );
   }
-  const renderedProjections = renderHostProjectionCandidates({
+  const renderProjection = evidenceFinalizationWorkflowIds === null
+    ? renderHostProjectionCandidates
+    : renderHostProjectionCandidatesForEvidenceFinalization;
+  const renderedProjections = renderProjection({
     root: resolvedRoot,
     adapter: hostAdapter,
     configurationId: configuration.name,
     packIds: packs.map((pack) => pack.id),
-    capabilityIds: capabilities.map((capability) => capability.id)
+    capabilityIds: capabilities.map((capability) => capability.id),
+    effectPolicies: configuration.effectPolicies,
+    ...(evidenceFinalizationWorkflowIds === null
+      ? {}
+      : { workflowIds: evidenceFinalizationWorkflowIds })
   });
   const projections = renderedProjections.outputs.map((projection) => ({
     id: projection.id,
@@ -248,12 +308,181 @@ function resolveConfigurationValue({ resolvedRoot, file, configuration, verifica
 export function resolveConfiguration({ root, configPath, host } = {}) {
   const resolvedRoot = path.resolve(root || path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..'));
   const file = configurationFile(resolvedRoot, configPath);
+  const configuration = isPrivateConfigurationPath(resolvedRoot, file)
+    ? readPrivateConfigurationState(resolvedRoot, path.basename(file, '.json')).configuration
+    : readJson(file);
+  if (configuration.$contract !== 'soter://contracts/configuration/v1') {
+    throw new Error('Not a Soter configuration: ' + repoRelativePath(resolvedRoot, file));
+  }
+  const verification = isPrivateConfigurationPath(resolvedRoot, file)
+    ? candidateVerification(resolvedRoot, file, configuration)
+    : verifySoter(resolvedRoot, { includeRuntimeArtifacts: false });
+  requireCleanGraph(verification);
+  return resolveConfigurationValue({ resolvedRoot, file, configuration, verification, host });
+}
+
+/**
+ * Compute, without writing, the two final host locks needed by one closed
+ * all-workflow evidence publication batch. Ordinary resolution remains strict:
+ * callers cannot use this path to realize a host or bless a partial workflow
+ * set, and every non-evidence static invariant must already pass.
+ */
+export function resolveDevelopmentEvidenceFinalizationConfiguration(options = {}) {
+  const keys = Object.keys(options).sort(compareText);
+  if (fingerprintJson(keys) !== fingerprintJson([
+    'configPath',
+    'host',
+    'root',
+    'workflowIds'
+  ])) {
+    throw new Error('Development evidence finalization resolver accepts only its exact declared arguments.');
+  }
+  const { root, configPath, host, workflowIds } = options;
+  if (!Array.isArray(workflowIds)
+    || workflowIds.length === 0
+    || new Set(workflowIds).size !== workflowIds.length) {
+    throw new Error('Development evidence finalization resolver requires one exact workflow set.');
+  }
+  const resolvedRoot = path.resolve(root);
+  const file = configurationFile(resolvedRoot, configPath);
+  if (isPrivateConfigurationPath(resolvedRoot, file)) {
+    throw new Error('Development evidence finalization resolves tracked portable configuration templates only.');
+  }
   const configuration = readJson(file);
   if (configuration.$contract !== 'soter://contracts/configuration/v1') {
     throw new Error('Not a Soter configuration: ' + repoRelativePath(resolvedRoot, file));
   }
   const verification = verifySoter(resolvedRoot, { includeRuntimeArtifacts: false });
   requireCleanGraph(verification);
+  return resolveConfigurationValue({
+    resolvedRoot,
+    file,
+    configuration,
+    verification,
+    host,
+    evidenceFinalizationWorkflowIds: [...workflowIds]
+  });
+}
+
+/**
+ * Resolves a lock only for a fully tombstoned migration candidate whose complete
+ * declared evidence set is the graph's sole remaining blocker. This is not a
+ * fallback for ordinary invalid graphs and it grants no runtime authority.
+ */
+export function resolveLegacyFinalizationConfiguration({
+  root,
+  configPath,
+  host,
+  expectedInventoryFingerprint,
+  checkerReceipt,
+  evidencePaths,
+  ...unknown
+} = {}) {
+  if (Object.keys(unknown).length > 0) {
+    throw new Error('Legacy finalization configuration request contains an unknown field.');
+  }
+  const resolvedRoot = path.resolve(root || path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..'));
+  const file = configurationFile(resolvedRoot, configPath);
+  if (isPrivateConfigurationPath(resolvedRoot, file)) {
+    throw new Error('Legacy finalization resolves tracked portable configuration templates only.');
+  }
+  const configuration = readJson(file);
+  if (configuration.$contract !== 'soter://contracts/configuration/v1') {
+    throw new Error('Not a Soter configuration: ' + repoRelativePath(resolvedRoot, file));
+  }
+  const verification = verifySoter(resolvedRoot, { includeRuntimeArtifacts: false });
+  assertLegacyFinalizationCandidateBasis({
+    root: resolvedRoot,
+    expectedInventoryFingerprint,
+    checkerReceipt,
+    evidencePaths,
+    verification
+  });
+  return resolveConfigurationValue({ resolvedRoot, file, configuration, verification, host });
+}
+
+function assertLegacyTransitionFixtureGenerationBasis({
+  root,
+  expectedInventoryFingerprint,
+  evidencePaths,
+  verification
+}) {
+  const inventory = assertLegacyInventoryStructureCurrent(root);
+  const exactEvidencePaths = [...new Set(inventory.items.flatMap((item) => {
+    return item.targets.flatMap((binding) => binding.evidence);
+  }))].sort(compareText);
+  const suppliedEvidencePaths = Array.isArray(evidencePaths)
+    ? [...evidencePaths].sort(compareText)
+    : [];
+  if (inventory.inventoryFingerprint !== expectedInventoryFingerprint
+    || fingerprintJson(exactEvidencePaths) !== fingerprintJson(suppliedEvidencePaths)) {
+    throw new Error('Legacy transition fixture generation does not bind the exact current inventory evidence set.');
+  }
+  if (!verification || !Array.isArray(verification.violations)) {
+    throw new Error('Legacy transition fixture generation requires one current verification result.');
+  }
+  if (verification.health?.valid === 'passed' && verification.violations.length === 0) {
+    return inventory;
+  }
+  if (verification.violations.length === 0 || verification.health?.valid !== 'failed') {
+    throw new Error('Legacy transition fixture generation is available only for a clean or evidence-only stale graph.');
+  }
+  const evidenceSet = new Set(exactEvidencePaths);
+  for (const violation of verification.violations) {
+    const relativeFile = repoRelativePath(root, violation.file);
+    if (violation.code !== 'SOTER_MIGRATION_EVIDENCE'
+      || !/^soter\/migrations\/[A-Za-z0-9._+-]+[.]migration[.]json$/.test(relativeFile)) {
+      throw new Error('Legacy transition fixture generation found a non-evidence graph violation: '
+        + String(violation.code));
+    }
+    const migration = readJson(path.join(root, relativeFile));
+    const anchored = migration.items.some((item) => {
+      return Array.isArray(item.evidence)
+        && item.evidence.length > 0
+        && item.evidence.every((evidencePath) => evidenceSet.has(evidencePath))
+        && [item.sourcePath, item.targetPath, ...item.evidence].some((anchor) => {
+          return typeof violation.what === 'string' && violation.what.includes(anchor);
+        });
+    });
+    if (!anchored) {
+      throw new Error('Legacy transition fixture generation found an unattributed evidence violation.');
+    }
+  }
+  return inventory;
+}
+
+/**
+ * Resolves deterministic fixture locks for the exact current inventory when
+ * stale migration evidence is the graph's only blocker. It performs no write,
+ * host realization, provider call, evidence promotion, or cutover action.
+ */
+export function resolveLegacyTransitionFixtureConfiguration({
+  root,
+  configPath,
+  host,
+  expectedInventoryFingerprint,
+  evidencePaths,
+  ...unknown
+} = {}) {
+  if (Object.keys(unknown).length > 0) {
+    throw new Error('Legacy transition fixture resolver received an unknown field.');
+  }
+  const resolvedRoot = path.resolve(root);
+  const file = configurationFile(resolvedRoot, configPath);
+  if (isPrivateConfigurationPath(resolvedRoot, file)) {
+    throw new Error('Legacy transition fixtures resolve tracked portable configuration templates only.');
+  }
+  const configuration = readJson(file);
+  if (configuration.$contract !== 'soter://contracts/configuration/v1') {
+    throw new Error('Not a Soter configuration: ' + repoRelativePath(resolvedRoot, file));
+  }
+  const verification = verifySoter(resolvedRoot, { includeRuntimeArtifacts: false });
+  assertLegacyTransitionFixtureGenerationBasis({
+    root: resolvedRoot,
+    expectedInventoryFingerprint,
+    evidencePaths,
+    verification
+  });
   return resolveConfigurationValue({ resolvedRoot, file, configuration, verification, host });
 }
 
@@ -268,10 +497,7 @@ export function evaluateConfigurationDocument({ root, configPath, configuration,
   const file = configurationFile(resolvedRoot, configPath);
   const currentVerification = verifySoter(resolvedRoot, { includeRuntimeArtifacts: false });
   requireCleanGraph(currentVerification);
-  const verification = verifyConfigurationCandidate(resolvedRoot, {
-    configPath: file,
-    configuration
-  });
+  const verification = candidateVerification(resolvedRoot, file, configuration);
   const valid = verification.health.valid === 'passed';
   return {
     verification,

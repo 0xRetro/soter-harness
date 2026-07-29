@@ -1,10 +1,19 @@
 import path from 'node:path';
 import fs from 'node:fs';
+import os from 'node:os';
 
 import { validateJsonSchema } from '../kernel/verify.mjs';
 import { previewConfiguration } from './configuration-preview.mjs';
 import { readJson } from './lib/canonical-json.mjs';
 import { fingerprintLock, resolveConfigurationDocument } from './resolve.mjs';
+import {
+  privateConfigurationStatePath,
+  writePrivateConfigurationState
+} from './private-configurations.mjs';
+import {
+  removeActiveConfigurationLockState,
+  writeActiveConfigurationLockState
+} from './runtime-state.mjs';
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -26,8 +35,16 @@ function findSensitiveKeys(value, at = '$', found = []) {
 function main() {
   const root = process.cwd();
   const schema = readJson(path.join(root, 'soter/contracts/configuration-preview.schema.json'));
-  const baseline = previewConfiguration({ root, name: 'meeting-intake' });
-  const repeated = previewConfiguration({ root, name: 'meeting-intake' });
+  const baseline = previewConfiguration({
+    root,
+    name: 'meeting-intake',
+    configurationBasis: 'tracked-contained'
+  });
+  const repeated = previewConfiguration({
+    root,
+    name: 'meeting-intake',
+    configurationBasis: 'tracked-contained'
+  });
   assert(validateJsonSchema(baseline, schema).length === 0, 'Baseline configuration preview failed its schema.');
   assert(JSON.stringify(baseline) === JSON.stringify(repeated), 'Configuration preview was not deterministic.');
   assert(baseline.draft.valid && !baseline.draft.changed, 'The unchanged configuration did not preserve its exact lock.');
@@ -36,6 +53,7 @@ function main() {
   const changed = previewConfiguration({
     root,
     name: 'meeting-intake',
+    configurationBasis: 'tracked-contained',
     draft: { hostAdapter: 'host.claude' }
   });
   assert(validateJsonSchema(changed, schema).length === 0, 'Changed configuration preview failed its schema.');
@@ -50,12 +68,12 @@ function main() {
   exactCandidateDocument.host = {
     id: 'claude',
     adapter: 'host.claude',
-    version: '0.1.0',
+    version: '0.3.1',
     reason: 'Preview the same selected Soter systems through the claude host projection.'
   };
   const exactCandidateLock = resolveConfigurationDocument({
     root,
-    configPath: configurationPath,
+    configPath: privateConfigurationStatePath(root, 'meeting-intake'),
     configuration: exactCandidateDocument
   });
   assert(changed.draft.lockFingerprint === fingerprintLock(exactCandidateLock)
@@ -67,6 +85,7 @@ function main() {
   const policyConflict = previewConfiguration({
     root,
     name: 'meeting-intake',
+    configurationBasis: 'tracked-contained',
     draft: { effectPolicies: { write: 'prohibit' } }
   });
   assert(!policyConflict.draft.valid
@@ -80,6 +99,7 @@ function main() {
   const optionalPack = previewConfiguration({
     root,
     name: 'meeting-intake',
+    configurationBasis: 'tracked-contained',
     draft: { addPacks: ['automation.project-pulse'] }
   });
   assert(validateJsonSchema(optionalPack, schema).length === 0, 'Optional-pack preview failed its schema.');
@@ -93,13 +113,14 @@ function main() {
   assert(optionalPack.draft.lockFingerprint === null && optionalPack.draft.graphFingerprint === null,
     'An incomplete candidate exposed exact fingerprints.');
   assert(optionalPack.diagnostics.some((item) => item.code === 'SOTER_CONFIGURATION_PREVIEW_SOURCE_REQUIREMENT'),
-    'Missing Project Pulse policy source did not produce a stable diagnostic.');
+    'Missing shared Projects policy source did not produce a stable diagnostic.');
   assert(optionalPack.evidenceImpact.state === 'unknown',
     'Incomplete optional-pack selection claimed a determinate evidence impact.');
 
   const invalid = previewConfiguration({
     root,
     name: 'meeting-intake',
+    configurationBasis: 'tracked-contained',
     draft: { hostAdapter: 'host.absent' }
   });
   assert(!invalid.draft.valid && invalid.draft.lockFingerprint === null,
@@ -113,6 +134,55 @@ function main() {
   const serialized = JSON.stringify(changed);
   assert(!serialized.includes('secret-ref.') && !serialized.includes('collection://'),
     'Secret references or authority target values reached configuration preview.');
+
+  const privateRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'soter-configuration-preview-basis-'));
+  try {
+    fs.cpSync(root, privateRoot, {
+      recursive: true,
+      filter(source) {
+        const relative = path.relative(root, source);
+        return relative !== '.git'
+          && !relative.startsWith('.git' + path.sep)
+          && relative !== '.soter'
+          && !relative.startsWith('.soter' + path.sep);
+      }
+    });
+    const privateConfiguration = readJson(
+      path.join(privateRoot, 'soter/configurations/meeting-intake.config.json')
+    );
+    writePrivateConfigurationState(privateRoot, 'meeting-intake', privateConfiguration);
+    const privateLock = resolveConfigurationDocument({
+      root: privateRoot,
+      configPath: privateConfigurationStatePath(privateRoot, 'meeting-intake'),
+      configuration: privateConfiguration
+    });
+    writeActiveConfigurationLockState(privateRoot, 'meeting-intake', privateLock);
+    const privatePreview = previewConfiguration({
+      root: privateRoot,
+      name: 'meeting-intake',
+      configurationBasis: 'private-active'
+    });
+    assert(privatePreview.configuration.configurationBasis === 'private-active',
+      'Private-active configuration preview did not disclose its exact selection basis.');
+    removeActiveConfigurationLockState(privateRoot, 'meeting-intake');
+    for (const configurationBasis of ['tracked-contained', 'private-active']) {
+      let halfStateRejected = false;
+      try {
+        previewConfiguration({
+          root: privateRoot,
+          name: 'meeting-intake',
+          configurationBasis
+        });
+      } catch (error) {
+        halfStateRejected = /must either both exist or both be absent/.test(error.message);
+      }
+      assert(halfStateRejected,
+        'Configuration preview accepted private desired state without its active lock for '
+          + configurationBasis + '.');
+    }
+  } finally {
+    fs.rmSync(privateRoot, { recursive: true, force: true });
+  }
 
   console.log('Soter configuration preview selftest passed.');
 }

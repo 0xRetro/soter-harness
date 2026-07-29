@@ -8,16 +8,17 @@
     "task": {
       "titleState": "private",
       "projectState": "exactly-resolvable",
-      "assigneeState": "optional-exact-reference",
+      "assigneeState": "current-user-or-unassigned",
       "nextActionState": "optional-pinned-date"
     }
   },
   "expected": {
     "capabilityOrder": [
-      "crm.records.read",
-      "crm.records.read",
-      "crm.records.read",
-      "crm.records.create"
+      "tasks.records.read",
+      "projects.records.read",
+      "workspace.identity.read",
+      "tasks.records.read",
+      "tasks.records.create"
     ],
     "effectModes": {
       "read": "allow",

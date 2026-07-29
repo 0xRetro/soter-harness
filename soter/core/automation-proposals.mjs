@@ -64,6 +64,41 @@ export function automationProposalMaterialFingerprint(material) {
   return fingerprintJson(unsigned);
 }
 
+export function inspectContextSnapshotCurrentness({ root, snapshot, at }) {
+  const resolvedRoot = path.resolve(root);
+  const currentAt = Date.parse(at);
+  if (!snapshot || !Array.isArray(snapshot.entries)) {
+    return { state: 'stale', reasonCode: 'CONTEXT_SNAPSHOT_STALE' };
+  }
+  for (const entry of snapshot.entries) {
+    let maximumAgeSeconds;
+    try {
+      const capability = readJson(path.join(
+        resolvedRoot,
+        'soter',
+        'capabilities',
+        entry.capability + '.json'
+      ));
+      maximumAgeSeconds = capability.freshness?.maxAgeSeconds;
+    } catch {
+      return { state: 'stale', reasonCode: 'CONTEXT_SNAPSHOT_STALE' };
+    }
+    if (maximumAgeSeconds === null) continue;
+    const observedAt = Date.parse(entry.observedAt);
+    const ageSeconds = (currentAt - observedAt) / 1000;
+    if (!Number.isInteger(maximumAgeSeconds)
+      || maximumAgeSeconds < 0
+      || entry.freshness !== 'passed'
+      || !Number.isFinite(observedAt)
+      || !Number.isFinite(currentAt)
+      || ageSeconds < 0
+      || ageSeconds > maximumAgeSeconds) {
+      return { state: 'stale', reasonCode: 'CONTEXT_SNAPSHOT_STALE' };
+    }
+  }
+  return { state: 'current', reasonCode: 'CONTEXT_SNAPSHOT_CURRENT' };
+}
+
 function exactArtifact(root, lock, manifest, artifactPath, role, label) {
   const declared = manifest.artifacts.find((item) => {
     return item.path === artifactPath && item.role === role;

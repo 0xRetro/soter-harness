@@ -1,0 +1,95 @@
+{
+  "$contract": "soter://contracts/context-record-model/v1",
+  "contractVersion": "1.0.0",
+  "id": "model.context.product.records",
+  "pack": "context.product",
+  "version": "0.1.0",
+  "subject": "product.records",
+  "recordTypes": [
+    {
+      "id": "feature-workflow-policy",
+      "summary": "An external selection record that binds the governed feature workflow definition.",
+      "fields": [
+        {
+          "id": "name",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The exact human-readable feature workflow policy title."
+        }
+      ],
+      "content": {
+        "kind": "none",
+        "requiredOnCreate": false,
+        "summary": "The exact governed rules live in the selected Product Context definition artifact."
+      },
+      "deduplicationFields": ["name"]
+    },
+    {
+      "id": "feature",
+      "summary": "A product capability or change tracked through an explicit lifecycle with its why kept distinct from its definition.",
+      "fields": [
+        {
+          "id": "name",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The concise feature name, distinct from the value or problem statement."
+        },
+        {
+          "id": "description",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The feature why: the value created or problem removed, without appended definition text."
+        },
+        {
+          "id": "status",
+          "type": "string",
+          "requiredOnCreate": true,
+          "nullable": false,
+          "mutable": true,
+          "summary": "The explicit portable feature lifecycle state."
+        },
+        {
+          "id": "featureType",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "The exact current feature, enhancement, bug, or content classification when the configured board supports it."
+        },
+        {
+          "id": "area",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "An optional exact current product-area classification owned by the configured board."
+        },
+        {
+          "id": "priority",
+          "type": "string",
+          "requiredOnCreate": false,
+          "nullable": true,
+          "mutable": true,
+          "summary": "An optional exact current priority classification owned by the configured board."
+        }
+      ],
+      "content": {
+        "kind": "markdown",
+        "requiredOnCreate": true,
+        "summary": "The feature definition lives in a deterministic markdown body whose sections remain separate from Description."
+      },
+      "deduplicationFields": ["name"]
+    }
+  ],
+  "limitations": [
+    "Board containment identifies the owning product, but the portable model does not infer a board from a display name or discover embedded provider collections.",
+    "Current provider options and board-specific templates must be observed through configured capabilities; this model does not invent Area, Priority, Type, or lifecycle values.",
+    "A prepared feature body or record change grants no approval, execution, provider-write, lifecycle-transition, or verification authority."
+  ]
+}

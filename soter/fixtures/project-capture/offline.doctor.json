@@ -1,0 +1,82 @@
+{
+  "$contract": "soter://contracts/doctor-result/v1",
+  "contractVersion": "1.0.0",
+  "id": "doctor.project-capture.fixture",
+  "createdAt": "2026-07-21T15:00:00.000Z",
+  "level": "offline",
+  "configuration": {
+    "name": "project-capture",
+    "lockFingerprint": "sha256:97b5f6583d39c359bcf015cf9a02a21a570ec807e5b227a80b54e856a2580406"
+  },
+  "states": {
+    "valid": "passed",
+    "ready": "unknown",
+    "verified": "unknown",
+    "healthy": "unknown"
+  },
+  "checks": [
+    {
+      "id": "kernel.graph-valid",
+      "claim": "Machine contracts and the selected dependency graph are internally valid.",
+      "state": "passed",
+      "evidenceIds": [],
+      "details": "The dependency-free Kernel verifier reported no graph errors."
+    },
+    {
+      "id": "core.lock-current",
+      "claim": "The supplied lock exactly matches a fresh deterministic resolution.",
+      "state": "passed",
+      "evidenceIds": [
+        "evidence.project-capture.resolution.fixture"
+      ],
+      "details": "The observed and freshly resolved lock fingerprints match."
+    },
+    {
+      "id": "host.credentials-ready",
+      "claim": "Required host credential references resolve with sufficient permissions.",
+      "state": "skipped",
+      "evidenceIds": [],
+      "details": "Offline doctor does not inspect credential values or provider permissions."
+    },
+    {
+      "id": "integrations.reachable",
+      "claim": "Selected integrations are authenticated, reachable, and capability-compatible.",
+      "state": "skipped",
+      "evidenceIds": [],
+      "details": "Offline doctor performs no network or provider calls."
+    },
+    {
+      "id": "behavior.evidence-current",
+      "claim": "Applicable fixture or stronger behavior evidence is current for every selected component.",
+      "state": "unknown",
+      "evidenceIds": [],
+      "details": "Static declarations, test capacity, and run-scoped evidence do not establish complete behavior verification."
+    },
+    {
+      "id": "runtime.health-current",
+      "claim": "Connected dependencies are currently healthy for this configuration.",
+      "state": "skipped",
+      "evidenceIds": [],
+      "details": "Current dependency health requires a connected or canary doctor level."
+    }
+  ],
+  "diagnostics": [
+    {
+      "code": "SOTER_OFFLINE_SCOPE",
+      "severity": "info",
+      "claim": "Offline doctor reports only claims it can establish without provider access.",
+      "subject": "project-capture",
+      "path": [],
+      "expected": "Readiness and live health remain unknown until connected checks run.",
+      "observed": "Credential, reachability, capability, and current-health checks were skipped.",
+      "evidenceIds": [
+        "evidence.project-capture.resolution.fixture"
+      ],
+      "remediation": "Run a future connected doctor before executing provider capabilities."
+    }
+  ],
+  "providerProbeIds": [],
+  "evidenceIds": [
+    "evidence.project-capture.resolution.fixture"
+  ]
+}

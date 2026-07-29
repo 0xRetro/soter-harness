@@ -1,7 +1,9 @@
-# Decisions — the ADR log
+# Decisions — retained historical evidence
 
-Append-only. One short record per durable decision; immutable once Accepted —
-supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.md`.
+These v1 records are retained as historical development evidence. Accepted
+records remain immutable and may be superseded, but v2 does not require ADR
+numbering or a checked-in legacy template/runtime. New decisions are optional
+development evidence governed by the selected workflow and workspace policy.
 
 | # | Title | Status |
 |---|---|---|

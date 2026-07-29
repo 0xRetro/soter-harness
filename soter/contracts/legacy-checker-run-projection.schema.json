@@ -1,0 +1,247 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/legacy-checker-run-projection/v1",
+  "title": "Governed sanitized legacy checker run projection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "observedAt",
+    "receipt",
+    "basis",
+    "command",
+    "result",
+    "authority",
+    "privacy",
+    "limitations",
+    "projectionFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/legacy-checker-run-projection/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^legacy-checker-run-projection[.][a-f0-9]{64}$"
+    },
+    "observedAt": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$"
+    },
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fingerprint"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^legacy-checker-run[.][a-f0-9]{64}$"
+        },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "basis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checker",
+        "transition",
+        "temporaryCrmVocabulary",
+        "checkerVisibleInputTree",
+        "gitFreshnessInputs",
+        "runtime"
+      ],
+      "properties": {
+        "checker": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "fingerprint"],
+          "properties": {
+            "path": { "const": ".claude/scripts/check.mjs" },
+            "fingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        "transition": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "fingerprint", "documentFingerprint"],
+          "properties": {
+            "path": { "const": "soter/kernel/legacy-checker-transition.json" },
+            "fingerprint": { "$ref": "#/$defs/fingerprint" },
+            "documentFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        "temporaryCrmVocabulary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "fingerprint",
+            "baseFingerprint",
+            "shimEntryFingerprint",
+            "purpose",
+            "retention"
+          ],
+          "properties": {
+            "path": { "const": "soter/contexts/crm/vocabulary.json" },
+            "fingerprint": { "$ref": "#/$defs/fingerprint" },
+            "baseFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "shimEntryFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "purpose": { "const": "immutable-pre-removal-channel-fragment-check-only" },
+            "retention": { "const": "must-be-removed-with-legacy-cutover" }
+          }
+        },
+        "checkerVisibleInputTree": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "scope",
+            "excludedRoots",
+            "directoryCount",
+            "fileCount",
+            "treeFingerprint"
+          ],
+          "properties": {
+            "scope": { "const": "complete-public-repository-tree" },
+            "excludedRoots": { "const": [".git", ".soter", "node_modules"] },
+            "directoryCount": { "type": "integer", "minimum": 1 },
+            "fileCount": { "type": "integer", "minimum": 1 },
+            "treeFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        "gitFreshnessInputs": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["state", "observationCount", "observationsFingerprint"],
+              "properties": {
+                "state": { "const": "available" },
+                "observationCount": { "type": "integer", "minimum": 0 },
+                "observationsFingerprint": { "$ref": "#/$defs/fingerprint" }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["state", "observationCount", "observationsFingerprint"],
+              "properties": {
+                "state": { "const": "unavailable" },
+                "observationCount": { "const": 0 },
+                "observationsFingerprint": { "$ref": "#/$defs/fingerprint" }
+              }
+            }
+          ]
+        },
+        "runtime": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["identity", "version", "binaryFingerprint"],
+          "properties": {
+            "identity": { "const": "current-node-binary" },
+            "version": {
+              "type": "string",
+              "pattern": "^v(?:0|[1-9][0-9]*)[.](?:0|[1-9][0-9]*)[.](?:0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$"
+            },
+            "binaryFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        }
+      }
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "executable",
+        "script",
+        "arguments",
+        "cwd",
+        "environmentPolicy",
+        "timeoutMs"
+      ],
+      "properties": {
+        "executable": { "const": "current-node-binary" },
+        "script": { "const": ".claude/scripts/check.mjs" },
+        "arguments": { "const": ["--all"] },
+        "cwd": { "const": "repository-root" },
+        "environmentPolicy": { "const": "fixed-minimal-v1" },
+        "timeoutMs": { "const": 60000 }
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exitStatus",
+        "errorCount",
+        "warningCount",
+        "stdoutFingerprint",
+        "stderrFingerprint"
+      ],
+      "properties": {
+        "exitStatus": { "const": 0 },
+        "errorCount": { "const": 0 },
+        "warningCount": { "const": 0 },
+        "stdoutFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "stderrFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "grantsMigration",
+        "grantsFallbackRemoval",
+        "grantsExecution",
+        "grantsProviderRead",
+        "grantsProviderWrite",
+        "grantsPublication",
+        "grantsMerge"
+      ],
+      "properties": {
+        "kind": { "const": "none" },
+        "grantsMigration": { "const": false },
+        "grantsFallbackRemoval": { "const": false },
+        "grantsExecution": { "const": false },
+        "grantsProviderRead": { "const": false },
+        "grantsProviderWrite": { "const": false },
+        "grantsPublication": { "const": false },
+        "grantsMerge": { "const": false }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rawOutputIncluded",
+        "privateStatePathIncluded",
+        "absolutePathsIncluded",
+        "sourceContentIncluded",
+        "environmentValuesIncluded"
+      ],
+      "properties": {
+        "rawOutputIncluded": { "const": false },
+        "privateStatePathIncluded": { "const": false },
+        "absolutePathsIncluded": { "const": false },
+        "sourceContentIncluded": { "const": false },
+        "environmentValuesIncluded": { "const": false }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 20, "maxLength": 1000 }
+    },
+    "projectionFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

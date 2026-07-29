@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://automations/meeting-intake/proposal/v1",
+  "title": "Meeting Intake review proposal",
+  "type": "object",
+  "required": ["$contract", "id", "automation", "decision", "proposalType", "review"],
+  "properties": {
+    "$contract": { "const": "soter://contracts/automation-proposal/v1" },
+    "id": { "type": "string", "pattern": "^proposal\\.meeting-intake\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "automation": {
+      "type": "object",
+      "required": ["id"],
+      "properties": { "id": { "const": "automation.meeting-intake" } }
+    },
+    "decision": {
+      "type": "object",
+      "required": ["id", "decisionType"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^decision\\.meeting-intake\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "decisionType": { "const": "meeting-intake.grounded-outcome" }
+      }
+    },
+    "proposalType": { "const": "meeting-intake.review-proposal" },
+    "review": {
+      "type": "object",
+      "required": ["$contract", "kind", "privateReview"],
+      "properties": {
+        "$contract": { "const": "soter://contracts/automation-review/v1" },
+        "kind": { "const": "meeting-intake-review" },
+        "privateReview": {
+          "type": "object",
+          "required": ["state"],
+          "properties": { "state": { "const": "available" } }
+        }
+      }
+    }
+  }
+}

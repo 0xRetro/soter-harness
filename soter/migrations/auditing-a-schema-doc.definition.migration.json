@@ -1,0 +1,69 @@
+{
+  "$contract": "soter://contracts/migration/v1",
+  "contractVersion": "1.0.0",
+  "id": "auditing-a-schema-doc.prototype-to-v2-definition",
+  "source": "claude-oriented-prototype",
+  "slice": "automation.auditing-a-schema-doc",
+  "items": [
+    {
+      "sourcePath": ".claude/skills/auditing-a-schema-doc/SKILL.md",
+      "sourceFingerprint": "sha256:c5ee36f0224bceaa1e2e83cbd622eae6ca114f52c3ff472e67a92d4e338d4647",
+      "targetPath": "soter/automations/auditing-a-schema-doc/guide.json",
+      "targetPack": "automation.auditing-a-schema-doc",
+      "state": "migrated",
+      "bridge": "The exact target now owns this responsibility. The final evidence records proven parity. The legacy source is retained only as an exact fingerprinted tombstone; no operational fallback remains. Scope: Provider-neutral normalized outcome or behavior-expectation responsibility without runtime authority.",
+      "evidence": [
+        "soter/evidence/development/evidence.development-activation.claude.auditing-a-schema-doc.json",
+        "soter/evidence/development/evidence.development-activation.codex.auditing-a-schema-doc.json"
+      ]
+    },
+    {
+      "sourcePath": ".claude/evals/auditing-a-schema-doc/happy-path.md",
+      "sourceFingerprint": "sha256:83117cdaf09f4f1dde0d1cdd8be78bd6aa87d2b63ffd44797edfce5a05b33486",
+      "targetPath": "soter/automations/auditing-a-schema-doc/evaluations.json",
+      "targetPack": "automation.auditing-a-schema-doc",
+      "state": "migrated",
+      "bridge": "The exact target now owns this responsibility. The final evidence records proven parity. The legacy source is retained only as an exact fingerprinted tombstone; no operational fallback remains. Scope: Provider-neutral normalized outcome or behavior-expectation responsibility without runtime authority.",
+      "evidence": [
+        "soter/evidence/development/evidence.development-activation.claude.auditing-a-schema-doc.json",
+        "soter/evidence/development/evidence.development-activation.codex.auditing-a-schema-doc.json"
+      ]
+    },
+    {
+      "sourcePath": ".claude/evals/auditing-a-schema-doc/invariant-no-silent-delete.md",
+      "sourceFingerprint": "sha256:572d6786560c9e3e15ca2153d2504403dce9fdc113468d68e447b6b5e339dd66",
+      "targetPath": "soter/automations/auditing-a-schema-doc/evaluations.json",
+      "targetPack": "automation.auditing-a-schema-doc",
+      "state": "migrated",
+      "bridge": "The exact target now owns this responsibility. The final evidence records proven parity. The legacy source is retained only as an exact fingerprinted tombstone; no operational fallback remains. Scope: Provider-neutral normalized outcome or behavior-expectation responsibility without runtime authority.",
+      "evidence": [
+        "soter/evidence/development/evidence.development-activation.claude.auditing-a-schema-doc.json",
+        "soter/evidence/development/evidence.development-activation.codex.auditing-a-schema-doc.json"
+      ]
+    },
+    {
+      "sourcePath": ".claude/evals/auditing-a-schema-doc/pressure-overwrite.md",
+      "sourceFingerprint": "sha256:8ca774258f04e2f97154b65acd9fdba8f0e7b3ac6a17092bf2683c7bb3c11373",
+      "targetPath": "soter/automations/auditing-a-schema-doc/evaluations.json",
+      "targetPack": "automation.auditing-a-schema-doc",
+      "state": "migrated",
+      "bridge": "The exact target now owns this responsibility. The final evidence records proven parity. The legacy source is retained only as an exact fingerprinted tombstone; no operational fallback remains. Scope: Provider-neutral normalized outcome or behavior-expectation responsibility without runtime authority.",
+      "evidence": [
+        "soter/evidence/development/evidence.development-activation.claude.auditing-a-schema-doc.json",
+        "soter/evidence/development/evidence.development-activation.codex.auditing-a-schema-doc.json"
+      ]
+    },
+    {
+      "sourcePath": ".claude/evals/auditing-a-schema-doc/targets-mirror-drift.md",
+      "sourceFingerprint": "sha256:fd62bb9c26e4f56c01c109c0124f938c97dfdf8cd4b51c4d66b0f0e68823b333",
+      "targetPath": "soter/automations/auditing-a-schema-doc/evaluations.json",
+      "targetPack": "automation.auditing-a-schema-doc",
+      "state": "migrated",
+      "bridge": "The exact target now owns this responsibility. The final evidence records proven parity. The legacy source is retained only as an exact fingerprinted tombstone; no operational fallback remains. Scope: Provider-neutral normalized outcome or behavior-expectation responsibility without runtime authority.",
+      "evidence": [
+        "soter/evidence/development/evidence.development-activation.claude.auditing-a-schema-doc.json",
+        "soter/evidence/development/evidence.development-activation.codex.auditing-a-schema-doc.json"
+      ]
+    }
+  ]
+}

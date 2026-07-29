@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { validateJsonSchema, verifySoter } from '../kernel/verify.mjs';
+import { workflowEvidenceBasisForPath } from '../kernel/workflow-evidence-bases.mjs';
 import { runOfflineDoctor } from './doctor.mjs';
 import { fingerprintJson, readJson, repoRelativePath, resolveRepoPath } from './lib/canonical-json.mjs';
 import { fingerprintLock, lockMatchesResolution } from './resolve.mjs';
@@ -10,6 +11,15 @@ import { evaluateConfigurationMaturity, loadMaturityEvidence } from './maturity.
 import { getDurableHostExecution } from './service.mjs';
 import { inspectConnectedOperatorActivity } from './operator-inspection.mjs';
 import { assertPreparedWork, projectPreparedWorkApplicability } from './prepared-work.mjs';
+import { inspectDevelopmentRun } from './development-runs.mjs';
+import {
+  hasPrivateConfigurationState,
+  privateConfigurationStatePath
+} from './private-configurations.mjs';
+import {
+  hasActiveConfigurationLockState,
+  readActiveConfigurationLockState
+} from './runtime-state.mjs';
 
 const CONTRACT = 'soter://contracts/workspace-inspection/v1';
 const VERSION = '1.0.0';
@@ -142,8 +152,109 @@ export function aggregateProofStates(observations) {
   ]));
 }
 
+function selectedInspectionLock(root, configurationName, fixtureLocks) {
+  const privatePath = privateConfigurationStatePath(root, configurationName);
+  const desired = fs.existsSync(privatePath);
+  const activeLock = hasActiveConfigurationLockState(root, configurationName);
+  if (desired || activeLock) {
+    if (!desired || !activeLock) {
+      return {
+        sourceKind: 'private-active',
+        configurationBasis: 'private-active',
+        lock: null,
+        lockState: 'invalid'
+      };
+    }
+    let lock = null;
+    try {
+      hasPrivateConfigurationState(root, configurationName);
+      lock = readActiveConfigurationLockState(root, configurationName).lock;
+      const expectedPath = repoRelativePath(
+        root,
+        privateConfigurationStatePath(root, configurationName)
+      );
+      if (lock.configuration?.name !== configurationName
+        || lock.configuration?.path !== expectedPath) {
+        return {
+          sourceKind: 'private-active',
+          configurationBasis: 'private-active',
+          lock: null,
+          lockState: 'invalid'
+        };
+      }
+      const current = lockMatchesResolution({
+        root,
+        lock,
+        configPath: expectedPath,
+        host: lock.host.id
+      });
+      return {
+        sourceKind: 'private-active',
+        configurationBasis: 'private-active',
+        lock,
+        lockState: current.matches ? 'current' : 'stale'
+      };
+    } catch {
+      return {
+        sourceKind: 'private-active',
+        configurationBasis: 'private-active',
+        lock: null,
+        lockState: 'invalid'
+      };
+    }
+  }
+  const matches = fixtureLocks.filter((candidate) => {
+    return candidate.configuration.name === configurationName;
+  });
+  if (matches.length === 0) {
+    return {
+      sourceKind: 'tracked-template',
+      configurationBasis: 'tracked-contained',
+      lock: null,
+      lockState: 'missing'
+    };
+  }
+  const uniqueLocks = new Map(matches.map((candidate) => [
+    fingerprintLock(candidate),
+    candidate
+  ]));
+  if (uniqueLocks.size !== 1) {
+    return {
+      sourceKind: 'tracked-template',
+      configurationBasis: 'tracked-contained',
+      lock: null,
+      lockState: 'invalid'
+    };
+  }
+  const lock = [...uniqueLocks.values()][0];
+  try {
+    const current = lockMatchesResolution({ root, lock, configPath: lock.configuration.path });
+    return {
+      sourceKind: 'tracked-template',
+      configurationBasis: 'tracked-contained',
+      lock,
+      lockState: current.matches ? 'current' : 'stale'
+    };
+  } catch {
+    return {
+      sourceKind: 'tracked-template',
+      configurationBasis: 'tracked-contained',
+      lock,
+      lockState: 'invalid'
+    };
+  }
+}
+
+function operationalFixtureLocks(root, fixtureDocs) {
+  return fixtureDocs
+    .filter((entry) => entry.value.$contract === 'soter://contracts/lock/v1')
+    .filter((entry) => {
+      return !workflowEvidenceBasisForPath(repoRelativePath(root, entry.file));
+    });
+}
+
 function proofSnapshot(root, verification, configurations, fixtureDocs, diagnostics) {
-  const locks = fixtureDocs.filter((entry) => entry.value.$contract === 'soter://contracts/lock/v1');
+  const locks = operationalFixtureLocks(root, fixtureDocs);
   const historicalDoctors = fixtureDocs
     .filter((entry) => entry.value.$contract === 'soter://contracts/doctor-result/v1' && entry.value.level === 'offline')
     .sort((left, right) => compareText(left.value.createdAt, right.value.createdAt));
@@ -165,8 +276,13 @@ function proofSnapshot(root, verification, configurations, fixtureDocs, diagnost
   let observedAt = null;
 
   for (const configuration of configurations) {
-    const lockEntry = locks.find((entry) => entry.value.configuration.name === configuration.name);
-    if (!lockEntry || configuration.lockState !== 'current') {
+    const selection = selectedInspectionLock(
+      root,
+      configuration.name,
+      locks.map((entry) => entry.value)
+    );
+    const lock = selection.lock;
+    if (!lock || configuration.lockState !== 'current') {
       const unavailableStates = configuration.lockState === 'stale'
         ? { valid: 'stale', ready: 'stale', verified: 'unknown', healthy: 'unknown' }
         : configuration.lockState === 'invalid'
@@ -185,8 +301,8 @@ function proofSnapshot(root, verification, configurations, fixtureDocs, diagnost
     try {
       const { report } = runOfflineDoctor({
         root,
-        configPath: lockEntry.value.configuration.path,
-        lock: lockEntry.value,
+        configPath: lock.configuration.path,
+        lock,
         doctorId: 'doctor.workspace-inspection.' + configuration.name + '.offline',
         evidenceId: 'evidence.workspace-inspection.' + configuration.name + '.resolution',
         createdAt
@@ -228,26 +344,31 @@ function proofSnapshot(root, verification, configurations, fixtureDocs, diagnost
 }
 
 function configurationSnapshots(root, verification, fixtureDocs, maturityEvidence) {
-  const locks = fixtureDocs
-    .filter((entry) => entry.value.$contract === 'soter://contracts/lock/v1')
+  const locks = operationalFixtureLocks(root, fixtureDocs)
     .map((entry) => entry.value);
   return verification.resolvedConfigurations.map((configuration) => {
-    const lock = locks.find((candidate) => candidate.configuration.name === configuration.name);
-    let lockState = 'missing';
-    if (lock) {
-      try {
-        lockState = lockMatchesResolution({
-          root,
-          lock,
-          configPath: lock.configuration.path
-        }).matches ? 'current' : 'stale';
-      } catch {
-        lockState = 'invalid';
-      }
-    }
+    const selection = selectedInspectionLock(root, configuration.name, locks);
+    const { lock, lockState, sourceKind, configurationBasis } = selection;
+    const templateFallbackAllowed = sourceKind === 'tracked-template';
+    const projectedSelections = lock?.packs || (templateFallbackAllowed ? configuration.selections : []);
+    const projectedBindings = lock?.bindings || (templateFallbackAllowed ? configuration.bindings : []);
+    const projectedAuthorities = lock?.authorities || (templateFallbackAllowed ? configuration.authorities : []);
+    const projectedEffectPolicies = lock?.effectPolicies
+      || (templateFallbackAllowed ? configuration.effectPolicies : null);
+    const projectedHost = lock?.host.id || (templateFallbackAllowed ? configuration.host.id : 'unavailable');
+    const maturityConfiguration = lock ? {
+      ...configuration,
+      host: {
+        ...configuration.host,
+        id: lock.host.id,
+        adapter: lock.host.adapter,
+        version: lock.host.version
+      },
+      selections: lock.packs
+    } : configuration;
     const maturity = evaluateConfigurationMaturity({
       lock,
-      resolvedConfiguration: configuration,
+      resolvedConfiguration: maturityConfiguration,
       evidenceRecords: maturityEvidence,
       lockState,
       at: new Date().toISOString()
@@ -256,38 +377,39 @@ function configurationSnapshots(root, verification, fixtureDocs, maturityEvidenc
       name: configuration.name,
       status: configuration.status,
       lockState,
-      host: configuration.host.id,
+      configurationBasis,
+      host: projectedHost,
       maturity: {
         verified: maturity.verified,
         reasonCode: maturity.reasonCode,
         host: maturity.host,
         selections: maturity.selections
       },
-      selections: configuration.selections.map((selection) => ({
+      selections: projectedSelections.map((selection) => ({
         id: selection.id,
         version: selection.version,
         layer: selection.layer,
         source: selection.source,
         reason: selection.reason
       })).sort((left, right) => compareText(left.id, right.id)),
-      bindings: configuration.bindings.map((binding) => ({
+      bindings: projectedBindings.map((binding) => ({
         capability: binding.capability,
         providerPack: binding.providerPack,
         authorities: [...binding.authorities].sort(compareText),
         effects: [...binding.effects].sort(compareText),
         reason: binding.reason
       })).sort((left, right) => compareText(left.capability, right.capability)),
-      authorities: configuration.authorities.map((authority) => ({
+      authorities: projectedAuthorities.map((authority) => ({
         id: authority.id,
         role: authority.role,
         subject: authority.subject,
         reason: authority.reason
       })).sort((left, right) => compareText(left.id, right.id)),
-      effectPolicies: EFFECT_ORDER.map((effect) => ({
+      effectPolicies: projectedEffectPolicies ? EFFECT_ORDER.map((effect) => ({
         effect,
-        mode: configuration.effectPolicies[effect].mode,
-        reason: configuration.effectPolicies[effect].reason
-      })),
+        mode: projectedEffectPolicies[effect].mode,
+        reason: projectedEffectPolicies[effect].reason
+      })) : [],
       graphFingerprint: lock?.graphFingerprint || null,
       lockFingerprint: lock ? fingerprintLock(lock) : null
     };
@@ -441,9 +563,19 @@ function migrationForAutomation(automation, migrations) {
   };
 }
 
+function migrationStateForScenario(root, scenario, migrationDoc) {
+  const targetPath = repoRelativePath(root, scenario.file);
+  const exactItem = migrationDoc?.items.find((item) => item.targetPath === targetPath);
+  if (exactItem) return exactItem.state;
+  if (migrationDoc?.items.length > 0
+    && migrationDoc.items.every((item) => item.state === 'migrated' || item.state === 'retired')) {
+    return 'target-native';
+  }
+  return 'unknown';
+}
+
 function isEvidence(value) {
-  return value.$contract === 'soter://contracts/evidence/v1'
-    || value.$contract === 'soter://contracts/evidence/v2';
+  return value.$contract === 'soter://contracts/evidence/v2';
 }
 
 function scenarioExecution(entry, configuration, fixtureDocs) {
@@ -495,9 +627,23 @@ function scenarioExecution(entry, configuration, fixtureDocs) {
   };
 }
 
-function buildWorkflows({ root, schemas, diagnostics, packs, scenarios, migrations, configurations, fixtureDocs }) {
+function buildWorkflows({
+  root,
+  schemas,
+  diagnostics,
+  packs,
+  hosts,
+  scenarios,
+  migrations,
+  configurations,
+  configurationMemberships,
+  fixtureDocs
+}) {
   return packs.filter(({ value }) => value.layer === 'automation').map(({ value: automation }) => {
-    const configuration = configurations.find((candidate) => candidate.selections.some((selection) => selection.id === automation.id));
+    const configuration = configurations.find((candidate) => {
+      const membership = configurationMemberships.find((item) => item.name === candidate.name);
+      return membership?.selections.some((selection) => selection.id === automation.id);
+    });
     const automationScenarios = scenarios.filter((entry) => entry.value.automation === automation.id);
     const migration = migrationForAutomation(automation, migrations);
     const migrationDoc = migrations.find((entry) => entry.value.id === migration.id)?.value;
@@ -518,13 +664,42 @@ function buildWorkflows({ root, schemas, diagnostics, packs, scenarios, migratio
             additionalInputs: inputEntry.value.additionalInputs
           },
           preparation: {
-            supported: Boolean(automation.operator.preparation),
-            boundary: automation.operator.preparation
-              ? 'private fixture-contained preparation only; no approval, execution, write, proof, maturity, or migration authority'
+            supported: Boolean(
+              automation.operator.preparation || automation.operator.acquisition
+            ),
+            boundary: automation.operator.preparation || automation.operator.acquisition
+              ? 'explicit private preparation modes only; mode facts grant no provider-call, approval, continuation, execution, write, readiness, verification, proof, maturity, or migration authority'
               : 'input-definition-only; no canonical prepared-work receipt or transition authority',
-            workStates: automation.operator.preparation
-              ? ['draft', 'preparing', 'needs-input', 'ready-for-review']
-              : []
+            workStates: [
+              ...(automation.operator.preparation
+                ? ['draft', 'preparing', 'needs-input', 'ready-for-review']
+                : []),
+              ...(automation.operator.acquisition
+                ? ['ready-for-acquisition']
+                : [])
+            ],
+            modes: [
+              ...(automation.operator.preparation
+                ? [{
+                  id: 'contained',
+                  configurationBases: ['tracked-contained', 'private-active'],
+                  resultState: 'ready-for-review',
+                  availability: { state: 'available' },
+                  boundary: 'private fixture-contained preparation only; no connected provider call, approval, execution, write, proof, maturity, or migration authority'
+                }]
+                : []),
+              ...(automation.operator.acquisition
+                ? [{
+                  id: 'connected-acquisition',
+                  configurationBases: ['private-active'],
+                  resultState: 'ready-for-acquisition',
+                  availability: structuredClone(
+                    automation.operator.acquisition.availability || { state: 'available' }
+                  ),
+                  boundary: 'stages exact private input and the current active lock only; no provider call, acquired context, approval, continuation, execution, write, readiness, verification, proof, maturity, or migration authority'
+                }]
+                : [])
+            ]
           }
         };
       }
@@ -535,15 +710,35 @@ function buildWorkflows({ root, schemas, diagnostics, packs, scenarios, migratio
       summary: automation.summary,
       version: automation.version,
       configuration: configuration?.name || null,
+      configurationBasis: configuration?.configurationBasis || null,
       host: configuration?.host || null,
+      hostCompatibility: Object.fromEntries(
+        hosts
+          .map((entry) => entry.value.host)
+          .sort(compareText)
+          .map((host) => {
+            if (automation.compatibility.hosts.includes(host)) {
+              return [host, { state: 'compatible' }];
+            }
+            const declared = (automation.compatibility.unavailableHosts || [])
+              .find((item) => item.id === host);
+            return [host, declared ? {
+              state: 'unavailable',
+              reasonCode: declared.reasonCode,
+              reason: declared.reason
+            } : {
+              state: 'unavailable',
+              reasonCode: 'AUTOMATION_HOST_NOT_DECLARED_COMPATIBLE',
+              reason: 'The Automation manifest does not declare this host compatible.'
+            }];
+          })
+      ),
       effects: [...automation.effects],
       requiredCapabilities: automation.capabilities.requires.map((item) => item.id).sort(compareText),
       dependencies: automation.dependencies.map((item) => item.pack).sort(compareText),
       bindings: (configuration?.bindings || []).map((item) => item.capability + ' → ' + item.providerPack).sort(compareText),
       operator,
       scenarios: automationScenarios.map((entry) => {
-        const targetPath = repoRelativePath(path.resolve(path.dirname(entry.file), '..', '..', '..'), entry.file);
-        const migrationItem = migrationDoc?.items.find((item) => item.targetPath.endsWith(path.basename(entry.file)));
         const execution = scenarioExecution(entry, configuration, fixtureDocs);
         return {
           id: entry.value.id,
@@ -553,7 +748,7 @@ function buildWorkflows({ root, schemas, diagnostics, packs, scenarios, migratio
           invariants: [...entry.value.expected.invariants],
           evidence: [...entry.value.expected.evidence],
           sourceCases: [...entry.value.sourceCases],
-          migrationState: migrationItem?.state || (targetPath ? 'unknown' : 'unknown'),
+          migrationState: migrationStateForScenario(root, entry, migrationDoc),
           execution
         };
       }).sort((left, right) => compareText(left.id, right.id)),
@@ -673,7 +868,10 @@ function operationPlanTimeline(checkpoint) {
       outputFingerprint: step.outputFingerprint,
       details: step.error
         ? 'Stopped with a ' + (step.error.kind || 'normalized') + ' error; private message excluded.'
-        : step.id === checkpoint.currentStepId ? 'Current step' : 'Sequential plan step'
+        : step.call?.pagination
+          ? 'Cursor-paged capability; ' + step.call.pagination.pages.length
+            + ' normalized page receipt(s); cursor values and private payload excluded.'
+          : step.id === checkpoint.currentStepId ? 'Current step' : 'Sequential plan step'
     };
   });
 }
@@ -707,9 +905,6 @@ function runtimeActivity(root, schemas, diagnostics) {
       }));
       continue;
     }
-    if (raw.$contract === 'soter://contracts/connected-transaction-checkpoint/v1') {
-      continue;
-    }
     let checkpoint;
     try {
       checkpoint = getDurableHostExecution({ root, checkpointId: raw.id }).checkpoint;
@@ -740,7 +935,10 @@ function runtimeActivity(root, schemas, diagnostics) {
           outputFingerprint: call?.outputFingerprint || null,
           details: call?.error
             ? 'Stopped with a ' + (call.error.kind || 'normalized') + ' error; private message excluded.'
-            : 'Private checkpoint metadata; payload excluded.'
+            : call?.pagination
+              ? 'Cursor-paged capability; ' + call.pagination.pages.length
+                + ' normalized page receipt(s); cursor values and private payload excluded.'
+              : 'Private checkpoint metadata; payload excluded.'
         }];
     items.push({
       id: checkpoint.id,
@@ -965,6 +1163,80 @@ function preparedWorkActivity(root, schemas, diagnostics) {
   return items;
 }
 
+function developmentRunActivity(root, diagnostics) {
+  const directory = path.join(root, '.soter', 'state', 'development-requests');
+  const items = [];
+  for (const file of walkJson(directory)) {
+    let requestId;
+    try {
+      requestId = readJson(file).id;
+      const inspection = inspectDevelopmentRun({ root, requestId });
+      const timeline = [{
+        id: inspection.request.id + ':request',
+        sequence: 1,
+        label: 'Exact private development request',
+        state: 'requested',
+        kind: 'development-request',
+        at: inspection.request.createdAt,
+        capability: null,
+        provider: null,
+        authority: 'request-scoped-development',
+        inputFingerprint: inspection.request.fingerprint,
+        outputFingerprint: null,
+        details: inspection.invocation.kind + ' · private target paths and requested outcome excluded'
+      }];
+      if (inspection.result) {
+        timeline.push({
+          id: inspection.result.id,
+          sequence: 2,
+          label: 'Scoped development evidence',
+          state: inspection.result.state,
+          kind: 'development-result',
+          at: inspection.result.completedAt,
+          capability: null,
+          provider: null,
+          authority: 'development-evidence-only',
+          inputFingerprint: inspection.request.fingerprint,
+          outputFingerprint: inspection.result.fingerprint,
+          details: String(inspection.progress.completedRuns) + ' of '
+            + String(inspection.progress.totalRuns) + ' planned worker runs recorded'
+        });
+      }
+      items.push({
+        id: inspection.request.id,
+        automationId: inspection.workflow.id,
+        source: 'runtime',
+        kind: 'development-run',
+        label: labelFor(inspection.workflow.id),
+        state: inspection.progress.state,
+        createdAt: inspection.request.createdAt,
+        updatedAt: inspection.result?.completedAt || inspection.request.createdAt,
+        host: inspection.host.id,
+        provider: null,
+        capability: null,
+        configurationLockFingerprint: inspection.configuration.lockFingerprint,
+        graphFingerprint: inspection.configuration.graphFingerprint,
+        recoveryId: null,
+        developmentRef: {
+          requestId: inspection.request.id,
+          resultId: inspection.result?.id || null
+        },
+        timeline,
+        evidence: []
+      });
+    } catch (error) {
+      diagnostics.push(scopedDiagnostic({
+        code: error?.code || 'SOTER_INSPECTION_DEVELOPMENT_RUN_INVALID',
+        source: 'runtime-state',
+        subject: requestId || repoRelativePath(root, file),
+        message: 'Private development state is unavailable or invalid; private error details were withheld.',
+        remediation: 'Inspect or repair the exact private development request and result state before relying on it.'
+      }));
+    }
+  }
+  return items;
+}
+
 export function inspectWorkspace({ root = DEFAULT_ROOT } = {}) {
   const resolvedRoot = path.resolve(root);
   const diagnostics = [];
@@ -980,7 +1252,7 @@ export function inspectWorkspace({ root = DEFAULT_ROOT } = {}) {
   const providers = loadDirectory(resolvedRoot, 'soter/providers', schemas, diagnostics)
     .filter((entry) => entry.value.$contract === 'soter://contracts/capability-provider/v1');
   const hosts = loadDirectory(resolvedRoot, 'soter/hosts', schemas, diagnostics)
-    .filter((entry) => entry.value.$contract === 'soter://contracts/host-adapter/v1');
+    .filter((entry) => entry.value.$contract === 'soter://contracts/host-adapter/v2');
   const scenarios = loadDirectory(resolvedRoot, 'soter/scenarios', schemas, diagnostics)
     .filter((entry) => entry.value.$contract === 'soter://contracts/scenario/v1');
   const migrations = loadDirectory(resolvedRoot, 'soter/migrations', schemas, diagnostics)
@@ -1004,11 +1276,23 @@ export function inspectWorkspace({ root = DEFAULT_ROOT } = {}) {
   const proof = proofSnapshot(resolvedRoot, verification, configurations, fixtureDocs, diagnostics);
   const catalog = buildCatalog({ packs, capabilities, providers, hosts, configurations });
   const graph = buildGraph({ catalog, packs, providers, configurations });
-  const workflows = buildWorkflows({ root: resolvedRoot, schemas, diagnostics, packs, scenarios, migrations, configurations, fixtureDocs });
+  const workflows = buildWorkflows({
+    root: resolvedRoot,
+    schemas,
+    diagnostics,
+    packs,
+    hosts,
+    scenarios,
+    migrations,
+    configurations,
+    configurationMemberships: maturityVerification.resolvedConfigurations,
+    fixtureDocs
+  });
   const activity = [
     ...fixtureActivity(fixtureDocs),
     ...runtimeActivity(resolvedRoot, schemas, diagnostics),
     ...preparedWorkActivity(resolvedRoot, schemas, diagnostics),
+    ...developmentRunActivity(resolvedRoot, diagnostics),
     ...connectedTransactionActivity(resolvedRoot, diagnostics)
   ]
     .sort((left, right) => compareText(right.updatedAt || '', left.updatedAt || '') || compareText(left.id, right.id));

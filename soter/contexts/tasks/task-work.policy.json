@@ -1,0 +1,13 @@
+{
+  "$contract": "soter://contexts/tasks/task-work-policy/v1",
+  "contractVersion": "1.0.0",
+  "id": "policy.context.tasks.task-work",
+  "name": "Tasks",
+  "createRequiresConfirmation": true,
+  "duplicateCandidateLimit": 10,
+  "duplicateKeyFields": ["title"],
+  "defaultStatus": "To Do",
+  "allowedContexts": ["Internal", "Service", "Project", "Client"],
+  "projectRequired": true,
+  "assigneePolicy": "current-user-or-unassigned"
+}

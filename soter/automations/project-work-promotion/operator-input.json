@@ -1,0 +1,47 @@
+{
+  "$contract": "soter://contracts/automation-input/v1",
+  "contractVersion": "1.0.0",
+  "id": "input.automation.project-work-promotion",
+  "automation": "automation.project-work-promotion",
+  "version": "1.0.0",
+  "fields": [
+    {
+      "id": "project",
+      "label": "Project reference",
+      "description": "Exact project identity containing the current work item.",
+      "type": "reference",
+      "required": true,
+      "exposure": "identifier",
+      "reference": { "subject": "projects.records.project", "authorityRole": "instance" },
+      "constraints": { "minLength": 3, "maxLength": 500 }
+    },
+    {
+      "id": "workItemAction",
+      "label": "Work-item action",
+      "description": "Private exact action text that must resolve once to an unchecked governed project work item.",
+      "type": "string",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minLength": 1, "maxLength": 1000 }
+    },
+    {
+      "id": "disposition",
+      "label": "Execution disposition",
+      "description": "Explicit operator judgment: create a tracked Task or complete a coordination-only item in place. Automation never infers this boundary.",
+      "type": "enum",
+      "required": true,
+      "exposure": "identifier",
+      "options": ["tracked-execution", "coordination-only"]
+    },
+    {
+      "id": "assignee",
+      "label": "Assignee",
+      "description": "Optional authenticated-self assignment for tracked execution; arbitrary person identifiers are not accepted.",
+      "type": "enum",
+      "required": false,
+      "exposure": "identifier",
+      "options": ["self"]
+    }
+  ],
+  "additionalInputs": false
+}

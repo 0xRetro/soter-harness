@@ -1,0 +1,32 @@
+{
+  "$contract": "soter://contracts/context-record-model/v1",
+  "contractVersion": "1.0.0",
+  "id": "model.context.onchain.records",
+  "pack": "context.onchain",
+  "version": "0.1.0",
+  "subject": "onchain.records",
+  "recordTypes": [
+    {
+      "id": "address",
+      "summary": "One public onchain account identity and its governed organizational purpose without credential or signing material.",
+      "fields": [
+        { "id": "address", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": false, "summary": "The exact public account address as observed." },
+        { "id": "network", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": false, "summary": "The governed network on which the account identity exists." },
+        { "id": "addressType", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The governed wallet, safe, contract, or other public-account classification." },
+        { "id": "label", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The exact internal label used to identify the public account." },
+        { "id": "function", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The factual organizational function assigned to the public account." },
+        { "id": "organizationUris", "type": "string-list", "requiredOnCreate": false, "nullable": false, "mutable": true, "reference": { "subject": "crm.records.organization", "identity": "resource-uri" }, "summary": "Exact related organization resource identities." },
+        { "id": "verificationProcessUris", "type": "string-list", "requiredOnCreate": false, "nullable": false, "mutable": true, "reference": { "subject": "process.records.process-definition", "identity": "resource-uri" }, "summary": "Exact process definitions permitted to establish account verification." },
+        { "id": "verificationRunUris", "type": "string-list", "requiredOnCreate": false, "nullable": false, "mutable": true, "reference": { "subject": "process.records.process-run", "identity": "resource-uri" }, "summary": "Exact completed process-run evidence identities supporting the current verification state." },
+        { "id": "verified", "type": "boolean", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "Whether current linked evidence satisfies the governed verification rule." }
+      ],
+      "content": { "kind": "none", "requiredOnCreate": false, "summary": "Address records contain public identity and governance facts only." },
+      "deduplicationFields": ["network", "address"]
+    }
+  ],
+  "limitations": [
+    "The governed context.onchain vocabulary artifact owns the exact current address term and definition.",
+    "Private keys, seed phrases, signing material, credentials, and transaction payloads are structurally outside this portable record model.",
+    "A verified value is only a domain field; it grants no signing, dispatch, transaction, provider-write, or execution authority."
+  ]
+}

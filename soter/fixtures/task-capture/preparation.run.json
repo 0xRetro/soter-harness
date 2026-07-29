@@ -1,0 +1,361 @@
+{
+  "$contract": "soter://contracts/run-envelope/v1",
+  "contractVersion": "1.0.0",
+  "id": "run.task-capture.preparation-fixture",
+  "createdAt": "2026-07-16T15:00:00.000Z",
+  "requestedOutcome": "Prepare one exact task-create review and stop before change-set issuance, approval, or provider writes.",
+  "initiation": "user-requested",
+  "intent": "operate",
+  "lifecycleState": "paused",
+  "automation": {
+    "id": "automation.task-capture",
+    "version": "0.2.0"
+  },
+  "configurationLock": {
+    "path": "soter/fixtures/task-capture/task-capture.lock.json",
+    "fingerprint": "sha256:56ec4abbbc6e05fde52bf201a8b4fe797b8e2a2a17ca1077a15b684bea593908"
+  },
+  "graphFingerprint": "sha256:d26b8bbc93e81dcee157108e67ac759d06de147484f6d6dfe2cfb88328a681a8",
+  "context": [
+    {
+      "subject": "notion.workspace",
+      "authority": "authority.notion.provider",
+      "role": "provider",
+      "uri": "soter-fixture://configuration-template/notion/account/operator",
+      "declarationFingerprint": "sha256:e3e11d347b7a0109668facaeb7b12311023da39949d1328bfd918c53a406c756",
+      "status": "loaded",
+      "provenance": "fixture:sha256:dae95c877af263c6353f0a858b2879a473fd2d0d9d1d4b799b8982c4d116068a",
+      "freshness": "passed"
+    },
+    {
+      "subject": "projects.records",
+      "authority": "authority.projects.definition",
+      "role": "definition",
+      "uri": "soter-fixture://configuration-template/notion/authority/project-policies",
+      "declarationFingerprint": "sha256:38ef148b0f7fad382cea8e4b30d5bd9b818c24ab8ad88e0c90d207502fc9801c",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:56ec4abbbc6e05fde52bf201a8b4fe797b8e2a2a17ca1077a15b684bea593908",
+      "freshness": "unknown"
+    },
+    {
+      "subject": "projects.records",
+      "authority": "authority.projects.instance",
+      "role": "instance",
+      "uri": "soter-fixture://configuration-template/notion/authority/projects",
+      "declarationFingerprint": "sha256:b1dfd54735725df3f95b6219c9b810b6504a34cb9953d61a30b7b470a82f40fd",
+      "status": "loaded",
+      "provenance": "fixture:sha256:4844f34c44ede48c29ff0fccd062e5b3dfabc7b831452745e80f5f5160ff05cf",
+      "freshness": "passed"
+    },
+    {
+      "subject": "runtime.runs",
+      "authority": "authority.run.evidence",
+      "role": "evidence",
+      "uri": "soter-state://runs",
+      "declarationFingerprint": "sha256:b6e3b94a81e9cf35143a6c5e6e686a4ea26b27bbdd09eaa5ccb559a361a45a5e",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:56ec4abbbc6e05fde52bf201a8b4fe797b8e2a2a17ca1077a15b684bea593908",
+      "freshness": "unknown"
+    },
+    {
+      "subject": "tasks.records",
+      "authority": "authority.tasks.definition",
+      "role": "definition",
+      "uri": "soter-fixture://configuration-template/notion/authority/policies",
+      "declarationFingerprint": "sha256:5971c298160d0fa0be94988871c095c041ddeb3322f146d569a53c6278264e27",
+      "status": "loaded",
+      "provenance": "fixture:sha256:10d71809655e0834dddd036e37c1878cfaeb8f95006a40aa4c49c451079c7313",
+      "freshness": "passed"
+    },
+    {
+      "subject": "tasks.records",
+      "authority": "authority.tasks.instance",
+      "role": "instance",
+      "uri": "soter-fixture://configuration-template/notion/authority/tasks",
+      "declarationFingerprint": "sha256:dfe1d5e14a986b4f20136d82d34ede26b2d1e0e78a31f10cd6a013876a77c6cf",
+      "status": "loaded",
+      "provenance": "fixture:sha256:c4d3f9b73a8841d97090b67325de9126c5a0618346607315266a6496aeb06541",
+      "freshness": "passed"
+    }
+  ],
+  "bindings": [
+    {
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.projects.definition",
+        "authority.projects.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Notion resolves the exact selected Project without transferring Project ownership into Task Context."
+    },
+    {
+      "capability": "tasks.records.create",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.tasks.instance"
+      ],
+      "effects": [
+        "write"
+      ],
+      "reason": "A separately approved exact operation may later create one mapped Task through the configured Tasks authority."
+    },
+    {
+      "capability": "tasks.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.tasks.definition",
+        "authority.tasks.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Notion is the configured authority for the Task policy and bounded Task duplicate candidates."
+    },
+    {
+      "capability": "tasks.schema.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.tasks.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Notion supplies one current normalized Task schema observation so provider choice values cannot be assumed from portable Context vocabulary."
+    },
+    {
+      "capability": "workspace.identity.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.notion.provider"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Notion resolves an optional current-user assignee through the exact authenticated workspace identity."
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0",
+    "projectionDefinition": {
+      "id": "host-projection.codex",
+      "version": "0.3.0",
+      "path": "soter/hosts/codex/projection.json",
+      "fingerprint": "sha256:76cd84436a3b5e7f00edcc8a0be3cdff64f53e488b13107a8bf56603b9600490"
+    },
+    "projectionGenerator": {
+      "id": "core.host-projection-generator",
+      "version": "2.1.0"
+    }
+  },
+  "effectPolicies": {
+    "read": {
+      "mode": "allow",
+      "reason": "Selected policy, project, and bounded task candidates may be read for private preparation."
+    },
+    "disclosure": {
+      "mode": "allow",
+      "reason": "Selected records may enter the configured private run envelope with explicit minimization."
+    },
+    "write": {
+      "mode": "confirm",
+      "reason": "Every exact task-create batch requires a fresh confirmation and separately consumed one-time start authorization."
+    },
+    "dispatch": {
+      "mode": "prohibit",
+      "reason": "Task Capture does not send messages or publish notifications."
+    },
+    "destructive": {
+      "mode": "prohibit",
+      "reason": "Task Capture never deletes records or performs destructive changes."
+    }
+  },
+  "approvals": [],
+  "checkpoints": [
+    {
+      "id": "effects-established",
+      "state": "passed",
+      "details": "Read and disclosure policies were evaluated before each fixture invocation."
+    },
+    {
+      "id": "task-create-review-grounded",
+      "state": "passed",
+      "details": "The exact policy, project, and bounded duplicate candidates were loaded without retaining raw private input values."
+    },
+    {
+      "id": "write-boundary-held",
+      "state": "passed",
+      "details": "No change set, approval request, continuation request, provider call, or canonical write was issued."
+    }
+  ],
+  "outputs": [
+    {
+      "id": "context.task-capture.preparation-fixture",
+      "type": "context-snapshot",
+      "fingerprint": "sha256:c30d501d257ee16608564f84e2dab81e1adf081ec5d795d819f789626be3dcaf"
+    }
+  ],
+  "effects": [
+    {
+      "id": "effect.task-capture.preparation.policy.fixture",
+      "capability": "tasks.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.tasks.definition",
+      "startedAt": "2026-07-16T15:00:00.000Z",
+      "completedAt": "2026-07-16T15:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected policy, project, and bounded task candidates may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:0ccfce214fc97fa3c9c56904f1674602a9495fe339d14b7b1b5e36d6ef85e001",
+      "state": "passed",
+      "outputFingerprint": "sha256:a6d3de61ae912fe5e38a9321bddb8b27d5bde713c0fa761397c705001ef827b7",
+      "error": null
+    },
+    {
+      "id": "effect.task-capture.preparation.project.fixture",
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.projects.instance",
+      "startedAt": "2026-07-16T15:00:00.000Z",
+      "completedAt": "2026-07-16T15:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected policy, project, and bounded task candidates may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:ae05d383d4f3c959cd5f97c498f27932047523747c265889c62940c5271e7596",
+      "state": "passed",
+      "outputFingerprint": "sha256:b3e00786691fb400c3ab643538b947c81a48d73d472503ac986f5caaadf3334d",
+      "error": null
+    },
+    {
+      "id": "effect.task-capture.preparation.identity.fixture",
+      "capability": "workspace.identity.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.notion.provider",
+      "startedAt": "2026-07-16T15:00:00.000Z",
+      "completedAt": "2026-07-16T15:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected policy, project, and bounded task candidates may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:ff2c001fb537a7acdcb20d610990ea83ca5dbf09e7ac76375b88f9eb3f4cda15",
+      "state": "passed",
+      "outputFingerprint": "sha256:4c30a8b44ee7c1e9516f854ee003822baf80f497a35ece383ae88e5112532dcc",
+      "error": null
+    },
+    {
+      "id": "effect.task-capture.preparation.duplicates.fixture",
+      "capability": "tasks.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.tasks.instance",
+      "startedAt": "2026-07-16T15:00:00.000Z",
+      "completedAt": "2026-07-16T15:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected policy, project, and bounded task candidates may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:76215f9784d52684c40d67841b827e82a04c1236f7b0d36db71f5593c315fddc",
+      "state": "passed",
+      "outputFingerprint": "sha256:d652f5d38b0f6b758173a4c3ee8198fa62f99f9505c7293c2b2d4adc2e075511",
+      "error": null
+    }
+  ],
+  "evidenceIds": [],
+  "scenario": {
+    "id": "task-capture.preparation",
+    "path": "soter/scenarios/task-capture/preparation.scenario.json",
+    "fingerprint": "sha256:4899e1f0b2f951427e984da3eab172230f6ccad6f0fb2597acd15908c89bd9ea"
+  }
+}

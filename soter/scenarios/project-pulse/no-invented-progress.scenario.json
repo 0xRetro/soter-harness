@@ -6,20 +6,23 @@
   "intent": "operate",
   "input": {
     "project": {
-      "fixtureId": "project.pulse-sparse",
+      "fixtureId": "https://www.notion.so/33333333333333333333333333333331",
       "referenceState": "resolvable",
       "promotedTasksState": "insufficient-for-percentage",
       "milestoneState": "partial"
     },
     "request": {
       "asksForCompletionPercentages": true
-    }
+    },
+    "healthJudgment": "on-track",
+    "healthMilestones": []
   },
   "expected": {
     "capabilityOrder": [
-      "crm.records.read",
-      "crm.records.read",
-      "crm.records.read"
+      "projects.records.read",
+      "projects.records.read",
+      "tasks.records.read",
+      "documents.content.read"
     ],
     "effectModes": {
       "read": "allow",

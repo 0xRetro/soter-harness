@@ -6,7 +6,7 @@
   "additionalProperties": false,
   "required": [
     "$contract", "contractVersion", "id", "createdAt", "updatedAt", "state",
-    "request", "approval", "configurationLockFingerprint", "runId",
+    "request", "approval", "configuration", "configurationLockFingerprint", "runId",
     "batchId", "batchFingerprint", "checkpointId", "checkpointFingerprint",
     "consumptionFingerprint"
   ],
@@ -19,6 +19,7 @@
     "state": { "enum": ["reserved", "started"] },
     "request": { "$ref": "#/$defs/reference" },
     "approval": { "$ref": "#/$defs/reference" },
+    "configuration": { "$ref": "#/$defs/configurationSelection" },
     "configurationLockFingerprint": { "$ref": "#/$defs/fingerprint" },
     "runId": { "type": "string", "minLength": 1 },
     "batchId": { "type": "string", "minLength": 1 },
@@ -35,6 +36,25 @@
       "properties": {
         "id": { "type": "string", "minLength": 1 },
         "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "configurationSelection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name", "configurationBasis", "path", "lockPath",
+        "lockFingerprint", "graphFingerprint"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "configurationBasis": { "const": "private-active" },
+        "path": { "type": "string", "minLength": 1 },
+        "lockPath": { "type": "string", "minLength": 1 },
+        "lockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "graphFingerprint": { "$ref": "#/$defs/fingerprint" }
       }
     }
   }

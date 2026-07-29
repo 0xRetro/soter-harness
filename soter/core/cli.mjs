@@ -3,8 +3,8 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { workflowEvidenceBasisForPath } from '../kernel/workflow-evidence-bases.mjs';
 import { formatDoctorReport, runConnectedDoctor, runOfflineDoctor } from './doctor.mjs';
-import { assembleMeetingIntakeContext } from './context.mjs';
 import {
   finalizeMeetingIntakeConnectedContext,
   prepareMeetingIntakeConnectedContext
@@ -14,6 +14,32 @@ import {
   prepareEmailTriageConnectedAcquisition
 } from '../automations/email-triage/context.mjs';
 import {
+  finalizeTaskCaptureConnectedAcquisition,
+  prepareTaskCaptureConnectedAcquisition
+} from '../automations/task-capture/context.mjs';
+import {
+  finalizeOrganizationCaptureConnectedAcquisition,
+  prepareOrganizationCaptureConnectedAcquisition
+} from '../automations/organization-capture/context.mjs';
+import {
+  finalizeProjectCaptureConnectedAcquisition,
+  prepareProjectCaptureConnectedAcquisition
+} from '../automations/project-capture/context.mjs';
+import {
+  finalizeContactCaptureConnectedAcquisition,
+  prepareContactCaptureConnectedAcquisition
+} from '../automations/contact-capture/context.mjs';
+import {
+  finalizeProjectPulseConnectedAcquisition,
+  prepareProjectPulseConnectedAcquisition
+} from '../automations/project-pulse/context.mjs';
+import {
+  finalizeSlackConversationReviewConnectedAcquisition,
+  inspectSlackConversationReviewConnected,
+  inspectSlackConversationReviewConnectedPrivateReview,
+  prepareSlackConversationReviewConnectedAcquisition
+} from '../automations/slack-conversation-review/context.mjs';
+import {
   commitMeetingIntakeDecision,
   inspectMeetingIntakeDecisionContext
 } from '../automations/meeting-intake/decision.mjs';
@@ -22,17 +48,69 @@ import {
   inspectEmailTriageDecisionContext
 } from '../automations/email-triage/decision.mjs';
 import {
+  commitTaskCaptureDecision,
+  inspectTaskCaptureDecisionContext
+} from '../automations/task-capture/decision.mjs';
+import {
+  commitOrganizationCaptureDecision,
+  inspectOrganizationCaptureDecisionContext
+} from '../automations/organization-capture/decision.mjs';
+import {
+  commitProjectCaptureDecision,
+  inspectProjectCaptureDecisionContext
+} from '../automations/project-capture/decision.mjs';
+import {
+  commitContactCaptureDecision,
+  inspectContactCaptureDecisionContext
+} from '../automations/contact-capture/decision.mjs';
+import {
+  commitProjectPulseDecision,
+  inspectProjectPulseDecisionContext
+} from '../automations/project-pulse/decision.mjs';
+import {
   commitEmailTriageProposal,
   inspectEmailTriageProposalDecision,
   inspectEmailTriageProposalMaterial
 } from '../automations/email-triage/proposal.mjs';
 import {
-  createContextAssemblyEvidence,
-  createContainedTransactionEvidence,
+  commitTaskCaptureProposal,
+  inspectTaskCaptureProposalDecision,
+  inspectTaskCaptureProposalMaterial
+} from '../automations/task-capture/proposal.mjs';
+import {
+  commitOrganizationCaptureProposal,
+  inspectOrganizationCaptureProposalDecision,
+  inspectOrganizationCaptureProposalMaterial
+} from '../automations/organization-capture/proposal.mjs';
+import {
+  commitProjectCaptureProposal,
+  inspectProjectCaptureProposalDecision,
+  inspectProjectCaptureProposalMaterial
+} from '../automations/project-capture/proposal.mjs';
+import {
+  commitContactCaptureProposal,
+  inspectContactCaptureProposalDecision,
+  inspectContactCaptureProposalMaterial
+} from '../automations/contact-capture/proposal.mjs';
+import {
+  commitProjectPulseProposal,
+  inspectProjectPulseProposalDecision,
+  inspectProjectPulseProposalMaterial
+} from '../automations/project-pulse/proposal.mjs';
+import {
+  commitMeetingIntakeProposal,
+  inspectMeetingIntakeProposalDecision,
+  inspectMeetingIntakeProposalMaterial
+} from '../automations/meeting-intake/proposal.mjs';
+import {
   createResolutionEvidence,
   createRunPreparationEvidence
 } from './evidence.mjs';
-import { checkSoterFixtures, writeSoterFixtures } from './fixtures.mjs';
+import {
+  checkSoterFixtures,
+  writeLegacyFinalizationFixtures,
+  writeSoterFixtures
+} from './fixtures.mjs';
 import {
   buildConfigurationView,
   formatConfigurationView
@@ -40,9 +118,17 @@ import {
 import {
   readJson,
   readPrivateJsonInput,
+  repoRelativePath,
   resolveRepoPath,
   writeJson
 } from './lib/canonical-json.mjs';
+import {
+  readLegacyFinalizationFixtureRequest
+} from './legacy-finalization.mjs';
+import {
+  inspectLegacyCheckerRunProjection,
+  inspectLegacyCheckerRunReceipt
+} from '../kernel/legacy-checker-run.mjs';
 import {
   fingerprintLock,
   lockMatchesResolution,
@@ -58,29 +144,18 @@ import {
   getDurableHostExecution,
   getDurableProviderProbeObservation,
   listDurableHostExecutions,
-  prepareDurableCapabilityExecution,
   prepareDurableConnectedTransactionExecution,
   prepareDurableConnectedTransactionReconciliation,
-  prepareDurableOperationPlanExecution,
   prepareDurableProviderProbeExecution
 } from './service.mjs';
 import {
-  proposeDurableMeetingIntakeChangeSet,
-  runContainedMeetingIntakeTransaction
-} from '../automations/meeting-intake/transaction.mjs';
-import {
-  compileConnectedOperationBatch
-} from './connected-transactions.mjs';
-import {
-  beginConnectedApprovalRequest,
   beginProposalConnectedApprovalRequest,
-  confirmConnectedApprovalRequest,
-  confirmProposalConnectedApprovalRequest,
-  readConnectedApprovalRequest
+  confirmProposalConnectedApprovalRequest
 } from './operator-authority.mjs';
 import { createProposalConnectedBatch } from './proposal-connected-batches.mjs';
 import { inspectConnectedApprovalReviewMaterial } from './connected-approval-review.mjs';
 import { inspectConnectedOperatorActivity } from './operator-inspection.mjs';
+import { inspectConnectedAcceptance } from './connected-acceptance-inspection.mjs';
 import {
   inspectPreparedAutomationDerivedReviewMaterial,
   inspectPreparedAutomationReviewMaterial,
@@ -122,6 +197,48 @@ import {
   preparePackInstallExecution,
   recoverPackInstall
 } from './pack-installs.mjs';
+import {
+  buildDevelopmentEvaluationInvocation,
+  inspectDevelopmentRun,
+  prepareDevelopmentRequest,
+  recordDevelopmentResult
+} from './development-runs.mjs';
+import { materializeDevelopmentCandidateLock } from './development-candidate-locks.mjs';
+import {
+  finalizeDevelopmentHostEvaluation,
+  runDevelopmentHostEvaluation,
+  runDevelopmentHostJudgment
+} from './development-host-runner.mjs';
+import {
+  buildDevelopmentHistoricalEvidenceBatchRequest,
+  executeDevelopmentHistoricalEvidenceBatch,
+  inspectDevelopmentHistoricalEvidenceBatch,
+  recoverDevelopmentHistoricalEvidenceBatch
+} from './development-historical-evidence-batch.mjs';
+import {
+  buildDevelopmentHostEvidenceFinalizationRequest,
+  finalizeDevelopmentHostEvidenceBatch,
+  rollbackCompletedDevelopmentHostEvidenceFinalization,
+  verifyDevelopmentHostEvidenceFinalization
+} from './development-host-evidence-finalization.mjs';
+import {
+  buildDevelopmentWorkflowLifecycleFinalizationRequest,
+  planDevelopmentWorkflowLifecycleFinalization
+} from './development-workflow-lifecycle-finalization.mjs';
+import {
+  buildRepositoryCutoverRequest,
+  executeRepositoryCutover,
+  inspectRepositoryCutover,
+  prepareRepositoryCutover,
+  recoverRepositoryCutover,
+  rollbackRepositoryCutover
+} from './repository-cutover.mjs';
+import {
+  buildLegacyFinalizationTransitionRequest
+} from './legacy-transition-finalization.mjs';
+import {
+  persistCanonicalPrivateRequest
+} from './private-request-files.mjs';
 
 const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -150,6 +267,37 @@ function requiredOption(args, name) {
   const value = option(args, name);
   if (!value) throw new Error('Missing required option ' + name + '.');
   return value;
+}
+
+function assertExactCommandArguments(args, {
+  valueOptions = [],
+  flagOptions = [],
+  repeatableValueOptions = []
+}) {
+  const repeatableValues = new Set(repeatableValueOptions);
+  const allowedValues = new Set(['--root', ...valueOptions, ...repeatableValues]);
+  const allowedFlags = new Set(['--json', ...flagOptions]);
+  const observed = new Set();
+  for (let index = 1; index < args.length; index += 1) {
+    const argument = args[index];
+    if (allowedFlags.has(argument)) {
+      if (observed.has(argument)) throw new Error('Duplicate option ' + argument + '.');
+      observed.add(argument);
+      continue;
+    }
+    if (allowedValues.has(argument)) {
+      if (observed.has(argument) && !repeatableValues.has(argument)) {
+        throw new Error('Duplicate option ' + argument + '.');
+      }
+      observed.add(argument);
+      if (!args[index + 1] || args[index + 1].startsWith('--')) {
+        throw new Error(argument + ' requires a value.');
+      }
+      index += 1;
+      continue;
+    }
+    throw new Error('Unexpected argument for ' + args[0] + ': ' + argument + '.');
+  }
 }
 
 function nowIdPart(createdAt) {
@@ -181,6 +329,37 @@ async function main() {
   const json = args.includes('--json');
   const createdAt = option(args, '--at', new Date().toISOString());
   const idPart = nowIdPart(createdAt);
+
+  if (command === 'legacy-checker-receipt-inspect') {
+    assertExactCommandArguments(args, { valueOptions: ['--receipt-id'] });
+    const receiptId = requiredOption(args, '--receipt-id');
+    const result = inspectLegacyCheckerRunReceipt({ root, receiptId });
+    if (json) print(result);
+    else process.stdout.write(
+      'Inspected historical legacy checker receipt ' + result.receipt.id + '.\n'
+        + 'Receipt fingerprint: ' + result.receipt.receiptFingerprint + '\n'
+        + 'Checker-visible tree: '
+          + result.receipt.basis.checkerVisibleInputTree.treeFingerprint + '\n'
+        + 'Migration or fallback-removal authority: none\n'
+    );
+    return;
+  }
+
+  if (command === 'legacy-checker-projection-inspect') {
+    assertExactCommandArguments(args, {});
+    const projection = inspectLegacyCheckerRunProjection({ root });
+    if (json) print(projection);
+    else process.stdout.write(
+      'Inspected governed sanitized legacy checker projection ' + projection.id + '.\n'
+        + 'Projection fingerprint: ' + projection.projectionFingerprint + '\n'
+        + 'Receipt fingerprint: ' + projection.receipt.fingerprint + '\n'
+        + 'Checker-visible tree: '
+          + projection.basis.checkerVisibleInputTree.treeFingerprint + '\n'
+        + 'Private receipt path or raw output included: no\n'
+        + 'Migration or fallback-removal authority: none\n'
+    );
+    return;
+  }
 
   if (command === 'resolve') {
     const configPath = option(args, '--config');
@@ -698,7 +877,20 @@ async function main() {
 
   if (command === 'doctor') {
     const lockPath = requiredOption(args, '--lock');
-    const lock = readJson(resolveRepoPath(root, lockPath));
+    const resolvedLockPath = resolveRepoPath(root, lockPath);
+    const historicalBasis = workflowEvidenceBasisForPath(
+      repoRelativePath(root, resolvedLockPath)
+    );
+    if (historicalBasis) {
+      const error = new Error(
+        'SOTER_HISTORICAL_EVIDENCE_LOCK_NOT_OPERATIONAL: '
+          + historicalBasis.path
+          + ' is an immutable workflow-evidence basis, not an operational doctor lock.'
+      );
+      error.code = 'SOTER_HISTORICAL_EVIDENCE_LOCK_NOT_OPERATIONAL';
+      throw error;
+    }
+    const lock = readJson(resolvedLockPath);
     const level = option(args, '--level', 'offline');
     if (!['offline', 'connected'].includes(level)) {
       throw new Error('doctor --level must be offline or connected; canary execution is not implemented.');
@@ -729,8 +921,7 @@ async function main() {
             return readJson(resolveRepoPath(root, probePath));
           }),
           ...checkpointObservations.filter((observation) => {
-            return observation.$contract === 'soter://contracts/provider-probe/v1'
-              || observation.$contract === 'soter://contracts/provider-probe/v2';
+            return observation.$contract === 'soter://contracts/provider-probe/v2';
           })
         ],
         providerProbeAttempts: checkpointObservations.filter((observation) => {
@@ -757,23 +948,26 @@ async function main() {
   }
 
   if (command === 'probe-prepare') {
+    if (option(args, '--output')) {
+      throw new Error(
+        'Provider probe checkpoints are private runtime state and cannot be exported.'
+      );
+    }
     const lockPath = requiredOption(args, '--lock');
     const providerImplementation = requiredOption(args, '--provider');
     const prepared = await prepareDurableProviderProbeExecution({
       root,
+      configurationBasis: requiredOption(args, '--configuration-basis'),
       lockPath,
       providerImplementation,
-      callId: option(args, '--call-id'),
       probeId: option(args, '--probe-id'),
       at: createdAt,
       validForSeconds: Number(option(args, '--valid-for-seconds', '300'))
     });
-    const output = option(args, '--output');
-    if (output) writeJson(resolveRepoPath(root, output), prepared.checkpoint);
     if (json) {
       print(prepared);
     } else {
-      const call = prepared.currentCall || prepared.checkpoint.call;
+      const call = prepared.currentCall;
       process.stdout.write(
         'Prepared ' + prepared.checkpoint.id + ' in state ' + prepared.checkpoint.state + '.\n'
           + 'Provider operation: ' + call.transport.server + '/'
@@ -781,7 +975,6 @@ async function main() {
           + 'Native host tool: ' + (call.transport.tool || 'none') + '\n'
           + 'Durable checkpoint: ' + prepared.checkpointPath + '\n'
           + 'Raw provider response persistence: disabled by Core\n'
-          + (output ? 'Wrote: ' + output + '\n' : '')
       );
     }
     if (prepared.checkpoint.state !== 'requested') process.exitCode = 1;
@@ -789,22 +982,19 @@ async function main() {
   }
 
   if (command === 'probe-complete') {
+    if (option(args, '--checkpoint-output') || option(args, '--probe-output')) {
+      throw new Error(
+        'Provider probe checkpoints and results are private runtime state and cannot be exported.'
+      );
+    }
     const response = readPrivateJsonInput(root, requiredOption(args, '--response'));
     const completed = await completeDurableProviderProbeExecution({
       root,
       checkpointId: requiredOption(args, '--checkpoint'),
-      callId: option(args, '--call'),
+      callId: requiredOption(args, '--call'),
       response,
       at: createdAt
     });
-    const checkpointOutput = option(args, '--checkpoint-output');
-    const probeOutput = option(args, '--probe-output');
-    if (checkpointOutput) {
-      writeJson(resolveRepoPath(root, checkpointOutput), completed.checkpoint);
-    }
-    if (probeOutput && completed.checkpoint.result) {
-      writeJson(resolveRepoPath(root, probeOutput), completed.checkpoint.result);
-    }
     if (json) {
       print(completed);
     } else {
@@ -823,110 +1013,40 @@ async function main() {
             ? 'Probe: ' + completed.checkpoint.result.id + '; capability compatibility remains '
               + completed.checkpoint.result.capabilities.map((item) => item.state).join(', ') + '.\n'
             : '')
-          + (checkpointOutput ? 'Wrote checkpoint: ' + checkpointOutput + '\n' : '')
-          + (probeOutput && completed.checkpoint.result ? 'Wrote probe: ' + probeOutput + '\n' : '')
       );
     }
     if (completed.checkpoint.state === 'failed') process.exitCode = 1;
     return;
   }
 
-  if (command === 'capability-prepare') {
-    const prepared = await prepareDurableCapabilityExecution({
-      root,
-      lockPath: requiredOption(args, '--lock'),
-      runPath: requiredOption(args, '--run'),
-      capability: requiredOption(args, '--capability'),
-      authority: requiredOption(args, '--authority'),
-      providerImplementation: requiredOption(args, '--provider'),
-      input: readJson(resolveRepoPath(root, requiredOption(args, '--input'))),
-      callId: option(args, '--call-id'),
-      at: createdAt
-    });
-    const output = option(args, '--output');
-    if (output) writeJson(resolveRepoPath(root, output), prepared.checkpoint);
-    if (json) {
-      print(prepared);
-    } else {
-      process.stdout.write(
-        'Prepared ' + prepared.checkpoint.id + ' in state ' + prepared.checkpoint.state + '.\n'
-          + (prepared.checkpoint.state === 'requested'
-            ? 'Provider operation: ' + prepared.checkpoint.call.transport.server + '/'
-              + prepared.checkpoint.call.transport.operation + '\n'
-              + 'Native host tool: ' + prepared.checkpoint.call.transport.tool + '\n'
-            : 'Host request emitted: no\n')
-          + 'Durable checkpoint: ' + prepared.checkpointPath + '\n'
-          + 'Durable run: ' + prepared.runPath + '\n'
-          + 'Connected write approval accepted by this command: no\n'
-          + (output ? 'Wrote: ' + output + '\n' : '')
+  if (command === 'capability-complete') {
+    if (option(args, '--checkpoint-output') || option(args, '--output')) {
+      throw new Error(
+        'Capability checkpoints and normalized results are private runtime state and cannot be exported.'
       );
     }
-    if (prepared.checkpoint.state !== 'requested') process.exitCode = 1;
-    return;
-  }
-
-  if (command === 'capability-complete') {
     const completed = await completeDurableCapabilityExecution({
       root,
       checkpointId: requiredOption(args, '--checkpoint'),
+      callId: option(args, '--call'),
       response: readPrivateJsonInput(root, requiredOption(args, '--response')),
       at: createdAt
     });
-    const checkpointOutput = option(args, '--checkpoint-output');
-    const output = option(args, '--output');
-    if (checkpointOutput) {
-      writeJson(resolveRepoPath(root, checkpointOutput), completed.checkpoint);
-    }
-    if (output && completed.checkpoint.result) {
-      writeJson(resolveRepoPath(root, output), completed.checkpoint.result);
-    }
     if (json) {
       print(completed);
     } else {
       process.stdout.write(
-        'Completed ' + completed.checkpoint.id + ' in state '
+        'Advanced ' + completed.checkpoint.id + ' to state '
           + completed.checkpoint.state + '.\n'
           + 'Raw provider response persisted by Core: no\n'
-          + (checkpointOutput ? 'Wrote checkpoint: ' + checkpointOutput + '\n' : '')
-          + (output && completed.checkpoint.result ? 'Wrote output: ' + output + '\n' : '')
+          + (completed.checkpoint.state === 'requested'
+            ? 'Next exact call ID: ' + completed.checkpoint.call.id + '\n'
+              + 'Next provider operation: ' + completed.checkpoint.call.transport.server + '/'
+              + completed.checkpoint.call.transport.operation + '\n'
+            : '')
       );
     }
-    if (completed.checkpoint.state !== 'completed') process.exitCode = 1;
-    return;
-  }
-
-  if (command === 'plan-prepare') {
-    if (option(args, '--output')) {
-      throw new Error(
-        'Operation plan checkpoints are private runtime state and cannot be exported into the repository.'
-      );
-    }
-    const prepared = await prepareDurableOperationPlanExecution({
-      root,
-      lockPath: requiredOption(args, '--lock'),
-      runPath: requiredOption(args, '--run'),
-      plan: readPrivateJsonInput(root, requiredOption(args, '--plan')),
-      at: createdAt
-    });
-    if (json) {
-      print(prepared);
-    } else {
-      const call = prepared.currentCall;
-      process.stdout.write(
-        'Prepared operation plan ' + prepared.checkpoint.plan.id + ' in state '
-          + prepared.checkpoint.state + '.\n'
-          + 'Current step: ' + (prepared.checkpoint.currentStepId || 'none') + '\n'
-          + (call
-            ? 'Provider operation: ' + call.transport.server + '/'
-              + call.transport.operation + '\n'
-              + 'Native host tool: ' + call.transport.tool + '\n'
-              + 'Exact call ID: ' + call.id + '\n'
-            : 'Host request emitted: no\n')
-          + 'Durable checkpoint: ' + prepared.checkpointPath + '\n'
-          + 'Connected write approval accepted by this command: no\n'
-      );
-    }
-    if (!['requested', 'completed'].includes(prepared.checkpoint.state)) process.exitCode = 1;
+    if (!['requested', 'completed'].includes(completed.checkpoint.state)) process.exitCode = 1;
     return;
   }
 
@@ -1000,11 +1120,9 @@ async function main() {
   if (command === 'connected-approval-request') {
     const batch = readDocumentInput(root, requiredOption(args, '--batch'));
     const changeSet = readDocumentInput(root, requiredOption(args, '--change-set'));
-    const begin = batch.$contract === 'soter://contracts/connected-operation-batch/v2'
-      ? beginProposalConnectedApprovalRequest
-      : beginConnectedApprovalRequest;
-    const begun = await begin({
+    const begun = await beginProposalConnectedApprovalRequest({
       root,
+      configurationBasis: requiredOption(args, '--configuration-basis'),
       lockPath: requiredOption(args, '--lock'),
       runPath: requiredOption(args, '--run'),
       batch,
@@ -1036,16 +1154,7 @@ async function main() {
 
   if (command === 'connected-approval-confirm') {
     const requestId = requiredOption(args, '--request-id');
-    const request = readConnectedApprovalRequest({
-      root,
-      requestId,
-      at: createdAt,
-      allowExpired: true
-    });
-    const confirm = request.batch.$contract === 'soter://contracts/connected-operation-batch/v2'
-      ? confirmProposalConnectedApprovalRequest
-      : confirmConnectedApprovalRequest;
-    const confirmed = await confirm({
+    const confirmed = await confirmProposalConnectedApprovalRequest({
       root,
       requestId,
       approvalId: requiredOption(args, '--approval-id'),
@@ -1093,6 +1202,19 @@ async function main() {
     return;
   }
 
+  if (command === 'connected-acceptance-inspect') {
+    assertExactCommandArguments(args, {
+      valueOptions: ['--checkpoint', '--at'],
+      repeatableValueOptions: ['--checkpoint']
+    });
+    print(inspectConnectedAcceptance({
+      root,
+      checkpointIds: options(args, '--checkpoint'),
+      generatedAt: createdAt
+    }));
+    return;
+  }
+
   if (command === 'operator-approval-review') {
     const material = inspectConnectedApprovalReviewMaterial({
       root,
@@ -1107,6 +1229,9 @@ async function main() {
       root,
       automationId: requiredOption(args, '--automation'),
       configurationName: requiredOption(args, '--configuration'),
+      configurationBasis: requiredOption(args, '--configuration-basis'),
+      preparationMode: option(args, '--preparation-mode', 'contained'),
+      expectedHost: option(args, '--host'),
       input: readPrivateJsonInput(root, requiredOption(args, '--input')),
       createdAt
     });
@@ -1115,6 +1240,8 @@ async function main() {
     } else {
       process.stdout.write(
         'Prepared private operator work ' + work.id + ' at state ' + work.state + '.\n'
+          + 'Configuration basis: ' + work.configuration.configurationBasis + '\n'
+          + 'Preparation mode: ' + (work.preparationMode || 'contained') + '\n'
           + 'Configuration applicability: ' + work.configuration.applicability + '\n'
           + 'External writes performed: no\n'
           + 'Approval requested: no\n'
@@ -1275,17 +1402,10 @@ async function main() {
   }
 
   if (command === 'context-connected-prepare') {
+    assertExactCommandArguments(args, { valueOptions: ['--work', '--at'] });
     const prepared = await prepareMeetingIntakeConnectedContext({
       root,
-      lockPath: requiredOption(args, '--lock'),
-      runPath: requiredOption(args, '--run'),
-      snapshotId: option(
-        args,
-        '--snapshot-id',
-        'context.meeting-intake.connected.' + idPart
-      ),
-      meetingId: requiredOption(args, '--meeting-id'),
-      recordingUri: requiredOption(args, '--recording-uri'),
+      workId: requiredOption(args, '--work'),
       at: createdAt
     });
     if (json) {
@@ -1331,16 +1451,10 @@ async function main() {
   }
 
   if (command === 'email-context-connected-prepare') {
+    assertExactCommandArguments(args, { valueOptions: ['--work', '--at'] });
     const prepared = await prepareEmailTriageConnectedAcquisition({
       root,
-      lockPath: requiredOption(args, '--lock'),
-      runPath: requiredOption(args, '--run'),
-      snapshotId: option(
-        args,
-        '--snapshot-id',
-        'context.email-triage.connected-acquisition.' + idPart
-      ),
-      query: requiredOption(args, '--query'),
+      workId: requiredOption(args, '--work'),
       at: createdAt
     });
     if (json) {
@@ -1365,6 +1479,82 @@ async function main() {
     return;
   }
 
+  if (command === 'slack-conversation-context-connected-prepare') {
+    assertExactCommandArguments(args, { valueOptions: ['--work', '--at'] });
+    const prepared = await prepareSlackConversationReviewConnectedAcquisition({
+      root,
+      workId: requiredOption(args, '--work'),
+      at: createdAt
+    });
+    if (json) {
+      print(prepared);
+    } else {
+      const call = prepared.currentCall;
+      process.stdout.write(
+        'Prepared connected Slack conversation review ' + prepared.checkpoint.plan.id
+          + ' in state ' + prepared.checkpoint.state + '.\n'
+          + 'Current source: ' + (prepared.checkpoint.currentStepId || 'none') + '\n'
+          + (call
+            ? 'Provider operation: ' + call.transport.server + '/'
+              + call.transport.operation + '\n'
+              + 'Native host tool: ' + call.transport.tool + '\n'
+              + 'Exact call ID: ' + call.id + '\n'
+            : 'Host request emitted: no\n')
+          + 'Durable checkpoint: ' + prepared.checkpointPath + '\n'
+          + 'Persistence proposal, approval, continuation, retry, or write authority granted: no\n'
+      );
+    }
+    if (!['requested', 'completed'].includes(prepared.checkpoint.state)) process.exitCode = 1;
+    return;
+  }
+
+  if (command === 'slack-conversation-context-connected-finalize') {
+    const finalized = finalizeSlackConversationReviewConnectedAcquisition({
+      root,
+      checkpointId: requiredOption(args, '--checkpoint')
+    });
+    if (json) {
+      print(finalized);
+    } else {
+      process.stdout.write(
+        'Finalized sanitized connected Slack conversation review ' + finalized.snapshot.id + '.\n'
+          + 'Selected conversations: ' + finalized.coverage.selectedConversationCount + '\n'
+          + 'Complete message windows: ' + finalized.coverage.messageWindowCount + '\n'
+          + 'Exact selected threads: ' + finalized.coverage.selectedThreadCount + '\n'
+          + 'Unselected rooted threads expanded: 0\n'
+          + 'Private values or external writes exposed: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'slack-conversation-connected-inspect') {
+    const inspected = inspectSlackConversationReviewConnected({
+      root,
+      workId: requiredOption(args, '--work')
+    });
+    if (json) {
+      print(inspected);
+    } else {
+      process.stdout.write(
+        'Inspected sanitized connected Slack conversation review ' + inspected.snapshot.id + '.\n'
+          + 'Coverage fingerprint: ' + inspected.coverage.coverageFingerprint + '\n'
+          + 'Suspected injection count: ' + inspected.injection.count + '\n'
+          + 'Private values included: no\n'
+          + 'Authority created: no\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'slack-conversation-connected-review') {
+    print(inspectSlackConversationReviewConnectedPrivateReview({
+      root,
+      workId: requiredOption(args, '--work')
+    }));
+    return;
+  }
+
   if (command === 'email-context-connected-finalize') {
     const finalized = finalizeEmailTriageConnectedAcquisition({
       root,
@@ -1382,6 +1572,792 @@ async function main() {
           + 'Triage judgments or external writes executed: 0\n'
       );
     }
+    return;
+  }
+
+  if (command === 'task-context-connected-prepare') {
+    assertExactCommandArguments(args, { valueOptions: ['--work', '--at'] });
+    const prepared = await prepareTaskCaptureConnectedAcquisition({
+      root,
+      workId: requiredOption(args, '--work'),
+      at: createdAt
+    });
+    if (json) {
+      print(prepared);
+    } else {
+      const call = prepared.currentCall;
+      process.stdout.write(
+        'Prepared connected Task acquisition ' + prepared.checkpoint.plan.id
+          + ' in state ' + prepared.checkpoint.state + '.\n'
+          + 'Current source: ' + (prepared.checkpoint.currentStepId || 'none') + '\n'
+          + (call
+            ? 'Provider operation: ' + call.transport.server + '/'
+              + call.transport.operation + '\n'
+              + 'Native host tool: ' + call.transport.tool + '\n'
+              + 'Exact call ID: ' + call.id + '\n'
+            : 'Host request emitted: no\n')
+          + 'Durable checkpoint: ' + prepared.checkpointPath + '\n'
+          + 'Task proposal, approval, continuation, or write authority granted: no\n'
+      );
+    }
+    if (!['requested', 'completed'].includes(prepared.checkpoint.state)) process.exitCode = 1;
+    return;
+  }
+
+  if (command === 'task-context-connected-finalize') {
+    const finalized = finalizeTaskCaptureConnectedAcquisition({
+      root,
+      checkpointId: requiredOption(args, '--checkpoint')
+    });
+    if (json) {
+      print(finalized);
+    } else {
+      process.stdout.write(
+        'Finalized connected Task acquisition snapshot ' + finalized.snapshot.id + '.\n'
+          + 'Entries: ' + finalized.snapshot.entries.length + '\n'
+          + 'Containment: ' + finalized.snapshot.containment + '\n'
+          + 'Run state: ' + finalized.run.lifecycleState + '\n'
+          + 'Private snapshot: ' + finalized.snapshotPath + '\n'
+          + 'Task decisions, proposals, approvals, or external writes executed: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'task-capture-decision-inspect') {
+    const inspected = inspectTaskCaptureDecisionContext({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      snapshotId: requiredOption(args, '--snapshot'),
+      at: createdAt
+    });
+    if (json) {
+      print(inspected);
+    } else {
+      process.stdout.write(
+        'Inspected private Task Capture decision basis ' + inspected.snapshot.id + '.\n'
+          + 'Derived state: ' + inspected.outcome.state + '\n'
+          + 'Duplicate candidates: ' + inspected.outcome.duplicateCandidateCount + '\n'
+          + 'Task fingerprint: ' + inspected.outcome.taskAfterFingerprint + '\n'
+          + 'Decision or write authority created: no\nProvider calls executed: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'task-capture-decision-commit') {
+    const committed = commitTaskCaptureDecision({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      snapshotId: requiredOption(args, '--snapshot'),
+      id: option(args, '--decision-id', 'decision.task-capture.' + idPart),
+      producer: {
+        kind: 'user',
+        id: option(args, '--actor', 'user'),
+        host: null
+      },
+      at: createdAt
+    });
+    if (json) {
+      print(committed);
+    } else {
+      process.stdout.write(
+        'Committed Task Capture decision ' + committed.decision.id + '.\n'
+          + 'State: ' + committed.decision.state + '\n'
+          + 'Decision fingerprint: ' + committed.decision.decisionFingerprint + '\n'
+          + 'Private decision: ' + committed.decisionPath + '\n'
+          + 'Proposal, approval, continuation, or provider writes created: no\n'
+      );
+    }
+    if (committed.decision.state !== 'ready') process.exitCode = 1;
+    return;
+  }
+
+  if (command === 'task-capture-proposal-inspect') {
+    const inspected = inspectTaskCaptureProposalDecision({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      decisionId: requiredOption(args, '--decision')
+    });
+    if (json) {
+      print(inspected);
+    } else {
+      process.stdout.write(
+        'Inspected private Task Capture proposal basis ' + inspected.decision.id + '.\n'
+          + 'Task fingerprint: ' + inspected.decision.taskAfterFingerprint + '\n'
+          + 'Proposal, approval, continuation, and provider writes created: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'task-capture-proposal-commit') {
+    const committed = commitTaskCaptureProposal({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      decisionId: requiredOption(args, '--decision'),
+      id: option(args, '--proposal-id', 'proposal.task-capture.' + idPart),
+      input: {},
+      producer: {
+        kind: 'user',
+        id: option(args, '--actor', 'user'),
+        host: null
+      },
+      at: createdAt
+    });
+    if (json) {
+      print(committed);
+    } else {
+      process.stdout.write(
+        'Committed Task Capture review proposal ' + committed.proposal.id + '.\n'
+          + 'Proposal fingerprint: ' + committed.proposal.proposalFingerprint + '\n'
+          + 'Private proposal: ' + committed.proposalPath + '\n'
+          + 'Selected private material: ' + committed.materialPath + '\n'
+          + 'Approval, continuation, provider calls, and writes created: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'task-capture-proposal-material') {
+    const material = inspectTaskCaptureProposalMaterial({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      proposalId: requiredOption(args, '--proposal')
+    });
+    print(material);
+    return;
+  }
+
+  if (command === 'organization-context-connected-prepare') {
+    assertExactCommandArguments(args, { valueOptions: ['--work', '--at'] });
+    const prepared = await prepareOrganizationCaptureConnectedAcquisition({
+      root,
+      workId: requiredOption(args, '--work'),
+      at: createdAt
+    });
+    if (json) {
+      print(prepared);
+    } else {
+      const call = prepared.currentCall;
+      process.stdout.write(
+        'Prepared connected Organization acquisition ' + prepared.checkpoint.plan.id
+          + ' in state ' + prepared.checkpoint.state + '.\n'
+          + 'Current source: ' + (prepared.checkpoint.currentStepId || 'none') + '\n'
+          + (call
+            ? 'Provider operation: ' + call.transport.server + '/'
+              + call.transport.operation + '\n'
+              + 'Native host tool: ' + call.transport.tool + '\n'
+              + 'Exact call ID: ' + call.id + '\n'
+            : 'Host request emitted: no\n')
+          + 'Durable checkpoint: ' + prepared.checkpointPath + '\n'
+          + 'Organization proposal, approval, continuation, or write authority granted: no\n'
+      );
+    }
+    if (!['requested', 'completed'].includes(prepared.checkpoint.state)) process.exitCode = 1;
+    return;
+  }
+
+  if (command === 'organization-context-connected-finalize') {
+    const finalized = finalizeOrganizationCaptureConnectedAcquisition({
+      root,
+      checkpointId: requiredOption(args, '--checkpoint')
+    });
+    if (json) {
+      print(finalized);
+    } else {
+      process.stdout.write(
+        'Finalized connected Organization acquisition snapshot ' + finalized.snapshot.id + '.\n'
+          + 'Entries: ' + finalized.snapshot.entries.length + '\n'
+          + 'Containment: ' + finalized.snapshot.containment + '\n'
+          + 'Run state: ' + finalized.run.lifecycleState + '\n'
+          + 'Private snapshot: ' + finalized.snapshotPath + '\n'
+          + 'Organization decisions, proposals, approvals, or external writes executed: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'organization-capture-decision-inspect') {
+    const inspected = inspectOrganizationCaptureDecisionContext({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      snapshotId: requiredOption(args, '--snapshot')
+    });
+    if (json) {
+      print(inspected);
+    } else {
+      process.stdout.write(
+        'Inspected private Organization Capture decision basis '
+          + inspected.snapshot.id + '.\n'
+          + 'Derived state: ' + inspected.outcome.state + '\n'
+          + 'Duplicate candidates: ' + inspected.outcome.duplicateCandidateCount + '\n'
+          + 'Schema fingerprint: ' + inspected.outcome.schemaFingerprint + '\n'
+          + 'Organization fingerprint: '
+            + inspected.outcome.organizationAfterFingerprint + '\n'
+          + 'Decision or write authority created: no\nProvider calls executed: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'organization-capture-decision-commit') {
+    const committed = commitOrganizationCaptureDecision({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      snapshotId: requiredOption(args, '--snapshot'),
+      id: option(
+        args,
+        '--decision-id',
+        'decision.organization-capture.' + idPart
+      ),
+      producer: {
+        kind: 'user',
+        id: option(args, '--actor', 'user'),
+        host: null
+      },
+      at: createdAt
+    });
+    if (json) {
+      print(committed);
+    } else {
+      process.stdout.write(
+        'Committed Organization Capture decision ' + committed.decision.id + '.\n'
+          + 'State: ' + committed.decision.state + '\n'
+          + 'Decision fingerprint: ' + committed.decision.decisionFingerprint + '\n'
+          + 'Private decision: ' + committed.decisionPath + '\n'
+          + 'Proposal, approval, continuation, or provider writes created: no\n'
+      );
+    }
+    if (committed.decision.state !== 'ready') process.exitCode = 1;
+    return;
+  }
+
+  if (command === 'organization-capture-proposal-inspect') {
+    const inspected = inspectOrganizationCaptureProposalDecision({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      decisionId: requiredOption(args, '--decision')
+    });
+    if (json) {
+      print(inspected);
+    } else {
+      process.stdout.write(
+        'Inspected private Organization Capture proposal basis '
+          + inspected.decision.id + '.\n'
+          + 'Organization fingerprint: '
+            + inspected.decision.organizationAfterFingerprint + '\n'
+          + 'Proposal, approval, continuation, and provider writes created: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'organization-capture-proposal-commit') {
+    const committed = commitOrganizationCaptureProposal({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      decisionId: requiredOption(args, '--decision'),
+      id: option(
+        args,
+        '--proposal-id',
+        'proposal.organization-capture.' + idPart
+      ),
+      input: {},
+      producer: {
+        kind: 'user',
+        id: option(args, '--actor', 'user'),
+        host: null
+      },
+      at: createdAt
+    });
+    if (json) {
+      print(committed);
+    } else {
+      process.stdout.write(
+        'Committed Organization Capture review proposal ' + committed.proposal.id + '.\n'
+          + 'Proposal fingerprint: ' + committed.proposal.proposalFingerprint + '\n'
+          + 'Private proposal: ' + committed.proposalPath + '\n'
+          + 'Selected private material: ' + committed.materialPath + '\n'
+          + 'Approval, continuation, provider calls, and writes created: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'organization-capture-proposal-material') {
+    const material = inspectOrganizationCaptureProposalMaterial({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      proposalId: requiredOption(args, '--proposal')
+    });
+    print(material);
+    return;
+  }
+
+  if (command === 'project-capture-context-connected-prepare') {
+    assertExactCommandArguments(args, { valueOptions: ['--work', '--at'] });
+    const prepared = await prepareProjectCaptureConnectedAcquisition({
+      root,
+      workId: requiredOption(args, '--work'),
+      at: createdAt
+    });
+    if (json) {
+      print(prepared);
+    } else {
+      const call = prepared.currentCall;
+      process.stdout.write(
+        'Prepared connected Project Capture acquisition ' + prepared.checkpoint.plan.id
+          + ' in state ' + prepared.checkpoint.state + '.\n'
+          + 'Current source: ' + (prepared.checkpoint.currentStepId || 'none') + '\n'
+          + (call
+            ? 'Provider operation: ' + call.transport.server + '/'
+              + call.transport.operation + '\n'
+              + 'Native host tool: ' + call.transport.tool + '\n'
+              + 'Exact call ID: ' + call.id + '\n'
+            : 'Host request emitted: no\n')
+          + 'Durable checkpoint: ' + prepared.checkpointPath + '\n'
+          + 'Project proposal, approval, continuation, or write authority granted: no\n'
+      );
+    }
+    if (!['requested', 'completed'].includes(prepared.checkpoint.state)) process.exitCode = 1;
+    return;
+  }
+
+  if (command === 'project-capture-context-connected-finalize') {
+    const finalized = finalizeProjectCaptureConnectedAcquisition({
+      root,
+      checkpointId: requiredOption(args, '--checkpoint')
+    });
+    if (json) {
+      print(finalized);
+    } else {
+      process.stdout.write(
+        'Finalized connected Project Capture snapshot ' + finalized.snapshot.id + '.\n'
+          + 'Entries: ' + finalized.snapshot.entries.length + '\n'
+          + 'Containment: ' + finalized.snapshot.containment + '\n'
+          + 'Run state: ' + finalized.run.lifecycleState + '\n'
+          + 'Private snapshot: ' + finalized.snapshotPath + '\n'
+          + 'Project decisions, proposals, approvals, or external writes executed: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'project-capture-decision-inspect') {
+    const inspected = inspectProjectCaptureDecisionContext({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      snapshotId: requiredOption(args, '--snapshot')
+    });
+    if (json) {
+      print(inspected);
+    } else {
+      process.stdout.write(
+        'Inspected private Project Capture decision basis ' + inspected.snapshot.id + '.\n'
+          + 'Derived state: ' + inspected.outcome.state + '\n'
+          + 'Duplicate candidates: ' + inspected.outcome.duplicateCandidateCount + '\n'
+          + 'Organization fingerprint: ' + inspected.outcome.organizationFingerprint + '\n'
+          + 'Project fingerprint: ' + inspected.outcome.projectAfterFingerprint + '\n'
+          + 'Decision or write authority created: no\nProvider calls executed: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'project-capture-decision-commit') {
+    const committed = commitProjectCaptureDecision({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      snapshotId: requiredOption(args, '--snapshot'),
+      id: option(args, '--decision-id', 'decision.project-capture.' + idPart),
+      producer: {
+        kind: 'user',
+        id: option(args, '--actor', 'user'),
+        host: null
+      },
+      at: createdAt
+    });
+    if (json) {
+      print(committed);
+    } else {
+      process.stdout.write(
+        'Committed Project Capture decision ' + committed.decision.id + '.\n'
+          + 'State: ' + committed.decision.state + '\n'
+          + 'Decision fingerprint: ' + committed.decision.decisionFingerprint + '\n'
+          + 'Private decision: ' + committed.decisionPath + '\n'
+          + 'Proposal, approval, continuation, or provider writes created: no\n'
+      );
+    }
+    if (committed.decision.state !== 'ready') process.exitCode = 1;
+    return;
+  }
+
+  if (command === 'project-capture-proposal-inspect') {
+    const inspected = inspectProjectCaptureProposalDecision({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      decisionId: requiredOption(args, '--decision')
+    });
+    if (json) {
+      print(inspected);
+    } else {
+      process.stdout.write(
+        'Inspected private Project Capture proposal basis ' + inspected.decision.id + '.\n'
+          + 'Project fingerprint: ' + inspected.decision.projectAfterFingerprint + '\n'
+          + 'Proposal, approval, continuation, and provider writes created: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'project-capture-proposal-commit') {
+    const committed = commitProjectCaptureProposal({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      decisionId: requiredOption(args, '--decision'),
+      id: option(args, '--proposal-id', 'proposal.project-capture.' + idPart),
+      input: {},
+      producer: {
+        kind: 'user',
+        id: option(args, '--actor', 'user'),
+        host: null
+      },
+      at: createdAt
+    });
+    if (json) {
+      print(committed);
+    } else {
+      process.stdout.write(
+        'Committed Project Capture review proposal ' + committed.proposal.id + '.\n'
+          + 'Proposal fingerprint: ' + committed.proposal.proposalFingerprint + '\n'
+          + 'Private proposal: ' + committed.proposalPath + '\n'
+          + 'Selected private material: ' + committed.materialPath + '\n'
+          + 'Approval, continuation, provider calls, and writes created: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'project-capture-proposal-material') {
+    const material = inspectProjectCaptureProposalMaterial({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      proposalId: requiredOption(args, '--proposal')
+    });
+    print(material);
+    return;
+  }
+
+  if (command === 'contact-context-connected-prepare') {
+    assertExactCommandArguments(args, { valueOptions: ['--work', '--at'] });
+    const prepared = await prepareContactCaptureConnectedAcquisition({
+      root,
+      workId: requiredOption(args, '--work'),
+      at: createdAt
+    });
+    if (json) {
+      print(prepared);
+    } else {
+      const call = prepared.currentCall;
+      process.stdout.write(
+        'Prepared connected Contact acquisition ' + prepared.checkpoint.plan.id
+          + ' in state ' + prepared.checkpoint.state + '.\n'
+          + 'Current source: ' + (prepared.checkpoint.currentStepId || 'none') + '\n'
+          + (call
+            ? 'Provider operation: ' + call.transport.server + '/'
+              + call.transport.operation + '\n'
+              + 'Native host tool: ' + call.transport.tool + '\n'
+              + 'Exact call ID: ' + call.id + '\n'
+            : 'Host request emitted: no\n')
+          + 'Durable checkpoint: ' + prepared.checkpointPath + '\n'
+          + 'Contact proposal, approval, continuation, or write authority granted: no\n'
+      );
+    }
+    if (!['requested', 'completed'].includes(prepared.checkpoint.state)) process.exitCode = 1;
+    return;
+  }
+
+  if (command === 'contact-context-connected-finalize') {
+    const finalized = finalizeContactCaptureConnectedAcquisition({
+      root,
+      checkpointId: requiredOption(args, '--checkpoint')
+    });
+    if (json) {
+      print(finalized);
+    } else {
+      process.stdout.write(
+        'Finalized connected Contact acquisition snapshot ' + finalized.snapshot.id + '.\n'
+          + 'Entries: ' + finalized.snapshot.entries.length + '\n'
+          + 'Containment: ' + finalized.snapshot.containment + '\n'
+          + 'Run state: ' + finalized.run.lifecycleState + '\n'
+          + 'Private snapshot: ' + finalized.snapshotPath + '\n'
+          + 'Contact decisions, proposals, approvals, or external writes executed: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'contact-capture-decision-inspect') {
+    const inspected = inspectContactCaptureDecisionContext({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      snapshotId: requiredOption(args, '--snapshot')
+    });
+    if (json) {
+      print(inspected);
+    } else {
+      process.stdout.write(
+        'Inspected private Contact Capture decision basis '
+          + inspected.snapshot.id + '.\n'
+          + 'Derived state: ' + inspected.outcome.state + '\n'
+          + 'Duplicate candidates: ' + inspected.outcome.duplicateCandidateCount + '\n'
+          + 'Schema fingerprint: ' + inspected.outcome.schemaFingerprint + '\n'
+          + 'Contact fingerprint: ' + inspected.outcome.contactAfterFingerprint + '\n'
+          + 'Decision or write authority created: no\nProvider calls executed: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'contact-capture-decision-commit') {
+    const committed = commitContactCaptureDecision({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      snapshotId: requiredOption(args, '--snapshot'),
+      id: option(args, '--decision-id', 'decision.contact-capture.' + idPart),
+      producer: {
+        kind: 'user',
+        id: option(args, '--actor', 'user'),
+        host: null
+      },
+      at: createdAt
+    });
+    if (json) {
+      print(committed);
+    } else {
+      process.stdout.write(
+        'Committed Contact Capture decision ' + committed.decision.id + '.\n'
+          + 'State: ' + committed.decision.state + '\n'
+          + 'Decision fingerprint: ' + committed.decision.decisionFingerprint + '\n'
+          + 'Private decision: ' + committed.decisionPath + '\n'
+          + 'Proposal, approval, continuation, or provider writes created: no\n'
+      );
+    }
+    if (committed.decision.state !== 'ready') process.exitCode = 1;
+    return;
+  }
+
+  if (command === 'contact-capture-proposal-inspect') {
+    const inspected = inspectContactCaptureProposalDecision({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      decisionId: requiredOption(args, '--decision')
+    });
+    if (json) {
+      print(inspected);
+    } else {
+      process.stdout.write(
+        'Inspected private Contact Capture proposal basis '
+          + inspected.decision.id + '.\n'
+          + 'Contact fingerprint: ' + inspected.decision.contactAfterFingerprint + '\n'
+          + 'Proposal, approval, continuation, and provider writes created: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'contact-capture-proposal-commit') {
+    const committed = commitContactCaptureProposal({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      decisionId: requiredOption(args, '--decision'),
+      id: option(args, '--proposal-id', 'proposal.contact-capture.' + idPart),
+      input: {},
+      producer: {
+        kind: 'user',
+        id: option(args, '--actor', 'user'),
+        host: null
+      },
+      at: createdAt
+    });
+    if (json) {
+      print(committed);
+    } else {
+      process.stdout.write(
+        'Committed Contact Capture review proposal ' + committed.proposal.id + '.\n'
+          + 'Proposal fingerprint: ' + committed.proposal.proposalFingerprint + '\n'
+          + 'Private proposal: ' + committed.proposalPath + '\n'
+          + 'Selected private material: ' + committed.materialPath + '\n'
+          + 'Approval, continuation, provider calls, and writes created: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'contact-capture-proposal-material') {
+    const material = inspectContactCaptureProposalMaterial({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      proposalId: requiredOption(args, '--proposal')
+    });
+    print(material);
+    return;
+  }
+
+  if (command === 'project-context-connected-prepare') {
+    assertExactCommandArguments(args, { valueOptions: ['--work', '--at'] });
+    const prepared = await prepareProjectPulseConnectedAcquisition({
+      root,
+      workId: requiredOption(args, '--work'),
+      at: createdAt
+    });
+    if (json) {
+      print(prepared);
+    } else {
+      const call = prepared.currentCall;
+      process.stdout.write(
+        'Prepared connected Project Pulse acquisition ' + prepared.checkpoint.plan.id
+          + ' in state ' + prepared.checkpoint.state + '.\n'
+          + 'Current source: ' + (prepared.checkpoint.currentStepId || 'none') + '\n'
+          + (call
+            ? 'Provider operation: ' + call.transport.server + '/'
+              + call.transport.operation + '\n'
+              + 'Native host tool: ' + call.transport.tool + '\n'
+              + 'Exact call ID: ' + call.id + '\n'
+            : 'Host request emitted: no\n')
+          + 'Durable checkpoint: ' + prepared.checkpointPath + '\n'
+          + 'Project decision, proposal, approval, continuation, or write authority granted: no\n'
+      );
+    }
+    if (!['requested', 'completed'].includes(prepared.checkpoint.state)) process.exitCode = 1;
+    return;
+  }
+
+  if (command === 'project-context-connected-finalize') {
+    const finalized = finalizeProjectPulseConnectedAcquisition({
+      root,
+      checkpointId: requiredOption(args, '--checkpoint')
+    });
+    if (json) {
+      print(finalized);
+    } else {
+      process.stdout.write(
+        'Finalized connected Project Pulse acquisition snapshot ' + finalized.snapshot.id + '.\n'
+          + 'Entries: ' + finalized.snapshot.entries.length + '\n'
+          + 'Containment: ' + finalized.snapshot.containment + '\n'
+          + 'Run state: ' + finalized.run.lifecycleState + '\n'
+          + 'Private snapshot: ' + finalized.snapshotPath + '\n'
+          + 'Project decisions, proposals, approvals, or external writes executed: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'project-pulse-decision-inspect') {
+    const inspected = inspectProjectPulseDecisionContext({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      snapshotId: requiredOption(args, '--snapshot')
+    });
+    if (json) {
+      print(inspected);
+    } else {
+      process.stdout.write(
+        'Inspected private Project Pulse decision basis ' + inspected.snapshot.id + '.\n'
+          + 'Derived state: ' + inspected.outcome.state + '\n'
+          + 'Promoted tasks: ' + inspected.outcome.taskCount + '\n'
+          + 'Milestones: ' + inspected.outcome.milestoneCount + '\n'
+          + 'Health: ' + inspected.outcome.health + '\n'
+          + 'Proposed milestone changes: ' + inspected.outcome.milestoneChangeCount + '\n'
+          + 'Decision or write authority created: no\nProvider calls executed: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'project-pulse-decision-commit') {
+    const committed = commitProjectPulseDecision({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      snapshotId: requiredOption(args, '--snapshot'),
+      id: option(args, '--decision-id', 'decision.project-pulse.' + idPart),
+      producer: {
+        kind: 'user',
+        id: option(args, '--actor', 'user'),
+        host: null
+      },
+      at: createdAt
+    });
+    if (json) {
+      print(committed);
+    } else {
+      process.stdout.write(
+        'Committed Project Pulse decision ' + committed.decision.id + '.\n'
+          + 'State: ' + committed.decision.state + '\n'
+          + 'Decision fingerprint: ' + committed.decision.decisionFingerprint + '\n'
+          + 'Private decision: ' + committed.decisionPath + '\n'
+          + 'Proposal, approval, continuation, or provider writes created: no\n'
+      );
+    }
+    if (committed.decision.state !== 'ready') process.exitCode = 1;
+    return;
+  }
+
+  if (command === 'project-pulse-proposal-inspect') {
+    const inspected = inspectProjectPulseProposalDecision({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      decisionId: requiredOption(args, '--decision')
+    });
+    if (json) {
+      print(inspected);
+    } else {
+      process.stdout.write(
+        'Inspected private Project Pulse proposal basis ' + inspected.decision.id + '.\n'
+          + 'Milestone changes: ' + inspected.decision.milestoneChangeCount + '\n'
+          + 'Status fingerprint: ' + inspected.decision.statusAfterFingerprint + '\n'
+          + 'Proposal, approval, continuation, and provider writes created: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'project-pulse-proposal-commit') {
+    const committed = commitProjectPulseProposal({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      decisionId: requiredOption(args, '--decision'),
+      id: option(args, '--proposal-id', 'proposal.project-pulse.' + idPart),
+      input: {},
+      producer: {
+        kind: 'user',
+        id: option(args, '--actor', 'user'),
+        host: null
+      },
+      at: createdAt
+    });
+    if (json) {
+      print(committed);
+    } else {
+      process.stdout.write(
+        'Committed Project Pulse review proposal ' + committed.proposal.id + '.\n'
+          + 'Proposal fingerprint: ' + committed.proposal.proposalFingerprint + '\n'
+          + 'Private proposal: ' + committed.proposalPath + '\n'
+          + 'Selected private material: ' + committed.materialPath + '\n'
+          + 'Approval, continuation, provider calls, and writes created: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'project-pulse-proposal-material') {
+    const material = inspectProjectPulseProposalMaterial({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      proposalId: requiredOption(args, '--proposal')
+    });
+    print(material);
     return;
   }
 
@@ -1548,54 +2524,80 @@ async function main() {
     return;
   }
 
-  if (command === 'meeting-intake-proposal') {
-    const proposal = proposeDurableMeetingIntakeChangeSet({
+  if (command === 'meeting-intake-proposal-inspect') {
+    const inspected = inspectMeetingIntakeProposalDecision({
       root,
       lockPath: requiredOption(args, '--lock'),
       decisionId: requiredOption(args, '--decision'),
-      id: option(
-        args,
-        '--change-set-id',
-        'changeset.meeting-intake.' + idPart
-      ),
-      createdAt
     });
-    const output = option(args, '--output');
-    if (output) writeJson(resolveRepoPath(root, output), proposal);
     if (json) {
-      print(proposal);
+      print(inspected);
     } else {
       process.stdout.write(
-        'Proposed meeting-intake change set ' + proposal.id + '.\n'
-          + 'Decision: ' + proposal.basis.id + ' (' + proposal.basis.fingerprint + ')\n'
-          + 'Operations: ' + proposal.operations.length + '\n'
-          + (output ? 'Reviewable change set: ' + output + '\n' : '')
-          + 'Approval created: no\nProvider calls executed: 0\n'
+        'Inspected private Meeting Intake proposal basis ' + inspected.decision.id + '.\n'
+          + 'Grounded summary segments: ' + inspected.decision.summarySegmentCount + '\n'
+          + 'Existing task folds: ' + inspected.decision.foldedTaskCount + '\n'
+          + 'Proposal, approval, continuation, provider calls, or writes created: 0\n'
       );
     }
     return;
   }
 
+  if (command === 'meeting-intake-proposal-commit') {
+    const committed = commitMeetingIntakeProposal({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      decisionId: requiredOption(args, '--decision'),
+      id: option(args, '--proposal-id', 'proposal.meeting-intake.' + idPart),
+      input: {},
+      producer: {
+        kind: 'user',
+        id: option(args, '--actor', 'user'),
+        host: null
+      },
+      at: createdAt
+    });
+    if (json) {
+      print(committed);
+    } else {
+      process.stdout.write(
+        'Committed Meeting Intake review proposal ' + committed.proposal.id + '.\n'
+          + 'Proposal fingerprint: ' + committed.proposal.proposalFingerprint + '\n'
+          + 'Private proposal: ' + committed.proposalPath + '\n'
+          + 'Selected private material: ' + committed.materialPath + '\n'
+          + 'Approval, continuation, provider calls, and writes created: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'meeting-intake-proposal-material') {
+    const material = inspectMeetingIntakeProposalMaterial({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      proposalId: requiredOption(args, '--proposal')
+    });
+    print(material);
+    return;
+  }
+
   if (command === 'host-fail') {
     const checkpointId = requiredOption(args, '--checkpoint');
-    const output = option(args, '--output');
-    if (output) {
-      const current = getDurableHostExecution({ root, checkpointId });
-      if (current.checkpoint.kind === 'connected-transaction') {
-        throw new Error(
-          'Connected transaction checkpoints are private runtime state and cannot be exported into the repository.'
-        );
-      }
+    if (option(args, '--output')) {
+      throw new Error(
+        'Host-call checkpoints are private runtime state and cannot be exported.'
+      );
     }
+    assertExactCommandArguments(args, {
+      valueOptions: ['--checkpoint', '--call', '--kind', '--at']
+    });
     const failed = await failDurableHostExecution({
       root,
       checkpointId,
       errorKind: requiredOption(args, '--kind'),
-      message: requiredOption(args, '--message'),
       callId: option(args, '--call'),
       at: createdAt
     });
-    if (output) writeJson(resolveRepoPath(root, output), failed.checkpoint);
     if (json) {
       print(failed);
     } else {
@@ -1609,7 +2611,6 @@ async function main() {
               + 'Next native host tool: ' + call.transport.tool + '\n'
               + 'Next exact call ID: ' + call.id + '\n'
             : '')
-          + (output ? 'Wrote: ' + output + '\n' : '')
       );
     }
     return;
@@ -1630,158 +2631,6 @@ async function main() {
       state: option(args, '--state')
     });
     print(checkpoints);
-    return;
-  }
-
-  if (command === 'context') {
-    const lockPath = requiredOption(args, '--lock');
-    const lock = readJson(resolveRepoPath(root, lockPath));
-    const runId = option(args, '--run-id', 'run.' + lock.configuration.name + '.context.' + idPart);
-    const snapshotId = option(
-      args,
-      '--snapshot-id',
-      'context.' + lock.configuration.name + '.' + idPart
-    );
-    const resolutionEvidenceId = option(
-      args,
-      '--resolution-evidence-id',
-      'evidence.' + lock.configuration.name + '.resolution.' + idPart
-    );
-    const contextEvidenceId = option(
-      args,
-      '--context-evidence-id',
-      'evidence.' + lock.configuration.name + '.context.' + idPart
-    );
-    const contained = await assembleMeetingIntakeContext({
-      root,
-      lock,
-      lockPath,
-      scenarioPath: option(args, '--scenario'),
-      runId,
-      snapshotId,
-      createdAt,
-      meetingId: requiredOption(args, '--meeting-id'),
-      recordingUri: requiredOption(args, '--recording-uri'),
-      evidenceIds: [resolutionEvidenceId, contextEvidenceId]
-    });
-    const evidence = [
-      createResolutionEvidence({ lock, id: resolutionEvidenceId, createdAt }),
-      createContextAssemblyEvidence({
-        lock,
-        envelope: contained.envelope,
-        snapshot: contained.snapshot,
-        id: contextEvidenceId,
-        createdAt
-      })
-    ];
-    const output = option(args, '--output');
-    const snapshotOutput = option(args, '--snapshot-output');
-    if (output) writeJson(resolveRepoPath(root, output), contained.envelope);
-    if (snapshotOutput) writeJson(resolveRepoPath(root, snapshotOutput), contained.snapshot);
-    writeEvidence(root, option(args, '--evidence-dir'), evidence);
-    if (json) {
-      print({ ...contained, evidence });
-    } else {
-      process.stdout.write(
-        'Assembled ' + contained.snapshot.entries.length + ' context entries through '
-          + contained.envelope.effects.length + ' typed fixture reads.\n'
-          + 'Run state: ' + contained.envelope.lifecycleState + '; external writes executed: 0\n'
-      );
-    }
-    return;
-  }
-
-  if (command === 'transaction') {
-    const lockPath = requiredOption(args, '--lock');
-    const lock = readJson(resolveRepoPath(root, lockPath));
-    const approved = args.includes('--approve');
-    const runId = option(args, '--run-id', 'run.' + lock.configuration.name + '.transaction.' + idPart);
-    const transactionEvidenceId = 'evidence.' + lock.configuration.name + '.transaction.' + idPart;
-    const resolutionEvidenceId = 'evidence.' + lock.configuration.name + '.resolution.' + idPart;
-    const transaction = await runContainedMeetingIntakeTransaction({
-      root,
-      lock,
-      lockPath,
-      scenarioPath: option(args, '--scenario'),
-      runId,
-      snapshotId: option(args, '--snapshot-id', 'context.' + lock.configuration.name + '.transaction.' + idPart),
-      decisionId: option(args, '--decision-id', 'decision.' + lock.configuration.name + '.' + idPart),
-      changeSetId: option(args, '--change-set-id', 'changeset.' + lock.configuration.name + '.' + idPart),
-      approvalId: option(args, '--approval-id', 'approval.' + lock.configuration.name + '.' + idPart),
-      createdAt,
-      actor: option(args, '--actor', 'user'),
-      approved,
-      evidenceIds: approved ? [resolutionEvidenceId, transactionEvidenceId] : []
-    });
-    const evidence = approved ? [
-      createResolutionEvidence({ lock, id: resolutionEvidenceId, createdAt }),
-      createContainedTransactionEvidence({
-        lock,
-        envelope: transaction.envelope,
-        decision: transaction.decision,
-        changeSet: transaction.changeSet,
-        approval: transaction.approval,
-        id: transactionEvidenceId,
-        createdAt
-      })
-    ] : [];
-    const output = option(args, '--output');
-    const snapshotOutput = option(args, '--snapshot-output');
-    const changeSetOutput = option(args, '--change-set-output');
-    const approvalOutput = option(args, '--approval-output');
-    if (output) writeJson(resolveRepoPath(root, output), transaction.envelope);
-    if (snapshotOutput) writeJson(resolveRepoPath(root, snapshotOutput), transaction.snapshot);
-    if (changeSetOutput) writeJson(resolveRepoPath(root, changeSetOutput), transaction.changeSet);
-    if (approvalOutput && transaction.approval) {
-      writeJson(resolveRepoPath(root, approvalOutput), transaction.approval);
-    }
-    writeEvidence(root, option(args, '--evidence-dir'), evidence);
-    if (json) {
-      print({ ...transaction, evidence });
-    } else if (!approved) {
-      process.stdout.write(
-        'Previewed ' + transaction.changeSet.operations.length + ' write operations.\n'
-          + 'State: proposed; writes executed: 0. Re-run with --approve to authorize this generated scope.\n'
-      );
-    } else {
-      process.stdout.write(
-        'Transaction ' + transaction.changeSet.state + ' with '
-          + transaction.changeSet.operations.length + ' approved writes.\n'
-          + 'Read-after-write verification: ' + transaction.changeSet.verification.state + '\n'
-      );
-    }
-    return;
-  }
-
-  if (command === 'connected-batch-preview') {
-    const lock = readJson(resolveRepoPath(root, requiredOption(args, '--lock')));
-    const changeSet = readJson(resolveRepoPath(root, requiredOption(args, '--change-set')));
-    const batch = compileConnectedOperationBatch({
-      root,
-      lock,
-      changeSet,
-      id: option(
-        args,
-        '--batch-id',
-        'batch.' + lock.configuration.name + '.' + idPart
-      ),
-      createdAt
-    });
-    if (json) {
-      print(batch);
-    } else {
-      process.stdout.write(
-        'Compiled connected operation batch ' + batch.id + '.\n'
-          + 'Executable: ' + (batch.executable ? 'yes' : 'no') + '\n'
-          + 'Operations: ' + batch.operations.length + '\n'
-          + 'Batch fingerprint: ' + batch.batchFingerprint + '\n'
-          + (batch.blockers.length
-            ? 'Blockers:\n  - ' + batch.blockers.join('\n  - ') + '\n'
-            : '')
-          + 'Provider calls executed: 0\n'
-      );
-    }
-    if (!batch.executable) process.exitCode = 1;
     return;
   }
 
@@ -1811,37 +2660,622 @@ async function main() {
     return;
   }
 
+  if (command === 'development-candidate-lock') {
+    const materialized = materializeDevelopmentCandidateLock({
+      root,
+      configPath: requiredOption(args, '--config'),
+      workflowId: requiredOption(args, '--workflow'),
+      host: requiredOption(args, '--host')
+    });
+    const inspection = {
+      path: materialized.path,
+      lockFingerprint: materialized.lockFingerprint,
+      graphFingerprint: materialized.graphFingerprint,
+      workflow: materialized.workflow,
+      host: materialized.host,
+      authority: materialized.authority
+    };
+    if (json) print(inspection);
+    else {
+      process.stdout.write(
+        'Created exact private development candidate lock.\n'
+          + 'Path: ' + inspection.path + '\n'
+          + 'Workflow: ' + inspection.workflow.id + '@' + inspection.workflow.version + '\n'
+          + 'Host: ' + inspection.host.id + '\n'
+          + 'Lock fingerprint: ' + inspection.lockFingerprint + '\n'
+          + 'Execution, migration, provider, merge, realization, or fallback-removal authority: none\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'development-request-create') {
+    const workflowId = requiredOption(args, '--workflow');
+    const invocationPath = option(args, '--invocation');
+    const exactEvaluationSuite = args.includes('--evaluation-suite');
+    if ((invocationPath ? 1 : 0) + (exactEvaluationSuite ? 1 : 0) !== 1) {
+      throw new Error('development-request-create requires exactly one of --invocation or --evaluation-suite.');
+    }
+    const invocation = exactEvaluationSuite
+      ? buildDevelopmentEvaluationInvocation({ root, workflowId })
+      : readPrivateJsonInput(root, invocationPath);
+    const prepared = prepareDevelopmentRequest({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      workflowId,
+      requestId: requiredOption(args, '--request-id'),
+      invocation,
+      createdAt: args.includes('--at') ? createdAt : null
+    });
+    if (json) print(prepared.inspection);
+    else {
+      process.stdout.write(
+        'Created exact private development request ' + prepared.inspection.request.id + '.\n'
+          + 'Workflow: ' + prepared.inspection.workflow.id + '\n'
+          + 'Host: ' + prepared.inspection.host.id + '\n'
+          + 'Provider transaction authority: none\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'development-result-record') {
+    const outcome = readPrivateJsonInput(root, requiredOption(args, '--outcome'));
+    const recorded = recordDevelopmentResult({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      requestId: requiredOption(args, '--request-id'),
+      outcome,
+      completedAt: args.includes('--at') ? createdAt : null
+    });
+    if (json) print(recorded.inspection);
+    else {
+      process.stdout.write(
+        'Recorded scoped development evidence for ' + recorded.inspection.request.id + '.\n'
+          + 'State: ' + recorded.inspection.progress.state + '\n'
+          + 'Fallback-removal authority: none\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'development-host-evaluate') {
+    const evaluated = runDevelopmentHostEvaluation({
+      root,
+      requestId: requiredOption(args, '--request-id'),
+      executablePath: requiredOption(args, '--executable')
+    });
+    if (json) print(evaluated.summary);
+    else {
+      process.stdout.write(
+        'Completed isolated ' + evaluated.summary.host + ' evaluation ' + evaluated.summary.id + '.\n'
+          + 'Fresh worker processes: ' + evaluated.summary.runCount + '\n'
+          + 'Independent judgment required: yes\n'
+          + 'Raw prompts and transcripts returned or inspected: no\n'
+          + 'Activation, migration, or fallback-removal authority: none\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'development-host-judge') {
+    const judged = runDevelopmentHostJudgment({
+      root,
+      requestId: requiredOption(args, '--request-id'),
+      executablePath: requiredOption(args, '--executable')
+    });
+    if (json) print(judged.summary);
+    else {
+      process.stdout.write(
+        'Completed isolated independent ' + judged.summary.host + ' judgment ' + judged.summary.id + '.\n'
+          + 'Fresh judge processes: ' + judged.summary.reviewCount + '\n'
+          + 'Guided cases passed: ' + (judged.summary.guidedPassed ? 'yes' : 'no') + '\n'
+          + 'Worker self-report accepted as judgment: no\n'
+          + 'Activation, migration, or fallback-removal authority: none\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'development-host-finalize') {
+    const judgmentPath = option(args, '--judgment');
+    const finalized = finalizeDevelopmentHostEvaluation({
+      root,
+      requestId: requiredOption(args, '--request-id'),
+      judgment: judgmentPath ? readPrivateJsonInput(root, judgmentPath) : null
+    });
+    if (json) print(finalized.observation);
+    else {
+      process.stdout.write(
+        'Recorded independently judged host observation ' + finalized.observation.id + '.\n'
+          + 'Host: ' + finalized.observation.host.id + '\n'
+          + 'Guided runs: ' + finalized.observation.runs.filter((run) => run.arm === 'guided').length + '\n'
+          + 'Worker self-report accepted as judgment: no\n'
+          + 'Activation, migration, or fallback-removal authority: none\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'development-host-evidence-historical') {
+    assertExactCommandArguments(args, { valueOptions: ['--request-id'] });
+    requiredOption(args, '--request-id');
+    throw new Error(
+      'DEVELOPMENT_MIGRATION_EVIDENCE_BATCH_REQUIRED: standalone historical evidence publication is retired; use development-historical-evidence-batch-request and the exact fourteen-chain batch.'
+    );
+  }
+
+  if (command === 'development-historical-evidence-batch-request') {
+    assertExactCommandArguments(args, {
+      valueOptions: ['--id', '--created-at', '--valid-until', '--workflows']
+    });
+    print(buildDevelopmentHistoricalEvidenceBatchRequest({
+      root,
+      id: requiredOption(args, '--id'),
+      createdAt: requiredOption(args, '--created-at'),
+      validUntil: requiredOption(args, '--valid-until'),
+      workflows: readPrivateJsonInput(root, requiredOption(args, '--workflows'))
+    }));
+    return;
+  }
+
+  if (command === 'development-historical-evidence-batch-execute'
+    || command === 'development-historical-evidence-batch-recover') {
+    assertExactCommandArguments(args, { valueOptions: ['--request', '--at'] });
+    const input = {
+      root,
+      requestPath: requiredOption(args, '--request'),
+      at: requiredOption(args, '--at')
+    };
+    print(command === 'development-historical-evidence-batch-execute'
+      ? executeDevelopmentHistoricalEvidenceBatch(input)
+      : recoverDevelopmentHistoricalEvidenceBatch(input));
+    return;
+  }
+
+  if (command === 'development-historical-evidence-batch-inspect') {
+    assertExactCommandArguments(args, { valueOptions: ['--request'] });
+    print(inspectDevelopmentHistoricalEvidenceBatch({
+      root,
+      requestPath: requiredOption(args, '--request')
+    }));
+    return;
+  }
+
+  if (command === 'development-host-evidence-final') {
+    assertExactCommandArguments(args, {
+      valueOptions: ['--request-id', '--lock', '--at']
+    });
+    requiredOption(args, '--request-id');
+    requiredOption(args, '--lock');
+    requiredOption(args, '--at');
+    throw new Error(
+      'DEVELOPMENT_ACTIVATION_EVIDENCE_BATCH_REQUIRED: standalone final evidence publication is retired; use development-host-evidence-finalize-batch.'
+    );
+  }
+
+  if (command === 'development-host-evidence-finalization-request-create') {
+    assertExactCommandArguments(args, {
+      valueOptions: [
+        '--id',
+        '--created-at',
+        '--valid-until',
+        '--legacy-finalization',
+        '--workflows',
+        '--output'
+      ]
+    });
+    const request = buildDevelopmentHostEvidenceFinalizationRequest({
+      root,
+      legacyFinalizationPath: requiredOption(args, '--legacy-finalization'),
+      id: requiredOption(args, '--id'),
+      createdAt: requiredOption(args, '--created-at'),
+      validUntil: requiredOption(args, '--valid-until'),
+      workflows: readPrivateJsonInput(root, requiredOption(args, '--workflows'))
+    });
+    print(persistCanonicalPrivateRequest({
+      root,
+      outputPath: requiredOption(args, '--output'),
+      request,
+      kind: 'development-host-evidence-finalization-request'
+    }));
+    return;
+  }
+
+  if (command === 'development-host-evidence-finalize-batch') {
+    assertExactCommandArguments(args, {
+      valueOptions: ['--request', '--legacy-finalization', '--at']
+    });
+    const result = finalizeDevelopmentHostEvidenceBatch({
+      root,
+      requestPath: requiredOption(args, '--request'),
+      legacyFinalizationPath: requiredOption(args, '--legacy-finalization'),
+      at: requiredOption(args, '--at')
+    });
+    print(result);
+    return;
+  }
+
+  if (command === 'development-host-evidence-finalization-verify') {
+    assertExactCommandArguments(args, {
+      valueOptions: ['--request', '--legacy-finalization', '--at']
+    });
+    const result = verifyDevelopmentHostEvidenceFinalization({
+      root,
+      requestPath: requiredOption(args, '--request'),
+      legacyFinalizationPath: requiredOption(args, '--legacy-finalization'),
+      at: requiredOption(args, '--at')
+    });
+    print(result);
+    return;
+  }
+
+  if (command === 'development-host-evidence-finalization-rollback') {
+    assertExactCommandArguments(args, {
+      valueOptions: ['--request', '--at']
+    });
+    const result = rollbackCompletedDevelopmentHostEvidenceFinalization({
+      root,
+      requestPath: requiredOption(args, '--request'),
+      at: requiredOption(args, '--at')
+    });
+    print(result);
+    return;
+  }
+
+  if (command === 'development-workflow-lifecycle-request-create') {
+    assertExactCommandArguments(args, {
+      valueOptions: ['--id', '--created-at', '--output']
+    });
+    const request = buildDevelopmentWorkflowLifecycleFinalizationRequest({
+      root,
+      id: requiredOption(args, '--id'),
+      createdAt: requiredOption(args, '--created-at')
+    });
+    print(persistCanonicalPrivateRequest({
+      root,
+      outputPath: requiredOption(args, '--output'),
+      request,
+      kind: 'development-workflow-lifecycle-finalization-request'
+    }));
+    return;
+  }
+
+  if (command === 'development-workflow-lifecycle-plan') {
+    assertExactCommandArguments(args, { valueOptions: ['--request'] });
+    const plan = planDevelopmentWorkflowLifecycleFinalization({
+      root,
+      requestPath: requiredOption(args, '--request')
+    });
+    print(plan);
+    return;
+  }
+
+  if (command === 'legacy-finalization-transition-request-create') {
+    assertExactCommandArguments(args, {
+      valueOptions: [
+        '--id',
+        '--created-at',
+        '--valid-until',
+        '--at',
+        '--lifecycle-request',
+        '--checker-receipt',
+        '--output',
+        '--fixture-output'
+      ]
+    });
+    const outputPath = requiredOption(args, '--output');
+    const fixtureOutputPath = requiredOption(args, '--fixture-output');
+    if (path.resolve(outputPath) === path.resolve(fixtureOutputPath)) {
+      throw new Error(
+        'legacy-finalization-transition-request-create requires distinct --output and --fixture-output paths.'
+      );
+    }
+    const request = await buildLegacyFinalizationTransitionRequest({
+      root,
+      id: requiredOption(args, '--id'),
+      createdAt: requiredOption(args, '--created-at'),
+      validUntil: requiredOption(args, '--valid-until'),
+      at: requiredOption(args, '--at'),
+      lifecycleRequestPath: requiredOption(args, '--lifecycle-request'),
+      checkerReceipt: readPrivateJsonInput(root, requiredOption(args, '--checker-receipt'))
+    });
+    const fixture = persistCanonicalPrivateRequest({
+      root,
+      outputPath: fixtureOutputPath,
+      request: request.fixtureRequest,
+      kind: 'legacy-finalization-fixture-request'
+    });
+    const transition = persistCanonicalPrivateRequest({
+      root,
+      outputPath,
+      request,
+      kind: 'legacy-finalization-transition-request'
+    });
+    print({ transition, fixture });
+    return;
+  }
+
+  if (command === 'repository-cutover-request-create') {
+    assertExactCommandArguments(args, {
+      valueOptions: [
+        '--id',
+        '--created-at',
+        '--lifecycle-request',
+        '--transition-request',
+        '--fixture-finalization-request',
+        '--output'
+      ]
+    });
+    const request = buildRepositoryCutoverRequest({
+      root,
+      id: requiredOption(args, '--id'),
+      createdAt: requiredOption(args, '--created-at'),
+      lifecycleRequestPath: requiredOption(args, '--lifecycle-request'),
+      transitionRequestPath: requiredOption(args, '--transition-request'),
+      fixtureFinalizationRequestPath: requiredOption(args, '--fixture-finalization-request')
+    });
+    print(persistCanonicalPrivateRequest({
+      root,
+      outputPath: requiredOption(args, '--output'),
+      request,
+      kind: 'repository-cutover-request'
+    }));
+    return;
+  }
+
+  if (command === 'repository-cutover-prepare') {
+    assertExactCommandArguments(args, { valueOptions: ['--request', '--at'] });
+    const inspection = await prepareRepositoryCutover({
+      root,
+      requestPath: requiredOption(args, '--request'),
+      at: requiredOption(args, '--at')
+    });
+    print(inspection);
+    return;
+  }
+
+  if (command === 'repository-cutover-execute'
+    || command === 'repository-cutover-recover'
+    || command === 'repository-cutover-rollback') {
+    assertExactCommandArguments(args, { valueOptions: ['--checkpoint-id', '--at'] });
+    const input = {
+      root,
+      checkpointId: requiredOption(args, '--checkpoint-id'),
+      at: requiredOption(args, '--at')
+    };
+    const inspection = command === 'repository-cutover-execute'
+      ? executeRepositoryCutover(input)
+      : command === 'repository-cutover-recover'
+        ? recoverRepositoryCutover(input)
+        : rollbackRepositoryCutover(input);
+    print(inspection);
+    return;
+  }
+
+  if (command === 'repository-cutover-inspect') {
+    assertExactCommandArguments(args, { valueOptions: ['--checkpoint-id'] });
+    print(inspectRepositoryCutover({
+      root,
+      checkpointId: requiredOption(args, '--checkpoint-id')
+    }));
+    return;
+  }
+
+  if (command === 'development-run-inspect') {
+    const inspection = inspectDevelopmentRun({
+      root,
+      requestId: requiredOption(args, '--request-id')
+    });
+    if (json) print(inspection);
+    else {
+      process.stdout.write(
+        'Development run ' + inspection.request.id + ': ' + inspection.progress.state + '.\n'
+          + 'Workflow: ' + inspection.workflow.id + '\n'
+          + 'Host: ' + inspection.host.id + '\n'
+          + 'Private paths, outcomes, diffs, transcripts, and provider responses included: no\n'
+      );
+    }
+    return;
+  }
+
   if (command === 'selftest') {
     const { selftest } = await import('./selftest.mjs');
+    const { selftestPrivateJsonInput } = await import('./lib/canonical-json.selftest.mjs');
     const { selftestPreparedWork } = await import('./prepared-work.selftest.mjs');
+    const { selftestConnectedAcceptanceInspection } = await import(
+      './connected-acceptance-inspection.selftest.mjs'
+    );
     const { selftestPreparedReviewBatches } = await import('./prepared-review-batches.selftest.mjs');
     const { selftestPreparedConnectedPlans } = await import('./prepared-connected-plans.selftest.mjs');
     const { selftestAutomationProposals } = await import('./automation-proposals.selftest.mjs');
     const { selftestConfigurationTransactions } = await import('./configuration-transactions.selftest.mjs');
     const { selftestHostRealizations } = await import('./host-realizations.selftest.mjs');
     const { selftestPackInstalls } = await import('./pack-installs.selftest.mjs');
+    const { selftestDevelopmentCandidateLocks } = await import(
+      './development-candidate-locks.selftest.mjs'
+    );
+    const { selftestDevelopmentRuns } = await import('./development-runs.selftest.mjs');
+    const { selftestDevelopmentHostObservations } = await import(
+      './development-host-observations.selftest.mjs'
+    );
+    const { selftestDevelopmentHostRunner } = await import(
+      './development-host-runner.selftest.mjs'
+    );
+    const { selftestLegacyFinalization } = await import('./legacy-finalization.selftest.mjs');
+    const { selftestLegacyTransitionFinalization } = await import(
+      './legacy-transition-finalization.selftest.mjs'
+    );
+    const { selftestDevelopmentWorkflowLifecycleFinalization } = await import(
+      './development-workflow-lifecycle-finalization.selftest.mjs'
+    );
+    const { selftestRepositoryCutover } = await import('./repository-cutover.selftest.mjs');
+    const { selftestPrivateRequestFiles } = await import('./private-request-files.selftest.mjs');
     const { selftestEmailConnectedContext } = await import(
       '../automations/email-triage/connected-context.selftest.mjs'
     );
-    process.exitCode = await selftest(root)
-      && await selftestPreparedWork(root)
-      && await selftestPreparedReviewBatches(root)
-      && await selftestPreparedConnectedPlans(root)
-      && await selftestAutomationProposals(root)
-      && await selftestConfigurationTransactions(root)
-      && await selftestHostRealizations(root)
-      && await selftestPackInstalls(root)
-      && await selftestEmailConnectedContext(root) ? 0 : 1;
+    const { selftestTaskCaptureConnectedContext } = await import(
+      '../automations/task-capture/connected-context.selftest.mjs'
+    );
+    const { selftestProjectPulseConnectedContext } = await import(
+      '../automations/project-pulse/connected-context.selftest.mjs'
+    );
+    const { selftestOrganizationCapture } = await import(
+      '../automations/organization-capture/organization-capture.selftest.mjs'
+    );
+    const { selftestOrganizationCaptureConnectedContext } = await import(
+      '../automations/organization-capture/connected-context.selftest.mjs'
+    );
+    const { selftestProjectCapture } = await import(
+      '../automations/project-capture/project-capture.selftest.mjs'
+    );
+    const { selftestProjectCaptureConnectedContext } = await import(
+      '../automations/project-capture/connected-context.selftest.mjs'
+    );
+    const { selftestContactCapture } = await import(
+      '../automations/contact-capture/contact-capture.selftest.mjs'
+    );
+    const { selftestContactCaptureConnectedContext } = await import(
+      '../automations/contact-capture/connected-context.selftest.mjs'
+    );
+    const { selftestDriveFiling } = await import(
+      '../automations/filing-a-drive-artifact/filing-a-drive-artifact.selftest.mjs'
+    );
+    const { selftestFeatureCapture } = await import(
+      '../automations/feature-capture/feature-capture.selftest.mjs'
+    );
+    const { selftestFeatureDefinition } = await import(
+      '../automations/feature-definition/feature-definition.selftest.mjs'
+    );
+    const { selftestRepositoryReview } = await import(
+      '../automations/repository-review/repository-review.selftest.mjs'
+    );
+    const { selftestSlackChannelIngestion } = await import(
+      '../automations/slack-channel-ingestion/slack-channel-ingestion.selftest.mjs'
+    );
+    const { selftestSlackConversationReviewConnectedContext } = await import(
+      '../automations/slack-conversation-review/connected-context.selftest.mjs'
+    );
+    const { selftestProcessCapture } = await import(
+      '../automations/process-capture/process-capture.selftest.mjs'
+    );
+    const { selftestProcessRedTeam } = await import(
+      '../automations/process-red-team/process-red-team.selftest.mjs'
+    );
+    const { selftestProjectDecisionResolution } = await import(
+      '../automations/project-decision-resolution/project-decision-resolution.selftest.mjs'
+    );
+    const { selftestProjectWorkPromotion } = await import(
+      '../automations/project-work-promotion/project-work-promotion.selftest.mjs'
+    );
+    const { selftestNotionRecordMappings } = await import(
+      '../integrations/notion/notion.selftest.mjs'
+    );
+    const suites = [
+      ['core', () => selftest(root)],
+      ['private-json-input', () => selftestPrivateJsonInput()],
+      ['connected-acceptance-inspection', () => selftestConnectedAcceptanceInspection(root)],
+      ['prepared-work', () => selftestPreparedWork(root)],
+      ['prepared-review-batches', () => selftestPreparedReviewBatches(root)],
+      ['prepared-connected-plans', () => selftestPreparedConnectedPlans(root)],
+      ['automation-proposals', () => selftestAutomationProposals(root)],
+      ['configuration-transactions', () => selftestConfigurationTransactions(root)],
+      ['host-realizations', () => selftestHostRealizations(root)],
+      ['pack-installs', () => selftestPackInstalls(root)],
+      ['development-candidate-locks', () => selftestDevelopmentCandidateLocks(root)],
+      ['development-runs', () => selftestDevelopmentRuns(root)],
+      ['development-host-observations', () => selftestDevelopmentHostObservations(root)],
+      ['development-host-runner', () => selftestDevelopmentHostRunner(root)],
+      ['legacy-finalization', () => selftestLegacyFinalization(root)],
+      ['legacy-transition-finalization', () => selftestLegacyTransitionFinalization(root)],
+      [
+        'development-workflow-lifecycle-finalization',
+        () => selftestDevelopmentWorkflowLifecycleFinalization(root)
+      ],
+      ['repository-cutover', () => selftestRepositoryCutover(root)],
+      ['private-request-files', () => selftestPrivateRequestFiles()],
+      ['email-connected-context', () => selftestEmailConnectedContext(root)],
+      ['task-capture-connected-context', () => selftestTaskCaptureConnectedContext(root)],
+      ['project-pulse-connected-context', () => selftestProjectPulseConnectedContext(root)],
+      ['organization-capture', () => selftestOrganizationCapture(root)],
+      [
+        'organization-capture-connected-context',
+        () => selftestOrganizationCaptureConnectedContext(root)
+      ],
+      ['project-capture', () => selftestProjectCapture(root)],
+      ['project-capture-connected-context', () => selftestProjectCaptureConnectedContext(root)],
+      ['contact-capture', () => selftestContactCapture(root)],
+      ['contact-capture-connected-context', () => selftestContactCaptureConnectedContext(root)],
+      ['drive-filing', () => selftestDriveFiling(root)],
+      ['feature-capture', () => selftestFeatureCapture(root)],
+      ['feature-definition', () => selftestFeatureDefinition(root)],
+      ['repository-review', () => selftestRepositoryReview(root)],
+      ['slack-channel-ingestion', () => selftestSlackChannelIngestion(root)],
+      [
+        'slack-conversation-review-connected-context',
+        () => selftestSlackConversationReviewConnectedContext(root)
+      ],
+      ['process-capture', () => selftestProcessCapture(root)],
+      ['process-red-team', () => selftestProcessRedTeam(root)],
+      ['project-decision-resolution', () => selftestProjectDecisionResolution(root)],
+      ['project-work-promotion', () => selftestProjectWorkPromotion(root)],
+      ['notion-record-mappings', () => selftestNotionRecordMappings(root)]
+    ];
+    const failedSuites = [];
+    for (const [name, run] of suites) {
+      try {
+        const result = await run();
+        if (!result) {
+          failedSuites.push(name);
+          process.stderr.write('CORE SELFTEST SUITE FAIL: ' + name + ' returned no passing result.\n');
+        }
+      } catch (error) {
+        failedSuites.push(name);
+        process.stderr.write(
+          'CORE SELFTEST SUITE FAIL: ' + name + ': '
+            + (error?.stack || error?.message || String(error)) + '\n'
+        );
+      }
+    }
+    if (failedSuites.length) {
+      process.stderr.write(
+        'CORE SELFTEST SUMMARY: ' + failedSuites.length + ' of ' + suites.length
+          + ' suites failed: ' + failedSuites.join(', ') + '.\n'
+      );
+    } else {
+      process.stdout.write(
+        'CORE SELFTEST SUMMARY: all ' + suites.length + ' suites passed.\n'
+      );
+    }
+    process.exitCode = failedSuites.length ? 1 : 0;
     return;
   }
 
   if (command === 'fixtures') {
-    if (args.includes('--update')) {
+    const fixtureModes = args.filter((argument) => {
+      return ['--check', '--update', '--finalize'].includes(argument);
+    });
+    if (fixtureModes.length !== 1) {
+      throw new Error('fixtures requires exactly one of --check, --update, or --finalize.');
+    }
+    if (fixtureModes[0] === '--finalize') {
+      const finalization = readLegacyFinalizationFixtureRequest(
+        root,
+        requiredOption(args, '--finalize')
+      );
+      const fixtures = await writeLegacyFinalizationFixtures(root, finalization);
+      process.stdout.write(
+        'Updated ' + fixtures.size
+          + ' generated Core fixtures through the exact legacy-finalization boundary.\n'
+      );
+      return;
+    }
+    if (fixtureModes[0] === '--update') {
       const fixtures = await writeSoterFixtures(root);
       process.stdout.write('Updated ' + fixtures.size + ' generated Core fixtures.\n');
       return;
     }
-    if (args.includes('--check')) {
+    if (fixtureModes[0] === '--check') {
       const result = await checkSoterFixtures(root);
       if (json) {
         print({ matches: result.matches, mismatches: result.mismatches });
@@ -1855,13 +3289,41 @@ async function main() {
       process.exitCode = result.matches ? 0 : 1;
       return;
     }
-    throw new Error('fixtures requires --check or --update.');
+    throw new Error('fixtures requires --check, --update, or --finalize ABSOLUTE_PRIVATE_PATH.');
   }
 
   throw new Error(
-    'Usage: node soter/core/cli.mjs <resolve|config-inspect|configuration-change-plan|configuration-change-request|configuration-change-confirm|configuration-change-start|configuration-change-execute|configuration-change-recover|configuration-change-inspect|host-realization-plan|host-realization-request|host-realization-confirm|host-realization-start|host-realization-execute|host-realization-recover|host-realization-inspect|pack-install-plan|pack-install-request|pack-install-confirm|pack-install-start|pack-install-execute|pack-install-recover|pack-install-inspect|operator-prepare|operator-prepared-inspect|operator-prepared-review|operator-prepared-derived-review|operator-review-batch-create|operator-review-batch|operator-connected-plan-create|operator-connected-plan|operator-inspect|operator-approval-review|prepare|context|context-connected-prepare|context-connected-finalize|meeting-intake-decision-inspect|meeting-intake-decision-commit|email-triage-decision-inspect|email-triage-decision-commit|email-triage-proposal-inspect|email-triage-proposal-commit|email-triage-proposal-material|meeting-intake-proposal|transaction|connected-batch-preview|proposal-connected-batch-preview|connected-approval-request|connected-approval-confirm|connected-transaction-prepare|connected-transaction-complete|connected-transaction-reconcile|doctor|probe-prepare|probe-complete|capability-prepare|capability-complete|plan-prepare|plan-complete|host-fail|host-get|host-list|fixtures|selftest> [options]\n'
+    'Usage: node soter/core/cli.mjs <legacy-checker-receipt-inspect|legacy-checker-projection-inspect|resolve|config-inspect|development-candidate-lock|development-request-create|development-result-record|development-host-evaluate|development-host-judge|development-host-finalize|development-host-evidence-historical|development-historical-evidence-batch-request|development-historical-evidence-batch-execute|development-historical-evidence-batch-recover|development-historical-evidence-batch-inspect|development-host-evidence-final|development-host-evidence-finalization-request-create|development-host-evidence-finalize-batch|development-host-evidence-finalization-rollback|development-host-evidence-finalization-verify|development-workflow-lifecycle-request-create|development-workflow-lifecycle-plan|legacy-finalization-transition-request-create|repository-cutover-request-create|repository-cutover-prepare|repository-cutover-execute|repository-cutover-recover|repository-cutover-rollback|repository-cutover-inspect|development-run-inspect|configuration-change-plan|configuration-change-request|configuration-change-confirm|configuration-change-start|configuration-change-execute|configuration-change-recover|configuration-change-inspect|host-realization-plan|host-realization-request|host-realization-confirm|host-realization-start|host-realization-execute|host-realization-recover|host-realization-inspect|pack-install-plan|pack-install-request|pack-install-confirm|pack-install-start|pack-install-execute|pack-install-recover|pack-install-inspect|operator-prepare|operator-prepared-inspect|operator-prepared-review|operator-prepared-derived-review|operator-review-batch-create|operator-review-batch|operator-connected-plan-create|operator-connected-plan|operator-inspect|connected-acceptance-inspect|operator-approval-review|prepare|context-connected-prepare|context-connected-finalize|slack-conversation-context-connected-prepare|slack-conversation-context-connected-finalize|slack-conversation-connected-inspect|slack-conversation-connected-review|meeting-intake-decision-inspect|meeting-intake-decision-commit|meeting-intake-proposal-inspect|meeting-intake-proposal-commit|meeting-intake-proposal-material|email-context-connected-prepare|email-context-connected-finalize|email-triage-decision-inspect|email-triage-decision-commit|email-triage-proposal-inspect|email-triage-proposal-commit|email-triage-proposal-material|task-context-connected-prepare|task-context-connected-finalize|task-capture-decision-inspect|task-capture-decision-commit|task-capture-proposal-inspect|task-capture-proposal-commit|task-capture-proposal-material|organization-context-connected-prepare|organization-context-connected-finalize|organization-capture-decision-inspect|organization-capture-decision-commit|organization-capture-proposal-inspect|organization-capture-proposal-commit|organization-capture-proposal-material|project-capture-context-connected-prepare|project-capture-context-connected-finalize|project-capture-decision-inspect|project-capture-decision-commit|project-capture-proposal-inspect|project-capture-proposal-commit|project-capture-proposal-material|contact-context-connected-prepare|contact-context-connected-finalize|contact-capture-decision-inspect|contact-capture-decision-commit|contact-capture-proposal-inspect|contact-capture-proposal-commit|contact-capture-proposal-material|project-context-connected-prepare|project-context-connected-finalize|project-pulse-decision-inspect|project-pulse-decision-commit|project-pulse-proposal-inspect|project-pulse-proposal-commit|project-pulse-proposal-material|proposal-connected-batch-preview|connected-approval-request|connected-approval-confirm|connected-transaction-prepare|connected-transaction-complete|connected-transaction-reconcile|doctor|probe-prepare|probe-complete|capability-complete|plan-complete|host-fail|host-get|host-list|fixtures|selftest> [options]\n'
+      + '  legacy-checker-receipt-inspect --receipt-id ID [--root PATH] [--json]\n'
+      + '  legacy-checker-projection-inspect [--root PATH] [--json]\n'
       + '  resolve [--config PATH] [--host ID] [--output PATH] [--json]\n'
       + '  config-inspect [--config PATH] [--host ID | --lock PATH] [--output PATH] [--json]\n'
+      + '  development-candidate-lock --config PATH --workflow ID --host <codex|claude> [--json]\n'
+      + '  development-request-create --lock PATH --workflow ID --request-id ID (--evaluation-suite | --invocation ABSOLUTE_PRIVATE_PATH) [--at TIME] [--json]\n'
+      + '  development-result-record --lock PATH --request-id ID --outcome ABSOLUTE_PRIVATE_PATH [--at TIME] [--json]\n'
+      + '  development-host-evaluate --request-id ID --executable ABSOLUTE_PRIVATE_PATH [--json]\n'
+      + '  development-host-judge --request-id ID --executable ABSOLUTE_PRIVATE_PATH [--json]\n'
+      + '  development-host-finalize --request-id ID [--judgment ABSOLUTE_PRIVATE_HUMAN_ATTESTATION_PATH] [--json]\n'
+      + '  development-host-evidence-historical --request-id ID [--json]\n'
+      + '  development-historical-evidence-batch-request --id ID --created-at TIME --valid-until TIME --workflows ABSOLUTE_PRIVATE_PATH [--json]\n'
+      + '  development-historical-evidence-batch-execute --request ABSOLUTE_PRIVATE_PATH --at TIME [--json]\n'
+      + '  development-historical-evidence-batch-recover --request ABSOLUTE_PRIVATE_PATH --at TIME [--json]\n'
+      + '  development-historical-evidence-batch-inspect --request ABSOLUTE_PRIVATE_PATH [--json]\n'
+      + '  development-host-evidence-final --request-id ID --lock GOVERNED_FIXTURE_LOCK_PATH --at TIME [--json]\n'
+      + '  development-host-evidence-finalization-request-create --id ID --created-at TIME --valid-until TIME --legacy-finalization ABSOLUTE_PRIVATE_PATH --workflows ABSOLUTE_PRIVATE_PATH --output ABSOLUTE_PRIVATE_PATH [--json]\n'
+      + '  development-host-evidence-finalize-batch --request ABSOLUTE_PRIVATE_PATH --legacy-finalization ABSOLUTE_PRIVATE_PATH --at TIME [--json]\n'
+      + '  development-host-evidence-finalization-rollback --request ABSOLUTE_PRIVATE_PATH --at TIME [--json]\n'
+      + '  development-host-evidence-finalization-verify --request ABSOLUTE_PRIVATE_PATH --legacy-finalization ABSOLUTE_PRIVATE_PATH --at TIME [--json]\n'
+      + '  development-workflow-lifecycle-request-create --id ID --created-at TIME --output ABSOLUTE_PRIVATE_PATH [--json]\n'
+      + '  development-workflow-lifecycle-plan --request ABSOLUTE_PRIVATE_PATH [--json]\n'
+      + '  legacy-finalization-transition-request-create --id ID --created-at TIME --valid-until TIME --at TIME --lifecycle-request ABSOLUTE_PRIVATE_PATH --checker-receipt ABSOLUTE_PRIVATE_PATH --output ABSOLUTE_PRIVATE_PATH --fixture-output ABSOLUTE_PRIVATE_PATH [--json]\n'
+      + '  repository-cutover-request-create --id ID --created-at TIME --lifecycle-request ABSOLUTE_PRIVATE_PATH --transition-request ABSOLUTE_PRIVATE_PATH --fixture-finalization-request ABSOLUTE_PRIVATE_PATH --output ABSOLUTE_PRIVATE_PATH [--json]\n'
+      + '  repository-cutover-prepare --request ABSOLUTE_PRIVATE_PATH --at TIME [--json]\n'
+      + '  repository-cutover-execute --checkpoint-id ID --at TIME [--json]\n'
+      + '  repository-cutover-recover --checkpoint-id ID --at TIME [--json]\n'
+      + '  repository-cutover-rollback --checkpoint-id ID --at TIME [--json]\n'
+      + '  repository-cutover-inspect --checkpoint-id ID [--json]\n'
+      + '  development-run-inspect --request-id ID [--json]\n'
       + '  configuration-change-plan --configuration NAME --candidate ABSOLUTE_PRIVATE_PATH [--plan-id ID] [--at TIME] [--json]\n'
       + '  configuration-change-request --plan-id ID --reason TEXT --expires-at TIME [--request-id ID] [--at TIME] [--json]\n'
       + '  configuration-change-confirm --request-id ID --actor ID --reason TEXT [--confirmation-id ID] [--at TIME] [--json]\n'
@@ -1883,7 +3345,7 @@ async function main() {
       + '  pack-install-execute --target ABSOLUTE_PRIVATE_TARGET --checkpoint-id ID [--at TIME] [--json]\n'
       + '  pack-install-recover --target ABSOLUTE_PRIVATE_TARGET --checkpoint-id ID [--at TIME] [--json]\n'
       + '  pack-install-inspect --target ABSOLUTE_PRIVATE_TARGET [--plan-id ID] [--request-id ID] [--confirmation-id ID] [--consumption-id ID] [--checkpoint-id ID] [--at TIME] [--json]\n'
-      + '  operator-prepare --configuration NAME --automation ID --input ABSOLUTE_PRIVATE_PATH [--at TIME] [--json]\n'
+      + '  operator-prepare --configuration NAME --configuration-basis tracked-contained|private-active --automation ID --input ABSOLUTE_PRIVATE_PATH [--preparation-mode contained|connected-acquisition] [--host ID] [--at TIME] [--json]\n'
       + '  operator-prepared-inspect --work-id ID [--json]\n'
       + '  operator-prepared-review --work-id ID [--json]\n'
       + '  operator-prepared-derived-review --work-id ID [--json]\n'
@@ -1892,37 +3354,76 @@ async function main() {
       + '  operator-connected-plan-create --batch-id ID [--at TIME] [--json]\n'
       + '  operator-connected-plan --plan-id ID [--json]\n'
       + '  operator-inspect [--request-id ID | --approval-id ID | --checkpoint ID] [--at TIME] [--json]\n'
+      + '  connected-acceptance-inspect [--checkpoint ID ...] [--at TIME] [--json]\n'
       + '  operator-approval-review --request-id ID [--json]\n'
       + '  prepare --lock PATH [--scenario PATH] [--output PATH] [--evidence-dir PATH] [--json]\n'
-      + '  context --lock PATH --meeting-id ID --recording-uri URI [--scenario PATH] [--json]\n'
-      + '  context-connected-prepare --lock PATH --run PATH --meeting-id ID --recording-uri URI [--snapshot-id ID] [--json]\n'
+      + '  context-connected-prepare --work ID [--at TIME] [--json]\n'
       + '  context-connected-finalize --checkpoint ID [--json]\n'
+      + '  slack-conversation-context-connected-prepare --work ID [--at TIME] [--json]\n'
+      + '  slack-conversation-context-connected-finalize --checkpoint ID [--json]\n'
+      + '  slack-conversation-connected-inspect --work ID [--json]\n'
+      + '  slack-conversation-connected-review --work ID [--json]\n'
       + '  meeting-intake-decision-inspect --lock PATH --snapshot ID [--json]\n'
       + '  meeting-intake-decision-commit --lock PATH --snapshot ID --decision-input PATH [--decision-id ID] [--actor ID] [--json]\n'
+      + '  email-context-connected-prepare --work ID [--at TIME] [--json]\n'
+      + '  email-context-connected-finalize --checkpoint ID [--json]\n'
       + '  email-triage-decision-inspect --lock PATH --snapshot ID [--json]\n'
       + '  email-triage-decision-commit --lock PATH --snapshot ID --decision-input PATH [--decision-id ID] [--actor ID] [--json]\n'
       + '  email-triage-proposal-inspect --lock PATH --decision ID [--json]\n'
       + '  email-triage-proposal-commit --lock PATH --decision ID --proposal-input ABSOLUTE_PATH [--proposal-id ID] [--actor ID] [--json]\n'
       + '  email-triage-proposal-material --lock PATH --proposal ID [--json]\n'
-      + '  meeting-intake-proposal --lock PATH --decision ID [--change-set-id ID] [--output PATH] [--json]\n'
-      + '  transaction --lock PATH [--scenario PATH] [--approve] [--json]\n'
-      + '  connected-batch-preview --lock PATH --change-set PATH [--batch-id ID] [--json]\n'
+      + '  task-context-connected-prepare --work ID [--at TIME] [--json]\n'
+      + '  task-context-connected-finalize --checkpoint ID [--json]\n'
+      + '  task-capture-decision-inspect --lock PATH --snapshot ID [--at ISO] [--json]\n'
+      + '  task-capture-decision-commit --lock PATH --snapshot ID [--decision-id ID] [--actor ID] [--json]\n'
+      + '  task-capture-proposal-inspect --lock PATH --decision ID [--json]\n'
+      + '  task-capture-proposal-commit --lock PATH --decision ID [--proposal-id ID] [--actor ID] [--json]\n'
+      + '  task-capture-proposal-material --lock PATH --proposal ID [--json]\n'
+      + '  organization-context-connected-prepare --work ID [--at TIME] [--json]\n'
+      + '  organization-context-connected-finalize --checkpoint ID [--json]\n'
+      + '  organization-capture-decision-inspect --lock PATH --snapshot ID [--json]\n'
+      + '  organization-capture-decision-commit --lock PATH --snapshot ID [--decision-id ID] [--actor ID] [--json]\n'
+      + '  organization-capture-proposal-inspect --lock PATH --decision ID [--json]\n'
+      + '  organization-capture-proposal-commit --lock PATH --decision ID [--proposal-id ID] [--actor ID] [--json]\n'
+      + '  organization-capture-proposal-material --lock PATH --proposal ID [--json]\n'
+      + '  project-capture-context-connected-prepare --work ID [--at TIME] [--json]\n'
+      + '  project-capture-context-connected-finalize --checkpoint ID [--json]\n'
+      + '  project-capture-decision-inspect --lock PATH --snapshot ID [--json]\n'
+      + '  project-capture-decision-commit --lock PATH --snapshot ID [--decision-id ID] [--actor ID] [--json]\n'
+      + '  project-capture-proposal-inspect --lock PATH --decision ID [--json]\n'
+      + '  project-capture-proposal-commit --lock PATH --decision ID [--proposal-id ID] [--actor ID] [--json]\n'
+      + '  project-capture-proposal-material --lock PATH --proposal ID [--json]\n'
+      + '  contact-context-connected-prepare --work ID [--at TIME] [--json]\n'
+      + '  contact-context-connected-finalize --checkpoint ID [--json]\n'
+      + '  contact-capture-decision-inspect --lock PATH --snapshot ID [--json]\n'
+      + '  contact-capture-decision-commit --lock PATH --snapshot ID [--decision-id ID] [--actor ID] [--json]\n'
+      + '  contact-capture-proposal-inspect --lock PATH --decision ID [--json]\n'
+      + '  contact-capture-proposal-commit --lock PATH --decision ID [--proposal-id ID] [--actor ID] [--json]\n'
+      + '  contact-capture-proposal-material --lock PATH --proposal ID [--json]\n'
+      + '  project-context-connected-prepare --work ID [--at TIME] [--json]\n'
+      + '  project-context-connected-finalize --checkpoint ID [--json]\n'
+      + '  project-pulse-decision-inspect --lock PATH --snapshot ID [--json]\n'
+      + '  project-pulse-decision-commit --lock PATH --snapshot ID [--decision-id ID] [--actor ID] [--json]\n'
+      + '  project-pulse-proposal-inspect --lock PATH --decision ID [--json]\n'
+      + '  project-pulse-proposal-commit --lock PATH --decision ID [--proposal-id ID] [--actor ID] [--json]\n'
+      + '  project-pulse-proposal-material --lock PATH --proposal ID [--json]\n'
+      + '  meeting-intake-proposal-inspect --lock PATH --decision ID [--json]\n'
+      + '  meeting-intake-proposal-commit --lock PATH --decision ID [--proposal-id ID] [--actor ID] [--json]\n'
+      + '  meeting-intake-proposal-material --lock PATH --proposal ID [--json]\n'
       + '  proposal-connected-batch-preview --lock PATH --proposal ID --action-id ID [--action-id ID] [--change-set-id ID] [--batch-id ID] [--json]\n'
-      + '  connected-approval-request --lock PATH --run PATH --batch PATH --change-set PATH --request-id ID --reason TEXT --expires-at TIME [--json]\n'
+      + '  connected-approval-request --configuration-basis private-active --lock PATH --run PATH --batch PATH --change-set PATH --request-id ID --reason TEXT --expires-at TIME [--json]\n'
       + '  connected-approval-confirm --request-id ID --approval-id ID --actor ACTOR --reason TEXT [--json]\n'
       + '  connected-transaction-prepare --approval-id ID [--json]\n'
       + '  connected-transaction-complete --checkpoint ID --call ID --response ABSOLUTE_PRIVATE_PATH [--json]\n'
       + '  connected-transaction-reconcile --checkpoint ID [--json]\n'
       + '  doctor --lock PATH [--level offline|connected] [--probe PATH ...] [--probe-checkpoint ID ...] [--config PATH] [--json]\n'
-      + '  probe-prepare --lock PATH --provider ID [--output PATH] [--json]\n'
-      + '  probe-complete --checkpoint ID [--call ID] --response ABSOLUTE_PRIVATE_PATH [--probe-output PATH] [--json]\n'
-      + '  capability-prepare --lock PATH --run PATH --capability ID --authority ID --provider ID --input PATH [--output PATH] [--json]\n'
-      + '  capability-complete --checkpoint ID --response ABSOLUTE_PRIVATE_PATH [--output PATH] [--json]\n'
-      + '  plan-prepare --lock PATH --run PATH --plan ABSOLUTE_PRIVATE_PATH [--json]\n'
+      + '  probe-prepare --configuration-basis private-active --lock PATH --provider ID [--json]\n'
+      + '  probe-complete --checkpoint ID --call ID --response ABSOLUTE_PRIVATE_PATH [--json]\n'
+      + '  capability-complete --checkpoint ID --response ABSOLUTE_PRIVATE_PATH [--json]\n'
       + '  plan-complete --checkpoint ID --call ID --response ABSOLUTE_PRIVATE_PATH [--json]\n'
-      + '  host-fail --checkpoint ID [--call ID] --kind KIND --message TEXT [--output PATH] [--json]\n'
+      + '  host-fail --checkpoint ID [--call ID] --kind KIND [--at TIME] [--json]\n'
       + '  host-get --checkpoint ID\n'
-      + '  host-list [--state requested|completed|rolled-back|failed|needs-attention|blocked]\n'
+      + '  host-list [--state requested|completed|failed|needs-attention|blocked]\n'
       + '  fixtures <--check|--update> [--json]'
   );
 }

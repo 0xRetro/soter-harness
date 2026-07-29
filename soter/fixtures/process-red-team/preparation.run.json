@@ -1,0 +1,338 @@
+{
+  "$contract": "soter://contracts/run-envelope/v1",
+  "contractVersion": "1.0.0",
+  "id": "run.process-red-team.preparation-fixture",
+  "createdAt": "2026-07-21T23:00:00.000Z",
+  "requestedOutcome": "Prepare one ranked five-lens process review with exact source reproduction, then stop before edits, approval, dispatch, or provider writes.",
+  "initiation": "user-requested",
+  "intent": "operate",
+  "lifecycleState": "paused",
+  "automation": {
+    "id": "automation.process-red-team",
+    "version": "0.1.0"
+  },
+  "configurationLock": {
+    "path": "soter/fixtures/process-red-team/process-red-team.lock.json",
+    "fingerprint": "sha256:b730a38e52ae8985aa4d521f141ee5464ef28e30c03d66a82efc79e569ced3f2"
+  },
+  "graphFingerprint": "sha256:4ead41034d8041a73c6cc0e6790a6f167c8af3f7b7d0631f41014d7325d7ec76",
+  "context": [
+    {
+      "subject": "notion.workspace",
+      "authority": "authority.notion.provider",
+      "role": "provider",
+      "uri": "soter-fixture://configuration-template/notion/account/operator",
+      "declarationFingerprint": "sha256:cdee230730b0f3c9c6ca06e6578e38324ed0b7f7da89339d7628c70061e960e1",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:b730a38e52ae8985aa4d521f141ee5464ef28e30c03d66a82efc79e569ced3f2",
+      "freshness": "unknown"
+    },
+    {
+      "subject": "process.records",
+      "authority": "authority.process.definition",
+      "role": "definition",
+      "uri": "soter-fixture://configuration-template/notion/authority/process-policies",
+      "declarationFingerprint": "sha256:73b17007c4b638af8660983e3baa71fb5cfa2f18e2783faf2961d643d67c2850",
+      "status": "loaded",
+      "provenance": "fixture:sha256:02d58110c3cb107df31c13ea29337875ac59e575b5f872d7184c2004bd858a74",
+      "freshness": "passed"
+    },
+    {
+      "subject": "process.records",
+      "authority": "authority.process.instance",
+      "role": "instance",
+      "uri": "soter-fixture://configuration-template/notion/authority/process",
+      "declarationFingerprint": "sha256:a8021b2f01883b9864ea4e04b2f4a28ba05f1c09a41e89431061f096377f79e4",
+      "status": "loaded",
+      "provenance": "fixture:sha256:ed3cae06e075ef0e886b57bb2bd3b24eb00ef96e8365ce581364bd6d7f337cea",
+      "freshness": "passed"
+    },
+    {
+      "subject": "runtime.runs",
+      "authority": "authority.run.evidence",
+      "role": "evidence",
+      "uri": "soter-state://runs",
+      "declarationFingerprint": "sha256:74c8fdd14e981038f959c469d6709fe66186b5f854f5f337f65bc67a6e7926c0",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:b730a38e52ae8985aa4d521f141ee5464ef28e30c03d66a82efc79e569ced3f2",
+      "freshness": "unknown"
+    }
+  ],
+  "bindings": [
+    {
+      "capability": "process.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.process.definition",
+        "authority.process.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Notion supplies the exact review policy selection and bounded review source set."
+    },
+    {
+      "capability": "process.schema.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.process.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Notion supplies one current normalized schema observation for the declared write target."
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0",
+    "projectionDefinition": {
+      "id": "host-projection.codex",
+      "version": "0.3.0",
+      "path": "soter/hosts/codex/projection.json",
+      "fingerprint": "sha256:76cd84436a3b5e7f00edcc8a0be3cdff64f53e488b13107a8bf56603b9600490"
+    },
+    "projectionGenerator": {
+      "id": "core.host-projection-generator",
+      "version": "2.1.0"
+    }
+  },
+  "effectPolicies": {
+    "read": {
+      "mode": "allow",
+      "reason": "The selected review definition and bounded exact source set may be read for private preparation."
+    },
+    "disclosure": {
+      "mode": "allow",
+      "reason": "Selected observations may enter a private run envelope with explicit minimization."
+    },
+    "write": {
+      "mode": "confirm",
+      "reason": "The shared selected Notion pack declares write capabilities, but Process Red Team requires none, emits no proposed change, and declares no compiler or execution path."
+    },
+    "dispatch": {
+      "mode": "prohibit",
+      "reason": "Process Red Team does not dispatch agents, messages, or work in this contained migration slice."
+    },
+    "destructive": {
+      "mode": "prohibit",
+      "reason": "Process Red Team never deletes or performs destructive changes."
+    }
+  },
+  "approvals": [],
+  "checkpoints": [
+    {
+      "id": "effects-established",
+      "state": "passed",
+      "details": "Read and disclosure policies were evaluated before every contained source invocation."
+    },
+    {
+      "id": "review-source-set-grounded",
+      "state": "passed",
+      "details": "The exact review policy, process, related policies, current write-target schema, and run evidence were loaded."
+    },
+    {
+      "id": "critical-reproduction-held",
+      "state": "passed",
+      "details": "Every critical finding was mechanically reproduced against the exact private source set before inclusion."
+    },
+    {
+      "id": "write-boundary-held",
+      "state": "passed",
+      "details": "No proposed change, approval request, continuation request, dispatch, provider write, or canonical write was issued."
+    }
+  ],
+  "outputs": [
+    {
+      "id": "context.process-red-team.preparation-fixture",
+      "type": "context-snapshot",
+      "fingerprint": "sha256:05afdfaa702a1f4d528ac6421e63e40b74fcb999f40c12326099451b9eb8589b"
+    }
+  ],
+  "effects": [
+    {
+      "id": "effect.process-red-team.preparation.policy.fixture",
+      "capability": "process.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.process.definition",
+      "startedAt": "2026-07-21T23:00:00.000Z",
+      "completedAt": "2026-07-21T23:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The selected review definition and bounded exact source set may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected observations may enter a private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:82deba1d6003a83966428c7d65ff271810dcb0d5a05d3d08498b9133c584d0c4",
+      "state": "passed",
+      "outputFingerprint": "sha256:5e10c5e86bc2a9a35cf41e9f29360d71843d458b0b2819e3c4348ee46136b36d",
+      "error": null
+    },
+    {
+      "id": "effect.process-red-team.preparation.target.fixture",
+      "capability": "process.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.process.instance",
+      "startedAt": "2026-07-21T23:00:00.000Z",
+      "completedAt": "2026-07-21T23:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The selected review definition and bounded exact source set may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected observations may enter a private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:f4565f5b911e583d150fd73c4670b6e34a24749c0c63030f382ece4c6f83a3bd",
+      "state": "passed",
+      "outputFingerprint": "sha256:b93861b0f277fa57b4f7c34aedd33045d953f5d2371d13eb9e389c0aec927ed0",
+      "error": null
+    },
+    {
+      "id": "effect.process-red-team.preparation.policy-standards.fixture",
+      "capability": "process.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.process.instance",
+      "startedAt": "2026-07-21T23:00:00.000Z",
+      "completedAt": "2026-07-21T23:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The selected review definition and bounded exact source set may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected observations may enter a private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:bd2e061f2cf6e53496916a27c855bcc9c2b71f264757036daed07010ea29e6ba",
+      "state": "passed",
+      "outputFingerprint": "sha256:0e7113b7ce0e7478125fb60df6073137d04a6fa586cef1ef9286e28793801d95",
+      "error": null
+    },
+    {
+      "id": "effect.process-red-team.preparation.write-target-schema.fixture",
+      "capability": "process.schema.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.process.instance",
+      "startedAt": "2026-07-21T23:00:00.000Z",
+      "completedAt": "2026-07-21T23:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The selected review definition and bounded exact source set may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected observations may enter a private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:e667639e8b36b288b8d4da9941547d8c906928f4c9ccd7230b95a86cb2fb7ad1",
+      "state": "passed",
+      "outputFingerprint": "sha256:fae1d658ff3a1dbad431be0e9f6085531bfc91a8a32986b228378dbda467dca3",
+      "error": null
+    },
+    {
+      "id": "effect.process-red-team.preparation.runs.fixture",
+      "capability": "process.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.process.instance",
+      "startedAt": "2026-07-21T23:00:00.000Z",
+      "completedAt": "2026-07-21T23:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The selected review definition and bounded exact source set may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected observations may enter a private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:e928b2b767c6497fb89e7644c0fea6d848847e25d72e77b5be7c75711634a2c7",
+      "state": "passed",
+      "outputFingerprint": "sha256:98ed051d562d9c07266040291327f0c505a596e17cf96a396ea357135304c5e6",
+      "error": null
+    }
+  ],
+  "evidenceIds": [],
+  "scenario": {
+    "id": "process-red-team.preparation",
+    "path": "soter/scenarios/process-red-team/preparation.scenario.json",
+    "fingerprint": "sha256:497605d705149b2ae6a74aa1672d9c2196d62d2f8c0d016184dacc30cc72e6fb"
+  }
+}

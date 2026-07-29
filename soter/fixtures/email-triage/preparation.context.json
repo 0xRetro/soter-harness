@@ -1,0 +1,50 @@
+{
+  "$contract": "soter://contracts/context-snapshot/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.email-triage.preparation-fixture",
+  "runId": "run.email-triage.preparation-fixture",
+  "createdAt": "2026-07-16T16:00:00.000Z",
+  "configurationLockFingerprint": "sha256:c1ecb4cb946b2f30808dc881ebf30261bb4e4c238d41ceced0f41e975cf81502",
+  "graphFingerprint": "sha256:7423c8496b0aea010a986cdc98341692785b78850ad1c1aef2680e7bbd9f256f",
+  "containment": "fixture",
+  "entries": [
+    {
+      "id": "context.email-triage.window",
+      "subject": "mail.mailbox.window",
+      "authority": "authority.mailbox.instance",
+      "role": "instance",
+      "capability": "mail.window.read",
+      "providerPack": "integration.gmail",
+      "providerImplementation": "provider.integration.gmail.fixture",
+      "providerVersion": "0.1.0",
+      "observedAt": "2026-07-16T16:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "gmail-fixture",
+        "authority": "authority.mailbox.instance",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:355909db7d4b7c0ceec7fdcc368ea5ebf86bfe40399488590a8392268e484fb7"
+      },
+      "valueFingerprint": "sha256:a342aa6568f6daae70d129d39f742698ade3d0b1bad25736637c688b21725cbb",
+      "value": {
+        "queryFingerprint": "sha256:69c443b697ee0381098722f89edf137896b9e485a841c08f8aee7e282dc4b82b",
+        "providerOutputFingerprint": "sha256:00ad6e5dfbdce3ef7be9638bee7152bb1a37d8f1b314ef3d761c3e86b2a9d256",
+        "modelFingerprint": "sha256:8b1af07709e3bd759ac041d8cdfecf66fa939cf897efe8fac2b772b2e7c1ba3b",
+        "rawThreadCount": 15,
+        "includedItemCount": 11,
+        "excludedItemCount": 4,
+        "reviewRowCount": 10,
+        "collectionFingerprint": "sha256:d4ef2fde4776e6f1197767f2c9020cb0492acdc2307cb4768dbf211fa8020ecc"
+      }
+    }
+  ],
+  "effectIds": [
+    "effect.email-triage.preparation.window.fixture"
+  ],
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Raw query, sender, recipient, subject, body, thread, message, draft, and handoff values are excluded; only exact fingerprints and counts remain."
+    ]
+  }
+}

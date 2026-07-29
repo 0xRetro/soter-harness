@@ -1,0 +1,107 @@
+{
+  "$contract": "soter://contracts/workflow-evaluation-set/v2",
+  "contractVersion": "2.0.0",
+  "id": "evaluation-set.writing-adrs",
+  "workflow": "automation.writing-adrs",
+  "version": "0.1.0",
+  "lifecycle": {
+    "state": "retired",
+    "retirement": "complete",
+    "authority": "none",
+    "permittedNextAction": "inspect-replacement"
+  },
+  "cases": [
+    {
+      "id": "happy-path",
+      "sequence": 1,
+      "kind": "happy-path",
+      "source": {
+        "presence": "removed",
+        "legacyPath": ".claude/evals/writing-adrs/happy-path.md",
+        "legacyFingerprint": "sha256:95b9ca70992d76d7b512e1f631b8128b6bda7a2b7d6bdf7ca28f72a454e40889"
+      },
+      "stimulus": {
+        "summary": "A deliberate deferral with costs and revisit trigger becomes one proposed decision record.",
+        "conditions": [
+          "The exact legacy case is available only as a migration source and is not an executable v2 test."
+        ]
+      },
+      "expectedObservations": [
+        "The record captures alternatives, consequences, and exact acceptance state.",
+        "The workflow remains authority-free while its runtime is unavailable."
+      ],
+      "prohibitedOutcomes": [
+        "No implementation permission is treated as decision acceptance.",
+        "No normalized case grants runtime, effect, readiness, verification, or health authority."
+      ]
+    },
+    {
+      "id": "invariant-immutable",
+      "sequence": 2,
+      "kind": "invariant",
+      "source": {
+        "presence": "removed",
+        "legacyPath": ".claude/evals/writing-adrs/invariant-immutable.md",
+        "legacyFingerprint": "sha256:06bd0d7356696f2ff4e70f5713ddef2be58e301e4a65f4dd2ca4f2b59c43aad9"
+      },
+      "stimulus": {
+        "summary": "A request to alter accepted decision text produces a supersession path instead.",
+        "conditions": [
+          "The exact legacy case is available only as a migration source and is not an executable v2 test."
+        ]
+      },
+      "expectedObservations": [
+        "Accepted history remains immutable.",
+        "The workflow remains authority-free while its runtime is unavailable."
+      ],
+      "prohibitedOutcomes": [
+        "No accepted decision body is edited in place.",
+        "No normalized case grants runtime, effect, readiness, verification, or health authority."
+      ]
+    },
+    {
+      "id": "pressure-inline",
+      "sequence": 3,
+      "kind": "pressure",
+      "source": {
+        "presence": "removed",
+        "legacyPath": ".claude/evals/writing-adrs/pressure-inline.md",
+        "legacyFingerprint": "sha256:5cc5f9b36f53913a0dde0d99da8391086c391c167ae42203cc8278937d5f9a9b"
+      },
+      "stimulus": {
+        "summary": "Urgency does not bury a durable choice inside always-on host instructions.",
+        "conditions": [
+          "The exact legacy case is available only as a migration source and is not an executable v2 test."
+        ]
+      },
+      "expectedObservations": [
+        "The decision remains a separately reviewable proposed record.",
+        "The workflow remains authority-free while its runtime is unavailable."
+      ],
+      "prohibitedOutcomes": [
+        "No quick host-file note becomes permanent architecture authority.",
+        "No normalized case grants runtime, effect, readiness, verification, or health authority."
+      ]
+    }
+  ],
+  "evaluationPolicy": {
+    "runner": "none",
+    "requestContract": null,
+    "resultContract": null,
+    "freshWorkerPerCase": true,
+    "expectationsWithheld": true,
+    "baselineRequired": true,
+    "supportedHosts": [],
+    "authority": "none"
+  },
+  "privacy": {
+    "rawPromptsIncluded": false,
+    "workspaceSpecificValuesIncluded": false,
+    "privateInputsIncluded": false,
+    "rawTranscriptsIncluded": false,
+    "absolutePathsIncluded": false
+  },
+  "limitations": [
+    "These normalized cases preserve behavior expectations but are not executable scenario evidence or proof of runtime parity."
+  ]
+}

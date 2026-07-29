@@ -1,0 +1,138 @@
+{
+  "$contract": "soter://contracts/automation-input/v1",
+  "contractVersion": "1.0.0",
+  "id": "input.automation.project-capture",
+  "automation": "automation.project-capture",
+  "version": "1.0.0",
+  "fields": [
+    {
+      "id": "name",
+      "label": "Project engagement name",
+      "description": "Private candidate project name. It must begin with the exact operator-supplied organization short name followed by a colon and space.",
+      "type": "string",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minLength": 3, "maxLength": 160 }
+    },
+    {
+      "id": "organizationShortName",
+      "label": "Organization short name",
+      "description": "Private exact short name used only to validate the candidate project-name prefix; it is not inferred from provider layout or displayed in sanitized inspection.",
+      "type": "string",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minLength": 1, "maxLength": 80, "pattern": "^[^:\\r\\n]+$" }
+    },
+    {
+      "id": "organization",
+      "label": "Organization reference",
+      "description": "Exact authoritative portable CRM Organization resource for this candidate. This v2 Project Capture workflow requires one Organization and its private exact short name; it does not accept a provider-native relation identifier.",
+      "type": "reference",
+      "required": true,
+      "exposure": "identifier",
+      "reference": { "subject": "crm.records.organization", "authorityRole": "instance" },
+      "constraints": { "minLength": 3, "maxLength": 240 }
+    },
+    {
+      "id": "creationProfile",
+      "label": "Creation profile",
+      "description": "Exact governed portable creation profile selected independently from any provider-native template behavior.",
+      "type": "enum",
+      "required": true,
+      "exposure": "identifier",
+      "options": ["project", "deal"]
+    },
+    {
+      "id": "projectType",
+      "label": "Project type",
+      "description": "Candidate portable project classification revalidated against the selected creation profile, governed policy, and current provider schema.",
+      "type": "enum",
+      "required": true,
+      "exposure": "identifier",
+      "options": ["Project", "Operations", "Deal"]
+    },
+    {
+      "id": "overview",
+      "label": "Project overview",
+      "description": "Private evidence-grounded overview retained only in selected local review material and the exact reviewed create body; it is absent from sanitized inspection.",
+      "type": "string",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minLength": 12, "maxLength": 4000 }
+    },
+    {
+      "id": "milestoneTitles",
+      "label": "Milestone titles",
+      "description": "Private ordered outcome titles. This list must have exactly the same number of entries as descriptions, owners, actions, and any supplied dates.",
+      "type": "string-list",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minItems": 1, "maxItems": 20, "itemMinLength": 3, "itemMaxLength": 160 }
+    },
+    {
+      "id": "milestoneDescriptions",
+      "label": "Milestone descriptions",
+      "description": "Private ordered one-line outcome descriptions paired positionally with milestone titles.",
+      "type": "string-list",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minItems": 1, "maxItems": 20, "itemMinLength": 3, "itemMaxLength": 600 }
+    },
+    {
+      "id": "milestoneOwners",
+      "label": "Milestone work owners",
+      "description": "Private ordered single owner tokens paired positionally with milestone actions. Multiple-owner legacy semantics are intentionally unavailable in this portable profile.",
+      "type": "string-list",
+      "required": true,
+      "exposure": "private",
+      "constraints": {
+        "minItems": 1,
+        "maxItems": 20,
+        "itemMinLength": 1,
+        "itemMaxLength": 100,
+        "itemPattern": "^[^,\\r\\n]+$"
+      }
+    },
+    {
+      "id": "milestoneActions",
+      "label": "Milestone work actions",
+      "description": "Private ordered concrete actions paired positionally with milestone titles and owners.",
+      "type": "string-list",
+      "required": true,
+      "exposure": "private",
+      "constraints": { "minItems": 1, "maxItems": 20, "itemMinLength": 3, "itemMaxLength": 1000 }
+    },
+    {
+      "id": "milestoneDates",
+      "label": "Milestone work dates",
+      "description": "Optional private ordered exact dates. When supplied, every milestone requires one YYYY-MM-DD entry; omission makes every initial work item undated.",
+      "type": "string-list",
+      "required": false,
+      "exposure": "private",
+      "constraints": {
+        "minItems": 0,
+        "maxItems": 20,
+        "itemMinLength": 10,
+        "itemMaxLength": 10,
+        "itemPattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+      }
+    },
+    {
+      "id": "startDate",
+      "label": "Start date",
+      "description": "Optional private project start date pinned exactly as YYYY-MM-DD rather than a relative phrase.",
+      "type": "date",
+      "required": false,
+      "exposure": "private"
+    },
+    {
+      "id": "targetEndDate",
+      "label": "Target end date",
+      "description": "Optional private target end date pinned exactly as YYYY-MM-DD and required to be no earlier than the start date.",
+      "type": "date",
+      "required": false,
+      "exposure": "private"
+    }
+  ],
+  "additionalInputs": false
+}

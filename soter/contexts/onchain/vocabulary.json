@@ -1,0 +1,30 @@
+{
+  "$contract": "soter://contracts/context-vocabulary/v1",
+  "contractVersion": "1.0.0",
+  "id": "vocabulary.context.onchain",
+  "pack": "context.onchain",
+  "version": "0.1.0",
+  "subject": "onchain.records",
+  "entries": [
+    {
+      "sequence": 1,
+      "id": "address",
+      "term": "address",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "A public onchain account identity described by its exact network, governed account type, organizational function, and internal label, whose verified state requires linked completed verification-run evidence.",
+      "domain": "identity",
+      "sourceUris": []
+    }
+  ],
+  "invariants": {
+    "singleDefinitionSource": true,
+    "projectionCopiesAreNonCanonical": true,
+    "providerNeutral": true,
+    "runtimeAuthority": "none"
+  },
+  "limitations": [
+    "This vocabulary defines public account meaning only; it excludes private keys, seed phrases, credentials, signing material, transaction payloads, and execution authority.",
+    "Provider and policy projections must bind this exact artifact and fail visibly on drift; copied definitions never become canonical."
+  ]
+}

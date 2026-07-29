@@ -1,0 +1,223 @@
+{
+  "$contract": "soter://contracts/evidence/v2",
+  "contractVersion": "2.0.0",
+  "id": "evidence.contact-capture.connected-workflow.fixture",
+  "createdAt": "2026-07-21T14:00:00.000Z",
+  "claimFamily": "transaction",
+  "claim": "One fixture-contained connected-route workflow preserved exact private review, approval, single-use start, write, and read-after-write verification boundaries without a live provider effect.",
+  "subject": {
+    "type": "run",
+    "id": "run.contact-capture.connected-acquisition.09272eefdde52a3e252a296a",
+    "version": null
+  },
+  "configurationLockFingerprint": "sha256:5db5f013e374a653b8171cecacc467eb3a74cb8a5e7986916c5d62d39f76e97e",
+  "graphFingerprint": "sha256:0d12bbdf9f6a43cce528372543de0b2e98138acc9d444517d02d5021869b692e",
+  "dependencies": [
+    {
+      "id": "kernel.soter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+    },
+    {
+      "id": "core.runtime",
+      "version": "0.1.0",
+      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+    },
+    {
+      "id": "context.crm",
+      "version": "0.1.0",
+      "fingerprint": "sha256:fa69fc9f796e84b1a2cd7e319c4344dcc44d8dcbea9542e51158eb868d266f44"
+    },
+    {
+      "id": "automation.contact-capture",
+      "version": "0.1.0",
+      "fingerprint": "sha256:f3778a32f7b08aeb70e1b543b5953e069c792daceed2b3ab284e97291713eeea"
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "fingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
+  },
+  "integrations": [
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "manifestFingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5",
+      "evidenceMaturity": "declared"
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.crm.definition",
+      "role": "definition",
+      "subject": "crm.records",
+      "declarationFingerprint": "sha256:b227f74aa9fe340623302d850236b1c1cab271c3ac7999bf6aa7ccacf80954a3"
+    },
+    {
+      "id": "authority.crm.instance",
+      "role": "instance",
+      "subject": "crm.records",
+      "declarationFingerprint": "sha256:e03ee1ca1dba612c75b80ee83b54a38f4a9e61c5ebad54e8a77903c8bd0825ee"
+    },
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "declarationFingerprint": "sha256:cdee230730b0f3c9c6ca06e6578e38324ed0b7f7da89339d7628c70061e960e1"
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "declarationFingerprint": "sha256:460a19b01a4b563273ab8064bb14cbafcacce77a8c9e39130533ebc3bae22546"
+    }
+  ],
+  "evaluator": {
+    "id": "automation.contact-capture.contained-connected-workflow",
+    "version": "0.5.0",
+    "level": "fixture"
+  },
+  "environment": {
+    "containment": "fixture",
+    "runtime": "node"
+  },
+  "acceptanceCriteria": [
+    "One current prepared-work basis produces a deterministic grounded decision and private review proposal.",
+    "No write request exists before an expiring exact-scope request is confirmed.",
+    "The exact approval is consumed once into one durable checkpoint rather than retained as reusable authority.",
+    "The checkpoint observes its declared precondition, one approved write result, and exact read-after-write verification in order.",
+    "The private execution lock derives only from the exact portable tracked template through a closed contained provider substitution.",
+    "Only normalized provider outputs and fingerprints enter durable state or this evidence record."
+  ],
+  "result": "passed",
+  "outcomes": [
+    {
+      "id": "connected-workflow.prepared",
+      "state": "passed"
+    },
+    {
+      "id": "connected-workflow.decision-grounded",
+      "state": "passed"
+    },
+    {
+      "id": "connected-workflow.proposal-reviewed",
+      "state": "passed"
+    },
+    {
+      "id": "connected-workflow.approval-consumed-once",
+      "state": "passed"
+    },
+    {
+      "id": "connected-workflow.verified",
+      "state": "passed"
+    },
+    {
+      "id": "connected-workflow.private-contained-basis",
+      "state": "passed"
+    },
+    {
+      "id": "connected-workflow.live-provider-effect",
+      "state": "not-applicable"
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "prepared-work",
+      "id": "work.contact-capture.09272eefdde52a3e252a296a",
+      "fingerprint": "sha256:02282b0e1d00ac276a9f6b16da1661c58552720b66da1dccbda8173f6554ec27"
+    },
+    {
+      "role": "automation-decision",
+      "id": "decision.contact-capture.connected-selftest",
+      "fingerprint": "sha256:6607257457601dc82a27406935b944dce20f0aeed067a8b281821347cd5839e3"
+    },
+    {
+      "role": "automation-proposal",
+      "id": "proposal.contact-capture.connected-selftest",
+      "fingerprint": "sha256:1a75fa98a0c7660a1ee4e6618665ef2bce818d821c6fd8debb7ec81712eadc1e"
+    },
+    {
+      "role": "connected-change-set",
+      "id": "changeset.contact-capture.connected-selftest",
+      "fingerprint": "sha256:79bc3cf04e4b08a8a724e684efea820d06cfaba6b15fe57c8d757b0fb0bb80f9"
+    },
+    {
+      "role": "connected-operation-batch",
+      "id": "batch.contact-capture.connected-selftest",
+      "fingerprint": "sha256:3d51ff5aca3b87d4a5c67a5480ddf926ee032d031d570def678318554d2ba4ef"
+    },
+    {
+      "role": "approval",
+      "id": "approval.contact-capture.connected-selftest",
+      "fingerprint": "sha256:41a18385693637a7e5f6ba32b700b32d7395ca231d20d3f9f78e9cb986cfb83c"
+    },
+    {
+      "role": "approval-consumption",
+      "id": "approval-consumption.contact-capture.connected-selftest",
+      "fingerprint": "sha256:31f0b0cdf0af1100d1d33ccd5631d56d412ec57f403d828d3684247249ea21a0"
+    },
+    {
+      "role": "connected-transaction-checkpoint",
+      "id": "checkpoint.transaction.contact-capture.connected-selftest",
+      "fingerprint": "sha256:8f8afb920402b84e99c657ac969bce4fe23d279c105bc5d83d64504ad60c552e"
+    }
+  ],
+  "effects": [],
+  "failures": [],
+  "warnings": [],
+  "skipped": [
+    "No live provider authentication, permission, reachability, write, or health was evaluated.",
+    "No readiness, connected verification, health, proof maturity, or migration state is promoted by this transaction evidence alone."
+  ],
+  "limitations": [
+    "Host responses are deterministic contained fixtures passed through the connected provider translators; this proves local transaction behavior only.",
+    "The exact private execution lock remains private; this record exposes only its fingerprints and mechanically checked portable applicability projection."
+  ],
+  "freshness": {
+    "policy": "Valid only while every configuration-lock fingerprint remains unchanged.",
+    "validUntil": null
+  },
+  "supersedes": null,
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Credential references and credential values are excluded."
+    ]
+  },
+  "privateContainedBasis": {
+    "kind": "private-active-contained",
+    "version": "1.1.0",
+    "configurationName": "contact-capture",
+    "privateConfigurationFingerprint": "sha256:86d59a988081bc91475c32c09225d19e8ea3501cf5766a546d2a551a18664cba",
+    "privateLockFingerprint": "sha256:5db5f013e374a653b8171cecacc467eb3a74cb8a5e7986916c5d62d39f76e97e",
+    "privateGraphFingerprint": "sha256:0d12bbdf9f6a43cce528372543de0b2e98138acc9d444517d02d5021869b692e",
+    "trackedTemplateLockFingerprint": "sha256:a599779b29591ba69f17ce8b7d63ecf4318752d8df788f5dd9589cee359faaf8",
+    "trackedTemplateGraphFingerprint": "sha256:7921dec0ea23e31dad47d550d8c8ba43540269df8c053cfd3a253bc0f7923568",
+    "applicabilityProjectionFingerprint": "sha256:8102cb2b874efad49eee552074ab7713c3338d9aa0f2f4ec24ea6f117baf75b0",
+    "substitutions": {
+      "notionTargetCount": 8,
+      "notionDocumentSourceCount": 0,
+      "providerFixtureDocumentCount": 0,
+      "notionOptionMappingScopeCount": 7,
+      "notionOptionMappingEntryCount": 22,
+      "notionOptionMappingScopeFingerprint": "sha256:318e45c9e41c61cbe795f76b24f307bc59558536a225823328f8d2401c2e12a8"
+    },
+    "privacy": {
+      "fullPrivateLockIncluded": false,
+      "privateConfigurationPathIncluded": false,
+      "providerTargetValuesIncluded": false,
+      "providerSourceValuesIncluded": false,
+      "providerOptionValuesIncluded": false,
+      "rawProviderResponsesIncluded": false,
+      "privateInputsIncluded": false
+    },
+    "basisFingerprint": "sha256:02c6e797a3d54aa18642e1db3b723c0fb224e789c1c44ec8151d1d8312bc7de8"
+  }
+}

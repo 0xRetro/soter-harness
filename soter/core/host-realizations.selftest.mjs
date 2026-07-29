@@ -15,6 +15,10 @@ import {
 import { renderHostProjectionCandidates } from './host-projections.mjs';
 import { fingerprintLock, resolveConfiguration } from './resolve.mjs';
 import {
+  privateConfigurationStatePath,
+  writePrivateConfigurationState
+} from './private-configurations.mjs';
+import {
   activeConfigurationLockStatePath,
   hostManagedManifestStatePath,
   hostRealizationCheckpointStatePath,
@@ -43,11 +47,40 @@ function copyRuntime(sourceRoot, label) {
   fs.cpSync(path.join(sourceRoot, 'soter'), path.join(root, 'soter'), { recursive: true });
   fs.copyFileSync(path.join(sourceRoot, 'package.json'), path.join(root, 'package.json'));
   fs.copyFileSync(path.join(sourceRoot, 'package-lock.json'), path.join(root, 'package-lock.json'));
+  const legacyInventory = readJson(path.join(
+    sourceRoot,
+    'soter/migrations/legacy-inventory.json'
+  ));
   for (const name of fs.readdirSync(path.join(root, 'soter/migrations'))) {
     if (!name.endsWith('.json')) continue;
     const migration = readJson(path.join(root, 'soter/migrations', name));
     for (const item of migration.items || []) {
       const source = path.join(sourceRoot, item.sourcePath);
+      if (!fs.existsSync(source)) {
+        const tombstones = legacyInventory.items.filter((candidate) => {
+          return candidate.sourcePath === item.sourcePath
+            && candidate.sourceFingerprint === item.sourceFingerprint
+            && candidate.sourcePresence === 'removed'
+            && ['migrated', 'retired'].includes(candidate.state)
+            && candidate.targets.length > 0
+            && candidate.targets.every((target) => {
+              return ['migrated', 'retired'].includes(target.state)
+                && target.fallback === 'removed'
+                && target.evidence.length > 0;
+            });
+        });
+        if (tombstones.length !== 1) {
+          throw new Error(
+            'Host realization selftest found a missing migration source without one exact completed tombstone: '
+              + item.sourcePath
+          );
+        }
+        continue;
+      }
+      const sourceStat = fs.lstatSync(source);
+      if (sourceStat.isSymbolicLink() || !sourceStat.isFile()) {
+        throw new Error('Host realization selftest accepts regular migration sources only: ' + item.sourcePath);
+      }
       const target = path.join(root, item.sourcePath);
       fs.mkdirSync(path.dirname(target), { recursive: true });
       fs.copyFileSync(source, target);
@@ -58,7 +91,11 @@ function copyRuntime(sourceRoot, label) {
 
 function activate(root, configurationName) {
   const configPath = 'soter/configurations/' + configurationName + '.config.json';
-  const lock = resolveConfiguration({ root, configPath });
+  writePrivateConfigurationState(root, configurationName, readJson(path.join(root, configPath)));
+  const lock = resolveConfiguration({
+    root,
+    configPath: privateConfigurationStatePath(root, configurationName)
+  });
   writeActiveConfigurationLockState(root, configurationName, lock);
   return lock;
 }
@@ -155,7 +192,7 @@ export async function selftestHostRealizations(sourceRoot) {
       fingerprintLock(firstLock),
       'Resolved host candidates depended on current developer projection bytes.'
     );
-    writeActiveConfigurationLockState(independence, 'meeting-intake', secondLock);
+    activate(independence, 'meeting-intake');
     assert.throws(
       () => prepareHostRealization({
         root: independence,
@@ -166,6 +203,161 @@ export async function selftestHostRealizations(sourceRoot) {
       }),
       (error) => error.code === 'HOST_REALIZATION_UNMANAGED_COLLISION'
     );
+
+    const codexNotionTool = copyRuntime(sourceRoot, 'codex-notion-tool');
+    roots.push(codexNotionTool);
+    const historicalCodexBasis = readJson(path.join(
+      codexNotionTool,
+      'soter/fixtures/harness-development-catalog-final/codex.lock.json'
+    ));
+    const codexAdapterFile = path.join(
+      codexNotionTool,
+      'soter/hosts/codex/adapter.json'
+    );
+    const codexProjectionFile = path.join(
+      codexNotionTool,
+      'soter/hosts/codex/projection.json'
+    );
+    const originalCodexAdapter = fs.readFileSync(codexAdapterFile, 'utf8');
+    const originalCodexProjection = fs.readFileSync(codexProjectionFile, 'utf8');
+    const currentCodexAdapter = JSON.parse(originalCodexAdapter);
+    const codexQueryMapping = currentCodexAdapter.mcpServers
+      .find((server) => server.id === 'notion')
+      ?.toolMappings.find((mapping) => mapping.logical === 'query_data_sources');
+    assert.equal(historicalCodexBasis.host.version, '0.3.0');
+    assert.equal(currentCodexAdapter.version, '0.3.1');
+    assert.equal(
+      codexQueryMapping?.native,
+      'mcp__codex_apps__notion_query_data_sources',
+      'Current Codex adapter did not select the corrected native Notion query tool.'
+    );
+    assert.equal(
+      fingerprintJson(JSON.parse(originalCodexProjection)),
+      historicalCodexBasis.host.projectionDefinition.fingerprint,
+      'Codex Notion tool correction unexpectedly changed the generated host projection.'
+    );
+    const codexLock = activate(codexNotionTool, 'harness-development-catalog');
+    assert.equal(codexLock.host.version, '0.3.1');
+    const expectUnsupportedCodexDrift = () => {
+      assert.throws(
+        () => resolveConfiguration({
+          root: codexNotionTool,
+          configPath: 'soter/configurations/harness-development-catalog.config.json'
+        }),
+        (error) => error.code
+          === 'HOST_PROJECTION_WORKFLOW_FINAL_EVIDENCE_APPLICABILITY_STALE'
+      );
+    };
+    const codexMetadataDrift = JSON.parse(originalCodexAdapter);
+    codexMetadataDrift.limitations.push('Hostile unrelated Codex adapter drift.');
+    fs.writeFileSync(
+      codexAdapterFile,
+      JSON.stringify(codexMetadataDrift, null, 2) + '\n'
+    );
+    expectUnsupportedCodexDrift();
+    fs.writeFileSync(codexAdapterFile, originalCodexAdapter);
+    const codexMappingDrift = JSON.parse(originalCodexAdapter);
+    codexMappingDrift.mcpServers.find((server) => server.id === 'notion')
+      .toolMappings.find((mapping) => mapping.logical === 'fetch').native
+        = 'mcp__codex_apps__notion_hostile_fetch';
+    fs.writeFileSync(
+      codexAdapterFile,
+      JSON.stringify(codexMappingDrift, null, 2) + '\n'
+    );
+    expectUnsupportedCodexDrift();
+    fs.writeFileSync(codexAdapterFile, originalCodexAdapter);
+    const codexOldQueryMapping = JSON.parse(originalCodexAdapter);
+    codexOldQueryMapping.mcpServers.find((server) => server.id === 'notion')
+      .toolMappings.find((mapping) => mapping.logical === 'query_data_sources').native
+        = 'mcp__codex_apps__notion_notion_query_data_sources';
+    fs.writeFileSync(
+      codexAdapterFile,
+      JSON.stringify(codexOldQueryMapping, null, 2) + '\n'
+    );
+    expectUnsupportedCodexDrift();
+    fs.writeFileSync(codexAdapterFile, originalCodexAdapter);
+    const codexProjectionDrift = JSON.parse(originalCodexProjection);
+    codexProjectionDrift.limitations.push('Hostile unrelated Codex projection drift.');
+    fs.writeFileSync(
+      codexProjectionFile,
+      JSON.stringify(codexProjectionDrift, null, 2) + '\n'
+    );
+    expectUnsupportedCodexDrift();
+    fs.writeFileSync(codexProjectionFile, originalCodexProjection);
+
+    const claudeRootMcp = copyRuntime(sourceRoot, 'claude-root-mcp');
+    roots.push(claudeRootMcp);
+    const claudeLock = activate(claudeRootMcp, 'harness-development-catalog-claude');
+    const historicalClaudeBasis = readJson(path.join(
+      claudeRootMcp,
+      'soter/fixtures/harness-development-catalog-final/claude.lock.json'
+    ));
+    assert(historicalClaudeBasis.projections.some((projection) => {
+      return projection.id === 'output.claude.tools'
+        && projection.path === '.claude/.mcp.json';
+    }), 'Immutable historical Claude evidence basis no longer preserves its observed MCP path.');
+    assert(claudeLock.projections.some((projection) => {
+      return projection.id === 'output.claude.tools' && projection.path === '.mcp.json';
+    }), 'Current Claude lock did not select the corrected root MCP path.');
+    const claudeAdapterFile = path.join(
+      claudeRootMcp,
+      'soter/hosts/claude/adapter.json'
+    );
+    const claudeProjectionFile = path.join(
+      claudeRootMcp,
+      'soter/hosts/claude/projection.json'
+    );
+    const originalClaudeAdapter = fs.readFileSync(claudeAdapterFile, 'utf8');
+    const originalClaudeProjection = fs.readFileSync(claudeProjectionFile, 'utf8');
+    const expectUnsupportedClaudeDrift = () => {
+      assert.throws(
+        () => resolveConfiguration({
+          root: claudeRootMcp,
+          configPath: 'soter/configurations/harness-development-catalog-claude.config.json'
+        }),
+        (error) => error.code
+          === 'HOST_PROJECTION_WORKFLOW_FINAL_EVIDENCE_APPLICABILITY_STALE'
+      );
+    };
+    const metadataDrift = JSON.parse(originalClaudeAdapter);
+    metadataDrift.limitations.push('Hostile unrelated adapter drift.');
+    fs.writeFileSync(claudeAdapterFile, JSON.stringify(metadataDrift, null, 2) + '\n');
+    expectUnsupportedClaudeDrift();
+    fs.writeFileSync(claudeAdapterFile, originalClaudeAdapter);
+    const toolDrift = JSON.parse(originalClaudeAdapter);
+    toolDrift.mcpServers.find((server) => server.id === 'notion')
+      .toolMappings.find((mapping) => mapping.logical === 'fetch').native
+        = 'Notion:hostile-unreviewed-fetch';
+    fs.writeFileSync(claudeAdapterFile, JSON.stringify(toolDrift, null, 2) + '\n');
+    expectUnsupportedClaudeDrift();
+    fs.writeFileSync(claudeAdapterFile, originalClaudeAdapter);
+    const projectionDrift = JSON.parse(originalClaudeProjection);
+    projectionDrift.limitations.push('Hostile unrelated projection drift.');
+    fs.writeFileSync(
+      claudeProjectionFile,
+      JSON.stringify(projectionDrift, null, 2) + '\n'
+    );
+    expectUnsupportedClaudeDrift();
+    fs.writeFileSync(claudeProjectionFile, originalClaudeProjection);
+    const claudeAuthority = authority(
+      claudeRootMcp,
+      'claude-root-mcp',
+      'harness-development-catalog-claude'
+    );
+    assert.equal(executeHostRealization({
+      root: claudeRootMcp,
+      checkpointId: claudeAuthority.execution.checkpoint.id,
+      at: EXECUTED
+    }).state, 'completed');
+    assert(fs.existsSync(path.join(claudeRootMcp, 'CLAUDE.md')));
+    assert(fs.existsSync(path.join(claudeRootMcp, '.mcp.json')));
+    assert(!fs.existsSync(path.join(claudeRootMcp, '.claude/.mcp.json')),
+      'Current Claude realization reproduced the retired nested MCP path.');
+    assert(fs.existsSync(path.join(
+      claudeRootMcp,
+      '.claude/skills/running-evals/SKILL.md'
+    )), 'Current Claude realization omitted an active governed workflow skill.');
+    assertMode(path.join(claudeRootMcp, '.mcp.json'), '0644');
 
     const credentialTemplate = copyRuntime(sourceRoot, 'credential-template');
     roots.push(credentialTemplate);
@@ -259,8 +451,33 @@ export async function selftestHostRealizations(sourceRoot) {
       adapter,
       configurationId: lock.configuration.name,
       packIds: lock.packs.map((pack) => pack.id),
-      capabilityIds: lock.capabilities.map((capability) => capability.id)
+      capabilityIds: lock.capabilities.map((capability) => capability.id),
+      effectPolicies: lock.effectPolicies
     });
+    const instructions = rendered.outputs.find((output) => output.role === 'instructions');
+    assert(instructions.content.includes('`integration.notion` requires `notion`')
+      && instructions.content.includes('`integration.otter` requires `otter`')
+      && !instructions.content.includes('`integration.slack` requires `slack`')
+      && instructions.content.includes('`private-by-construction` (`kernel-static`)'),
+    'Host instructions did not project the exact selected provider requirements and canonical development guards.');
+    assert(!instructions.content.includes('mcp__codex_apps__')
+      && instructions.content.includes('discovery and authentication must be proven separately'),
+    'Host instructions leaked native tool names or promoted provider discovery/authentication.');
+    const missingProviderRoute = structuredClone(adapter);
+    missingProviderRoute.mcpServers = missingProviderRoute.mcpServers.filter((server) => {
+      return server.id !== 'notion';
+    });
+    assert.throws(
+      () => renderHostProjectionCandidates({
+        root: happy,
+        adapter: missingProviderRoute,
+        configurationId: lock.configuration.name,
+        packIds: lock.packs.map((pack) => pack.id),
+        capabilityIds: lock.capabilities.map((capability) => capability.id),
+        effectPolicies: lock.effectPolicies
+      }),
+      (error) => error.code === 'HOST_PROJECTION_PROVIDER_REQUIREMENT_UNAVAILABLE'
+    );
     for (const output of rendered.outputs) {
       const file = path.join(happy, output.path);
       assert.equal(fs.readFileSync(file, 'utf8'), output.content);

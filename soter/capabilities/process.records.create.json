@@ -1,0 +1,74 @@
+{
+  "$contract": "soter://contracts/capability/v1",
+  "contractVersion": "1.0.0",
+  "id": "process.records.create",
+  "version": "1.0.0",
+  "purpose": "Creates one typed Process record through an exact deduplication key only after separate Core transaction authority exists.",
+  "portability": "portable",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["recordType", "deduplicationKey", "fields", "body"],
+    "properties": {
+      "recordType": { "type": "string" },
+      "deduplicationKey": { "type": "string" },
+      "deduplicationFilter": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["field", "value"],
+        "properties": { "field": { "type": "string" }, "value": { "type": "string" } }
+      },
+      "fields": { "type": "object" },
+      "body": { "type": "string", "minLength": 1, "maxLength": 250000 }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["record", "created", "provenance", "observedAt"],
+    "properties": {
+      "record": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "id", "fields", "body"],
+        "properties": {
+          "type": { "type": "string" },
+          "id": { "type": "string" },
+          "fields": { "type": "object" },
+          "version": { "type": "string", "minLength": 1 },
+          "deduplicationKey": { "type": "string", "minLength": 1 },
+          "body": { "type": "string" }
+        }
+      },
+      "created": { "type": "boolean" },
+      "provenance": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["provider", "authority", "mapping", "mappingVersion"],
+        "properties": {
+          "provider": { "type": "string", "minLength": 1 },
+          "authority": { "type": "string", "minLength": 1 },
+          "mapping": { "type": "string", "minLength": 1 },
+          "mappingVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+          "sourceKind": { "enum": ["fixture", "connected"] },
+          "sourceReferenceFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        }
+      },
+      "observedAt": { "type": "string" }
+    }
+  },
+  "authentication": { "required": true, "minimumScopes": ["records:write"] },
+  "effects": ["write"],
+  "idempotency": { "mode": "conditional", "key": "deduplicationKey" },
+  "retry": { "safe": true, "maxAttempts": 2, "checkpoint": "Persist the exact deduplication key and provider result before any retry." },
+  "errors": ["authentication", "authorization", "validation", "conflict", "rate-limit", "unavailable", "retryable", "not-found", "unknown"],
+  "freshness": { "returnsProvenance": true, "returnsObservedAt": true, "maxAgeSeconds": null },
+  "health": {
+    "check": "Validate a contained process create and deduplicated replay against a fixture store.",
+    "fixture": "soter/scenarios/process-capture/preparation.scenario.json",
+    "containedVerification": "Prove one create, replay safety, body preservation, and normalized effect evidence without a live provider."
+  },
+  "providerLimitations": [
+    "Declaring this capability does not grant approval, one-time start, provider-write, readiness, verification, or health authority."
+  ]
+}

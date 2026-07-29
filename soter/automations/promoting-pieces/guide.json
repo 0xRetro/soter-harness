@@ -1,0 +1,183 @@
+{
+  "contractVersion": "2.0.0",
+  "id": "workflow-guide.promoting-pieces",
+  "contentFingerprint": "sha256:9e3871b30f50bbf9b0063828aaf4f41bf1e9ab46fb3c5d1b5487ee3e320101cd",
+  "$contract": "soter://contracts/workflow-guide/v2",
+  "workflow": {
+    "id": "automation.promoting-pieces",
+    "version": "0.1.0",
+    "definitionPath": "soter/automations/promoting-pieces/definition.json",
+    "definitionFingerprint": "sha256:0983eddb3c6a85598ada2cbf6e04e53be7a45b97903c88b86f8476d6759f828b",
+    "evaluationSetPath": "soter/automations/promoting-pieces/evaluations.json",
+    "evaluationSetFingerprint": "sha256:eda0240bb92e646ce37926e8ba27813c7a18382968b2721b242fe8505043aef6"
+  },
+  "skill": {
+    "name": "promoting-pieces",
+    "description": "Evaluate one staged harness artifact for broader discovery or host invocation using exact real-use evidence and effect classification. Use for a promotion or explicit refusal; do not use for initial authoring, review, retirement, or content changes.",
+    "invocation": "explicit-only",
+    "displayName": "Promote a harness artifact",
+    "shortDescription": "Decide one artifact's promotion from exact usage evidence.",
+    "defaultPrompt": "Use $promoting-pieces to evaluate this one exact artifact for discovery or invocation without transferring evidence or authority."
+  },
+  "status": {
+    "state": "active",
+    "reasonCode": "WORKFLOW_GUIDE_ACTIVE",
+    "proceduralAuthority": "target",
+    "behaviorParity": "passed",
+    "delivery": "host-skill",
+    "evidence": [
+      {
+        "path": "soter/evidence/development/development-agent-migration-evidence.claude.promoting-pieces.json",
+        "fingerprint": "sha256:7e659d3db92d90b242693364a105822e96e40509fedcecb44025b528e5445f6e",
+        "host": "claude"
+      },
+      {
+        "path": "soter/evidence/development/development-agent-migration-evidence.codex.promoting-pieces.json",
+        "fingerprint": "sha256:6e811cc894ebbbf796b81e23f43d8a1bf3ff75a316827572d08471a655380a52",
+        "host": "codex"
+      }
+    ],
+    "permittedNextAction": "invoke-through-selected-host"
+  },
+  "authority": {
+    "kind": "procedural-guidance",
+    "executionAuthority": "none",
+    "effectAuthority": "none",
+    "approvalAuthority": "none",
+    "reasonCode": "WORKFLOW_GUIDE_NO_EXECUTION_AUTHORITY",
+    "providerTransactionAuthority": "none"
+  },
+  "stepDetails": [
+    {
+      "id": "select-one-artifact",
+      "sequence": 1,
+      "instructions": [
+        "Bind the promotion decision to one artifact identity, version, current fingerprint, owner, and host-delivery state.",
+        "Split batch requests into separate decisions; one artifact's evidence cannot satisfy another artifact's promotion."
+      ],
+      "flexibility": [],
+      "stopConditions": [
+        "Stop when the artifact is still changing or its exact current identity cannot be established."
+      ]
+    },
+    {
+      "id": "gather-observed-evidence",
+      "sequence": 2,
+      "instructions": [
+        "Inspect exact git changes, observed gotchas, evaluation records, run artifacts, and applicable host evidence rather than requester testimony.",
+        "Require at least three real uses across at least two distinct sessions unless the governed promotion policy defines a stronger floor.",
+        "Treat a claim of use only as a pointer to inspectable evidence and preserve any limitations or pending redlines."
+      ],
+      "flexibility": [
+        "Refusing promotion requires a clear reason but does not require manufacturing additional evidence."
+      ],
+      "stopConditions": [
+        "Stop promotion when evidence is missing, stale, differently scoped, or limited to one session."
+      ]
+    },
+    {
+      "id": "evaluate-promotion-scope",
+      "sequence": 3,
+      "instructions": [
+        "Separate discoverability from implicit invocation and evaluate each requested scope independently.",
+        "Classify any file write, commit, worker dispatch, provider call, external message, publication, or other effect as side-effecting.",
+        "Keep implicit invocation disabled for side-effecting behavior regardless of urgency, popularity, or user-interface convenience."
+      ],
+      "flexibility": [],
+      "stopConditions": [
+        "Stop before granting implicit invocation when any possible effect is not demonstrably read-only and advisory."
+      ]
+    },
+    {
+      "id": "prepare-decision",
+      "sequence": 4,
+      "instructions": [
+        "Prepare a promotion or refusal that cites the exact evidence, requested scope, effect classification, limitations, and proposed metadata changes.",
+        "Keep the decision specific to the current artifact fingerprint and identify what evidence would change a refusal."
+      ],
+      "flexibility": [
+        "A successful decision may approve discoverability while refusing implicit invocation."
+      ],
+      "stopConditions": [
+        "Stop when the proposed metadata would imply evidence, readiness, health, or authority not established by the cited records."
+      ]
+    },
+    {
+      "id": "confirm-and-verify",
+      "sequence": 5,
+      "instructions": [
+        "Apply only the exact confirmed metadata scope through the governed repository change boundary.",
+        "Re-run static discovery, trigger, exclusion, and host projection checks affected by the promotion.",
+        "Record the decision beside the governed contract or evidence; create a separate decision note only when the cross-cutting rationale cannot live there."
+      ],
+      "flexibility": [],
+      "stopConditions": [
+        "Stop before any repository or host realization effect without its separate authority."
+      ]
+    }
+  ],
+  "verification": [
+    "The decision covers exactly one current artifact fingerprint.",
+    "Real-use evidence satisfies both the use-count and distinct-session requirements.",
+    "Discovery and implicit invocation are evaluated separately.",
+    "Side-effecting artifacts retain explicit-only invocation.",
+    "Applied metadata and generated host projections preserve the confirmed scope and current proof boundaries."
+  ],
+  "gotchas": [
+    {
+      "id": "testimony-is-not-evidence",
+      "kind": "baseline",
+      "summary": "A confident claim that an artifact was used repeatedly can be accepted without opening any supporting artifact.",
+      "countermeasure": "Resolve every use claim to exact git, run, evaluation, or gotcha evidence before counting it."
+    },
+    {
+      "id": "deadline-does-not-change-effects",
+      "kind": "baseline",
+      "summary": "Demo pressure can make implicit invocation look like a harmless visibility improvement even for side-effecting behavior.",
+      "countermeasure": "Classify effects first and use discovery-only promotion when invocation cannot be safely implicit."
+    },
+    {
+      "id": "same-day-is-one-session",
+      "kind": "observed",
+      "summary": "Several uses in one working session do not demonstrate behavior across independent contexts.",
+      "countermeasure": "Require the distinct-session leg independently from the total-use leg."
+    },
+    {
+      "id": "batch-evidence-transfer",
+      "kind": "constraint",
+      "summary": "A batch presentation can quietly transfer one artifact's stronger evidence to weaker neighbors.",
+      "countermeasure": "Keep one identity, evidence set, scope decision, and verdict per artifact."
+    }
+  ],
+  "references": [
+    {
+      "id": "development-governance",
+      "kind": "contract",
+      "label": "Provider-neutral development governance",
+      "target": "soter://contracts/development-governance/v1"
+    },
+    {
+      "id": "review-workflow",
+      "kind": "workflow",
+      "label": "Independent initial artifact review",
+      "target": "automation.reviewing-forge-output"
+    }
+  ],
+  "source": {
+    "presence": "removed",
+    "legacyPath": ".claude/skills/promoting-pieces/SKILL.md",
+    "legacyFingerprint": "sha256:461fb180f91518633cab26c19b567b3d41dbcb6a614d01591b3cb5ede2c02dcf",
+    "normalization": "behavior-preserving-with-explicit-authority-boundary"
+  },
+  "privacy": {
+    "rawSourceIncluded": false,
+    "workspaceSpecificValuesIncluded": false,
+    "credentialsIncluded": false,
+    "privateInputsIncluded": false,
+    "providerResponsesIncluded": false
+  },
+  "limitations": [
+    "This procedural promotion guide grants no metadata-write, merge, publication, or host-realization authority.",
+    "Adoption requires independent exact host-skill behavior evidence and a separate governed fallback-removal decision."
+  ]
+}

@@ -139,7 +139,7 @@ function evidenceRecord(pack, sourceInputFingerprint, validUntil = '2026-07-17T1
     configurationLockFingerprint: fingerprint,
     graphFingerprint: sourceInputFingerprint,
     dependencies: [{ id: manifest.id, version: manifest.version, fingerprint: manifestFingerprint }],
-    host: { id: 'codex', adapter: 'host.codex', version: '0.1.0', manifestFingerprint: fingerprint },
+    host: { id: 'codex', adapter: 'host.codex', version: '0.2.0', manifestFingerprint: fingerprint },
     integrations: [],
     authorities: [],
     evaluator: { id: 'kernel.soter.distribution.selftest', version: '1.0.0', level: 'contained' },
@@ -227,6 +227,31 @@ try {
     createdAt
   }));
   assert.equal(releases.length, packIds.length);
+  const unavailableHostReleases = releases.filter((release) => {
+    return (release.inspection.constraints.compatibility.unavailableHosts || []).length > 0;
+  });
+  assert.deepEqual(
+    unavailableHostReleases.map((release) => release.inspection.release.id),
+    [
+      'automation.slack-channel-ingestion',
+      'integration.slack'
+    ]
+  );
+  for (const release of unavailableHostReleases) {
+    const capsule = JSON.parse(fs.readFileSync(release.capsulePath, 'utf8'));
+    const manifest = JSON.parse(fs.readFileSync(
+      path.join(root, capsule.pack.manifestPath),
+      'utf8'
+    ));
+    assert.deepEqual(
+      capsule.pack.compatibility.unavailableHosts,
+      manifest.compatibility.unavailableHosts
+    );
+    assert.deepEqual(
+      release.inspection.constraints.compatibility.unavailableHosts,
+      manifest.compatibility.unavailableHosts
+    );
+  }
 
   for (const release of releases) {
     assert.equal(release.inspection.integrity.state, 'passed');

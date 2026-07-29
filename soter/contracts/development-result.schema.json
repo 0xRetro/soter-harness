@@ -1,0 +1,283 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/development-result/v1",
+  "title": "Soter private development result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "resultFingerprint",
+    "createdAt",
+    "completedAt",
+    "request",
+    "workflow",
+    "host",
+    "configuration",
+    "workspace",
+    "postWorkspace",
+    "state",
+    "workerRuns",
+    "judgments",
+    "changes",
+    "checks",
+    "effects",
+    "promotion",
+    "decisionEvidence",
+    "authority",
+    "privacy",
+    "limitations"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/development-result/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^development-result[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "resultFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "createdAt": { "$ref": "#/$defs/instant" },
+    "completedAt": { "$ref": "#/$defs/instant" },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fingerprint"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^development-request[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "workflow": { "$ref": "#/$defs/workflowBinding" },
+    "host": { "$ref": "#/$defs/hostBinding" },
+    "configuration": { "$ref": "#/$defs/configurationBinding" },
+    "workspace": { "$ref": "#/$defs/workspaceBinding" },
+    "postWorkspace": { "$ref": "#/$defs/workspaceBinding" },
+    "state": { "enum": ["passed", "failed", "blocked", "partial"] },
+    "workerRuns": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/workerRun" }
+    },
+    "judgments": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/judgment" }
+    },
+    "changes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/change" }
+    },
+    "checks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/check" }
+    },
+    "effects": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/effect" }
+    },
+    "promotion": { "$ref": "#/$defs/promotion" },
+    "decisionEvidence": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/decisionEvidence" }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "grantsExecution", "grantsApproval", "grantsPublication", "grantsMerge", "grantsProviderWrite", "grantsFallbackRemoval"],
+      "properties": {
+        "kind": { "const": "development-evidence-only" },
+        "grantsExecution": { "const": false },
+        "grantsApproval": { "const": false },
+        "grantsPublication": { "const": false },
+        "grantsMerge": { "const": false },
+        "grantsProviderWrite": { "const": false },
+        "grantsFallbackRemoval": { "const": false }
+      }
+    },
+    "privacy": { "$ref": "#/$defs/privacy" },
+    "limitations": { "$ref": "#/$defs/limitations" }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "instant": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:[.][0-9]{3})?Z$" },
+    "nullableFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+    "relativePath": { "type": "string", "minLength": 1, "maxLength": 300, "pattern": "^[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$" },
+    "workflowBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "evaluatedSubjectFingerprint", "definitionFingerprint", "guideContentFingerprint", "evaluationSetFingerprint"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^automation[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "version": { "type": "string", "pattern": "^(?:0|[1-9][0-9]*)[.](?:0|[1-9][0-9]*)[.](?:0|[1-9][0-9]*)$" },
+        "evaluatedSubjectFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "definitionFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "guideContentFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "evaluationSetFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "hostBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "adapterFingerprint", "projectionDefinitionFingerprint", "evaluatedInstructionFingerprint", "candidateProjectionFingerprint"],
+      "properties": {
+        "id": { "enum": ["codex", "claude"] },
+        "adapterFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "projectionDefinitionFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "evaluatedInstructionFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "candidateProjectionFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "configurationBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "lockFingerprint", "graphFingerprint"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "lockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "graphFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "workspaceBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rootIdentityFingerprint", "revisionFingerprint", "treeFingerprint", "exactInputState", "policyFingerprint", "settingsFingerprint"],
+      "properties": {
+        "rootIdentityFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "revisionFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+        "treeFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "exactInputState": { "enum": ["clean", "dirty", "unknown"] },
+        "policyFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "settingsFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "workerRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sequence", "requestRunId", "caseId", "arm", "guideState", "workerFingerprint", "dispatchFingerprint", "expectationsIncluded", "answerKeyAccess", "transcriptFingerprint", "state"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^worker-run[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "sequence": { "type": "integer", "minimum": 1, "maximum": 500 },
+        "requestRunId": { "type": "string", "pattern": "^evaluation-run[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "caseId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "arm": { "enum": ["baseline", "guided"] },
+        "guideState": { "enum": ["withheld", "candidate"] },
+        "workerFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "dispatchFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "expectationsIncluded": { "const": false },
+        "answerKeyAccess": { "enum": ["not-observed", "observed", "unknown"] },
+        "transcriptFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "state": { "enum": ["passed", "failed", "blocked"] }
+      }
+    },
+    "criterion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "sequence", "state", "evidenceFingerprint"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*[.](?:expected|prohibited)[.][1-9][0-9]*$" },
+        "kind": { "enum": ["expected", "prohibited"] },
+        "sequence": { "type": "integer", "minimum": 1, "maximum": 500 },
+        "state": { "enum": ["observed", "not-observed", "unknown"] },
+        "evidenceFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
+      }
+    },
+    "judgment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "workerRunId", "caseId", "verdict", "criteria"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^judgment[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "workerRunId": { "type": "string", "pattern": "^worker-run[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "caseId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "verdict": { "enum": ["passed", "failed", "blocked"] },
+        "criteria": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/criterion" } }
+      }
+    },
+    "change": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "kind", "beforeFingerprint", "afterFingerprint"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "path": { "$ref": "#/$defs/relativePath" },
+        "kind": { "enum": ["create", "modify", "remove", "unchanged"] },
+        "beforeFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+        "afterFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
+      }
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "state", "observedFingerprint"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "state": { "enum": ["passed", "failed", "blocked", "unknown"] },
+        "observedFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
+      }
+    },
+    "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["category", "scope", "state", "count", "observedFingerprint"],
+      "properties": {
+        "category": { "enum": ["local-workspace-read", "local-workspace-write", "local-command", "subagent-dispatch", "provider-read", "provider-write", "publication", "merge", "protected-root-mutation", "host-realization"] },
+        "scope": { "enum": ["request-scoped", "separate-authority"] },
+        "state": { "enum": ["observed", "not-observed", "blocked", "unknown"] },
+        "count": { "type": "integer", "minimum": 0 },
+        "observedFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
+      }
+    },
+    "promotion": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "artifactFingerprint", "reasonCode"],
+          "properties": {
+            "state": { "enum": ["not-requested", "held"] },
+            "artifactFingerprint": { "type": "null" },
+            "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "artifactFingerprint", "reasonCode"],
+          "properties": {
+            "state": { "enum": ["proposed", "accepted", "declined"] },
+            "artifactFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" }
+          }
+        }
+      ]
+    },
+    "decisionEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "reference", "fingerprint"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "kind": { "enum": ["development-result", "evidence", "historical-decision"] },
+        "reference": { "$ref": "#/$defs/relativePath" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "workspaceInspectionIncluded", "absolutePathsIncluded", "rawDiffsIncluded", "rawTranscriptsIncluded", "providerResponsesIncluded", "credentialsIncluded"],
+      "properties": {
+        "scope": { "const": "private-runtime" },
+        "workspaceInspectionIncluded": { "const": false },
+        "absolutePathsIncluded": { "const": false },
+        "rawDiffsIncluded": { "const": false },
+        "rawTranscriptsIncluded": { "const": false },
+        "providerResponsesIncluded": { "const": false },
+        "credentialsIncluded": { "const": false }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 12, "maxLength": 500 }
+    }
+  }
+}

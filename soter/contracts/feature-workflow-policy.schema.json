@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contexts/product/feature-workflow-policy/v1",
+  "title": "Soter portable feature workflow policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "name",
+    "defaultStatus",
+    "lifecycle",
+    "allowedTypes",
+    "duplicateCandidateLimit",
+    "writesRequireConfirmation",
+    "descriptionOwnsWhy",
+    "definitionPreservesDescription",
+    "definitionPreservesStatus",
+    "bodyTemplate"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contexts/product/feature-workflow-policy/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "const": "policy.feature-workflow" },
+    "name": { "type": "string", "minLength": 3, "maxLength": 120 },
+    "defaultStatus": { "const": "Planned" },
+    "lifecycle": {
+      "const": ["Planned", "Up Next", "In Development", "Completed", "Canceled"]
+    },
+    "allowedTypes": {
+      "const": ["Bug", "Content", "Enhancement", "Feature"]
+    },
+    "duplicateCandidateLimit": { "type": "integer", "minimum": 1, "maximum": 25 },
+    "writesRequireConfirmation": { "const": true },
+    "descriptionOwnsWhy": { "const": true },
+    "definitionPreservesDescription": { "const": true },
+    "definitionPreservesStatus": { "const": true },
+    "bodyTemplate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sharedSections", "sectionTwoByType"],
+      "properties": {
+        "sharedSections": {
+          "const": [
+            "Summary",
+            "Current state in code",
+            "Relationships",
+            "Decisions & open questions"
+          ]
+        },
+        "sectionTwoByType": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["Bug", "Content", "Enhancement", "Feature"],
+          "properties": {
+            "Bug": { "const": "Repro / Expected vs Actual" },
+            "Content": { "const": "Scope" },
+            "Enhancement": { "const": "Current / Desired behavior" },
+            "Feature": { "const": "Behavior / Acceptance" }
+          }
+        }
+      }
+    }
+  }
+}

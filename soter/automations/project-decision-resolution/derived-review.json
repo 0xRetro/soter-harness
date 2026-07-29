@@ -1,0 +1,45 @@
+{
+  "$contract": "soter://contracts/automation-derived-review/v1",
+  "contractVersion": "1.0.0",
+  "automation": "automation.project-decision-resolution",
+  "kind": "project-decision-resolution-derived-review",
+  "items": [
+    {
+      "kind": "project-decision-create",
+      "fields": [
+        { "id": "headline", "label": "Decision headline", "type": "text" },
+        { "id": "category", "label": "Category", "type": "text" },
+        { "id": "date", "label": "Decision date", "type": "text" },
+        { "id": "summary", "label": "Complete decision summary", "type": "text" },
+        { "id": "processed", "label": "Processed", "type": "boolean" },
+        { "id": "visibility", "label": "Visibility", "type": "text" },
+        { "id": "projectIds", "label": "Project identities", "type": "string-list" },
+        { "id": "missingWhy", "label": "Why was unavailable", "type": "boolean" },
+        { "id": "batchActionIds", "label": "Required complete-group actions", "type": "string-list" }
+      ]
+    },
+    {
+      "kind": "project-question-process",
+      "fields": [
+        { "id": "recordId", "label": "Question identity", "type": "text" },
+        { "id": "expectedVersion", "label": "Expected question version", "type": "text" },
+        { "id": "beforeFingerprint", "label": "Current question fingerprint", "type": "text" },
+        { "id": "afterProcessed", "label": "Processed after review", "type": "boolean" },
+        { "id": "batchActionIds", "label": "Required complete-group actions", "type": "string-list" }
+      ]
+    },
+    {
+      "kind": "project-work-item-complete",
+      "fields": [
+        { "id": "uri", "label": "Project document identity", "type": "text" },
+        { "id": "expectedTitle", "label": "Expected project title", "type": "text" },
+        { "id": "expectedBodyFingerprint", "label": "Current document fingerprint", "type": "text" },
+        { "id": "afterBodyFingerprint", "label": "Expected document fingerprint", "type": "text" },
+        { "id": "workItemId", "label": "Exact work-item identity", "type": "text" },
+        { "id": "oldText", "label": "Current work-item line", "type": "text" },
+        { "id": "newText", "label": "Completed work-item line", "type": "text" },
+        { "id": "batchActionIds", "label": "Required complete-group actions", "type": "string-list" }
+      ]
+    }
+  ]
+}

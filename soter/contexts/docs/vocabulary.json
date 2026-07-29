@@ -1,0 +1,40 @@
+{
+  "$contract": "soter://contracts/context-vocabulary/v1",
+  "contractVersion": "1.0.0",
+  "id": "vocabulary.context.docs",
+  "pack": "context.docs",
+  "version": "0.1.0",
+  "subject": "documents.records",
+  "entries": [
+    {
+      "sequence": 1,
+      "id": "doc",
+      "term": "doc",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "A governed index record for a shared document or link, classified by document type and audience and related through exact resource identities to the records that reference it.",
+      "domain": "documents",
+      "sourceUris": []
+    },
+    {
+      "sequence": 2,
+      "id": "private-workspace-doc",
+      "term": "private-workspace doc",
+      "aliases": [],
+      "abbreviation": null,
+      "definition": "A document in a restricted workspace collection that remains governed and served in place and is excluded from the shared document index and harness projections, including its content and provider page identities.",
+      "domain": "privacy",
+      "sourceUris": []
+    }
+  ],
+  "invariants": {
+    "singleDefinitionSource": true,
+    "projectionCopiesAreNonCanonical": true,
+    "providerNeutral": true,
+    "runtimeAuthority": "none"
+  },
+  "limitations": [
+    "This vocabulary defines portable document-index and private-workspace boundary meaning only; it does not inspect private collections, expose their content, or grant provider access.",
+    "Provider and policy projections must bind this exact artifact and fail visibly on drift; copied definitions never become canonical."
+  ]
+}

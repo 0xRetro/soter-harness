@@ -40,9 +40,7 @@ import {
 import { readJson, repoRelativePath } from '../../core/lib/canonical-json.mjs';
 import {
   beginProposalConnectedApprovalRequest,
-  confirmConnectedApprovalRequest,
-  confirmProposalConnectedApprovalRequest,
-  readConnectedApprovalRequest
+  confirmProposalConnectedApprovalRequest
 } from '../../core/operator-authority.mjs';
 import { inspectConnectedApprovalReviewMaterial } from '../../core/connected-approval-review.mjs';
 import { inspectConnectedOperatorActivity } from '../../core/operator-inspection.mjs';
@@ -65,6 +63,16 @@ import {
   prepareDurableConnectedTransactionExecution,
   prepareDurableConnectedTransactionReconciliation
 } from '../../core/service.mjs';
+import {
+  hasPrivateConfigurationState,
+  privateConfigurationStatePath,
+  readPrivateConfigurationState
+} from '../../core/private-configurations.mjs';
+import {
+  activeConfigurationLockStatePath,
+  hasActiveConfigurationLockState,
+  readActiveConfigurationLockState
+} from '../../core/runtime-state.mjs';
 import { fingerprintLock, lockMatchesResolution } from '../../core/resolve.mjs';
 import { inspectBundle, verifyPackRelease } from '../../kernel/distribution.mjs';
 
@@ -149,12 +157,54 @@ const proposalConnectedBatchErrorCodes = new Set([
   'PROPOSAL_CONNECTED_BATCH_CREDENTIAL_REJECTED',
   'PROPOSAL_CONNECTED_BATCH_MALFORMED',
   'PROPOSAL_CONNECTED_BATCH_STALE',
+  'PROPOSAL_CONNECTED_BATCH_CONTEXT_STALE',
   'PROPOSAL_CONNECTED_BATCH_PROVIDER_UNAVAILABLE'
+]);
+const connectedApprovalActionErrorCodes = new Set([
+  ...proposalConnectedBatchErrorCodes
+]);
+const connectedTransactionStartErrorCodes = new Set([
+  ...proposalConnectedBatchErrorCodes,
+  'CONNECTED_TRANSACTION_PREFLIGHT_FAILED'
+]);
+const connectedActionMessages = new Map([
+  [
+    'PROPOSAL_CONNECTED_BATCH_CONTEXT_STALE',
+    'The exact connected proposal context is stale. Rebuild and review a current proposal before requesting, confirming, or starting.'
+  ],
+  [
+    'CONNECTED_TRANSACTION_PREFLIGHT_FAILED',
+    'The exact connected transaction could not prepare its provider call. No approval was consumed and no checkpoint or provider effect was created.'
+  ],
+  [
+    'PROPOSAL_CONNECTED_BATCH_PROVIDER_UNAVAILABLE',
+    'The selected proposal actions do not have one exact connected write and verification provider.'
+  ]
 ]);
 const configurationChangeCode = /^CONFIGURATION_[A-Z0-9_]+$/;
 const hostRealizationCode = /^HOST_REALIZATION_[A-Z0-9_]+$/;
 const distributionCode = /^(PACK_RELEASE|BUNDLE|DISTRIBUTION)_[A-Z0-9_]+$/;
 const packInstallCode = /^PACK_INSTALL_[A-Z0-9_]+$/;
+const stableReasonCode = /^[A-Z][A-Z0-9_]{0,127}$/;
+
+function sanitizedConnectedActionError(error, {
+  allowedCodes,
+  fallbackCode,
+  fallbackMessage
+}) {
+  const exactCode = typeof error?.code === 'string' && allowedCodes.has(error.code);
+  const code = exactCode ? error.code : fallbackCode;
+  const reasonCode = exactCode
+    && typeof error?.reasonCode === 'string'
+    && stableReasonCode.test(error.reasonCode)
+    ? error.reasonCode
+    : null;
+  return {
+    code,
+    ...(reasonCode ? { reasonCode } : {}),
+    message: connectedActionMessages.get(code) || fallbackMessage
+  };
+}
 
 protocol.registerSchemesAsPrivileged([{
   scheme: 'soter-studio',
@@ -310,9 +360,9 @@ function watchWorkspace(root, window) {
   const watchedPaths = new Set();
   let timeout = null;
   const invalidate = () => {
+    snapshotPromise = null;
     clearTimeout(timeout);
     timeout = setTimeout(() => {
-      snapshotPromise = null;
       if (!window.isDestroyed()) window.webContents.send('workspace:invalidated');
     }, 160);
   };
@@ -342,10 +392,13 @@ function watchWorkspace(root, window) {
     invalidate();
   });
 
-  return () => {
-    clearTimeout(timeout);
-    watchers.forEach((watcher) => watcher.close());
-  }
+  return {
+    invalidate,
+    close: () => {
+      clearTimeout(timeout);
+      watchers.forEach((watcher) => watcher.close());
+    }
+  };
 }
 
 let snapshotPromise = null;
@@ -358,15 +411,6 @@ function loadSnapshot(root, refresh = false) {
   return snapshotPromise;
 }
 
-function walkLockJson(directory) {
-  if (!fs.existsSync(directory)) return [];
-  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const target = path.join(directory, entry.name);
-    if (entry.isDirectory()) return walkLockJson(target);
-    return entry.isFile() && entry.name.endsWith('.lock.json') ? [target] : [];
-  }).sort((left, right) => left.localeCompare(right, 'en'));
-}
-
 function automationProposalLock(root, request) {
   if (!request || typeof request !== 'object' || Array.isArray(request)
     || Object.keys(request).sort().join(',') !== 'configurationName,lockFingerprint,proposalId'
@@ -375,28 +419,33 @@ function automationProposalLock(root, request) {
     || typeof request.lockFingerprint !== 'string') {
     throw new TypeError('Automation proposal inspection requires one exact proposal and configuration lock reference.');
   }
-  const candidates = walkLockJson(path.join(root, 'soter', 'fixtures'))
-    .map((file) => {
-      try {
-        return { file, value: readJson(file) };
-      } catch {
-        return null;
-      }
-    })
-    .filter(Boolean)
-    .filter(({ value }) => value.$contract === 'soter://contracts/lock/v1'
-      && value.configuration.name === request.configurationName
-      && fingerprintLock(value) === request.lockFingerprint);
-  if (candidates.length !== 1) {
+  if (!hasPrivateConfigurationState(root, request.configurationName)
+    || !hasActiveConfigurationLockState(root, request.configurationName)) {
     const error = new Error('Automation proposal configuration lock binding is unavailable.');
     error.code = 'AUTOMATION_PROPOSAL_BINDING_INVALID';
     throw error;
   }
-  const selected = candidates[0];
+  const desired = readPrivateConfigurationState(root, request.configurationName);
+  const active = readActiveConfigurationLockState(root, request.configurationName);
+  const lock = active.lock;
+  const expectedConfigurationPath = repoRelativePath(
+    root,
+    privateConfigurationStatePath(root, request.configurationName)
+  );
+  if (desired.path !== expectedConfigurationPath
+    || lock.$contract !== 'soter://contracts/lock/v1'
+    || lock.configuration.name !== request.configurationName
+    || lock.configuration.path !== expectedConfigurationPath
+    || fingerprintLock(lock) !== request.lockFingerprint) {
+    const error = new Error('Automation proposal configuration lock binding is unavailable.');
+    error.code = 'AUTOMATION_PROPOSAL_BINDING_INVALID';
+    throw error;
+  }
   const applicability = lockMatchesResolution({
     root,
-    lock: selected.value,
-    configPath: selected.value.configuration.path
+    lock,
+    configPath: expectedConfigurationPath,
+    host: lock.host.id
   });
   if (!applicability.matches) {
     const error = new Error('Automation proposal configuration lock is stale.');
@@ -405,8 +454,11 @@ function automationProposalLock(root, request) {
   }
   return {
     proposalId: request.proposalId,
-    lockPath: repoRelativePath(root, selected.file),
-    expectedHost: selected.value.host.id
+    lockPath: repoRelativePath(
+      root,
+      activeConfigurationLockStatePath(root, request.configurationName)
+    ),
+    expectedHost: lock.host.id
   };
 }
 
@@ -433,8 +485,8 @@ async function createWindow() {
   });
 
   installSecurityBoundaries(window);
-  const closeWatcher = watchWorkspace(root, window);
-  window.on('closed', closeWatcher);
+  const workspaceWatcher = watchWorkspace(root, window);
+  window.on('closed', workspaceWatcher.close);
   window.once('ready-to-show', () => window.show());
 
   ipcMain.handle('workspace:get', async (event) => {
@@ -706,12 +758,14 @@ async function createWindow() {
   });
   ipcMain.handle('configuration:preview', async (event, request) => {
     assertSender(event);
-    if (!request || typeof request !== 'object' || Array.isArray(request)) {
+    if (!request || typeof request !== 'object' || Array.isArray(request)
+      || !['tracked-contained', 'private-active'].includes(request.configurationBasis)) {
       throw new TypeError('Configuration preview request must be an object.');
     }
     return previewConfiguration({
       root,
       name: request.name,
+      configurationBasis: request.configurationBasis,
       draft: request.draft
     });
   });
@@ -733,8 +787,7 @@ async function createWindow() {
         id: `configuration-change-plan.${request.name}.${randomUUID()}`,
         createdAt: at
       });
-      snapshotPromise = null;
-      if (!window.isDestroyed()) window.webContents.send('workspace:invalidated');
+      workspaceWatcher.invalidate();
       return {
         ok: true,
         inspection: inspectConfigurationChange({ root, planId: result.plan.id, at })
@@ -760,8 +813,7 @@ async function createWindow() {
         createdAt: created.toISOString(),
         expiresAt: new Date(created.getTime() + 10 * 60 * 1000).toISOString()
       });
-      snapshotPromise = null;
-      if (!window.isDestroyed()) window.webContents.send('workspace:invalidated');
+      workspaceWatcher.invalidate();
       return {
         ok: true,
         inspection: inspectConfigurationChange({
@@ -792,8 +844,7 @@ async function createWindow() {
         reason: 'Confirmed in Soter Studio after exact-scope review.',
         confirmedAt
       });
-      snapshotPromise = null;
-      if (!window.isDestroyed()) window.webContents.send('workspace:invalidated');
+      workspaceWatcher.invalidate();
       return {
         ok: true,
         inspection: inspectConfigurationChange({
@@ -821,8 +872,7 @@ async function createWindow() {
         checkpointId: `checkpoint.configuration.${randomUUID()}`,
         at
       });
-      snapshotPromise = null;
-      if (!window.isDestroyed()) window.webContents.send('workspace:invalidated');
+      workspaceWatcher.invalidate();
       return {
         ok: true,
         inspection: inspectConfigurationChange({
@@ -849,8 +899,7 @@ async function createWindow() {
       }
       const at = new Date().toISOString();
       const checkpoint = executeConfigurationChange({ root, checkpointId: request.checkpointId, at });
-      snapshotPromise = null;
-      if (!window.isDestroyed()) window.webContents.send('workspace:invalidated');
+      workspaceWatcher.invalidate();
       return {
         ok: true,
         inspection: inspectConfigurationChange({
@@ -877,8 +926,7 @@ async function createWindow() {
       }
       const at = new Date().toISOString();
       const checkpoint = recoverConfigurationChange({ root, checkpointId: request.checkpointId, at });
-      snapshotPromise = null;
-      if (!window.isDestroyed()) window.webContents.send('workspace:invalidated');
+      workspaceWatcher.invalidate();
       return {
         ok: true,
         inspection: inspectConfigurationChange({
@@ -935,8 +983,7 @@ async function createWindow() {
         createdAt,
         validUntil: new Date(created.getTime() + 20 * 60 * 1000).toISOString()
       });
-      snapshotPromise = null;
-      if (!window.isDestroyed()) window.webContents.send('workspace:invalidated');
+      workspaceWatcher.invalidate();
       return { ok: true, inspection: inspectHostRealization({ root, planId: result.plan.id, at: createdAt }) };
     } catch (error) {
       return hostRealizationFailure(error, 'The exact private host realization plan is unavailable.');
@@ -961,8 +1008,7 @@ async function createWindow() {
         createdAt,
         expiresAt
       });
-      snapshotPromise = null;
-      if (!window.isDestroyed()) window.webContents.send('workspace:invalidated');
+      workspaceWatcher.invalidate();
       return {
         ok: true,
         inspection: inspectHostRealization({ root, planId: request.planId, requestId: result.request.id, at: createdAt })
@@ -988,8 +1034,7 @@ async function createWindow() {
         reason: 'Confirmed in Soter Studio after exact host output scope review.',
         confirmedAt
       });
-      snapshotPromise = null;
-      if (!window.isDestroyed()) window.webContents.send('workspace:invalidated');
+      workspaceWatcher.invalidate();
       return {
         ok: true,
         inspection: inspectHostRealization({
@@ -1017,8 +1062,7 @@ async function createWindow() {
         checkpointId: `checkpoint.host-realization.${randomUUID()}`,
         at
       });
-      snapshotPromise = null;
-      if (!window.isDestroyed()) window.webContents.send('workspace:invalidated');
+      workspaceWatcher.invalidate();
       return {
         ok: true,
         inspection: inspectHostRealization({
@@ -1045,8 +1089,7 @@ async function createWindow() {
       }
       const at = new Date().toISOString();
       const checkpoint = executeHostRealization({ root, checkpointId: request.checkpointId, at });
-      snapshotPromise = null;
-      if (!window.isDestroyed()) window.webContents.send('workspace:invalidated');
+      workspaceWatcher.invalidate();
       return {
         ok: true,
         inspection: inspectHostRealization({
@@ -1073,8 +1116,7 @@ async function createWindow() {
       }
       const at = new Date().toISOString();
       const checkpoint = recoverHostRealization({ root, checkpointId: request.checkpointId, at });
-      snapshotPromise = null;
-      if (!window.isDestroyed()) window.webContents.send('workspace:invalidated');
+      workspaceWatcher.invalidate();
       return {
         ok: true,
         inspection: inspectHostRealization({
@@ -1374,20 +1416,17 @@ async function createWindow() {
         })
       };
     } catch (error) {
-      const code = typeof error?.code === 'string'
-        && (proposalConnectedBatchErrorCodes.has(error.code)
-          || automationProposalErrorCodes.has(error.code)
-          || automationProposalMaterialErrorCodes.has(error.code))
-        ? error.code
-        : 'PROPOSAL_CONNECTED_BATCH_ADAPTER_UNAVAILABLE';
       return {
         ok: false,
-        error: {
-          code,
-          message: code === 'PROPOSAL_CONNECTED_BATCH_PROVIDER_UNAVAILABLE'
-            ? 'The selected proposal actions do not have one exact connected write and verification provider.'
-            : 'The exact connected proposal preview is unavailable.'
-        }
+        error: sanitizedConnectedActionError(error, {
+          allowedCodes: new Set([
+            ...proposalConnectedBatchErrorCodes,
+            ...automationProposalErrorCodes,
+            ...automationProposalMaterialErrorCodes
+          ]),
+          fallbackCode: 'PROPOSAL_CONNECTED_BATCH_ADAPTER_UNAVAILABLE',
+          fallbackMessage: 'The exact connected proposal preview is unavailable.'
+        })
       };
     }
   });
@@ -1411,6 +1450,7 @@ async function createWindow() {
       const id = 'approval-request.email-triage.' + randomUUID();
       const begun = await beginProposalConnectedApprovalRequest({
         root,
+        configurationBasis: 'private-active',
         lockPath: exact.lockPath,
         runPath: proposal.runPath,
         batch,
@@ -1420,25 +1460,23 @@ async function createWindow() {
         createdAt: createdAt.toISOString(),
         expiresAt: new Date(createdAt.getTime() + 10 * 60 * 1000).toISOString()
       });
-      snapshotPromise = null;
-      if (!window.isDestroyed()) window.webContents.send('workspace:invalidated');
+      workspaceWatcher.invalidate();
       return {
         ok: true,
         inspection: inspectConnectedOperatorActivity({ root, requestId: begun.request.id })
       };
     } catch (error) {
-      const code = typeof error?.code === 'string'
-        && (proposalConnectedBatchErrorCodes.has(error.code)
-          || automationProposalErrorCodes.has(error.code)
-          || automationProposalMaterialErrorCodes.has(error.code))
-        ? error.code
-        : 'PROPOSAL_CONNECTED_APPROVAL_ADAPTER_UNAVAILABLE';
       return {
         ok: false,
-        error: {
-          code,
-          message: 'The exact connected approval request is unavailable.'
-        }
+        error: sanitizedConnectedActionError(error, {
+          allowedCodes: new Set([
+            ...proposalConnectedBatchErrorCodes,
+            ...automationProposalErrorCodes,
+            ...automationProposalMaterialErrorCodes
+          ]),
+          fallbackCode: 'PROPOSAL_CONNECTED_APPROVAL_ADAPTER_UNAVAILABLE',
+          fallbackMessage: 'The exact connected approval request is unavailable.'
+        })
       };
     }
   });
@@ -1468,71 +1506,104 @@ async function createWindow() {
   });
   ipcMain.handle('operator:prepare', async (event, request) => {
     assertSender(event);
+    const requestKeys = request && typeof request === 'object' && !Array.isArray(request)
+      ? Object.keys(request)
+      : [];
     if (!request || typeof request !== 'object' || Array.isArray(request)
+      || requestKeys.length !== 5
+      || requestKeys.some((key) => ![
+        'automationId',
+        'configurationName',
+        'configurationBasis',
+        'preparationMode',
+        'input'
+      ].includes(key))
       || typeof request.automationId !== 'string'
       || typeof request.configurationName !== 'string'
+      || !['tracked-contained', 'private-active'].includes(request.configurationBasis)
+      || !['contained', 'connected-acquisition'].includes(request.preparationMode)
+      || (request.preparationMode === 'connected-acquisition'
+        && request.configurationBasis !== 'private-active')
       || !request.input || typeof request.input !== 'object' || Array.isArray(request.input)
-      || Object.values(request.input).some((value) => !['string', 'boolean'].includes(typeof value))) {
-      throw new TypeError('Automation preparation requires an automation id and scalar declared inputs.');
+      || Object.values(request.input).some((value) => !(
+        ['string', 'boolean'].includes(typeof value)
+        || (Array.isArray(value) && value.every((item) => typeof item === 'string'))
+      ))) {
+      throw new TypeError('Automation preparation requires one explicit supported preparation mode, a compatible configuration basis, and declared inputs.');
     }
     const result = await prepareAutomationRun({
       root,
       automationId: request.automationId,
       configurationName: request.configurationName,
+      configurationBasis: request.configurationBasis,
+      preparationMode: request.preparationMode,
       input: request.input,
       createdAt: new Date().toISOString()
     });
-    snapshotPromise = null;
-    if (!window.isDestroyed()) window.webContents.send('workspace:invalidated');
+    workspaceWatcher.invalidate();
     return result;
   });
   ipcMain.handle('operator:approval-confirm', async (event, request) => {
     assertSender(event);
-    if (!request || typeof request !== 'object' || Array.isArray(request)
-      || request.confirmed !== true
-      || typeof request.requestId !== 'string'
-      || typeof request.approvalId !== 'string') {
-      throw new TypeError('Approval requires an explicit decision and canonical request and approval ids.');
+    try {
+      if (!request || typeof request !== 'object' || Array.isArray(request)
+        || request.confirmed !== true
+        || typeof request.requestId !== 'string'
+        || typeof request.approvalId !== 'string') {
+        throw new TypeError('Approval requires an explicit decision and canonical request and approval ids.');
+      }
+      const confirmedAt = new Date().toISOString();
+      const result = await confirmProposalConnectedApprovalRequest({
+        root,
+        requestId: request.requestId,
+        approvalId: request.approvalId,
+        actor: 'local-studio-operator',
+        reason: typeof request.reason === 'string' ? request.reason : 'Approved in Soter Studio after exact-scope review',
+        confirmedAt
+      });
+      workspaceWatcher.invalidate();
+      return {
+        ok: true,
+        inspection: inspectConnectedOperatorActivity({ root, approvalId: result.approval.id })
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error: sanitizedConnectedActionError(error, {
+          allowedCodes: connectedApprovalActionErrorCodes,
+          fallbackCode: 'CONNECTED_APPROVAL_CONFIRM_ADAPTER_UNAVAILABLE',
+          fallbackMessage: 'The exact connected approval could not be confirmed.'
+        })
+      };
     }
-    const confirmedAt = new Date().toISOString();
-    const canonicalRequest = readConnectedApprovalRequest({
-      root,
-      requestId: request.requestId,
-      at: confirmedAt,
-      allowExpired: true
-    });
-    const confirm = canonicalRequest.batch.$contract === 'soter://contracts/connected-operation-batch/v2'
-      ? confirmProposalConnectedApprovalRequest
-      : canonicalRequest.batch.$contract === 'soter://contracts/connected-operation-batch/v1'
-        ? confirmConnectedApprovalRequest
-        : null;
-    if (!confirm) throw new TypeError('Approval confirmation requires a supported canonical operation batch contract.');
-    const result = await confirm({
-      root,
-      requestId: request.requestId,
-      approvalId: request.approvalId,
-      actor: 'local-studio-operator',
-      reason: typeof request.reason === 'string' ? request.reason : 'Approved in Soter Studio after exact-scope review',
-      confirmedAt
-    });
-    snapshotPromise = null;
-    if (!window.isDestroyed()) window.webContents.send('workspace:invalidated');
-    return inspectConnectedOperatorActivity({ root, approvalId: result.approval.id });
   });
   ipcMain.handle('operator:transaction-start', async (event, request) => {
     assertSender(event);
-    if (!request || typeof request !== 'object' || Array.isArray(request)
-      || typeof request.approvalId !== 'string') {
-      throw new TypeError('Starting a connected transaction requires one canonical approval id.');
+    try {
+      if (!request || typeof request !== 'object' || Array.isArray(request)
+        || typeof request.approvalId !== 'string') {
+        throw new TypeError('Starting a connected transaction requires one canonical approval id.');
+      }
+      const result = await prepareDurableConnectedTransactionExecution({
+        root,
+        approvalId: request.approvalId,
+        at: new Date().toISOString()
+      });
+      workspaceWatcher.invalidate();
+      return {
+        ok: true,
+        inspection: inspectConnectedOperatorActivity({ root, checkpointId: result.checkpoint.id })
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error: sanitizedConnectedActionError(error, {
+          allowedCodes: connectedTransactionStartErrorCodes,
+          fallbackCode: 'CONNECTED_TRANSACTION_START_ADAPTER_UNAVAILABLE',
+          fallbackMessage: 'The exact connected transaction could not be started.'
+        })
+      };
     }
-    const result = await prepareDurableConnectedTransactionExecution({
-      root,
-      approvalId: request.approvalId,
-      at: new Date().toISOString()
-    });
-    snapshotPromise = null;
-    if (!window.isDestroyed()) window.webContents.send('workspace:invalidated');
-    return inspectConnectedOperatorActivity({ root, checkpointId: result.checkpoint.id });
   });
   ipcMain.handle('operator:reconciliation-prepare', async (event, request) => {
     assertSender(event);
@@ -1550,8 +1621,7 @@ async function createWindow() {
       checkpointId: current.continuationRequest.checkpointId,
       at: new Date().toISOString()
     });
-    snapshotPromise = null;
-    if (!window.isDestroyed()) window.webContents.send('workspace:invalidated');
+    workspaceWatcher.invalidate();
     return inspectConnectedOperatorActivity({ root, checkpointId: result.checkpoint.id });
   });
 

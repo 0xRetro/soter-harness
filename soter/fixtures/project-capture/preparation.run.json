@@ -1,0 +1,373 @@
+{
+  "$contract": "soter://contracts/run-envelope/v1",
+  "contractVersion": "1.0.0",
+  "id": "run.project-capture.preparation-fixture",
+  "createdAt": "2026-07-21T15:00:00.000Z",
+  "requestedOutcome": "Prepare one grounded portable Project or Deal candidate for exact private review and stop before approval, start authorization, or provider writes.",
+  "initiation": "user-requested",
+  "intent": "operate",
+  "lifecycleState": "paused",
+  "automation": {
+    "id": "automation.project-capture",
+    "version": "0.1.0"
+  },
+  "configurationLock": {
+    "path": "soter/fixtures/project-capture/project-capture.lock.json",
+    "fingerprint": "sha256:97b5f6583d39c359bcf015cf9a02a21a570ec807e5b227a80b54e856a2580406"
+  },
+  "graphFingerprint": "sha256:30f58f330453c88c3a963b1f7115d7ce1b17617f023751867d82ec65c97ddfcf",
+  "context": [
+    {
+      "subject": "crm.records",
+      "authority": "authority.crm.definition",
+      "role": "definition",
+      "uri": "soter-fixture://configuration-template/notion/authority/crm-policies",
+      "declarationFingerprint": "sha256:3d57e543eb317047a3dd1e66c7ebc375a14da087d8d149eb037df7598d6b2484",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:97b5f6583d39c359bcf015cf9a02a21a570ec807e5b227a80b54e856a2580406",
+      "freshness": "unknown"
+    },
+    {
+      "subject": "crm.records",
+      "authority": "authority.crm.instance",
+      "role": "instance",
+      "uri": "soter-fixture://configuration-template/notion/authority/crm",
+      "declarationFingerprint": "sha256:0edb7b21a2e593cfa664cb28593a14be80d1f7a1b22a60ec1e31590d346d4e0b",
+      "status": "loaded",
+      "provenance": "fixture:sha256:4c54c7abaf267122a32fa5e1956cd81cdba5dc63ac9e8ad937cba8fe2b5d858f",
+      "freshness": "passed"
+    },
+    {
+      "subject": "notion.workspace",
+      "authority": "authority.notion.provider",
+      "role": "provider",
+      "uri": "soter-fixture://configuration-template/notion/account/operator",
+      "declarationFingerprint": "sha256:ac5069cd8caaa12d0875e257a94dfe28297822278cb3eaab9dcbe9fa112517d5",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:97b5f6583d39c359bcf015cf9a02a21a570ec807e5b227a80b54e856a2580406",
+      "freshness": "unknown"
+    },
+    {
+      "subject": "projects.records",
+      "authority": "authority.projects.definition",
+      "role": "definition",
+      "uri": "soter-fixture://configuration-template/notion/authority/policies",
+      "declarationFingerprint": "sha256:4a961816259ea34ff12258c4d1b9067b344b617f72a1ad918d20d77d1b2dea00",
+      "status": "loaded",
+      "provenance": "fixture:sha256:c38d9524b9f6592299c17416f7534ebee14de93a9392d84214153d2f1cd2f1b4",
+      "freshness": "passed"
+    },
+    {
+      "subject": "projects.records",
+      "authority": "authority.projects.instance",
+      "role": "instance",
+      "uri": "soter-fixture://configuration-template/notion/authority/projects",
+      "declarationFingerprint": "sha256:44a2e8e607b9d5daba783d081ed12d0049201922355964a4c9300dd7c8f5f9f7",
+      "status": "loaded",
+      "provenance": "fixture:sha256:6f643c0854912efc3a4958a6bd89112dad3ed8a80337a369ef6f637f7e665743",
+      "freshness": "passed"
+    },
+    {
+      "subject": "runtime.runs",
+      "authority": "authority.run.evidence",
+      "role": "evidence",
+      "uri": "soter-state://runs",
+      "declarationFingerprint": "sha256:b6e3b94a81e9cf35143a6c5e6e686a4ea26b27bbdd09eaa5ccb559a361a45a5e",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:97b5f6583d39c359bcf015cf9a02a21a570ec807e5b227a80b54e856a2580406",
+      "freshness": "unknown"
+    }
+  ],
+  "bindings": [
+    {
+      "capability": "crm.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.crm.definition",
+        "authority.crm.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Notion resolves the exact selected CRM Organization without transferring CRM ownership into Projects Context."
+    },
+    {
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.projects.definition",
+        "authority.projects.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Notion is the configured authority for the Project policy and bounded duplicate Project candidates."
+    },
+    {
+      "capability": "projects.schema.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.projects.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Notion supplies a normalized current project schema observation before any create proposal."
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0",
+    "projectionDefinition": {
+      "id": "host-projection.codex",
+      "version": "0.3.0",
+      "path": "soter/hosts/codex/projection.json",
+      "fingerprint": "sha256:76cd84436a3b5e7f00edcc8a0be3cdff64f53e488b13107a8bf56603b9600490"
+    },
+    "projectionGenerator": {
+      "id": "core.host-projection-generator",
+      "version": "2.1.0"
+    }
+  },
+  "effectPolicies": {
+    "read": {
+      "mode": "allow",
+      "reason": "Selected policy, current project schema, organization, and bounded project candidates may be read for private preparation."
+    },
+    "disclosure": {
+      "mode": "allow",
+      "reason": "Selected records may enter the configured private run envelope with explicit minimization."
+    },
+    "write": {
+      "mode": "confirm",
+      "reason": "The selected Integration exposes separately governed write capabilities, so any write still requires confirmation. Project Capture itself declares no write capability: COMPLETE_PROJECT_READBACK_UNAVAILABLE holds its candidate before proposal selection, batch, approval, one-time start, checkpoint, provider write, or verification authority."
+    },
+    "dispatch": {
+      "mode": "prohibit",
+      "reason": "Project Capture does not send messages or publish notifications."
+    },
+    "destructive": {
+      "mode": "prohibit",
+      "reason": "Project Capture never deletes records or performs destructive changes."
+    }
+  },
+  "approvals": [],
+  "checkpoints": [
+    {
+      "id": "effects-established",
+      "state": "passed",
+      "details": "Read and disclosure policies were evaluated before each fixture invocation."
+    },
+    {
+      "id": "project-create-review-grounded",
+      "state": "passed",
+      "details": "The exact policy, complete creation-profile set, current schema, organization, and bounded duplicate candidates were loaded without retaining raw private input values."
+    },
+    {
+      "id": "portable-project-grammar-validated",
+      "state": "passed",
+      "details": "The exact private milestone inputs round-tripped through the governed portable milestone and work-item grammar."
+    },
+    {
+      "id": "write-boundary-held",
+      "state": "passed",
+      "details": "No change set, approval request, continuation request, provider call, or canonical write was issued."
+    }
+  ],
+  "outputs": [
+    {
+      "id": "context.project-capture.preparation-fixture",
+      "type": "context-snapshot",
+      "fingerprint": "sha256:e2a32f5d54a24f598a77914741ab15d69c9932a5fa080e7423df72cc213ff8ab"
+    }
+  ],
+  "effects": [
+    {
+      "id": "effect.project-capture.preparation.policy.fixture",
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.projects.definition",
+      "startedAt": "2026-07-21T15:00:00.000Z",
+      "completedAt": "2026-07-21T15:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected policy, current project schema, organization, and bounded project candidates may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:b0e20d8e3bb2ea1877f6904862968a4fd65d4881fd66b21d705a071f4222b824",
+      "state": "passed",
+      "outputFingerprint": "sha256:a34e92292db9d69b5e5d7faf19e9a860db848d831c8ee1de0ead30632f1df566",
+      "error": null
+    },
+    {
+      "id": "effect.project-capture.preparation.profile.fixture",
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.projects.definition",
+      "startedAt": "2026-07-21T15:00:00.000Z",
+      "completedAt": "2026-07-21T15:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected policy, current project schema, organization, and bounded project candidates may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:822670ac8de29e73a981b35ccace52f28cff739ec13654743c4a4c6ae45fdfe9",
+      "state": "passed",
+      "outputFingerprint": "sha256:7afcc647df9c46b51a16456236e16c96a67ed84246a7c605df07baa32f19c704",
+      "error": null
+    },
+    {
+      "id": "effect.project-capture.preparation.schema.fixture",
+      "capability": "projects.schema.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.projects.instance",
+      "startedAt": "2026-07-21T15:00:00.000Z",
+      "completedAt": "2026-07-21T15:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected policy, current project schema, organization, and bounded project candidates may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:8d79985b7663f302c80e79fdb082d575b9f9299469782ac4baa1aecc5839e2eb",
+      "state": "passed",
+      "outputFingerprint": "sha256:f542020066f89b20f424fa8b18c45796c5f6df2847e7793c845b1322bf08f826",
+      "error": null
+    },
+    {
+      "id": "effect.project-capture.preparation.organization.fixture",
+      "capability": "crm.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.crm.instance",
+      "startedAt": "2026-07-21T15:00:00.000Z",
+      "completedAt": "2026-07-21T15:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected policy, current project schema, organization, and bounded project candidates may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:11ddea95593b913c925d7e7c9debed4cdd0ad4944b63ca1584974d1a9592ad43",
+      "state": "passed",
+      "outputFingerprint": "sha256:15189a1c9b5c4f6226f9542b79752fbafdf1a7ffc827c99c73f754dbbaa410d0",
+      "error": null
+    },
+    {
+      "id": "effect.project-capture.preparation.duplicates.fixture",
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.projects.instance",
+      "startedAt": "2026-07-21T15:00:00.000Z",
+      "completedAt": "2026-07-21T15:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected policy, current project schema, organization, and bounded project candidates may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:1b93ef903b309416e92de47f19ccb44c7bc72d66e53d838d6cf7138ef5a6f174",
+      "state": "passed",
+      "outputFingerprint": "sha256:7497e605e930d1a93575fefc3817bed9352ea1370b1b3de2e660032a63694565",
+      "error": null
+    }
+  ],
+  "evidenceIds": [],
+  "scenario": {
+    "id": "project-capture.preparation",
+    "path": "soter/scenarios/project-capture/preparation.scenario.json",
+    "fingerprint": "sha256:af81a8bc5b0a51f11ec328e1c9ad6d1e89807a0cf5e945f3d2c4fc5b363d0cd3"
+  }
+}

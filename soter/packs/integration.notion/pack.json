@@ -2,11 +2,11 @@
   "$contract": "soter://contracts/pack/v1",
   "contractVersion": "1.0.0",
   "id": "integration.notion",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "layer": "integration",
   "releaseStage": "experimental",
   "evidenceMaturity": "declared",
-  "summary": "Implements portable CRM record capabilities through a configured Notion workspace and explicit schema mappings.",
+  "summary": "Implements explicitly mapped portable Context record capabilities through a configured Notion workspace.",
   "dependencies": [
     {
       "pack": "core.runtime",
@@ -17,40 +17,386 @@
     {
       "pack": "context.crm",
       "version": "^0.1.0",
-      "optional": false,
-      "reason": "Notion maps provider fields into the canonical portable CRM record model owned by Context."
+      "optional": true,
+      "reason": "When selected, Notion maps provider fields into the canonical portable CRM record model without requiring CRM in unrelated configurations."
+    },
+    {
+      "pack": "context.communications.collaboration",
+      "version": "^0.1.0",
+      "optional": true,
+      "reason": "When selected, Notion maps the portable Communications channel directory and policies without making provider layout or CRM responsible for communication meaning."
+    },
+    {
+      "pack": "context.product",
+      "version": "^0.1.0",
+      "optional": true,
+      "reason": "When selected, Notion maps one exact configured feature board into portable Product records without requiring Product in unrelated configurations."
+    },
+    {
+      "pack": "context.process",
+      "version": "^0.1.0",
+      "optional": true,
+      "reason": "When selected, Notion maps explicit process, role, service, run, and policy targets into portable Process records."
+    },
+    {
+      "pack": "context.projects",
+      "version": "^0.1.0",
+      "optional": true,
+      "reason": "When selected, Notion maps configured project databases into portable Project records without requiring Projects in unrelated configurations."
+    },
+    {
+      "pack": "context.tasks",
+      "version": "^0.1.0",
+      "optional": true,
+      "reason": "When selected, Notion maps configured task databases into portable Task records without requiring Tasks in unrelated configurations."
+    },
+    {
+      "pack": "context.meetings",
+      "version": "^0.1.0",
+      "optional": true,
+      "reason": "When selected, Notion maps configured meeting and summary databases into portable Meeting records without requiring Meetings in unrelated configurations."
     }
   ],
   "capabilities": {
     "requires": [],
     "provides": [
-      { "id": "crm.records.read", "version": "1.0.0" },
-      { "id": "crm.records.create", "version": "1.0.0" },
-      { "id": "crm.records.update", "version": "1.0.0" },
-      { "id": "documents.content.read", "version": "1.0.0" }
+      {
+        "id": "crm.records.read",
+        "version": "1.0.0"
+      },
+      {
+        "id": "crm.records.create",
+        "version": "1.0.0"
+      },
+      {
+        "id": "crm.records.update",
+        "version": "1.0.0"
+      },
+      {
+        "id": "crm.schema.read",
+        "version": "1.0.0"
+      },
+      {
+        "id": "communications.records.read",
+        "version": "1.0.0"
+      },
+      {
+        "id": "communications.records.create",
+        "version": "1.0.0"
+      },
+      {
+        "id": "communications.records.update",
+        "version": "1.0.0"
+      },
+      {
+        "id": "communications.schema.read",
+        "version": "1.0.0"
+      },
+      {
+        "id": "product.records.read",
+        "version": "1.0.0"
+      },
+      {
+        "id": "product.records.create",
+        "version": "1.0.0"
+      },
+      {
+        "id": "product.schema.read",
+        "version": "1.0.0"
+      },
+      {
+        "id": "process.records.read",
+        "version": "1.0.0"
+      },
+      {
+        "id": "process.records.create",
+        "version": "1.0.0"
+      },
+      {
+        "id": "process.schema.read",
+        "version": "1.0.0"
+      },
+      {
+        "id": "documents.content.read",
+        "version": "1.0.0"
+      },
+      {
+        "id": "documents.content.update",
+        "version": "1.0.0"
+      },
+      {
+        "id": "workspace.identity.read",
+        "version": "1.0.0"
+      },
+      {
+        "id": "projects.records.read",
+        "version": "1.0.0"
+      },
+      {
+        "id": "projects.records.create",
+        "version": "1.0.0"
+      },
+      {
+        "id": "projects.records.update",
+        "version": "1.0.0"
+      },
+      {
+        "id": "projects.schema.read",
+        "version": "1.0.0"
+      },
+      {
+        "id": "tasks.records.read",
+        "version": "1.0.0"
+      },
+      {
+        "id": "tasks.records.create",
+        "version": "1.0.0"
+      },
+      {
+        "id": "tasks.records.update",
+        "version": "1.0.0"
+      },
+      {
+        "id": "tasks.schema.read",
+        "version": "1.0.0"
+      },
+      {
+        "id": "meetings.records.read",
+        "version": "1.0.0"
+      },
+      {
+        "id": "meetings.records.create",
+        "version": "1.0.0"
+      },
+      {
+        "id": "meetings.schema.read",
+        "version": "1.0.0"
+      }
     ]
   },
   "authorities": [
-    { "role": "provider", "subject": "notion.workspace", "required": true },
-    { "role": "instance", "subject": "crm.records", "required": true }
+    {
+      "role": "provider",
+      "subject": "notion.workspace",
+      "required": true
+    },
+    {
+      "role": "instance",
+      "subject": "crm.records",
+      "required": false
+    },
+    {
+      "role": "instance",
+      "subject": "communications.records",
+      "required": false
+    },
+    {
+      "role": "instance",
+      "subject": "product.records",
+      "required": false
+    },
+    {
+      "role": "instance",
+      "subject": "process.records",
+      "required": false
+    },
+    {
+      "role": "instance",
+      "subject": "projects.records",
+      "required": false
+    },
+    {
+      "role": "instance",
+      "subject": "tasks.records",
+      "required": false
+    },
+    {
+      "role": "instance",
+      "subject": "meetings.records",
+      "required": false
+    }
   ],
-  "effects": ["read", "disclosure", "write"],
+  "effects": [
+    "read",
+    "disclosure",
+    "write"
+  ],
   "artifacts": [
-    { "path": "soter/capabilities/crm.records.read.json", "role": "definition" },
-    { "path": "soter/capabilities/crm.records.create.json", "role": "definition" },
-    { "path": "soter/capabilities/crm.records.update.json", "role": "definition" },
-    { "path": "soter/capabilities/documents.content.read.json", "role": "definition" },
-    { "path": "soter/providers/provider.integration.notion.fixture.json", "role": "implementation" },
-    { "path": "soter/integrations/notion/fixture.mjs", "role": "implementation" },
-    { "path": "soter/integrations/notion/settings.json", "role": "definition" },
-    { "path": "soter/integrations/notion/crm-records.mapping.json", "role": "definition" },
-    { "path": "soter/providers/provider.integration.notion.mcp.json", "role": "implementation" },
-    { "path": "soter/integrations/notion/mcp.mjs", "role": "implementation" },
-    { "path": "soter/fixtures/providers/notion/crm-records.json", "role": "fixture" }
+    {
+      "path": "soter/capabilities/crm.records.read.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/crm.records.create.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/crm.records.update.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/crm.schema.read.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/communications.records.read.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/communications.records.create.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/communications.records.update.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/communications.schema.read.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/product.records.read.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/product.records.create.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/product.schema.read.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/process.records.read.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/process.records.create.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/process.schema.read.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/documents.content.read.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/documents.content.update.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/workspace.identity.read.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/providers/provider.integration.notion.fixture.json",
+      "role": "implementation"
+    },
+    {
+      "path": "soter/integrations/notion/fixture.mjs",
+      "role": "implementation"
+    },
+    {
+      "path": "soter/integrations/notion/settings.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/integrations/notion/crm-records.mapping.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/integrations/notion/communications-records.mapping.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/integrations/notion/product-records.mapping.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/integrations/notion/process-records.mapping.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/providers/provider.integration.notion.mcp.json",
+      "role": "implementation"
+    },
+    {
+      "path": "soter/integrations/notion/mcp.mjs",
+      "role": "implementation"
+    },
+    {
+      "path": "soter/integrations/notion/notion.selftest.mjs",
+      "role": "evaluation"
+    },
+    {
+      "path": "soter/fixtures/providers/notion/workspace-records.json",
+      "role": "fixture"
+    },
+    {
+      "path": "soter/capabilities/projects.records.read.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/projects.records.create.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/projects.records.update.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/projects.schema.read.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/integrations/notion/projects-records.mapping.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/tasks.records.read.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/tasks.records.create.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/tasks.records.update.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/tasks.schema.read.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/integrations/notion/tasks-records.mapping.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/meetings.records.read.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/meetings.records.create.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/capabilities/meetings.schema.read.json",
+      "role": "definition"
+    },
+    {
+      "path": "soter/integrations/notion/meetings-records.mapping.json",
+      "role": "definition"
+    }
   ],
   "compatibility": {
     "baseContract": "^1.0.0",
-    "hosts": ["codex", "claude"]
+    "hosts": [
+      "codex",
+      "claude"
+    ]
   },
   "verification": {
     "maxLevel": "static",

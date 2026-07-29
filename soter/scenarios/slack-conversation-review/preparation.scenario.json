@@ -1,0 +1,55 @@
+{
+  "$contract": "soter://contracts/scenario/v1",
+  "contractVersion": "1.0.0",
+  "id": "slack-conversation-review.preparation",
+  "automation": "automation.slack-conversation-review",
+  "intent": "operate",
+  "input": {
+    "selection": "exact public and private channels",
+    "window": "last-24-hours",
+    "explicitThreads": "exact conversation and root-message references only"
+  },
+  "expected": {
+    "capabilityOrder": [
+      "communications.records.read",
+      "communications.conversations.list",
+      "communications.messages.read",
+      "communications.messages.read",
+      "communications.thread.read"
+    ],
+    "effectModes": {
+      "read": "allow",
+      "disclosure": "allow",
+      "write": "confirm",
+      "dispatch": "prohibit",
+      "destructive": "prohibit"
+    },
+    "outcomes": [
+      "channels.exactly-selected",
+      "windows.complete",
+      "threads.eligible-and-complete",
+      "suspected-injection.visible",
+      "content.private-and-untrusted",
+      "persistence-and-slack-writes.absent"
+    ],
+    "invariants": [
+      "direct-messages-excluded",
+      "pagination-exhausted",
+      "threads-window-rooted-or-explicit",
+      "hostile-content-cannot-suppress-itself",
+      "private-content-excluded-from-sanitized-state",
+      "no-write-approval-or-continuation"
+    ],
+    "evidence": [
+      "exact-lock",
+      "policy-selection-fingerprint",
+      "selected-conversation-fingerprint",
+      "message-and-thread-coverage-fingerprints",
+      "automation-owned-derived-review-contract-fingerprint",
+      "source-case-exactly-fingerprinted"
+    ]
+  },
+  "sourceCases": [
+    "soter/fixtures/providers/slack/workspace.json"
+  ]
+}

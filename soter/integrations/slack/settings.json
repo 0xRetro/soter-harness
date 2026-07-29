@@ -1,0 +1,27 @@
+{
+  "$contract": "soter://contracts/pack-settings/v1",
+  "contractVersion": "1.0.0",
+  "id": "settings.integration.slack",
+  "pack": "integration.slack",
+  "version": "0.1.0",
+  "required": true,
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["workspaceId"],
+    "properties": {
+      "workspaceId": {
+        "type": "string",
+        "oneOf": [
+          {
+            "pattern": "^T[A-Z0-9]{8,63}$"
+          },
+          {
+            "pattern": "^soter-fixture://configuration-template/slack/workspace/[a-z0-9]+(?:-[a-z0-9]+)*$"
+          }
+        ]
+      }
+    }
+  },
+  "reason": "The exact Slack workspace identity is private user configuration and must bind every operator-selected workspace before connected provider planning."
+}

@@ -1,0 +1,21 @@
+{
+  "$contract": "soter://contracts/context-vocabulary/v1",
+  "contractVersion": "1.0.0",
+  "id": "vocabulary.context.projects",
+  "pack": "context.projects",
+  "version": "0.1.0",
+  "subject": "projects.records",
+  "entries": [
+    { "sequence": 1, "id": "project", "term": "project", "aliases": [], "abbreviation": null, "definition": "A bounded body of work that groups outcomes, milestones, embedded work items, decisions, questions, and status independently from CRM and provider layout.", "domain": "projects", "sourceUris": [] },
+    { "sequence": 2, "id": "milestone", "term": "milestone", "aliases": [], "abbreviation": null, "definition": "A Project objective or outcome composed of exact work items whose progress and health remain separate from Task state.", "domain": "projects", "sourceUris": [] },
+    { "sequence": 3, "id": "work-item", "term": "work item", "aliases": [], "abbreviation": null, "definition": "An exact unit of Project-local work that remains embedded and coordination-scoped until an operator explicitly promotes it into tracked Task execution.", "domain": "projects", "sourceUris": [] },
+    { "sequence": 4, "id": "project-feed-entry", "term": "project feed entry", "aliases": ["update"], "abbreviation": null, "definition": "A dated, categorized, visibility-scoped Project fact covering an update, status, Decision, Question, or milestone without rewriting the whole Project.", "domain": "projects", "sourceUris": [] },
+    { "sequence": 5, "id": "decision", "term": "decision", "aliases": [], "abbreviation": null, "definition": "A Project feed fact recording exactly what was decided, by whom, and why or that the why was not supplied.", "domain": "projects", "sourceUris": [] },
+    { "sequence": 6, "id": "question", "term": "question", "aliases": [], "abbreviation": null, "definition": "An unresolved Project feed fact that may be processed only by an exact governed resolution tied to its Decision and work item.", "domain": "projects", "sourceUris": [] }
+  ],
+  "invariants": { "singleDefinitionSource": true, "projectionCopiesAreNonCanonical": true, "providerNeutral": true, "runtimeAuthority": "none" },
+  "limitations": [
+    "This vocabulary defines portable Project meaning only; it grants no provider, approval, execution, or health authority.",
+    "Task, CRM, Meeting, document, and channel relationships remain typed external resource identities."
+  ]
+}

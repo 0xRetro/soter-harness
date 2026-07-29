@@ -1,0 +1,105 @@
+{
+  "$contract": "soter://contracts/evidence/v2",
+  "contractVersion": "2.0.0",
+  "id": "evidence.claude-host-projection.resolution.fixture",
+  "createdAt": "2026-07-21T23:30:00.000Z",
+  "claimFamily": "graph",
+  "claim": "The desired configuration resolves to this exact, internally valid artifact graph.",
+  "subject": {
+    "type": "configuration",
+    "id": "claude-host-projection",
+    "version": null
+  },
+  "configurationLockFingerprint": "sha256:876581b6c7325d62526e757422f1cbc4be378a89e18b5f84f28efe8a2444b579",
+  "graphFingerprint": "sha256:d5e5ec943f612e70d3716b1ec253c82ae36252cbfb13291759731097b056c340",
+  "dependencies": [
+    {
+      "id": "kernel.soter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+    },
+    {
+      "id": "core.runtime",
+      "version": "0.1.0",
+      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+    }
+  ],
+  "host": {
+    "id": "claude",
+    "adapter": "host.claude",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:711ff958a8e512297e97679e70fbfc10f6a545bc9e37154d33c8401b9f4e2189"
+  },
+  "integrations": [],
+  "authorities": [
+    {
+      "id": "authority.claude-host-projection.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "declarationFingerprint": "sha256:9f663c68ece3798b6b50a46a80004fd87bd87f1c29710e79137341a9ba375a59"
+    }
+  ],
+  "evaluator": {
+    "id": "core.resolver",
+    "version": "0.5.0",
+    "level": "graph"
+  },
+  "environment": {
+    "containment": "offline",
+    "runtime": "node"
+  },
+  "acceptanceCriteria": [
+    "Kernel validation reports no graph errors.",
+    "Every selected pack, capability, host projection, authority, and policy is fingerprinted.",
+    "Resolving unchanged inputs produces the same configuration lock fingerprint.",
+    "Credential references and values are absent from the lock."
+  ],
+  "result": "passed",
+  "outcomes": [
+    {
+      "id": "configuration.graph-resolved",
+      "state": "passed"
+    },
+    {
+      "id": "configuration.lock-deterministic",
+      "state": "passed"
+    },
+    {
+      "id": "configuration.lock-secret-free",
+      "state": "passed"
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "configuration",
+      "path": "soter/configurations/claude-host-projection.config.json",
+      "fingerprint": "sha256:9e847ba2646da404ba38d6a3ec33abf06d2dd5d3ee63588dc080cc0deb4342c3"
+    },
+    {
+      "role": "configuration-lock",
+      "fingerprint": "sha256:876581b6c7325d62526e757422f1cbc4be378a89e18b5f84f28efe8a2444b579"
+    }
+  ],
+  "effects": [],
+  "failures": [],
+  "warnings": [],
+  "skipped": [
+    "Host authentication and reachability were not checked offline.",
+    "Integration capabilities were not invoked.",
+    "Automation outcomes and external effects were not evaluated."
+  ],
+  "limitations": [
+    "This evidence establishes graph validity and reproducibility only; it does not establish readiness, behavior verification, or live health."
+  ],
+  "freshness": {
+    "policy": "Valid only while every configuration-lock fingerprint remains unchanged.",
+    "validUntil": null
+  },
+  "supersedes": null,
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Credential references and credential values are excluded."
+    ]
+  }
+}

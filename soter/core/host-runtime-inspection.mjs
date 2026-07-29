@@ -19,7 +19,7 @@ const SERVER_NAME = 'soter-core';
 const SERVER_VERSION = '0.1.0';
 
 function compareText(left, right) {
-  return left.localeCompare(right, 'en');
+  return left < right ? -1 : left > right ? 1 : 0;
 }
 
 function packManifestFiles(root) {
@@ -47,10 +47,26 @@ function runtimeInventory(root, host) {
   const adapterRelativePath = 'soter/hosts/' + host + '/adapter.json';
   const adapterPath = resolveRepoPath(root, adapterRelativePath);
   const adapter = readJson(adapterPath);
-  if (adapter.host !== host || adapter.$contract !== 'soter://contracts/host-adapter/v1') {
+  if (adapter.host !== host || adapter.$contract !== 'soter://contracts/host-adapter/v2') {
     throw new Error('Host runtime adapter does not match active host ' + host + '.');
   }
   entries.push({ path: adapterRelativePath, fingerprint: fingerprintPath(adapterPath) });
+  const definitionPath = resolveRepoPath(root, adapter.projectionDefinition.path);
+  const definition = readJson(definitionPath);
+  entries.push({
+    path: adapter.projectionDefinition.path,
+    fingerprint: fingerprintPath(definitionPath)
+  });
+  for (const output of definition.outputs) {
+    const templatePath = resolveRepoPath(root, output.template);
+    entries.push({ path: output.template, fingerprint: fingerprintPath(templatePath) });
+  }
+  for (const collection of definition.collections) {
+    for (const output of collection.outputs) {
+      const templatePath = resolveRepoPath(root, output.template);
+      entries.push({ path: output.template, fingerprint: fingerprintPath(templatePath) });
+    }
+  }
   for (const projection of adapter.projections) {
     const projectionPath = resolveRepoPath(root, projection.path);
     entries.push({ path: projection.path, fingerprint: fingerprintPath(projectionPath) });

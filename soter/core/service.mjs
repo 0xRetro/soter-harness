@@ -1,21 +1,19 @@
+import fs from 'node:fs';
 import path from 'node:path';
 
 import { validateJsonSchema } from '../kernel/verify.mjs';
 import {
+  assertHostToolCall,
   completeHostToolCall,
   failHostToolCall,
   prepareHostToolCall
 } from './host-tools.mjs';
-import { containsCredentialMaterial } from './host-runtime.mjs';
-import { fingerprintJson, readJson, repoRelativePath, resolveRepoPath } from './lib/canonical-json.mjs';
 import {
-  assertConnectedTransactionCheckpoint,
-  completeConnectedTransactionCall,
-  connectedTransactionCurrentCall,
-  createConnectedTransactionCheckpoint,
-  failConnectedTransactionCall,
-  prepareConnectedTransactionReconciliation
-} from './connected-transaction-runtime.mjs';
+  containsCredentialMaterial,
+  isHostFailureKind,
+  normalizedError
+} from './host-runtime.mjs';
+import { fingerprintJson, readJson, repoRelativePath, resolveRepoPath } from './lib/canonical-json.mjs';
 import {
   assertVerifiedConnectedTransactionCheckpoint,
   completeVerifiedConnectedTransactionCall,
@@ -35,17 +33,11 @@ import {
   requestNextOperationPlanStep
 } from './operation-plans.mjs';
 import {
-  completeProviderProbeCall,
-  failProviderProbeCall,
-  prepareProviderProbeCall
-} from './provider-probes.mjs';
-import {
   assertProviderProbePlanCheckpoint,
   completeProviderProbePlanStep,
   createProviderProbePlanCheckpoint,
   failProviderProbePlanStep,
-  providerProbePlanCurrentCall,
-  providerUsesProbePlan
+  providerProbePlanCurrentCall
 } from './provider-probe-plans.mjs';
 import { fingerprintLock, lockMatchesResolution } from './resolve.mjs';
 import {
@@ -60,20 +52,70 @@ import {
   hasContextSnapshotState,
   hasHostCallCheckpoint,
   hasRunState,
-  listHostCallCheckpointDocuments,
+  hostCallCheckpointPath,
   readAutomationDecisionState,
   readContextSnapshotState,
   readHostCallCheckpoint,
   readRunState,
+  runStatePath,
   writeAutomationDecisionState,
   writeContextSnapshotState,
   writeHostCallCheckpoint,
   writeRunState
 } from './runtime-state.mjs';
 import { connectedApprovalFingerprint } from './connected-transactions.mjs';
+import {
+  ConnectedConfigurationError,
+  revalidateExactConnectedConfiguration,
+  selectExactConnectedConfiguration
+} from './connected-configuration.mjs';
 
 const EXECUTABLE_RUN_STATES = new Set(['effects-established', 'executing']);
 const DURABLE_RUN_STATES = new Set(['effects-established', 'executing', 'paused']);
+const READ_ONLY_FOLLOWUP_RUN_STATES = new Set([
+  ...DURABLE_RUN_STATES,
+  'context-assembled'
+]);
+const READ_ONLY_PLAN_EFFECTS = new Set(['read', 'disclosure']);
+
+function assertExactServiceArguments(value, allowedKeys, label) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+    || Object.keys(value).some((key) => !allowedKeys.has(key))) {
+    throw new Error(label + ' accepts only its exact declared arguments.');
+  }
+}
+
+function operationProviderImplementations(operation) {
+  return [
+    operation.provider?.connectedImplementation,
+    operation.precondition?.provider?.connectedImplementation,
+    operation.verification?.provider?.connectedImplementation
+  ].filter(Boolean);
+}
+
+function checkpointProviderImplementations(checkpoint) {
+  if (checkpoint.kind === 'capability') {
+    return [checkpoint.call.provider.implementation];
+  }
+  if (checkpoint.kind === 'operation-plan') {
+    return [...new Set(checkpoint.plan.steps.map((step) => {
+      return step.providerImplementation;
+    }))];
+  }
+  if (checkpoint.kind === 'connected-transaction') {
+    return [...new Set(checkpoint.batch.operations.flatMap(operationProviderImplementations))];
+  }
+  if (checkpoint.$contract === 'soter://contracts/provider-probe-plan-checkpoint/v1') {
+    return [checkpoint.provider.implementation];
+  }
+  throw new Error('Unsupported durable host checkpoint contract.');
+}
+
+function approvalProviderImplementations(approval) {
+  return [...new Set(approval.request.batch.operations.flatMap(
+    operationProviderImplementations
+  ))];
+}
 
 function contractFailures(root, value, schemaPath, label) {
   const schema = readJson(path.join(root, schemaPath));
@@ -161,6 +203,113 @@ function exactRun(root, lockFile, lock, runPath, allowedStates = EXECUTABLE_RUN_
   return { file, run };
 }
 
+function assertExactPrivateStateFile(root, file, expected, label) {
+  if (file !== expected || !fs.existsSync(file)) {
+    throw new Error(label + ' requires an existing exact Core-owned private state file.');
+  }
+  const relative = path.relative(path.resolve(root), file);
+  if (!relative
+    || relative === '..'
+    || relative.startsWith('..' + path.sep)
+    || path.isAbsolute(relative)) {
+    throw new Error(label + ' is outside the exact Core-owned private state root.');
+  }
+  let current = path.resolve(root);
+  for (const part of relative.split(path.sep)) {
+    current = path.join(current, part);
+    const component = fs.lstatSync(current);
+    if (component.isSymbolicLink()) {
+      throw new Error(label + ' cannot traverse symbolic links.');
+    }
+  }
+  const fileStat = fs.lstatSync(file);
+  const directoryStat = fs.lstatSync(path.dirname(file));
+  if (!fileStat.isFile()
+    || fileStat.nlink !== 1
+    || !directoryStat.isDirectory()
+    || directoryStat.isSymbolicLink()
+    || (process.platform !== 'win32'
+      && ((fileStat.mode & 0o7777) !== 0o600
+        || (directoryStat.mode & 0o7777) !== 0o700))) {
+    throw new Error(
+      label + ' must be one non-linked 0600 file in its exact 0700 directory.'
+    );
+  }
+}
+
+function exactPrivateRun(root, lockFile, lock, runPath, allowedStates) {
+  let file;
+  try {
+    file = resolveRepoPath(root, runPath);
+  } catch {
+    throw new Error(
+      'Private-active execution requires an exact Core-owned durable run state path.'
+    );
+  }
+  const extension = path.extname(file);
+  const runId = path.basename(file, extension);
+  let expected;
+  try {
+    expected = runStatePath(root, runId);
+  } catch {
+    throw new Error(
+      'Private-active execution requires an exact Core-owned durable run state path.'
+    );
+  }
+  if (extension !== '.json') {
+    throw new Error(
+      'Private-active execution requires an existing exact Core-owned durable run state.'
+    );
+  }
+  assertExactPrivateStateFile(
+    root,
+    file,
+    expected,
+    'Private-active durable run state'
+  );
+  const state = readRunState(root, runId);
+  if (state.file !== file || state.run.id !== runId) {
+    throw new Error('Private-active durable run identity does not match its exact state path.');
+  }
+  return {
+    file,
+    run: assertExactRun(root, lockFile, lock, state.run, allowedStates)
+  };
+}
+
+function operationPlanIsReadOnly(root, lock, plan) {
+  return plan.steps.every((step) => {
+    const selected = lock.capabilities.filter((capability) => capability.id === step.capability);
+    if (selected.length !== 1) return false;
+    const capability = readJson(resolveRepoPath(
+      root,
+      'soter/capabilities/' + step.capability + '.json'
+    ));
+    return capability.id === selected[0].id
+      && capability.version === selected[0].version
+      && fingerprintJson(capability) === selected[0].contractFingerprint
+      && capability.effects.length > 0
+      && capability.effects.every((effect) => READ_ONLY_PLAN_EFFECTS.has(effect));
+  });
+}
+
+function assertReadOnlyFollowupRun(run) {
+  if (!['context-assembled', 'paused'].includes(run.lifecycleState)) return;
+  const priorEffectsAreClosedReads = run.effects.every((effect) => {
+    return effect.state === 'passed'
+      && effect.declaredEffects.length > 0
+      && effect.declaredEffects.every((declared) => READ_ONLY_PLAN_EFFECTS.has(declared));
+  });
+  if (run.approvals.length !== 0
+    || !priorEffectsAreClosedReads
+    || run.checkpoints.length === 0
+    || run.checkpoints.some((checkpoint) => checkpoint.state !== 'passed')) {
+    throw new Error(
+      'Paused run cannot start a read-only follow-up because its exact prior checkpoints, effects, or approval boundary are not clean.'
+    );
+  }
+}
+
 function atOrNow(at) {
   return at || new Date().toISOString();
 }
@@ -183,14 +332,10 @@ function sealCheckpoint(checkpoint) {
 }
 
 function assertCheckpoint(root, checkpoint) {
-  if (checkpoint?.$contract === 'soter://contracts/connected-transaction-checkpoint/v1') {
-    return assertConnectedTransactionCheckpoint(root, checkpoint);
-  }
   if (checkpoint?.$contract === 'soter://contracts/connected-transaction-checkpoint/v2') {
     return assertVerifiedConnectedTransactionCheckpoint(root, checkpoint);
   }
-  if (checkpoint?.$contract === 'soter://contracts/operation-plan-checkpoint/v1'
-    || checkpoint?.$contract === 'soter://contracts/operation-plan-checkpoint/v2') {
+  if (checkpoint?.$contract === 'soter://contracts/operation-plan-checkpoint/v2') {
     return assertOperationPlanCheckpoint(root, checkpoint);
   }
   if (checkpoint?.$contract === 'soter://contracts/provider-probe-plan-checkpoint/v1') {
@@ -206,30 +351,32 @@ function assertCheckpoint(root, checkpoint) {
     throw new Error('Host call checkpoint fingerprint does not match its durable contents.');
   }
   if (checkpoint.state !== checkpoint.call.state
+    || !checkpoint.call.configuration
+    || fingerprintJson(checkpoint.call.configuration)
+      !== fingerprintJson(checkpoint.configuration)
+    || checkpoint.configuration.lockPath !== checkpoint.configurationLock.path
+    || checkpoint.configuration.lockFingerprint
+      !== checkpoint.configurationLock.fingerprint
+    || checkpoint.configuration.graphFingerprint !== checkpoint.graphFingerprint
     || checkpoint.configurationLock.fingerprint
       !== checkpoint.call.configurationLockFingerprint
     || checkpoint.graphFingerprint !== checkpoint.call.graphFingerprint
     || fingerprintJson(checkpoint.host) !== fingerprintJson(checkpoint.call.host)) {
     throw new Error('Host call checkpoint metadata does not match its exact call record.');
   }
-  if ((checkpoint.kind === 'capability') !== Boolean(checkpoint.run)
-    || (checkpoint.kind === 'capability') !== Boolean(checkpoint.input)) {
-    throw new Error('Host call checkpoint kind does not match its run and input state.');
+  if (checkpoint.kind !== 'capability' || !checkpoint.run || !checkpoint.input) {
+    throw new Error('Host call checkpoint must contain one exact capability run and input.');
   }
-  const expectedCallContract = checkpoint.kind === 'capability'
-    ? 'soter://contracts/host-tool-call/v1'
-    : 'soter://contracts/provider-probe-call/v1';
-  if (checkpoint.call.$contract !== expectedCallContract) {
-    throw new Error('Host call checkpoint kind does not match its nested call contract.');
+  if (checkpoint.call.$contract !== 'soter://contracts/host-tool-call/v1') {
+    throw new Error('Host call checkpoint must contain one host-tool call.');
   }
   contractFailures(
     root,
     checkpoint.call,
-    checkpoint.kind === 'capability'
-      ? 'soter/contracts/host-tool-call.schema.json'
-      : 'soter/contracts/provider-probe-call.schema.json',
+    'soter/contracts/host-tool-call.schema.json',
     'Checkpoint call'
   );
+  assertHostToolCall(root, checkpoint.call);
   return checkpoint;
 }
 
@@ -373,11 +520,7 @@ function syncRunWithOperationPlan(run, checkpoint) {
 }
 
 function connectedTransactionRunEntry(checkpoint) {
-  const verified = checkpoint.$contract
-    === 'soter://contracts/connected-transaction-checkpoint/v2';
-  const currentCall = verified
-    ? verifiedConnectedTransactionCurrentCall(checkpoint)
-    : connectedTransactionCurrentCall(checkpoint);
+  const currentCall = verifiedConnectedTransactionCurrentCall(checkpoint);
   const progressFingerprint = fingerprintJson({
     batchFingerprint: checkpoint.batchFingerprint,
     changeSetFingerprint: checkpoint.changeSetFingerprint,
@@ -387,23 +530,13 @@ function connectedTransactionRunEntry(checkpoint) {
     operations: checkpoint.operations.map((operation) => ({
       id: operation.id,
       state: operation.state,
-      callFingerprints: (verified
-        ? [
-            operation.precondition,
-            operation.write,
-            operation.verification,
-            ...operation.reconciliations.map((item) => item.phase)
-          ]
-        : [
-            operation.compare,
-            operation.write,
-            operation.verification,
-            operation.contentVerification,
-            operation.compensation,
-            operation.compensationVerification,
-            ...operation.reconciliations.map((item) => item.phase)
-          ]).filter(Boolean).map((phase) => fingerprintJson(phase.call)),
-      ambiguities: verified ? (operation.ambiguity ? [operation.ambiguity] : []) : operation.ambiguities,
+      callFingerprints: [
+        operation.precondition,
+        operation.write,
+        operation.verification,
+        ...operation.reconciliations.map((item) => item.phase)
+      ].filter(Boolean).map((phase) => fingerprintJson(phase.call)),
+      ambiguities: operation.ambiguity ? [operation.ambiguity] : [],
       reconciliations: operation.reconciliations.map((item) => ({
         id: item.id,
         ambiguityId: item.ambiguityId,
@@ -449,15 +582,8 @@ function syncRunWithConnectedTransaction(run, checkpoint) {
   } else {
     next.approvals.push(structuredClone(checkpoint.approval));
   }
-  const verified = checkpoint.$contract
-    === 'soter://contracts/connected-transaction-checkpoint/v2';
   for (const operation of checkpoint.operations) {
-    for (const name of (verified
-      ? ['precondition', 'write', 'verification']
-      : [
-          'compare', 'write', 'verification', 'contentVerification',
-          'compensation', 'compensationVerification'
-        ])) {
+    for (const name of ['precondition', 'write', 'verification']) {
       const call = operation[name]?.call;
       if (call) next = syncRunWithCheckpoint(next, { kind: 'capability', call });
     }
@@ -485,55 +611,10 @@ function syncRunWithConnectedTransaction(run, checkpoint) {
   return next;
 }
 
-export async function prepareProviderProbeExecution({
-  root,
-  lockPath,
-  providerImplementation,
-  callId,
-  probeId,
-  at,
-  validForSeconds = 300,
-  expectedHost
-}) {
-  const createdAt = atOrNow(at);
-  const { lock } = exactLock(root, lockPath, expectedHost);
-  const providerPart = idPart(
-    providerImplementation.startsWith('provider.')
-      ? providerImplementation.slice('provider.'.length)
-      : providerImplementation
-  );
-  return prepareProviderProbeCall({
-    root,
-    lock,
-    providerImplementation,
-    callId: callId || 'probecall.' + idPart(lock.configuration.name) + '.' + idPart(createdAt),
-    probeId: probeId || 'probe.' + providerPart + '.' + idPart(createdAt),
-    at: createdAt,
-    validForSeconds
-  });
-}
-
-export async function completeProviderProbeExecution({
-  root,
-  lockPath,
-  call,
-  response,
-  at,
-  expectedHost
-}) {
-  const { lock } = exactLock(root, lockPath, expectedHost);
-  return completeProviderProbeCall({
-    root,
-    lock,
-    call,
-    response,
-    at: atOrNow(at)
-  });
-}
-
 export async function prepareCapabilityExecution({
   root,
   lockPath,
+  configurationBasis,
   runPath,
   capability,
   authority,
@@ -544,11 +625,19 @@ export async function prepareCapabilityExecution({
   expectedHost
 }) {
   const createdAt = atOrNow(at);
-  const { file: lockFile, lock } = exactLock(root, lockPath, expectedHost);
+  const selected = selectExactConnectedConfiguration({
+    root,
+    configurationBasis,
+    lockPath,
+    expectedHost,
+    providerImplementations: [providerImplementation]
+  });
+  const { lockFile, lock } = selected;
   const { run } = exactRun(path.resolve(root), lockFile, lock, runPath);
   return prepareHostToolCall({
     root,
     lock,
+    configuration: selected.selection,
     runId: run.id,
     callId: callId || 'toolcall.' + idPart(run.id.slice('run.'.length)) + '.' + idPart(createdAt),
     capability,
@@ -564,6 +653,7 @@ export async function prepareCapabilityExecution({
 export async function completeCapabilityExecution({
   root,
   lockPath,
+  configurationBasis,
   runPath,
   call,
   input,
@@ -571,10 +661,23 @@ export async function completeCapabilityExecution({
   at,
   expectedHost
 }) {
-  const { file: lockFile, lock } = exactLock(root, lockPath, expectedHost);
+  const selected = selectExactConnectedConfiguration({
+    root,
+    configurationBasis,
+    lockPath,
+    expectedHost,
+    providerImplementations: [call.provider.implementation]
+  });
+  const { lockFile, lock } = selected;
   const { run } = exactRun(path.resolve(root), lockFile, lock, runPath);
   if (call.runId !== run.id) {
     throw new Error('Host tool call does not belong to the supplied exact run envelope.');
+  }
+  if (!call.configuration
+    || fingerprintJson(call.configuration) !== fingerprintJson(selected.selection)) {
+    throw new Error(
+      'Host tool call does not match the exact selected configuration basis.'
+    );
   }
   return completeHostToolCall({
     root,
@@ -586,31 +689,52 @@ export async function completeCapabilityExecution({
   });
 }
 
-export function failHostExecution({
-  root,
-  lockPath,
-  runPath,
-  call,
-  errorKind,
-  message,
-  at,
-  expectedHost
-}) {
-  const { file: lockFile, lock } = exactLock(root, lockPath, expectedHost);
-  const error = { kind: errorKind, message };
-  if (call?.$contract === 'soter://contracts/provider-probe-call/v1') {
-    if (runPath) {
-      throw new Error('Provider probe failures do not accept a run envelope.');
-    }
-    return {
-      call: failProviderProbeCall({ root, lock, call, error, at: atOrNow(at) })
-    };
+export function failHostExecution(options) {
+  assertExactServiceArguments(options, new Set([
+    'root',
+    'lockPath',
+    'configurationBasis',
+    'runPath',
+    'call',
+    'errorKind',
+    'at',
+    'expectedHost'
+  ]), 'Host failure recording');
+  const {
+    root,
+    lockPath,
+    configurationBasis,
+    runPath,
+    call,
+    errorKind,
+    at,
+    expectedHost
+  } = options;
+  if (!isHostFailureKind(errorKind)) {
+    throw new Error(
+      'Host failure requires an explicit closed error kind; use unknown when no narrower kind applies.'
+    );
   }
+  const selected = selectExactConnectedConfiguration({
+    root,
+    configurationBasis,
+    lockPath,
+    expectedHost,
+    providerImplementations: [call?.provider?.implementation].filter(Boolean)
+  });
+  const { lockFile, lock } = selected;
+  const error = normalizedError({ kind: errorKind });
   if (call?.$contract === 'soter://contracts/host-tool-call/v1') {
     if (!runPath) throw new Error('Capability call failures require runPath.');
     const { run } = exactRun(path.resolve(root), lockFile, lock, runPath);
     if (call.runId !== run.id) {
       throw new Error('Host tool call does not belong to the supplied exact run envelope.');
+    }
+    if (!call.configuration
+      || fingerprintJson(call.configuration) !== fingerprintJson(selected.selection)) {
+      throw new Error(
+        'Host tool call does not match the exact selected configuration basis.'
+      );
     }
     return {
       call: failHostToolCall({ root, lock, call, error, at: atOrNow(at) })
@@ -619,7 +743,18 @@ export function failHostExecution({
   throw new Error('Unsupported host call contract.');
 }
 
-function baseDurableCheckpoint({ root, lockFile, lock, kind, call, input, result, run, at }) {
+function baseDurableCheckpoint({
+  root,
+  lockFile,
+  lock,
+  configuration,
+  kind,
+  call,
+  input,
+  result,
+  run,
+  at
+}) {
   return {
     $contract: 'soter://contracts/host-call-checkpoint/v1',
     contractVersion: '1.0.0',
@@ -628,6 +763,7 @@ function baseDurableCheckpoint({ root, lockFile, lock, kind, call, input, result
     createdAt: call.createdAt,
     updatedAt: at,
     state: call.state,
+    configuration: structuredClone(configuration),
     configurationLock: {
       path: repoRelativePath(root, lockFile),
       fingerprint: fingerprintLock(lock)
@@ -671,19 +807,35 @@ function persistDurableCheckpoint(root, checkpoint, run = null) {
   if (next.kind === 'operation-plan') {
     persisted.currentCall = operationPlanCurrentCall(next);
   } else if (next.kind === 'connected-transaction') {
-    persisted.currentCall = next.$contract
-      === 'soter://contracts/connected-transaction-checkpoint/v2'
-      ? verifiedConnectedTransactionCurrentCall(next)
-      : connectedTransactionCurrentCall(next);
+    persisted.currentCall = verifiedConnectedTransactionCurrentCall(next);
   } else if (next.$contract === 'soter://contracts/provider-probe-plan-checkpoint/v1') {
     persisted.currentCall = providerProbePlanCurrentCall(next);
   }
   return persisted;
 }
 
-function stageDurableRun(root, lockFile, lock, runPath, allowedStates = EXECUTABLE_RUN_STATES) {
-  const source = exactRun(root, lockFile, lock, runPath, allowedStates);
+function stageDurableRun(
+  root,
+  lockFile,
+  lock,
+  runPath,
+  configuration,
+  allowedStates = EXECUTABLE_RUN_STATES,
+  runGuard = null
+) {
+  const privateActive = configuration?.configurationBasis === 'private-active';
+  const source = privateActive
+    ? exactPrivateRun(root, lockFile, lock, runPath, allowedStates)
+    : exactRun(root, lockFile, lock, runPath, allowedStates);
+  if (runGuard) runGuard(source.run);
   const sourcePath = repoRelativePath(root, source.file);
+  if (privateActive) {
+    return {
+      run: structuredClone(source.run),
+      sourcePath,
+      statePath: sourcePath
+    };
+  }
   if (!hasRunState(root, source.run.id)) {
     const state = writeRunState(root, structuredClone(source.run));
     return {
@@ -694,6 +846,7 @@ function stageDurableRun(root, lockFile, lock, runPath, allowedStates = EXECUTAB
   }
   const state = readRunState(root, source.run.id);
   const run = assertExactRun(root, lockFile, lock, state.run, allowedStates);
+  if (runGuard) runGuard(run);
   if (durableRunIdentity(run) !== durableRunIdentity(source.run)) {
     throw new Error('Durable run state does not match the supplied run envelope identity.');
   }
@@ -705,8 +858,24 @@ function stageDurableRun(root, lockFile, lock, runPath, allowedStates = EXECUTAB
 }
 
 function loadedCheckpoint(root, checkpointId, expectedHost) {
+  const expected = hostCallCheckpointPath(root, checkpointId);
+  assertExactPrivateStateFile(
+    path.resolve(root),
+    expected,
+    expected,
+    'Durable host call checkpoint'
+  );
   const state = readHostCallCheckpoint(root, checkpointId);
+  if (state.file !== expected) {
+    throw new Error('Durable host call checkpoint path does not match its exact identity.');
+  }
   const checkpoint = assertCheckpoint(path.resolve(root), state.checkpoint);
+  if (checkpoint.id !== checkpointId
+    || hostCallCheckpointPath(root, checkpoint.id) !== state.file) {
+    throw new Error(
+      'Durable host call checkpoint identity does not match its exact private state path.'
+    );
+  }
   if (expectedHost && checkpoint.host.id !== expectedHost) {
     throw new Error(
       'Host call checkpoint belongs to ' + checkpoint.host.id
@@ -718,23 +887,39 @@ function loadedCheckpoint(root, checkpointId, expectedHost) {
 
 function exactCheckpoint(root, checkpointId, expectedHost) {
   const state = loadedCheckpoint(root, checkpointId, expectedHost);
-  const lockState = exactLock(root, state.checkpoint.configurationLock.path, expectedHost);
+  const lockState = revalidateExactConnectedConfiguration({
+    root,
+    selection: state.checkpoint.configuration,
+    expectedHost,
+    providerImplementations: checkpointProviderImplementations(state.checkpoint)
+  });
   if (state.checkpoint.configurationLock.fingerprint !== fingerprintLock(lockState.lock)
+    || state.checkpoint.configurationLock.path !== lockState.selection.lockPath
     || state.checkpoint.graphFingerprint !== lockState.lock.graphFingerprint) {
     throw new Error('Host call checkpoint does not match the current exact lock and graph.');
   }
   return {
     checkpointFile: state.checkpointFile,
     checkpoint: state.checkpoint,
-    lockFile: lockState.file,
+    lockFile: lockState.lockFile,
     lock: lockState.lock
   };
 }
 
 function durableRunForCheckpoint(root, lockFile, lock, checkpoint) {
   if (!checkpoint.run) return null;
+  const expectedRunPath = runStatePath(root, checkpoint.run.id);
+  if (repoRelativePath(root, expectedRunPath) !== checkpoint.run.statePath) {
+    throw new Error('Host call checkpoint points to an unexpected durable run path.');
+  }
+  assertExactPrivateStateFile(
+    path.resolve(root),
+    expectedRunPath,
+    expectedRunPath,
+    'Durable run state'
+  );
   const state = readRunState(root, checkpoint.run.id);
-  if (repoRelativePath(root, state.file) !== checkpoint.run.statePath) {
+  if (state.file !== expectedRunPath) {
     throw new Error('Host call checkpoint points to an unexpected durable run path.');
   }
   const allowedStates = checkpoint.state === 'requested'
@@ -752,6 +937,11 @@ function durableRunForCheckpoint(root, lockFile, lock, checkpoint) {
       );
     }
     const repaired = syncRunWithConnectedTransaction(run, checkpoint);
+    if (fingerprintJson(repaired) !== checkpoint.run.fingerprint) {
+      throw new Error(
+        'Durable run state does not match the exact connected transaction checkpoint.'
+      );
+    }
     if (fingerprintJson(repaired) !== fingerprintJson(run)) {
       writeRunState(root, repaired);
       run = repaired;
@@ -768,6 +958,11 @@ function durableRunForCheckpoint(root, lockFile, lock, checkpoint) {
       throw new Error('Durable run contains operation-plan state newer than or unrelated to the checkpoint.');
     }
     const repaired = syncRunWithOperationPlan(run, checkpoint);
+    if (fingerprintJson(repaired) !== checkpoint.run.fingerprint) {
+      throw new Error(
+        'Durable run state does not match the exact operation-plan checkpoint.'
+      );
+    }
     if (fingerprintJson(repaired) !== fingerprintJson(run)) {
       writeRunState(root, repaired);
       run = repaired;
@@ -783,20 +978,90 @@ function durableRunForCheckpoint(root, lockFile, lock, checkpoint) {
       && ['completed', 'failed', 'blocked'].includes(currentEntry.state);
     if (checkpointProgressed) {
       run = syncRunWithCheckpoint(run, checkpoint);
-      writeRunState(root, run);
     } else if (!runProgressed) {
       throw new Error('Durable run checkpoint conflicts with the exact host call checkpoint.');
     }
   } else if (!currentEntry) {
     run = syncRunWithCheckpoint(run, checkpoint);
+  }
+  if (fingerprintJson(run) !== checkpoint.run.fingerprint) {
+    throw new Error(
+      'Durable run state does not match the exact capability checkpoint.'
+    );
+  }
+  if (fingerprintJson(run) !== fingerprintJson(state.run)) {
     writeRunState(root, run);
   }
   return run;
 }
 
+function listDurableCheckpointDocuments(root) {
+  const resolvedRoot = path.resolve(root);
+  const directory = path.dirname(
+    hostCallCheckpointPath(resolvedRoot, 'checkpoint.private-list-check')
+  );
+  if (!fs.existsSync(directory)) return [];
+  const directoryRelative = path.relative(resolvedRoot, directory);
+  let current = resolvedRoot;
+  for (const part of directoryRelative.split(path.sep)) {
+    current = path.join(current, part);
+    const component = fs.lstatSync(current);
+    if (component.isSymbolicLink()) {
+      throw new Error('Durable host call state directory cannot traverse symbolic links.');
+    }
+  }
+  const directoryStat = fs.lstatSync(directory);
+  if (!directoryStat.isDirectory()
+    || directoryStat.isSymbolicLink()
+    || (process.platform !== 'win32' && (directoryStat.mode & 0o7777) !== 0o700)) {
+    throw new Error('Durable host call state directory must be the exact private 0700 directory.');
+  }
+  return fs.readdirSync(directory, { withFileTypes: true })
+    .filter((entry) => entry.name.endsWith('.json'))
+    .sort((left, right) => left.name < right.name ? -1 : left.name > right.name ? 1 : 0)
+    .map((entry) => {
+      const file = path.join(directory, entry.name);
+      const candidate = entry.name.slice(0, -'.json'.length);
+      const id = /^checkpoint\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/.test(candidate)
+        ? candidate
+        : null;
+      try {
+        assertExactPrivateStateFile(
+          resolvedRoot,
+          file,
+          file,
+          'Durable host call checkpoint'
+        );
+        return { file, checkpoint: readJson(file), id, error: null };
+      } catch (error) {
+        return { file, checkpoint: null, id, error };
+      }
+    });
+}
+
+function assertCheckpointDocumentIdentity(root, item, checkpoint) {
+  if (!item.id
+    || checkpoint.id !== item.id
+    || item.file !== hostCallCheckpointPath(root, checkpoint.id)) {
+    throw new Error(
+      'Durable host call checkpoint identity does not match its exact private state path.'
+    );
+  }
+}
+
 function pendingCheckpointForRun(root, runId, expectedHost) {
-  return listHostCallCheckpointDocuments(root)
-    .map((item) => assertCheckpoint(path.resolve(root), item.checkpoint))
+  return listDurableCheckpointDocuments(root)
+    .flatMap((item) => {
+      try {
+        const checkpoint = assertCheckpoint(path.resolve(root), item.checkpoint);
+        assertCheckpointDocumentIdentity(path.resolve(root), item, checkpoint);
+        const state = exactCheckpoint(root, checkpoint.id, expectedHost);
+        durableRunForCheckpoint(root, state.lockFile, state.lock, checkpoint);
+        return [checkpoint];
+      } catch {
+        return [];
+      }
+    })
     .find((checkpoint) => {
       return (!expectedHost || checkpoint.host.id === expectedHost)
         && (checkpoint.kind === 'capability'
@@ -812,6 +1077,7 @@ export async function prepareDurableOperationPlanExecution({
   lockPath,
   runPath,
   plan,
+  configurationBasis,
   at,
   expectedHost
 }) {
@@ -820,15 +1086,44 @@ export async function prepareDurableOperationPlanExecution({
   if (containsCredentialMaterial(plan)) {
     throw new Error('Operation plan contains credential-like material and cannot enter durable state.');
   }
-  const { file: lockFile, lock } = exactLock(resolvedRoot, lockPath, expectedHost);
+  const selected = selectExactConnectedConfiguration({
+    root: resolvedRoot,
+    configurationBasis,
+    lockPath,
+    expectedHost,
+    providerImplementations: [...new Set(plan.steps.map((step) => {
+      return step.providerImplementation;
+    }))]
+  });
+  const { lockFile, lock } = selected;
+  const boundPlan = {
+    ...structuredClone(plan),
+    configuration: structuredClone(selected.selection)
+  };
+  if (plan.configuration
+    && fingerprintJson(plan.configuration) !== fingerprintJson(selected.selection)) {
+    throw new Error(
+      'Operation plan configuration binding does not match the exact selected basis.'
+    );
+  }
+  assertOperationPlanDocument(resolvedRoot, boundPlan);
   const createdAt = atOrNow(at || plan.createdAt);
   await preflightOperationPlanSteps({
     root: resolvedRoot,
     lock,
-    plan,
+    plan: boundPlan,
     at: createdAt
   });
-  const durable = stageDurableRun(resolvedRoot, lockFile, lock, runPath);
+  const readOnlyFollowup = operationPlanIsReadOnly(resolvedRoot, lock, plan);
+  const durable = stageDurableRun(
+    resolvedRoot,
+    lockFile,
+    lock,
+    runPath,
+    selected.selection,
+    readOnlyFollowup ? READ_ONLY_FOLLOWUP_RUN_STATES : EXECUTABLE_RUN_STATES,
+    readOnlyFollowup ? assertReadOnlyFollowupRun : null
+  );
   const pending = pendingCheckpointForRun(resolvedRoot, durable.run.id, expectedHost);
   if (pending) {
     throw new Error(
@@ -842,7 +1137,8 @@ export async function prepareDurableOperationPlanExecution({
     run: durable.run,
     runSourcePath: durable.sourcePath,
     runStatePath: durable.statePath,
-    plan,
+    plan: boundPlan,
+    configuration: selected.selection,
     at: createdAt
   });
   if (hasHostCallCheckpoint(resolvedRoot, checkpoint.id)) {
@@ -855,12 +1151,6 @@ export async function prepareDurableOperationPlanExecution({
     at: createdAt
   });
   return persistDurableCheckpoint(resolvedRoot, checkpoint, durable.run);
-}
-
-async function createApprovedConnectedCheckpoint(options) {
-  return options.batch.$contract === 'soter://contracts/connected-operation-batch/v2'
-    ? createVerifiedConnectedTransactionCheckpoint(options)
-    : createConnectedTransactionCheckpoint(options);
 }
 
 export async function prepareDurableConnectedTransactionExecution({
@@ -883,11 +1173,20 @@ export async function prepareDurableConnectedTransactionExecution({
       'Connected transaction sources contain credential-like material and cannot enter durable state.'
     );
   }
-  const { file: lockFile, lock } = exactLock(
-    resolvedRoot,
-    approval.request.configuration.lockPath,
-    expectedHost
-  );
+  const selected = revalidateExactConnectedConfiguration({
+    root: resolvedRoot,
+    selection: {
+      name: approval.request.configuration.name,
+      configurationBasis: approval.request.configuration.configurationBasis,
+      path: approval.request.configuration.path,
+      lockPath: approval.request.configuration.lockPath,
+      lockFingerprint: approval.request.configuration.lockFingerprint,
+      graphFingerprint: approval.request.configuration.graphFingerprint
+    },
+    expectedHost,
+    providerImplementations: approvalProviderImplementations(approval)
+  });
+  const { lockFile, lock } = selected;
   const hasConsumption = hasApprovalConsumptionState(
     resolvedRoot,
     approvalConsumptionId(approval.id)
@@ -907,6 +1206,7 @@ export async function prepareDurableConnectedTransactionExecution({
     lockFile,
     lock,
     approval.request.run.path,
+    selected.selection,
     DURABLE_RUN_STATES
   );
   const pending = pendingCheckpointForRun(resolvedRoot, durable.run.id, expectedHost);
@@ -922,14 +1222,14 @@ export async function prepareDurableConnectedTransactionExecution({
   let checkpoint = null;
   let reservation = null;
   if (hasConsumption) {
-    reservation = reserveApprovalConsumption({
+    reservation = await reserveApprovalConsumption({
       root: resolvedRoot,
       approval,
       checkpointId,
       at: requestedAt
     });
   } else {
-    checkpoint = await createApprovedConnectedCheckpoint({
+    checkpoint = await createVerifiedConnectedTransactionCheckpoint({
       root: resolvedRoot,
       lock,
       lockPath: repoRelativePath(resolvedRoot, lockFile),
@@ -939,9 +1239,10 @@ export async function prepareDurableConnectedTransactionExecution({
       batch,
       changeSet,
       approval,
+      configuration: selected.selection,
       at: requestedAt
     });
-    reservation = reserveApprovalConsumption({
+    reservation = await reserveApprovalConsumption({
       root: resolvedRoot,
       approval,
       checkpointId,
@@ -968,7 +1269,7 @@ export async function prepareDurableConnectedTransactionExecution({
     throw new Error('Started approval consumption is missing its durable checkpoint.');
   }
   if (!checkpoint || checkpoint.createdAt !== reservation.consumption.createdAt) {
-    checkpoint = await createApprovedConnectedCheckpoint({
+    checkpoint = await createVerifiedConnectedTransactionCheckpoint({
       root: resolvedRoot,
       lock,
       lockPath: repoRelativePath(resolvedRoot, lockFile),
@@ -978,6 +1279,7 @@ export async function prepareDurableConnectedTransactionExecution({
       batch,
       changeSet,
       approval,
+      configuration: selected.selection,
       at: reservation.consumption.createdAt
     });
   }
@@ -1006,20 +1308,24 @@ export async function prepareDurableConnectedTransactionReconciliation({
     return durableResult(root, state);
   }
   const run = durableRunForCheckpoint(root, state.lockFile, state.lock, checkpoint);
-  const reconcile = checkpoint.$contract
-    === 'soter://contracts/connected-transaction-checkpoint/v2'
-    ? prepareVerifiedConnectedTransactionReconciliation
-    : prepareConnectedTransactionReconciliation;
-  const next = await reconcile({ root, lock: state.lock, checkpoint, at: atOrNow(at) });
+  const next = await prepareVerifiedConnectedTransactionReconciliation({
+    root,
+    lock: state.lock,
+    checkpoint,
+    at: atOrNow(at)
+  });
   return persistDurableCheckpoint(root, next, run);
 }
 
 export async function prepareDurableProviderProbeExecution(options) {
-  const { file: lockFile, lock } = exactLock(
-    options.root,
-    options.lockPath,
-    options.expectedHost
-  );
+  const selected = selectExactConnectedConfiguration({
+    root: options.root,
+    configurationBasis: options.configurationBasis,
+    lockPath: options.lockPath,
+    expectedHost: options.expectedHost,
+    providerImplementations: [options.providerImplementation]
+  });
+  const { lockFile, lock } = selected;
   const createdAt = atOrNow(options.at);
   const providerPart = idPart(
     options.providerImplementation.startsWith('provider.')
@@ -1027,57 +1333,44 @@ export async function prepareDurableProviderProbeExecution(options) {
       : options.providerImplementation
   );
   const probeId = options.probeId || 'probe.' + providerPart + '.' + idPart(createdAt);
-  if (providerUsesProbePlan(options.root, lock, options.providerImplementation)) {
-    if (options.callId) {
-      throw new Error('Multi-step provider probes use deterministic per-step call IDs.');
-    }
-    const checkpoint = await createProviderProbePlanCheckpoint({
-      root: options.root,
-      lock,
-      lockPath: repoRelativePath(options.root, lockFile),
-      providerImplementation: options.providerImplementation,
-      probeId,
-      validForSeconds: options.validForSeconds ?? 300,
-      at: createdAt
-    });
-    if (hasHostCallCheckpoint(options.root, checkpoint.id)) {
-      throw new Error('Durable provider probe checkpoint already exists: ' + checkpoint.id + '.');
-    }
-    return persistDurableCheckpoint(options.root, checkpoint);
+  if (options.callId) {
+    throw new Error('Provider probe plans use deterministic per-step call IDs.');
   }
-  const prepared = await prepareProviderProbeExecution({
-    ...options,
+  const checkpoint = await createProviderProbePlanCheckpoint({
+    root: options.root,
+    lock,
+    lockPath: repoRelativePath(options.root, lockFile),
+    providerImplementation: options.providerImplementation,
     probeId,
+    configuration: selected.selection,
+    validForSeconds: options.validForSeconds ?? 300,
     at: createdAt
   });
-  const at = prepared.call.createdAt;
-  const checkpoint = baseDurableCheckpoint({
-    root: options.root,
-    lockFile,
-    lock,
-    kind: 'provider-probe',
-    call: prepared.call,
-    input: null,
-    result: null,
-    run: null,
-    at
-  });
   if (hasHostCallCheckpoint(options.root, checkpoint.id)) {
-    throw new Error('Durable host call checkpoint already exists: ' + checkpoint.id + '.');
+    throw new Error('Durable provider probe checkpoint already exists: ' + checkpoint.id + '.');
   }
   return persistDurableCheckpoint(options.root, checkpoint);
 }
 
 export async function prepareDurableCapabilityExecution(options) {
-  const { file: lockFile, lock } = exactLock(
-    options.root,
-    options.lockPath,
-    options.expectedHost
-  );
+  const selected = selectExactConnectedConfiguration({
+    root: options.root,
+    configurationBasis: options.configurationBasis,
+    lockPath: options.lockPath,
+    expectedHost: options.expectedHost,
+    providerImplementations: [options.providerImplementation]
+  });
+  const { lockFile, lock } = selected;
   if (containsCredentialMaterial(options.input)) {
     throw new Error('Capability input contains credential-like material and cannot enter durable state.');
   }
-  const durable = stageDurableRun(path.resolve(options.root), lockFile, lock, options.runPath);
+  const durable = stageDurableRun(
+    path.resolve(options.root),
+    lockFile,
+    lock,
+    options.runPath,
+    selected.selection
+  );
   const pending = pendingCheckpointForRun(options.root, durable.run.id, options.expectedHost);
   if (pending) {
     throw new Error(
@@ -1088,6 +1381,7 @@ export async function prepareDurableCapabilityExecution(options) {
   const prepared = await prepareHostToolCall({
     root: options.root,
     lock,
+    configuration: selected.selection,
     runId: durable.run.id,
     callId: options.callId || 'toolcall.'
       + idPart(durable.run.id.slice('run.'.length)) + '.' + idPart(createdAt),
@@ -1103,6 +1397,7 @@ export async function prepareDurableCapabilityExecution(options) {
     root: options.root,
     lockFile,
     lock,
+    configuration: selected.selection,
     kind: 'capability',
     call: prepared.call,
     input: options.input,
@@ -1131,12 +1426,12 @@ function durableResult(root, state) {
     checkpoint: state.checkpoint,
     checkpointPath: repoRelativePath(root, state.checkpointFile),
     run,
-    runPath: run ? repoRelativePath(root, readRunState(root, run.id).file) : null
+    runPath: run ? repoRelativePath(root, runStatePath(root, run.id)) : null
   };
   if (state.checkpoint.kind === 'operation-plan') {
     result.currentCall = operationPlanCurrentCall(state.checkpoint);
   } else if (state.checkpoint.kind === 'connected-transaction') {
-    result.currentCall = connectedTransactionCurrentCall(state.checkpoint);
+    result.currentCall = verifiedConnectedTransactionCurrentCall(state.checkpoint);
   } else if (state.checkpoint.$contract
     === 'soter://contracts/provider-probe-plan-checkpoint/v1') {
     result.currentCall = providerProbePlanCurrentCall(state.checkpoint);
@@ -1185,11 +1480,7 @@ export async function completeDurableConnectedTransactionExecution({
   }
   if (!callId) throw new Error('Connected transaction completion requires the exact current call ID.');
   const run = durableRunForCheckpoint(root, state.lockFile, state.lock, checkpoint);
-  const complete = checkpoint.$contract
-    === 'soter://contracts/connected-transaction-checkpoint/v2'
-    ? completeVerifiedConnectedTransactionCall
-    : completeConnectedTransactionCall;
-  const completed = await complete({
+  const completed = await completeVerifiedConnectedTransactionCall({
     root, lock: state.lock, checkpoint, callId, response, at: atOrNow(at)
   });
   if (completed.idempotent) return durableResult(root, state);
@@ -1209,47 +1500,26 @@ export async function completeDurableProviderProbeExecution({
   if (checkpoint.kind !== 'provider-probe') {
     throw new Error('Checkpoint ' + checkpointId + ' is not a provider probe call.');
   }
-  if (checkpoint.$contract === 'soter://contracts/provider-probe-plan-checkpoint/v1') {
-    if (!callId) throw new Error('Provider probe plans require the exact current call ID.');
-    const completed = await completeProviderProbePlanStep({
-      root,
-      lock: state.lock,
-      checkpoint,
-      callId,
-      response,
-      at: atOrNow(at)
-    });
-    if (completed.idempotent) return durableResult(root, state);
-    return persistDurableCheckpoint(root, completed.checkpoint);
+  if (checkpoint.$contract !== 'soter://contracts/provider-probe-plan-checkpoint/v1') {
+    throw new Error('Provider probe checkpoint does not use the required plan contract.');
   }
-  const responseFingerprint = fingerprintJson(response);
-  if (checkpoint.state !== 'requested') {
-    if (checkpoint.call.responseFingerprint === responseFingerprint) {
-      return durableResult(root, state);
-    }
-    throw new Error('Only a requested provider probe checkpoint can accept a response.');
-  }
-  const completedAt = atOrNow(at);
-  const completed = await completeProviderProbeCall({
+  if (!callId) throw new Error('Provider probe plans require the exact current call ID.');
+  const completed = await completeProviderProbePlanStep({
     root,
     lock: state.lock,
-    call: checkpoint.call,
+    checkpoint,
+    callId,
     response,
-    at: completedAt
+    at: atOrNow(at)
   });
-  const next = {
-    ...checkpoint,
-    updatedAt: completedAt,
-    state: completed.call.state,
-    call: completed.call,
-    result: completed.call.state === 'completed' ? completed.probe : null
-  };
-  return persistDurableCheckpoint(root, next);
+  if (completed.idempotent) return durableResult(root, state);
+  return persistDurableCheckpoint(root, completed.checkpoint);
 }
 
 export async function completeDurableCapabilityExecution({
   root,
   checkpointId,
+  callId,
   response,
   at,
   expectedHost
@@ -1260,6 +1530,19 @@ export async function completeDurableCapabilityExecution({
     throw new Error('Checkpoint ' + checkpointId + ' is not a capability call.');
   }
   const responseFingerprint = fingerprintJson(response);
+  const priorPage = checkpoint.call.pagination?.pages.find((page) => page.callId === callId);
+  if (priorPage) {
+    if (priorPage.responseFingerprint !== responseFingerprint) {
+      throw new Error('Capability response does not match the exact completed page call.');
+    }
+    return durableResult(root, state);
+  }
+  if (checkpoint.call.pagination && !callId) {
+    throw new Error('Paginated capability completion requires the exact current call ID.');
+  }
+  if (callId && checkpoint.call.id !== callId) {
+    throw new Error('Capability response does not match the exact current call ID.');
+  }
   if (checkpoint.state !== 'requested') {
     if (checkpoint.call.responseFingerprint === responseFingerprint) {
       return durableResult(root, state);
@@ -1286,27 +1569,37 @@ export async function completeDurableCapabilityExecution({
   return persistDurableCheckpoint(root, next, run);
 }
 
-export async function failDurableHostExecution({
-  root,
-  checkpointId,
-  errorKind,
-  message,
-  callId,
-  at,
-  expectedHost
-}) {
+export async function failDurableHostExecution(options) {
+  assertExactServiceArguments(options, new Set([
+    'root',
+    'checkpointId',
+    'errorKind',
+    'callId',
+    'at',
+    'expectedHost'
+  ]), 'Durable host failure recording');
+  const {
+    root,
+    checkpointId,
+    errorKind,
+    callId,
+    at,
+    expectedHost
+  } = options;
+  if (!isHostFailureKind(errorKind)) {
+    throw new Error(
+      'Durable host failure requires an explicit closed error kind; use unknown when no narrower kind applies.'
+    );
+  }
   const state = exactCheckpoint(root, checkpointId, expectedHost);
   const checkpoint = state.checkpoint;
+  const failure = normalizedError({ kind: errorKind });
   if (checkpoint.kind === 'connected-transaction') {
     if (!callId) throw new Error('Connected transaction failures require the exact current call ID.');
     const run = durableRunForCheckpoint(root, state.lockFile, state.lock, checkpoint);
-    const fail = checkpoint.$contract
-      === 'soter://contracts/connected-transaction-checkpoint/v2'
-      ? failVerifiedConnectedTransactionCall
-      : failConnectedTransactionCall;
-    const failed = await fail({
+    const failed = await failVerifiedConnectedTransactionCall({
       root, lock: state.lock, checkpoint, callId,
-      error: { kind: errorKind, message }, at: atOrNow(at)
+      error: failure, at: atOrNow(at)
     });
     return persistDurableCheckpoint(root, failed, run);
   }
@@ -1318,7 +1611,7 @@ export async function failDurableHostExecution({
       lock: state.lock,
       checkpoint,
       callId,
-      error: { kind: errorKind, message },
+      error: failure,
       at: atOrNow(at)
     });
     if (failed.idempotent) return durableResult(root, state);
@@ -1331,37 +1624,36 @@ export async function failDurableHostExecution({
       lock: state.lock,
       checkpoint,
       callId,
-      error: { kind: errorKind, message },
+      error: failure,
       at: atOrNow(at)
     });
     if (failed.idempotent) return durableResult(root, state);
     return persistDurableCheckpoint(root, failed.checkpoint);
   }
+  if (checkpoint.kind !== 'capability') {
+    throw new Error('Unsupported durable host checkpoint contract.');
+  }
   if (checkpoint.state !== 'requested') {
-    if (checkpoint.call.error?.kind === errorKind && checkpoint.call.error?.message === message) {
+    if (checkpoint.call.error
+      && fingerprintJson(checkpoint.call.error) === fingerprintJson(failure)) {
       return durableResult(root, state);
     }
     throw new Error('Only a requested host call checkpoint can record a host failure.');
+  }
+  if (checkpoint.kind === 'capability' && checkpoint.call.pagination && !callId) {
+    throw new Error('Paginated capability failures require the exact current call ID.');
   }
   if (callId && checkpoint.call.id !== callId) {
     throw new Error('Host failure does not match the exact checkpoint call ID.');
   }
   const completedAt = atOrNow(at);
-  const failedCall = checkpoint.kind === 'capability'
-    ? failHostToolCall({
-      root,
-      lock: state.lock,
-      call: checkpoint.call,
-      error: { kind: errorKind, message },
-      at: completedAt
-    })
-    : failProviderProbeCall({
-      root,
-      lock: state.lock,
-      call: checkpoint.call,
-      error: { kind: errorKind, message },
-      at: completedAt
-    });
+  const failedCall = failHostToolCall({
+    root,
+    lock: state.lock,
+    call: checkpoint.call,
+    error: failure,
+    at: completedAt
+  });
   const next = {
     ...checkpoint,
     updatedAt: completedAt,
@@ -1369,27 +1661,12 @@ export async function failDurableHostExecution({
     call: failedCall,
     result: null
   };
-  const run = checkpoint.kind === 'capability'
-    ? durableRunForCheckpoint(root, state.lockFile, state.lock, checkpoint)
-    : null;
+  const run = durableRunForCheckpoint(root, state.lockFile, state.lock, checkpoint);
   return persistDurableCheckpoint(root, next, run);
 }
 
 export function getDurableHostExecution({ root, checkpointId, expectedHost }) {
-  const state = loadedCheckpoint(root, checkpointId, expectedHost);
-  const result = {
-    checkpoint: state.checkpoint,
-    checkpointPath: repoRelativePath(root, state.checkpointFile)
-  };
-  if (state.checkpoint.kind === 'operation-plan') {
-    result.currentCall = operationPlanCurrentCall(state.checkpoint);
-  } else if (state.checkpoint.kind === 'connected-transaction') {
-    result.currentCall = connectedTransactionCurrentCall(state.checkpoint);
-  } else if (state.checkpoint.$contract
-    === 'soter://contracts/provider-probe-plan-checkpoint/v1') {
-    result.currentCall = providerProbePlanCurrentCall(state.checkpoint);
-  }
-  return result;
+  return durableResult(root, exactCheckpoint(root, checkpointId, expectedHost));
 }
 
 export function getExactDurableHostExecution({ root, checkpointId, expectedHost }) {
@@ -1607,9 +1884,20 @@ export function commitDurableContextSnapshot({
     snapshotState = writeContextSnapshotState(resolvedRoot, snapshot);
   }
   const runState = writeRunState(resolvedRoot, nextRun);
+  const progressedCheckpoint = sealCheckpoint({
+    ...structuredClone(checkpoint),
+    run: {
+      ...structuredClone(checkpoint.run),
+      fingerprint: fingerprintJson(nextRun)
+    }
+  });
+  const progressedCheckpointState = writeHostCallCheckpoint(
+    resolvedRoot,
+    progressedCheckpoint
+  );
   return {
-    checkpoint,
-    checkpointPath: repoRelativePath(resolvedRoot, state.checkpointFile),
+    checkpoint: progressedCheckpoint,
+    checkpointPath: progressedCheckpointState.path,
     snapshot,
     snapshotPath: snapshotState.path,
     run: nextRun,
@@ -1913,20 +2201,19 @@ export function getDurableProviderProbe({ root, checkpointId, expectedHost }) {
 
 function failedProbeAttempt(root, state) {
   const checkpoint = state.checkpoint;
-  const planned = checkpoint.$contract
-    === 'soter://contracts/provider-probe-plan-checkpoint/v1';
-  const runtimeStep = planned
-    ? checkpoint.steps.find((step) => step.state === 'failed')
-    : null;
+  if (checkpoint.$contract !== 'soter://contracts/provider-probe-plan-checkpoint/v1') {
+    throw new Error('Provider probe checkpoint does not use the required plan contract.');
+  }
+  const runtimeStep = checkpoint.steps.find((step) => step.state === 'failed');
   const sourceStep = runtimeStep
     ? checkpoint.plan.steps.find((step) => step.id === runtimeStep.id)
     : null;
-  const call = planned ? runtimeStep?.call : checkpoint.call;
-  const error = planned ? runtimeStep?.error : call?.error;
-  const scope = planned ? checkpoint.plan.scope : call?.plan;
-  const provider = planned ? checkpoint.provider : call?.provider;
-  const probeId = planned ? checkpoint.plan.probeId : call?.probeId;
-  const validForSeconds = planned ? checkpoint.plan.validForSeconds : call?.validForSeconds;
+  const call = runtimeStep?.call;
+  const error = runtimeStep?.error;
+  const scope = checkpoint.plan.scope;
+  const provider = checkpoint.provider;
+  const probeId = checkpoint.plan.probeId;
+  const validForSeconds = checkpoint.plan.validForSeconds;
   const failedAt = call?.completedAt || checkpoint.updatedAt;
   if (!call || !error || !scope || !provider || !probeId
     || !Number.isInteger(validForSeconds) || !Number.isFinite(Date.parse(failedAt))) {
@@ -1963,7 +2250,12 @@ function failedProbeAttempt(root, state) {
         }
         : null,
       callId: call.id,
-      transport: structuredClone(call.transport)
+      transport: {
+        protocol: call.transport.protocol,
+        server: call.transport.server,
+        operation: call.transport.operation,
+        tool: call.transport.tool
+      }
     },
     sourceCheckpointFingerprint: checkpoint.checkpointFingerprint,
     privacy: {
@@ -2000,25 +2292,75 @@ export function getDurableProviderProbeObservation({ root, checkpointId, expecte
 }
 
 export function listDurableHostExecutions({ root, state, expectedHost }) {
-  const checkpoints = listHostCallCheckpointDocuments(root)
-    .map((item) => assertCheckpoint(path.resolve(root), item.checkpoint))
-    .filter((checkpoint) => !expectedHost || checkpoint.host.id === expectedHost)
-    .filter((checkpoint) => !state || checkpoint.state === state)
-    .map((checkpoint) => {
+  const resolvedRoot = path.resolve(root);
+  const checkpoints = listDurableCheckpointDocuments(resolvedRoot)
+    .flatMap((item) => {
+      let checkpoint;
+      try {
+        if (item.error) throw item.error;
+        checkpoint = assertCheckpoint(resolvedRoot, item.checkpoint);
+        assertCheckpointDocumentIdentity(resolvedRoot, item, checkpoint);
+      } catch {
+        const id = item.id || (typeof item.checkpoint?.id === 'string'
+          && /^checkpoint\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/.test(item.checkpoint.id)
+          ? item.checkpoint.id
+          : null);
+        return [{
+          id,
+          kind: null,
+          state: null,
+          availability: 'unavailable',
+          reasonCode: 'CONNECTED_EXECUTION_STATE_INVALID',
+          callId: null,
+          updatedAt: null,
+          host: null,
+          provider: null,
+          capability: null,
+          runId: null,
+          planId: null,
+          currentStepId: null,
+          batchId: null,
+          currentStage: null
+        }];
+      }
+      if (expectedHost && checkpoint.host.id !== expectedHost) return [];
+      if (state && checkpoint.state !== state) return [];
+      let exact;
+      try {
+        exact = exactCheckpoint(resolvedRoot, checkpoint.id, expectedHost);
+        durableResult(resolvedRoot, exact);
+      } catch (error) {
+        return [{
+          id: checkpoint.id,
+          kind: checkpoint.kind,
+          state: checkpoint.state,
+          availability: 'unavailable',
+          reasonCode: error instanceof ConnectedConfigurationError
+            ? error.code
+            : 'CONNECTED_EXECUTION_STATE_STALE',
+          callId: null,
+          updatedAt: checkpoint.updatedAt,
+          host: checkpoint.host.id,
+          provider: null,
+          capability: null,
+          runId: null,
+          planId: null,
+          currentStepId: null,
+          batchId: null,
+          currentStage: null
+        }];
+      }
       const planned = checkpoint.kind === 'operation-plan'
         || checkpoint.$contract === 'soter://contracts/provider-probe-plan-checkpoint/v1';
       const call = checkpoint.kind === 'operation-plan'
         ? operationPlanCurrentCall(checkpoint)
           || checkpoint.steps.findLast((step) => step.call)?.call
         : checkpoint.kind === 'connected-transaction'
-          ? connectedTransactionCurrentCall(checkpoint)
+          ? verifiedConnectedTransactionCurrentCall(checkpoint)
             || checkpoint.operations.flatMap((operation) => [
-              operation.compare,
+              operation.precondition,
               operation.write,
               operation.verification,
-              operation.contentVerification,
-              operation.compensation,
-              operation.compensationVerification,
               ...operation.reconciliations.map((item) => item.phase)
             ]).filter(Boolean).findLast((phase) => phase.call)?.call
         : checkpoint.$contract === 'soter://contracts/provider-probe-plan-checkpoint/v1'
@@ -2029,6 +2371,8 @@ export function listDurableHostExecutions({ root, state, expectedHost }) {
         id: checkpoint.id,
         kind: checkpoint.kind,
         state: checkpoint.state,
+        availability: 'current',
+        reasonCode: 'CONNECTED_EXECUTION_CURRENT',
         callId: call?.id || null,
         updatedAt: checkpoint.updatedAt,
         host: checkpoint.host.id,

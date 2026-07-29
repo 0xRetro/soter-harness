@@ -1,0 +1,23 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.docs",
+  "version": "0.1.0",
+  "layer": "context",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Defines portable shared document-index type, audience, exact relations, deduplication identity, and private-workspace exclusion without provider authority.",
+  "dependencies": [],
+  "capabilities": { "requires": [], "provides": [] },
+  "authorities": [
+    { "role": "definition", "subject": "documents.records", "required": true },
+    { "role": "instance", "subject": "documents.records", "required": true }
+  ],
+  "effects": [],
+  "artifacts": [
+    { "path": "soter/contexts/docs/records.model.json", "role": "definition" },
+    { "path": "soter/contexts/docs/vocabulary.json", "role": "definition" }
+  ],
+  "compatibility": { "baseContract": "^1.0.0", "hosts": ["codex", "claude"] },
+  "verification": { "maxLevel": "static", "scenarios": [] }
+}

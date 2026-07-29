@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contexts/crm/contact-capture-policy/v1",
+  "title": "Contact Capture Policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "name",
+    "createRequiresConfirmation",
+    "duplicateCandidateLimit",
+    "organizationCandidateLimit",
+    "duplicateKeyFields",
+    "optionFields",
+    "optionMatching",
+    "unmatchedOptionHandling",
+    "organizationResolution"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contexts/crm/contact-capture-policy/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^policy\\.context\\.crm\\.contact-capture$" },
+    "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "createRequiresConfirmation": { "const": true },
+    "duplicateCandidateLimit": { "type": "integer", "minimum": 1, "maximum": 50 },
+    "organizationCandidateLimit": { "type": "integer", "minimum": 1, "maximum": 20 },
+    "duplicateKeyFields": {
+      "type": "array",
+      "items": { "enum": ["email", "name"] },
+      "uniqueItems": true,
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "optionFields": {
+      "type": "array",
+      "items": { "enum": ["role", "status", "disposition", "authority", "tags"] },
+      "uniqueItems": true,
+      "minItems": 5,
+      "maxItems": 5
+    },
+    "optionMatching": { "const": "exact-case-insensitive" },
+    "unmatchedOptionHandling": { "const": "omit-and-flag" },
+    "organizationResolution": { "const": "single-exact-name-or-empty-and-flag" }
+  }
+}

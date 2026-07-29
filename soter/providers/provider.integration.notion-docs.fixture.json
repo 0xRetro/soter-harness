@@ -1,0 +1,26 @@
+{
+  "$contract": "soter://contracts/capability-provider/v1",
+  "contractVersion": "1.0.0",
+  "id": "provider.integration.notion-docs.fixture",
+  "pack": "integration.notion-docs",
+  "version": "0.1.0",
+  "containment": "fixture",
+  "runtime": { "engine": "node", "module": "soter/integrations/notion-docs/fixture.mjs", "export": "invoke" },
+  "capabilities": [
+    { "id": "documents.schema.read", "version": "1.0.0" },
+    { "id": "documents.records.read", "version": "1.0.0" },
+    { "id": "documents.records.create", "version": "1.0.0" }
+  ],
+  "authorities": [
+    { "role": "definition", "subject": "documents.records" },
+    { "role": "instance", "subject": "documents.records" },
+    { "role": "provider", "subject": "notion.workspace" }
+  ],
+  "effects": ["read", "disclosure", "write"],
+  "mappings": [],
+  "fixtures": ["soter/fixtures/providers/notion/documents.json"],
+  "limitations": [
+    "Uses deterministic local document-index records only; it does not authenticate to, mutate, or represent the current state of a Notion workspace.",
+    "Connected Notion document-index translation is intentionally unavailable in this migration slice, so no live create or verification authority exists."
+  ]
+}

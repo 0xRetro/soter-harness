@@ -1,0 +1,340 @@
+{
+  "$contract": "soter://contracts/context-snapshot/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.drive-filing.preparation-fixture",
+  "runId": "run.drive-filing.preparation-fixture",
+  "createdAt": "2026-07-21T16:00:00.000Z",
+  "configurationLockFingerprint": "sha256:df8f28329703c6a1e20d1314083de36cdacffb7a2bf2e253303f5d5f8bb74560",
+  "graphFingerprint": "sha256:e0e7aa7674b6e53e84e2dd33acc7b8e6d040991bd93a9f368b11824faa84da40",
+  "containment": "fixture",
+  "entries": [
+    {
+      "id": "context.drive-filing.registry",
+      "subject": "storage.locations.drive-filing",
+      "authority": "authority.storage.locations",
+      "role": "definition",
+      "capability": "storage.registry.read",
+      "providerPack": "integration.google-drive",
+      "providerImplementation": "provider.integration.google-drive.fixture",
+      "providerVersion": "0.1.0",
+      "observedAt": "2026-07-21T16:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "google-drive-fixture",
+        "authority": "authority.storage.locations",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:e5a0631420e9afedc4c93d03296ce2fc6c3cc8c5cc3a7f6612fca2a2d821a1ac"
+      },
+      "valueFingerprint": "sha256:6f49b5210f0e251865f98b9b98489919b66087c1343cacd9cd076142374ce315",
+      "value": {
+        "registry": {
+          "id": "registry.drive-filing.fixture",
+          "policy": {
+            "name": "Contained Storage Filing Policy",
+            "placementRequiresConfirmation": true,
+            "indexRequired": true,
+            "movesHumanOnly": true,
+            "renameAllowed": false,
+            "deleteAllowed": false,
+            "externalDefaultForm": "shortcut",
+            "snapshotForm": "copy",
+            "unclearHomeKey": "home.inbox",
+            "duplicateCandidateLimit": 20
+          },
+          "locations": [
+            {
+              "key": "home.inbox",
+              "label": "Registered filing inbox",
+              "uri": "soter-fixture://storage/folder/inbox",
+              "driveUri": "soter-fixture://storage/drive/shared",
+              "kind": "inbox",
+              "subjectKeys": [],
+              "documentCategories": [
+                "Unclassified"
+              ]
+            },
+            {
+              "key": "home.prime",
+              "label": "Prime workstream",
+              "uri": "soter-fixture://storage/folder/prime",
+              "driveUri": "soter-fixture://storage/drive/shared",
+              "kind": "home",
+              "subjectKeys": [
+                "prime"
+              ],
+              "documentCategories": [
+                "Prime"
+              ]
+            },
+            {
+              "key": "home.research",
+              "label": "Research and analysis",
+              "uri": "soter-fixture://storage/folder/research",
+              "driveUri": "soter-fixture://storage/drive/shared",
+              "kind": "home",
+              "subjectKeys": [
+                "research"
+              ],
+              "documentCategories": [
+                "Research"
+              ]
+            }
+          ],
+          "fingerprint": "sha256:15dec05ab3183b4fdce24ddb45d1fdee58e7eb776084a2223d467f672e26be9e"
+        },
+        "provenance": {
+          "provider": "google-drive-fixture",
+          "authority": "authority.storage.locations",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:e5a0631420e9afedc4c93d03296ce2fc6c3cc8c5cc3a7f6612fca2a2d821a1ac"
+        },
+        "observedAt": "2026-07-21T16:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.drive-filing.artifact",
+      "subject": "storage.artifacts.selected",
+      "authority": "authority.storage.artifacts",
+      "role": "instance",
+      "capability": "storage.artifacts.read",
+      "providerPack": "integration.google-drive",
+      "providerImplementation": "provider.integration.google-drive.fixture",
+      "providerVersion": "0.1.0",
+      "observedAt": "2026-07-21T16:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "google-drive-fixture",
+        "authority": "authority.storage.artifacts",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:9a7a8206b24714f1751ffb7c1468c9e710a5164e1d82024b88dc93d05362236f"
+      },
+      "valueFingerprint": "sha256:dc2d440c9d305ff3fd5d347f7c0c0385f9341e81165ff9b58b888cf80e6f0882",
+      "value": {
+        "artifact": {
+          "name": "External research memo",
+          "uri": "soter-fixture://storage/artifact/external-research",
+          "kind": "file",
+          "ownership": "external",
+          "link": "https://drive.example.invalid/external-research",
+          "parentUris": [
+            "soter-fixture://storage/folder/external-share"
+          ],
+          "targetUri": null,
+          "fingerprint": "sha256:a20599a61477b518b12e14a96ccf984765df72ec8c282c9ea6f591db1b3c8aad"
+        },
+        "provenance": {
+          "provider": "google-drive-fixture",
+          "authority": "authority.storage.artifacts",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:9a7a8206b24714f1751ffb7c1468c9e710a5164e1d82024b88dc93d05362236f"
+        },
+        "observedAt": "2026-07-21T16:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.drive-filing.document-schema",
+      "subject": "documents.records.document-index-schema",
+      "authority": "authority.documents.definition",
+      "role": "definition",
+      "capability": "documents.schema.read",
+      "providerPack": "integration.notion-docs",
+      "providerImplementation": "provider.integration.notion-docs.fixture",
+      "providerVersion": "0.1.0",
+      "observedAt": "2026-07-21T16:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-docs-fixture",
+        "authority": "authority.documents.definition",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:b929910de9216ec05513359164b8b1c22beb0e526c2cbd4a2d2e6f280beb44e9"
+      },
+      "valueFingerprint": "sha256:5206de6c7d5c17a47accfad527cda1b778adaf93fec4d28c9f22fd7bd0524d40",
+      "value": {
+        "schema": {
+          "recordType": "document-index",
+          "fields": [
+            {
+              "id": "categories",
+              "writable": true,
+              "options": [
+                "Prime",
+                "Research",
+                "Unclassified"
+              ]
+            },
+            {
+              "id": "description",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "documentType",
+              "writable": true,
+              "options": [
+                "Guide",
+                "Reference",
+                "Report",
+                "Research",
+                "Working Doc"
+              ]
+            },
+            {
+              "id": "link",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "name",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "organizationUris",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "ownerIds",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "relatedProjectUris",
+              "writable": true,
+              "options": null
+            }
+          ],
+          "fingerprint": "sha256:40470934b641bdc81223cd00a232b1bc8b0e9813bf608bbed4eb14033675ae69"
+        },
+        "provenance": {
+          "provider": "notion-docs-fixture",
+          "authority": "authority.documents.definition",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:b929910de9216ec05513359164b8b1c22beb0e526c2cbd4a2d2e6f280beb44e9"
+        },
+        "observedAt": "2026-07-21T16:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.drive-filing.document-candidates",
+      "subject": "documents.records.document-index-candidates",
+      "authority": "authority.documents.instance",
+      "role": "instance",
+      "capability": "documents.records.read",
+      "providerPack": "integration.notion-docs",
+      "providerImplementation": "provider.integration.notion-docs.fixture",
+      "providerVersion": "0.1.0",
+      "observedAt": "2026-07-21T16:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-docs-fixture",
+        "authority": "authority.documents.instance",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:86d7434f6eb35550e7d58c6d98a7b69fa3221d49c59a3a0954f24a5c41c6349d"
+      },
+      "valueFingerprint": "sha256:9dd2b3499b87baf4cf26be7bb60eed95fa381b50997d841d5727fd50944b3dea",
+      "value": {
+        "candidateCount": 0,
+        "candidateIds": [],
+        "providerOutputFingerprint": "sha256:8d669591083d1ed34df1621f0b07a0e162e3b1b8ed5b14b56335ffeb68c2212c"
+      }
+    },
+    {
+      "id": "context.drive-filing.organization",
+      "subject": "crm.records.organization",
+      "authority": "authority.crm.instance",
+      "role": "instance",
+      "capability": "crm.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T16:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.crm.instance",
+        "mapping": "mapping.integration.notion.crm-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:fd85f9564b1ed60751a76a06a093dff0cdbc9be8ffc3d947da190bd90e15f95d"
+      },
+      "valueFingerprint": "sha256:4a8987db78f5f66a0ed289bff54ba213948bf9b1c570f791e5cb423bed21b1a8",
+      "value": {
+        "records": [
+          {
+            "type": "organization",
+            "id": "soter-fixture://crm/organization/acme",
+            "version": "1",
+            "fields": {
+              "name": "Acme Design",
+              "status": "active",
+              "projectUris": [
+                "soter-fixture://projects/project/launch"
+              ]
+            },
+            "identityBinding": {
+              "state": "exact-request",
+              "requestedIdFingerprint": "sha256:15435bbfb3ba596e83959a6bc1a9fc8935affe9cd8779525f7b2686f5654560c"
+            }
+          }
+        ],
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.crm.instance",
+          "mapping": "mapping.integration.notion.crm-records",
+          "mappingVersion": "0.2.0",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:fd85f9564b1ed60751a76a06a093dff0cdbc9be8ffc3d947da190bd90e15f95d"
+        },
+        "observedAt": "2026-07-21T16:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.drive-filing.identity",
+      "subject": "notion.workspace.current-user",
+      "authority": "authority.notion.provider",
+      "role": "provider",
+      "capability": "workspace.identity.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T16:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.notion.provider",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:fba96dd124786906deac3173b004cf264261d14806396ade46da4ace8c3e6e77"
+      },
+      "valueFingerprint": "sha256:acf24d8148cc9bb6fa00394bd8ea2b444d23cdc1d416480968fe9346f7731cb7",
+      "value": {
+        "identity": {
+          "kind": "current-user",
+          "providerPersonId": "provider-person.maya",
+          "fingerprint": "sha256:fcfa59de1ec300265f6f8e71d97dfe7413cdfc9c4e6a5e81250a18b693b812ff"
+        },
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.notion.provider",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:fba96dd124786906deac3173b004cf264261d14806396ade46da4ace8c3e6e77"
+        },
+        "observedAt": "2026-07-21T16:00:00.000Z"
+      }
+    }
+  ],
+  "effectIds": [
+    "effect.drive-filing.preparation.registry.fixture",
+    "effect.drive-filing.preparation.artifact.fixture",
+    "effect.drive-filing.preparation.document-schema.fixture",
+    "effect.drive-filing.preparation.document-candidates.fixture",
+    "effect.drive-filing.preparation.organization.fixture",
+    "effect.drive-filing.preparation.identity.fixture"
+  ],
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Artifact names, resource identities, destination labels, private operator values, provider responses, credentials, and document values are excluded from general inspection."
+    ]
+  }
+}

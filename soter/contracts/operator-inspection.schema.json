@@ -21,18 +21,19 @@
         "id": { "type": "string", "pattern": "^activity\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
         "automationId": { "type": ["string", "null"], "minLength": 1 },
         "workId": { "type": "string", "pattern": "^work\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
-        "workState": { "enum": ["awaiting-approval", "approval-expired", "approved-not-started", "running", "blocked", "verification-failed", "rolling-back", "rolled-back", "completed", "failed"] },
-        "phase": { "enum": ["approval", "execution", "verification", "compensation", "complete"] },
+        "workState": { "enum": ["awaiting-approval", "approval-expired", "approved-not-started", "running", "blocked", "verification-failed", "completed", "failed"] },
+        "phase": { "enum": ["approval", "execution", "reconciliation", "verification", "complete"] },
         "runId": { "type": "string", "minLength": 1 }
       }
     },
     "configuration": {
       "type": "object", "additionalProperties": false,
-      "required": ["name", "path", "lockPath", "lockFingerprint", "graphFingerprint", "host", "applicability"],
+      "required": ["name", "path", "lockPath", "configurationBasis", "lockFingerprint", "graphFingerprint", "host", "applicability"],
       "properties": {
         "name": { "type": ["string", "null"], "minLength": 1 },
         "path": { "type": "string", "minLength": 1 },
         "lockPath": { "type": "string", "minLength": 1 },
+        "configurationBasis": { "enum": ["tracked-contained", "private-active", null] },
         "lockFingerprint": { "$ref": "#/$defs/fingerprint" },
         "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
         "host": { "type": "string", "minLength": 1 },
@@ -64,7 +65,7 @@
       "type": "object", "additionalProperties": false,
       "required": ["state", "request", "confirmation", "consumption", "reasonCode"],
       "properties": {
-        "state": { "enum": ["awaiting", "expired", "confirmed", "consumed", "stale"] },
+        "state": { "enum": ["awaiting", "expired", "confirmed", "consumed"] },
         "request": { "$ref": "#/$defs/approvalRequest" },
         "confirmation": { "$ref": "#/$defs/confirmation" },
         "consumption": { "$ref": "#/$defs/consumption" },
@@ -107,11 +108,11 @@
       "type": "object", "additionalProperties": false,
       "required": ["state", "plan", "completedStepIds", "remainingStepIds", "restoredFingerprint"],
       "properties": {
-        "state": { "enum": ["not-required", "pending", "running", "verified", "failed", "unknown"] },
-        "plan": { "type": "array", "items": { "$ref": "#/$defs/compensationStep" } },
-        "completedStepIds": { "$ref": "#/$defs/stringList" },
-        "remainingStepIds": { "$ref": "#/$defs/stringList" },
-        "restoredFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
+        "state": { "const": "not-required" },
+        "plan": { "type": "array", "maxItems": 0 },
+        "completedStepIds": { "type": "array", "maxItems": 0 },
+        "remainingStepIds": { "type": "array", "maxItems": 0 },
+        "restoredFingerprint": { "type": "null" }
       }
     },
     "families": {
@@ -134,6 +135,31 @@
     },
     "inspectionFingerprint": { "$ref": "#/$defs/fingerprint" }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "configuration": {
+            "properties": {
+              "configurationBasis": { "enum": ["tracked-contained", null] }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "resume": {
+            "properties": {
+              "classification": { "const": "unavailable" },
+              "reasonCode": { "const": "CONFIGURATION_BASIS_NOT_PRIVATE_ACTIVE" },
+              "permittedNextAction": { "const": "inspect-checkpoint" }
+            }
+          },
+          "continuationRequest": { "type": "null" }
+        }
+      }
+    }
+  ],
   "$defs": {
     "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
     "nullableFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
@@ -185,14 +211,14 @@
         "id": { "type": "string", "minLength": 1 }, "sequence": { "type": "integer", "minimum": 1 },
         "capability": { "type": "string", "minLength": 1 }, "authority": { "type": "string", "minLength": 1 },
         "effects": { "$ref": "#/$defs/stringSet" },
-        "state": { "enum": ["pending", "current", "applied", "failed", "needs-attention", "compensating", "compensated"] }
+        "state": { "enum": ["pending", "current", "applied", "failed", "needs-attention"] }
       }
     },
     "currentStep": {
       "type": ["object", "null"], "additionalProperties": false,
       "required": ["stepId", "stage", "callId", "reconciliationId"],
       "properties": {
-        "stepId": { "type": "string", "minLength": 1 }, "stage": { "type": "string", "minLength": 1 },
+        "stepId": { "type": "string", "minLength": 1 }, "stage": { "enum": ["precondition", "write", "verify", "reconcile"] },
         "callId": { "type": "string", "minLength": 1 }, "reconciliationId": { "type": ["string", "null"], "minLength": 1 }
       }
     },
@@ -212,8 +238,8 @@
     "checkpoint": {
       "type": ["object", "null"], "additionalProperties": false, "required": ["id", "fingerprint", "state", "updatedAt"],
       "properties": {
-        "id": { "type": "string", "minLength": 1 }, "fingerprint": { "$ref": "#/$defs/fingerprint" },
-        "state": { "type": "string", "minLength": 1 }, "updatedAt": { "type": "string", "minLength": 20 }
+        "id": { "type": "string", "pattern": "^checkpoint\\.transaction\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" }, "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "state": { "enum": ["requested", "completed", "failed", "needs-attention"] }, "updatedAt": { "type": "string", "minLength": 20 }
       }
     },
     "continuationRequest": {
@@ -232,13 +258,6 @@
       "properties": {
         "id": { "type": "string", "minLength": 1 }, "state": { "enum": ["pending", "running", "passed", "failed", "unknown"] },
         "reasonCode": { "$ref": "#/$defs/reasonCode" }, "observedFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
-      }
-    },
-    "compensationStep": {
-      "type": "object", "additionalProperties": false, "required": ["stepId", "mode"],
-      "properties": {
-        "stepId": { "type": "string", "minLength": 1 },
-        "mode": { "enum": ["restore-prior-fields", "terminal-idempotent-create", "manual-required"] }
       }
     },
     "unprojectedFamily": {

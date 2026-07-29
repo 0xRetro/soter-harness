@@ -30,6 +30,7 @@
     "mode": { "const": "sequential" },
     "failurePolicy": { "const": "stop" },
     "reason": { "type": "string", "minLength": 12 },
+    "configuration": { "$ref": "#/$defs/configurationSelection" },
     "steps": {
       "type": "array",
       "minItems": 1,
@@ -104,13 +105,40 @@
                     "pattern": "^[A-Za-z][A-Za-z0-9]*$"
                   }
                 },
-                "transform": { "const": "unique-string-list" },
+                "transform": { "enum": ["unique-string-list", "exact-string"] },
                 "onEmpty": { "enum": ["skip-step", "fail-plan"] }
               }
             }
           },
           "reason": { "type": "string", "minLength": 8 }
         }
+      }
+    }
+  },
+  "$defs": {
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "configurationSelection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name", "configurationBasis", "path", "lockPath",
+        "lockFingerprint", "graphFingerprint"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "configurationBasis": {
+          "enum": ["tracked-contained", "private-active"]
+        },
+        "path": { "type": "string", "minLength": 1 },
+        "lockPath": { "type": "string", "minLength": 1 },
+        "lockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "graphFingerprint": { "$ref": "#/$defs/fingerprint" }
       }
     }
   }

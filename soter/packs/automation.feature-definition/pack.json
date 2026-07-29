@@ -1,0 +1,72 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "automation.feature-definition",
+  "version": "0.1.0",
+  "layer": "automation",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Prepares an exact existing Planned feature body definition while preserving Description and Status and stopping before approval or provider writes.",
+  "dependencies": [
+    {
+      "pack": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Feature Definition preparation requires exact locks, private review companions, effect policy, and no-authority boundaries."
+    },
+    {
+      "pack": "context.product",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Feature lifecycle, why ownership, body section meaning, and definition preservation rules belong to Product Context."
+    }
+  ],
+  "capabilities": {
+    "requires": [
+      { "id": "product.records.read", "version": "^1.0.0", "optional": false, "reason": "Preparation resolves the exact existing feature and selected workflow policy." },
+      { "id": "product.schema.read", "version": "^1.0.0", "optional": false, "reason": "Preparation proves the configured feature lifecycle still contains the governed Planned state." },
+      { "id": "documents.content.read", "version": "^1.0.0", "optional": false, "reason": "Preparation reads the exact current feature body under expected title and body fingerprint." },
+      { "id": "documents.content.update", "version": "^1.0.0", "optional": false, "reason": "A compatible review may name one exact whole-body replacement, but this migration slice declares no connected compiler." }
+    ],
+    "provides": []
+  },
+  "sourceRequirements": [
+    {
+      "purpose": "feature-workflow-policy",
+      "capability": "product.records.read",
+      "authorityRole": "definition",
+      "authoritySubject": "product.records",
+      "minimum": 1,
+      "maximum": 1,
+      "reason": "Feature Definition requires one configured external selection that binds the exact governed Product workflow definition."
+    }
+  ],
+  "authorities": [
+    { "role": "definition", "subject": "product.records", "required": true },
+    { "role": "instance", "subject": "product.records", "required": true },
+    { "role": "evidence", "subject": "runtime.runs", "required": true }
+  ],
+  "effects": ["read", "disclosure", "write"],
+  "operator": {
+    "input": "soter/automations/feature-definition/operator-input.json",
+    "preparation": {
+      "module": "soter/automations/feature-definition/prepare.mjs",
+      "export": "prepareFeatureDefinitionRun",
+      "containment": "fixture",
+      "derivedReviewContract": "soter/automations/feature-definition/derived-review.json"
+    }
+  },
+  "artifacts": [
+    { "path": "soter/automations/feature-definition/operator-input.json", "role": "definition" },
+    { "path": "soter/automations/feature-definition/derived-review.json", "role": "definition" },
+    { "path": "soter/automations/feature-definition/prepare.mjs", "role": "implementation" },
+    { "path": "soter/automations/feature-definition/scenario.mjs", "role": "evaluation" },
+    { "path": "soter/automations/feature-definition/feature-definition.selftest.mjs", "role": "evaluation" },
+    { "path": "soter/scenarios/feature-definition/preparation.scenario.json", "role": "evaluation" }
+  ],
+  "compatibility": { "baseContract": "^1.0.0", "hosts": ["codex", "claude"] },
+  "verification": {
+    "maxLevel": "fixture",
+    "scenarios": ["soter/scenarios/feature-definition/preparation.scenario.json"]
+  }
+}

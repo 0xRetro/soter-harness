@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/workflow-evaluation-set/v2",
+  "title": "Soter governed host-guided workflow evaluation set",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "workflow",
+    "version",
+    "lifecycle",
+    "cases",
+    "evaluationPolicy",
+    "privacy",
+    "limitations"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/workflow-evaluation-set/v2" },
+    "contractVersion": { "const": "2.0.0" },
+    "id": { "type": "string", "pattern": "^evaluation-set[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "workflow": { "type": "string", "pattern": "^automation[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "version": { "$ref": "#/$defs/version" },
+    "lifecycle": {
+      "oneOf": [
+        { "$ref": "#/$defs/definitionOnlyLifecycle" },
+        { "$ref": "#/$defs/hostGuidedLifecycle" },
+        { "$ref": "#/$defs/retiredLifecycle" }
+      ]
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/case" }
+    },
+    "evaluationPolicy": {
+      "oneOf": [
+        { "$ref": "#/$defs/unavailablePolicy" },
+        { "$ref": "#/$defs/hostGuidedPolicy" }
+      ]
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rawPromptsIncluded", "workspaceSpecificValuesIncluded", "privateInputsIncluded", "rawTranscriptsIncluded", "absolutePathsIncluded"],
+      "properties": {
+        "rawPromptsIncluded": { "const": false },
+        "workspaceSpecificValuesIncluded": { "const": false },
+        "privateInputsIncluded": { "const": false },
+        "rawTranscriptsIncluded": { "const": false },
+        "absolutePathsIncluded": { "const": false }
+      }
+    },
+    "limitations": { "$ref": "#/$defs/limitations" }
+  },
+  "$defs": {
+    "version": { "type": "string", "pattern": "^(?:0|[1-9][0-9]*)[.](?:0|[1-9][0-9]*)[.](?:0|[1-9][0-9]*)$" },
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "contractReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^soter://contracts/[a-z0-9]+(?:-[a-z0-9]+)*/v[0-9]+$" },
+        "path": { "type": "string", "pattern": "^soter/contracts/[a-z0-9]+(?:-[a-z0-9]+)*[.]schema[.]json$" }
+      }
+    },
+    "definitionOnlyLifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "reasonCode", "authority", "permittedNextAction"],
+      "properties": {
+        "state": { "const": "definition-only" },
+        "reasonCode": { "const": "AUTOMATION_RUNTIME_NOT_IMPLEMENTED" },
+        "authority": { "const": "none" },
+        "permittedNextAction": { "const": "design-runtime-slice" }
+      }
+    },
+    "hostGuidedLifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "activation", "authority", "permittedNextAction"],
+      "properties": {
+        "state": { "const": "active-host-guided" },
+        "activation": { "enum": ["candidate", "active"] },
+        "authority": { "const": "request-bound-development-evidence" },
+        "permittedNextAction": { "const": "run-exact-evaluation-suite" }
+      }
+    },
+    "retiredLifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "retirement", "authority", "permittedNextAction"],
+      "properties": {
+        "state": { "const": "retired" },
+        "retirement": { "enum": ["candidate", "complete"] },
+        "authority": { "const": "none" },
+        "permittedNextAction": { "enum": ["prove-retirement", "inspect-replacement"] }
+      }
+    },
+    "unavailablePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runner", "requestContract", "resultContract", "freshWorkerPerCase", "expectationsWithheld", "baselineRequired", "supportedHosts", "authority"],
+      "properties": {
+        "runner": { "const": "none" },
+        "requestContract": { "type": "null" },
+        "resultContract": { "type": "null" },
+        "freshWorkerPerCase": { "const": true },
+        "expectationsWithheld": { "const": true },
+        "baselineRequired": { "const": true },
+        "supportedHosts": { "type": "array", "maxItems": 0 },
+        "authority": { "const": "none" }
+      }
+    },
+    "hostGuidedPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runner", "requestContract", "resultContract", "freshWorkerPerCase", "expectationsWithheld", "baselineRequired", "baselineCaseId", "baselineOutcome", "supportedHosts", "authority"],
+      "properties": {
+        "runner": { "const": "core-development-request" },
+        "requestContract": { "$ref": "#/$defs/contractReference" },
+        "resultContract": { "$ref": "#/$defs/contractReference" },
+        "freshWorkerPerCase": { "const": true },
+        "expectationsWithheld": { "const": true },
+        "baselineRequired": { "const": true },
+        "baselineCaseId": { "const": "happy-path" },
+        "baselineOutcome": { "const": "observed-not-gating" },
+        "supportedHosts": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": { "enum": ["codex", "claude"] }
+        },
+        "authority": { "const": "request-bound-evidence-only" }
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sequence", "kind", "source", "stimulus", "expectedObservations", "prohibitedOutcomes"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "sequence": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "kind": { "enum": ["happy-path", "invariant", "pressure", "regression"] },
+        "source": { "$ref": "#/$defs/sourceProvenance" },
+        "stimulus": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["summary", "conditions"],
+          "properties": {
+            "summary": { "type": "string", "minLength": 12, "maxLength": 500 },
+            "conditions": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "type": "string", "minLength": 8, "maxLength": 300 }
+            }
+          }
+        },
+        "expectedObservations": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 8, "maxLength": 400 }
+        },
+        "prohibitedOutcomes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 8, "maxLength": 400 }
+        }
+      }
+    },
+    "sourceProvenance": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["presence", "legacyPath", "legacyFingerprint"],
+          "properties": {
+            "presence": { "const": "present" },
+            "legacyPath": { "type": "string", "pattern": "^[.]claude/evals/[a-z0-9]+(?:-[a-z0-9]+)*/.+[.]md$" },
+            "legacyFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["presence", "legacyPath", "legacyFingerprint"],
+          "properties": {
+            "presence": { "const": "removed" },
+            "legacyPath": { "type": "string", "pattern": "^[.]claude/evals/[a-z0-9]+(?:-[a-z0-9]+)*/.+[.]md$" },
+            "legacyFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        }
+      ]
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 12, "maxLength": 400 }
+    }
+  }
+}

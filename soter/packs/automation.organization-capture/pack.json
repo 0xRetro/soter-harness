@@ -1,0 +1,132 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "automation.organization-capture",
+  "version": "0.1.0",
+  "layer": "automation",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Grounds one schema-current, alias-deduplicated Organization create, projects private review, and compiles an exact selected action for Core-governed approval, single-use start, and verified connected execution.",
+  "dependencies": [
+    {
+      "pack": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Organization preparation requires exact locks, private review companions, effect policy, and checkpoint boundaries."
+    },
+    {
+      "pack": "context.crm",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Organization fields, classification rules, alias policy, and relation meaning belong to CRM Context."
+    }
+  ],
+  "capabilities": {
+    "requires": [
+      {
+        "id": "crm.records.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation must select one policy and inspect bounded alias candidates before create."
+      },
+      {
+        "id": "crm.schema.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Preparation must observe current writable Type and Tags options rather than embed provider schema values."
+      },
+      {
+        "id": "crm.records.create",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "A future exact proposal transaction may create one mapped organization only after separate Core authority."
+      }
+    ],
+    "provides": []
+  },
+  "sourceRequirements": [
+    {
+      "purpose": "organization-capture-policy",
+      "capability": "crm.records.read",
+      "authorityRole": "definition",
+      "authoritySubject": "crm.records",
+      "minimum": 1,
+      "maximum": 1,
+      "reason": "Organization Capture requires one configured policy selection for confirmation, option matching, alias derivation, and empty-on-create relations."
+    }
+  ],
+  "authorities": [
+    { "role": "definition", "subject": "crm.records", "required": true },
+    { "role": "instance", "subject": "crm.records", "required": true },
+    { "role": "evidence", "subject": "runtime.runs", "required": true }
+  ],
+  "effects": ["read", "disclosure", "write"],
+  "operator": {
+    "input": "soter/automations/organization-capture/operator-input.json",
+    "preparation": {
+      "module": "soter/automations/organization-capture/prepare.mjs",
+      "export": "prepareOrganizationCaptureRun",
+      "containment": "fixture",
+      "derivedReviewContract": "soter/automations/organization-capture/derived-review.json"
+    },
+    "acquisition": {
+      "module": "soter/automations/organization-capture/context.mjs",
+      "prepareExport": "prepareOrganizationCaptureConnectedAcquisition",
+      "finalizeExport": "finalizeOrganizationCaptureConnectedAcquisition",
+      "containment": "connected",
+      "recordRequirements": [
+        {
+          "capability": "crm.records.read",
+          "recordTypes": ["organization-capture-policy", "organization"]
+        },
+        {
+          "capability": "crm.schema.read",
+          "recordTypes": ["organization"]
+        }
+      ]
+    },
+    "connection": {
+      "module": "soter/automations/organization-capture/connected.mjs",
+      "compileExport": "compileOrganizationCaptureConnectedOperations",
+      "evaluateExport": "evaluateOrganizationCaptureConnectedVerification",
+      "recordRequirements": [
+        {
+          "capability": "crm.records.create",
+          "recordTypes": ["organization"]
+        }
+      ]
+    },
+    "proposal": {
+      "module": "soter/automations/organization-capture/proposal.mjs",
+      "export": "createOrganizationCaptureProposal",
+      "schema": "soter/automations/organization-capture/proposal.schema.json",
+      "inputSchema": "soter/automations/organization-capture/proposal-input.schema.json",
+      "derivedReviewContract": "soter/automations/organization-capture/derived-review.json"
+    }
+  },
+  "artifacts": [
+    { "path": "soter/automations/organization-capture/operator-input.json", "role": "definition" },
+    { "path": "soter/automations/organization-capture/derived-review.json", "role": "definition" },
+    { "path": "soter/automations/organization-capture/decision.schema.json", "role": "definition" },
+    { "path": "soter/automations/organization-capture/proposal-input.schema.json", "role": "definition" },
+    { "path": "soter/automations/organization-capture/proposal.schema.json", "role": "definition" },
+    { "path": "soter/automations/organization-capture/policy.mjs", "role": "implementation" },
+    { "path": "soter/automations/organization-capture/prepare.mjs", "role": "implementation" },
+    { "path": "soter/automations/organization-capture/context.mjs", "role": "implementation" },
+    { "path": "soter/automations/organization-capture/decision.mjs", "role": "implementation" },
+    { "path": "soter/automations/organization-capture/proposal.mjs", "role": "implementation" },
+    { "path": "soter/automations/organization-capture/connected.mjs", "role": "implementation" },
+    { "path": "soter/automations/organization-capture/scenario.mjs", "role": "evaluation" },
+    { "path": "soter/automations/organization-capture/organization-capture.selftest.mjs", "role": "evaluation" },
+    { "path": "soter/automations/organization-capture/connected-context.selftest.mjs", "role": "evaluation" },
+    { "path": "soter/scenarios/organization-capture/preparation.scenario.json", "role": "evaluation" }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": ["codex", "claude"]
+  },
+  "verification": {
+    "maxLevel": "fixture",
+    "scenarios": ["soter/scenarios/organization-capture/preparation.scenario.json"]
+  }
+}

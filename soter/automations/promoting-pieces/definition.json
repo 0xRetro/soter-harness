@@ -1,0 +1,168 @@
+{
+  "$contract": "soter://contracts/workflow-definition/v2",
+  "contractVersion": "2.0.0",
+  "id": "automation.promoting-pieces",
+  "version": "0.1.0",
+  "title": "Promote a harness artifact",
+  "summary": "Evaluates one staged harness artifact against exact usage and evidence before changing discoverability or host invocation behavior.",
+  "ownership": {
+    "layer": "automation",
+    "domain": "harness-governance",
+    "legacyLayer": "skill",
+    "responsibility": "outcome-definition"
+  },
+  "lifecycle": {
+    "state": "active-host-guided",
+    "activation": {
+      "state": "active",
+      "reasonCode": "WORKFLOW_HOST_GUIDANCE_ACTIVE",
+      "proceduralAuthority": "target",
+      "delivery": "host-skill",
+      "behaviorParity": "passed",
+      "evidence": [
+        {
+          "path": "soter/evidence/development/development-agent-migration-evidence.claude.promoting-pieces.json",
+          "fingerprint": "sha256:7e659d3db92d90b242693364a105822e96e40509fedcecb44025b528e5445f6e",
+          "host": "claude"
+        },
+        {
+          "path": "soter/evidence/development/development-agent-migration-evidence.codex.promoting-pieces.json",
+          "fingerprint": "sha256:6e811cc894ebbbf796b81e23f43d8a1bf3ff75a316827572d08471a655380a52",
+          "host": "codex"
+        }
+      ],
+      "permittedNextAction": "invoke-through-selected-host"
+    },
+    "development": {
+      "requestContract": {
+        "id": "soter://contracts/development-request/v1",
+        "path": "soter/contracts/development-request.schema.json"
+      },
+      "resultContract": {
+        "id": "soter://contracts/development-result/v1",
+        "path": "soter/contracts/development-result.schema.json"
+      },
+      "workspacePolicy": {
+        "id": "settings.kernel.soter.development-workspace",
+        "path": "soter/kernel/development-workspace.settings.json",
+        "fingerprint": "sha256:84ea480a61e67ac271b9cb3bb58ef338f0430d9a04d772d3ec47cad17175bfc1"
+      },
+      "supportedHosts": [
+        "codex",
+        "claude"
+      ]
+    },
+    "effectBoundary": {
+      "localWorkspaceRead": "request-scoped",
+      "localWorkspaceWrite": "request-scoped",
+      "localCommand": "request-scoped",
+      "subagentDispatch": "request-scoped",
+      "providerRead": "separate-authority",
+      "providerWrite": "separate-authority",
+      "publication": "separate-authority",
+      "merge": "separate-authority",
+      "protectedRootMutation": "separate-authority",
+      "hostRealization": "separate-authority",
+      "authority": "development-request-only"
+    }
+  },
+  "intent": {
+    "goal": "Produce one evidence-bound promotion or refusal without converting testimony, popularity, or a batch request into authority.",
+    "useWhen": [
+      "A staged artifact is proposed for broader discoverability or host invocation."
+    ],
+    "excludeWhen": [
+      "The artifact is still being authored, reviewed for initial adoption, retired, or changed in content."
+    ]
+  },
+  "procedure": [
+    {
+      "id": "select-one-artifact",
+      "sequence": 1,
+      "outcome": "Bind the decision to one exact artifact and current fingerprint.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "gather-observed-evidence",
+      "sequence": 2,
+      "outcome": "Inspect applicable usage, gotchas, evaluations, and host-effect facts rather than relying on testimony.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "evaluate-promotion-scope",
+      "sequence": 3,
+      "outcome": "Separate discoverability from invocation and prohibit automatic invocation for side-effecting behavior.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "prepare-decision",
+      "sequence": 4,
+      "outcome": "Prepare a promotion or refusal with evidence, limitations, and exact proposed metadata changes.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    },
+    {
+      "id": "confirm-and-verify",
+      "sequence": 5,
+      "outcome": "Apply only an explicitly confirmed scope and verify the resulting artifact and host projection remain valid.",
+      "requirements": [
+        "Bind every input and observation to one exact governed source or explicit operator decision."
+      ],
+      "stopConditions": [
+        "Stop when required evidence, authority, or an exact prerequisite is unavailable."
+      ]
+    }
+  ],
+  "safeguards": [
+    "Never transfer evidence between artifacts or promote a batch as one decision.",
+    "Never grant automatic invocation to side-effecting behavior.",
+    "Never treat the requester claim or a demo deadline as usage evidence."
+  ],
+  "evaluationSet": {
+    "id": "evaluation-set.promoting-pieces",
+    "path": "soter/automations/promoting-pieces/evaluations.json"
+  },
+  "guide": {
+    "id": "workflow-guide.promoting-pieces",
+    "path": "soter/automations/promoting-pieces/guide.json"
+  },
+  "potentialEffects": [
+    "read",
+    "disclosure",
+    "write"
+  ],
+  "source": {
+    "presence": "removed",
+    "legacyPath": ".claude/skills/promoting-pieces/SKILL.md",
+    "legacyFingerprint": "sha256:461fb180f91518633cab26c19b567b3d41dbcb6a614d01591b3cb5ede2c02dcf"
+  },
+  "privacy": {
+    "rawSourceIncluded": false,
+    "workspaceSpecificValuesIncluded": false,
+    "credentialsIncluded": false,
+    "privateInputsIncluded": false
+  },
+  "limitations": [
+    "This normalized definition preserves inspectable intent only; it has no operator runtime, provider binding, effect authority, or behavior parity.",
+    "The fingerprinted legacy source remains canonical until a separate implemented and evidenced runtime migration removes that fallback."
+  ]
+}

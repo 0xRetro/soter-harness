@@ -1,0 +1,23 @@
+{
+  "$contract": "soter://contracts/automation-derived-review/v1",
+  "contractVersion": "1.0.0",
+  "automation": "automation.process-red-team",
+  "kind": "process-red-team-derived-review",
+  "items": [
+    {
+      "kind": "process-review-finding",
+      "fields": [
+        { "id": "findingId", "label": "Finding identity", "type": "text" },
+        { "id": "severity", "label": "Severity", "type": "text" },
+        { "id": "lens", "label": "Review lens", "type": "text" },
+        { "id": "title", "label": "Title", "type": "text" },
+        { "id": "finding", "label": "Verified finding", "type": "text" },
+        { "id": "reproduction", "label": "Reproduction", "type": "text" },
+        { "id": "sourceIds", "label": "Exact source identities", "type": "string-list" },
+        { "id": "proposedFix", "label": "Proposed fix", "type": "text" },
+        { "id": "reproduced", "label": "Reproduced", "type": "boolean" },
+        { "id": "disposition", "label": "Disposition", "type": "text" }
+      ]
+    }
+  ]
+}

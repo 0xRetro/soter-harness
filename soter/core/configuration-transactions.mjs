@@ -11,10 +11,18 @@ import {
 } from './lib/canonical-json.mjs';
 import {
   evaluateConfigurationDocument,
+  findConfigurationTemplate,
   fingerprintLock,
   resolveConfiguration,
   resolveConfigurationDocument
 } from './resolve.mjs';
+import {
+  hasPrivateConfigurationState,
+  privateConfigurationStatePath,
+  readPrivateConfigurationState,
+  removePrivateConfigurationState,
+  writePrivateConfigurationState
+} from './private-configurations.mjs';
 import {
   activeConfigurationLockStatePath,
   configurationChangeConfirmationStatePath,
@@ -105,31 +113,15 @@ function assertFingerprint(root, value, kind, property, label) {
   return value;
 }
 
-function walkJson(directory) {
-  if (!fs.existsSync(directory)) return [];
-  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const target = path.join(directory, entry.name);
-    if (entry.isDirectory()) return walkJson(target);
-    return entry.isFile() && entry.name.endsWith('.json') ? [target] : [];
-  }).sort(compareText);
-}
-
 function findConfiguration(root, name) {
   if (typeof name !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name)) {
     fail('CONFIGURATION_NAME_INVALID', 'Configuration name is invalid.');
   }
-  const matches = walkJson(path.join(root, 'soter', 'configurations')).filter((file) => {
-    try {
-      const value = readJson(file);
-      return value.$contract === 'soter://contracts/configuration/v1' && value.name === name;
-    } catch {
-      return false;
-    }
-  });
-  if (matches.length !== 1) {
-    fail('CONFIGURATION_NOT_FOUND', 'Expected exactly one desired configuration with the requested name.');
+  try {
+    return findConfigurationTemplate(root, name);
+  } catch {
+    fail('CONFIGURATION_NOT_FOUND', 'Expected exactly one portable configuration template with the requested name.');
   }
-  return matches[0];
 }
 
 function iso(value, label) {
@@ -248,7 +240,7 @@ function configurationChanges(current, candidate) {
   return changes.sort((left, right) => compareText(left.id, right.id));
 }
 
-function assertCandidate(root, file, candidate, expectedName) {
+function assertCandidate(root, desiredStateFile, candidate, expectedName) {
   if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
     fail('CONFIGURATION_CANDIDATE_INVALID', 'Configuration candidate must be an object.');
   }
@@ -257,7 +249,11 @@ function assertCandidate(root, file, candidate, expectedName) {
     || candidate.name !== expectedName) {
     fail('CONFIGURATION_CANDIDATE_INVALID', 'Candidate must replace the same named configuration/v1 document.');
   }
-  const evaluated = evaluateConfigurationDocument({ root, configPath: file, configuration: candidate });
+  const evaluated = evaluateConfigurationDocument({
+    root,
+    configPath: desiredStateFile,
+    configuration: candidate
+  });
   if (evaluated.verification.health.valid !== 'passed' || !evaluated.lock) {
     const codes = evaluated.verification.violations
       .filter((item) => item.level !== 'warn')
@@ -269,66 +265,66 @@ function assertCandidate(root, file, candidate, expectedName) {
   return evaluated.lock;
 }
 
-function atomicWriteRepositoryJson(file, value) {
-  const directory = path.dirname(file);
-  const temporary = file + '.' + process.pid + '.' + Date.now() + '.tmp';
-  const mode = fs.statSync(file).mode & 0o777;
-  let descriptor = null;
-  try {
-    descriptor = fs.openSync(temporary, 'wx', mode || 0o600);
-    fs.writeFileSync(descriptor, JSON.stringify(value, null, 2) + '\n');
-    fs.fsyncSync(descriptor);
-    fs.closeSync(descriptor);
-    descriptor = null;
-    fs.renameSync(temporary, file);
-    try {
-      const directoryDescriptor = fs.openSync(directory, 'r');
-      try {
-        fs.fsyncSync(directoryDescriptor);
-      } finally {
-        fs.closeSync(directoryDescriptor);
-      }
-    } catch {
-      // Directory fsync is not available on every filesystem.
-    }
-  } finally {
-    if (descriptor !== null) fs.closeSync(descriptor);
-    if (fs.existsSync(temporary)) fs.rmSync(temporary, { force: true });
+function currentDesiredConfiguration(root, name, templateFile) {
+  const privatePresent = hasPrivateConfigurationState(root, name);
+  const activePresent = hasActiveConfigurationLockState(root, name);
+  if (privatePresent !== activePresent) {
+    fail(
+      'CONFIGURATION_PRIVATE_STATE_UNBOUND',
+      'Private desired configuration and its exact active lock must either both exist or both be absent.'
+    );
   }
+  if (!privatePresent) {
+    const configuration = readJson(templateFile);
+    return {
+      sourceKind: 'tracked-template',
+      configuration,
+      lock: resolveConfiguration({ root, configPath: templateFile }),
+      priorActiveLock: { state: 'absent', fingerprint: null, lock: null }
+    };
+  }
+  const privateState = readPrivateConfigurationState(root, name);
+  let lock;
+  let activeLock;
+  try {
+    lock = resolveConfiguration({ root, configPath: privateState.file });
+    activeLock = readActiveConfigurationLockState(root, name).lock;
+  } catch {
+    fail('CONFIGURATION_ACTIVE_LOCK_STALE', 'Private desired configuration or its active lock is invalid.');
+  }
+  const activeFingerprint = fingerprintLock(activeLock);
+  if (activeFingerprint !== fingerprintLock(lock)) {
+    fail('CONFIGURATION_ACTIVE_LOCK_STALE', 'Private active lock does not match the private desired configuration.');
+  }
+  return {
+    sourceKind: 'private-active',
+    configuration: privateState.configuration,
+    lock,
+    priorActiveLock: { state: 'present', fingerprint: activeFingerprint, lock: activeLock }
+  };
 }
 
 function planCurrentness(root, plan) {
-  const file = resolveRepoPath(root, plan.configuration.path);
-  if (!fs.existsSync(file)) return { state: 'stale', reasonCode: 'CONFIGURATION_SOURCE_MISSING' };
-  const observedDocumentFingerprint = fingerprintJson(readJson(file));
-  let observedLockFingerprint = null;
-  try {
-    observedLockFingerprint = fingerprintLock(resolveConfiguration({ root, configPath: file }));
-  } catch {
-    return { state: 'stale', reasonCode: 'CONFIGURATION_CURRENT_RESOLUTION_INVALID' };
+  const observed = observe(root, plan);
+  if (observed.templateFingerprint !== plan.configuration.templateFingerprint) {
+    return { state: 'stale', reasonCode: 'CONFIGURATION_TEMPLATE_DRIFT' };
   }
-  let observedActiveLockFingerprint = null;
-  try {
-    observedActiveLockFingerprint = hasActiveConfigurationLockState(root, plan.configuration.name)
-      ? fingerprintLock(readActiveConfigurationLockState(root, plan.configuration.name).lock)
-      : null;
-  } catch {
-    return { state: 'stale', reasonCode: 'CONFIGURATION_ACTIVE_LOCK_INVALID' };
-  }
-  if (observedDocumentFingerprint === plan.configuration.candidateDocumentFingerprint
-    && observedLockFingerprint === plan.configuration.candidateLockFingerprint
-    && observedActiveLockFingerprint === plan.configuration.candidateLockFingerprint) {
+  if (observed.sourceKind === 'private-active'
+    && observed.documentFingerprint === plan.configuration.candidateDocumentFingerprint
+    && observed.resolutionFingerprint === plan.configuration.candidateLockFingerprint
+    && observed.activeLockFingerprint === plan.configuration.candidateLockFingerprint) {
     return { state: 'applied', reasonCode: 'CONFIGURATION_CANDIDATE_APPLIED' };
   }
-  if (observedDocumentFingerprint !== plan.configuration.currentDocumentFingerprint
-    || observedLockFingerprint !== plan.configuration.currentLockFingerprint
-    || observedActiveLockFingerprint !== plan.priorActiveLock.fingerprint) {
+  if (observed.sourceKind !== plan.configuration.currentSourceKind
+    || observed.documentFingerprint !== plan.configuration.currentDocumentFingerprint
+    || observed.resolutionFingerprint !== plan.configuration.currentLockFingerprint
+    || observed.activeLockFingerprint !== plan.priorActiveLock.fingerprint) {
     return { state: 'stale', reasonCode: 'CONFIGURATION_PLAN_STALE' };
   }
   try {
     const candidateLock = resolveConfigurationDocument({
       root,
-      configPath: file,
+      configPath: resolveRepoPath(root, plan.configuration.desiredStatePath),
       configuration: plan.candidateConfiguration
     });
     if (fingerprintLock(candidateLock) !== plan.configuration.candidateLockFingerprint
@@ -344,12 +340,25 @@ function planCurrentness(root, plan) {
 
 function assertPlan(root, plan) {
   assertFingerprint(root, plan, 'plan', 'planFingerprint', 'Configuration change plan');
-  if (fingerprintJson(plan.currentConfiguration) !== plan.configuration.currentDocumentFingerprint
+  const expectedTemplatePath = repoRelativePath(root, findConfiguration(root, plan.configuration.name));
+  const expectedDesiredPath = repoRelativePath(
+    root,
+    privateConfigurationStatePath(root, plan.configuration.name)
+  );
+  if (plan.configuration.templatePath !== expectedTemplatePath
+    || plan.configuration.desiredStatePath !== expectedDesiredPath
+    || fingerprintJson(plan.currentConfiguration) !== plan.configuration.currentDocumentFingerprint
     || fingerprintJson(plan.candidateConfiguration) !== plan.configuration.candidateDocumentFingerprint
     || fingerprintLock(plan.currentLock) !== plan.configuration.currentLockFingerprint
     || plan.currentLock.graphFingerprint !== plan.configuration.currentGraphFingerprint
     || fingerprintLock(plan.candidateLock) !== plan.configuration.candidateLockFingerprint
     || plan.candidateLock.graphFingerprint !== plan.configuration.candidateGraphFingerprint
+    || plan.candidateLock.configuration.path !== plan.configuration.desiredStatePath
+    || plan.candidateLock.configuration.name !== plan.configuration.name
+    || plan.currentLock.configuration.name !== plan.configuration.name
+    || (plan.configuration.currentSourceKind === 'tracked-template'
+      ? plan.currentLock.configuration.path !== plan.configuration.templatePath
+      : plan.currentLock.configuration.path !== plan.configuration.desiredStatePath)
     || projectionFingerprint(plan.candidateLock) !== plan.configuration.projectionFingerprint
     || fingerprintJson(plan.changes) !== plan.scopeFingerprint) {
     fail('CONFIGURATION_PLAN_TAMPERED', 'Configuration change plan exact bindings are invalid.');
@@ -357,6 +366,10 @@ function assertPlan(root, plan) {
   if (plan.priorActiveLock.state === 'present'
     && fingerprintLock(plan.priorActiveLock.lock) !== plan.priorActiveLock.fingerprint) {
     fail('CONFIGURATION_PLAN_TAMPERED', 'Configuration change plan prior active lock is invalid.');
+  }
+  if ((plan.configuration.currentSourceKind === 'private-active')
+    !== (plan.priorActiveLock.state === 'present')) {
+    fail('CONFIGURATION_PLAN_TAMPERED', 'Configuration plan prior source and active-lock state disagree.');
   }
   return plan;
 }
@@ -376,7 +389,7 @@ function assertRequest(root, request) {
   if (plan.planFingerprint !== request.plan.fingerprint
     || plan.scopeFingerprint !== request.scopeFingerprint
     || plan.configuration.name !== request.configuration.name
-    || plan.configuration.path !== request.configuration.path
+    || request.configuration.sourceKind !== 'private-active'
     || plan.configuration.currentLockFingerprint !== request.configuration.currentLockFingerprint
     || plan.configuration.candidateLockFingerprint !== request.configuration.candidateLockFingerprint
     || plan.configuration.candidateGraphFingerprint !== request.configuration.candidateGraphFingerprint) {
@@ -506,8 +519,7 @@ function preparedCheckpoint({ plan, request, confirmation, consumption, checkpoi
     consumption: { id: consumption.id, fingerprint: consumption.consumptionFingerprint },
     configuration: {
       name: plan.configuration.name,
-      path: plan.configuration.path,
-      activeLockPath: plan.configuration.activeLockPath,
+      sourceKind: 'private-active',
       currentDocumentFingerprint: plan.configuration.currentDocumentFingerprint,
       candidateDocumentFingerprint: plan.configuration.candidateDocumentFingerprint,
       currentLockFingerprint: plan.configuration.currentLockFingerprint,
@@ -576,18 +588,45 @@ function startReservedExecution(root, { plan, request, confirmation, consumption
 }
 
 function observe(root, plan) {
-  const file = resolveRepoPath(root, plan.configuration.path);
+  const templateFile = resolveRepoPath(root, plan.configuration.templatePath);
+  const desiredFile = resolveRepoPath(root, plan.configuration.desiredStatePath);
+  let templateFingerprint = null;
+  try {
+    templateFingerprint = fingerprintJson(readJson(templateFile));
+  } catch {
+    // A removed or malformed portable template invalidates every private resolution.
+  }
+  const privateExists = fs.existsSync(desiredFile);
+  const activeExists = hasActiveConfigurationLockState(root, plan.configuration.name);
+  let documentFingerprint = null;
   let resolutionFingerprint = null;
   try {
-    resolutionFingerprint = fingerprintLock(resolveConfiguration({ root, configPath: file }));
+    if (privateExists) {
+      const privateState = readPrivateConfigurationState(root, plan.configuration.name);
+      documentFingerprint = fingerprintJson(privateState.configuration);
+      resolutionFingerprint = fingerprintLock(resolveConfiguration({ root, configPath: privateState.file }));
+    } else if (!activeExists) {
+      documentFingerprint = templateFingerprint;
+      resolutionFingerprint = fingerprintLock(resolveConfiguration({ root, configPath: templateFile }));
+    }
   } catch {
-    // A half-applied or externally edited configuration can be temporarily invalid.
+    // A half-applied, permission-drifted, or externally edited configuration is invalid.
+  }
+  let activeLockFingerprint = null;
+  try {
+    activeLockFingerprint = activeExists
+      ? fingerprintLock(readActiveConfigurationLockState(root, plan.configuration.name).lock)
+      : null;
+  } catch {
+    // Malformed private authority never falls back to the portable template.
   }
   return {
-    documentFingerprint: fs.existsSync(file) ? fingerprintJson(readJson(file)) : null,
-    activeLockFingerprint: hasActiveConfigurationLockState(root, plan.configuration.name)
-      ? fingerprintLock(readActiveConfigurationLockState(root, plan.configuration.name).lock)
-      : null,
+    sourceKind: privateExists && activeExists
+      ? 'private-active'
+      : !privateExists && !activeExists ? 'tracked-template' : 'invalid',
+    templateFingerprint,
+    documentFingerprint,
+    activeLockFingerprint,
     resolutionFingerprint
   };
 }
@@ -599,7 +638,15 @@ function restorePrior(root, checkpoint, plan, at, reasonCode, summary) {
   checkpoint.updatedAt = at;
   persistCheckpoint(root, checkpoint);
   try {
-    atomicWriteRepositoryJson(resolveRepoPath(root, plan.configuration.path), plan.currentConfiguration);
+    if (plan.configuration.currentSourceKind === 'private-active') {
+      writePrivateConfigurationState(
+        root,
+        plan.configuration.name,
+        plan.currentConfiguration
+      );
+    } else {
+      removePrivateConfigurationState(root, plan.configuration.name);
+    }
     checkpoint.phase = 'rollback-active-lock';
     checkpoint.observation = observe(root, plan);
     persistCheckpoint(root, checkpoint);
@@ -610,7 +657,9 @@ function restorePrior(root, checkpoint, plan, at, reasonCode, summary) {
     }
     const restored = observe(root, plan);
     const expectedActive = plan.priorActiveLock.fingerprint;
-    if (restored.documentFingerprint !== plan.configuration.currentDocumentFingerprint
+    if (restored.sourceKind !== plan.configuration.currentSourceKind
+      || restored.templateFingerprint !== plan.configuration.templateFingerprint
+      || restored.documentFingerprint !== plan.configuration.currentDocumentFingerprint
       || restored.resolutionFingerprint !== plan.configuration.currentLockFingerprint
       || restored.activeLockFingerprint !== expectedActive) {
       fail('CONFIGURATION_ROLLBACK_VERIFICATION_FAILED', 'Configuration rollback could not establish the exact prior state.');
@@ -645,37 +694,34 @@ export function prepareConfigurationChange({
 } = {}) {
   const resolvedRoot = path.resolve(root);
   iso(createdAt, 'createdAt');
-  const file = findConfiguration(resolvedRoot, name);
+  const templateFile = findConfiguration(resolvedRoot, name);
+  const desiredStateFile = privateConfigurationStatePath(resolvedRoot, name);
   const candidate = clone(candidateConfiguration);
   if (hasConfigurationChangePlanState(resolvedRoot, id)) {
     const existing = readPlan(resolvedRoot, id);
     if (existing.createdAt !== createdAt
       || existing.configuration.name !== name
-      || existing.configuration.path !== repoRelativePath(resolvedRoot, file)
+      || existing.configuration.templatePath !== repoRelativePath(resolvedRoot, templateFile)
+      || existing.configuration.desiredStatePath !== repoRelativePath(resolvedRoot, desiredStateFile)
       || existing.configuration.candidateDocumentFingerprint !== fingerprintJson(candidate)) {
       fail('CONFIGURATION_PLAN_CONFLICT', 'Configuration change plan ID already binds different exact content.');
     }
     return { plan: existing, planPath: repoRelativePath(resolvedRoot, configurationChangePlanStatePath(resolvedRoot, id)) };
   }
-  const currentConfiguration = readJson(file);
-  const currentLock = resolveConfiguration({ root: resolvedRoot, configPath: file });
-  const candidateLock = assertCandidate(resolvedRoot, file, candidate, currentConfiguration.name);
+  const templateConfiguration = readJson(templateFile);
+  const current = currentDesiredConfiguration(resolvedRoot, name, templateFile);
+  const currentConfiguration = current.configuration;
+  const currentLock = current.lock;
+  const candidateLock = assertCandidate(
+    resolvedRoot,
+    desiredStateFile,
+    candidate,
+    templateConfiguration.name
+  );
   const changes = configurationChanges(currentConfiguration, candidate);
   if (!changes.length) fail('CONFIGURATION_CHANGE_EMPTY', 'Candidate resolves from an unchanged desired configuration.');
   const activeLockPath = activeConfigurationLockStatePath(resolvedRoot, name);
-  const priorActiveLock = fs.existsSync(activeLockPath)
-    ? (() => {
-        const lock = readJson(activeLockPath);
-        return { state: 'present', fingerprint: fingerprintLock(lock), lock };
-      })()
-    : { state: 'absent', fingerprint: null, lock: null };
-  if (priorActiveLock.state === 'present'
-    && priorActiveLock.fingerprint !== fingerprintLock(currentLock)) {
-    fail(
-      'CONFIGURATION_ACTIVE_LOCK_STALE',
-      'The private active lock does not match the current desired configuration resolution.'
-    );
-  }
+  const priorActiveLock = current.priorActiveLock;
   const plan = seal({
     $contract: CONTRACTS.plan[0],
     contractVersion: VERSION,
@@ -683,8 +729,11 @@ export function prepareConfigurationChange({
     createdAt,
     configuration: {
       name,
-      path: repoRelativePath(resolvedRoot, file),
+      templatePath: repoRelativePath(resolvedRoot, templateFile),
+      desiredStatePath: repoRelativePath(resolvedRoot, desiredStateFile),
       activeLockPath: repoRelativePath(resolvedRoot, activeLockPath),
+      templateFingerprint: fingerprintJson(templateConfiguration),
+      currentSourceKind: current.sourceKind,
       currentDocumentFingerprint: fingerprintJson(currentConfiguration),
       currentLockFingerprint: fingerprintLock(currentLock),
       currentGraphFingerprint: currentLock.graphFingerprint,
@@ -734,7 +783,7 @@ export function beginConfigurationChangeRequest({
     plan: { id: plan.id, fingerprint: plan.planFingerprint },
     configuration: {
       name: plan.configuration.name,
-      path: plan.configuration.path,
+      sourceKind: 'private-active',
       currentLockFingerprint: plan.configuration.currentLockFingerprint,
       candidateLockFingerprint: plan.configuration.candidateLockFingerprint,
       candidateGraphFingerprint: plan.configuration.candidateGraphFingerprint
@@ -905,7 +954,11 @@ export function executeConfigurationChange({ root = DEFAULT_ROOT, checkpointId, 
     checkpoint.state = 'applying';
     checkpoint.updatedAt = at;
     persistCheckpoint(resolvedRoot, checkpoint);
-    atomicWriteRepositoryJson(resolveRepoPath(resolvedRoot, plan.configuration.path), plan.candidateConfiguration);
+    writePrivateConfigurationState(
+      resolvedRoot,
+      plan.configuration.name,
+      plan.candidateConfiguration
+    );
     checkpoint.phase = 'configuration-written';
     checkpoint.observation = observe(resolvedRoot, plan);
     persistCheckpoint(resolvedRoot, checkpoint);
@@ -917,7 +970,9 @@ export function executeConfigurationChange({ root = DEFAULT_ROOT, checkpointId, 
     checkpoint.phase = 'verifying';
     checkpoint.observation = observe(resolvedRoot, plan);
     persistCheckpoint(resolvedRoot, checkpoint);
-    if (checkpoint.observation.documentFingerprint !== plan.configuration.candidateDocumentFingerprint
+    if (checkpoint.observation.sourceKind !== 'private-active'
+      || checkpoint.observation.templateFingerprint !== plan.configuration.templateFingerprint
+      || checkpoint.observation.documentFingerprint !== plan.configuration.candidateDocumentFingerprint
       || checkpoint.observation.activeLockFingerprint !== plan.configuration.candidateLockFingerprint
       || checkpoint.observation.resolutionFingerprint !== plan.configuration.candidateLockFingerprint) {
       fail('CONFIGURATION_APPLY_VERIFICATION_FAILED', 'Applied configuration did not reproduce the exact candidate lock.');
@@ -952,9 +1007,13 @@ export function recoverConfigurationChange({ root = DEFAULT_ROOT, checkpointId, 
     return checkpoint;
   }
   const observed = observe(resolvedRoot, plan);
-  const candidateDocument = observed.documentFingerprint === plan.configuration.candidateDocumentFingerprint;
+  const candidateDocument = observed.templateFingerprint === plan.configuration.templateFingerprint
+    && observed.documentFingerprint === plan.configuration.candidateDocumentFingerprint;
   const candidateLock = observed.activeLockFingerprint === plan.configuration.candidateLockFingerprint;
-  if (candidateDocument && candidateLock && observed.resolutionFingerprint === plan.configuration.candidateLockFingerprint) {
+  if (observed.sourceKind === 'private-active'
+    && candidateDocument
+    && candidateLock
+    && observed.resolutionFingerprint === plan.configuration.candidateLockFingerprint) {
     checkpoint.state = 'completed';
     checkpoint.phase = 'terminal';
     checkpoint.observation = observed;
@@ -972,6 +1031,8 @@ export function recoverConfigurationChange({ root = DEFAULT_ROOT, checkpointId, 
       checkpoint.updatedAt = at;
       persistCheckpoint(resolvedRoot, checkpoint);
       if (checkpoint.observation.activeLockFingerprint === plan.configuration.candidateLockFingerprint
+        && checkpoint.observation.sourceKind === 'private-active'
+        && checkpoint.observation.templateFingerprint === plan.configuration.templateFingerprint
         && checkpoint.observation.resolutionFingerprint === plan.configuration.candidateLockFingerprint) {
         checkpoint.state = 'completed';
         checkpoint.phase = 'terminal';
@@ -982,7 +1043,9 @@ export function recoverConfigurationChange({ root = DEFAULT_ROOT, checkpointId, 
       // The exact prior state below is the safe fallback.
     }
   }
-  if (observed.documentFingerprint === plan.configuration.currentDocumentFingerprint
+  if (observed.sourceKind === plan.configuration.currentSourceKind
+    && observed.templateFingerprint === plan.configuration.templateFingerprint
+    && observed.documentFingerprint === plan.configuration.currentDocumentFingerprint
     && observed.resolutionFingerprint === plan.configuration.currentLockFingerprint
     && observed.activeLockFingerprint === plan.priorActiveLock.fingerprint
     && checkpoint.state === 'prepared') {
@@ -1160,7 +1223,9 @@ export function inspectConfigurationChange({
     plan: { id: plan.id, fingerprint: plan.planFingerprint },
     configuration: {
       name: plan.configuration.name,
-      path: plan.configuration.path,
+      sourceKind: applicability.state === 'applied'
+        ? 'private-active'
+        : plan.configuration.currentSourceKind,
       baselineLockFingerprint: plan.configuration.currentLockFingerprint,
       candidateLockFingerprint: plan.configuration.candidateLockFingerprint,
       candidateGraphFingerprint: plan.configuration.candidateGraphFingerprint,

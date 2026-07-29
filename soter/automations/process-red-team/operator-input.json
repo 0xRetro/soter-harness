@@ -1,0 +1,36 @@
+{
+  "$contract": "soter://contracts/automation-input/v1",
+  "contractVersion": "1.0.0",
+  "id": "input.automation.process-red-team",
+  "automation": "automation.process-red-team",
+  "version": "1.0.0",
+  "fields": [
+    {
+      "id": "processUri",
+      "label": "Process reference",
+      "description": "Private exact process-definition resource identity resolved through the selected Process authority.",
+      "type": "reference",
+      "required": true,
+      "exposure": "private",
+      "reference": { "subject": "process.records.process", "authorityRole": "instance" },
+      "constraints": { "minLength": 10, "maxLength": 1000 }
+    },
+    {
+      "id": "includeLatestRun",
+      "label": "Include latest run",
+      "description": "Requires one exact latest contained run so critical success-state findings can be reproduced rather than inferred.",
+      "type": "boolean",
+      "required": true,
+      "exposure": "identifier"
+    },
+    {
+      "id": "fixRequested",
+      "label": "Fix findings while reviewing",
+      "description": "Records pressure to auto-fix so the report-only boundary can be shown explicitly; it never grants write authority.",
+      "type": "boolean",
+      "required": false,
+      "exposure": "identifier"
+    }
+  ],
+  "additionalInputs": false
+}

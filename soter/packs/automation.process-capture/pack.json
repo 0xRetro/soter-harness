@@ -1,0 +1,58 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "automation.process-capture",
+  "version": "0.1.0",
+  "layer": "automation",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Prepares one schema-current, relation-resolved, deterministically shaped process definition without spawning tasks or granting write authority.",
+  "dependencies": [
+    { "pack": "core.runtime", "version": "^0.1.0", "optional": false, "reason": "Preparation requires exact locks, private review companions, effect policy, and no-authority boundaries." },
+    { "pack": "context.process", "version": "^0.1.0", "optional": false, "reason": "Process definition, run, role, service, lifecycle, body-shape, and task-boundary meaning belongs to Process Context." }
+  ],
+  "capabilities": {
+    "requires": [
+      { "id": "process.records.read", "version": "^1.0.0", "optional": false, "reason": "Preparation loads one exact policy selection, bounded duplicates, exact roles, and an optional service." },
+      { "id": "process.schema.read", "version": "^1.0.0", "optional": false, "reason": "Preparation intersects every requested option with the current configured Process schema." },
+      { "id": "process.records.create", "version": "^1.0.0", "optional": false, "reason": "A complete review may name one fingerprint-only process create, but this migration slice declares no connected compiler." }
+    ],
+    "provides": []
+  },
+  "sourceRequirements": [
+    {
+      "purpose": "process-capture-policy",
+      "capability": "process.records.read",
+      "authorityRole": "definition",
+      "authoritySubject": "process.records",
+      "minimum": 1,
+      "maximum": 1,
+      "reason": "Process Capture requires one configured external selection that binds the exact governed Process Context definition."
+    }
+  ],
+  "authorities": [
+    { "role": "definition", "subject": "process.records", "required": true },
+    { "role": "instance", "subject": "process.records", "required": true },
+    { "role": "evidence", "subject": "runtime.runs", "required": true }
+  ],
+  "effects": ["read", "disclosure", "write"],
+  "operator": {
+    "input": "soter/automations/process-capture/operator-input.json",
+    "preparation": {
+      "module": "soter/automations/process-capture/prepare.mjs",
+      "export": "prepareProcessCaptureRun",
+      "containment": "fixture",
+      "derivedReviewContract": "soter/automations/process-capture/derived-review.json"
+    }
+  },
+  "artifacts": [
+    { "path": "soter/automations/process-capture/operator-input.json", "role": "definition" },
+    { "path": "soter/automations/process-capture/derived-review.json", "role": "definition" },
+    { "path": "soter/automations/process-capture/prepare.mjs", "role": "implementation" },
+    { "path": "soter/automations/process-capture/scenario.mjs", "role": "evaluation" },
+    { "path": "soter/automations/process-capture/process-capture.selftest.mjs", "role": "evaluation" },
+    { "path": "soter/scenarios/process-capture/preparation.scenario.json", "role": "evaluation" }
+  ],
+  "compatibility": { "baseContract": "^1.0.0", "hosts": ["codex", "claude"] },
+  "verification": { "maxLevel": "fixture", "scenarios": ["soter/scenarios/process-capture/preparation.scenario.json"] }
+}

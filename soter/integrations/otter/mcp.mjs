@@ -1,3 +1,5 @@
+import { fingerprintJson } from '../../core/lib/canonical-json.mjs';
+
 function providerError(kind, message) {
   const error = new Error(message);
   error.kind = kind;
@@ -90,6 +92,7 @@ export function completeMcp({ capability, input, authority, response, at }) {
   const providerMeetingId = otterMeetingId(input.recordingUri);
   return {
     meetingId: input.meetingId,
+    recordingUri: input.recordingUri,
     speakers: result.speakers.map((speaker, index) => ({
       id: requiredString(speaker?.id, 'speakers[' + index + '].id'),
       displayName: requiredString(
@@ -118,20 +121,52 @@ export function completeMcp({ capability, input, authority, response, at }) {
   };
 }
 
-export function prepareProbeMcp() {
+export function prepareProbePlanMcp() {
   return {
-    tool: 'get_user_info',
-    arguments: {}
+    steps: [{
+      id: 'step.identity',
+      kind: 'identity',
+      subject: 'provider.identity',
+      scope: {
+        expectation: {
+          identityType: 'non-empty-string'
+        }
+      },
+      tool: 'get_user_info',
+      arguments: {}
+    }]
   };
 }
 
-export function completeProbeMcp({ response, plan }) {
+export function completeProbePlanStepMcp({ step, response }) {
+  if (step?.id !== 'step.identity' || step.kind !== 'identity') {
+    throw providerError('validation', 'Otter provider probe received an unsupported step.');
+  }
   const identity = response?.structuredContent?.result ?? response?.result;
   if (typeof identity !== 'string' || !identity.trim()) {
     throw providerError(
       'authentication',
       'Otter get_user_info did not return an authenticated identity result.'
     );
+  }
+  return {
+    identityAuthenticated: true,
+    expectedFingerprint: fingerprintJson(step.scope.expectation),
+    observedFingerprint: fingerprintJson({ identityType: 'non-empty-string' })
+  };
+}
+
+export function finalizeProbePlanMcp({ plan, steps, results }) {
+  const step = steps?.[0];
+  const observed = results?.[0];
+  if (steps?.length !== 1
+    || results?.length !== 1
+    || step?.id !== 'step.identity'
+    || observed?.stepId !== step.id
+    || !observed.result?.identityAuthenticated
+    || observed.result.expectedFingerprint !== fingerprintJson(step.scope.expectation)
+    || typeof observed.result.observedFingerprint !== 'string') {
+    throw providerError('validation', 'Otter provider probe is missing its exact minimized identity result.');
   }
   return {
     credentials: plan.credentialRefs.map((secretRefId) => ({
@@ -154,6 +189,18 @@ export function completeProbeMcp({ response, plan }) {
       method: 'metadata',
       details: 'Identity metadata does not establish access to or normalization of a specific transcript.'
     })),
+    checks: [{
+      id: 'check.identity',
+      stepId: step.id,
+      kind: step.kind,
+      subject: step.subject,
+      scopeFingerprint: step.scopeFingerprint,
+      state: 'passed',
+      method: 'metadata',
+      expectedFingerprint: observed.result.expectedFingerprint,
+      observedFingerprint: observed.result.observedFingerprint,
+      details: 'The host-authenticated Otter identity response matched the minimized identity contract.'
+    }],
     limitations: [
       'This identity-only probe establishes authentication and endpoint reachability, not transcript access, response-shape compatibility, or end-to-end health.',
       'The provider response body and returned identity value are excluded; only typed observations and fingerprints may persist.'

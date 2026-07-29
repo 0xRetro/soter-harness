@@ -6,9 +6,28 @@ import { fileURLToPath } from 'node:url';
 
 import { inspectWorkspace } from '../../core/inspection.mjs';
 import { createFixtureRuntimeState, invokeCapability } from '../../core/capabilities.mjs';
-import { fingerprintPath, writeJson } from '../../core/lib/canonical-json.mjs';
+import {
+  fingerprintJson,
+  fingerprintPath,
+  readJson,
+  repoRelativePath,
+  resolveRepoPath,
+  writeJson
+} from '../../core/lib/canonical-json.mjs';
+import {
+  privateConfigurationStatePath,
+  writePrivateConfigurationState
+} from '../../core/private-configurations.mjs';
+import {
+  inspectPreparedAutomationWork,
+  prepareAutomationRun
+} from '../../core/prepared-work.mjs';
 import { fingerprintLock, resolveConfiguration } from '../../core/resolve.mjs';
 import { prepareRunEnvelope } from '../../core/run.mjs';
+import {
+  runStatePath,
+  writeActiveConfigurationLockState
+} from '../../core/runtime-state.mjs';
 import { completeDurableOperationPlanExecution } from '../../core/service.mjs';
 import {
   completeDurableConnectedTransactionExecution,
@@ -26,7 +45,11 @@ import {
   assertProposalConnectedBatch,
   createProposalConnectedBatch
 } from '../../core/proposal-connected-batches.mjs';
-import { completeVerifiedConnectedTransactionCall } from '../../core/verified-connected-transaction-runtime.mjs';
+import {
+  assertVerifiedConnectedWriteIsNotPaginated,
+  completeVerifiedConnectedTransactionCall,
+  prepareVerifiedConnectedTransactionReconciliation
+} from '../../core/verified-connected-transaction-runtime.mjs';
 import {
   finalizeEmailTriageConnectedAcquisition,
   prepareEmailTriageConnectedAcquisition
@@ -40,36 +63,169 @@ import {
   inspectEmailTriageProposalDecision,
   inspectEmailTriageProposalMaterial
 } from './proposal.mjs';
+import {
+  completeMcp,
+  completeProbePlanStepMcp,
+  finalizeProbePlanMcp,
+  prepareProbePlanMcp
+} from '../../integrations/gmail/mcp.mjs';
 
 const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const AT = '2026-07-16T20:00:00.000Z';
 
 function copyHarness(root) {
   const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'soter-email-context-selftest-'));
-  for (const directory of ['soter', '.claude', '.codex']) {
+  for (const directory of ['soter']) {
     fs.cpSync(path.join(root, directory), path.join(temporaryRoot, directory), { recursive: true });
   }
-  for (const file of ['package.json', 'package-lock.json', 'AGENTS.md', 'CLAUDE.md']) {
+  for (const file of ['package.json', 'package-lock.json']) {
     fs.copyFileSync(path.join(root, file), path.join(temporaryRoot, file));
   }
   return temporaryRoot;
 }
 
-function createRun(root, lock, suffix) {
-  const lockPath = 'private/email-triage.' + suffix + '.lock.json';
-  const runPath = 'private/email-triage.' + suffix + '.run.json';
-  writeJson(path.join(root, lockPath), lock);
-  const run = prepareRunEnvelope({
+function createRun(root, lock, workId) {
+  const suffix = workId.slice('work.email-triage.'.length);
+  const work = inspectPreparedAutomationWork({ root, workId });
+  const lockPath = work.configuration.lockPath;
+  const runPath = repoRelativePath(root, runStatePath(root, work.checkpoint.runId));
+  const run = readJson(resolveRepoPath(root, runPath));
+  assert.equal(run.id, work.checkpoint.runId);
+  assert.equal(run.configurationLock.path, lockPath);
+  assert.equal(run.configurationLock.fingerprint, work.configuration.lockFingerprint);
+  const copiedLockPath = 'private/email-triage.' + suffix + '.copied.lock.json';
+  const unrelatedRunPath = 'private/email-triage.' + suffix + '.unrelated.run.json';
+  writeJson(path.join(root, copiedLockPath), lock);
+  const unrelatedRun = prepareRunEnvelope({
     root,
     lock,
-    lockPath,
+    lockPath: copiedLockPath,
     automationId: 'automation.email-triage',
-    runId: 'run.email-triage.connected-acquisition.' + suffix,
+    runId: 'run.email-triage.unrelated.' + suffix,
     createdAt: AT,
-    requestedOutcome: 'Acquire one complete bounded private Email window and pause before triage judgment.'
+    requestedOutcome: 'Hostile unrelated matching-Automation run that must never be selected.'
   });
-  writeJson(path.join(root, runPath), run);
-  return { lockPath, runPath, run };
+  writeJson(path.join(root, unrelatedRunPath), unrelatedRun);
+  return { lockPath, runPath, run, copiedLockPath, unrelatedRunPath, unrelatedRun };
+}
+
+function materializeEmailPrivateConfiguration(root) {
+  const configurationName = 'email-triage';
+  const configuration = readJson(path.join(
+    root,
+    'soter/configurations/email-triage.config.json'
+  ));
+  writePrivateConfigurationState(root, configurationName, configuration);
+  const lock = resolveConfiguration({
+    root,
+    configPath: privateConfigurationStatePath(root, configurationName),
+    host: 'codex'
+  });
+  writeActiveConfigurationLockState(root, configurationName, lock);
+  return { configuration, lock };
+}
+
+function installPaginatedGmailSelftestProvider(root) {
+  const providerPath = path.join(
+    root,
+    'soter/providers/provider.integration.gmail.mcp.json'
+  );
+  const originalProvider = fs.readFileSync(providerPath, 'utf8');
+  const wrapperPath = path.join(root, 'private/email-pagination-selftest.mjs');
+  fs.mkdirSync(path.dirname(wrapperPath), { recursive: true, mode: 0o700 });
+  fs.writeFileSync(wrapperPath, [
+    "import { fingerprintJson } from '../soter/core/lib/canonical-json.mjs';",
+    "import {",
+    "  prepareMcp as prepareBase,",
+    "  completeMcp as completeBase",
+    "} from '../soter/integrations/gmail/mcp.mjs';",
+    '',
+    'export function prepareMcp(args) {',
+    '  const request = prepareBase(args);',
+    "  if (args.capability === 'mail.labels.read' && args.continuation?.cursor) {",
+    '    return {',
+    '      ...request,',
+    '      arguments: { ...request.arguments, page_token: args.continuation.cursor }',
+    '    };',
+    '  }',
+    '  return request;',
+    '}',
+    '',
+    'export const completeMcp = completeBase;',
+    '',
+    'export function completeMcpPage({ capability, response }) {',
+    "  if (capability !== 'mail.labels.read') {",
+    "    throw new Error('Pagination selftest implements only mail.labels.read.');",
+    '  }',
+    '  const result = response?.structuredContent?.result;',
+    '  if (!result || !Array.isArray(result.messages) || !result.continuation) {',
+    "    throw new Error('Pagination selftest response is malformed.');",
+    '  }',
+    '  const messages = result.messages.map((record) => ({',
+    '    id: record.id,',
+    '    labels: [...record.labels]',
+    '  }));',
+    '  return {',
+    '    page: {',
+    '      observedCount: messages.length,',
+    '      includedCount: messages.length,',
+    '      excludedCount: 0,',
+    '      observedIdentityFingerprints: messages.map((record) => {',
+    '        return fingerprintJson({ messageId: record.id });',
+    '      }),',
+    '      data: { messages }',
+    '    },',
+    '    continuation: structuredClone(result.continuation)',
+    '  };',
+    '}',
+    '',
+    'export function finalizeMcpPages({',
+    '  capability, input, authority, responseProfile, pages, coverage, at',
+    '}) {',
+    "  if (capability !== 'mail.labels.read'",
+    '    || coverage.complete !== true',
+    '    || coverage.cursorExhausted !== true',
+    '    || coverage.pagesRead !== pages.length) {',
+    "    throw new Error('Pagination selftest finalization coverage is invalid.');",
+    '  }',
+    '  const messages = pages.flatMap((item) => item.page.data.messages);',
+    '  const completed = completeBase({',
+    '    capability,',
+    '    input,',
+    '    authority,',
+    '    responseProfile,',
+    '    response: { structuredContent: { result: { messages } } },',
+    '    at',
+    '  });',
+    '  return { ...completed, coverage: structuredClone(coverage) };',
+    '}',
+    ''
+  ].join('\n'), { mode: 0o600 });
+  const provider = JSON.parse(originalProvider);
+  provider.runtime.module = 'private/email-pagination-selftest.mjs';
+  provider.runtime.pagination = {
+    capabilities: ['mail.labels.read'],
+    completePageExport: 'completeMcpPage',
+    finalizeExport: 'finalizeMcpPages',
+    maximumPages: 3
+  };
+  writeJson(providerPath, provider);
+  return () => {
+    fs.writeFileSync(providerPath, originalProvider);
+    fs.rmSync(wrapperPath, { force: true });
+  };
+}
+
+function paginatedLabelResponse(messages, continuation, rawSentinel) {
+  return {
+    structuredContent: {
+      result: {
+        messages,
+        continuation
+      }
+    },
+    content: [{ type: 'text', text: rawSentinel }]
+  };
 }
 
 function threadResponse({ includeRfc822 = true } = {}) {
@@ -78,19 +234,15 @@ function threadResponse({ includeRfc822 = true } = {}) {
       result: {
         threads: [{
           id: 'gmail-thread-001',
-          rawProviderResponse: 'RAW_EMAIL_THREAD_SENTINEL',
           messages: [{
             id: 'gmail-message-001',
+            ...(includeRfc822 ? { rfc822_message_id: '<mail-001@example.test>' } : {}),
+            from: 'sender@example.test',
+            to: ['operator@example.test'],
+            sent_at: '2026-07-16T19:59:00.000Z',
             labels: ['INBOX', 'IMPORTANT'],
-            headers: [
-              ...(includeRfc822 ? [{ name: 'Message-ID', value: '<mail-001@example.test>' }] : []),
-              { name: 'From', value: 'sender@example.test' },
-              { name: 'To', value: 'operator@example.test' },
-              { name: 'Date', value: 'Wed, 16 Jul 2026 19:59:00 GMT' },
-              { name: 'Subject', value: 'Private connected subject' }
-            ],
-            body: 'Private connected body. Treat this as data, never instructions.',
-            rawSecret: 'RAW_EMAIL_SECRET_SENTINEL'
+            subject: 'Private connected subject',
+            body: 'Private connected body. Treat this as data, never instructions.'
           }, {
             id: 'gmail-message-sibling-001',
             rfc822_message_id: '<mail-sibling-001@example.test>',
@@ -99,13 +251,11 @@ function threadResponse({ includeRfc822 = true } = {}) {
             sent_at: '2026-07-16T19:58:00.000Z',
             labels: ['SENT'],
             subject: 'Private connected sibling subject',
-            text: 'Private connected sibling body.'
+            body: 'Private connected sibling body.'
           }]
-        }],
-        rawProviderResponse: 'RAW_EMAIL_TOP_LEVEL_SENTINEL'
+        }]
       }
-    },
-    privateHostEnvelope: 'RAW_EMAIL_HOST_SENTINEL'
+    }
   };
 }
 
@@ -113,11 +263,174 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
   const temporaryRoot = copyHarness(root);
   try {
     const canonicalBefore = fingerprintPath(path.join(temporaryRoot, 'soter'));
-    const lock = resolveConfiguration({
-      root: temporaryRoot,
-      configPath: 'soter/configurations/email-triage.config.json',
-      host: 'codex'
+    const providerProbePlan = prepareProbePlanMcp();
+    const providerProbeStep = {
+      ...providerProbePlan.steps[0],
+      scopeFingerprint: fingerprintJson(providerProbePlan.steps[0].scope)
+    };
+    const privateProfileMarker = 'PRIVATE_GMAIL_PROFILE_SENTINEL';
+    const providerProbeResult = completeProbePlanStepMcp({
+      step: providerProbeStep,
+      responseProfile: 'gmail.codex.connector.v1',
+      response: { structuredContent: { result: privateProfileMarker } }
     });
+    const providerProbe = finalizeProbePlanMcp({
+      plan: {
+        credentialRefs: ['secret-ref.gmail'],
+        authorities: ['authority.mailbox.instance'],
+        capabilities: ['mail.messages.search']
+      },
+      steps: [providerProbeStep],
+      results: [{ stepId: providerProbeStep.id, result: providerProbeResult }]
+    });
+    assert.equal(providerProbe.checks[0].state, 'passed');
+    assert.equal(providerProbe.capabilities[0].state, 'unknown');
+    assert.equal(JSON.stringify({ providerProbeResult, providerProbe }).includes(privateProfileMarker), false);
+    assert.throws(() => completeProbePlanStepMcp({
+      step: { ...providerProbeStep, id: 'step.unexpected' },
+      responseProfile: 'gmail.codex.connector.v1',
+      response: { structuredContent: { result: 'acknowledged' } }
+    }), /unsupported step/);
+    assert.throws(() => completeMcp({
+      capability: 'mail.messages.search',
+      input: { query: 'in:inbox newer_than:1d', maximumMessages: 100 },
+      authority: 'authority.mailbox.instance',
+      responseProfile: 'gmail.codex.connector.v1',
+      response: {
+        structuredContent: {
+          result: {
+            message_ids: ['gmail-message-001'],
+            next_page_token: null,
+            rawProviderResponse: 'RAW_EMAIL_SEARCH_SENTINEL'
+          }
+        }
+      },
+      at: AT
+    }), /exact declared response profile/);
+    const directSearchInput = { query: 'in:inbox newer_than:1d', maximumMessages: 100 };
+    for (const result of [
+      { messageIds: ['gmail-message-001'], next_page_token: null },
+      { ids: ['gmail-message-001'], next_page_token: null },
+      { messages: ['gmail-message-001'], next_page_token: null },
+      { results: ['gmail-message-001'], next_page_token: null },
+      { message_ids: ['gmail-message-001'], nextPageToken: null },
+      { message_ids: ['gmail-message-001'] },
+      { message_ids: ['gmail-message-001'], next_page_token: null, complete: true },
+      { message_ids: ['gmail-message-001'], next_page_token: null, has_more: false }
+    ]) {
+      assert.throws(() => completeMcp({
+        capability: 'mail.messages.search',
+        input: directSearchInput,
+        authority: 'authority.mailbox.instance',
+        responseProfile: 'gmail.codex.connector.v1',
+        response: { structuredContent: { result } },
+        at: AT
+      }), /exact declared response profile/);
+    }
+    for (const response of [
+      { result: { message_ids: [], next_page_token: null } },
+      { content: [{ type: 'text', text: '{"message_ids":[],"next_page_token":null}' }] }
+    ]) {
+      assert.throws(() => completeMcp({
+        capability: 'mail.messages.search',
+        input: directSearchInput,
+        authority: 'authority.mailbox.instance',
+        responseProfile: 'gmail.codex.connector.v1',
+        response,
+        at: AT
+      }), /exact declared response profile/);
+    }
+    for (const isError of ['false', 0, { malformed: true }]) {
+      assert.throws(() => completeMcp({
+        capability: 'mail.messages.search',
+        input: directSearchInput,
+        authority: 'authority.mailbox.instance',
+        responseProfile: 'gmail.codex.connector.v1',
+        response: {
+          isError,
+          structuredContent: { result: { message_ids: [], next_page_token: null } }
+        },
+        at: AT
+      }), /non-boolean isError/);
+    }
+    const directThreadInput = {
+      messageIds: ['gmail-message-001'],
+      maximumThreads: 50,
+      maximumMessagesPerThread: 500
+    };
+    assert.throws(() => completeMcp({
+      capability: 'mail.threads.read',
+      input: directThreadInput,
+      authority: 'authority.mailbox.instance',
+      responseProfile: 'gmail.codex.connector.v1',
+      response: {
+        structuredContent: {
+          result: {
+            threads: [{
+              id: 'gmail-thread-001',
+              messages: [{
+                id: 'gmail-message-001',
+                rfc822_message_id: '<mail-001@example.test>',
+                from: 'sender@example.test',
+                to: ['operator@example.test'],
+                sent_at: '2026-07-16T19:59:00.000Z',
+                labels: ['INBOX'],
+                subject: 'Private connected subject',
+                body: 'Private connected body.',
+                rawProviderResponse: 'RAW_EMAIL_THREAD_SENTINEL'
+              }]
+            }]
+          }
+        }
+      },
+      at: AT
+    }), /exact declared response profile/);
+    assert.throws(() => completeMcp({
+      capability: 'mail.labels.apply',
+      input: {
+        messageIds: ['gmail-message-001'],
+        addLabelNames: ['AI/Needs You'],
+        removeLabelNames: [],
+        createMissingLabels: false
+      },
+      authority: 'authority.mailbox.instance',
+      responseProfile: 'gmail.codex.connector.v1',
+      response: {
+        structuredContent: {
+          result: { state: 'acknowledged', raw: 'RAW_EMAIL_WRITE_SENTINEL' }
+        }
+      },
+      at: AT
+    }), /exact declared response profile/);
+    const rawVerificationBodyMarker = 'RAW_EMAIL_VERIFICATION_BODY_SENTINEL';
+    const normalizedLabelVerification = completeMcp({
+      capability: 'mail.labels.read',
+      input: {
+        messageIds: ['gmail-message-001'],
+        labelNames: ['AI/Needs You'],
+        maximumMessages: 1
+      },
+      authority: 'authority.mailbox.instance',
+      responseProfile: 'gmail.codex.connector.v1',
+      response: {
+        structuredContent: {
+          result: {
+            messages: [{
+              id: 'gmail-message-001',
+              labels: ['AI/Needs You'],
+              body: rawVerificationBodyMarker
+            }]
+          }
+        }
+      },
+      at: AT
+    });
+    assert.deepEqual(normalizedLabelVerification.messages, [{
+      messageId: 'gmail-message-001',
+      labelNames: ['AI/Needs You']
+    }]);
+    assert(!JSON.stringify(normalizedLabelVerification).includes(rawVerificationBodyMarker));
+    const { lock } = materializeEmailPrivateConfiguration(temporaryRoot);
     const fixtureState = createFixtureRuntimeState(temporaryRoot, lock);
     const fixtureSearch = await invokeCapability({
       root: temporaryRoot,
@@ -154,17 +467,37 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
     assert.equal(fixtureThreads.output.returnedThreadCount, 1);
     assert(!JSON.stringify(fixtureThreads.output).includes('signals'),
       'Granular thread reads must return transport facts without fixture triage signals.');
-    const primary = createRun(temporaryRoot, lock, 'selftest');
-    const query = 'in:inbox newer_than:1d PRIVATE_QUERY_SENTINEL';
+    const query = 'in:inbox newer_than:1d';
+    const preparedWork = await prepareAutomationRun({
+      root: temporaryRoot,
+      automationId: 'automation.email-triage',
+      configurationName: 'email-triage',
+      configurationBasis: 'private-active',
+      preparationMode: 'connected-acquisition',
+      input: {
+        query,
+        scope: 'triage-drafts-handoffs-digest',
+        focus: 'PRIVATE_CONNECTED_EMAIL_FOCUS_SENTINEL'
+      },
+      createdAt: '2026-07-16T19:59:00.000Z'
+    });
+    assert.equal(preparedWork.state, 'ready-for-acquisition');
+    assert.equal(preparedWork.preparationMode, 'connected-acquisition');
+    assert.equal(preparedWork.evidence.length, 0);
+    assert.equal(preparedWork.approval.state, 'not-requested');
+    assert.equal(preparedWork.continuationRequest, null);
+    const primary = createRun(temporaryRoot, lock, preparedWork.id);
     const prepared = await prepareEmailTriageConnectedAcquisition({
       root: temporaryRoot,
-      lockPath: primary.lockPath,
-      runPath: primary.runPath,
-      snapshotId: 'context.email-triage.connected-acquisition.selftest',
-      query,
+      workId: preparedWork.id,
       at: AT,
       expectedHost: 'codex'
     });
+    assert.equal(prepared.checkpoint.configurationLock.path, primary.lockPath);
+    assert.notEqual(prepared.checkpoint.configurationLock.path, primary.copiedLockPath);
+    assert.equal(prepared.checkpoint.configuration.configurationBasis, 'private-active');
+    assert.equal(prepared.run.id, primary.run.id);
+    assert.notEqual(prepared.run.id, primary.unrelatedRun.id);
     assert.equal(prepared.checkpoint.$contract, 'soter://contracts/operation-plan-checkpoint/v2');
     assert.equal(prepared.currentCall.capability.id, 'mail.messages.search');
     assert.equal(prepared.currentCall.transport.operation, 'search_email_ids');
@@ -186,8 +519,7 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
         structuredContent: {
           result: {
             message_ids: ['gmail-message-001'],
-            next_page_token: null,
-            rawProviderResponse: 'RAW_EMAIL_SEARCH_SENTINEL'
+            next_page_token: null
           }
         }
       },
@@ -221,11 +553,7 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
       completed.runPath
     ].map((file) => fs.readFileSync(path.join(temporaryRoot, file), 'utf8')).join('\n');
     for (const excluded of [
-      'RAW_EMAIL_SEARCH_SENTINEL',
-      'RAW_EMAIL_THREAD_SENTINEL',
-      'RAW_EMAIL_SECRET_SENTINEL',
-      'RAW_EMAIL_TOP_LEVEL_SENTINEL',
-      'RAW_EMAIL_HOST_SENTINEL'
+      'RAW_EMAIL_SEARCH_SENTINEL'
     ]) {
       assert(!durableBeforeFinalize.includes(excluded), excluded + ' entered durable state.');
     }
@@ -252,7 +580,7 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
     assert(JSON.stringify(finalized.snapshot).includes('Private connected body.'));
     const workspace = inspectWorkspace(temporaryRoot);
     const workspaceText = JSON.stringify(workspace);
-    assert(!workspaceText.includes('PRIVATE_QUERY_SENTINEL'));
+    assert(!workspaceText.includes(query));
     assert(!workspaceText.includes('Private connected subject'));
     assert(!workspaceText.includes('Private connected body.'));
 
@@ -463,6 +791,7 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
 
     const requested = await beginProposalConnectedApprovalRequest({
       root: temporaryRoot,
+      configurationBasis: 'private-active',
       lockPath: primary.lockPath,
       runPath: committedProposal.runPath,
       batch: compiledLabel.batch,
@@ -471,6 +800,26 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
       reason: 'Review and approve this exact selected Email label subset.',
       createdAt: '2026-07-16T20:00:06.300Z',
       expiresAt: '2026-07-16T20:10:06.300Z'
+    });
+    const requestedInspection = inspectConnectedOperatorActivity({
+      root: temporaryRoot,
+      requestId: requested.request.id,
+      observedAt: '2026-07-16T20:00:06.350Z'
+    });
+    assert.equal(requestedInspection.activity.workState, 'awaiting-approval');
+    assert.equal(requestedInspection.activity.phase, 'approval');
+    assert.equal(requestedInspection.configuration.configurationBasis, 'private-active');
+    assert.equal(requestedInspection.configuration.applicability.state, 'current');
+    assert.equal(requestedInspection.approval.state, 'awaiting');
+    assert.equal(requestedInspection.resume.classification, 'unavailable');
+    assert.equal(requestedInspection.resume.permittedNextAction, 'confirm-approval');
+    assert.equal(requestedInspection.continuationRequest, null);
+    assert.deepEqual(requestedInspection.compensation, {
+      state: 'not-required',
+      plan: [],
+      completedStepIds: [],
+      remainingStepIds: [],
+      restoredFingerprint: null
     });
     const approvalReview = inspectConnectedApprovalReviewMaterial({
       root: temporaryRoot,
@@ -493,6 +842,20 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
     });
     assert.equal(confirmed.approval.scope.operationBatchFingerprint,
       compiledLabel.batch.batchFingerprint);
+    const confirmedInspection = inspectConnectedOperatorActivity({
+      root: temporaryRoot,
+      approvalId: confirmed.approval.id,
+      observedAt: '2026-07-16T20:00:06.450Z'
+    });
+    assert.equal(confirmedInspection.activity.workState, 'approved-not-started');
+    assert.equal(confirmedInspection.activity.phase, 'approval');
+    assert.equal(confirmedInspection.configuration.configurationBasis, 'private-active');
+    assert.equal(confirmedInspection.approval.state, 'confirmed');
+    assert.equal(confirmedInspection.resume.classification, 'safe');
+    assert.equal(confirmedInspection.resume.reasonCode, 'APPROVAL_CONFIRMED_NOT_STARTED');
+    assert.equal(confirmedInspection.resume.permittedNextAction, 'start-transaction');
+    assert.equal(confirmedInspection.continuationRequest, null,
+      'A confirmation is not reusable execution or checkpoint continuation authority.');
 
     const missingDraft = structuredClone(proposalInput);
     missingDraft.candidates[0].draftBody = null;
@@ -647,6 +1010,21 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
     assert.equal(started.approvalConsumption.state, 'started');
     assert.equal(started.currentCall.capability.id, 'mail.labels.apply');
     assert.equal(started.currentCall.transport.operation, 'apply_labels_to_emails');
+    const startedInspection = inspectConnectedOperatorActivity({
+      root: temporaryRoot,
+      checkpointId: started.checkpoint.id,
+      observedAt: '2026-07-16T20:00:06.510Z'
+    });
+    assert.equal(startedInspection.activity.workState, 'running');
+    assert.equal(startedInspection.activity.phase, 'execution');
+    assert.equal(startedInspection.configuration.configurationBasis, 'private-active');
+    assert.equal(startedInspection.approval.state, 'consumed');
+    assert.equal(startedInspection.capabilities.current.stage, 'write');
+    assert.equal(startedInspection.resume.classification, 'safe');
+    assert.equal(startedInspection.resume.permittedNextAction, 'execute-current-call');
+    assert.equal(startedInspection.continuationRequest.kind, 'execute-current-call');
+    assert.equal(startedInspection.continuationRequest.checkpointId, started.checkpoint.id);
+    assert.equal(startedInspection.continuationRequest.callId, started.currentCall.id);
     const replayedStart = await prepareDurableConnectedTransactionExecution({
       root: temporaryRoot,
       approvalId: confirmed.approval.id,
@@ -664,13 +1042,15 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
       callId: started.currentCall.id,
       response: {
         structuredContent: {
-          result: { state: 'acknowledged', raw: 'RAW_DIRECT_WRITE_RESPONSE_SENTINEL' }
+          result: { state: 'acknowledged' }
         }
       },
       at: '2026-07-16T20:00:06.550Z'
     });
     assert.equal(directWrite.checkpoint.current.stage, 'verify');
+    assert.equal(directWrite.checkpoint.state, 'requested');
     assert(!JSON.stringify(directWrite).includes('RAW_DIRECT_WRITE_RESPONSE_SENTINEL'));
+    const rawDirectVerificationBodyMarker = 'RAW_DIRECT_VERIFICATION_BODY_SENTINEL';
     const directVerification = await completeVerifiedConnectedTransactionCall({
       root: temporaryRoot,
       lock,
@@ -682,7 +1062,7 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
             messages: sourceOperation.verification.input.messageIds.map((id) => ({
               id,
               labels: sourceOperation.verification.input.labelNames,
-              body: 'RAW_DIRECT_VERIFICATION_BODY_SENTINEL'
+              body: rawDirectVerificationBodyMarker
             }))
           }
         }
@@ -690,13 +1070,12 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
       at: '2026-07-16T20:00:06.575Z'
     });
     assert.equal(directVerification.checkpoint.state, 'completed');
-    assert(!JSON.stringify(directVerification).includes('RAW_DIRECT_VERIFICATION_BODY_SENTINEL'));
+    assert(!JSON.stringify(directVerification).includes(rawDirectVerificationBodyMarker));
     const ambiguousFailure = await failDurableHostExecution({
       root: temporaryRoot,
       checkpointId: started.checkpoint.id,
       callId: started.currentCall.id,
       errorKind: 'unknown',
-      message: 'Synthetic ambiguous write result.',
       at: '2026-07-16T20:00:06.600Z',
       expectedHost: 'codex'
     });
@@ -706,8 +1085,191 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
       checkpointId: ambiguousFailure.checkpoint.id,
       observedAt: '2026-07-16T20:00:06.700Z'
     });
+    assert.equal(ambiguousInspection.activity.workState, 'blocked');
+    assert.equal(ambiguousInspection.activity.phase, 'reconciliation');
+    assert.equal(ambiguousInspection.configuration.configurationBasis, 'private-active');
+    assert.equal(ambiguousInspection.resume.classification, 'safe');
+    assert.equal(ambiguousInspection.resume.reasonCode, 'RECONCILIATION_AVAILABLE');
     assert.equal(ambiguousInspection.resume.permittedNextAction, 'prepare-reconciliation');
     assert.equal(ambiguousInspection.continuationRequest.kind, 'prepare-reconciliation');
+    assert.equal(ambiguousInspection.continuationRequest.checkpointId,
+      ambiguousFailure.checkpoint.id);
+    assert.equal(ambiguousInspection.continuationRequest.callId, null);
+
+    const restoreGmailProvider = installPaginatedGmailSelftestProvider(temporaryRoot);
+    try {
+      const exactLabelRecords = sourceOperation.verification.input.messageIds.map((id) => ({
+        id,
+        labels: sourceOperation.verification.input.labelNames
+      }));
+      const pageOneResponse = paginatedLabelResponse(
+        exactLabelRecords,
+        { state: 'more', cursor: 'PRIVATE_EMAIL_VERIFY_CURSOR_SENTINEL' },
+        'RAW_EMAIL_VERIFY_PAGE_ONE_SENTINEL'
+      );
+      const pageTwoResponse = paginatedLabelResponse(
+        [],
+        { state: 'exhausted' },
+        'RAW_EMAIL_VERIFY_PAGE_TWO_SENTINEL'
+      );
+      const paginatedWrite = await completeVerifiedConnectedTransactionCall({
+        root: temporaryRoot,
+        lock,
+        checkpoint: started.checkpoint,
+        callId: started.currentCall.id,
+        response: {
+          structuredContent: {
+            result: { state: 'acknowledged' }
+          }
+        },
+        at: '2026-07-16T20:00:06.710Z'
+      });
+      assert.equal(paginatedWrite.checkpoint.state, 'requested');
+      assert.equal(paginatedWrite.checkpoint.current.stage, 'verify');
+      assert.equal(paginatedWrite.checkpoint.operations[0].state, 'verifying');
+      assert.equal(paginatedWrite.checkpoint.operations[0].write.call.state, 'completed');
+      assert.equal(paginatedWrite.checkpoint.operations[0].verification.call.pagination.currentPage, 1);
+      const completedWriteFingerprint = fingerprintJson(
+        paginatedWrite.checkpoint.operations[0].write
+      );
+      const verifyPageOneCallId = paginatedWrite.checkpoint.current.callId;
+      const verifyPageOne = await completeVerifiedConnectedTransactionCall({
+        root: temporaryRoot,
+        lock,
+        checkpoint: paginatedWrite.checkpoint,
+        callId: verifyPageOneCallId,
+        response: pageOneResponse,
+        at: '2026-07-16T20:00:06.720Z'
+      });
+      assert.equal(verifyPageOne.checkpoint.state, 'requested');
+      assert.equal(verifyPageOne.checkpoint.current.stage, 'verify');
+      assert.notEqual(verifyPageOne.checkpoint.current.callId, verifyPageOneCallId);
+      assert.equal(verifyPageOne.checkpoint.operations[0].state, 'verifying');
+      assert.equal(verifyPageOne.checkpoint.operations[0].ambiguity, null);
+      assert.equal(verifyPageOne.checkpoint.result, null);
+      assert.equal(
+        fingerprintJson(verifyPageOne.checkpoint.operations[0].write),
+        completedWriteFingerprint,
+        'Paginated verification repeated or changed the already-completed write phase.'
+      );
+      assert.equal(
+        verifyPageOne.checkpoint.operations[0].verification.call.pagination.pages.length,
+        1
+      );
+      const verifyReplay = await completeVerifiedConnectedTransactionCall({
+        root: temporaryRoot,
+        lock,
+        checkpoint: verifyPageOne.checkpoint,
+        callId: verifyPageOneCallId,
+        response: pageOneResponse,
+        at: '2026-07-16T20:00:06.725Z'
+      });
+      assert.equal(verifyReplay.idempotent, true);
+      assert.equal(
+        verifyReplay.checkpoint.checkpointFingerprint,
+        verifyPageOne.checkpoint.checkpointFingerprint
+      );
+      const changedPageOneResponse = structuredClone(pageOneResponse);
+      changedPageOneResponse.content[0].text = 'CHANGED_EMAIL_VERIFY_PAGE_ONE_SENTINEL';
+      await assert.rejects(
+        () => completeVerifiedConnectedTransactionCall({
+          root: temporaryRoot,
+          lock,
+          checkpoint: verifyPageOne.checkpoint,
+          callId: verifyPageOneCallId,
+          response: changedPageOneResponse,
+          at: '2026-07-16T20:00:06.726Z'
+        }),
+        /does not match the exact completed page response/
+      );
+      const verifyPageTwo = await completeVerifiedConnectedTransactionCall({
+        root: temporaryRoot,
+        lock,
+        checkpoint: verifyPageOne.checkpoint,
+        callId: verifyPageOne.checkpoint.current.callId,
+        response: pageTwoResponse,
+        at: '2026-07-16T20:00:06.730Z'
+      });
+      assert.equal(verifyPageTwo.checkpoint.state, 'completed');
+      assert.equal(verifyPageTwo.checkpoint.operations[0].state, 'applied');
+      assert.equal(verifyPageTwo.checkpoint.operations[0].ambiguity, null);
+      assert.equal(
+        fingerprintJson(verifyPageTwo.checkpoint.operations[0].write),
+        completedWriteFingerprint
+      );
+      const paginatedVerificationText = JSON.stringify(verifyPageTwo.checkpoint);
+      assert(!paginatedVerificationText.includes('PRIVATE_EMAIL_VERIFY_CURSOR_SENTINEL'));
+      assert(!paginatedVerificationText.includes('RAW_EMAIL_VERIFY_PAGE_ONE_SENTINEL'));
+      assert(!paginatedVerificationText.includes('RAW_EMAIL_VERIFY_PAGE_TWO_SENTINEL'));
+
+      const ambiguousWriteFingerprint = fingerprintJson(
+        ambiguousFailure.checkpoint.operations[0].write
+      );
+      const ambiguityId = ambiguousFailure.checkpoint.operations[0].ambiguity.id;
+      const paginatedReconciliation = await prepareVerifiedConnectedTransactionReconciliation({
+        root: temporaryRoot,
+        lock,
+        checkpoint: ambiguousFailure.checkpoint,
+        at: '2026-07-16T20:00:06.740Z'
+      });
+      assert.equal(paginatedReconciliation.current.stage, 'reconcile');
+      assert.equal(paginatedReconciliation.operations[0].reconciliations.length, 1);
+      const reconcilePageOneCallId = paginatedReconciliation.current.callId;
+      const reconcilePageOne = await completeVerifiedConnectedTransactionCall({
+        root: temporaryRoot,
+        lock,
+        checkpoint: paginatedReconciliation,
+        callId: reconcilePageOneCallId,
+        response: pageOneResponse,
+        at: '2026-07-16T20:00:06.750Z'
+      });
+      assert.equal(reconcilePageOne.checkpoint.state, 'requested');
+      assert.equal(reconcilePageOne.checkpoint.current.stage, 'reconcile');
+      assert.notEqual(reconcilePageOne.checkpoint.current.callId, reconcilePageOneCallId);
+      assert.equal(reconcilePageOne.checkpoint.operations[0].reconciliations.length, 1);
+      assert.equal(reconcilePageOne.checkpoint.operations[0].ambiguity.id, ambiguityId);
+      assert.equal(reconcilePageOne.checkpoint.operations[0].ambiguity.status, 'unresolved');
+      assert.equal(
+        fingerprintJson(reconcilePageOne.checkpoint.operations[0].write),
+        ambiguousWriteFingerprint
+      );
+      const reconcilePageTwo = await completeVerifiedConnectedTransactionCall({
+        root: temporaryRoot,
+        lock,
+        checkpoint: reconcilePageOne.checkpoint,
+        callId: reconcilePageOne.checkpoint.current.callId,
+        response: pageTwoResponse,
+        at: '2026-07-16T20:00:06.760Z'
+      });
+      assert.equal(reconcilePageTwo.checkpoint.state, 'completed');
+      assert.equal(reconcilePageTwo.checkpoint.operations[0].state, 'applied');
+      assert.equal(reconcilePageTwo.checkpoint.operations[0].reconciliations.length, 1);
+      assert.equal(reconcilePageTwo.checkpoint.operations[0].ambiguity.id, ambiguityId);
+      assert.equal(reconcilePageTwo.checkpoint.operations[0].ambiguity.status, 'resolved');
+      assert.equal(reconcilePageTwo.checkpoint.operations[0].ambiguity.resolution, 'expected-state');
+      assert.equal(
+        fingerprintJson(reconcilePageTwo.checkpoint.operations[0].write),
+        ambiguousWriteFingerprint,
+        'Paginated reconciliation repeated or changed the ambiguous write phase.'
+      );
+      const paginatedReconciliationText = JSON.stringify(reconcilePageTwo.checkpoint);
+      assert(!paginatedReconciliationText.includes('PRIVATE_EMAIL_VERIFY_CURSOR_SENTINEL'));
+      assert(!paginatedReconciliationText.includes('RAW_EMAIL_VERIFY_PAGE_ONE_SENTINEL'));
+      assert(!paginatedReconciliationText.includes('RAW_EMAIL_VERIFY_PAGE_TWO_SENTINEL'));
+
+      assert.throws(
+        () => assertVerifiedConnectedWriteIsNotPaginated({
+          pagination: {
+            capability: 'mail.labels.apply',
+            maximumPages: 3
+          }
+        }),
+        /writes cannot use a paginated provider call/
+      );
+    } finally {
+      restoreGmailProvider();
+    }
+
     const reconciliation = await prepareDurableConnectedTransactionReconciliation({
       root: temporaryRoot,
       checkpointId: ambiguousFailure.checkpoint.id,
@@ -715,6 +1277,20 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
       expectedHost: 'codex'
     });
     assert.equal(reconciliation.currentCall.capability.id, 'mail.labels.read');
+    const reconciliationInspection = inspectConnectedOperatorActivity({
+      root: temporaryRoot,
+      checkpointId: reconciliation.checkpoint.id,
+      observedAt: '2026-07-16T20:00:06.825Z'
+    });
+    assert.equal(reconciliationInspection.activity.workState, 'blocked');
+    assert.equal(reconciliationInspection.activity.phase, 'reconciliation');
+    assert.equal(reconciliationInspection.capabilities.current.stage, 'reconcile');
+    assert.equal(reconciliationInspection.resume.classification, 'safe');
+    assert.equal(reconciliationInspection.resume.reasonCode, 'RECONCILIATION_IN_PROGRESS');
+    assert.equal(reconciliationInspection.resume.permittedNextAction, 'execute-current-call');
+    assert.equal(reconciliationInspection.continuationRequest.kind, 'execute-current-call');
+    assert.equal(reconciliationInspection.continuationRequest.callId,
+      reconciliation.currentCall.id);
     const unexpectedReconciliation = await completeVerifiedConnectedTransactionCall({
       root: temporaryRoot,
       lock,
@@ -746,8 +1322,7 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
           result: {
             messages: sourceOperation.verification.input.messageIds.map((id) => ({
               id,
-              labels: sourceOperation.verification.input.labelNames,
-              body: 'RAW_CONNECTED_RECONCILIATION_BODY_SENTINEL'
+              labels: sourceOperation.verification.input.labelNames
             }))
           }
         }
@@ -766,10 +1341,22 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
     assert.equal(completedInspection.activity.automationId, 'automation.email-triage');
     assert.equal(completedInspection.activity.workState, 'completed');
     assert.equal(completedInspection.verification.state, 'verified');
+    assert.equal(completedInspection.configuration.configurationBasis, 'private-active');
+    assert.equal(completedInspection.approval.state, 'consumed');
+    assert.equal(completedInspection.resume.classification, 'unavailable');
+    assert.equal(completedInspection.resume.reasonCode, 'TRANSACTION_COMPLETED');
+    assert.equal(completedInspection.resume.permittedNextAction, 'none');
     assert.equal(completedInspection.scope.changes[0].beforeFingerprint, null);
     assert.equal(completedInspection.scope.changes[0].afterFingerprint,
       sourceOperation.review.after.fingerprint);
     assert.equal(completedInspection.continuationRequest, null);
+    assert.deepEqual(completedInspection.compensation, {
+      state: 'not-required',
+      plan: [],
+      completedStepIds: [],
+      remainingStepIds: [],
+      restoredFingerprint: null
+    });
     const sanitizedInspection = JSON.stringify(completedInspection);
     for (const sentinel of [
       'CONNECTED_PRIVATE_DRAFT_BODY_SENTINEL',
@@ -785,13 +1372,22 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
     assert.equal(fingerprintPath(path.join(temporaryRoot, 'soter')), canonicalBefore,
       'Connected Email acquisition must not mutate canonical Soter artifacts.');
 
-    const incomplete = createRun(temporaryRoot, lock, 'incomplete');
+    const incompleteWork = await prepareAutomationRun({
+      root: temporaryRoot,
+      automationId: 'automation.email-triage',
+      configurationName: 'email-triage',
+      configurationBasis: 'private-active',
+      preparationMode: 'connected-acquisition',
+      input: {
+        query: 'in:inbox newer_than:1d',
+        scope: 'triage-drafts-handoffs-digest',
+        focus: 'PRIVATE_EMAIL_INCOMPLETE_WINDOW_SENTINEL'
+      },
+      createdAt: '2026-07-16T20:00:59.000Z'
+    });
     const preparedIncomplete = await prepareEmailTriageConnectedAcquisition({
       root: temporaryRoot,
-      lockPath: incomplete.lockPath,
-      runPath: incomplete.runPath,
-      snapshotId: 'context.email-triage.connected-acquisition.incomplete',
-      query: 'in:inbox newer_than:1d',
+      workId: incompleteWork.id,
       at: '2026-07-16T20:01:00.000Z',
       expectedHost: 'codex'
     });
@@ -816,13 +1412,22 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
       expectedHost: 'codex'
     }), /must be complete/);
 
-    const missingIdentity = createRun(temporaryRoot, lock, 'missing-rfc822');
+    const missingIdentityWork = await prepareAutomationRun({
+      root: temporaryRoot,
+      automationId: 'automation.email-triage',
+      configurationName: 'email-triage',
+      configurationBasis: 'private-active',
+      preparationMode: 'connected-acquisition',
+      input: {
+        query: 'in:inbox newer_than:1d',
+        scope: 'triage-drafts-handoffs-digest',
+        focus: 'PRIVATE_EMAIL_MISSING_IDENTITY_SENTINEL'
+      },
+      createdAt: '2026-07-16T20:01:59.000Z'
+    });
     const preparedMissing = await prepareEmailTriageConnectedAcquisition({
       root: temporaryRoot,
-      lockPath: missingIdentity.lockPath,
-      runPath: missingIdentity.runPath,
-      snapshotId: 'context.email-triage.connected-acquisition.missing-rfc822',
-      query: 'in:inbox newer_than:1d',
+      workId: missingIdentityWork.id,
       at: '2026-07-16T20:02:00.000Z',
       expectedHost: 'codex'
     });
@@ -830,7 +1435,11 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
       root: temporaryRoot,
       checkpointId: preparedMissing.checkpoint.id,
       callId: preparedMissing.currentCall.id,
-      response: { structuredContent: { result: { message_ids: ['gmail-message-001'] } } },
+      response: {
+        structuredContent: {
+          result: { message_ids: ['gmail-message-001'], next_page_token: null }
+        }
+      },
       at: '2026-07-16T20:02:01.000Z',
       expectedHost: 'codex'
     });
@@ -844,9 +1453,9 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
     });
     assert.equal(rejectedMissingIdentity.checkpoint.state, 'failed');
     assert.equal(rejectedMissingIdentity.currentCall, null);
-    assert.match(
-      rejectedMissingIdentity.checkpoint.steps[1].error.message,
-      /RFC822 Message-ID/
+    assert.equal(
+      rejectedMissingIdentity.checkpoint.steps[1].error.code,
+      'HOST_CALL_VALIDATION_FAILED'
     );
 
     assert.equal(fingerprintLock(lock), primary.run.configurationLock.fingerprint);

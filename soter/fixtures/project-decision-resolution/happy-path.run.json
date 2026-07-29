@@ -1,0 +1,338 @@
+{
+  "$contract": "soter://contracts/run-envelope/v1",
+  "contractVersion": "1.0.0",
+  "id": "run.project-decision-resolution.happy-path-fixture",
+  "createdAt": "2026-07-22T12:00:00.000Z",
+  "requestedOutcome": "Prepare one exact Decision, matching Question resolution, and project work-item completion as an indivisible review group.",
+  "initiation": "user-requested",
+  "intent": "operate",
+  "lifecycleState": "paused",
+  "automation": {
+    "id": "automation.project-decision-resolution",
+    "version": "0.1.0"
+  },
+  "configurationLock": {
+    "path": "soter/fixtures/project-decision-resolution/project-decision-resolution.lock.json",
+    "fingerprint": "sha256:3cceb56bdd08b4cab872711f6972927773d78810beb5c845e741c6b1ad3de558"
+  },
+  "graphFingerprint": "sha256:1a9d3a912a2a697928cc2bdb7921fb4669a66a3e27cab43346ec706467394242",
+  "context": [
+    {
+      "subject": "notion.workspace",
+      "authority": "authority.notion.provider",
+      "role": "provider",
+      "uri": "soter-fixture://configuration-template/notion/account/operator",
+      "declarationFingerprint": "sha256:e3e11d347b7a0109668facaeb7b12311023da39949d1328bfd918c53a406c756",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:3cceb56bdd08b4cab872711f6972927773d78810beb5c845e741c6b1ad3de558",
+      "freshness": "unknown"
+    },
+    {
+      "subject": "projects.records",
+      "authority": "authority.projects.definition",
+      "role": "definition",
+      "uri": "soter-fixture://configuration-template/notion/authority/policies",
+      "declarationFingerprint": "sha256:22e894767d6cefa5fa1acbbb783984b3c17576924322b91b971909ce612b5757",
+      "status": "loaded",
+      "provenance": "fixture:sha256:d5dc586559ea99ac5545d20ed228224c63e456f26fea5ac56d74356dd9ab3a19",
+      "freshness": "passed"
+    },
+    {
+      "subject": "projects.records",
+      "authority": "authority.projects.instance",
+      "role": "instance",
+      "uri": "soter-fixture://configuration-template/notion/authority/projects",
+      "declarationFingerprint": "sha256:5b92f29a8e62e3a32482298ff81513c035feb14a8e15742d3759da903784b63d",
+      "status": "loaded",
+      "provenance": "fixture:sha256:34bdfad41ca036b77b8bd7fbe5b1149878009f9f70a9f3c6f189469509363cc9",
+      "freshness": "passed"
+    },
+    {
+      "subject": "runtime.runs",
+      "authority": "authority.run.evidence",
+      "role": "evidence",
+      "uri": "soter-state://runs",
+      "declarationFingerprint": "sha256:8afe5da5de9d67a21267be3ba143ca970bf2a316ca513dd3146f805613c7ee46",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:3cceb56bdd08b4cab872711f6972927773d78810beb5c845e741c6b1ad3de558",
+      "freshness": "unknown"
+    }
+  ],
+  "bindings": [
+    {
+      "capability": "documents.content.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.projects.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Notion supplies the exact current project document containing the selected work item."
+    },
+    {
+      "capability": "documents.content.update",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.projects.instance"
+      ],
+      "effects": [
+        "write"
+      ],
+      "reason": "A separately governed transaction may later replace only the exact reviewed work-item line."
+    },
+    {
+      "capability": "projects.records.create",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.projects.instance"
+      ],
+      "effects": [
+        "write"
+      ],
+      "reason": "A separately governed transaction may later create the exact reviewed Decision feed entry."
+    },
+    {
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.projects.definition",
+        "authority.projects.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Notion is the configured authority for the shared Projects policy, exact project, and exact current Question."
+    },
+    {
+      "capability": "projects.records.update",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.2.0",
+      "authorities": [
+        "authority.projects.instance"
+      ],
+      "effects": [
+        "write"
+      ],
+      "reason": "A separately governed transaction may later mark only the exact reviewed Question as processed."
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0",
+    "projectionDefinition": {
+      "id": "host-projection.codex",
+      "version": "0.3.0",
+      "path": "soter/hosts/codex/projection.json",
+      "fingerprint": "sha256:76cd84436a3b5e7f00edcc8a0be3cdff64f53e488b13107a8bf56603b9600490"
+    },
+    "projectionGenerator": {
+      "id": "core.host-projection-generator",
+      "version": "2.1.0"
+    }
+  },
+  "effectPolicies": {
+    "read": {
+      "mode": "allow",
+      "reason": "The exact policy, project, Question, and project document may be read for private preparation."
+    },
+    "disclosure": {
+      "mode": "allow",
+      "reason": "Selected records may enter the configured private run envelope with explicit minimization."
+    },
+    "write": {
+      "mode": "confirm",
+      "reason": "The exact three-action group requires a fresh later confirmation and separately consumed one-time start authorization."
+    },
+    "dispatch": {
+      "mode": "prohibit",
+      "reason": "Decision resolution does not send messages or publish notifications."
+    },
+    "destructive": {
+      "mode": "prohibit",
+      "reason": "Decision resolution never deletes records or performs destructive changes."
+    }
+  },
+  "approvals": [],
+  "checkpoints": [
+    {
+      "id": "effects-established",
+      "state": "passed",
+      "details": "Read and disclosure policies were evaluated before contained context acquisition."
+    },
+    {
+      "id": "project-decision-resolution-grounded",
+      "state": "passed",
+      "details": "The exact Projects policy, project, Question, and current work document were loaded."
+    },
+    {
+      "id": "write-boundary-held",
+      "state": "passed",
+      "details": "No approval, continuation, provider write, or canonical write was issued."
+    }
+  ],
+  "outputs": [
+    {
+      "id": "context.project-decision-resolution.happy-path-fixture",
+      "type": "context-snapshot",
+      "fingerprint": "sha256:d27b3baaaa67d46921a132e750c9efdf862673ef9bd76f565852a746e8b5a4ea"
+    }
+  ],
+  "effects": [
+    {
+      "id": "effect.project-decision-resolution.policy.fixture",
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.projects.definition",
+      "startedAt": "2026-07-22T12:00:00.000Z",
+      "completedAt": "2026-07-22T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The exact policy, project, Question, and project document may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:7926a96bd072cf583c91ebd9105ecf2d29785d3c39ef5156e41487cfac8c6d3b",
+      "state": "passed",
+      "outputFingerprint": "sha256:7bb503412a10c4d4245c2ac6643caa39c41056ea378c21e8f8b1a4fe8926720c",
+      "error": null
+    },
+    {
+      "id": "effect.project-decision-resolution.project.fixture",
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.projects.instance",
+      "startedAt": "2026-07-22T12:00:00.000Z",
+      "completedAt": "2026-07-22T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The exact policy, project, Question, and project document may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:8bea1e88c754214cb9b67965b8b558e8ec0a77539c367d7a506ac4835dfbb6d4",
+      "state": "passed",
+      "outputFingerprint": "sha256:2882c75de083b34a9c1f86f5bb74585063172f00de251d478bf70ea3a0e4017a",
+      "error": null
+    },
+    {
+      "id": "effect.project-decision-resolution.question.fixture",
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.projects.instance",
+      "startedAt": "2026-07-22T12:00:00.000Z",
+      "completedAt": "2026-07-22T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The exact policy, project, Question, and project document may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:c2f8b3e2c98bd6384d81ca8d949d5a6df3d08a6f7c5ac1f63489e8e143b948ad",
+      "state": "passed",
+      "outputFingerprint": "sha256:307e162457f6e519cdfd3e189a0b8aa7687f6ed8ad6f4ad5d9fcda0ef402af13",
+      "error": null
+    },
+    {
+      "id": "effect.project-decision-resolution.document.fixture",
+      "capability": "documents.content.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.projects.instance",
+      "startedAt": "2026-07-22T12:00:00.000Z",
+      "completedAt": "2026-07-22T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The exact policy, project, Question, and project document may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected records may enter the configured private run envelope with explicit minimization."
+        }
+      ],
+      "inputFingerprint": "sha256:72fcd9cc7c4082211bf4dc354a1a0115518a122798e8032a3be3a1f20d66ed49",
+      "state": "passed",
+      "outputFingerprint": "sha256:6d0ee7b37ea319f0b8414f9a594125ae9e4191cb3a5e78946f12aec95be27aba",
+      "error": null
+    }
+  ],
+  "evidenceIds": [],
+  "scenario": {
+    "id": "project-decision-resolution.happy-path",
+    "path": "soter/scenarios/project-decision-resolution/happy-path.scenario.json",
+    "fingerprint": "sha256:6572f5428626af685b0c654805c72a8d26652e6447f7f786e53ee09738084f46"
+  }
+}

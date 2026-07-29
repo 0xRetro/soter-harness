@@ -83,17 +83,39 @@
                 "type": { "enum": ["text", "string-list", "boolean"] },
                 "reviewValue": {
                   "oneOf": [
-                    { "type": "string", "minLength": 1, "maxLength": 50000 },
+                    { "type": "string", "maxLength": 50000 },
                     { "type": "boolean" },
                     {
-                      "type": "array", "minItems": 1, "maxItems": 500,
+                      "type": "array", "minItems": 0, "maxItems": 500,
                       "uniqueItems": true,
                       "items": { "type": "string", "minLength": 1, "maxLength": 2000 }
                     }
                   ]
                 },
                 "fingerprint": { "$ref": "#/$defs/fingerprint" }
-              }
+              },
+              "allOf": [
+                {
+                  "if": { "properties": { "type": { "const": "text" } }, "required": ["type"] },
+                  "then": { "properties": { "reviewValue": { "type": "string", "maxLength": 50000 } } }
+                },
+                {
+                  "if": { "properties": { "type": { "const": "boolean" } }, "required": ["type"] },
+                  "then": { "properties": { "reviewValue": { "type": "boolean" } } }
+                },
+                {
+                  "if": { "properties": { "type": { "const": "string-list" } }, "required": ["type"] },
+                  "then": {
+                    "properties": {
+                      "reviewValue": {
+                        "type": "array", "minItems": 0, "maxItems": 500,
+                        "uniqueItems": true,
+                        "items": { "type": "string", "minLength": 1, "maxLength": 2000 }
+                      }
+                    }
+                  }
+                }
+              ]
             }
           },
           "fingerprint": { "$ref": "#/$defs/fingerprint" }

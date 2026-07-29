@@ -25,20 +25,36 @@
   },
   "outputSchema": {
     "type": "object",
+    "additionalProperties": false,
     "required": ["record", "created", "provenance", "observedAt"],
     "properties": {
       "record": {
         "type": "object",
+        "additionalProperties": false,
         "required": ["type", "id", "fields"],
         "properties": {
           "type": { "type": "string" },
           "id": { "type": "string" },
           "fields": { "type": "object" },
+          "version": { "type": "string", "minLength": 1 },
+          "deduplicationKey": { "type": "string", "minLength": 1 },
           "body": { "type": ["string", "object", "null"] }
         }
       },
       "created": { "type": "boolean" },
-      "provenance": { "type": "object" },
+      "provenance": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["provider", "authority", "mapping", "mappingVersion"],
+        "properties": {
+          "provider": { "type": "string", "minLength": 1 },
+          "authority": { "type": "string", "minLength": 1 },
+          "mapping": { "type": "string", "minLength": 1 },
+          "mappingVersion": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+          "sourceKind": { "enum": ["fixture", "connected"] },
+          "sourceReferenceFingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+        }
+      },
       "observedAt": { "type": "string" }
     }
   },

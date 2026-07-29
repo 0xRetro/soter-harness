@@ -1,0 +1,32 @@
+{
+  "$contract": "soter://contracts/channel-ingestion-policy/v1",
+  "contractVersion": "1.0.0",
+  "id": "policy.context.communications.collaboration.channel-ingestion",
+  "name": "Collaboration Channels",
+  "platform": "slack",
+  "maxSweepChannels": 100,
+  "maxSelectedChannels": 20,
+  "maxParticipantsPerChannel": 200,
+  "maxContactCandidates": 100,
+  "maxOrganizationCandidates": 100,
+  "allowedVisibilities": ["public", "private"],
+  "selectionRequiredForSweep": true,
+  "participantReadRequiresExplicitSelection": true,
+  "identityOnlyBeforeSelection": true,
+  "botsExcluded": true,
+  "providerParticipantsAreCrmPeople": false,
+  "participantMatchOrder": ["email-exact", "name-exact-unique"],
+  "organizationMatchOrder": ["channel-name-explicit-exact"],
+  "identityFingerprintScope": "platform-workspace-conversation",
+  "identityFingerprintAlgorithm": "sha256-canonical-json-v1",
+  "portableProviderIdsStored": false,
+  "writesRequireConfirmation": true,
+  "messagesIncluded": false,
+  "limitations": [
+    "Channel identity may be swept before selection, but participant profiles may be read only for exact operator-selected conversation identities.",
+    "A provider participant never becomes a CRM person automatically; only exact email or unique exact-name resolution may produce a personUri.",
+    "Only exact existing organization records may be related; missing organizations become review residue and are never created implicitly.",
+    "Every exact channel create or update remains separately approval-, one-time-start-, checkpoint-, and verification-bound.",
+    "Message content is outside channel ingestion and remains private untrusted data owned by a separate review workflow."
+  ]
+}

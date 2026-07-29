@@ -1,0 +1,196 @@
+{
+  "$contract": "soter://contracts/evidence/v2",
+  "contractVersion": "2.0.0",
+  "id": "evidence.slack-channel-ingestion.resolution.fixture",
+  "createdAt": "2026-07-21T21:00:00.000Z",
+  "claimFamily": "graph",
+  "claim": "The desired configuration resolves to this exact, internally valid artifact graph.",
+  "subject": {
+    "type": "configuration",
+    "id": "slack-channel-ingestion",
+    "version": null
+  },
+  "configurationLockFingerprint": "sha256:51acc8121ec5dcd6e9778460f4db91382885a924644c9a1505740b1ec3a3fd9d",
+  "graphFingerprint": "sha256:2136077a1ebf7d12e0b047e2cd3f9ec905fb9796766c8f1cb331e5c85cb4c85e",
+  "dependencies": [
+    {
+      "id": "kernel.soter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+    },
+    {
+      "id": "core.runtime",
+      "version": "0.1.0",
+      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+    },
+    {
+      "id": "context.communications",
+      "version": "0.1.0",
+      "fingerprint": "sha256:47a6b6d2e824effaa4dcefa386529642c9425d8cae6249f0fca478de4597bdf8"
+    },
+    {
+      "id": "context.communications.collaboration",
+      "version": "0.1.0",
+      "fingerprint": "sha256:63388da3ec915d352cc4cf4ec6a04880a1e34bec38dc5f04f3f650d8f51087e2"
+    },
+    {
+      "id": "context.crm",
+      "version": "0.1.0",
+      "fingerprint": "sha256:fa69fc9f796e84b1a2cd7e319c4344dcc44d8dcbea9542e51158eb868d266f44"
+    },
+    {
+      "id": "automation.slack-channel-ingestion",
+      "version": "0.1.0",
+      "fingerprint": "sha256:d81e392c9717dd9ef93c00d0e077168ba867d1c91a1848c74292489045fe9ee4"
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "fingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5"
+    },
+    {
+      "id": "integration.slack",
+      "version": "0.1.0",
+      "fingerprint": "sha256:af80c0e344e1425c4ed127b14170155bc55bd31a57494d288b611f37afc2840c"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
+  },
+  "integrations": [
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "manifestFingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5",
+      "evidenceMaturity": "declared"
+    },
+    {
+      "id": "integration.slack",
+      "version": "0.1.0",
+      "manifestFingerprint": "sha256:af80c0e344e1425c4ed127b14170155bc55bd31a57494d288b611f37afc2840c",
+      "evidenceMaturity": "declared"
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.communications.definition",
+      "role": "definition",
+      "subject": "communications.records",
+      "declarationFingerprint": "sha256:02f254cc47a3ceb005c4946aaee52c987f582151699be15ae513a45f875ffeaa"
+    },
+    {
+      "id": "authority.communications.instance",
+      "role": "instance",
+      "subject": "communications.records",
+      "declarationFingerprint": "sha256:e0b59be35ed05fb19540e2ad0d565fa70066a1434adf4677421d1abe17357012"
+    },
+    {
+      "id": "authority.communications.semantics.definition",
+      "role": "definition",
+      "subject": "communications.semantics.records",
+      "declarationFingerprint": "sha256:0b465d80100b2ccb7a4a6486fe2b4a6844b1f43eb18dad379d82b8af79ac93c9"
+    },
+    {
+      "id": "authority.crm.definition",
+      "role": "definition",
+      "subject": "crm.records",
+      "declarationFingerprint": "sha256:502352d07fedd267c13487a51fa06ebb3bee5550c6b5aa168e59899dba62aba2"
+    },
+    {
+      "id": "authority.crm.instance",
+      "role": "instance",
+      "subject": "crm.records",
+      "declarationFingerprint": "sha256:0a64464ffcf631127f54283b034ea5ea4ee7d136e4740880d427261bf61c8b6e"
+    },
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "declarationFingerprint": "sha256:cdee230730b0f3c9c6ca06e6578e38324ed0b7f7da89339d7628c70061e960e1"
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "declarationFingerprint": "sha256:9d785399ed6214659b768c25bec1cbb10b5e1fac5b42d9bbd7908d0529a9d6e7"
+    },
+    {
+      "id": "authority.slack.instance",
+      "role": "instance",
+      "subject": "communications.workspace",
+      "declarationFingerprint": "sha256:dfadf6558bc22a7a49fb8c18f6c9dd7f52fc3f3db57b7028131082a4074889ae"
+    },
+    {
+      "id": "authority.slack.provider",
+      "role": "provider",
+      "subject": "slack.workspace",
+      "declarationFingerprint": "sha256:2558293ca5572f625738bf204fe52e651f3254e2e7478474d75dde0895967382"
+    }
+  ],
+  "evaluator": {
+    "id": "core.resolver",
+    "version": "0.5.0",
+    "level": "graph"
+  },
+  "environment": {
+    "containment": "offline",
+    "runtime": "node"
+  },
+  "acceptanceCriteria": [
+    "Kernel validation reports no graph errors.",
+    "Every selected pack, capability, host projection, authority, and policy is fingerprinted.",
+    "Resolving unchanged inputs produces the same configuration lock fingerprint.",
+    "Credential references and values are absent from the lock."
+  ],
+  "result": "passed",
+  "outcomes": [
+    {
+      "id": "configuration.graph-resolved",
+      "state": "passed"
+    },
+    {
+      "id": "configuration.lock-deterministic",
+      "state": "passed"
+    },
+    {
+      "id": "configuration.lock-secret-free",
+      "state": "passed"
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "configuration",
+      "path": "soter/configurations/slack-channel-ingestion.config.json",
+      "fingerprint": "sha256:b96c9e4ec685e5778f46016dba5e9f9e9c2d09769ffd8b53fe17abbd6be6a57a"
+    },
+    {
+      "role": "configuration-lock",
+      "fingerprint": "sha256:51acc8121ec5dcd6e9778460f4db91382885a924644c9a1505740b1ec3a3fd9d"
+    }
+  ],
+  "effects": [],
+  "failures": [],
+  "warnings": [],
+  "skipped": [
+    "Host authentication and reachability were not checked offline.",
+    "Integration capabilities were not invoked.",
+    "Automation outcomes and external effects were not evaluated."
+  ],
+  "limitations": [
+    "This evidence establishes graph validity and reproducibility only; it does not establish readiness, behavior verification, or live health."
+  ],
+  "freshness": {
+    "policy": "Valid only while every configuration-lock fingerprint remains unchanged.",
+    "validUntil": null
+  },
+  "supersedes": null,
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Credential references and credential values are excluded."
+    ]
+  }
+}

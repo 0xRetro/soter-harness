@@ -1,0 +1,210 @@
+{
+  "contractVersion": "2.0.0",
+  "id": "workflow-guide.forge",
+  "contentFingerprint": "sha256:6b6ef145613ba555ebd0ea112112118329eb22e850432c276da5df76984adc48",
+  "$contract": "soter://contracts/workflow-guide/v2",
+  "workflow": {
+    "id": "automation.forge",
+    "version": "0.1.0",
+    "definitionPath": "soter/automations/forge/definition.json",
+    "definitionFingerprint": "sha256:e81450ad678bc460314ee99927ec169ec8fd1b160a560491d05ffd2df56f74f7",
+    "evaluationSetPath": "soter/automations/forge/evaluations.json",
+    "evaluationSetFingerprint": "sha256:affe1cc5acbdd2d543a2662e8e880d527fdf5f9865a93b0c5707bebd8057f69d"
+  },
+  "skill": {
+    "name": "forge",
+    "description": "Create one new governed harness artifact from a demonstrated need, exact ownership, contract shape, adversarial evaluation, and human review. Use for a genuinely new pack, contract, workflow, rule, or provider-neutral artifact; do not use for bounded edits, routine decision notes, or bulk rewrites.",
+    "invocation": "explicit-only",
+    "displayName": "Forge a harness artifact",
+    "shortDescription": "Create one governed artifact from evidence through review.",
+    "defaultPrompt": "Use $forge to develop this one harness artifact from an observed need through exact contracts, evaluation, and review."
+  },
+  "status": {
+    "state": "active",
+    "reasonCode": "WORKFLOW_GUIDE_ACTIVE",
+    "proceduralAuthority": "target",
+    "behaviorParity": "passed",
+    "delivery": "host-skill",
+    "evidence": [
+      {
+        "path": "soter/evidence/development/development-agent-migration-evidence.claude.forge.json",
+        "fingerprint": "sha256:2b28dd9ff0d0b87e14e25bac1e9a7ce535d0982871e3fffa36aec106060f33c1",
+        "host": "claude"
+      },
+      {
+        "path": "soter/evidence/development/development-agent-migration-evidence.codex.forge.json",
+        "fingerprint": "sha256:6b1ca49b3e1ed60cc54f6d974e89e43461f34bf042f93886e96979f9fe6826a9",
+        "host": "codex"
+      }
+    ],
+    "permittedNextAction": "invoke-through-selected-host"
+  },
+  "authority": {
+    "kind": "procedural-guidance",
+    "executionAuthority": "none",
+    "effectAuthority": "none",
+    "approvalAuthority": "none",
+    "reasonCode": "WORKFLOW_GUIDE_NO_EXECUTION_AUTHORITY",
+    "providerTransactionAuthority": "none"
+  },
+  "stepDetails": [
+    {
+      "id": "classify-responsibility",
+      "sequence": 1,
+      "instructions": [
+        "Classify the requested outcome as Kernel, Core, Context, Automation, Integration, configuration, or host responsibility before naming an artifact.",
+        "Identify the governing contract, canonical owner, possible effects, and why an existing artifact cannot express the need.",
+        "Use a decision note only for a rare cross-cutting, security, compatibility, or expensive-to-reverse choice whose rationale cannot live beside the contract.",
+        "For every proposed new system namespace, state the birth-decision disposition: mechanically link the exact optional decision when that threshold is met; otherwise explicitly withhold it and explain why the rationale belongs beside the owning contract or artifact."
+      ],
+      "flexibility": [
+        "Choose the shortest stable name and smallest coherent artifact boundary that preserve the classified responsibility."
+      ],
+      "stopConditions": [
+        "Stop when ownership is ambiguous or the request is actually a bounded edit to an existing artifact."
+      ]
+    },
+    {
+      "id": "check-territory",
+      "sequence": 2,
+      "instructions": [
+        "Inspect existing manifests, definitions, exclusions, contracts, and migration bindings for overlapping responsibility.",
+        "When overlap exists, extend or correct the current owner instead of creating a second authority.",
+        "State the exact gap that remains after the territory review."
+      ],
+      "flexibility": [],
+      "stopConditions": [
+        "Stop when an existing owner already satisfies the requested outcome or the intended relationship cannot be made explicit."
+      ]
+    },
+    {
+      "id": "establish-contained-baseline",
+      "sequence": 3,
+      "instructions": [
+        "Create an isolated development workspace before drafting and verify that it is not the protected root checkout.",
+        "Reproduce an exact missing contract, failing behavior, or representative pressure case without the proposed artifact.",
+        "Use a fresh contained evaluator when available and judge from artifacts; if independent containment is unavailable, record the missing evidence rather than manufacturing a baseline."
+      ],
+      "flexibility": [
+        "A deterministic contract failure can replace a stochastic worker baseline when it directly proves the missing invariant."
+      ],
+      "stopConditions": [
+        "Stop when no real failure or missing contract justifies a new durable artifact."
+      ]
+    },
+    {
+      "id": "draft-governed-artifacts",
+      "sequence": 4,
+      "instructions": [
+        "Derive the artifact shape from its governing contract and include identity, ownership, purpose, dependencies, effects, limitations, verification, and migration impact.",
+        "Counter every observed baseline rationalization with a mechanical invariant or explicit procedural safeguard.",
+        "Keep provider details in Integration, domain meaning in Context, orchestration in Automation, runtime authority in Core, and host delivery in adapters."
+      ],
+      "flexibility": [
+        "Use prose for judgment and deterministic code or schemas for rules that can be enforced mechanically."
+      ],
+      "stopConditions": [
+        "Stop when the draft would introduce hidden authority, an undeclared dependency, or a duplicate canonical source."
+      ]
+    },
+    {
+      "id": "run-adversarial-gates",
+      "sequence": 5,
+      "instructions": [
+        "Run the changed-scope static, graph, fixture, privacy, and behavior checks required by the artifact's claims.",
+        "Plant at least one realistic pressure or mutation that would pass if the new boundary were merely documented rather than enforced.",
+        "Inspect artifacts and traces instead of accepting the implementing agent's completion statement as evidence."
+      ],
+      "flexibility": [
+        "Add broader gates only when a changed transitive artifact or generated graph makes their previous evidence stale."
+      ],
+      "stopConditions": [
+        "Stop adoption on any unresolved correctness, security, privacy, authority, migration, or claim-boundary failure."
+      ]
+    },
+    {
+      "id": "present-exact-change",
+      "sequence": 6,
+      "instructions": [
+        "Present the exact artifact diff, baseline, adversarial evidence, limitations, stale evidence impact, and rollback or retirement boundary.",
+        "Apply review corrections and rerun only the evidence invalidated by those corrections.",
+        "Keep merge, publication, installation, configuration, and host realization as separate effects requiring their own authority."
+      ],
+      "flexibility": [],
+      "stopConditions": [
+        "Stop before adopting the artifact without the requested human decision and every applicable gate."
+      ]
+    }
+  ],
+  "verification": [
+    "The artifact has one exact canonical owner and no overlapping authority.",
+    "Every proposed new system namespace states an exact linked-or-withheld birth-decision disposition and rationale.",
+    "A real missing contract or behavior establishes why the artifact exists.",
+    "Applicable adversarial checks fail without the boundary and pass with it.",
+    "Privacy, effects, evidence maturity, migration impact, and limitations remain explicit.",
+    "Adoption, publication, installation, and realization remain separate authorized actions."
+  ],
+  "gotchas": [
+    {
+      "id": "shallow-baseline",
+      "kind": "research",
+      "summary": "A trivial or leading baseline can produce a favorable verdict without demonstrating that the new guidance changes difficult behavior.",
+      "countermeasure": "Use a substantive multi-step pressure case or a deterministic missing-contract mutation."
+    },
+    {
+      "id": "test-bait-pollution",
+      "kind": "observed",
+      "summary": "A compliant evaluator may create the scenario's fake files, decisions, branches, or external effects as real artifacts.",
+      "countermeasure": "Use isolated containment, prohibit external and publication effects, inspect the diff, and remove only known test scaffolding before review."
+    },
+    {
+      "id": "schema-green-is-not-behavior",
+      "kind": "constraint",
+      "summary": "A schema-valid artifact can still have no runtime, no applicable evidence, or a broken ownership boundary.",
+      "countermeasure": "Match every claim to the verification ladder level and exact evidence that can actually prove it."
+    },
+    {
+      "id": "draft-on-main",
+      "kind": "constraint",
+      "summary": "Drafting on the protected root checkout risks mixing experimental changes with the verified baseline.",
+      "countermeasure": "Verify an isolated worktree and branch before the first edit."
+    }
+  ],
+  "references": [
+    {
+      "id": "architecture",
+      "kind": "architecture",
+      "label": "Soter responsibility and migration architecture",
+      "target": "ARCHITECTURE.md"
+    },
+    {
+      "id": "contracts",
+      "kind": "contract",
+      "label": "Normative Soter contracts",
+      "target": "CONTRACTS.md"
+    },
+    {
+      "id": "development-governance",
+      "kind": "contract",
+      "label": "Provider-neutral development governance",
+      "target": "soter://contracts/development-governance/v1"
+    }
+  ],
+  "source": {
+    "presence": "removed",
+    "legacyPath": ".claude/skills/forge/SKILL.md",
+    "legacyFingerprint": "sha256:f5708137623689d2a44f0864a379c389ec805a845795b05cf94d6c4ea3d22c69",
+    "normalization": "behavior-preserving-with-explicit-authority-boundary"
+  },
+  "privacy": {
+    "rawSourceIncluded": false,
+    "workspaceSpecificValuesIncluded": false,
+    "credentialsIncluded": false,
+    "privateInputsIncluded": false,
+    "providerResponsesIncluded": false
+  },
+  "limitations": [
+    "This procedural guide has no file-write, merge, publication, installation, realization, or external-effect authority.",
+    "Adoption requires independent exact host-skill behavior evidence and a separate governed fallback-removal decision."
+  ]
+}

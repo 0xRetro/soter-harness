@@ -1,0 +1,139 @@
+{
+  "$contract": "soter://contracts/evidence/v2",
+  "contractVersion": "2.0.0",
+  "id": "evidence.claude-host-projection.parallel-session-delivery.migration.fixture",
+  "createdAt": "2026-07-21T23:30:00.000Z",
+  "claimFamily": "migration",
+  "claim": "The exact target becomes canonical for this legacy responsibility and its fallback may be removed under the recorded parity decision; a mixed source artifact may remain only for separately unfinished responsibilities.",
+  "subject": {
+    "type": "host",
+    "id": "host.claude",
+    "version": "0.3.1"
+  },
+  "configurationLockFingerprint": "sha256:876581b6c7325d62526e757422f1cbc4be378a89e18b5f84f28efe8a2444b579",
+  "graphFingerprint": "sha256:d5e5ec943f612e70d3716b1ec253c82ae36252cbfb13291759731097b056c340",
+  "dependencies": [
+    {
+      "id": "kernel.soter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+    },
+    {
+      "id": "core.runtime",
+      "version": "0.1.0",
+      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+    }
+  ],
+  "host": {
+    "id": "claude",
+    "adapter": "host.claude",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:711ff958a8e512297e97679e70fbfc10f6a545bc9e37154d33c8401b9f4e2189"
+  },
+  "integrations": [],
+  "authorities": [
+    {
+      "id": "authority.claude-host-projection.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "declarationFingerprint": "sha256:9f663c68ece3798b6b50a46a80004fd87bd87f1c29710e79137341a9ba375a59"
+    }
+  ],
+  "evaluator": {
+    "id": "kernel.legacy-migration-completion",
+    "version": "1.0.0",
+    "level": "fixture"
+  },
+  "environment": {
+    "containment": "fixture",
+    "runtime": "node"
+  },
+  "acceptanceCriteria": [
+    "The exact migration target is selected by and fingerprinted in the current configuration lock.",
+    "Every artifact labeled as same-lock supporting evidence passed against the exact configuration lock and stable semantic graph; separately labeled supporting artifacts are fingerprint-bound without a same-lock claim.",
+    "The complete inventory records the exact target authority or retirement, parity decision, fallback removal, evidence reference, and either a completed source tombstone or one completed responsibility inside a retained mixed source.",
+    "The exact legacy source is a fingerprinted tombstone, no operational file or dependent remains, and the target contains no executable or runtime path reference beyond closed provenance declarations.",
+    "The exact Claude v2 host adapter and projection definition are selected as the only canonical host-delivery definitions.",
+    "The deterministic projection owns none of the retired plugin, setting, hook, task-runner, parallel-session, platform-card, or checker outputs.",
+    "The generated Claude MCP projection routes only to the local Soter server; legacy provider endpoints, credentials, authentication state, and provider-specific setup are neither adopted nor generated."
+  ],
+  "result": "passed",
+  "outcomes": [
+    {
+      "id": "migration-disposition",
+      "state": "migrated"
+    },
+    {
+      "id": "migration-parity",
+      "state": "intentional-change"
+    },
+    {
+      "id": "target-selected-in-exact-lock",
+      "state": "passed"
+    },
+    {
+      "id": "supporting-evidence-current",
+      "state": "passed"
+    },
+    {
+      "id": "authority-transition-explicit",
+      "state": "passed"
+    },
+    {
+      "id": "legacy-dependencies-cleared",
+      "state": "passed"
+    },
+    {
+      "id": "host-boundary-declared",
+      "state": "passed"
+    },
+    {
+      "id": "obsolete-output-ownership-removed",
+      "state": "passed"
+    },
+    {
+      "id": "private-provider-setup-not-adopted",
+      "state": "passed"
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "migration-source",
+      "path": ".claude/rules/parallel-sessions.md",
+      "fingerprint": "sha256:a97ab0e08da57250bc2cb12c0d888caee2a968ea047e0ae52dacf1326d286558"
+    },
+    {
+      "role": "migration-target",
+      "path": "soter/hosts/claude/adapter.json",
+      "fingerprint": "sha256:711ff958a8e512297e97679e70fbfc10f6a545bc9e37154d33c8401b9f4e2189"
+    },
+    {
+      "role": "supporting-evidence",
+      "path": "soter/fixtures/claude-host-projection/resolution.evidence.json",
+      "fingerprint": "sha256:6e5f7ea48d32cf3374d12eef950aa4f6a61ad80a79f1ad3837fd3435968f2052"
+    }
+  ],
+  "effects": [],
+  "failures": [],
+  "warnings": [],
+  "skipped": [
+    "Connected provider readiness, live behavior verification, and current health were not evaluated.",
+    "Removing a legacy source fallback does not grant provider effect or host execution authority."
+  ],
+  "limitations": [
+    "This intentional migration proves deterministic local Claude projection structure only; host launch, realized-file currency, tool discovery, authentication, provider reachability, connected behavior, readiness, verification, and health remain not evaluated.",
+    "Provider endpoint selection, credentials, OAuth state, and authentication setup remain private and unavailable in generated evidence; the legacy MCP endpoint document is never adopted as provider authority.",
+    "Retired Claude-only hooks, plugin packaging, task-runner delivery, and duplicate guard files are unavailable rather than retained as hidden compatibility fallbacks."
+  ],
+  "freshness": {
+    "policy": "Valid only while every configuration-lock fingerprint remains unchanged.",
+    "validUntil": null
+  },
+  "supersedes": null,
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Credential references and credential values are excluded."
+    ]
+  }
+}

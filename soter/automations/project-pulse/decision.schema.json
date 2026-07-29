@@ -1,0 +1,257 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://automations/project-pulse/decision/v1",
+  "title": "Project Pulse grounded decision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "id", "automation", "runId", "createdAt",
+    "configurationLockFingerprint", "graphFingerprint", "context", "producer",
+    "state", "decisionType", "payload", "issues", "privacy", "decisionFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/automation-decision/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "type": "string", "pattern": "^decision\\.project-pulse\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "automation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "const": "automation.project-pulse" },
+        "version": { "$ref": "#/$defs/version" }
+      }
+    },
+    "runId": { "type": "string", "pattern": "^run\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "configurationLockFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "context": {
+      "type": "object", "additionalProperties": false,
+      "required": ["snapshotId", "snapshotFingerprint"],
+      "properties": {
+        "snapshotId": { "type": "string", "pattern": "^context\\.project-pulse\\.connected-acquisition\\.[a-f0-9]{24}$" },
+        "snapshotFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "producer": { "$ref": "#/$defs/producer" },
+    "state": { "enum": ["ready", "needs-input"] },
+    "decisionType": { "const": "project-pulse.grounded-status" },
+    "payload": {
+      "type": "object", "additionalProperties": false,
+      "required": ["preparedWork", "policy", "observations", "analysis"],
+      "properties": {
+        "preparedWork": {
+          "type": "object", "additionalProperties": false,
+          "required": ["id", "fingerprint", "reviewMaterialFingerprint", "inputContractFingerprint"],
+          "properties": {
+            "id": { "type": "string", "pattern": "^work\\.project-pulse\\.[a-f0-9]{24}$" },
+            "fingerprint": { "$ref": "#/$defs/fingerprint" },
+            "reviewMaterialFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "inputContractFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        "policy": {
+          "type": "object", "additionalProperties": false,
+          "required": ["definitionId", "definitionFingerprint", "entryId", "entryFingerprint", "externalRecordId", "externalRecordFingerprint"],
+          "properties": {
+            "definitionId": { "type": "string", "pattern": "^policy\\.context\\.projects\\.project-work(?:[.-][a-z0-9]+)*$" },
+            "definitionFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "entryId": { "const": "context.project-pulse.policy-selection" },
+            "entryFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "externalRecordId": { "type": "string", "minLength": 1, "maxLength": 500 },
+            "externalRecordFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        "observations": {
+          "type": "object", "additionalProperties": false,
+          "required": ["projectEntryFingerprint", "tasksEntryFingerprint", "documentEntryFingerprint"],
+          "properties": {
+            "projectEntryFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "tasksEntryFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "documentEntryFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        "analysis": { "$ref": "#/$defs/analysis" }
+      }
+    },
+    "issues": {
+      "type": "array", "uniqueItems": true,
+      "items": { "type": "string", "minLength": 12 }
+    },
+    "privacy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["scope", "redactions"],
+      "properties": {
+        "scope": { "const": "private" },
+        "redactions": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": { "type": "string", "minLength": 12 }
+        }
+      }
+    },
+    "decisionFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "allOf": [{
+    "if": { "properties": { "state": { "const": "ready" } } },
+    "then": {
+      "properties": {
+        "issues": { "maxItems": 0 },
+        "payload": { "properties": { "analysis": { "properties": { "state": { "const": "ready" }, "issues": { "maxItems": 0 } } } } }
+      }
+    },
+    "else": {
+      "properties": {
+        "issues": { "minItems": 1 },
+        "payload": { "properties": { "analysis": { "properties": { "state": { "const": "needs-input" }, "issues": { "minItems": 1 } } } } }
+      }
+    }
+  }],
+  "$defs": {
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "producer": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "id", "host"],
+      "properties": {
+        "kind": { "enum": ["host", "user", "fixture"] },
+        "id": { "type": "string", "minLength": 1 },
+        "host": { "type": ["string", "null"], "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+      },
+      "allOf": [{
+        "if": { "properties": { "kind": { "const": "host" } } },
+        "then": { "properties": { "host": { "type": "string" } } },
+        "else": { "properties": { "host": { "type": "null" } } }
+      }]
+    },
+    "project": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "name", "version", "fingerprint"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "version": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "tasks": {
+      "type": "object", "additionalProperties": false,
+      "required": ["total", "done", "blocked", "unmatched", "completionPercent", "records"],
+      "properties": {
+        "total": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "done": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "blocked": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "unmatched": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "completionPercent": { "type": ["integer", "null"], "minimum": 0, "maximum": 100 },
+        "records": {
+          "type": "array", "maxItems": 100,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["id", "title", "status", "milestoneId", "workItemFingerprint", "fingerprint"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1, "maxLength": 500 },
+              "title": { "type": "string", "minLength": 1, "maxLength": 500 },
+              "status": { "type": "string", "minLength": 1, "maxLength": 100 },
+              "milestoneId": { "type": "string", "pattern": "^milestone\\.[a-f0-9]{24}$" },
+              "workItemFingerprint": { "$ref": "#/$defs/fingerprint" },
+              "fingerprint": { "$ref": "#/$defs/fingerprint" }
+            }
+          }
+        }
+      }
+    },
+    "milestone": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "title", "completed", "total", "currentProgressTag", "proposedProgressTag", "currentHealthTag", "proposedHealthTag", "oldLine", "newLine", "changed", "workItemFingerprints", "promotedTaskIds"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^milestone\\.[a-f0-9]{24}$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "completed": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "total": { "type": "integer", "minimum": 1, "maximum": 10000 },
+        "currentProgressTag": { "enum": ["todo", "in-progress", "done"] },
+        "proposedProgressTag": { "enum": ["todo", "in-progress", "done"] },
+        "currentHealthTag": { "enum": ["on-track", "at-risk", "off-track"] },
+        "proposedHealthTag": { "enum": ["on-track", "at-risk", "off-track"] },
+        "oldLine": { "type": "string", "minLength": 1, "maxLength": 20000 },
+        "newLine": { "type": "string", "minLength": 1, "maxLength": 20000 },
+        "changed": { "type": "boolean" },
+        "workItemFingerprints": {
+          "type": "array", "minItems": 1, "maxItems": 100, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/fingerprint" }
+        },
+        "promotedTaskIds": {
+          "type": "array", "maxItems": 100, "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+        }
+      }
+    },
+    "status": {
+      "type": "object", "additionalProperties": false,
+      "required": ["recordType", "fields", "afterFingerprint"],
+      "properties": {
+        "recordType": { "const": "project-feed-entry" },
+        "fields": {
+          "type": "object", "additionalProperties": false,
+          "required": ["headline", "category", "date", "summary", "processed", "visibility", "projectIds"],
+          "properties": {
+            "headline": { "type": "string", "minLength": 1, "maxLength": 500 },
+            "category": { "const": "Status" },
+            "date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+            "summary": { "type": "string", "minLength": 1, "maxLength": 10000 },
+            "processed": { "const": false },
+            "visibility": { "enum": ["Internal", "Agent", "Public"] },
+            "projectIds": { "type": "array", "minItems": 1, "maxItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 500 } }
+          }
+        },
+        "afterFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "document": {
+      "type": "object", "additionalProperties": false,
+      "required": ["uri", "title", "expectedBodyFingerprint", "afterBodyFingerprint", "updates", "changed"],
+      "properties": {
+        "uri": { "type": "string", "minLength": 1, "maxLength": 2048 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "expectedBodyFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "afterBodyFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "updates": {
+          "type": "array", "maxItems": 20,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["id", "oldText", "newText", "replaceAllMatches"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+              "oldText": { "type": "string", "minLength": 1, "maxLength": 20000 },
+              "newText": { "type": "string", "minLength": 1, "maxLength": 20000 },
+              "replaceAllMatches": { "const": false }
+            }
+          }
+        },
+        "changed": { "type": "boolean" }
+      }
+    },
+    "analysis": {
+      "type": "object", "additionalProperties": false,
+      "required": ["state", "issues", "project", "tasks", "milestones", "health", "status", "document", "limitations"],
+      "properties": {
+        "state": { "enum": ["ready", "needs-input"] },
+        "issues": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 12 } },
+        "project": { "$ref": "#/$defs/project" },
+        "tasks": { "$ref": "#/$defs/tasks" },
+        "milestones": { "type": "array", "maxItems": 20, "items": { "$ref": "#/$defs/milestone" } },
+        "health": {
+          "type": "object", "additionalProperties": false,
+          "required": ["state", "requested", "contradicted", "basis"],
+          "properties": {
+            "state": { "enum": ["unavailable", "on-track", "at-risk", "off-track"] },
+            "requested": { "enum": ["on-track", "at-risk", "off-track"] },
+            "contradicted": { "type": "boolean" },
+            "basis": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 600 } }
+          }
+        },
+        "status": { "$ref": "#/$defs/status" },
+        "document": { "$ref": "#/$defs/document" },
+        "limitations": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 12 } }
+      }
+    }
+  }
+}

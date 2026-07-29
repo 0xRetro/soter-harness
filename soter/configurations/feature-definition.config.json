@@ -1,0 +1,60 @@
+{
+  "$contract": "soter://contracts/configuration/v1",
+  "contractVersion": "1.0.0",
+  "name": "feature-definition",
+  "base": { "kernel": "kernel.soter", "core": "core.runtime" },
+  "packs": [
+    { "id": "context.product", "source": "dependency", "reason": "Feature Definition depends on portable Product feature, lifecycle, why, and body meaning." },
+    { "id": "automation.feature-definition", "source": "user", "reason": "The user selected exact existing-feature definition preparation with why and status preservation." },
+    { "id": "integration.notion", "source": "binding", "reason": "The selected policy, current feature, schema, and exact page body authority live in Notion." }
+  ],
+  "bindings": [
+    { "capability": "product.records.read", "providerPack": "integration.notion", "authorities": ["authority.product.definition", "authority.product.instance"], "secretRef": "secret-ref.notion", "reason": "Notion supplies the exact policy selection and existing feature record." },
+    { "capability": "product.schema.read", "providerPack": "integration.notion", "authorities": ["authority.product.instance"], "secretRef": "secret-ref.notion", "reason": "Notion supplies the current normalized feature lifecycle schema." },
+    { "capability": "documents.content.read", "providerPack": "integration.notion", "authorities": ["authority.product.instance"], "secretRef": "secret-ref.notion", "reason": "Notion supplies the exact current feature page body under expected title." },
+    { "capability": "documents.content.update", "providerPack": "integration.notion", "authorities": ["authority.product.instance"], "secretRef": "secret-ref.notion", "reason": "A separately governed exact transaction may later replace the reviewed body without touching feature fields." }
+  ],
+  "sources": [
+    {
+      "id": "source.policy.feature-workflow",
+      "capability": "product.records.read",
+      "authority": "authority.product.definition",
+      "input": { "recordTypes": ["feature-workflow-policy"], "ids": ["policy.feature-workflow"], "limit": 2 },
+      "readiness": { "mode": "probe-read", "reason": "Connected readiness must prove the selected workflow policy record can be read without retaining private values." },
+      "consumers": [
+        { "pack": "automation.feature-definition", "purpose": "feature-workflow-policy", "subjects": ["feature-definition"], "reason": "The exact external selection binds the governed Product rules used by preparation." }
+      ],
+      "reason": "Feature workflow rules are a selected Product Context definition rather than Automation-owned constants."
+    }
+  ],
+  "authorities": [
+    { "id": "authority.product.definition", "role": "definition", "subject": "product.records", "uri": "soter-fixture://configuration-template/notion/authority/product-policies", "reason": "The selected policy row identifies the governed Product workflow definition." },
+    { "id": "authority.product.instance", "role": "instance", "subject": "product.records", "uri": "soter-fixture://configuration-template/notion/authority/feature-board", "reason": "One exact configured Feature Board and its page bodies are authoritative for current records and content." },
+    { "id": "authority.notion.provider", "role": "provider", "subject": "notion.workspace", "uri": "soter-fixture://configuration-template/notion/account/operator", "reason": "The selected Notion account supplies provider identity and permission context without becoming Product authority." },
+    { "id": "authority.run.evidence", "role": "evidence", "subject": "runtime.runs", "uri": "soter-state://runs", "reason": "Private local runtime state owns prepared work and review companions." }
+  ],
+  "effectPolicies": {
+    "read": { "mode": "allow", "reason": "The exact policy, feature record, schema, and current page body may be read for private preparation." },
+    "disclosure": { "mode": "allow", "reason": "Selected observations may enter a private run envelope with explicit minimization." },
+    "write": { "mode": "confirm", "reason": "Every exact feature-body update would require fresh confirmation and separately consumed one-time start authority." },
+    "dispatch": { "mode": "prohibit", "reason": "Feature Definition does not send or publish messages." },
+    "destructive": { "mode": "prohibit", "reason": "Feature Definition never deletes records or performs destructive changes." }
+  },
+  "secretRefs": [{ "id": "secret-ref.notion", "provider": "host", "key": "NOTION_OAUTH" }],
+  "host": { "id": "codex", "adapter": "host.codex", "version": "0.3.1", "reason": "This contained configuration exercises Codex projection while preserving provider-neutral contracts." },
+  "settings": {
+    "integration.notion": {
+      "targets": {
+        "policies": "soter-fixture://configuration-template/notion/collection/policies",
+        "organizations": "soter-fixture://configuration-template/notion/collection/organizations",
+        "contacts": "soter-fixture://configuration-template/notion/collection/contacts",
+        "projects": "soter-fixture://configuration-template/notion/collection/projects",
+        "updates": "soter-fixture://configuration-template/notion/collection/updates",
+        "tasks": "soter-fixture://configuration-template/notion/collection/tasks",
+        "meetings": "soter-fixture://configuration-template/notion/collection/meetings",
+        "documents": "soter-fixture://configuration-template/notion/collection/documents",
+        "features": "soter-fixture://configuration-template/notion/collection/features"
+      }
+    }
+  }
+}

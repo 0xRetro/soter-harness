@@ -573,7 +573,8 @@ export async function prepareEmailTriageRun({
   lockPath,
   workId,
   input,
-  createdAt
+  createdAt,
+  scenarioPath = null
 }) {
   const model = exactModel(root, lock);
   const derivedReviewDefinition = exactDerivedReviewDefinition(root);
@@ -588,7 +589,7 @@ export async function prepareEmailTriageRun({
     root,
     lock,
     lockPath,
-    scenarioPath: null,
+    scenarioPath,
     automationId: AUTOMATION_ID,
     runId,
     createdAt,
@@ -714,7 +715,7 @@ export async function prepareEmailTriageRun({
     outcomes: [
       { id: 'email-window-covered', label: 'Exact mailbox window coverage prepared', state: 'supported', basis: ['context.email-triage.window'], limitation: 'Coverage applies only to the exact contained query and synthetic fixture.' },
       { id: 'email-review-private', label: 'Private thread, draft, handoff, and digest review prepared', state: 'supported', basis: ['context.email-triage.window'], limitation: 'Private review material grants no approval, continuation, execution, write, send, proof, maturity, or migration authority.' },
-      { id: 'email-approval-blocked', label: 'Email approval remains unavailable', state: 'blocked', basis: ['context.email-triage.window'], limitation: 'Exact subsets may enter the generic review-only batch boundary, but Email still requires a pack-owned connected label/draft compiler and exact provider verification before approval may be enabled.' }
+      { id: 'email-approval-not-requested', label: 'Email approval has not been requested', state: 'blocked', basis: ['context.email-triage.window'], limitation: 'Preparation creates no approval. A committed grounded decision, private proposal, exact selected review batch, compiled connected plan, private selected-activity review, and separate exact request and confirmation are required.' }
     ],
     preview,
     derivedReview

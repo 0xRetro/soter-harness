@@ -1,7 +1,6 @@
 import path from 'node:path';
 
 import { validateJsonSchema } from '../kernel/verify.mjs';
-import { assertConnectedTransactionCheckpoint } from './connected-transaction-runtime.mjs';
 import { assertVerifiedConnectedTransactionCheckpoint } from './verified-connected-transaction-runtime.mjs';
 import { connectedApprovalFingerprint } from './connected-transactions.mjs';
 import { fingerprintJson, readJson, resolveRepoPath } from './lib/canonical-json.mjs';
@@ -24,7 +23,7 @@ export const OPERATOR_REASON_CODES = Object.freeze({
   REQUIRED_INPUT_MISSING: 'REQUIRED_INPUT_MISSING',
   CHECKPOINT_STALE: 'CHECKPOINT_STALE',
   READ_AFTER_WRITE_MISMATCH: 'READ_AFTER_WRITE_MISMATCH',
-  COMPENSATION_FAILED: 'COMPENSATION_FAILED',
+  CONFIGURATION_BASIS_NOT_PRIVATE_ACTIVE: 'CONFIGURATION_BASIS_NOT_PRIVATE_ACTIVE',
   APPROVAL_REQUEST_EXPIRED: 'APPROVAL_REQUEST_EXPIRED',
   APPROVAL_REQUEST_PENDING: 'APPROVAL_REQUEST_PENDING',
   APPROVAL_CONFIRMED_NOT_STARTED: 'APPROVAL_CONFIRMED_NOT_STARTED',
@@ -35,7 +34,6 @@ export const OPERATOR_REASON_CODES = Object.freeze({
   RECONCILIATION_IN_PROGRESS: 'RECONCILIATION_IN_PROGRESS',
   EXECUTION_FAILED: 'EXECUTION_FAILED',
   TRANSACTION_COMPLETED: 'TRANSACTION_COMPLETED',
-  TRANSACTION_ROLLED_BACK: 'TRANSACTION_ROLLED_BACK',
   CHECKPOINT_MISSING: 'CHECKPOINT_MISSING',
   LOCK_APPLICABILITY_UNKNOWN: 'LOCK_APPLICABILITY_UNKNOWN',
   LOCK_CURRENT: 'LOCK_CURRENT',
@@ -100,11 +98,7 @@ function loadSources({ root, requestId, approvalId, checkpointId, observedAt }) 
   let request = null;
   if (checkpointId) {
     checkpoint = readHostCallCheckpoint(root, checkpointId).checkpoint;
-    if (checkpoint.$contract === 'soter://contracts/connected-transaction-checkpoint/v2') {
-      assertVerifiedConnectedTransactionCheckpoint(root, checkpoint);
-    } else {
-      assertConnectedTransactionCheckpoint(root, checkpoint);
-    }
+    assertVerifiedConnectedTransactionCheckpoint(root, checkpoint);
     approval = checkpoint.approval;
     request = approval.request;
   }
@@ -129,6 +123,9 @@ function loadSources({ root, requestId, approvalId, checkpointId, observedAt }) 
     request = supplied;
   }
   if (!request) throw new Error('Operator inspection requires a request, approval, or checkpoint id.');
+  if (request.batch?.$contract !== 'soter://contracts/connected-operation-batch/v2') {
+    throw new Error('Operator inspection accepts only pack-compiled connected transaction v2 sources.');
+  }
   if (!approval) approval = approvalForRequest(root, request.id, observedAt);
   let consumption = null;
   if (approval) {
@@ -156,9 +153,10 @@ function configurationFacts(root, request) {
       : 'stale'
     : 'unknown';
   return {
-    name: lock?.configuration?.name || null,
+    name: request.configuration.name || lock?.configuration?.name || null,
     path: request.configuration.path,
     lockPath: request.configuration.lockPath,
+    configurationBasis: request.configuration.configurationBasis || null,
     lockFingerprint: request.configuration.lockFingerprint,
     graphFingerprint: request.configuration.graphFingerprint,
     host: request.configuration.host,
@@ -180,10 +178,6 @@ function runtimeStepState(operation) {
   if (operation.state === 'applied') return 'applied';
   if (operation.state === 'failed') return 'failed';
   if (operation.state === 'needs-attention') return 'needs-attention';
-  if (operation.state === 'compensated') return 'compensated';
-  if (['compensating', 'compensation-verifying'].includes(operation.state)) {
-    return 'compensating';
-  }
   return operation.state === 'pending' ? 'pending' : 'current';
 }
 
@@ -201,7 +195,7 @@ function capabilityFacts(request, checkpoint) {
   }));
   const completedPrefix = [];
   for (const step of steps) {
-    if (!['applied', 'compensated'].includes(step.state)) break;
+    if (step.state !== 'applied') break;
     completedPrefix.push(step.id);
   }
   return {
@@ -221,9 +215,7 @@ function capabilityFacts(request, checkpoint) {
 
 function verificationCriterion(operation, name, stage) {
   const phase = operation?.[name] || null;
-  const ambiguity = Array.isArray(operation?.ambiguities)
-    ? operation.ambiguities.find((item) => item.stage === stage) || null
-    : operation?.ambiguity?.stage === stage ? operation.ambiguity : null;
+  const ambiguity = operation?.ambiguity?.stage === stage ? operation.ambiguity : null;
   const reconciledPassed = ambiguity?.status === 'resolved'
     && ambiguity.resolution === 'expected-state';
   const failed = Boolean((ambiguity && !reconciledPassed)
@@ -252,17 +244,10 @@ function verificationFacts(request, checkpoint) {
   }));
   const criteria = request.batch.operations.flatMap((source) => {
     const operation = runtime.get(source.id);
-    const records = [{
+    return [{
       id: 'verification.' + source.id + '.record',
       ...verificationCriterion(operation, 'verification', 'verify')
     }];
-    if (source.contentVerification) {
-      records.push({
-        id: 'verification.' + source.id + '.content',
-        ...verificationCriterion(operation, 'contentVerification', 'content-verify')
-      });
-    }
-    return records;
   });
   const state = criteria.some((item) => item.state === 'failed') ? 'failed'
     : criteria.length && criteria.every((item) => item.state === 'passed') ? 'verified'
@@ -276,77 +261,32 @@ function verificationFacts(request, checkpoint) {
   };
 }
 
-function compensationFacts(request, checkpoint) {
-  const plan = request.batch.operations.map((operation) => ({
-    stepId: operation.id,
-    mode: operation.recovery.mode
-  }));
-  if (request.batch.$contract === 'soter://contracts/connected-operation-batch/v2') {
-    return {
-      state: 'not-required',
-      plan,
-      completedStepIds: [],
-      remainingStepIds: [],
-      restoredFingerprint: null
-    };
-  }
-  if (!checkpoint) {
-    return { state: 'not-required', plan, completedStepIds: [], remainingStepIds: [], restoredFingerprint: null };
-  }
-  const eligible = checkpoint.operations.filter((operation) => operation.priorFields !== null);
-  const completed = eligible.filter((operation) => operation.state === 'compensated');
-  const compensating = eligible.some((operation) => {
-    return ['compensating', 'compensation-verifying'].includes(operation.state);
-  });
-  const failed = checkpoint.operations.some((operation) => {
-    return operation.ambiguities.some((item) => {
-      return ['compensate', 'compensation-verify'].includes(item.stage)
-        && item.status === 'unresolved';
-    });
-  });
-  const touched = eligible.some((operation) => {
-    return operation.compensation || operation.compensationVerification
-      || operation.state === 'compensated';
-  });
-  const state = checkpoint.state === 'rolled-back' ? 'verified'
-    : failed ? 'failed'
-      : compensating ? 'running'
-        : touched ? 'pending'
-          : 'not-required';
+function compensationFacts() {
   return {
-    state,
-    plan,
-    completedStepIds: completed.map((operation) => operation.id),
-    remainingStepIds: ['pending', 'running', 'failed'].includes(state)
-      ? eligible.filter((operation) => operation.state !== 'compensated').map((operation) => operation.id)
-      : [],
-    restoredFingerprint: completed.length
-      ? fingerprintJson(completed.map((operation) => ({
-          id: operation.id,
-          priorFields: operation.priorFields
-        })))
-      : null
+    state: 'not-required',
+    plan: [],
+    completedStepIds: [],
+    remainingStepIds: [],
+    restoredFingerprint: null
   };
 }
 
 function checkpointHasVerificationFailure(checkpoint) {
   return Boolean(checkpoint?.operations.some((operation) => {
-    const ambiguities = Array.isArray(operation.ambiguities)
-      ? operation.ambiguities
-      : operation.ambiguity ? [operation.ambiguity] : [];
-    return ambiguities.some((item) => {
-      return ['verify', 'content-verify'].includes(item.stage) && item.status === 'unresolved';
-    }) || (operation.error?.kind === 'conflict'
-      && (operation.verification || operation.contentVerification));
+    return operation.ambiguity?.stage === 'verify'
+      && operation.ambiguity.status === 'unresolved'
+      || (operation.error?.kind === 'conflict' && operation.verification);
   }));
 }
 
-function activityFacts(request, approval, consumption, checkpoint, verification, compensation) {
+function activityFacts(request, approval, consumption, checkpoint, verification) {
   const expired = Date.parse(request.expiresAt) < Date.parse(request.observedAt);
   let workState = !approval ? (expired ? 'approval-expired' : 'awaiting-approval')
     : !consumption ? (expired ? 'approval-expired' : 'approved-not-started')
       : 'running';
-  let phase = workState.startsWith('approval') || workState === 'awaiting-approval'
+  let phase = workState.startsWith('approval')
+    || workState === 'awaiting-approval'
+    || workState === 'approved-not-started'
     ? 'approval'
     : 'execution';
   if (consumption && !checkpoint) {
@@ -354,27 +294,22 @@ function activityFacts(request, approval, consumption, checkpoint, verification,
     phase = 'execution';
   } else if (checkpoint?.current?.stage === 'reconcile') {
     workState = 'blocked';
-    phase = 'execution';
+    phase = 'reconciliation';
   } else if (checkpoint?.state === 'completed') {
     workState = 'completed';
     phase = 'complete';
-  } else if (checkpoint?.state === 'rolled-back') {
-    workState = 'rolled-back';
-    phase = 'compensation';
-  } else if (compensation.state === 'running') {
-    workState = 'rolling-back';
-    phase = 'compensation';
   } else if (verification.state === 'failed' || checkpointHasVerificationFailure(checkpoint)) {
     workState = 'verification-failed';
     phase = 'verification';
   } else if (checkpoint?.state === 'needs-attention') {
     workState = 'blocked';
-    phase = 'execution';
+    phase = checkpoint.operations.some((operation) => {
+      return operation.ambiguity?.status === 'unresolved';
+    }) ? 'reconciliation' : 'execution';
   } else if (checkpoint?.state === 'failed') {
     workState = 'failed';
     phase = 'execution';
-  } else if (checkpoint?.current?.stage === 'verify'
-    || checkpoint?.current?.stage === 'content-verify') {
+  } else if (checkpoint?.current?.stage === 'verify') {
     phase = 'verification';
   }
   let automationId = null;
@@ -432,8 +367,17 @@ function approvalFacts(request, approval, consumption, observedAt) {
   };
 }
 
-function blockers(configuration, approval, checkpoint, verification, compensation) {
+function blockers(configuration, approval, checkpoint, verification) {
   const items = [];
+  if (configuration.configurationBasis !== 'private-active') {
+    items.push({
+      reasonCode: OPERATOR_REASON_CODES.CONFIGURATION_BASIS_NOT_PRIVATE_ACTIVE,
+      summary: 'Connected continuation requires an exact private-active configuration basis.',
+      details: [{ key: 'configurationBasis', value: configuration.configurationBasis }],
+      requiredInputs: [],
+      requiredPermissions: []
+    });
+  }
   if (configuration.applicability.state !== 'current') {
     items.push({
       reasonCode: configuration.applicability.reasonCode,
@@ -465,29 +409,17 @@ function blockers(configuration, approval, checkpoint, verification, compensatio
       requiredPermissions: []
     });
   }
-  if (compensation.state === 'failed') {
-    items.push({
-      reasonCode: OPERATOR_REASON_CODES.COMPENSATION_FAILED,
-      summary: 'Compensation has not established the captured prior state.',
-      details: [{ key: 'checkpointId', value: checkpoint?.id || null }],
-      requiredInputs: [],
-      requiredPermissions: []
-    });
-  }
   if (checkpoint?.state === 'needs-attention'
-    && verification.state !== 'failed'
-    && compensation.state !== 'failed') {
+    && verification.state !== 'failed') {
     items.push({
       reasonCode: OPERATOR_REASON_CODES.RECONCILIATION_AVAILABLE,
       summary: 'An ambiguous external effect requires exact read-only reconciliation.',
-      details: checkpoint.operations.flatMap((operation) => {
-        const ambiguities = Array.isArray(operation.ambiguities)
-          ? operation.ambiguities
-          : operation.ambiguity ? [operation.ambiguity] : [];
-        return ambiguities
-          .filter((item) => item.status === 'unresolved')
-          .map((item) => ({ key: 'ambiguityId', value: item.id }));
-      }),
+      details: checkpoint.operations
+        .filter((operation) => operation.ambiguity?.status === 'unresolved')
+        .map((operation) => ({
+          key: 'ambiguityId',
+          value: operation.ambiguity.id
+        })),
       requiredInputs: [],
       requiredPermissions: []
     });
@@ -504,7 +436,15 @@ function blockers(configuration, approval, checkpoint, verification, compensatio
   return items;
 }
 
-function resumeFacts(configuration, approval, consumption, checkpoint) {
+export function deriveOperatorResumeFacts(configuration, approval, consumption, checkpoint) {
+  if (configuration.configurationBasis !== 'private-active') {
+    return {
+      classification: 'unavailable',
+      reasonCode: OPERATOR_REASON_CODES.CONFIGURATION_BASIS_NOT_PRIVATE_ACTIVE,
+      reason: 'Connected continuation requires an exact private-active configuration basis.',
+      permittedNextAction: 'inspect-checkpoint'
+    };
+  }
   if (configuration.applicability.state !== 'current') {
     return {
       classification: 'unavailable',
@@ -567,9 +507,7 @@ function resumeFacts(configuration, approval, consumption, checkpoint) {
   }
   if (checkpoint?.state === 'needs-attention') {
     const unresolved = checkpoint.operations.some((operation) => {
-      return Array.isArray(operation.ambiguities)
-        ? operation.ambiguities.some((item) => item.status === 'unresolved')
-        : operation.ambiguity?.status === 'unresolved';
+      return operation.ambiguity?.status === 'unresolved';
     });
     if (!unresolved) {
       return {
@@ -588,9 +526,7 @@ function resumeFacts(configuration, approval, consumption, checkpoint) {
   }
   const terminalCode = checkpoint?.state === 'completed'
     ? OPERATOR_REASON_CODES.TRANSACTION_COMPLETED
-    : checkpoint?.state === 'rolled-back'
-      ? OPERATOR_REASON_CODES.TRANSACTION_ROLLED_BACK
-      : OPERATOR_REASON_CODES.EXECUTION_FAILED;
+    : OPERATOR_REASON_CODES.EXECUTION_FAILED;
   return {
     classification: 'unavailable',
     reasonCode: terminalCode,
@@ -599,7 +535,7 @@ function resumeFacts(configuration, approval, consumption, checkpoint) {
   };
 }
 
-function continuationRequest(checkpoint, resume) {
+export function deriveOperatorContinuationRequest(checkpoint, resume) {
   if (!checkpoint || resume.classification !== 'safe') return null;
   const kind = resume.permittedNextAction === 'execute-current-call'
     ? 'execute-current-call'
@@ -642,54 +578,27 @@ export function inspectConnectedOperatorActivity({
   );
   const capabilities = capabilityFacts(sources.request, sources.checkpoint);
   const verification = verificationFacts(sources.request, sources.checkpoint);
-  const compensation = compensationFacts(sources.request, sources.checkpoint);
+  const compensation = compensationFacts();
   const activity = activityFacts(
     request,
     sources.approval,
     sources.consumption,
     sources.checkpoint,
-    verification,
-    compensation
+    verification
   );
-  const packCompiled = sources.request.batch.$contract
-    === 'soter://contracts/connected-operation-batch/v2';
-  const recordIds = packCompiled
-    ? unique(sources.request.batch.operations.map((operation) => operation.review.subject.id))
-    : unique([
-        ...sources.request.batch.operations.map((operation) => operation.input?.id),
-        ...(sources.checkpoint?.operations || []).map((operation) => operation.createdRecordId)
-      ]);
-  const runtimeById = new Map((sources.checkpoint?.operations || []).map((operation) => {
-    return [operation.id, operation];
-  }));
+  const recordIds = unique(
+    sources.request.batch.operations.map((operation) => operation.review.subject.id)
+  );
   const changes = sources.request.batch.operations.map((operation) => {
-    const runtime = runtimeById.get(operation.id);
-    if (packCompiled) {
-      return {
-        id: operation.id,
-        recordId: operation.review.subject.id,
-        effect: operation.capability,
-        beforeFingerprint: operation.review.before.fingerprint,
-        afterFingerprint: operation.review.after.fingerprint
-      };
-    }
-    const after = operation.capability === 'crm.records.update'
-      ? operation.input.patch
-      : {
-          fields: operation.input.fields,
-          bodyFingerprint: typeof operation.input.body === 'string'
-            ? fingerprintJson(operation.input.body)
-            : null
-        };
     return {
       id: operation.id,
-      recordId: operation.input.id || runtime?.createdRecordId || null,
+      recordId: operation.review.subject.id,
       effect: operation.capability,
-      beforeFingerprint: runtime?.priorFields ? fingerprintJson(runtime.priorFields) : null,
-      afterFingerprint: fingerprintJson(after)
+      beforeFingerprint: operation.review.before.fingerprint,
+      afterFingerprint: operation.review.after.fingerprint
     };
   });
-  const resume = resumeFacts(
+  const resume = deriveOperatorResumeFacts(
     configuration,
     approval,
     sources.consumption,
@@ -721,8 +630,7 @@ export function inspectConnectedOperatorActivity({
       configuration,
       approval,
       sources.checkpoint,
-      verification,
-      compensation
+      verification
     ),
     checkpoint: sources.checkpoint
       ? {
@@ -733,7 +641,7 @@ export function inspectConnectedOperatorActivity({
         }
       : null,
     resume,
-    continuationRequest: continuationRequest(sources.checkpoint, resume),
+    continuationRequest: deriveOperatorContinuationRequest(sources.checkpoint, resume),
     verification,
     compensation,
     families: {

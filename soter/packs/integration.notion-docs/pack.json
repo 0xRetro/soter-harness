@@ -1,0 +1,38 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "integration.notion-docs",
+  "version": "0.1.0",
+  "layer": "integration",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Maps portable document-index schema, reads, and creates through a contained Notion fixture without coupling CRM-only configurations to Docs.",
+  "dependencies": [
+    { "pack": "core.runtime", "version": "^0.1.0", "optional": false, "reason": "Integration binding, effect policy, private state, and evidence are supplied by Core." },
+    { "pack": "context.docs", "version": "^0.1.0", "optional": false, "reason": "Portable document-index meaning belongs to the selected Docs Context." }
+  ],
+  "capabilities": {
+    "requires": [],
+    "provides": [
+      { "id": "documents.schema.read", "version": "1.0.0" },
+      { "id": "documents.records.read", "version": "1.0.0" },
+      { "id": "documents.records.create", "version": "1.0.0" }
+    ]
+  },
+  "authorities": [
+    { "role": "definition", "subject": "documents.records", "required": true },
+    { "role": "instance", "subject": "documents.records", "required": true },
+    { "role": "provider", "subject": "notion.workspace", "required": true }
+  ],
+  "effects": ["read", "disclosure", "write"],
+  "artifacts": [
+    { "path": "soter/capabilities/documents.schema.read.json", "role": "definition" },
+    { "path": "soter/capabilities/documents.records.read.json", "role": "definition" },
+    { "path": "soter/capabilities/documents.records.create.json", "role": "definition" },
+    { "path": "soter/providers/provider.integration.notion-docs.fixture.json", "role": "implementation" },
+    { "path": "soter/integrations/notion-docs/fixture.mjs", "role": "implementation" },
+    { "path": "soter/fixtures/providers/notion/documents.json", "role": "fixture" }
+  ],
+  "compatibility": { "baseContract": "^1.0.0", "hosts": ["codex", "claude"] },
+  "verification": { "maxLevel": "fixture", "scenarios": [] }
+}

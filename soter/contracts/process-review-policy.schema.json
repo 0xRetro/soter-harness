@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contexts/process/process-review-policy/v1",
+  "title": "Soter process review policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "id",
+    "name",
+    "lenses",
+    "severityOrder",
+    "criticalVerification",
+    "fixMode",
+    "sourceRoles",
+    "maximumFindings"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contexts/process/process-review-policy/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": { "const": "policy.context.process.review" },
+    "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "lenses": {
+      "const": [
+        "operator-execution",
+        "adversarial",
+        "consistency",
+        "completeness",
+        "failure-paths"
+      ]
+    },
+    "severityOrder": { "const": ["critical", "should-fix", "nice-to-have"] },
+    "criticalVerification": { "const": "exact-source-reproduction-required" },
+    "fixMode": { "const": "report-only" },
+    "sourceRoles": {
+      "const": [
+        "process-definition",
+        "policy-standards",
+        "write-target-schemas",
+        "process-runs",
+        "body-shape"
+      ]
+    },
+    "maximumFindings": { "type": "integer", "minimum": 1, "maximum": 100 }
+  }
+}

@@ -1,0 +1,279 @@
+{
+  "$contract": "soter://contracts/context-snapshot/v1",
+  "contractVersion": "1.0.0",
+  "id": "context.process-capture.preparation-fixture",
+  "runId": "run.process-capture.preparation-fixture",
+  "createdAt": "2026-07-21T22:00:00.000Z",
+  "configurationLockFingerprint": "sha256:c90f0f8ea158c28bb1c7702b2f61770c9b549c38b3a4be23e467c8e12ffc987b",
+  "graphFingerprint": "sha256:ac00f74224e2d7b612f8a33718d1ca20ad2a46e456dd6704cb629fb738e1d8f5",
+  "containment": "fixture",
+  "entries": [
+    {
+      "id": "context.process-capture.policy",
+      "subject": "process.records.process-capture-policy",
+      "authority": "authority.process.definition",
+      "role": "definition",
+      "capability": "process.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T22:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.process.definition",
+        "mapping": "mapping.integration.notion.process-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:0dc79cd769045b7ac8fd5f816aa75072cc14f85d8881f50f6649c6f27876f77d"
+      },
+      "valueFingerprint": "sha256:46b3778833e6b717965e845b57e08fa1d80568282ca65e5ec50a124c87fa3fde",
+      "value": {
+        "record": {
+          "type": "process-capture-policy",
+          "id": "policy.process-capture",
+          "version": "1",
+          "fields": {
+            "name": "Processes"
+          },
+          "identityBinding": {
+            "state": "exact-request",
+            "requestedIdFingerprint": "sha256:8b31c4b2660c740eb83ae6c4cb018c769d93368d1bd6b7c8e6e97915cc219e9d"
+          }
+        },
+        "definitionFingerprint": "sha256:259767957b07e85a5f7f191c31882b53d0431cc367a0c458dfb0b32edc76417d"
+      }
+    },
+    {
+      "id": "context.process-capture.schema",
+      "subject": "process.records.process-schema",
+      "authority": "authority.process.instance",
+      "role": "instance",
+      "capability": "process.schema.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T22:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.process.instance",
+        "mapping": "mapping.integration.notion.process-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:78ed6072a10e6274f88c92ee311e778194e4bdd0fdda5e5a6a54c8c16401ba5a"
+      },
+      "valueFingerprint": "sha256:cc8f5964cc6e6cc33dd7f0645bae39865c8a1209a988a42326c164ffe1cf570e",
+      "value": {
+        "schema": {
+          "recordType": "process",
+          "fields": [
+            {
+              "id": "category",
+              "writable": true,
+              "options": [
+                "Engineering",
+                "Governance",
+                "Operations — Finance",
+                "Operations — Security",
+                "Product"
+              ]
+            },
+            {
+              "id": "declaredClaims",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "frequency",
+              "writable": true,
+              "options": [
+                "Ad Hoc",
+                "Bi-Annual",
+                "Bi-Weekly",
+                "Daily",
+                "Monthly",
+                "Quarterly",
+                "Weekly"
+              ]
+            },
+            {
+              "id": "name",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "priority",
+              "writable": true,
+              "options": [
+                "High",
+                "Low",
+                "Medium"
+              ]
+            },
+            {
+              "id": "processLogicOwnerUris",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "processOs",
+              "writable": true,
+              "options": [
+                "Live",
+                "Not Ready",
+                "Ready"
+              ]
+            },
+            {
+              "id": "relatedPolicyUris",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "relatedRoleUris",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "relatedServiceUris",
+              "writable": true,
+              "options": null
+            },
+            {
+              "id": "status",
+              "writable": true,
+              "options": [
+                "Active",
+                "Backlog",
+                "Draft",
+                "In Review",
+                "Retired",
+                "Up Next"
+              ]
+            },
+            {
+              "id": "tags",
+              "writable": true,
+              "options": [
+                "Incident Response",
+                "Multisig",
+                "Treasury"
+              ]
+            },
+            {
+              "id": "writeTargetTypes",
+              "writable": true,
+              "options": null
+            }
+          ],
+          "fingerprint": "sha256:10d9d73e5bfb2ac090c6db4804c86ee4da527d1f7e0d855981a6f32b44290936"
+        },
+        "provenance": {
+          "provider": "notion-fixture",
+          "authority": "authority.process.instance",
+          "mapping": "mapping.integration.notion.process-records",
+          "mappingVersion": "0.2.0",
+          "sourceKind": "fixture",
+          "sourceReferenceFingerprint": "sha256:78ed6072a10e6274f88c92ee311e778194e4bdd0fdda5e5a6a54c8c16401ba5a"
+        },
+        "observedAt": "2026-07-21T22:00:00.000Z"
+      }
+    },
+    {
+      "id": "context.process-capture.candidates",
+      "subject": "process.records.process-candidates",
+      "authority": "authority.process.instance",
+      "role": "instance",
+      "capability": "process.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T22:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.process.instance",
+        "mapping": "mapping.integration.notion.process-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:0dc79cd769045b7ac8fd5f816aa75072cc14f85d8881f50f6649c6f27876f77d"
+      },
+      "valueFingerprint": "sha256:635bfebbfc9a7f71ad46958b0e4737cc60dddfee16bc79e2299204ae66ffdec5",
+      "value": {
+        "candidateCount": 0,
+        "candidateIds": [],
+        "providerOutputFingerprint": "sha256:e2ae217888ddf0417c65fc782ab3359480e635c9016e738194b04344b3c84ddb"
+      }
+    },
+    {
+      "id": "context.process-capture.roles",
+      "subject": "process.records.roles",
+      "authority": "authority.process.instance",
+      "role": "instance",
+      "capability": "process.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T22:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.process.instance",
+        "mapping": "mapping.integration.notion.process-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:0dc79cd769045b7ac8fd5f816aa75072cc14f85d8881f50f6649c6f27876f77d"
+      },
+      "valueFingerprint": "sha256:143ebd2c05f47e6209f1fe1c78eda63f635ea8cc769a8b2884742b51ffb1eb12",
+      "value": {
+        "requestedCount": 1,
+        "candidateIds": [
+          "soter-fixture://process/role/security-lead"
+        ],
+        "providerOutputFingerprint": "sha256:4c33f6e698d25c4cc99054560b5b0a4682fc1746dc60cf2ed6418ae139bde9ee"
+      }
+    },
+    {
+      "id": "context.process-capture.service",
+      "subject": "process.records.service",
+      "authority": "authority.process.instance",
+      "role": "instance",
+      "capability": "process.records.read",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "observedAt": "2026-07-21T22:00:00.000Z",
+      "freshness": "passed",
+      "provenance": {
+        "provider": "notion-fixture",
+        "authority": "authority.process.instance",
+        "mapping": "mapping.integration.notion.process-records",
+        "mappingVersion": "0.2.0",
+        "sourceKind": "fixture",
+        "sourceReferenceFingerprint": "sha256:0dc79cd769045b7ac8fd5f816aa75072cc14f85d8881f50f6649c6f27876f77d"
+      },
+      "valueFingerprint": "sha256:9733c27a7a46a187ffa4c1b85df92a1b67de7bebaabc9ea122c14ed69a4766db",
+      "value": {
+        "requested": true,
+        "candidateIds": [
+          "soter-fixture://process/service/security-operations"
+        ],
+        "providerOutputFingerprint": "sha256:ebde0dedc935db4dad35d541359faacd17947597f986111fe61d4d2001531094"
+      }
+    }
+  ],
+  "effectIds": [
+    "effect.process-capture.preparation.policy.fixture",
+    "effect.process-capture.preparation.schema.fixture",
+    "effect.process-capture.preparation.candidates.fixture",
+    "effect.process-capture.preparation.roles.fixture",
+    "effect.process-capture.preparation.service.fixture"
+  ],
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Process name, purpose, triggers, roles, capabilities, steps, work-items, body, requested options, relation names, provider targets, native responses, and credentials are excluded from general inspection."
+    ]
+  }
+}

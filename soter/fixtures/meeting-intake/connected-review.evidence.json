@@ -1,0 +1,263 @@
+{
+  "$contract": "soter://contracts/evidence/v2",
+  "contractVersion": "2.0.0",
+  "id": "evidence.meeting-intake.connected-review.fixture",
+  "createdAt": "2026-07-20T12:00:00.000Z",
+  "claimFamily": "behavior",
+  "claim": "One fixture-contained connected acquisition produced a grounded private review whose incomplete write-verification boundary remained mechanically held without creating execution authority.",
+  "subject": {
+    "type": "run",
+    "id": "run.meeting-intake.connected-acquisition.b32b95e1efd454a3e7529e7c",
+    "version": null
+  },
+  "configurationLockFingerprint": "sha256:68291883526f461cd2defbe05b519220d7b4ceaa7cea46fed02ccd5af8bdb463",
+  "graphFingerprint": "sha256:d71cae3f2d0cb42bd8b257dd0ac320adf7756f3f5e91636c8095d0b0164bd6e6",
+  "dependencies": [
+    {
+      "id": "kernel.soter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+    },
+    {
+      "id": "core.runtime",
+      "version": "0.1.0",
+      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+    },
+    {
+      "id": "context.crm",
+      "version": "0.1.0",
+      "fingerprint": "sha256:fa69fc9f796e84b1a2cd7e319c4344dcc44d8dcbea9542e51158eb868d266f44"
+    },
+    {
+      "id": "context.meetings",
+      "version": "0.1.0",
+      "fingerprint": "sha256:151852f16515b5d3b48508ff15bbf38107a1333f3ee10a6b6579fadb4ee64164"
+    },
+    {
+      "id": "context.projects",
+      "version": "0.1.0",
+      "fingerprint": "sha256:e8b68449ec9582d769c56d9b9cdf9ed3a6f220c15593a614ac13e9a656cf0ce5"
+    },
+    {
+      "id": "context.tasks",
+      "version": "0.1.0",
+      "fingerprint": "sha256:5d516369250d03e1a270d7ac6c0dfe3a19d790eafab4a7971e1b11a36d282555"
+    },
+    {
+      "id": "automation.meeting-intake",
+      "version": "0.1.0",
+      "fingerprint": "sha256:4f39b7bae165899b915085db78ceb67efb86d72f6624879b9571d90e6a017fae"
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "fingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5"
+    },
+    {
+      "id": "integration.otter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:2b026b4426d72cab08f667f36e219be74664913634b175ab79b0f040f192e07b"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
+  },
+  "integrations": [
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "manifestFingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5",
+      "evidenceMaturity": "declared"
+    },
+    {
+      "id": "integration.otter",
+      "version": "0.1.0",
+      "manifestFingerprint": "sha256:2b026b4426d72cab08f667f36e219be74664913634b175ab79b0f040f192e07b",
+      "evidenceMaturity": "declared"
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.crm.definition",
+      "role": "definition",
+      "subject": "crm.records",
+      "declarationFingerprint": "sha256:bb8707ba433f49d40250874f67667e8e3fb9243ba31895b026d530750f2c7b88"
+    },
+    {
+      "id": "authority.crm.instance",
+      "role": "instance",
+      "subject": "crm.records",
+      "declarationFingerprint": "sha256:23a6dd9d0b3aa51376f36403b34c0e0530399afab401429e72b3a30eddf14e11"
+    },
+    {
+      "id": "authority.meetings.definition",
+      "role": "definition",
+      "subject": "meetings.records",
+      "declarationFingerprint": "sha256:98e080ad675a7d7ba10d62449164df4b2b7774f5fec5a6f8ab8c02213caeb7c6"
+    },
+    {
+      "id": "authority.meetings.instance",
+      "role": "instance",
+      "subject": "meetings.records",
+      "declarationFingerprint": "sha256:8abd68d26f22693f3573546c995297998e5655b35ac6c21524e3b548ecddce60"
+    },
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "declarationFingerprint": "sha256:e3e11d347b7a0109668facaeb7b12311023da39949d1328bfd918c53a406c756"
+    },
+    {
+      "id": "authority.otter.provider",
+      "role": "provider",
+      "subject": "meeting.transcript",
+      "declarationFingerprint": "sha256:b2acdfc57c3b02106dcfe5c7b9e6838548a644c6e8927999d7a051057ba64331"
+    },
+    {
+      "id": "authority.projects.definition",
+      "role": "definition",
+      "subject": "projects.records",
+      "declarationFingerprint": "sha256:fce3445f679b41227242b5dbc7fafd2cb86c9a95020d887a50c5df612eee0f83"
+    },
+    {
+      "id": "authority.projects.instance",
+      "role": "instance",
+      "subject": "projects.records",
+      "declarationFingerprint": "sha256:97b91257bdd2ef42a8ce3efcb23bc86d5a337118c9d81058af64035b7e7a0aa6"
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "declarationFingerprint": "sha256:6f39e99f1ebc86fe11ee09cc7170824ac4c11a6fc88371edb673bd2379dacdc8"
+    },
+    {
+      "id": "authority.tasks.definition",
+      "role": "definition",
+      "subject": "tasks.records",
+      "declarationFingerprint": "sha256:88a0f55602be20f6491a2faf0180ed8b16b309f23d937f41878065bd784358bb"
+    },
+    {
+      "id": "authority.tasks.instance",
+      "role": "instance",
+      "subject": "tasks.records",
+      "declarationFingerprint": "sha256:dcb3e8d127b4bcc04235daa8426dce206db992719e80880e7fb994f670cf1d8a"
+    }
+  ],
+  "evaluator": {
+    "id": "automation.meeting-intake.contained-connected-review",
+    "version": "0.5.0",
+    "level": "fixture"
+  },
+  "environment": {
+    "containment": "fixture",
+    "runtime": "node"
+  },
+  "acceptanceCriteria": [
+    "One current prepared-work basis produces a deterministic grounded decision and private review proposal.",
+    "Every incomplete write action is held under the exact stable reason code.",
+    "The sanitized proposal contains no proposed change or reusable execution authority.",
+    "No batch, approval request, confirmation, start authorization, checkpoint, provider write, or retry authority is created.",
+    "Only normalized provider outputs and fingerprints enter durable state or this evidence record."
+  ],
+  "result": "passed",
+  "outcomes": [
+    {
+      "id": "connected-review.prepared",
+      "state": "passed"
+    },
+    {
+      "id": "connected-review.decision-grounded",
+      "state": "passed"
+    },
+    {
+      "id": "connected-review.private-material-available",
+      "state": "passed"
+    },
+    {
+      "id": "connected-review.write-authority-held",
+      "state": "passed",
+      "reasonCode": "COMPLETE_MEETING_READBACK_UNAVAILABLE"
+    },
+    {
+      "id": "connected-review.private-contained-basis",
+      "state": "passed"
+    },
+    {
+      "id": "connected-review.live-provider-effect",
+      "state": "not-applicable"
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "prepared-work",
+      "id": "work.meeting-intake.b32b95e1efd454a3e7529e7c",
+      "fingerprint": "sha256:a4c8671e2d12672eb6a2e8255c62075754728c502847dc2b9b50cf142f32b58d"
+    },
+    {
+      "role": "automation-decision",
+      "id": "decision.meeting-intake.connected-selftest",
+      "fingerprint": "sha256:8c167378737a26c2c8d4af628ab58cdbb0273b239068b1e9096f8d4f7464212a"
+    },
+    {
+      "role": "automation-proposal",
+      "id": "proposal.meeting-intake.connected-selftest",
+      "fingerprint": "sha256:dec815f02fa25e436cad26c6e744d37ff783f36fc7f653c2e785ae4e2df0c298"
+    }
+  ],
+  "effects": [],
+  "failures": [],
+  "warnings": [],
+  "skipped": [
+    "No batch, approval request, confirmation, one-time start, checkpoint, or provider write was created.",
+    "No live provider authentication, permission, reachability, write, or health was evaluated.",
+    "Complete multi-observation read-back verification is unavailable in Core v2."
+  ],
+  "limitations": [
+    "This proves connected acquisition, grounded decision support, private review, and the exact held boundary against contained normalized responses.",
+    "It does not prove connected write readiness, behavior verification, recovery, or health."
+  ],
+  "freshness": {
+    "policy": "Valid only while every configuration-lock fingerprint remains unchanged.",
+    "validUntil": null
+  },
+  "supersedes": null,
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Credential references and credential values are excluded."
+    ]
+  },
+  "privateContainedBasis": {
+    "kind": "private-active-contained",
+    "version": "1.1.0",
+    "configurationName": "meeting-intake",
+    "privateConfigurationFingerprint": "sha256:93b3e59b179ff230f367bea6879f87a6ef822ac83fc62b6066f547e392e30e01",
+    "privateLockFingerprint": "sha256:68291883526f461cd2defbe05b519220d7b4ceaa7cea46fed02ccd5af8bdb463",
+    "privateGraphFingerprint": "sha256:d71cae3f2d0cb42bd8b257dd0ac320adf7756f3f5e91636c8095d0b0164bd6e6",
+    "trackedTemplateLockFingerprint": "sha256:5bb9bf587f258e66fc5ce2eb092d61a05e544734c723a8cc209f212a42569df9",
+    "trackedTemplateGraphFingerprint": "sha256:cbb99770c57b011bec7b722843a3fdbe536f2989da64f046c8bed3d4cc050638",
+    "applicabilityProjectionFingerprint": "sha256:c5e57e82ecd4f8d39189616d13ca146270410d840b71ec78d9e4923479445613",
+    "substitutions": {
+      "notionTargetCount": 8,
+      "notionDocumentSourceCount": 3,
+      "providerFixtureDocumentCount": 3,
+      "notionOptionMappingScopeCount": 8,
+      "notionOptionMappingEntryCount": 8,
+      "notionOptionMappingScopeFingerprint": "sha256:8a27378a6248b256cbbd418207c0f38a83682f94e36424c32e11eb4a57aceb8b"
+    },
+    "privacy": {
+      "fullPrivateLockIncluded": false,
+      "privateConfigurationPathIncluded": false,
+      "providerTargetValuesIncluded": false,
+      "providerSourceValuesIncluded": false,
+      "providerOptionValuesIncluded": false,
+      "rawProviderResponsesIncluded": false,
+      "privateInputsIncluded": false
+    },
+    "basisFingerprint": "sha256:0c063499c03a724de9fc4d70c7286a3e2ac856bc123de4b2813f6860dc5ca607"
+  }
+}

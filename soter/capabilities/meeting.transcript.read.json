@@ -15,9 +15,10 @@
   },
   "outputSchema": {
     "type": "object",
-    "required": ["meetingId", "speakers", "segments", "provenance", "observedAt"],
+    "required": ["meetingId", "recordingUri", "speakers", "segments", "provenance", "observedAt"],
     "properties": {
       "meetingId": { "type": "string" },
+      "recordingUri": { "type": "string" },
       "speakers": {
         "type": "array",
         "items": {

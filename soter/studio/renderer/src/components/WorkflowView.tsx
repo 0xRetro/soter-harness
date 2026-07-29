@@ -6,6 +6,11 @@ import { StateMark } from './StateMark';
 export function WorkflowView({ workflow, configuration }: { workflow: Workflow; configuration: Configuration | null }) {
   const outcomes = workflow.scenarios.flatMap((scenario) => scenario.outcomes).filter(unique);
   const executedCount = workflow.scenarios.filter((scenario) => scenario.execution).length;
+  const hostCompatibility = Object.entries(workflow.hostCompatibility);
+  const compatibleHosts = hostCompatibility
+    .filter(([, fact]) => fact.state === 'compatible')
+    .map(([host]) => host);
+  const unavailableHosts = hostCompatibility.filter(([, fact]) => fact.state === 'unavailable');
   return (
     <div className="workflow-view">
       <header className="view-intro workflow-intro">
@@ -26,6 +31,22 @@ export function WorkflowView({ workflow, configuration }: { workflow: Workflow; 
           <div><span className="eyebrow">Catalog availability</span><strong>Not selected</strong></div>
           <p>This automation is declared and inspectable, but no desired configuration resolves it. Its scenarios remain declared—not executed.</p>
           <a href="#/config">Preview in Config <span aria-hidden="true">→</span></a>
+        </section>
+      )}
+
+      {unavailableHosts.length > 0 && (
+        <section className="workflow-availability" aria-label="Workflow host compatibility">
+          <div>
+            <span className="eyebrow">Compatible hosts</span>
+            <strong>{compatibleHosts.join(', ')}</strong>
+          </div>
+          <div>
+            {unavailableHosts.map(([host, unavailable]) => unavailable.state === 'unavailable' && (
+              <p key={host}>
+                <code>{host}</code> unavailable · <code>{unavailable.reasonCode}</code> · {unavailable.reason}
+              </p>
+            ))}
+          </div>
         </section>
       )}
 
@@ -116,7 +137,7 @@ export function WorkflowView({ workflow, configuration }: { workflow: Workflow; 
                 <ScenarioList label="Expected outcomes" values={scenario.outcomes} />
                 <ScenarioList label="Invariants" values={scenario.invariants} />
                 <ScenarioList label="Required evidence" values={scenario.evidence} />
-                <ScenarioList label="Mapped legacy cases" values={scenario.sourceCases} mono />
+                <ScenarioList label="Legacy source tombstones" values={scenario.sourceCases} mono />
               </div>
             </details>
           ))}

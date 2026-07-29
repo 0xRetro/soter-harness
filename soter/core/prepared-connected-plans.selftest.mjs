@@ -29,7 +29,14 @@ function resignPlan(plan) {
   return plan;
 }
 
-async function invokeFixture({ root, lock, operation, verification = false, state }) {
+async function invokeFixture({
+  root,
+  lock,
+  operation,
+  verification = false,
+  state,
+  input = null
+}) {
   const specification = verification ? operation.verification : operation;
   return invokeCapability({
     root,
@@ -37,7 +44,7 @@ async function invokeFixture({ root, lock, operation, verification = false, stat
     capability: specification.capability,
     authority: operation.authority,
     containment: 'fixture',
-    input: specification.input,
+    input: input === null ? specification.input : input,
     effectId: 'effect.selftest.' + operation.sequence + (verification ? '.verify' : '.write'),
     at: AT,
     approvedEffects: verification ? [] : ['write'],
@@ -49,10 +56,7 @@ export async function selftestPreparedConnectedPlans(root = defaultRoot) {
   const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'soter-connected-plan-selftest-'));
   try {
     fs.cpSync(path.join(root, 'soter'), path.join(temporaryRoot, 'soter'), { recursive: true });
-    for (const directory of ['.claude', '.codex']) {
-      fs.cpSync(path.join(root, directory), path.join(temporaryRoot, directory), { recursive: true });
-    }
-    for (const file of ['package.json', 'package-lock.json', 'AGENTS.md', 'CLAUDE.md']) {
+    for (const file of ['package.json', 'package-lock.json']) {
       fs.copyFileSync(path.join(root, file), path.join(temporaryRoot, file));
     }
     const canonicalBefore = fingerprintPath(path.join(temporaryRoot, 'soter'));
@@ -61,6 +65,7 @@ export async function selftestPreparedConnectedPlans(root = defaultRoot) {
       root: temporaryRoot,
       automationId: 'automation.email-triage',
       configurationName: 'email-triage',
+      configurationBasis: 'tracked-contained',
       input: {
         query: 'in:inbox newer_than:1d',
         scope: 'triage-drafts-handoffs-digest',
@@ -227,13 +232,40 @@ export async function selftestPreparedConnectedPlans(root = defaultRoot) {
       input: connectedLabel.input,
       response: {
         structuredContent: {
-          result: { state: 'acknowledged', rawProviderResponse: rawWriteMarker }
+          result: { state: 'acknowledged' }
         }
       },
       at: '2026-07-16T19:04:11.000Z'
     });
     assert.equal(completedLabelWrite.call.state, 'completed');
     assert(!JSON.stringify(completedLabelWrite).includes(rawWriteMarker));
+    const preparedHostileLabelWrite = await prepareHostToolCall({
+      root: temporaryRoot,
+      lock,
+      runId: 'run.email-triage.connected-label-selftest',
+      callId: 'toolcall.email-triage.connected-label-write-hostile-extra',
+      capability: connectedLabel.capability,
+      authority: connectedLabel.authority,
+      providerImplementation: connectedLabel.provider.connectedImplementation,
+      input: connectedLabel.input,
+      at: '2026-07-16T19:04:11.100Z',
+      approvedEffects: ['write']
+    });
+    const rejectedHostileLabelWrite = await completeHostToolCall({
+      root: temporaryRoot,
+      lock,
+      call: preparedHostileLabelWrite.call,
+      input: connectedLabel.input,
+      response: {
+        structuredContent: {
+          result: { state: 'acknowledged', rawProviderResponse: rawWriteMarker }
+        }
+      },
+      at: '2026-07-16T19:04:11.200Z'
+    });
+    assert.equal(rejectedHostileLabelWrite.call.state, 'failed');
+    assert.equal(rejectedHostileLabelWrite.call.error.kind, 'validation');
+    assert(!JSON.stringify(rejectedHostileLabelWrite).includes(rawWriteMarker));
 
     const preparedLabelRead = await prepareHostToolCall({
       root: temporaryRoot,
@@ -334,6 +366,110 @@ export async function selftestPreparedConnectedPlans(root = defaultRoot) {
       assert.equal(result.retryPermitted, false);
     }
 
+    const taskTitle = 'PRIVATE_CONNECTED_TASK_TITLE_SENTINEL';
+    const taskDate = '2026-07-30';
+    const taskWork = await prepareAutomationRun({
+      root: temporaryRoot,
+      automationId: 'automation.task-capture',
+      configurationName: 'task-capture',
+      configurationBasis: 'tracked-contained',
+      input: {
+        title: taskTitle,
+        project: 'soter-fixture://projects/project/launch',
+        assignee: 'self',
+        nextActionOn: taskDate,
+        context: 'Project'
+      },
+      createdAt: '2026-07-16T19:05:00.000Z'
+    });
+    const taskAction = taskWork.preview.collections[0].rows[0].actions[0];
+    const taskBatch = createPreparedReviewBatch({
+      root: temporaryRoot,
+      workId: taskWork.id,
+      actionIds: [taskAction.id],
+      createdAt: '2026-07-16T19:05:30.000Z'
+    });
+    const taskPlan = await createPreparedConnectedPlan({
+      root: temporaryRoot,
+      batchId: taskBatch.id,
+      createdAt: '2026-07-16T19:06:00.000Z'
+    });
+    assert.equal(taskPlan.state, 'blocked-review-only');
+    assert.equal(taskPlan.executable, false);
+    assert.equal(taskPlan.privacy.authority, 'none');
+    assert.equal(taskPlan.privacy.approvalAuthorityIncluded, false);
+    assert.equal(taskPlan.privacy.continuationAuthorityIncluded, false);
+    assert.equal(taskPlan.privacy.executionAuthorityIncluded, false);
+    assert.equal(taskPlan.privacy.retryAuthorityIncluded, false);
+    assert.deepEqual(taskPlan.blockers, [
+      'CONNECTED_TRANSACTION_RUNTIME_NOT_SUPPORTED',
+      'CONNECTED_VERIFICATION_NOT_PROVEN',
+      'SELECTED_ACTIVITY_PRIVATE_APPROVAL_REVIEW_NOT_AVAILABLE'
+    ]);
+    assert.equal(taskPlan.operations.length, 1);
+    const taskOperation = taskPlan.operations[0];
+    assert.equal(taskOperation.sourceActionId, taskAction.id);
+    assert.equal(taskOperation.capability, 'tasks.records.create');
+    assert.equal(taskOperation.authority, 'authority.tasks.instance');
+    assert.equal(taskOperation.provider.pack, 'integration.notion');
+    assert.equal(taskOperation.provider.connectedImplementation, 'provider.integration.notion.mcp');
+    assert.equal(taskOperation.precondition.capability, 'tasks.records.read');
+    assert.equal(taskOperation.precondition.provider.pack, 'integration.notion');
+    assert.equal(taskOperation.precondition.provider.connectedImplementation,
+      'provider.integration.notion.mcp');
+    assert.equal(taskOperation.verification.provider.connectedImplementation,
+      'provider.integration.notion.mcp');
+    assert.equal(taskOperation.input.recordType, 'task');
+    assert.equal(taskOperation.input.deduplicationKey, taskTitle);
+    assert.deepEqual(taskOperation.input.fields, {
+      title: taskTitle,
+      status: 'To Do',
+      context: 'Project',
+      projectUris: ['soter-fixture://projects/project/launch'],
+      assigneeIds: ['provider-person.maya'],
+      nextActionOn: taskDate
+    });
+    assert.equal(taskOperation.ambiguity.retry, 'prohibited');
+    assert.equal(taskOperation.recovery.mode, 'manual-required');
+    assert(JSON.stringify(taskPlan).includes(taskTitle));
+    assert(JSON.stringify(taskPlan).includes(taskDate));
+
+    const taskLock = readJson(path.join(temporaryRoot, taskBatch.configuration.lockPath));
+    const taskBefore = await invokeFixture({
+      root: temporaryRoot,
+      lock: taskLock,
+      operation: taskOperation,
+      verification: true,
+      state: fixtureState
+    });
+    assert.equal(taskBefore.invocation.state, 'passed');
+    await assert.rejects(
+      () => evaluatePreparedConnectedVerification({
+        root: temporaryRoot,
+        planId: taskPlan.id,
+        operationId: taskOperation.id,
+        output: taskBefore.output
+      }),
+      (error) => error.code === 'PREPARED_CONNECTED_PLAN_VERIFICATION_RECEIPT_REQUIRED'
+    );
+    const taskWrite = await invokeFixture({
+      root: temporaryRoot,
+      lock: taskLock,
+      operation: taskOperation,
+      verification: false,
+      state: fixtureState
+    });
+    assert.equal(taskWrite.invocation.state, 'passed');
+    await assert.rejects(
+      () => evaluatePreparedConnectedVerification({
+        root: temporaryRoot,
+        planId: taskPlan.id,
+        operationId: taskOperation.id,
+        output: taskBefore.output
+      }),
+      (error) => error.code === 'PREPARED_CONNECTED_PLAN_VERIFICATION_RECEIPT_REQUIRED'
+    );
+
     const substitutedInput = resignPlan(structuredClone(plan));
     const substitutedLabel = substitutedInput.operations.find((operation) => {
       return operation.capability === 'mail.labels.apply';
@@ -352,6 +488,13 @@ export async function selftestPreparedConnectedPlans(root = defaultRoot) {
     resignPlan(falseProvider);
     await assert.rejects(
       () => assertPreparedConnectedPlan(temporaryRoot, falseProvider),
+      (error) => error.code === 'PREPARED_CONNECTED_PLAN_BINDING_INVALID'
+    );
+    const falseConfigurationBasis = structuredClone(plan);
+    falseConfigurationBasis.configuration.configurationBasis = 'private-active';
+    resignPlan(falseConfigurationBasis);
+    await assert.rejects(
+      () => assertPreparedConnectedPlan(temporaryRoot, falseConfigurationBasis),
       (error) => error.code === 'PREPARED_CONNECTED_PLAN_BINDING_INVALID'
     );
     const rawProviderEscape = structuredClone(plan);
@@ -385,8 +528,11 @@ export async function selftestPreparedConnectedPlans(root = defaultRoot) {
     const serializedWorkspace = JSON.stringify(workspace);
     assert(!serializedWorkspace.includes(plan.id));
     assert(!serializedWorkspace.includes(labelPlan.id));
+    assert(!serializedWorkspace.includes(taskPlan.id));
     assert(!serializedWorkspace.includes('Thanks for the note.'));
     assert(!serializedWorkspace.includes(focus));
+    assert(!serializedWorkspace.includes(taskTitle));
+    assert(!serializedWorkspace.includes(taskDate));
     assert.equal(fs.existsSync(path.join(temporaryRoot, '.soter', 'state', 'approval-requests')), false);
     assert.equal(fs.existsSync(path.join(temporaryRoot, '.soter', 'state', 'approvals')), false);
     assert.equal(fs.existsSync(path.join(temporaryRoot, '.soter', 'state', 'approval-consumptions')), false);

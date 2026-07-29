@@ -1,0 +1,124 @@
+{
+  "$contract": "soter://contracts/configuration/v1",
+  "contractVersion": "1.0.0",
+  "name": "slack-channel-ingestion",
+  "base": { "kernel": "kernel.soter", "core": "core.runtime" },
+  "packs": [
+    { "id": "context.communications", "source": "dependency", "reason": "The Communications base owns provider-neutral private and untrusted communication semantics." },
+    { "id": "context.communications.collaboration", "source": "dependency", "reason": "Collaboration Context owns portable workspaces, channels, participants, channel-directory records, duplicates, and ingestion policy." },
+    { "id": "context.crm", "source": "dependency", "reason": "CRM owns only optional exact Person and Organization identities linked after explicit participant review." },
+    { "id": "automation.slack-channel-ingestion", "source": "user", "reason": "The user selected staged Slack channel identity review and exact selected-channel enrichment." },
+    { "id": "integration.slack", "source": "binding", "reason": "The configured Slack workspace supplies bounded channel identities and selected member profiles." },
+    { "id": "integration.notion", "source": "binding", "reason": "The configured CRM supplies policy, schema, channel, contact, organization, and eventual channel write capabilities." }
+  ],
+  "bindings": [
+    {
+      "capability": "communications.conversations.list",
+      "providerPack": "integration.slack",
+      "authorities": ["authority.slack.instance"],
+      "secretRef": "secret-ref.slack",
+      "reason": "Slack supplies one exact complete conversation identity window or exact selected channel set without participant or message data."
+    },
+    {
+      "capability": "communications.participants.read",
+      "providerPack": "integration.slack",
+      "authorities": ["authority.slack.instance"],
+      "secretRef": "secret-ref.slack",
+      "reason": "Slack supplies bounded human participant profiles only for exact operator-selected channel identities."
+    },
+    {
+      "capability": "communications.records.read",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.communications.definition", "authority.communications.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "Notion supplies one exact channel-ingestion policy selection plus bounded current Communications channel-directory candidates."
+    },
+    {
+      "capability": "communications.schema.read",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.communications.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "Notion supplies one current portable Communications channel schema observation."
+    },
+    {
+      "capability": "communications.records.create",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.communications.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "A separately governed exact transaction may create a mapped Communications channel."
+    },
+    {
+      "capability": "communications.records.update",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.communications.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "A separately governed exact transaction may update a mapped Communications channel under expected-version checks."
+    },
+    {
+      "capability": "crm.records.read",
+      "providerPack": "integration.notion",
+      "authorities": ["authority.crm.instance"],
+      "secretRef": "secret-ref.notion",
+      "reason": "Notion supplies bounded Person and Organization candidates only for optional typed links."
+    }
+  ],
+  "sources": [
+    {
+      "id": "source.policy.channel-ingestion",
+      "capability": "communications.records.read",
+      "authority": "authority.communications.definition",
+      "input": { "recordTypes": ["channel-ingestion-policy"], "ids": ["policy.channel-ingestion"], "limit": 2 },
+      "readiness": { "mode": "probe-read", "reason": "Connected readiness must prove the selected policy record can be read without retaining private values." },
+      "consumers": [
+        {
+          "pack": "automation.slack-channel-ingestion",
+          "purpose": "channel-ingestion-policy",
+          "subjects": ["slack-channels"],
+          "reason": "The exact external selection binds the governed Collaboration Context definition used by both preparation phases."
+        }
+      ],
+      "reason": "Provider-neutral channel-ingestion rules are a selected Context definition rather than Automation-owned constants."
+    }
+  ],
+  "authorities": [
+    { "id": "authority.communications.semantics.definition", "role": "definition", "subject": "communications.semantics.records", "uri": "soter://context/communications", "reason": "The selected base Context owns provider-neutral communication scope, identity, privacy, and typed-link meaning." },
+    { "id": "authority.communications.definition", "role": "definition", "subject": "communications.records", "uri": "soter-fixture://configuration-template/notion/authority/policies", "reason": "The selected policy record identifies the governed provider-neutral channel-ingestion definition." },
+    { "id": "authority.slack.instance", "role": "instance", "subject": "communications.workspace", "uri": "soter-fixture://configuration-template/slack/workspace/review", "reason": "The configured workspace is authoritative for channel identities and exact selected member profiles." },
+    { "id": "authority.slack.provider", "role": "provider", "subject": "slack.workspace", "uri": "soter-fixture://configuration-template/slack/account/operator", "reason": "The selected Slack account supplies provider identity and permission context without becoming CRM authority." },
+    { "id": "authority.communications.instance", "role": "instance", "subject": "communications.records", "uri": "soter-fixture://configuration-template/notion/authority/communications", "reason": "The configured Communications schema and records are authoritative for channel options, duplicates, and channel-directory instances." },
+    { "id": "authority.crm.definition", "role": "definition", "subject": "crm.records", "uri": "soter://context/crm", "reason": "The selected CRM Context owns portable Person and Organization meaning used only for optional exact links." },
+    { "id": "authority.crm.instance", "role": "instance", "subject": "crm.records", "uri": "soter-fixture://configuration-template/notion/authority/crm", "reason": "The configured CRM records are authoritative only for optional exact Person and Organization links." },
+    { "id": "authority.notion.provider", "role": "provider", "subject": "notion.workspace", "uri": "soter-fixture://configuration-template/notion/account/operator", "reason": "The selected Notion account supplies provider identity and permission context without becoming domain authority." },
+    { "id": "authority.run.evidence", "role": "evidence", "subject": "runtime.runs", "uri": "soter-state://runs", "reason": "Private local runtime state owns prepared work, selected review subsets, approvals, and checkpoints." }
+  ],
+  "effectPolicies": {
+    "read": { "mode": "allow", "reason": "Exact policy, identity, schema, candidate, and selected participant reads may run inside the declared private preparation phase." },
+    "disclosure": { "mode": "allow", "reason": "Bounded normalized channel and selected member observations may enter private runtime state with strict minimization." },
+    "write": { "mode": "confirm", "reason": "Every exact selected channel create or update requires fresh confirmation and separately consumed one-time start authority." },
+    "dispatch": { "mode": "prohibit", "reason": "Slack channel ingestion sends or publishes no messages." },
+    "destructive": { "mode": "prohibit", "reason": "Slack channel ingestion never deletes, archives, leaves, or destructively mutates channels or CRM records." }
+  },
+  "secretRefs": [
+    { "id": "secret-ref.slack", "provider": "host", "key": "SLACK_OAUTH" },
+    { "id": "secret-ref.notion", "provider": "host", "key": "NOTION_OAUTH" }
+  ],
+  "host": { "id": "codex", "adapter": "host.codex", "version": "0.3.1", "reason": "This contained configuration exercises Codex projection while preserving provider-neutral contracts." },
+  "settings": {
+    "integration.notion": {
+      "targets": {
+        "policies": "soter-fixture://configuration-template/notion/collection/policies",
+        "organizations": "soter-fixture://configuration-template/notion/collection/organizations",
+        "contacts": "soter-fixture://configuration-template/notion/collection/contacts",
+        "projects": "soter-fixture://configuration-template/notion/collection/projects",
+        "updates": "soter-fixture://configuration-template/notion/collection/updates",
+        "tasks": "soter-fixture://configuration-template/notion/collection/tasks",
+        "meetings": "soter-fixture://configuration-template/notion/collection/meetings",
+        "documents": "soter-fixture://configuration-template/notion/collection/documents",
+        "channels": "soter-fixture://configuration-template/notion/collection/channels"
+      }
+    },
+    "integration.slack": {
+      "workspaceId": "soter-fixture://configuration-template/slack/workspace/contained"
+    }
+  }
+}

@@ -3,7 +3,7 @@
   "contractVersion": "1.0.0",
   "id": "provider.integration.notion.fixture",
   "pack": "integration.notion",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "containment": "fixture",
   "runtime": {
     "engine": "node",
@@ -11,19 +11,197 @@
     "export": "invoke"
   },
   "capabilities": [
-    { "id": "crm.records.read", "version": "1.0.0" },
-    { "id": "crm.records.create", "version": "1.0.0" },
-    { "id": "crm.records.update", "version": "1.0.0" },
-    { "id": "documents.content.read", "version": "1.0.0" }
+    {
+      "id": "crm.records.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "crm.records.create",
+      "version": "1.0.0"
+    },
+    {
+      "id": "crm.records.update",
+      "version": "1.0.0"
+    },
+    {
+      "id": "crm.schema.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "communications.records.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "communications.records.create",
+      "version": "1.0.0"
+    },
+    {
+      "id": "communications.records.update",
+      "version": "1.0.0"
+    },
+    {
+      "id": "communications.schema.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "product.records.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "product.records.create",
+      "version": "1.0.0"
+    },
+    {
+      "id": "product.schema.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "process.records.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "process.records.create",
+      "version": "1.0.0"
+    },
+    {
+      "id": "process.schema.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "documents.content.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "documents.content.update",
+      "version": "1.0.0"
+    },
+    {
+      "id": "workspace.identity.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "projects.records.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "projects.records.create",
+      "version": "1.0.0"
+    },
+    {
+      "id": "projects.records.update",
+      "version": "1.0.0"
+    },
+    {
+      "id": "projects.schema.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "tasks.records.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "tasks.records.create",
+      "version": "1.0.0"
+    },
+    {
+      "id": "tasks.records.update",
+      "version": "1.0.0"
+    },
+    {
+      "id": "tasks.schema.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "meetings.records.read",
+      "version": "1.0.0"
+    },
+    {
+      "id": "meetings.records.create",
+      "version": "1.0.0"
+    },
+    {
+      "id": "meetings.schema.read",
+      "version": "1.0.0"
+    }
   ],
   "authorities": [
-    { "role": "definition", "subject": "crm.records" },
-    { "role": "instance", "subject": "crm.records" }
+    {
+      "role": "definition",
+      "subject": "crm.records"
+    },
+    {
+      "role": "instance",
+      "subject": "crm.records"
+    },
+    {
+      "role": "definition",
+      "subject": "communications.records"
+    },
+    {
+      "role": "instance",
+      "subject": "communications.records"
+    },
+    {
+      "role": "definition",
+      "subject": "product.records"
+    },
+    {
+      "role": "instance",
+      "subject": "product.records"
+    },
+    {
+      "role": "definition",
+      "subject": "process.records"
+    },
+    {
+      "role": "instance",
+      "subject": "process.records"
+    },
+    {
+      "role": "provider",
+      "subject": "notion.workspace"
+    },
+    {
+      "role": "definition",
+      "subject": "projects.records"
+    },
+    {
+      "role": "instance",
+      "subject": "projects.records"
+    },
+    {
+      "role": "definition",
+      "subject": "tasks.records"
+    },
+    {
+      "role": "instance",
+      "subject": "tasks.records"
+    },
+    {
+      "role": "definition",
+      "subject": "meetings.records"
+    },
+    {
+      "role": "instance",
+      "subject": "meetings.records"
+    }
   ],
-  "effects": ["read", "disclosure", "write"],
-  "mappings": [],
+  "effects": [
+    "read",
+    "disclosure",
+    "write"
+  ],
+  "mappings": [
+    "soter/integrations/notion/crm-records.mapping.json",
+    "soter/integrations/notion/communications-records.mapping.json",
+    "soter/integrations/notion/product-records.mapping.json",
+    "soter/integrations/notion/process-records.mapping.json",
+    "soter/integrations/notion/projects-records.mapping.json",
+    "soter/integrations/notion/tasks-records.mapping.json",
+    "soter/integrations/notion/meetings-records.mapping.json"
+  ],
   "fixtures": [
-    "soter/fixtures/providers/notion/crm-records.json"
+    "soter/fixtures/providers/notion/workspace-records.json"
   ],
   "limitations": [
     "Uses an in-memory copy of deterministic local records and policy documents only; it does not authenticate to, mutate, or represent the current state of a Notion workspace."

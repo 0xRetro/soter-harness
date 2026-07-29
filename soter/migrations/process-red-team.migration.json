@@ -1,0 +1,64 @@
+{
+  "$contract": "soter://contracts/migration/v1",
+  "contractVersion": "1.0.0",
+  "id": "process-red-team.prototype-to-v2",
+  "source": "claude-oriented-prototype",
+  "slice": "automation.process-red-team",
+  "items": [
+    {
+      "sourcePath": ".claude/skills/red-teaming-a-process/SKILL.md",
+      "sourceFingerprint": "sha256:65fdd3ce3bf0413578ed37c32122056ad0f6c877af711b76e04a33b6fb1cf914",
+      "targetPath": "soter/packs/automation.process-red-team/pack.json",
+      "targetPack": "automation.process-red-team",
+      "state": "migrated",
+      "bridge": "A five-lens, exact-source, ranked private review with reproduced criticals and report-only proposed fixes replaces the prompt guide; no dispatch or write capability is declared.",
+      "evidence": [
+        "soter/fixtures/process-red-team/legacy-guide-migration.evidence.json"
+      ]
+    },
+    {
+      "sourcePath": ".claude/evals/red-teaming-a-process/happy-path.md",
+      "sourceFingerprint": "sha256:a7ead2c359e76dcbd777c9f930fbab12430bc4e48b92491776ec9a07d88b96f4",
+      "targetPath": "soter/scenarios/process-red-team/preparation.scenario.json",
+      "targetPack": "automation.process-red-team",
+      "state": "migrated",
+      "bridge": "The target fixture scopes the exact process, related policies, declared write-target schema, and run; applies all five lenses; and reproduces criticals before ranked reporting.",
+      "evidence": [
+        "soter/fixtures/process-red-team/legacy-happy-path-migration.evidence.json"
+      ]
+    },
+    {
+      "sourcePath": ".claude/evals/red-teaming-a-process/invariant-read-only.md",
+      "sourceFingerprint": "sha256:c4e6b0a280f141fe6a61b8f958eee76adfe815cdcbba01b2b1472dec5bb65748",
+      "targetPath": "soter/scenarios/process-red-team/preparation.scenario.json",
+      "targetPack": "automation.process-red-team",
+      "state": "migrated",
+      "bridge": "The target fixture declares read and disclosure only, produces no proposed change, approval, continuation, dispatch, or provider write, and proves sanitized inspection excludes the private source set.",
+      "evidence": [
+        "soter/fixtures/process-red-team/legacy-invariant-read-only-migration.evidence.json"
+      ]
+    },
+    {
+      "sourcePath": ".claude/evals/red-teaming-a-process/pressure-autofix.md",
+      "sourceFingerprint": "sha256:c0f362f0d27aaeec19c89e46051551d0e99d87c5f5f94c45911bddd5ccb50f8d",
+      "targetPath": "soter/scenarios/process-red-team/preparation.scenario.json",
+      "targetPack": "automation.process-red-team",
+      "state": "migrated",
+      "bridge": "The target pressure variant records the fix request, keeps every finding held for decision, and exposes no write capability or hidden auto-fix path.",
+      "evidence": [
+        "soter/fixtures/process-red-team/legacy-pressure-autofix-migration.evidence.json"
+      ]
+    },
+    {
+      "sourcePath": ".claude/systems/process.md",
+      "sourceFingerprint": "sha256:27d6812f6084081f035ea15693cb52dc1cce698adf7964f40c5536fccf8ca372",
+      "targetPath": "soter/packs/automation.process-red-team/pack.json",
+      "targetPack": "automation.process-red-team",
+      "state": "migrated",
+      "bridge": "The review-gate mechanism formerly summarized by the system card is target-owned by the report-only Process Red Team Automation.",
+      "evidence": [
+        "soter/fixtures/process-red-team/legacy-system-red-team-migration.evidence.json"
+      ]
+    }
+  ]
+}

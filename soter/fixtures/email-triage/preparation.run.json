@@ -1,0 +1,274 @@
+{
+  "$contract": "soter://contracts/run-envelope/v1",
+  "contractVersion": "1.0.0",
+  "id": "run.email-triage.preparation-fixture",
+  "createdAt": "2026-07-16T16:00:00.000Z",
+  "requestedOutcome": "Prepare one bounded Email triage, private drafts, handoffs, and digest; stop before approval, writes, or sending.",
+  "initiation": "user-requested",
+  "intent": "operate",
+  "lifecycleState": "paused",
+  "automation": {
+    "id": "automation.email-triage",
+    "version": "0.1.0"
+  },
+  "configurationLock": {
+    "path": "soter/fixtures/email-triage/email-triage.lock.json",
+    "fingerprint": "sha256:c1ecb4cb946b2f30808dc881ebf30261bb4e4c238d41ceced0f41e975cf81502"
+  },
+  "graphFingerprint": "sha256:7423c8496b0aea010a986cdc98341692785b78850ad1c1aef2680e7bbd9f256f",
+  "context": [
+    {
+      "subject": "communications.semantics.records",
+      "authority": "authority.communications.semantics.definition",
+      "role": "definition",
+      "uri": "soter://context/communications",
+      "declarationFingerprint": "sha256:0b465d80100b2ccb7a4a6486fe2b4a6844b1f43eb18dad379d82b8af79ac93c9",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:c1ecb4cb946b2f30808dc881ebf30261bb4e4c238d41ceced0f41e975cf81502",
+      "freshness": "unknown"
+    },
+    {
+      "subject": "gmail.account",
+      "authority": "authority.gmail.provider",
+      "role": "provider",
+      "uri": "soter-fixture://configuration-template/gmail/account/operator",
+      "declarationFingerprint": "sha256:b786e80d1e624e4e70559562497b367e3855d508fcdffc50832ee40f55fa68c9",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:c1ecb4cb946b2f30808dc881ebf30261bb4e4c238d41ceced0f41e975cf81502",
+      "freshness": "unknown"
+    },
+    {
+      "subject": "mail.processing",
+      "authority": "authority.mail.definition",
+      "role": "definition",
+      "uri": "soter-pack://context.email/processing",
+      "declarationFingerprint": "sha256:6ad65b455c19f6c64fb13d12d0b7d9fbae4de3a1f09661696acd4f8c8c411273",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:c1ecb4cb946b2f30808dc881ebf30261bb4e4c238d41ceced0f41e975cf81502",
+      "freshness": "unknown"
+    },
+    {
+      "subject": "mail.mailbox",
+      "authority": "authority.mailbox.instance",
+      "role": "instance",
+      "uri": "soter-fixture://configuration-template/gmail/mailbox/inbox",
+      "declarationFingerprint": "sha256:7b8a4f8545ab853895f8f6af26793ba470b9dce5eda17c351b08f37c7969e4e6",
+      "status": "loaded",
+      "provenance": "fixture:sha256:a342aa6568f6daae70d129d39f742698ade3d0b1bad25736637c688b21725cbb",
+      "freshness": "passed"
+    },
+    {
+      "subject": "runtime.runs",
+      "authority": "authority.run.evidence",
+      "role": "evidence",
+      "uri": "soter-state://runs",
+      "declarationFingerprint": "sha256:dedfa34444ef6f06fdf8796e903f8c085009564339efce087f663abdd91d299b",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:c1ecb4cb946b2f30808dc881ebf30261bb4e4c238d41ceced0f41e975cf81502",
+      "freshness": "unknown"
+    }
+  ],
+  "bindings": [
+    {
+      "capability": "mail.drafts.create",
+      "capabilityVersion": "2.0.0",
+      "providerPack": "integration.gmail",
+      "providerVersion": "0.1.0",
+      "authorities": [
+        "authority.mailbox.instance"
+      ],
+      "effects": [
+        "write"
+      ],
+      "reason": "A later exact approved batch may create a draft against one exact reply message but cannot send it."
+    },
+    {
+      "capability": "mail.drafts.list",
+      "capabilityVersion": "2.0.0",
+      "providerPack": "integration.gmail",
+      "providerVersion": "0.1.0",
+      "authorities": [
+        "authority.mailbox.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Exact draft verification lists minimized metadata by reply-message identity and idempotency key."
+    },
+    {
+      "capability": "mail.labels.apply",
+      "capabilityVersion": "2.0.0",
+      "providerPack": "integration.gmail",
+      "providerVersion": "0.1.0",
+      "authorities": [
+        "authority.mailbox.instance"
+      ],
+      "effects": [
+        "write"
+      ],
+      "reason": "A later exact approved batch may apply only configured existing AI-namespace label names to exact message IDs."
+    },
+    {
+      "capability": "mail.labels.read",
+      "capabilityVersion": "2.0.0",
+      "providerPack": "integration.gmail",
+      "providerVersion": "0.1.0",
+      "authorities": [
+        "authority.mailbox.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Exact label verification re-reads the approved message IDs and configured label names."
+    },
+    {
+      "capability": "mail.messages.search",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.gmail",
+      "providerVersion": "0.1.0",
+      "authorities": [
+        "authority.mailbox.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Gmail is the configured instance authority for one exact private bounded message-identity search."
+    },
+    {
+      "capability": "mail.threads.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.gmail",
+      "providerVersion": "0.1.0",
+      "authorities": [
+        "authority.mailbox.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Gmail expands exact provider-message identities into bounded private transport facts without triage judgment."
+    },
+    {
+      "capability": "mail.window.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.gmail",
+      "providerVersion": "0.1.0",
+      "authorities": [
+        "authority.mailbox.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "Gmail is the configured instance authority for one bounded private mailbox read."
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0",
+    "projectionDefinition": {
+      "id": "host-projection.codex",
+      "version": "0.3.0",
+      "path": "soter/hosts/codex/projection.json",
+      "fingerprint": "sha256:76cd84436a3b5e7f00edcc8a0be3cdff64f53e488b13107a8bf56603b9600490"
+    },
+    "projectionGenerator": {
+      "id": "core.host-projection-generator",
+      "version": "2.1.0"
+    }
+  },
+  "effectPolicies": {
+    "read": {
+      "mode": "allow",
+      "reason": "The exact bounded mailbox query may be read for private preparation."
+    },
+    "disclosure": {
+      "mode": "allow",
+      "reason": "Selected bounded normalized mail may enter private runtime Context with strict minimization and no workspace aggregation."
+    },
+    "write": {
+      "mode": "confirm",
+      "reason": "Every exact label or draft batch requires a fresh approval and separately consumed one-time start authorization."
+    },
+    "dispatch": {
+      "mode": "prohibit",
+      "reason": "Email sending is prohibited and no send capability is declared."
+    },
+    "destructive": {
+      "mode": "prohibit",
+      "reason": "Email triage does not delete, archive, trash, or otherwise destructively mutate mail."
+    }
+  },
+  "approvals": [],
+  "checkpoints": [
+    {
+      "id": "effects-established",
+      "state": "passed",
+      "details": "Read and disclosure policies were evaluated before the exact bounded fixture call."
+    },
+    {
+      "id": "mail-window-reduced",
+      "state": "passed",
+      "details": "Deterministic identity, sibling, triage-freshness, injection, bucket, and coverage rules were applied."
+    },
+    {
+      "id": "write-and-dispatch-boundary-held",
+      "state": "passed",
+      "details": "No label, draft, CRM, digest, calendar, send, approval, continuation, or provider write was executed."
+    }
+  ],
+  "outputs": [
+    {
+      "id": "context.email-triage.preparation-fixture",
+      "type": "context-snapshot",
+      "fingerprint": "sha256:95bf458d5ba055d59434a620d0d0007e36c9e9a0c3f6301a4fb34e900ae19fbc"
+    }
+  ],
+  "effects": [
+    {
+      "id": "effect.email-triage.preparation.window.fixture",
+      "capability": "mail.window.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.gmail",
+      "providerImplementation": "provider.integration.gmail.fixture",
+      "providerVersion": "0.1.0",
+      "containment": "fixture",
+      "authority": "authority.mailbox.instance",
+      "startedAt": "2026-07-16T16:00:00.000Z",
+      "completedAt": "2026-07-16T16:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "The exact bounded mailbox query may be read for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected bounded normalized mail may enter private runtime Context with strict minimization and no workspace aggregation."
+        }
+      ],
+      "inputFingerprint": "sha256:93b38db558a509a4078a68329048b1230d0b2ac186d8a84336ad8ab0ac8d566b",
+      "state": "passed",
+      "outputFingerprint": "sha256:00ad6e5dfbdce3ef7be9638bee7152bb1a37d8f1b314ef3d761c3e86b2a9d256",
+      "error": null
+    }
+  ],
+  "evidenceIds": [],
+  "scenario": {
+    "id": "email-triage.preparation",
+    "path": "soter/scenarios/email-triage/preparation.scenario.json",
+    "fingerprint": "sha256:d2e0c46f89877cc7f27c8d9bac12c5dfe623f1c7686c08535b49ba811a690ce1"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://automations/project-capture/proposal/v1",
+  "title": "Project Capture review proposal",
+  "type": "object",
+  "required": [
+    "$contract",
+    "id",
+    "automation",
+    "decision",
+    "proposalType",
+    "review"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/automation-proposal/v1" },
+    "id": {
+      "type": "string",
+      "pattern": "^proposal\\.project-capture\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "automation": {
+      "type": "object",
+      "required": ["id"],
+      "properties": { "id": { "const": "automation.project-capture" } }
+    },
+    "decision": {
+      "type": "object",
+      "required": ["id", "decisionType"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^decision\\.project-capture\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "decisionType": { "const": "project-capture.grounded-candidate" }
+      }
+    },
+    "proposalType": { "const": "project-capture.review-proposal" },
+    "review": {
+      "type": "object",
+      "required": ["$contract", "kind", "privateReview"],
+      "properties": {
+        "$contract": { "const": "soter://contracts/automation-review/v1" },
+        "kind": { "const": "project-capture-review" },
+        "privateReview": {
+          "type": "object",
+          "required": ["state"],
+          "properties": { "state": { "const": "available" } }
+        }
+      }
+    }
+  }
+}

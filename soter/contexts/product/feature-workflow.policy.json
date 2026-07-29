@@ -1,0 +1,28 @@
+{
+  "$contract": "soter://contexts/product/feature-workflow-policy/v1",
+  "contractVersion": "1.0.0",
+  "id": "policy.feature-workflow",
+  "name": "Feature Development",
+  "defaultStatus": "Planned",
+  "lifecycle": ["Planned", "Up Next", "In Development", "Completed", "Canceled"],
+  "allowedTypes": ["Bug", "Content", "Enhancement", "Feature"],
+  "duplicateCandidateLimit": 10,
+  "writesRequireConfirmation": true,
+  "descriptionOwnsWhy": true,
+  "definitionPreservesDescription": true,
+  "definitionPreservesStatus": true,
+  "bodyTemplate": {
+    "sharedSections": [
+      "Summary",
+      "Current state in code",
+      "Relationships",
+      "Decisions & open questions"
+    ],
+    "sectionTwoByType": {
+      "Bug": "Repro / Expected vs Actual",
+      "Content": "Scope",
+      "Enhancement": "Current / Desired behavior",
+      "Feature": "Behavior / Acceptance"
+    }
+  }
+}
