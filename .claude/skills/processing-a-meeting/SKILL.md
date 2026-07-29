@@ -81,6 +81,19 @@ staleness-triaged, and written only through one human-confirmed gate.
 - (worked example #1, 2026-07-15) Topic→project attribution is a judgment call the
   human gates ("facet testing relates to what?") — the summary's Related: line records
   the answer once so it is never re-derived.
+- (live 2026-07-28) The Otter payload's `calendar_participants` pairs names to emails
+  by zipping two independently sorted lists, so every pairing is meaningless (it
+  credited one person's address to another). NEVER read attribution from it — resolve
+  people against the workspace user list, and take attendees from the meeting row's
+  `Participants`.
+- (live 2026-07-28) Otter's `action_items` restate the call inaccurately — one credited
+  a merge conflict to the wrong person's pull request, reversing who was blocked.
+  Derive every commitment from the transcript body; the action list is a cross-check
+  for coverage, never a source.
+- (live 2026-07-28) A meeting row whose `Related Docs` is empty is NOT proof it is
+  unprocessed — rows are also summarized in-body under a `## Call Summary` heading.
+  Detect processing state by reading the row body, not the relation; a `Related Docs`
+  scan alone reported a 51-meeting backlog that did not exist.
 
 ## Evals
 - `.claude/evals/processing-a-meeting/happy-path.md`

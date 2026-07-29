@@ -261,21 +261,23 @@ Features"). Identify a board only by the tooling page that embeds it.
   credential locations only; standing invite links only by explicit admin decision.
 
 ### docs  *(the [DB] Docs database — the team's shared documents and links)*
-- **data_source_id:** `2abd79b5-de38-8075-a97b-000b24e99dc1` *(live-verified 2026-07-15, full audit — doc + mirror reconciled)*
+- **data_source_id:** `2abd79b5-de38-8075-a97b-000b24e99dc1` *(live-verified 2026-07-28 — `Type` + `Category` option sets and two unmirrored properties reconciled)*
 - **policy standard:** `Docs` in the `policy-standards` registry — rules, D2 (Type), D3 (derived audience)
 - **properties:**
   - `Name` → title            <!-- free-form per the policy's D1 -->
-  - `Type` → select           <!-- Template · Research · Working Doc · SOP/Runbook · Guide · Tracker/Database · Report · Proposal · Reference/Dashboard; assign per D2 -->
-  - `Category` → multi_select <!-- 15 options (DR · IB · GAR · PCR · MSC · Admin & Internal Ops · …) — fetch live for the full list; definitions live in the Sky-context vocabulary -->
+  - `Type` → select           <!-- Meeting Summary · Template · Research · Working Doc · SOP/Runbook · Tracker/Database · Report · Proposal · Reference/Dashboard · Spec; assign per D2 -->
+  - `Category` → multi_select <!-- 16 options (DR · IB · GAR · PCR · MSC · Admin & Internal Ops · … · Sky Ecosystem) — fetch live for the full list; definitions live in the Sky-context vocabulary -->
   - `Description` → text      <!-- one line: what the doc is and why it's kept -->
   - `Link` → url              <!-- required for external Reference/Dashboard docs -->
-  - `Owner` · `Client Contact` → person
+  - `Owner` · `Client Contact` → person   <!-- Owner is who owns the RECORD, not who chaired the meeting -->
   - `Org` · `Related Projects` → relation   <!-- resolve target page ids first; Org is always set (policy) -->
+  - `AI summary` → text · `Notify` → person   <!-- Notion stock note fields; deliberately unused — never populated on live docs -->
 - Meeting RECORDS (agendas, notes, transcripts) never enter this DB — they live in
-  [DB] Meetings (target `meetings`). A meeting's derived SUMMARY is a doc: Type `Report`,
-  body from the registered `[Meeting Summary Template]` (page `39ed79b5de388058bb35e24d6c162c19`) —
-  every topic names its Related project/deal — linked from the meeting row's `Related Docs`
-  (Docs policy v0.4).
+  [DB] Meetings (target `meetings`). A meeting's derived SUMMARY is a doc: Type
+  `Meeting Summary` (its own option — NOT `Report`; the option post-dates the Docs
+  policy clause naming `Report`), body from the registered `[Meeting Summary Template]`
+  (page `39ed79b5de388058bb35e24d6c162c19`) — every topic names its Related project/deal —
+  linked from the meeting row's `Related Docs`.
 
 ### calendar  *(the [DB] Calendar database — the standing-commitments registry)*
 - **data_source_id:** `396d79b5-de38-8015-9843-000b38c8c6eb` *(live-verified 2026-07-15, schema created this wave)*
