@@ -102,12 +102,19 @@ host came from the configuration default or an explicit override and
 fingerprints only that host's projections. It atomically checkpoints each
 call and its private run state before returning a provider request, and can
 rehydrate pending work by checkpoint ID after a server restart. The server also
-exposes `soter_inspect_host_runtime`. It fingerprints governed runtime behavior
-at startup and reports `SOTER_HOST_RUNTIME_STALE` when the repository changes
-underneath the loaded process; all operational Soter MCP tools then stop before
-private-state creation or provider dispatch until the host runtime is
-restarted. This applicability check grants no authority and does not promote
-readiness, verification, or health. The connected
+exposes `soter_inspect_host_runtime`. It reports `current` only when exact
+startup/current fingerprints still bind governed sources, the private
+configuration and managed manifest, and every static or generated output byte
+and full required mode. A clean root with no managed realization reports
+`SOTER_HOST_RUNTIME_NOT_REALIZED`, null fingerprints, and the guidance action
+`realize-host-runtime`; after realization the host must restart. Changed,
+invalid, unsafe, missing, unmanaged, or mode-drifted state reports
+`SOTER_HOST_RUNTIME_STALE`. An invalid basis reports no automatic action and an
+unknown restart requirement; a complete changed basis requires restart. In both blocked states all operational
+Soter MCP tools stop before private-state creation or provider dispatch. This
+applicability check grants no approval, continuation, provider-call, write, or
+execution authority and does not promote readiness, verification, or health.
+The connected
 doctor also consumes failed probe checkpoints through a typed, expiring summary
 that identifies the exact lock, provider, semantic step, native route, and
 failure category while excluding provider arguments, raw responses, credential

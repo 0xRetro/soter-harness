@@ -8,9 +8,11 @@ import {
   readGovernedFile,
   readGovernedJson
 } from './lib/canonical-json.mjs';
+import { inspectManagedHostRuntimeProjection } from './host-realizations.mjs';
 
 export const HOST_RUNTIME_REASON_CODES = Object.freeze({
   CURRENT: 'SOTER_HOST_RUNTIME_CURRENT',
+  NOT_REALIZED: 'SOTER_HOST_RUNTIME_NOT_REALIZED',
   STALE: 'SOTER_HOST_RUNTIME_STALE'
 });
 
@@ -90,24 +92,52 @@ function runtimeInventory(root, host) {
       });
     }
   }
-  for (const projection of adapter.projections) {
-    entries.push({
-      path: projection.path,
-      fingerprint: fingerprintGovernedFile(root, projection.path)
-    });
-  }
-
   const unique = new Map();
   for (const entry of entries) unique.set(entry.path, entry);
   return [...unique.values()].sort((left, right) => compareText(left.path, right.path));
 }
 
-function runtimeFingerprint(root, host) {
-  return fingerprintJson({
-    contract: 'soter-host-runtime-basis/v1',
-    host,
-    artifacts: runtimeInventory(root, host)
-  });
+function runtimeSnapshot(root, host, expectedProjection = null) {
+  try {
+    const artifacts = runtimeInventory(root, host);
+    const governedSourceFingerprint = fingerprintJson({
+      contract: 'soter-host-runtime-governed-source/v1',
+      host,
+      artifacts
+    });
+    const projection = inspectManagedHostRuntimeProjection({
+      root,
+      host,
+      governedSourceFingerprint,
+      expected: expectedProjection
+    });
+    if (projection.state === 'not-realized') {
+      return Object.freeze({
+        state: 'not-realized',
+        fingerprint: null,
+        governedSourceFingerprint,
+        projectionBasis: null
+      });
+    }
+    return Object.freeze({
+      state: 'realized',
+      fingerprint: fingerprintJson({
+        contract: 'soter-host-runtime-basis/v2',
+        host,
+        governedSourceFingerprint,
+        projectionFingerprint: projection.fingerprint
+      }),
+      governedSourceFingerprint,
+      projectionBasis: projection.basis
+    });
+  } catch {
+    return Object.freeze({
+      state: 'invalid',
+      fingerprint: null,
+      governedSourceFingerprint: null,
+      projectionBasis: null
+    });
+  }
 }
 
 function inspectionFingerprint(inspection) {
@@ -125,15 +155,42 @@ function assertInspection(inspection, schema) {
   if (inspection.inspectionFingerprint !== inspectionFingerprint(inspection)) {
     throw new Error('Host runtime inspection fingerprint is stale.');
   }
+  const runtime = inspection.runtime;
+  if ((runtime.state === 'current'
+      && (runtime.startupFingerprint === null
+        || runtime.currentFingerprint !== runtime.startupFingerprint
+        || runtime.reasonCode !== HOST_RUNTIME_REASON_CODES.CURRENT
+        || runtime.restartRequired
+        || runtime.permittedNextAction !== 'continue'))
+    || (runtime.state === 'not-realized'
+      && (runtime.startupFingerprint !== null
+        || runtime.currentFingerprint !== null
+        || runtime.reasonCode !== HOST_RUNTIME_REASON_CODES.NOT_REALIZED
+        || !runtime.restartRequired
+        || runtime.permittedNextAction !== 'realize-host-runtime'))
+    || (runtime.state === 'stale'
+      && (runtime.reasonCode !== HOST_RUNTIME_REASON_CODES.STALE
+        || runtime.restartRequired !== (runtime.currentFingerprint === null ? null : true)
+        || runtime.permittedNextAction !== (runtime.currentFingerprint === null
+          ? 'none'
+          : 'restart-host-runtime')
+        || (runtime.startupFingerprint !== null
+          && runtime.currentFingerprint === runtime.startupFingerprint)))) {
+    throw new Error('Host runtime inspection state facts are contradictory.');
+  }
   return inspection;
 }
 
 export function createHostRuntimeBasis({ root, host, startedAt = new Date().toISOString() }) {
   const resolvedRoot = path.resolve(root);
+  const startup = runtimeSnapshot(resolvedRoot, host);
   return Object.freeze({
     host,
     server: Object.freeze({ name: SERVER_NAME, version: SERVER_VERSION, startedAt }),
-    startupFingerprint: runtimeFingerprint(resolvedRoot, host),
+    startupState: startup.state,
+    startupFingerprint: startup.fingerprint,
+    startupGovernedSourceFingerprint: startup.governedSourceFingerprint,
+    startupProjectionBasis: startup.projectionBasis,
     inspectionSchema: readGovernedJson(
       resolvedRoot,
       'soter/contracts/host-runtime-inspection.schema.json'
@@ -143,13 +200,21 @@ export function createHostRuntimeBasis({ root, host, startedAt = new Date().toIS
 
 export function inspectHostRuntime({ root, basis, inspectedAt = new Date().toISOString() }) {
   const resolvedRoot = path.resolve(root);
-  let currentFingerprint = null;
-  try {
-    currentFingerprint = runtimeFingerprint(resolvedRoot, basis.host);
-  } catch {
-    currentFingerprint = null;
-  }
-  const current = currentFingerprint === basis.startupFingerprint;
+  const observed = runtimeSnapshot(
+    resolvedRoot,
+    basis.host,
+    basis.startupState === 'realized' ? basis.startupProjectionBasis : null
+  );
+  const currentFingerprint = observed.fingerprint;
+  const notRealized = basis.startupState === 'not-realized'
+    && observed.state === 'not-realized'
+    && observed.governedSourceFingerprint === basis.startupGovernedSourceFingerprint;
+  const current = basis.startupState === 'realized'
+    && observed.state === 'realized'
+    && currentFingerprint === basis.startupFingerprint;
+  const automaticRecoveryUnavailable = !notRealized
+    && !current
+    && currentFingerprint === null;
   const inspection = {
     $contract: 'soter://contracts/host-runtime-inspection/v1',
     contractVersion: '1.0.0',
@@ -157,14 +222,22 @@ export function inspectHostRuntime({ root, basis, inspectedAt = new Date().toISO
     host: basis.host,
     server: { ...basis.server },
     runtime: {
-      state: current ? 'current' : 'stale',
+      state: notRealized ? 'not-realized' : current ? 'current' : 'stale',
       startupFingerprint: basis.startupFingerprint,
       currentFingerprint,
-      reasonCode: current
-        ? HOST_RUNTIME_REASON_CODES.CURRENT
-        : HOST_RUNTIME_REASON_CODES.STALE,
-      restartRequired: !current,
-      permittedNextAction: current ? 'continue' : 'restart-host-runtime'
+      reasonCode: notRealized
+        ? HOST_RUNTIME_REASON_CODES.NOT_REALIZED
+        : current
+          ? HOST_RUNTIME_REASON_CODES.CURRENT
+          : HOST_RUNTIME_REASON_CODES.STALE,
+      restartRequired: notRealized
+        ? true
+        : current ? false : automaticRecoveryUnavailable ? null : true,
+      permittedNextAction: notRealized
+        ? 'realize-host-runtime'
+        : current
+          ? 'continue'
+          : automaticRecoveryUnavailable ? 'none' : 'restart-host-runtime'
     },
     authority: {
       grants: 'none',

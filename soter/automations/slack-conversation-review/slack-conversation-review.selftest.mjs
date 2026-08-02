@@ -18,6 +18,9 @@ import {
 } from '../../core/private-configurations.mjs';
 import { writeActiveConfigurationLockState } from '../../core/runtime-state.mjs';
 import {
+  deriveContainedNotionFieldBindings
+} from '../../core/contained-private-configurations.mjs';
+import {
   assertSlackConversationSelection
 } from './prepare.mjs';
 import { runContainedSlackConversationReviewScenario } from './scenario.mjs';
@@ -77,6 +80,8 @@ export function slackConversationReviewTestConfiguration(
   configuration.settings['integration.slack'] = {
     workspaceId
   };
+  configuration.settings['integration.notion'].fieldBindings
+    = deriveContainedNotionFieldBindings(root, configuration);
   const policySources = configuration.sources.filter((source) => {
     return source.consumers.some((consumer) => {
       return consumer.pack === 'automation.slack-conversation-review'

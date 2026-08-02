@@ -6,7 +6,7 @@
   "level": "offline",
   "configuration": {
     "name": "process-red-team",
-    "lockFingerprint": "sha256:43dc66a7ce9a5d102948df6d6c58175388c96f5c9f42dcdf1e1a01b0ffc8841a"
+    "lockFingerprint": "sha256:38e626ee8315bea57d0ce8e520f9eabf66f7d34a7f1740a4014f53899c234efc"
   },
   "states": {
     "valid": "passed",

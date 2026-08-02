@@ -106,8 +106,15 @@ function result(value, summary) {
   };
 }
 
-function staleRuntimeResult(inspection) {
-  const message = 'The loaded Soter host runtime no longer matches the current governed behavior. Restart the host runtime before using operational tools.';
+function blockedRuntimeResult(inspection) {
+  let message;
+  if (inspection.runtime.state === 'not-realized') {
+    message = 'The governed host outputs this runtime declares are not realized in this consumer root. Realize them for an active configuration, then restart the host runtime before using operational tools.';
+  } else if (inspection.runtime.permittedNextAction === 'restart-host-runtime') {
+    message = 'The loaded Soter host runtime no longer matches the complete current governed basis. Restart the host runtime before using operational tools.';
+  } else {
+    message = 'The current Soter host runtime basis is incomplete or invalid. No automatic recovery action is permitted; the exact local runtime basis must be repaired outside this inspection boundary before operational tools can be used.';
+  }
   const value = {
     code: inspection.runtime.reasonCode,
     message,
@@ -129,7 +136,7 @@ export function createSoterMcpServer({ root, host }) {
     { name: 'soter-core', version: '0.1.0' },
     {
       instructions: [
-        'Before operational work, use soter_inspect_host_runtime; if it reports SOTER_HOST_RUNTIME_STALE, restart the host runtime instead of retrying another Soter tool.',
+        'Before operational work, use soter_inspect_host_runtime; follow only its guidance action. A stale runtime with action none has no automatic recovery route and must be repaired outside inspection; restart only when the exact action is restart-host-runtime. If it reports SOTER_HOST_RUNTIME_NOT_REALIZED, realize the declared host outputs first because no restart or retry can satisfy them.',
         'Soter Core validates exact locks and runs for the active ' + host + ' host projection, then saves a private durable checkpoint before emitting a provider-neutral operation resolved to an exact native host tool.',
         'After compaction or restart, use soter_list_host_calls and soter_get_host_call to recover pending work.',
         'Use soter_stage_automation_acquisition to validate one exact private operator input and create the zero-effect prepared-work/run boundary, then use soter_prepare_automation_acquisition with that exact Automation and work identity.',
@@ -159,7 +166,7 @@ export function createSoterMcpServer({ root, host }) {
   const currentRuntimeInspection = () => inspectHostRuntime({ root, basis: runtimeBasis });
   const guard = (handler) => async (...args) => {
     const inspection = currentRuntimeInspection();
-    if (inspection.runtime.state !== 'current') return staleRuntimeResult(inspection);
+    if (inspection.runtime.state !== 'current') return blockedRuntimeResult(inspection);
     return handler(...args);
   };
   const registerGuardedTool = (name, specification, handler) => {

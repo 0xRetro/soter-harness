@@ -1235,18 +1235,31 @@ does not include evaluation fixtures or private runtime state. The read-only
 
 - the active host and server identity;
 - startup and current behavior fingerprints;
-- `current` or `stale` with a stable reason code;
+- `current`, `not-realized`, or `stale` with a stable reason code;
 - whether restart is required and the only permitted next action; and
 - explicit no-authority and privacy facts.
 
-If current behavior cannot be inventoried or differs from startup, the runtime
-is stale. Every MCP tool other than inspection returns a structured
-`SOTER_HOST_RUNTIME_STALE` failure before state creation, checkpoint mutation,
-or provider-request emission. Restoring identical artifacts may restore the
-same process to current; changed behavior requires a restarted host runtime.
-This comparison establishes only that the process matches governed local
-behavior. It cannot establish connector authentication, provider reachability,
-readiness, write conformance, verification, or health.
+`current` requires an exact non-null startup/current fingerprint match over
+governed source artifacts, the private configuration and managed manifest, and
+all static and collection-generated output bytes and full required modes. The
+manifest must match the exact deterministic host/configuration render;
+unmanaged outputs are not adopted. `not-realized` reports
+`SOTER_HOST_RUNTIME_NOT_REALIZED` only for a clean consumer with no managed
+manifest or realized output footprint; both fingerprints are null, and the only
+guidance is `realize-host-runtime` followed by a restart. `stale` reports
+`SOTER_HOST_RUNTIME_STALE` for changed, invalid, unsafe, missing, unmanaged, or
+mode-drifted runtime state. A null current fingerprint permits no automatic next
+action and reports `restartRequired: null`; exact repair is outside this
+inspection boundary. A complete changed
+fingerprint—including a realization that appears after a null startup—permits
+only `restart-host-runtime`. Every MCP tool other than inspection returns
+the corresponding structured failure before state creation, checkpoint
+mutation, or provider-request emission. Restoring identical artifacts may
+restore a stale process to current; newly realized or complete changed behavior requires
+a restarted host runtime. These comparisons establish only local runtime
+applicability. They grant no approval, continuation, provider-call, write, or
+execution authority and cannot establish connector authentication, provider
+reachability, readiness, write conformance, verification, or health.
 
 Internal capability and operation-plan preparation accepts no caller-supplied
 approval set and is not a public generic read surface. Consequently, a

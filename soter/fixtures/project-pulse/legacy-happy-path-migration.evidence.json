@@ -10,8 +10,8 @@
     "id": "automation.project-pulse",
     "version": "0.1.0"
   },
-  "configurationLockFingerprint": "sha256:8fefba6c90072685bac4441fc844ded8f0a6decec24792353f0c694646062a1d",
-  "graphFingerprint": "sha256:eaef2715a22c1e321bc06598a448549b905f4a2d9b3771dc5b86521723447605",
+  "configurationLockFingerprint": "sha256:4c0e1477c24c64fbab88de0e686f1f15a0cb16f6ca0631ee232de6b1a00f7828",
+  "graphFingerprint": "sha256:b86ec5b1190996ceac0376d60bc24f251f780507ef0d7543756f1023e6ee7da4",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -157,7 +157,7 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/project-pulse/happy-path.evidence.json",
-      "fingerprint": "sha256:4e4209c1d6f963b9b76dd9bca9c3727ee80a8c7912ab7c13983467dfa6422760"
+      "fingerprint": "sha256:3ac2e9aa4d0bf5989fade911538e499b69ce02a6b724d5e662d8b2cb34e62395"
     }
   ],
   "effects": [],

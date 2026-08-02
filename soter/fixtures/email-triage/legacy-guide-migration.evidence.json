@@ -10,8 +10,8 @@
     "id": "automation.email-triage",
     "version": "0.1.0"
   },
-  "configurationLockFingerprint": "sha256:61565ea2a31942e3ed205db2f47165905e3c3abe8b426d1a2308583237769e69",
-  "graphFingerprint": "sha256:575458aaa282b309538743ebcd13e0e4f4cc8d1199dfb9579838483a466664e9",
+  "configurationLockFingerprint": "sha256:0a60737f961210248f029a9147e5b3fdb44b8411e1789a9b8a09f69c00c6d81d",
+  "graphFingerprint": "sha256:917614c8d9c943fc80b0bdc0702dac1ec7834567b5da1d4e6149d3ce7e158429",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -161,7 +161,7 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/email-triage/preparation.evidence.json",
-      "fingerprint": "sha256:90f02b25cdd53ee4a1d485a724f175fe62da472b2897649a8fb2f259c1fd7338"
+      "fingerprint": "sha256:53ff5deefc25c067a8386fdd808bc0c2532004d3cb4a0ac7adff204aacdbf62e"
     }
   ],
   "effects": [],

@@ -86,7 +86,7 @@
           "requiredOnCreate": false,
           "nullable": true,
           "mutable": true,
-          "summary": "Exact Meeting participant resource identities; provider identities must be normalized before entering this portable field.",
+          "summary": "Exact Meeting-scoped participant resource identities after governed normalization; provider names, emails, calendar pairings, or account metadata cannot establish this portable field.",
           "reference": {
             "subject": "meetings.records.participant",
             "identity": "resource-uri"
@@ -105,7 +105,7 @@
     },
     {
       "id": "participant",
-      "summary": "A portable Meeting participant identity that remains distinct from CRM contact and provider-account identity.",
+      "summary": "A portable Meeting participant identity that remains distinct from CRM contact and provider-account identity; provider participant metadata alone cannot establish it.",
       "fields": [
         {
           "id": "displayName",
@@ -113,7 +113,7 @@
           "requiredOnCreate": true,
           "nullable": false,
           "mutable": true,
-          "summary": "The participant display name observed for this Meeting context."
+          "summary": "The untrusted participant display label observed for this Meeting context; it is not email, account, or CRM identity authority."
         },
         {
           "id": "identityUri",
@@ -315,7 +315,8 @@
     "The governed context.meetings vocabulary artifact owns portable Meeting terminology; compatibility pointers and provider labels are non-canonical projections.",
     "This model owns portable Meetings, participants, commitments, summaries, recording attribution, and transcript relationships; CRM, Projects, and Tasks remain separate selectable Context packs.",
     "Organization, person, Project, and Task links are optional typed resource identities and do not make those Context packs required dependencies.",
-    "Provider participant identifiers must be normalized into Meeting participant resource identities and never become CRM contacts by implication.",
+    "Provider participant identifiers and calendar-participant metadata are untrusted source facts that must be normalized into Meeting participant resource identities and never become participant-email or CRM identity by implication.",
+    "An absent summary relationship, an empty provider-specific related-document field, or an empty in-body summary section does not prove that a Meeting is unprocessed; processing state comes only from exact Automation and run evidence.",
     "Commitment extraction is review evidence only until a separate Automation explicitly dispositions it into a Task, Project update, or retained Meeting commitment.",
     "Meeting summary or commitment writes require separate Automation, Integration, configuration, approval, checkpoint, and verification authority."
   ]

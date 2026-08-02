@@ -10,6 +10,11 @@ import {
   readJson,
   writeJson
 } from '../core/lib/canonical-json.mjs';
+import { inspectManagedHostProjectionOwnership } from '../core/host-realizations.mjs';
+import {
+  HOST_PROJECTION_GENERATOR_ID,
+  HOST_PROJECTION_GENERATOR_VERSION
+} from '../core/host-projections.mjs';
 import {
   workflowGuideContentFingerprintMatches
 } from './workflow-guides.mjs';
@@ -36,15 +41,42 @@ function portable(relative) {
   return relative.split(path.sep).join('/');
 }
 
+function managedClaudeLegacyExclusions(root) {
+  const manifestFile = path.join(
+    root,
+    '.soter',
+    'state',
+    'host-projections',
+    'claude.json'
+  );
+  if (!fs.existsSync(manifestFile)) return new Set();
+  const ownership = inspectManagedHostProjectionOwnership({ root, host: 'claude' });
+  if (ownership.state !== 'realized') {
+    throw new Error('Legacy inventory managed Claude projection is not current.');
+  }
+  return new Set(ownership.outputPaths.filter((outputPath) => {
+    return outputPath.startsWith('.claude/');
+  }));
+}
+
 function walkLegacy(root) {
   const legacyRoot = path.join(root, '.claude');
   const files = [];
   if (!fs.existsSync(legacyRoot)) return files;
+  const managedExclusions = managedClaudeLegacyExclusions(root);
   const visit = (directory) => {
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
       const absolute = path.join(directory, entry.name);
       const relative = portable(path.relative(root, absolute));
       if (relative === '.claude/worktrees' || relative.startsWith('.claude/worktrees/')) continue;
+      // Per-developer host state is gitignored, machine-specific, and absent from
+      // the final-v1 inventory, so it has no governed legacy tombstone to match.
+      if (relative === '.claude/settings.local.json') continue;
+      // A realized Claude skill is excluded only when the exact private
+      // configuration, current lock, deterministic candidates, sealed manifest,
+      // complete collection inventory, bytes, and full modes all agree.
+      // Unknown neighboring files remain legacy inputs.
+      if (managedExclusions.has(relative)) continue;
       if (entry.isSymbolicLink()) throw new Error('Legacy inventory rejects symlinks: ' + relative);
       if (entry.isDirectory()) visit(absolute);
       else if (entry.isFile()) files.push({ absolute, relative });
@@ -608,7 +640,9 @@ function expectFailure(run, pattern) {
 }
 
 export function selftestLegacyInventory() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'soter-legacy-inventory-'));
+  const root = fs.realpathSync(
+    fs.mkdtempSync(path.join(os.tmpdir(), 'soter-legacy-inventory-'))
+  );
   try {
     const rule = path.join(root, '.claude/rules/example.md');
     fs.mkdirSync(path.dirname(rule), { recursive: true });
@@ -630,6 +664,118 @@ export function selftestLegacyInventory() {
     fs.writeFileSync(added, 'new rule\n');
     expectFailure(() => assertLegacyInventoryCurrent(root), /explicit classification for new paths/);
     fs.rmSync(added);
+
+    const localSettings = path.join(root, '.claude/settings.local.json');
+    fs.writeFileSync(localSettings, '{"permissions":{"allow":[]}}\n');
+    assertLegacyInventoryCurrent(root);
+    fs.rmSync(localSettings);
+
+    for (const relative of [
+      'soter/contracts/host-managed-manifest.schema.json',
+      'soter/contracts/host-adapter.schema.json',
+      'soter/contracts/host-projection-definition.schema.json',
+      'soter/hosts/claude/adapter.json',
+      'soter/hosts/claude/projection.json'
+    ]) {
+      const target = path.join(root, relative);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.copyFileSync(path.join(defaultRoot, relative), target);
+    }
+    const managedFiles = new Map([
+      ['CLAUDE.md', 'Generated Claude instructions.\n'],
+      ['.mcp.json', '{"mcpServers":{}}\n'],
+      ['.claude/skills/generated-review/SKILL.md', 'Generated Claude skill.\n']
+    ]);
+    for (const [relative, content] of managedFiles) {
+      const target = path.join(root, relative);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.writeFileSync(target, content, { mode: 0o644 });
+      fs.chmodSync(target, 0o644);
+    }
+    const projection = readJson(path.join(root, 'soter/hosts/claude/projection.json'));
+    const managedOutputs = [
+      {
+        id: 'output.claude.instructions',
+        path: 'CLAUDE.md',
+        role: 'instructions'
+      },
+      {
+        id: 'output.claude.tools',
+        path: '.mcp.json',
+        role: 'tools'
+      },
+      {
+        id: 'output.claude.workflow-guide.generated-review.skill',
+        path: '.claude/skills/generated-review/SKILL.md',
+        role: 'skills'
+      }
+    ].map((output) => {
+      const contentFingerprint = fingerprintFile(path.join(root, output.path));
+      return {
+        ...output,
+        mode: '0644',
+        contentFingerprint,
+        fingerprint: fingerprintJson({ contentFingerprint, mode: '0644' })
+      };
+    });
+    const placeholderFingerprint = fingerprintJson('legacy-inventory-selftest');
+    const managedManifest = {
+      $contract: 'soter://contracts/host-managed-manifest/v1',
+      contractVersion: '1.0.0',
+      id: 'host-managed-manifest.claude',
+      host: 'claude',
+      targetFingerprint: fingerprintJson({
+        requestedPath: root,
+        realPath: root,
+        device: Number(fs.statSync(root).dev),
+        inode: Number(fs.statSync(root).ino)
+      }),
+      configuration: {
+        name: 'legacy-inventory-selftest',
+        lockFingerprint: placeholderFingerprint,
+        graphFingerprint: placeholderFingerprint
+      },
+      definition: {
+        id: projection.id,
+        version: projection.version,
+        fingerprint: fingerprintJson(projection)
+      },
+      generator: {
+        id: HOST_PROJECTION_GENERATOR_ID,
+        version: HOST_PROJECTION_GENERATOR_VERSION,
+        fingerprint: placeholderFingerprint
+      },
+      outputs: managedOutputs,
+      checkpoint: {
+        id: 'checkpoint.legacy-inventory-selftest',
+        fingerprint: placeholderFingerprint
+      },
+      manifestFingerprint: null
+    };
+    const unsignedManagedManifest = { ...managedManifest };
+    delete unsignedManagedManifest.manifestFingerprint;
+    managedManifest.manifestFingerprint = fingerprintJson(unsignedManagedManifest);
+    const privateStateRoot = path.join(root, '.soter');
+    const privateStateDirectory = path.join(privateStateRoot, 'state');
+    const manifestDirectory = path.join(privateStateDirectory, 'host-projections');
+    for (const directory of [privateStateRoot, privateStateDirectory, manifestDirectory]) {
+      fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+      fs.chmodSync(directory, 0o700);
+    }
+    const managedManifestFile = path.join(manifestDirectory, 'claude.json');
+    writeJson(managedManifestFile, managedManifest);
+    fs.chmodSync(managedManifestFile, 0o600);
+    expectFailure(
+      () => assertLegacyInventoryCurrent(root),
+      /Private desired configuration is unavailable/
+    );
+    fs.rmSync(managedManifestFile);
+    expectFailure(
+      () => assertLegacyInventoryCurrent(root),
+      /explicit classification for new paths/
+    );
+    fs.rmSync(path.join(root, '.claude/skills'), { recursive: true, force: true });
+    assertLegacyInventoryCurrent(root);
 
     fs.rmSync(rule);
     expectFailure(

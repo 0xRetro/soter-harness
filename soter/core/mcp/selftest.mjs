@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
+import { validateJsonSchema } from '../../kernel/verify.mjs';
 import {
   fingerprintJson,
   fingerprintPath,
@@ -29,7 +30,7 @@ import {
   privateConfigurationStatePath,
   writePrivateConfigurationState
 } from '../private-configurations.mjs';
-import { resolveConfiguration } from '../resolve.mjs';
+import { fingerprintLock, resolveConfiguration } from '../resolve.mjs';
 import { prepareRunEnvelope } from '../run.mjs';
 import {
   failDurableHostExecution,
@@ -42,6 +43,7 @@ import {
   activeConfigurationLockStatePath,
   runStatePath,
   writeActiveConfigurationLockState,
+  writeHostManagedManifestState,
   writeRunState
 } from '../runtime-state.mjs';
 
@@ -341,12 +343,72 @@ function writeExactProjectionOutput(root, candidate) {
   }
 }
 
-function materializeExactHostProjections(root) {
+function consumerTarget(root) {
+  const requestedPath = path.resolve(root);
+  const realPath = fs.realpathSync(requestedPath);
+  const stat = fs.statSync(realPath);
+  const identity = {
+    requestedPath,
+    realPath,
+    device: Number(stat.dev),
+    inode: Number(stat.ino)
+  };
+  return { ...identity, fingerprint: fingerprintJson(identity) };
+}
+
+function exactManagedHostManifest(root, host, lock, rendered) {
+  const target = consumerTarget(root);
+  const manifest = {
+    $contract: 'soter://contracts/host-managed-manifest/v1',
+    contractVersion: '1.0.0',
+    id: 'host-managed-manifest.' + host,
+    host,
+    targetFingerprint: target.fingerprint,
+    configuration: {
+      name: lock.configuration.name,
+      lockFingerprint: fingerprintLock(lock),
+      graphFingerprint: lock.graphFingerprint
+    },
+    definition: {
+      id: rendered.definition.id,
+      version: rendered.definition.version,
+      fingerprint: rendered.definition.fingerprint
+    },
+    generator: {
+      id: rendered.generator.id,
+      version: rendered.generator.version,
+      fingerprint: fingerprintJson(rendered.generator)
+    },
+    outputs: rendered.outputs.map((output) => ({
+      id: output.id,
+      path: output.path,
+      role: output.role,
+      mode: output.mode,
+      contentFingerprint: output.contentFingerprint,
+      fingerprint: output.fingerprint
+    })).sort((left, right) => left.path.localeCompare(right.path, 'en')),
+    checkpoint: {
+      id: 'checkpoint.host-realization.mcp-' + host,
+      fingerprint: fingerprintJson({ host, kind: 'mcp-selftest-realization' })
+    },
+    manifestFingerprint: null
+  };
+  const unsigned = { ...manifest };
+  delete unsigned.manifestFingerprint;
+  manifest.manifestFingerprint = fingerprintJson(unsigned);
+  return manifest;
+}
+
+function materializeExactHostProjections(root, hosts = ['codex', 'claude']) {
   const candidates = [];
-  for (const host of ['codex', 'claude']) {
+  const realizations = [];
+  for (const host of hosts) {
+    const configurationName = host === 'claude'
+      ? 'claude-host-projection'
+      : 'harness-development-catalog';
     const lock = resolveConfiguration({
       root,
-      configPath: 'soter/configurations/meeting-intake.config.json',
+      configPath: privateConfigurationStatePath(root, configurationName),
       host
     });
     const adapter = readJson(resolveRepoPath(root, 'soter/hosts/' + host + '/adapter.json'));
@@ -378,6 +440,7 @@ function materializeExactHostProjections(root) {
         ...safeProjectionTarget(root, output.path)
       });
     }
+    realizations.push({ host, lock, rendered });
   }
   candidates.sort((left, right) => compareText(left.relativePath, right.relativePath));
   for (let index = 0; index < candidates.length; index += 1) {
@@ -390,8 +453,16 @@ function materializeExactHostProjections(root) {
     }
   }
   for (const candidate of candidates) writeExactProjectionOutput(root, candidate);
-  if (fs.existsSync(path.join(root, '.soter'))) {
-    throw new Error('MCP fixture projection materialization created runtime authority state.');
+  for (const realization of realizations) {
+    writeHostManagedManifestState(
+      root,
+      exactManagedHostManifest(
+        root,
+        realization.host,
+        realization.lock,
+        realization.rendered
+      )
+    );
   }
 }
 
@@ -553,12 +624,11 @@ function applicablePolicySources(lock) {
 }
 
 function createFixtureRoot() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'soter-mcp-'));
+  const root = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'soter-mcp-'));
   fs.cpSync(path.join(codeRoot, 'soter'), path.join(root, 'soter'), { recursive: true });
   for (const file of ['package.json', 'package-lock.json']) {
     fs.copyFileSync(path.join(codeRoot, file), path.join(root, file));
   }
-  materializeExactHostProjections(root);
   const meeting = materializeContainedPrivateConfiguration({
     root,
     configurationName: 'meeting-intake',
@@ -571,6 +641,26 @@ function createFixtureRoot() {
     host: 'codex',
     notionOptionMappings: taskNotionOptionMappings()
   });
+  writePrivateConfigurationState(
+    root,
+    'claude-host-projection',
+    readJson(path.join(
+      root,
+      'soter',
+      'configurations',
+      'claude-host-projection.config.json'
+    ))
+  );
+  writePrivateConfigurationState(
+    root,
+    'harness-development-catalog',
+    readJson(path.join(
+      root,
+      'soter',
+      'configurations',
+      'harness-development-catalog.config.json'
+    ))
+  );
   taskPolicyId = task.notion.recordUris['policy.tasks'];
   if (!/^https:\/\/www\.notion\.so\/[a-f0-9]{32}$/.test(taskPolicyId || '')) {
     throw new Error('Contained Task configuration did not materialize its exact private policy identity.');
@@ -586,6 +676,7 @@ function createFixtureRoot() {
     host: 'codex'
   });
   writeActiveConfigurationLockState(root, emailConfiguration.name, emailLock);
+  materializeExactHostProjections(root);
   lockPath = path.relative(
     root,
     activeConfigurationLockStatePath(root, meeting.configuration.name)
@@ -601,6 +692,18 @@ function createFixtureRoot() {
   });
   const storedRun = writeRunState(root, run);
   runPath = storedRun.path;
+  return root;
+}
+
+function createUnrealizedFixtureRoot() {
+  const root = fs.mkdtempSync(path.join(
+    fs.realpathSync(os.tmpdir()),
+    'soter-mcp-unrealized-'
+  ));
+  fs.cpSync(path.join(codeRoot, 'soter'), path.join(root, 'soter'), { recursive: true });
+  for (const file of ['package.json', 'package-lock.json']) {
+    fs.copyFileSync(path.join(codeRoot, file), path.join(root, file));
+  }
   return root;
 }
 
@@ -620,6 +723,270 @@ async function connectClient(root, host = 'codex') {
   });
   await client.connect(transport);
   return client;
+}
+
+async function assertUnrealizedHostRuntimes() {
+  for (const host of ['codex', 'claude']) {
+    const root = createUnrealizedFixtureRoot();
+    const privateStatePath = path.join(root, '.soter');
+    try {
+      if (fs.existsSync(privateStatePath)) {
+        throw new Error('Clean unrealized MCP fixture unexpectedly contains private state.');
+      }
+      const client = await connectClient(root, host);
+      try {
+        const inspection = await call(client, 'soter_inspect_host_runtime', {});
+        if (inspection.$contract !== 'soter://contracts/host-runtime-inspection/v1'
+          || inspection.host !== host
+          || inspection.runtime.state !== 'not-realized'
+          || inspection.runtime.startupFingerprint !== null
+          || inspection.runtime.currentFingerprint !== null
+          || inspection.runtime.reasonCode !== 'SOTER_HOST_RUNTIME_NOT_REALIZED'
+          || !inspection.runtime.restartRequired
+          || inspection.runtime.permittedNextAction !== 'realize-host-runtime'
+          || inspection.authority.grants !== 'none'
+          || inspection.authority.providerCallsPermitted
+          || inspection.authority.writesPermitted) {
+          throw new Error(
+            host + ' did not report its exact unrealized no-authority host-runtime state.'
+          );
+        }
+        const inspectionSchema = readJson(path.join(
+          root,
+          'soter',
+          'contracts',
+          'host-runtime-inspection.schema.json'
+        ));
+        const crossedRuntimeFacts = [
+          {
+            ...structuredClone(inspection),
+            runtime: {
+              ...inspection.runtime,
+              state: 'current',
+              reasonCode: 'SOTER_HOST_RUNTIME_CURRENT',
+              restartRequired: false,
+              permittedNextAction: 'continue'
+            }
+          },
+          {
+            ...structuredClone(inspection),
+            runtime: {
+              ...inspection.runtime,
+              reasonCode: 'SOTER_HOST_RUNTIME_STALE',
+              permittedNextAction: 'restart-host-runtime'
+            }
+          },
+          {
+            ...structuredClone(inspection),
+            runtime: {
+              ...inspection.runtime,
+              state: 'stale',
+              reasonCode: 'SOTER_HOST_RUNTIME_CURRENT'
+            }
+          }
+        ];
+        if (crossedRuntimeFacts.some((candidate) => {
+          return validateJsonSchema(candidate, inspectionSchema).length === 0;
+        })) {
+          throw new Error(
+            'Host runtime inspection schema accepted contradictory state facts.'
+          );
+        }
+        const blocked = await client.callTool({
+          name: 'soter_stage_automation_acquisition',
+          arguments: {
+            automation_id: 'automation.task-capture',
+            configuration_name: 'task-capture',
+            configuration_basis: 'private-active',
+            input: {},
+            at: fixtureTime
+          }
+        });
+        if (!blocked.isError
+          || blocked.structuredContent?.result?.code
+            !== 'SOTER_HOST_RUNTIME_NOT_REALIZED'
+          || blocked.structuredContent?.result?.inspection?.runtime?.state
+            !== 'not-realized'
+          || fs.existsSync(privateStatePath)) {
+          throw new Error(
+            host + ' did not block operational work before private-state creation.'
+          );
+        }
+
+        const emptyCollectionRoot = path.join(
+          root,
+          host === 'codex' ? '.agents' : '.claude'
+        );
+        fs.mkdirSync(path.join(emptyCollectionRoot, 'skills'), { recursive: true });
+        try {
+          const emptyCollection = await call(client, 'soter_inspect_host_runtime', {});
+          if (emptyCollection.runtime.state !== 'not-realized'
+            || emptyCollection.runtime.currentFingerprint !== null) {
+            throw new Error(
+              host + ' treated an empty host collection directory as a realized output.'
+            );
+          }
+        } finally {
+          fs.rmSync(emptyCollectionRoot, { recursive: true, force: true });
+        }
+
+        const unsafeUnmanagedProjection = path.join(
+          root,
+          host === 'codex' ? 'AGENTS.md' : 'CLAUDE.md'
+        );
+        fs.mkdirSync(unsafeUnmanagedProjection);
+        try {
+          const unsafeAbsence = await call(client, 'soter_inspect_host_runtime', {});
+          if (unsafeAbsence.runtime.state !== 'stale'
+            || unsafeAbsence.runtime.startupFingerprint !== null
+            || unsafeAbsence.runtime.currentFingerprint !== null
+            || unsafeAbsence.runtime.reasonCode !== 'SOTER_HOST_RUNTIME_STALE'
+            || unsafeAbsence.runtime.permittedNextAction !== 'none') {
+            throw new Error(
+              host + ' treated an unsafe unmanaged output as clean non-realization.'
+            );
+          }
+        } finally {
+          fs.rmSync(unsafeUnmanagedProjection, { recursive: true, force: true });
+        }
+        const cleanAgain = await call(client, 'soter_inspect_host_runtime', {});
+        if (cleanAgain.runtime.state !== 'not-realized'
+          || cleanAgain.runtime.currentFingerprint !== null) {
+          throw new Error(host + ' did not recover its exact clean unrealized state.');
+        }
+
+        const realizationConfiguration = host === 'codex'
+          ? 'harness-development-catalog'
+          : 'claude-host-projection';
+        writePrivateConfigurationState(
+          root,
+          realizationConfiguration,
+          readJson(path.join(
+            root,
+            'soter',
+            'configurations',
+            realizationConfiguration + '.config.json'
+          ))
+        );
+        materializeExactHostProjections(root, [host]);
+        const realizedAfterStartup = await call(
+          client,
+          'soter_inspect_host_runtime',
+          {}
+        );
+        if (realizedAfterStartup.runtime.state !== 'stale'
+          || realizedAfterStartup.runtime.startupFingerprint !== null
+          || realizedAfterStartup.runtime.currentFingerprint === null
+          || realizedAfterStartup.runtime.reasonCode !== 'SOTER_HOST_RUNTIME_STALE'
+          || !realizedAfterStartup.runtime.restartRequired
+          || realizedAfterStartup.runtime.permittedNextAction !== 'restart-host-runtime') {
+          throw new Error(
+            host + ' blessed a realization that appeared after its null startup basis: '
+              + JSON.stringify(realizedAfterStartup.runtime)
+          );
+        }
+      } finally {
+        await client.close().catch(() => {});
+      }
+
+      const restarted = await connectClient(root, host);
+      try {
+        const current = await call(restarted, 'soter_inspect_host_runtime', {});
+        if (current.runtime.state !== 'current'
+          || current.runtime.startupFingerprint === null
+          || current.runtime.currentFingerprint !== current.runtime.startupFingerprint
+          || current.runtime.reasonCode !== 'SOTER_HOST_RUNTIME_CURRENT'
+          || current.runtime.restartRequired
+          || current.runtime.permittedNextAction !== 'continue') {
+          throw new Error(
+            host + ' did not accept the exact managed realization after restart.'
+          );
+        }
+        const collectionRoot = path.join(
+          root,
+          host === 'codex' ? '.agents' : '.claude',
+          'skills'
+        );
+        const extraSkillRoot = path.join(
+          collectionRoot,
+          'mcp-unmanaged-extra-skill'
+        );
+        const extraSkillFile = path.join(extraSkillRoot, 'SKILL.md');
+        fs.mkdirSync(extraSkillRoot, { recursive: true });
+        fs.writeFileSync(
+          extraSkillFile,
+          '# Unmanaged extra skill\n\nThis file is not in the exact managed manifest.\n',
+          { mode: 0o644 }
+        );
+        if (process.platform !== 'win32') fs.chmodSync(extraSkillFile, 0o644);
+        try {
+          const extraSkillRuntime = await call(
+            restarted,
+            'soter_inspect_host_runtime',
+            {}
+          );
+          if (extraSkillRuntime.runtime.state !== 'stale'
+            || extraSkillRuntime.runtime.currentFingerprint !== null
+            || extraSkillRuntime.runtime.reasonCode !== 'SOTER_HOST_RUNTIME_STALE'
+            || extraSkillRuntime.runtime.restartRequired !== null
+            || extraSkillRuntime.runtime.permittedNextAction !== 'none') {
+            throw new Error(
+              host + ' accepted an unmanaged file in its owned projection collection.'
+            );
+          }
+          const privateStateRoot = path.join(root, '.soter');
+          const stateBeforeBlockedExtraSkill = privateStateTreeFingerprint(
+            privateStateRoot
+          );
+          const blockedExtraSkillOperation = await restarted.callTool({
+            name: 'soter_stage_automation_acquisition',
+            arguments: {
+              automation_id: 'automation.task-capture',
+              configuration_name: 'task-capture',
+              configuration_basis: 'private-active',
+              input: {},
+              at: fixtureTime
+            }
+          });
+          const expectedNoAutomaticRecoveryMessage = 'The current Soter host runtime basis is incomplete or invalid. No automatic recovery action is permitted; the exact local runtime basis must be repaired outside this inspection boundary before operational tools can be used.';
+          if (!blockedExtraSkillOperation.isError
+            || blockedExtraSkillOperation.structuredContent?.result?.code
+              !== 'SOTER_HOST_RUNTIME_STALE'
+            || blockedExtraSkillOperation.structuredContent?.result?.message
+              !== expectedNoAutomaticRecoveryMessage
+            || blockedExtraSkillOperation.structuredContent?.result?.inspection
+              ?.runtime?.permittedNextAction !== 'none'
+            || JSON.stringify(blockedExtraSkillOperation).includes(
+              'Restart the host runtime before using operational tools.'
+            )
+            || privateStateTreeFingerprint(privateStateRoot)
+              !== stateBeforeBlockedExtraSkill) {
+            throw new Error(
+              host + ' projected false restart guidance or mutated state for an invalid runtime.'
+            );
+          }
+        } finally {
+          fs.rmSync(extraSkillRoot, { recursive: true, force: true });
+        }
+        const restoredCollection = await call(
+          restarted,
+          'soter_inspect_host_runtime',
+          {}
+        );
+        if (restoredCollection.runtime.state !== 'current'
+          || restoredCollection.runtime.currentFingerprint
+            !== current.runtime.startupFingerprint) {
+          throw new Error(
+            host + ' did not recover after exact projection collection restoration.'
+          );
+        }
+      } finally {
+        await restarted.close().catch(() => {});
+      }
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  }
 }
 
 function toolResult(response) {
@@ -951,9 +1318,134 @@ async function selftest(root) {
       || currentRuntime.authority.writesPermitted) {
       throw new Error('MCP host runtime inspection did not report its exact current no-authority state.');
     }
+    if (JSON.stringify(currentRuntime).includes(root)
+      || JSON.stringify(currentRuntime).includes('.soter/state/')) {
+      throw new Error('MCP host runtime inspection exposed private runtime paths.');
+    }
 
     const runtimeArtifact = path.join(root, 'AGENTS.md');
     const runtimeArtifactSource = fs.readFileSync(runtimeArtifact, 'utf8');
+    if (process.platform !== 'win32') {
+      fs.chmodSync(runtimeArtifact, 0o1644);
+      try {
+        const modeDriftRuntime = await call(client, 'soter_inspect_host_runtime', {});
+        if (modeDriftRuntime.runtime.state !== 'stale'
+          || modeDriftRuntime.runtime.reasonCode !== 'SOTER_HOST_RUNTIME_STALE'
+          || modeDriftRuntime.runtime.currentFingerprint !== null
+          || modeDriftRuntime.runtime.permittedNextAction !== 'none') {
+          throw new Error(
+            'MCP host runtime inspection accepted special permission bits on a managed output.'
+          );
+        }
+      } finally {
+        fs.chmodSync(runtimeArtifact, 0o644);
+      }
+      const restoredAfterModeDrift = await call(
+        client,
+        'soter_inspect_host_runtime',
+        {}
+      );
+      if (restoredAfterModeDrift.runtime.state !== 'current'
+        || restoredAfterModeDrift.runtime.currentFingerprint
+          !== currentRuntime.runtime.startupFingerprint) {
+        throw new Error(
+          'MCP host runtime inspection did not recover after exact output-mode restoration.'
+        );
+      }
+    }
+
+    const managedManifest = readJson(path.join(
+      root,
+      '.soter',
+      'state',
+      'host-projections',
+      'codex.json'
+    ));
+    const dynamicProjection = managedManifest.outputs.find((output) => {
+      return output.role === 'skills';
+    });
+    if (!dynamicProjection) {
+      throw new Error('MCP fixture managed manifest has no dynamic skill projection.');
+    }
+    const dynamicProjectionFile = path.join(root, dynamicProjection.path);
+    const dynamicProjectionSource = fs.readFileSync(dynamicProjectionFile, 'utf8');
+    fs.writeFileSync(
+      dynamicProjectionFile,
+      dynamicProjectionSource + '\n<!-- MCP dynamic projection drift selftest. -->\n'
+    );
+    try {
+      const dynamicDriftRuntime = await call(client, 'soter_inspect_host_runtime', {});
+      if (dynamicDriftRuntime.runtime.state !== 'stale'
+        || dynamicDriftRuntime.runtime.reasonCode !== 'SOTER_HOST_RUNTIME_STALE'
+        || dynamicDriftRuntime.runtime.currentFingerprint !== null
+        || dynamicDriftRuntime.runtime.permittedNextAction !== 'none') {
+        throw new Error(
+          'MCP host runtime inspection omitted a dynamic projection-collection output.'
+        );
+      }
+    } finally {
+      fs.writeFileSync(dynamicProjectionFile, dynamicProjectionSource);
+      if (process.platform !== 'win32') fs.chmodSync(dynamicProjectionFile, 0o644);
+    }
+    const restoredAfterDynamicDrift = await call(
+      client,
+      'soter_inspect_host_runtime',
+      {}
+    );
+    if (restoredAfterDynamicDrift.runtime.state !== 'current'
+      || restoredAfterDynamicDrift.runtime.currentFingerprint
+        !== currentRuntime.runtime.startupFingerprint) {
+      throw new Error(
+        'MCP host runtime inspection did not recover after dynamic projection restoration.'
+      );
+    }
+
+    const runtimeConfigurationFile = path.join(
+      root,
+      '.soter',
+      'state',
+      'configurations',
+      'harness-development-catalog.json'
+    );
+    const runtimeConfigurationSource = fs.readFileSync(runtimeConfigurationFile, 'utf8');
+    const driftedRuntimeConfiguration = JSON.parse(runtimeConfigurationSource);
+    driftedRuntimeConfiguration.host.reason += ' MCP private configuration drift selftest.';
+    fs.writeFileSync(
+      runtimeConfigurationFile,
+      JSON.stringify(driftedRuntimeConfiguration, null, 2) + '\n'
+    );
+    if (process.platform !== 'win32') fs.chmodSync(runtimeConfigurationFile, 0o600);
+    try {
+      const privateConfigurationDrift = await call(
+        client,
+        'soter_inspect_host_runtime',
+        {}
+      );
+      if (privateConfigurationDrift.runtime.state !== 'stale'
+        || privateConfigurationDrift.runtime.reasonCode !== 'SOTER_HOST_RUNTIME_STALE'
+        || privateConfigurationDrift.runtime.currentFingerprint !== null
+        || privateConfigurationDrift.runtime.permittedNextAction !== 'none') {
+        throw new Error(
+          'MCP host runtime inspection accepted private configuration drift.'
+        );
+      }
+    } finally {
+      fs.writeFileSync(runtimeConfigurationFile, runtimeConfigurationSource);
+      if (process.platform !== 'win32') fs.chmodSync(runtimeConfigurationFile, 0o600);
+    }
+    const restoredAfterConfigurationDrift = await call(
+      client,
+      'soter_inspect_host_runtime',
+      {}
+    );
+    if (restoredAfterConfigurationDrift.runtime.state !== 'current'
+      || restoredAfterConfigurationDrift.runtime.currentFingerprint
+        !== currentRuntime.runtime.startupFingerprint) {
+      throw new Error(
+        'MCP host runtime inspection did not recover after private configuration restoration.'
+      );
+    }
+
     fs.writeFileSync(
       runtimeArtifact,
       runtimeArtifactSource + '\n<!-- MCP Codex projection drift selftest. -->\n'
@@ -965,8 +1457,8 @@ async function selftest(root) {
       const staleRuntime = await call(client, 'soter_inspect_host_runtime', {});
       if (staleRuntime.runtime.state !== 'stale'
         || staleRuntime.runtime.reasonCode !== 'SOTER_HOST_RUNTIME_STALE'
-        || !staleRuntime.runtime.restartRequired
-        || staleRuntime.runtime.permittedNextAction !== 'restart-host-runtime'
+        || staleRuntime.runtime.restartRequired !== null
+        || staleRuntime.runtime.permittedNextAction !== 'none'
         || staleRuntime.runtime.currentFingerprint === staleRuntime.runtime.startupFingerprint) {
         throw new Error('MCP host runtime inspection did not fail closed on behavior drift.');
       }
@@ -996,7 +1488,234 @@ async function selftest(root) {
       || restoredRuntime.runtime.currentFingerprint !== currentRuntime.runtime.startupFingerprint) {
       throw new Error('MCP host runtime inspection did not recover after exact behavior restoration.');
     }
+    const heldRuntimeArtifact = runtimeArtifact + '.mcp-missing-projection-selftest';
+    fs.renameSync(runtimeArtifact, heldRuntimeArtifact);
+    try {
+      const missingProjectionRuntime = await call(client, 'soter_inspect_host_runtime', {});
+      if (missingProjectionRuntime.runtime.state !== 'stale'
+        || missingProjectionRuntime.runtime.reasonCode !== 'SOTER_HOST_RUNTIME_STALE'
+        || missingProjectionRuntime.runtime.startupFingerprint
+          !== currentRuntime.runtime.startupFingerprint
+        || missingProjectionRuntime.runtime.currentFingerprint !== null
+        || missingProjectionRuntime.runtime.restartRequired !== null
+        || missingProjectionRuntime.runtime.permittedNextAction !== 'none') {
+        throw new Error(
+          'A projection removed after exact realized startup was not classified as stale.'
+        );
+      }
+    } finally {
+      fs.renameSync(heldRuntimeArtifact, runtimeArtifact);
+    }
+    const restoredAfterMissingProjection = await call(
+      client,
+      'soter_inspect_host_runtime',
+      {}
+    );
+    if (restoredAfterMissingProjection.runtime.state !== 'current'
+      || restoredAfterMissingProjection.runtime.currentFingerprint
+        !== currentRuntime.runtime.startupFingerprint) {
+      throw new Error(
+        'MCP host runtime inspection did not recover after restoring an exact missing projection.'
+      );
+    }
+    const managedManifestFile = path.join(
+      root,
+      '.soter',
+      'state',
+      'host-projections',
+      'codex.json'
+    );
+    const heldManagedManifestFile = managedManifestFile + '.mcp-orphan-selftest';
+    fs.renameSync(managedManifestFile, heldManagedManifestFile);
+    try {
+      const orphanedRuntime = await call(client, 'soter_inspect_host_runtime', {});
+      if (orphanedRuntime.runtime.state !== 'stale'
+        || orphanedRuntime.runtime.reasonCode !== 'SOTER_HOST_RUNTIME_STALE'
+        || orphanedRuntime.runtime.currentFingerprint !== null
+        || orphanedRuntime.runtime.permittedNextAction !== 'none') {
+        throw new Error(
+          'MCP host runtime inspection adopted projection outputs without their exact managed manifest.'
+        );
+      }
+    } finally {
+      fs.renameSync(heldManagedManifestFile, managedManifestFile);
+    }
+    const restoredAfterManifest = await call(client, 'soter_inspect_host_runtime', {});
+    if (restoredAfterManifest.runtime.state !== 'current'
+      || restoredAfterManifest.runtime.currentFingerprint
+        !== currentRuntime.runtime.startupFingerprint) {
+      throw new Error(
+        'MCP host runtime inspection did not recover after exact managed-manifest restoration.'
+      );
+    }
     if (process.platform !== 'win32') {
+      fs.chmodSync(managedManifestFile, 0o644);
+      try {
+        const publicManifestRuntime = await call(
+          client,
+          'soter_inspect_host_runtime',
+          {}
+        );
+        if (publicManifestRuntime.runtime.state !== 'stale'
+          || publicManifestRuntime.runtime.currentFingerprint !== null
+          || publicManifestRuntime.runtime.permittedNextAction !== 'none') {
+          throw new Error(
+            'MCP host runtime inspection accepted a managed manifest without private mode 0600.'
+          );
+        }
+      } finally {
+        fs.chmodSync(managedManifestFile, 0o600);
+      }
+      fs.renameSync(managedManifestFile, heldManagedManifestFile);
+      fs.symlinkSync(heldManagedManifestFile, managedManifestFile, 'file');
+      try {
+        const linkedManifestRuntime = await call(
+          client,
+          'soter_inspect_host_runtime',
+          {}
+        );
+        if (linkedManifestRuntime.runtime.state !== 'stale'
+          || linkedManifestRuntime.runtime.currentFingerprint !== null
+          || linkedManifestRuntime.runtime.permittedNextAction !== 'none') {
+          throw new Error(
+            'MCP host runtime inspection accepted a symbolic-link private managed manifest.'
+          );
+        }
+      } finally {
+        fs.unlinkSync(managedManifestFile);
+        fs.renameSync(heldManagedManifestFile, managedManifestFile);
+      }
+      const externalManifestRoot = fs.mkdtempSync(path.join(
+        os.tmpdir(),
+        'soter-runtime-manifest-selftest-'
+      ));
+      const externalManifestFile = path.join(externalManifestRoot, 'codex.json');
+      fs.copyFileSync(managedManifestFile, externalManifestFile);
+      fs.chmodSync(externalManifestFile, 0o600);
+      fs.renameSync(managedManifestFile, heldManagedManifestFile);
+      fs.linkSync(externalManifestFile, managedManifestFile);
+      try {
+        const linkedManifestRuntime = await call(
+          client,
+          'soter_inspect_host_runtime',
+          {}
+        );
+        if (linkedManifestRuntime.runtime.state !== 'stale'
+          || linkedManifestRuntime.runtime.currentFingerprint !== null
+          || linkedManifestRuntime.runtime.permittedNextAction !== 'none') {
+          throw new Error(
+            'MCP host runtime inspection accepted a hard-linked private managed manifest.'
+          );
+        }
+      } finally {
+        fs.unlinkSync(managedManifestFile);
+        fs.renameSync(heldManagedManifestFile, managedManifestFile);
+        fs.rmSync(externalManifestRoot, { recursive: true, force: true });
+      }
+      const restoredAfterUnsafeManifest = await call(
+        client,
+        'soter_inspect_host_runtime',
+        {}
+      );
+      if (restoredAfterUnsafeManifest.runtime.state !== 'current'
+        || restoredAfterUnsafeManifest.runtime.currentFingerprint
+          !== currentRuntime.runtime.startupFingerprint) {
+        throw new Error(
+          'MCP host runtime inspection did not recover after private manifest restoration.'
+        );
+      }
+
+      const toolsProjection = path.join(root, '.codex', 'config.toml');
+      const toolsProjectionSource = fs.readFileSync(toolsProjection, 'utf8');
+      const heldToolsProjection = toolsProjection + '.mcp-unsafe-output-selftest';
+      const unsafeOutputRoot = fs.mkdtempSync(path.join(
+        os.tmpdir(),
+        'soter-runtime-output-selftest-'
+      ));
+      const externalToolsProjection = path.join(unsafeOutputRoot, 'config.toml');
+      fs.writeFileSync(externalToolsProjection, toolsProjectionSource, { mode: 0o644 });
+      fs.chmodSync(externalToolsProjection, 0o644);
+      const assertUnsafeManagedOutput = async (label) => {
+        const unsafe = await call(client, 'soter_inspect_host_runtime', {});
+        if (unsafe.runtime.state !== 'stale'
+          || unsafe.runtime.reasonCode !== 'SOTER_HOST_RUNTIME_STALE'
+          || unsafe.runtime.currentFingerprint !== null
+          || unsafe.runtime.permittedNextAction !== 'none') {
+          throw new Error(
+            'MCP host runtime inspection accepted an unsafe ' + label + ' managed output.'
+          );
+        }
+      };
+      try {
+        fs.renameSync(runtimeArtifact, heldRuntimeArtifact);
+        fs.renameSync(toolsProjection, heldToolsProjection);
+        fs.linkSync(externalToolsProjection, toolsProjection);
+        await assertUnsafeManagedOutput('hard-linked');
+        fs.renameSync(heldRuntimeArtifact, runtimeArtifact);
+        await assertUnsafeManagedOutput('hard-linked after another output was restored');
+        fs.unlinkSync(toolsProjection);
+        fs.renameSync(heldToolsProjection, toolsProjection);
+
+        fs.renameSync(toolsProjection, heldToolsProjection);
+        fs.mkdirSync(toolsProjection, { mode: 0o755 });
+        await assertUnsafeManagedOutput('directory');
+        fs.rmSync(toolsProjection, { recursive: true, force: true });
+        fs.renameSync(heldToolsProjection, toolsProjection);
+
+        fs.renameSync(toolsProjection, heldToolsProjection);
+        fs.symlinkSync(externalToolsProjection, toolsProjection, 'file');
+        await assertUnsafeManagedOutput('symbolic-link');
+        fs.unlinkSync(toolsProjection);
+        fs.renameSync(heldToolsProjection, toolsProjection);
+
+        const codexDirectory = path.dirname(toolsProjection);
+        const heldCodexDirectory = codexDirectory + '.mcp-parent-selftest';
+        const externalCodexDirectory = path.join(unsafeOutputRoot, 'codex-parent');
+        fs.mkdirSync(externalCodexDirectory, { mode: 0o755 });
+        fs.writeFileSync(
+          path.join(externalCodexDirectory, 'config.toml'),
+          toolsProjectionSource,
+          { mode: 0o644 }
+        );
+        fs.renameSync(codexDirectory, heldCodexDirectory);
+        fs.symlinkSync(externalCodexDirectory, codexDirectory, 'dir');
+        try {
+          await assertUnsafeManagedOutput('parent-symbolic-link');
+        } finally {
+          fs.unlinkSync(codexDirectory);
+          fs.renameSync(heldCodexDirectory, codexDirectory);
+        }
+      } finally {
+        if (!fs.lstatSync(runtimeArtifact, { throwIfNoEntry: false })
+          && fs.lstatSync(heldRuntimeArtifact, { throwIfNoEntry: false })) {
+          fs.renameSync(heldRuntimeArtifact, runtimeArtifact);
+        }
+        const toolsStat = fs.lstatSync(toolsProjection, { throwIfNoEntry: false });
+        if (toolsStat?.isSymbolicLink()) fs.unlinkSync(toolsProjection);
+        else if (toolsStat?.isDirectory()) {
+          fs.rmSync(toolsProjection, { recursive: true, force: true });
+        } else if (toolsStat && toolsStat.nlink !== 1) {
+          fs.unlinkSync(toolsProjection);
+        }
+        if (!fs.lstatSync(toolsProjection, { throwIfNoEntry: false })
+          && fs.lstatSync(heldToolsProjection, { throwIfNoEntry: false })) {
+          fs.renameSync(heldToolsProjection, toolsProjection);
+        }
+        fs.rmSync(unsafeOutputRoot, { recursive: true, force: true });
+      }
+      const restoredAfterUnsafeOutputs = await call(
+        client,
+        'soter_inspect_host_runtime',
+        {}
+      );
+      if (restoredAfterUnsafeOutputs.runtime.state !== 'current'
+        || restoredAfterUnsafeOutputs.runtime.currentFingerprint
+          !== currentRuntime.runtime.startupFingerprint) {
+        throw new Error(
+          'MCP host runtime inspection did not recover after unsafe output restoration.'
+        );
+      }
+
       const governedDirectory = path.join(
         root,
         'soter',
@@ -1016,7 +1735,8 @@ async function selftest(root) {
         const symlinkedRuntime = await call(client, 'soter_inspect_host_runtime', {});
         if (symlinkedRuntime.runtime.state !== 'stale'
           || symlinkedRuntime.runtime.reasonCode !== 'SOTER_HOST_RUNTIME_STALE'
-          || symlinkedRuntime.runtime.currentFingerprint !== null) {
+          || symlinkedRuntime.runtime.currentFingerprint !== null
+          || symlinkedRuntime.runtime.permittedNextAction !== 'none') {
           throw new Error(
             'MCP host runtime inspection accepted a byte-identical governed artifact through an escaping parent symlink.'
           );
@@ -3233,8 +3953,12 @@ async function selftest(root) {
   }
 }
 
-const fixtureRoot = createFixtureRoot();
-selftest(fixtureRoot)
+let fixtureRoot;
+assertUnrealizedHostRuntimes()
+  .then(() => {
+    fixtureRoot = createFixtureRoot();
+    return selftest(fixtureRoot);
+  })
   .then(() => {
     process.stdout.write('Soter MCP selftest: passed.\n');
   })
@@ -3243,5 +3967,5 @@ selftest(fixtureRoot)
     process.exitCode = 1;
   })
   .finally(() => {
-    fs.rmSync(fixtureRoot, { recursive: true, force: true });
+    if (fixtureRoot) fs.rmSync(fixtureRoot, { recursive: true, force: true });
   });

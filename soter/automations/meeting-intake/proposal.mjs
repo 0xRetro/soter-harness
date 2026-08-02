@@ -31,6 +31,7 @@ const ZERO_FINGERPRINT = 'sha256:' + '0'.repeat(64);
 const REQUIRED_ACTIONS = [SUMMARY_ACTION, TASK_ACTION];
 const LIMITATIONS = [
   'This private review proposal creates no approval, confirmation, continuation, provider call, write, proof, maturity, or migration authority.',
+  'Only exact normalized transcript segments ground this review. Provider action-item interpretations and calendar-participant pairings are excluded and cannot create commitments, tasks, or identity links.',
   'The current v2 scope prepares one grounded summary and one exact existing-task fold for private review. Meeting-row updates, new tasks, project-body updates, provider-created summary back-links, and AI Inbox digest writes are deliberately unavailable.',
   'The complete summary-and-task group remains held because Core cannot yet verify every mapped summary field and the complete summary body in one exact read-back criterion. No proposed change can be selected into a connected batch.'
 ];

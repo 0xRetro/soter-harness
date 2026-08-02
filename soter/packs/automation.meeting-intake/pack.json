@@ -45,7 +45,7 @@
         "id": "meeting.transcript.read",
         "version": "^1.0.0",
         "optional": false,
-        "reason": "The automation must ground every derived outcome in the source transcript."
+        "reason": "The automation must ground every derived outcome in exact normalized transcript segments; provider action-item interpretations and calendar-participant pairings are excluded."
       },
       {
         "id": "crm.records.read",

@@ -10,8 +10,8 @@
     "id": "automation.meeting-intake",
     "version": "0.1.0"
   },
-  "configurationLockFingerprint": "sha256:f306a42577417c7340471a01729342d334c444b3d2d2fc98fb83e79a7ea3a0c4",
-  "graphFingerprint": "sha256:613b55e47f4a23d5ad22c552ad0233108f11e2d5a39dc19297128455dd4b192c",
+  "configurationLockFingerprint": "sha256:034ddf1fa51f68d481e2d49ae81fbb622f584c10baa83920e2504dbb3d87b99a",
+  "graphFingerprint": "sha256:bf3daca7cc41fe67ec2bdd394fef6b91e140d5948ff227426d50fb72a8b6f2d9",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -46,7 +46,7 @@
     {
       "id": "automation.meeting-intake",
       "version": "0.1.0",
-      "fingerprint": "sha256:4f39b7bae165899b915085db78ceb67efb86d72f6624879b9571d90e6a017fae"
+      "fingerprint": "sha256:f0f4e2710f91faabc07b1a19029c0cad3cd1887d51536e6fa3a1e83f4d1a7c72"
     },
     {
       "id": "integration.notion",
@@ -213,12 +213,12 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/meeting-intake/review-preparation.evidence.json",
-      "fingerprint": "sha256:aac7f51f3de60a0e50f2da1ab0ba9ff37a7b9324d13115359e0bffd7ef72ffa4"
+      "fingerprint": "sha256:09f8167323fb58704302cf63203bc8d17aba48733043a307d08f0ec7e3bdceaf"
     },
     {
       "role": "supporting-artifact",
       "path": "soter/fixtures/meeting-intake/connected-review.evidence.json",
-      "fingerprint": "sha256:69bde36e51f89e8a5acb52f0806588a23dd390180f8340cf8ba8d3d4e06664ef"
+      "fingerprint": "sha256:1e46d1823a61a41048bb24ceb75653f5f7b94c405cee1a7ebcd3d149a72fbbe3"
     }
   ],
   "effects": [],

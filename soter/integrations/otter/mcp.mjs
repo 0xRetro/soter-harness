@@ -66,6 +66,15 @@ function requiredNumber(value, field) {
   return value;
 }
 
+function transcriptProjection(result) {
+  // Provider calendar_participants and action_items are untrusted annotations.
+  // Only the exact speaker and segment fields below can cross the portable boundary.
+  return {
+    speakers: result.speakers,
+    segments: result.segments
+  };
+}
+
 export function prepareMcp({ capability, input }) {
   if (capability !== 'meeting.transcript.read') {
     throw providerError('validation', 'Otter MCP does not implement ' + capability + '.');
@@ -82,7 +91,7 @@ export function completeMcp({ capability, input, authority, response, at }) {
   if (capability !== 'meeting.transcript.read') {
     throw providerError('validation', 'Otter MCP does not implement ' + capability + '.');
   }
-  const result = structuredResult(response);
+  const result = transcriptProjection(structuredResult(response));
   if (!Array.isArray(result.speakers) || !Array.isArray(result.segments)) {
     throw providerError(
       'validation',
@@ -114,8 +123,12 @@ export function completeMcp({ capability, input, authority, response, at }) {
     provenance: {
       provider: 'otter-mcp',
       authority,
-      providerMeetingId,
-      recordingUri: input.recordingUri
+      sourceKind: 'connected',
+      sourceReferenceFingerprint: fingerprintJson({
+        provider: 'otter-mcp',
+        authority,
+        providerMeetingId
+      })
     },
     observedAt: at
   };

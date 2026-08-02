@@ -4,8 +4,8 @@
   "id": "context.task-capture.preparation-fixture",
   "runId": "run.task-capture.preparation-fixture",
   "createdAt": "2026-07-16T15:00:00.000Z",
-  "configurationLockFingerprint": "sha256:1c7658c752c5939a46789314d2f78d5a30419269bdc04f03a17dd1e299bc040e",
-  "graphFingerprint": "sha256:a38ff845875d6d86d235b8a2a85dfc54ac7015f63978e38f18b5532a093a2b49",
+  "configurationLockFingerprint": "sha256:1de2e7d6010f95b0e12ddd869a918ad2a6cc0627a399b7f4c53b57c3715c832d",
+  "graphFingerprint": "sha256:466406c5cffa546fda9f77741cd56a55bd7e66d3aa2de62aa2be2ab04e5ca6f2",
   "containment": "fixture",
   "entries": [
     {
@@ -25,9 +25,9 @@
         "mapping": "mapping.integration.notion.tasks-records",
         "mappingVersion": "0.2.0",
         "sourceKind": "fixture",
-        "sourceReferenceFingerprint": "sha256:8cddeb0070f5fc60fe9a798d329c80c51165bdc7349724b9ae5e139355b9bddd"
+        "sourceReferenceFingerprint": "sha256:936c53c3ece808f5fa6f91fc1f79a8dae3151b9197826fba1bc0221917dad79f"
       },
-      "valueFingerprint": "sha256:a6d3de61ae912fe5e38a9321bddb8b27d5bde713c0fa761397c705001ef827b7",
+      "valueFingerprint": "sha256:9976415986c2fc7c6d278df061d18efe01dab87c0776ea1b88e652a090260278",
       "value": {
         "records": [
           {
@@ -63,7 +63,7 @@
           "mapping": "mapping.integration.notion.tasks-records",
           "mappingVersion": "0.2.0",
           "sourceKind": "fixture",
-          "sourceReferenceFingerprint": "sha256:8cddeb0070f5fc60fe9a798d329c80c51165bdc7349724b9ae5e139355b9bddd"
+          "sourceReferenceFingerprint": "sha256:936c53c3ece808f5fa6f91fc1f79a8dae3151b9197826fba1bc0221917dad79f"
         },
         "observedAt": "2026-07-16T15:00:00.000Z"
       }
@@ -171,13 +171,13 @@
         "mapping": "mapping.integration.notion.tasks-records",
         "mappingVersion": "0.2.0",
         "sourceKind": "fixture",
-        "sourceReferenceFingerprint": "sha256:8cddeb0070f5fc60fe9a798d329c80c51165bdc7349724b9ae5e139355b9bddd"
+        "sourceReferenceFingerprint": "sha256:936c53c3ece808f5fa6f91fc1f79a8dae3151b9197826fba1bc0221917dad79f"
       },
-      "valueFingerprint": "sha256:2f2743384190a12671e9833485ade5afcfcf95f492a871a3ce259fba815ccdfb",
+      "valueFingerprint": "sha256:a4ace05c91058e27ddaa6cbf4d6ac7c21c26b9b30184524741f2cd6d933202fe",
       "value": {
         "candidateCount": 0,
         "candidateIds": [],
-        "providerOutputFingerprint": "sha256:d652f5d38b0f6b758173a4c3ee8198fa62f99f9505c7293c2b2d4adc2e075511"
+        "providerOutputFingerprint": "sha256:dc416bdb7afff80f9afac6292189bbc5b387174d6074f3a1b0eb297848d54542"
       }
     }
   ],

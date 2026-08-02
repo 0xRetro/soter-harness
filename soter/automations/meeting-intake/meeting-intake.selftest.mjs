@@ -17,10 +17,19 @@ const derivedReviewDefinition = readJson(path.join(
   root,
   'soter/automations/meeting-intake/derived-review.json'
 ));
+const untrustedActionItem = 'PROVIDER_ACTION_ITEM_MUST_NOT_CREATE_TASK_OR_COMMITMENT';
+const untrustedParticipantEmail = 'provider-calendar-pairing-must-not-be-identity@example.test';
 
 const snapshot = {
   entries: [
-    { subject: 'meeting.transcript', value: transcript },
+    {
+      subject: 'meeting.transcript',
+      value: {
+        ...structuredClone(transcript),
+        calendar_participants: [{ name: 'Wrongly paired participant', email: untrustedParticipantEmail }],
+        action_items: [{ text: untrustedActionItem, assignee: 'Wrong participant' }]
+      }
+    },
     { value: { records: [meeting, project, task] } }
   ]
 };
@@ -64,6 +73,19 @@ assert.equal(review.review.proposedChanges.length, 0);
 assert.equal(review.review.collections[0].rows.length, 3);
 assert.equal(review.review.collections[0].rows[2].actions[0].state, 'held');
 const privateText = JSON.stringify(review.derivedReview);
+const completeReviewText = JSON.stringify(review);
+assert(!completeReviewText.includes(untrustedActionItem));
+assert(!completeReviewText.includes(untrustedParticipantEmail));
+assert.equal(
+  review.derivedReview.items.filter((item) => item.kind === 'meeting-task-fold').length,
+  1,
+  'Provider action_items must not create an additional task review item.'
+);
+assert.equal(
+  review.derivedReview.items.some((item) => item.kind === 'meeting-commitment'),
+  false,
+  'Provider action_items must not create a commitment review item.'
+);
 assert(privateText.includes('## Our commitments'));
 assert(privateText.includes('## Their commitments'));
 assert(privateText.includes('Maya Chen: I will send the integration reference after the meeting.'));

@@ -10,8 +10,8 @@
     "id": "context.product",
     "version": "0.1.0"
   },
-  "configurationLockFingerprint": "sha256:53e1ad9c970bee360254a407a78e2d6f379241b1cd2e7b06dc09def29488dd38",
-  "graphFingerprint": "sha256:66721252c2a5c1f29e7591f170023b187c3e42c5fb2a82f9d3000d12c3783443",
+  "configurationLockFingerprint": "sha256:9dd20e07025e250e69c55068ed756f1f74967951bb11156c91a4fd17a7adf5b4",
+  "graphFingerprint": "sha256:5c9b5a65bf21538671467637ab33fbbcc89ddb7d184a072cc67d9cf2b767e3d8",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -145,7 +145,7 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/feature-capture/preparation.evidence.json",
-      "fingerprint": "sha256:ee64b66d01a2e3dd6ab60bd984309724ce976237815b26d12282c157e2fa0c8c"
+      "fingerprint": "sha256:c21332bdd5167c1c0f48788b1f99b640b282809744a0e6ee3fc8a782280be3f7"
     }
   ],
   "effects": [],

@@ -10,8 +10,8 @@
     "id": "automation.contact-capture",
     "version": "0.1.0"
   },
-  "configurationLockFingerprint": "sha256:91e35d3cbdfcb3f09cfcf7faa52568827551910cb895e2a9c119ecbd047cd1b5",
-  "graphFingerprint": "sha256:a81e0e0c6806ce7d9a12bdc6473fd93707078c64daaaceae0ee0e0080d314612",
+  "configurationLockFingerprint": "sha256:ea806a1135e5eb9605212c5c2c9a3c71ebf51b684ae0caa9e046b2755fc9fd0d",
+  "graphFingerprint": "sha256:0eb1e52b32563c75ca90ff2f475625a3d0d339498b6190bfda2bd72d9eb70e68",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -140,12 +140,12 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/contact-capture/preparation.evidence.json",
-      "fingerprint": "sha256:a02a8ff0c0928cec305b7e094bbce17119d95ebe9575439c1aaa92c1c36b1f03"
+      "fingerprint": "sha256:8690b8b110735cd93693b8099dbf8fa58b79ccbf1cfa7fe882248be3866e7219"
     },
     {
       "role": "supporting-artifact",
       "path": "soter/fixtures/contact-capture/connected-workflow.evidence.json",
-      "fingerprint": "sha256:511817864a2778bde2ce5672a28240346c1269f451a0177d4d7970a57452c8ed"
+      "fingerprint": "sha256:987daa7a69602f0430722abcf71dae51536814e26c31c88e65c2c450ccd03659"
     }
   ],
   "effects": [],

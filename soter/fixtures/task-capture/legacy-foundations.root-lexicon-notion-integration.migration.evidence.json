@@ -10,8 +10,8 @@
     "id": "integration.notion",
     "version": "0.2.0"
   },
-  "configurationLockFingerprint": "sha256:1c7658c752c5939a46789314d2f78d5a30419269bdc04f03a17dd1e299bc040e",
-  "graphFingerprint": "sha256:a38ff845875d6d86d235b8a2a85dfc54ac7015f63978e38f18b5532a093a2b49",
+  "configurationLockFingerprint": "sha256:1de2e7d6010f95b0e12ddd869a918ad2a6cc0627a399b7f4c53b57c3715c832d",
+  "graphFingerprint": "sha256:466406c5cffa546fda9f77741cd56a55bd7e66d3aa2de62aa2be2ab04e5ca6f2",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -167,12 +167,12 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/task-capture/preparation.evidence.json",
-      "fingerprint": "sha256:1b8b2bb47766f0e44e42d7384c312afb9f77eb44e9a319c6f312a06351719db7"
+      "fingerprint": "sha256:36b295dac61c5a3ac58507ddade89522dfa93e9148e377c8e44f5d6897991da9"
     },
     {
       "role": "supporting-artifact",
       "path": "soter/fixtures/task-capture/connected-workflow.evidence.json",
-      "fingerprint": "sha256:634940fc6480fa5a36cfa9bc109f0194a5351c028387943cbee872e8b0d7a353"
+      "fingerprint": "sha256:17f969aea171bc113a1a979e1dbdacbbfb60f1521f441b1d3820f4bf86d92f13"
     }
   ],
   "effects": [],

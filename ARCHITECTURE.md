@@ -447,16 +447,30 @@ approval; successful read-oriented preparation still establishes no write,
 readiness, verification, or health claim.
 
 The local MCP process also captures one startup fingerprint over governed
-definition, implementation, and projection artifacts plus the selected host
-adapter and its declared host projections. `host-runtime-inspection/v1`
-compares that loaded basis with the current repository. When they differ, the
-inspection reports `SOTER_HOST_RUNTIME_STALE`, requires a host-runtime restart,
-and every operational MCP tool fails before creating private state or emitting
-a provider request. The inspection remains usable while stale and exposes no
-credentials, provider responses, or private runtime state. It is runtime
-applicability, not readiness, verification, health, approval, or execution
-authority. A process that predates this contract must be restarted once before
-the guard can protect later graph changes.
+definition, implementation, and projection sources, the exact private
+configuration and managed manifest, and every static or collection-generated
+host output byte and full required mode. The manifest must still match a
+deterministic render of its exact host/configuration lock; unmanaged outputs
+are never adopted. `host-runtime-inspection/v1` compares that loaded basis with
+the current consumer root and reports three exact states. `current` means the
+complete loaded fingerprint still matches and permits only the guidance action
+`continue`. `not-realized` means a clean consumer has no managed manifest or
+realized output footprint, so both fingerprints are null and the guidance action
+`realize-host-runtime`, after which the host must restart. `stale` means a
+startup basis or current realization is invalid or changed—including unmanaged,
+missing, unsafe, byte-drifted, or mode-drifted output state. When no complete
+current fingerprint exists, no automatic next action is permitted; exact repair
+must happen outside this inspection boundary and `restartRequired` is null until
+that repair establishes an exact basis. A complete changed fingerprint
+permits only `restart-host-runtime`. A realization appearing after a null
+startup basis is also stale until restart. In
+either blocked state every operational MCP tool fails before creating private
+state or emitting a provider request. Inspection remains usable and exposes no
+credentials, provider responses, or private runtime state. These states and
+actions describe runtime applicability only; they grant no readiness,
+verification, health, approval, provider-call, write, or execution authority.
+A process that predates this contract must be restarted once before the guard
+can protect later graph changes.
 
 This projection deliberately exposes no generic way to attach connected-write
 approval. Reads and probes can cross the seam when their resolved policy allows

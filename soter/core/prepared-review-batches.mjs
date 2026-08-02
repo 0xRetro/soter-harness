@@ -389,9 +389,18 @@ export function createPreparedReviewBatch({
   const selectedIds = new Set(actionIds);
   const selected = available.filter((binding) => selectedIds.has(binding.action.id));
   if (selected.length !== selectedIds.size) {
+    const known = new Set();
+    for (const collection of work.preview.collections) {
+      for (const row of collection.rows) {
+        for (const action of row.actions) known.add(action.id);
+      }
+    }
+    const unknown = actionIds.filter((id) => !known.has(id));
     throw codedError(
       'PREPARED_REVIEW_BATCH_SELECTION_INVALID',
-      'Prepared review selection contains an unavailable, held, prohibited, or handoff action.'
+      unknown.length
+        ? 'Prepared review selection contains one or more unknown action ids.'
+        : 'Prepared review selection contains an unavailable, held, prohibited, or handoff action.'
     );
   }
   const actions = selected.map(selectedAction);

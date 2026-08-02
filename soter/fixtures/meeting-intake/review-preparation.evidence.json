@@ -10,8 +10,8 @@
     "id": "run.meeting-intake.review-preparation-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:f306a42577417c7340471a01729342d334c444b3d2d2fc98fb83e79a7ea3a0c4",
-  "graphFingerprint": "sha256:613b55e47f4a23d5ad22c552ad0233108f11e2d5a39dc19297128455dd4b192c",
+  "configurationLockFingerprint": "sha256:034ddf1fa51f68d481e2d49ae81fbb622f584c10baa83920e2504dbb3d87b99a",
+  "graphFingerprint": "sha256:bf3daca7cc41fe67ec2bdd394fef6b91e140d5948ff227426d50fb72a8b6f2d9",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -46,7 +46,7 @@
     {
       "id": "automation.meeting-intake",
       "version": "0.1.0",
-      "fingerprint": "sha256:4f39b7bae165899b915085db78ceb67efb86d72f6624879b9571d90e6a017fae"
+      "fingerprint": "sha256:f0f4e2710f91faabc07b1a19029c0cad3cd1887d51536e6fa3a1e83f4d1a7c72"
     },
     {
       "id": "integration.notion",
@@ -315,7 +315,7 @@
     {
       "role": "context-snapshot",
       "id": "context.meeting-intake.review-preparation-fixture",
-      "fingerprint": "sha256:772d3bf137f1d1a48a0513f5edb9df43b1e46f05f35a8e5550381b91571734a3"
+      "fingerprint": "sha256:16cb99bbdda389c8d9ea0e34d89b8d86c3139bfd15e0dfcaeb11bb09b1d6d12e"
     },
     {
       "role": "meeting-preparation-review",
@@ -456,7 +456,7 @@
       ],
       "inputFingerprint": "sha256:d92beb3b8180b86b6b344ef81bdf2a554f5d08bb3904a9d14ef8328f437d37b1",
       "state": "passed",
-      "outputFingerprint": "sha256:3dba076284e18ee493363cfdd149bb65d53e2055e9e25e63889249a9700b86d7",
+      "outputFingerprint": "sha256:f5b562ea620d30c743955e5a1af72dd4ea27291c9897c7ad859fdfe136734541",
       "error": null
     },
     {
@@ -592,7 +592,7 @@
       ],
       "inputFingerprint": "sha256:d19ab73fb1d5771619f7371637a1bb0577477d6813ce7736c5813c38f411959d",
       "state": "passed",
-      "outputFingerprint": "sha256:f7988c9c595ad37f79689f3c5cfa85457c53d9472917aa109b66b2e8fd287d3c",
+      "outputFingerprint": "sha256:73b14b64d2d04000aaddbd3d876b651f6dffa668d02dc723152d8de1599ac7a2",
       "error": null
     }
   ],

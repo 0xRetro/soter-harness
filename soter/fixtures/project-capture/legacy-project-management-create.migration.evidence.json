@@ -10,8 +10,8 @@
     "id": "automation.project-capture",
     "version": "0.1.0"
   },
-  "configurationLockFingerprint": "sha256:b0dea41315d4e3ca5552a274a0c93fe9b52ee4ab12e5e2d88c07c68262a8d841",
-  "graphFingerprint": "sha256:5dbd3466670724b56d516fe3d91eb3bebe94106ee690325af9b1ef11243aa387",
+  "configurationLockFingerprint": "sha256:015ef33f34e38ce9d3b7d6206e7329026d0e29271fe94fd80ea0c1caebd5d87e",
+  "graphFingerprint": "sha256:b2ade6b632d5f53e14a5dedb3e96e6b50a9c53f1d2d2b964adf907839cc8bfdc",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -167,12 +167,12 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/project-capture/preparation.evidence.json",
-      "fingerprint": "sha256:eaac6d6d91cd8e054bb1a4a651bc914de09e10836f9e5d7770b90cf1fbca5497"
+      "fingerprint": "sha256:8fb076dadf68ab1364b86e58828b660a2be9f8f701773e5d44d664772a1c388c"
     },
     {
       "role": "supporting-artifact",
       "path": "soter/fixtures/project-capture/connected-review.evidence.json",
-      "fingerprint": "sha256:1f747d3dd0f8709cc2f85468fec48ecde5a92aedc3a6207d0a92fb47b59f4a8a"
+      "fingerprint": "sha256:2b09873a2e69ac6cde2370a02dd931d8c16255bb44cc7308b4ff5ff46b03f948"
     }
   ],
   "effects": [],

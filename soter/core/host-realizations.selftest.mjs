@@ -32,6 +32,7 @@ import {
 } from './runtime-state.mjs';
 import { fingerprintJson, readJson, sha256 } from './lib/canonical-json.mjs';
 import { validateJsonSchema } from '../kernel/verify.mjs';
+import { assertLegacyInventoryCurrent } from '../kernel/legacy-inventory.mjs';
 
 const CREATED = '2026-07-16T12:00:00.000Z';
 const CONFIRMED = '2026-07-16T12:05:00.000Z';
@@ -358,6 +359,54 @@ export async function selftestHostRealizations(sourceRoot) {
       '.claude/skills/running-evals/SKILL.md'
     )), 'Current Claude realization omitted an active governed workflow skill.');
     assertMode(path.join(claudeRootMcp, '.mcp.json'), '0644');
+    assertLegacyInventoryCurrent(claudeRootMcp);
+    const unmanagedClaudeSkill = path.join(
+      claudeRootMcp,
+      '.claude/skills/unmanaged-neighbor/SKILL.md'
+    );
+    fs.mkdirSync(path.dirname(unmanagedClaudeSkill), { recursive: true });
+    fs.writeFileSync(unmanagedClaudeSkill, 'Unmanaged neighboring skill.\n', { mode: 0o644 });
+    assert.throws(
+      () => assertLegacyInventoryCurrent(claudeRootMcp),
+      (error) => error.code === 'HOST_REALIZATION_MANAGED_DRIFT'
+    );
+    fs.rmSync(path.dirname(unmanagedClaudeSkill), { recursive: true, force: true });
+    assertLegacyInventoryCurrent(claudeRootMcp);
+
+    const exactClaudeManifest = structuredClone(
+      readHostManagedManifestState(claudeRootMcp, 'claude').manifest
+    );
+    const inventedClaudeSkill = path.join(
+      claudeRootMcp,
+      '.claude/skills/invented-review/SKILL.md'
+    );
+    const inventedClaudeContent = 'Invented self-sealed Claude skill.\n';
+    fs.mkdirSync(path.dirname(inventedClaudeSkill), { recursive: true });
+    fs.writeFileSync(inventedClaudeSkill, inventedClaudeContent, { mode: 0o644 });
+    const forgedClaudeManifest = structuredClone(exactClaudeManifest);
+    const runningEvalsOutput = forgedClaudeManifest.outputs.find((output) => {
+      return output.path === '.claude/skills/running-evals/SKILL.md';
+    });
+    const inventedContentFingerprint = sha256(Buffer.from(inventedClaudeContent, 'utf8'));
+    forgedClaudeManifest.outputs.push({
+      ...runningEvalsOutput,
+      id: 'output.claude.workflow-guide.invented-review.skill',
+      path: '.claude/skills/invented-review/SKILL.md',
+      contentFingerprint: inventedContentFingerprint,
+      fingerprint: fingerprintJson({
+        contentFingerprint: inventedContentFingerprint,
+        mode: '0644'
+      })
+    });
+    forgedClaudeManifest.outputs.sort((left, right) => left.path.localeCompare(right.path, 'en'));
+    writeHostManagedManifestState(claudeRootMcp, resealManifest(forgedClaudeManifest));
+    assert.throws(
+      () => assertLegacyInventoryCurrent(claudeRootMcp),
+      (error) => error.code === 'HOST_REALIZATION_CANDIDATE_DRIFT'
+    );
+    writeHostManagedManifestState(claudeRootMcp, exactClaudeManifest);
+    fs.rmSync(path.dirname(inventedClaudeSkill), { recursive: true, force: true });
+    assertLegacyInventoryCurrent(claudeRootMcp);
 
     const credentialTemplate = copyRuntime(sourceRoot, 'credential-template');
     roots.push(credentialTemplate);

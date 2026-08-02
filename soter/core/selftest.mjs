@@ -3763,6 +3763,9 @@ export async function selftest(root) {
       at: FIXTURE_TIME
     });
     const transcriptMarker = 'private-transcript-response-marker';
+    const calendarParticipantMarker = 'private-calendar-participant-marker@example.test';
+    const actionItemMarker = 'private-provider-action-item-marker';
+    const nestedRawProviderMarker = 'HOSTILE_NESTED_RAW_PROVIDER_RESPONSE';
     const completedOtterRead = await completeHostToolCall({
       root: temp,
       lock,
@@ -3772,14 +3775,25 @@ export async function selftest(root) {
         structuredContent: {
           result: {
             speakers: [
-              { id: 'speaker.selftest', displayName: 'Selftest speaker' }
+              {
+                id: 'speaker.selftest',
+                displayName: 'Selftest speaker',
+                rawProviderResponse: nestedRawProviderMarker
+              }
             ],
             segments: [
               {
                 speakerId: 'speaker.selftest',
                 text: 'Selftest transcript segment.',
-                startSeconds: 0
+                startSeconds: 0,
+                rawProviderResponse: nestedRawProviderMarker
               }
+            ],
+            calendar_participants: [
+              { name: 'Untrusted pairing', email: calendarParticipantMarker }
+            ],
+            action_items: [
+              { text: actionItemMarker, assignee: 'Untrusted attribution' }
             ],
             ignoredPrivateField: transcriptMarker
           }
@@ -3793,8 +3807,65 @@ export async function selftest(root) {
       || preparedOtterRead.call.arguments.id !== 'conversation_selftest'
       || completedOtterRead.call.state !== 'completed'
       || completedOtterRead.output?.meetingId !== 'meeting.selftest'
-      || JSON.stringify(completedOtterRead).includes(transcriptMarker)) {
+      || JSON.stringify(completedOtterRead).includes(transcriptMarker)
+      || JSON.stringify(completedOtterRead).includes(calendarParticipantMarker)
+      || JSON.stringify(completedOtterRead).includes(actionItemMarker)
+      || JSON.stringify(completedOtterRead).includes(nestedRawProviderMarker)
+      || JSON.stringify(Object.keys(completedOtterRead.output?.provenance || {}).sort())
+        !== JSON.stringify([
+          'authority', 'provider', 'sourceKind', 'sourceReferenceFingerprint'
+        ])) {
       failures.push('Otter MCP bridge did not enforce exact fetch translation and minimized normalization');
+    }
+    const transcriptContract = readJson(path.join(
+      temp,
+      'soter/capabilities/meeting.transcript.read.json'
+    ));
+    const hostilePortableTranscript = {
+      ...structuredClone(completedOtterRead.output),
+      calendar_participants: [{ email: calendarParticipantMarker }],
+      action_items: [{ text: actionItemMarker }]
+    };
+    if (validateJsonSchema(hostilePortableTranscript, transcriptContract.outputSchema).length === 0) {
+      failures.push('portable transcript schema accepted untrusted provider annotations');
+    }
+    const hostileNestedProviderTranscript = structuredClone(completedOtterRead.output);
+    hostileNestedProviderTranscript.provenance.rawProviderResponse = nestedRawProviderMarker;
+    hostileNestedProviderTranscript.speakers[0].rawProviderResponse = nestedRawProviderMarker;
+    if (validateJsonSchema(
+      hostileNestedProviderTranscript,
+      transcriptContract.outputSchema
+    ).length < 2) {
+      failures.push('portable transcript schema accepted nested raw provider escape properties');
+    }
+    const hostileOtterFixtureState = createFixtureRuntimeState(temp);
+    const hostileFixtureTranscript = hostileOtterFixtureState[
+      'provider.integration.otter.fixture'
+    ].data.transcripts[0];
+    hostileFixtureTranscript.rawProviderResponse = nestedRawProviderMarker;
+    hostileFixtureTranscript.speakers[0].rawProviderResponse = nestedRawProviderMarker;
+    hostileFixtureTranscript.segments[0].rawProviderResponse = nestedRawProviderMarker;
+    const minimizedFixtureTranscript = await invokeCapability({
+      root: temp,
+      lock,
+      capability: 'meeting.transcript.read',
+      authority: 'authority.otter.provider',
+      containment: 'fixture',
+      input: {
+        meetingId: hostileFixtureTranscript.meetingId,
+        recordingUri: hostileFixtureTranscript.recordingUri
+      },
+      effectId: 'effect.meeting-intake.hostile-transcript.fixture',
+      at: FIXTURE_TIME,
+      runtimeState: hostileOtterFixtureState
+    });
+    if (minimizedFixtureTranscript.invocation.state !== 'passed'
+      || JSON.stringify(minimizedFixtureTranscript.output).includes(nestedRawProviderMarker)
+      || JSON.stringify(Object.keys(minimizedFixtureTranscript.output?.provenance || {}).sort())
+        !== JSON.stringify([
+          'authority', 'provider', 'sourceKind', 'sourceReferenceFingerprint'
+        ])) {
+      failures.push('Otter fixture bridge did not minimize nested provider data and provenance');
     }
     const invalidOtterRead = await prepareHostToolCall({
       root: temp,

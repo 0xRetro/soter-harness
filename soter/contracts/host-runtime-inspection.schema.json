@@ -45,15 +45,68 @@
         "permittedNextAction"
       ],
       "properties": {
-        "state": { "enum": ["current", "stale"] },
-        "startupFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "state": { "enum": ["current", "not-realized", "stale"] },
+        "startupFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
         "currentFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
         "reasonCode": {
-          "enum": ["SOTER_HOST_RUNTIME_CURRENT", "SOTER_HOST_RUNTIME_STALE"]
+          "enum": [
+            "SOTER_HOST_RUNTIME_CURRENT",
+            "SOTER_HOST_RUNTIME_NOT_REALIZED",
+            "SOTER_HOST_RUNTIME_STALE"
+          ]
         },
-        "restartRequired": { "type": "boolean" },
-        "permittedNextAction": { "enum": ["continue", "restart-host-runtime"] }
-      }
+        "restartRequired": { "type": ["boolean", "null"] },
+        "permittedNextAction": {
+          "enum": [
+            "continue",
+            "realize-host-runtime",
+            "none",
+            "restart-host-runtime"
+          ]
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "state": { "const": "current" },
+            "startupFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "currentFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "reasonCode": { "const": "SOTER_HOST_RUNTIME_CURRENT" },
+            "restartRequired": { "const": false },
+            "permittedNextAction": { "const": "continue" }
+          }
+        },
+        {
+          "properties": {
+            "state": { "const": "not-realized" },
+            "startupFingerprint": { "const": null },
+            "currentFingerprint": { "const": null },
+            "reasonCode": { "const": "SOTER_HOST_RUNTIME_NOT_REALIZED" },
+            "restartRequired": { "const": true },
+            "permittedNextAction": { "const": "realize-host-runtime" }
+          }
+        },
+        {
+          "properties": {
+            "state": { "const": "stale" },
+            "startupFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+            "currentFingerprint": { "const": null },
+            "reasonCode": { "const": "SOTER_HOST_RUNTIME_STALE" },
+            "restartRequired": { "const": null },
+            "permittedNextAction": { "const": "none" }
+          }
+        },
+        {
+          "properties": {
+            "state": { "const": "stale" },
+            "startupFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+            "currentFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "reasonCode": { "const": "SOTER_HOST_RUNTIME_STALE" },
+            "restartRequired": { "const": true },
+            "permittedNextAction": { "const": "restart-host-runtime" }
+          }
+        }
+      ]
     },
     "authority": {
       "type": "object",

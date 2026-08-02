@@ -605,6 +605,31 @@ export async function selftestNotionRecordMappings(root) {
     || updated.provenance.mapping !== mapping.id) {
     throw new Error('Synthetic Product records did not round-trip through the generic fixture translator.');
   }
+  for (const [label, mutate] of [
+    ['missing fixture content mapping', (value) => { delete value.recordTypes[0].content; }],
+    ['wrong fixture content target', (value) => {
+      value.recordTypes[0].content.provider = 'Private provider target';
+    }]
+  ]) {
+    const invalidContentMapping = structuredClone(mapping);
+    mutate(invalidContentMapping);
+    await expectFailure(
+      label,
+      () => invokeFixture({
+        ...fixtureBase,
+        state: syntheticProductFixture(),
+        mappings: [invalidContentMapping],
+        capability: 'product.records.create',
+        input: {
+          recordType: 'feature',
+          deduplicationKey: 'feature-invalid-content-' + label.replaceAll(' ', '-'),
+          fields: { title: 'Invalid content route', status: 'Planned' },
+          body: 'HOSTILE_UNDECLARED_CONTENT'
+        }
+      }),
+      /exact mapped markdown page-content route/
+    );
+  }
   const mismatchedMapping = structuredClone(mapping);
   mismatchedMapping.recordTypes[0].capabilities = ['crm.records.read'];
   await expectFailure(
@@ -637,10 +662,6 @@ export async function selftestNotionRecordMappings(root) {
   const privateTaskProviderContext = 'PRIVATE_PROVIDER_TASK_CONTEXT_SENTINEL';
   const canonicalTaskProjectUri
     = 'https://www.notion.so/cccccccccccccccccccccccccccccccc';
-  const canonicalSourceMeetingUris = [
-    'https://www.notion.so/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-    'https://www.notion.so/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
-  ];
   const taskProviderPersonUuid = '123e4567-e89b-42d3-a456-426614174000';
   const taskProviderPersonUuidUpper = taskProviderPersonUuid.toUpperCase();
   const taskProviderPersonIds = [
@@ -674,19 +695,6 @@ export async function selftestNotionRecordMappings(root) {
       if (binding.recordType !== 'task') return binding;
       if (binding.field === 'title') {
         return { ...binding, provider: 'Task Name' };
-      }
-      if ([
-        'sourceMeetingUris',
-        'sourceQuotes',
-        'sourceSummaryFingerprints'
-      ].includes(binding.field)) {
-        return {
-          mapping: binding.mapping,
-          recordType: binding.recordType,
-          field: binding.field,
-          state: 'unavailable',
-          reasonCode: 'PROVIDER_PROPERTY_UNAVAILABLE'
-        };
       }
       return binding;
     });
@@ -785,7 +793,7 @@ export async function selftestNotionRecordMappings(root) {
       && !liveTaskQuery.includes('"Grounding"')
       && !liveTaskQuery.includes('"Summary Fingerprints"'),
     true,
-    'Connected record reads must select renamed mapped properties and omit unavailable fields.'
+    'Connected record reads must select renamed mapped properties and omit undeclared fields.'
   );
   const liveTaskRead = completeMcp({
     capability: 'tasks.records.read',
@@ -880,31 +888,52 @@ export async function selftestNotionRecordMappings(root) {
         'https://www.notion.so/Private-project-slug-CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCCCC?pvs=4'
       ],
       assigneeIds: taskProviderPersonIds,
-      sourceMeetingUris: [
-        'https://app.notion.com/p/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
-        'https://www.notion.so/Private-meeting-slug-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
-      ],
       nextActionOn: '2026-07-24'
-    }
+    },
+    body: '## Context\n\nReview the exact connected Task mapping.'
   };
-  const liveTaskCreateInput = structuredClone(taskCreateInput);
-  delete liveTaskCreateInput.fields.sourceMeetingUris;
+  for (const [label, mutate] of [
+    ['missing connected Task content mapping', (value) => {
+      delete value.recordTypes.find((record) => record.id === 'task').content;
+    }],
+    ['wrong connected Task content target', (value) => {
+      value.recordTypes.find((record) => record.id === 'task').content.provider
+        = 'Private provider target';
+    }]
+  ]) {
+    const invalidContentMapping = structuredClone(tasksMapping);
+    mutate(invalidContentMapping);
+    await expectFailure(
+      label,
+      () => prepareMcp({
+        capability: 'tasks.records.create',
+        input: taskCreateInput,
+        settings: taskSettings,
+        mappings: [invalidContentMapping]
+      }),
+      /exact mapped markdown page-content route/
+    );
+  }
   const liveTaskCreateRequest = prepareMcp({
     capability: 'tasks.records.create',
-    input: liveTaskCreateInput,
+    input: taskCreateInput,
     settings: liveTaskSettings,
     mappings: [tasksMapping]
   });
   assert.equal(
     liveTaskCreateRequest.arguments.pages[0].properties['Task Name'],
-    liveTaskCreateInput.fields.title,
+    taskCreateInput.fields.title,
     'Connected writes must use the exact private provider property binding.'
   );
+  const legacySourceMeetingTaskCreateInput = structuredClone(taskCreateInput);
+  legacySourceMeetingTaskCreateInput.fields.sourceMeetingUris = [
+    'https://app.notion.com/p/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
+  ];
   await expectFailure(
-    'unavailable optional connected task write',
+    'legacy source-meeting connected task write',
     () => prepareMcp({
       capability: 'tasks.records.create',
-      input: taskCreateInput,
+      input: legacySourceMeetingTaskCreateInput,
       settings: liveTaskSettings,
       mappings: [tasksMapping]
     }),
@@ -931,9 +960,40 @@ export async function selftestNotionRecordMappings(root) {
     settings: taskSettings,
     mappings: [tasksMapping]
   });
+  const taskUpdateInputSchema = readJson(path.join(
+    root,
+    'soter',
+    'capabilities',
+    'tasks.records.update.json'
+  )).inputSchema;
+  if (validateJsonSchema({
+    ...taskUpdateInput,
+    body: 'HOSTILE_SILENT_TASK_BODY'
+  }, taskUpdateInputSchema).length === 0) {
+    throw new Error('Task update input accepted an unavailable top-level page body.');
+  }
+  await expectFailure(
+    'unavailable Task page-body update',
+    () => prepareMcp({
+      capability: 'tasks.records.update',
+      input: {
+        ...taskUpdateInput,
+        patch: {
+          ...taskUpdateInput.patch,
+          body: 'HOSTILE_UNVERIFIED_TASK_BODY'
+        }
+      },
+      settings: taskSettings,
+      mappings: [tasksMapping]
+    }),
+    /contains unmapped field task\.body/
+  );
   const taskCreateProperties = taskCreateRequest.arguments.pages[0].properties;
   if (taskCreateRequest.tool !== 'create_pages'
     || taskUpdateRequest.tool !== 'update_page'
+    || taskUpdateRequest.arguments.command !== 'update_properties'
+    || Object.hasOwn(taskUpdateRequest.arguments, 'content')
+    || Object.hasOwn(taskUpdateRequest.arguments, 'content_updates')
     || !Array.isArray(taskCreateProperties.Project)
     || !Array.isArray(taskCreateProperties['Assigned To'])
     || !Array.isArray(taskUpdateRequest.arguments.properties.Project)
@@ -941,8 +1001,8 @@ export async function selftestNotionRecordMappings(root) {
     || taskCreateProperties.Status !== privateTaskProviderStatus
     || taskCreateProperties.Context !== privateTaskProviderContext
     || taskCreateProperties.Project[0] !== canonicalTaskProjectUri
-    || fingerprintJson(taskCreateProperties['Source Meetings'])
-      !== fingerprintJson(canonicalSourceMeetingUris)
+    || taskCreateRequest.arguments.pages[0].content !== taskCreateInput.body
+    || Object.hasOwn(taskCreateProperties, 'body')
     || fingerprintJson(taskCreateProperties['Assigned To'])
       !== fingerprintJson(taskProviderPersonIds)
     || taskUpdateRequest.arguments.properties.Project[0] !== canonicalTaskProjectUri
@@ -1047,12 +1107,6 @@ export async function selftestNotionRecordMappings(root) {
               ]),
               assigneeIds: JSON.stringify(taskProviderPersonIds),
               nextActionOn: null,
-              sourceMeetingUris: JSON.stringify([
-                'https://www.notion.so/Private-meeting-b-BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
-                'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
-              ]),
-              sourceQuotes: JSON.stringify([]),
-              sourceSummaryFingerprints: JSON.stringify([]),
               ...fieldOverrides
             })
           }],
@@ -1307,8 +1361,6 @@ export async function selftestNotionRecordMappings(root) {
     || taskRead.records[0].fields.context !== 'Project'
     || fingerprintJson(taskRead.records[0].fields.projectUris)
       !== fingerprintJson([canonicalTaskProjectUri])
-    || fingerprintJson(taskRead.records[0].fields.sourceMeetingUris)
-      !== fingerprintJson(canonicalSourceMeetingUris)
     || fingerprintJson(taskRead.records[0].fields.assigneeIds)
       !== fingerprintJson(taskProviderPersonIds)
     || JSON.stringify(taskRead).includes('Private-')
@@ -1593,7 +1645,6 @@ export async function selftestNotionRecordMappings(root) {
         ? 'user://' + taskProviderPersonUuidUpper
         : identity;
     })),
-    sourceMeetingUris: JSON.stringify(canonicalSourceMeetingUris),
     nextActionOn: taskCreateInput.fields.nextActionOn
   });
   assert.equal(
@@ -4057,10 +4108,10 @@ export async function selftestNotionRecordMappings(root) {
     ])
     || taskSchemaProbeObservation.schemaCompatible !== true
     || taskSchemaProbeObservation.choiceFieldCount !== 2
-    || taskSchemaProbeObservation.mappedFieldCount !== 9
+    || taskSchemaProbeObservation.mappedFieldCount !== 6
     || JSON.stringify(taskSchemaProbeObservation).includes(privateTaskProviderStatus)
     || JSON.stringify(taskSchemaProbeObservation).includes(privateTaskProviderContext)) {
-    throw new Error('Generic connected Notion translation did not preserve the Product mapping boundary.');
+    throw new Error('Generic connected Notion translation did not preserve the Task mapping boundary.');
   }
 
   process.stdout.write(

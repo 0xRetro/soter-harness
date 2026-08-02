@@ -172,7 +172,7 @@ function exactNotionFieldBindings(value) {
   });
 }
 
-function containedNotionFieldBindings(root, configuration) {
+export function deriveContainedNotionFieldBindings(root, configuration) {
   const notionSettings = configuration.settings?.['integration.notion'];
   const targets = notionSettings?.targets || {};
   const boundCapabilities = new Set(
@@ -471,7 +471,7 @@ export function materializeContainedPrivateConfiguration({
     configuration.settings['integration.notion'].optionMappings
       = structuredClone(exactOptionMappings);
   }
-  const exactFieldBindings = containedNotionFieldBindings(resolvedRoot, configuration);
+  const exactFieldBindings = deriveContainedNotionFieldBindings(resolvedRoot, configuration);
   configuration.settings['integration.notion'].fieldBindings
     = structuredClone(exactFieldBindings);
   const fixturePath = path.join(resolvedRoot, 'soter/fixtures/providers/notion/workspace-records.json');

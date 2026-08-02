@@ -16,7 +16,7 @@
         { "id": "categories", "type": "string-list", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The current governed subject categories for the artifact." },
         { "id": "description", "type": "string", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "One factual line explaining what the document is and why it is retained." },
         { "id": "link", "type": "string", "format": "resource-uri", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "The exact canonical artifact link." },
-        { "id": "ownerIds", "type": "string-list", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "Exact provider person identities for the human document owner.", "reference": { "subject": "workspace.identity", "identity": "provider-person-id" } },
+        { "id": "ownerIds", "type": "string-list", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "Exact workspace actor identities for the human steward accountable for this document-index record; this does not imply meeting chair, participant, author, or ownership of the linked artifact.", "reference": { "subject": "workspace.identity", "identity": "provider-person-id" } },
         { "id": "organizationUris", "type": "string-list", "requiredOnCreate": true, "nullable": false, "mutable": true, "summary": "Exact organization resource identities related to the document.", "reference": { "subject": "crm.records.organization", "identity": "resource-uri" } },
         { "id": "relatedProjectUris", "type": "string-list", "requiredOnCreate": false, "nullable": false, "mutable": true, "summary": "Exact evidenced Project resource identities related to the document.", "reference": { "subject": "projects.records.project", "identity": "resource-uri" } },
         { "id": "relatedTaskUris", "type": "string-list", "requiredOnCreate": false, "nullable": false, "mutable": true, "summary": "Exact evidenced Task resource identities related to the document.", "reference": { "subject": "tasks.records.task", "identity": "resource-uri" } },
@@ -29,6 +29,7 @@
   "limitations": [
     "This model owns portable document-index meaning only; provider schemas, option sets, relation targets, permissions, and current records require Integration observations.",
     "The governed context.docs vocabulary artifact owns the exact current doc and private-workspace doc terms and definitions.",
-    "Private-workspace documents and meeting source records are outside this shared index model and must not be promoted into it implicitly."
+    "Private-workspace documents and meeting source records are outside this shared index model and must not be promoted into it implicitly.",
+    "Document-index owner means the steward accountable for the record; Meeting participation, chairing, attendance, or absence cannot establish ownership."
   ]
 }

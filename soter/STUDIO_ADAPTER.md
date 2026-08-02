@@ -586,11 +586,21 @@ replaced by `operator-inspection/v1`, not synchronized in two stores.
 Studio surfaces it, map the exact `runtime.state`, startup/current
 fingerprints, `reasonCode`, `restartRequired`, and `permittedNextAction` fields.
 Do not merge them into prepared-work, approval, checkpoint, proof, maturity, or
-migration state. `continue` and `restart-host-runtime` are guidance, not
-execution authority. When the runtime is stale, operational MCP requests are
-structurally unavailable; Studio must not substitute retry, approval, or a
-continuation request. No private state, provider response, credential value, or
-provider action is representable in this inspection.
+migration state. Map the exact branches as follows:
+
+| Runtime state | Reason code | Fingerprints | Guidance only |
+|---|---|---|---|
+| `current` | `SOTER_HOST_RUNTIME_CURRENT` | exact non-null governed-source, private configuration/manifest, and complete static/dynamic output byte/full-mode match | `continue` |
+| `not-realized` | `SOTER_HOST_RUNTIME_NOT_REALIZED` | null/null for a clean unrealized startup | `realize-host-runtime`, then restart |
+| `stale` | `SOTER_HOST_RUNTIME_STALE` | current fingerprint unavailable; `restartRequired: null` because the basis is invalid, unsafe, missing, unmanaged, or mode-drifted | `none`; exact repair is outside inspection |
+| `stale` | `SOTER_HOST_RUNTIME_STALE` | complete changed fingerprint, including realization after a null startup | `restart-host-runtime` |
+
+All three actions are display guidance, not execution authority. In either
+blocked state operational MCP requests are structurally unavailable and fail
+before private-state creation; Studio must not substitute retry, approval, or a
+continuation request. No private state, provider response, credential value,
+provider action, readiness, verification, or health claim is representable in
+this inspection.
 
 ## Lifecycle label mapping
 

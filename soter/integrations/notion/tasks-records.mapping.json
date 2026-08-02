@@ -76,31 +76,19 @@
           "provider": "Next Action",
           "providerType": "date",
           "decode": "scalar"
-        },
-        {
-          "portable": "sourceMeetingUris",
-          "provider": "Source Meetings",
-          "providerType": "relation",
-          "decode": "json"
-        },
-        {
-          "portable": "sourceQuotes",
-          "provider": "Grounding",
-          "providerType": "text",
-          "decode": "json"
-        },
-        {
-          "portable": "sourceSummaryFingerprints",
-          "provider": "Summary Fingerprints",
-          "providerType": "text",
-          "decode": "json"
         }
-      ]
+      ],
+      "content": {
+        "portable": "body",
+        "provider": "page-content",
+        "providerType": "markdown"
+      }
     }
   ],
   "limitations": [
     "This mapping translates Task definitions and records only; Project and Meeting references remain typed portable resource identities owned by their respective Context packs.",
-    "Task create and update translation covers portable properties only; every write still requires an exact Core batch, approval, one-time start authorization, checkpoint, and connected verification.",
+    "Task create translation covers declared portable fields and optional page body content. Task update translation covers declared properties only; provider page-body update and read-back are unavailable in this mapping, so body changes cannot enter an executable verified batch.",
+    "Every supported Task write still requires an exact Core batch, approval, one-time start authorization, checkpoint, and connected verification.",
     "The task-work-policy mapping identifies the configured Tasks policy row by name; preparation fails closed unless that external identity matches the selected Context definition.",
     "Schema compatibility is not established by this declaration; an exact-lock private probe must observe current target schemas."
   ]

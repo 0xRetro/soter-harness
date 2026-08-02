@@ -15,21 +15,28 @@ import {
   fingerprintJson,
   readGovernedJson,
   readJson,
+  repoRelativePath,
   resolveRepoPath,
   sha256,
   writeJson
 } from './lib/canonical-json.mjs';
 import {
+  configurationFile,
   fingerprintLock,
   resolveConfiguration,
   resolveLegacyFinalizationConfiguration,
-  resolveLegacyTransitionFixtureConfiguration
+  resolveConfigurationValue
 } from './resolve.mjs';
+import { isPrivateConfigurationPath } from './private-configurations.mjs';
 import {
   assertLegacyFinalizationFixtureRequest
 } from './legacy-finalization.mjs';
 import { prepareRunEnvelope } from './run.mjs';
-import { fingerprintLegacySource } from '../kernel/legacy-inventory.mjs';
+import {
+  assertLegacyInventoryStructureCurrent,
+  fingerprintLegacySource
+} from '../kernel/legacy-inventory.mjs';
+import { verifySoter } from '../kernel/verify.mjs';
 import {
   assertLegacyCheckerTransitionCurrent
 } from '../kernel/legacy-checker-transition.mjs';
@@ -374,6 +381,91 @@ function configuredNotionTargetsMatchLegacySource(root, configuration) {
       && target.startsWith('collection://')
       && legacySource.includes(target.slice('collection://'.length).toLowerCase().replaceAll('-', ''));
   });
+}
+
+function assertLegacyTransitionFixtureGenerationBasis({
+  root,
+  expectedInventoryFingerprint,
+  evidencePaths,
+  verification
+}) {
+  const inventory = assertLegacyInventoryStructureCurrent(root);
+  const exactEvidencePaths = [...new Set(inventory.items.flatMap((item) => {
+    return item.targets.flatMap((binding) => binding.evidence);
+  }))].sort(compareCodepoint);
+  const suppliedEvidencePaths = Array.isArray(evidencePaths)
+    ? [...evidencePaths].sort(compareCodepoint)
+    : [];
+  if (inventory.inventoryFingerprint !== expectedInventoryFingerprint
+    || fingerprintJson(exactEvidencePaths) !== fingerprintJson(suppliedEvidencePaths)) {
+    throw new Error('Legacy transition fixture generation does not bind the exact current inventory evidence set.');
+  }
+  if (!verification || !Array.isArray(verification.violations)) {
+    throw new Error('Legacy transition fixture generation requires one current verification result.');
+  }
+  if (verification.health?.valid === 'passed' && verification.violations.length === 0) {
+    return inventory;
+  }
+  if (verification.violations.length === 0 || verification.health?.valid !== 'failed') {
+    throw new Error('Legacy transition fixture generation is available only for a clean or evidence-only stale graph.');
+  }
+  const evidenceSet = new Set(exactEvidencePaths);
+  for (const violation of verification.violations) {
+    const relativeFile = repoRelativePath(root, violation.file);
+    if (violation.code !== 'SOTER_MIGRATION_EVIDENCE'
+      || !/^soter\/migrations\/[A-Za-z0-9._+-]+[.]migration[.]json$/.test(relativeFile)) {
+      throw new Error('Legacy transition fixture generation found a non-evidence graph violation: '
+        + String(violation.code));
+    }
+    const migration = readJson(path.join(root, relativeFile));
+    const anchored = migration.items.some((item) => {
+      return Array.isArray(item.evidence)
+        && item.evidence.length > 0
+        && item.evidence.every((evidencePath) => evidenceSet.has(evidencePath))
+        && [item.sourcePath, item.targetPath, ...item.evidence].some((anchor) => {
+          return typeof violation.what === 'string' && violation.what.includes(anchor);
+        });
+    });
+    if (!anchored) {
+      throw new Error('Legacy transition fixture generation found an unattributed evidence violation.');
+    }
+  }
+  return inventory;
+}
+
+/**
+ * Resolves deterministic fixture locks for the exact current inventory when
+ * stale migration evidence is the graph's only blocker. It performs no write,
+ * host realization, provider call, evidence promotion, or cutover action.
+ */
+function resolveLegacyTransitionFixtureConfiguration({
+  root,
+  configPath,
+  host,
+  expectedInventoryFingerprint,
+  evidencePaths,
+  ...unknown
+} = {}) {
+  if (Object.keys(unknown).length > 0) {
+    throw new Error('Legacy transition fixture resolver received an unknown field.');
+  }
+  const resolvedRoot = path.resolve(root);
+  const file = configurationFile(resolvedRoot, configPath);
+  if (isPrivateConfigurationPath(resolvedRoot, file)) {
+    throw new Error('Legacy transition fixtures resolve tracked portable configuration templates only.');
+  }
+  const configuration = readJson(file);
+  if (configuration.$contract !== 'soter://contracts/configuration/v1') {
+    throw new Error('Not a Soter configuration: ' + repoRelativePath(resolvedRoot, file));
+  }
+  const verification = verifySoter(resolvedRoot, { includeRuntimeArtifacts: false });
+  assertLegacyTransitionFixtureGenerationBasis({
+    root: resolvedRoot,
+    expectedInventoryFingerprint,
+    evidencePaths,
+    verification
+  });
+  return resolveConfigurationValue({ resolvedRoot, file, configuration, verification, host });
 }
 
 function resolveFixtureConfiguration(root, configPath, finalization) {

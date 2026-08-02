@@ -69,6 +69,20 @@ function assertMappedWriteFields(definition, values, operation) {
   }
 }
 
+function assertMappedBodyContent(definition, body) {
+  if (body === undefined || body === null) return false;
+  if (definition.content?.portable !== 'body'
+    || definition.content.provider !== 'page-content'
+    || definition.content.providerType !== 'markdown'
+    || typeof body !== 'string') {
+    throw providerError(
+      'validation',
+      'Notion fixture page content requires the exact mapped markdown page-content route.'
+    );
+  }
+  return true;
+}
+
 function requestedRecordTypes(input) {
   const plural = Array.isArray(input?.recordTypes) ? input.recordTypes : null;
   const singular = typeof input?.recordType === 'string' ? [input.recordType] : null;
@@ -299,6 +313,7 @@ export async function invoke({ capability, input, authority, fixtures, mappings,
   if (descriptor.operation === 'create') {
     const definition = recordMapping(mapping, input.recordType, capability);
     assertMappedWriteFields(definition, input.fields, 'create');
+    const bodyPresent = assertMappedBodyContent(definition, input.body);
     const existing = fixture.data.records.find((record) => {
       return record.type === input.recordType && record.deduplicationKey === input.deduplicationKey;
     });
@@ -316,7 +331,7 @@ export async function invoke({ capability, input, authority, fixtures, mappings,
       version: '1',
       deduplicationKey: input.deduplicationKey,
       fields: { ...input.fields },
-      ...(input.body !== undefined ? { body: input.body } : {})
+      ...(bodyPresent ? { body: input.body } : {})
     };
     fixture.data.records.push(record);
     return {

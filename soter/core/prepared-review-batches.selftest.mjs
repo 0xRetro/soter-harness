@@ -201,6 +201,29 @@ export async function selftestPreparedReviewBatches(root = defaultRoot) {
       workId: work.id,
       actionIds: [label.id, label.id]
     }), (error) => error.code === 'PREPARED_REVIEW_BATCH_SELECTION_INVALID');
+    const hostileUnknownAction = 'action.email-triage.not-present-/private/operator/token';
+    assert.throws(() => createPreparedReviewBatch({
+      root: temporaryRoot,
+      workId: work.id,
+      actionIds: [hostileUnknownAction]
+    }), (error) => {
+      return error.code === 'PREPARED_REVIEW_BATCH_SELECTION_INVALID'
+        && error.message.includes('one or more unknown action ids')
+        && !error.message.includes(hostileUnknownAction)
+        && !error.message.includes('/private/operator/token');
+    }, 'An unknown action id must keep the stable diagnostic class without echoing caller input.');
+    const handoff = work.preview.collections.flatMap((collection) => {
+      return collection.rows.flatMap((row) => row.actions);
+    }).find((action) => action.state === 'handoff');
+    assert(handoff, 'Email fixture must declare at least one handoff boundary.');
+    assert.throws(() => createPreparedReviewBatch({
+      root: temporaryRoot,
+      workId: work.id,
+      actionIds: [handoff.id]
+    }), (error) => {
+      return error.code === 'PREPARED_REVIEW_BATCH_SELECTION_INVALID'
+        && error.message.includes('unavailable, held, prohibited, or handoff action');
+    }, 'A known handoff action must be distinguished from an unknown action id.');
     const prohibited = work.preview.collections.flatMap((collection) => {
       return collection.rows.flatMap((row) => row.actions);
     }).find((action) => action.state === 'prohibited');
@@ -209,7 +232,10 @@ export async function selftestPreparedReviewBatches(root = defaultRoot) {
       root: temporaryRoot,
       workId: work.id,
       actionIds: [prohibited.id]
-    }), (error) => error.code === 'PREPARED_REVIEW_BATCH_SELECTION_INVALID');
+    }), (error) => {
+      return error.code === 'PREPARED_REVIEW_BATCH_SELECTION_INVALID'
+        && error.message.includes('unavailable, held, prohibited, or handoff action');
+    }, 'A known prohibited action must be distinguished from an unknown action id.');
 
     const substitutedBatch = structuredClone(batch);
     substitutedBatch.actions[0].proposedValueFingerprint = batch.actions[1].proposedValueFingerprint;
@@ -370,7 +396,10 @@ export async function selftestPreparedReviewBatches(root = defaultRoot) {
       root: temporaryRoot,
       workId: duplicateTaskWork.id,
       actionIds: [heldTaskAction.id]
-    }), (error) => error.code === 'PREPARED_REVIEW_BATCH_SELECTION_INVALID');
+    }), (error) => {
+      return error.code === 'PREPARED_REVIEW_BATCH_SELECTION_INVALID'
+        && error.message.includes('unavailable, held, prohibited, or handoff action');
+    }, 'A known held action must be distinguished from an unknown action id.');
 
     const derivedPath = preparedWorkDerivedReviewMaterialStatePath(temporaryRoot, work.id);
     const heldDerivedPath = derivedPath + '.held';

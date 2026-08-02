@@ -13,9 +13,9 @@
   },
   "configurationLock": {
     "path": "soter/fixtures/drive-filing/drive-filing.lock.json",
-    "fingerprint": "sha256:09534f61e3b701889dea29a4c19bce761d12493403ec86d5ea769a1ca7c2c4a1"
+    "fingerprint": "sha256:84696f0fb6c5d324caf022f98800d750386c7d8ab4b3b26cd69bec673413f1f6"
   },
-  "graphFingerprint": "sha256:f5cfe6aca47379dfaec7ecb14ff0c23b43ca8423563fabf3d388bd63046751e9",
+  "graphFingerprint": "sha256:614c4b0fe0e4dbd4596e7cb15b56462e2b5f2c113a2b78e7426b6af64be213ac",
   "context": [
     {
       "subject": "crm.records",
@@ -24,7 +24,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/policies",
       "declarationFingerprint": "sha256:5dcd7b166e69d5be3bf39ed57adf225ede8a4a2bd73d0d4800b3a38981ebce8d",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:09534f61e3b701889dea29a4c19bce761d12493403ec86d5ea769a1ca7c2c4a1",
+      "provenance": "configuration-lock:sha256:84696f0fb6c5d324caf022f98800d750386c7d8ab4b3b26cd69bec673413f1f6",
       "freshness": "unknown"
     },
     {
@@ -64,7 +64,7 @@
       "uri": "soter-fixture://configuration-template/storage/provider/google-drive",
       "declarationFingerprint": "sha256:01a83215e98a812ba14b9b0e2013835e4165a31cbde2b54c6cdef42094b4f334",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:09534f61e3b701889dea29a4c19bce761d12493403ec86d5ea769a1ca7c2c4a1",
+      "provenance": "configuration-lock:sha256:84696f0fb6c5d324caf022f98800d750386c7d8ab4b3b26cd69bec673413f1f6",
       "freshness": "unknown"
     },
     {
@@ -84,7 +84,7 @@
       "uri": "soter-state://runs",
       "declarationFingerprint": "sha256:8c419343899d33fbd2ef0b1c128c9b04b32ec716905dd04ae0934b803b0b9cad",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:09534f61e3b701889dea29a4c19bce761d12493403ec86d5ea769a1ca7c2c4a1",
+      "provenance": "configuration-lock:sha256:84696f0fb6c5d324caf022f98800d750386c7d8ab4b3b26cd69bec673413f1f6",
       "freshness": "unknown"
     },
     {
@@ -293,7 +293,7 @@
     {
       "id": "context.drive-filing.preparation-fixture",
       "type": "context-snapshot",
-      "fingerprint": "sha256:f4c35647a011680a527067ab4949a5a359290876dcab023412ca4ab248b85a34"
+      "fingerprint": "sha256:2743594c061eafda3cdfb94be89dc114bc9bd02c073f8dc23a2a323514fa71d2"
     }
   ],
   "effects": [

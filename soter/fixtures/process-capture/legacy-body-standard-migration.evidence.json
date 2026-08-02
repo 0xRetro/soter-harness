@@ -10,8 +10,8 @@
     "id": "context.process",
     "version": "0.1.0"
   },
-  "configurationLockFingerprint": "sha256:69d3a2d3c3a9055b2e5dbb85b3336f271b549c93d388263e298e12db0a382263",
-  "graphFingerprint": "sha256:dcbd4da9d3b0aa7593e295351b7fe5f9ac39905af77ac18a695cde2236c75834",
+  "configurationLockFingerprint": "sha256:7ea3ed78926dabcbdad9ef939c7fd47db70b241fc9213074dcc9f65dec85a341",
+  "graphFingerprint": "sha256:d3107129a33565ce8f39fda67c85f9077a089cfc1f78083790a0686b2eab4b5b",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -140,7 +140,7 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/process-capture/preparation.evidence.json",
-      "fingerprint": "sha256:aeb05e381046a8debc98f2e21adfd163137429d21b4e5220e124ddc5520c42ed"
+      "fingerprint": "sha256:bf951adf00c5fbc3a1656ec5148059a33bedad1e00645fd90469933432eb8d0a"
     }
   ],
   "effects": [],

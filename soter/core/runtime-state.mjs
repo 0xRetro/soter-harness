@@ -391,7 +391,11 @@ export function hasHostRealizationCheckpointState(root, checkpointId) {
 }
 
 export function hasHostManagedManifestState(root, hostId) {
-  return fs.existsSync(hostManagedManifestStatePath(root, hostId));
+  const file = hostManagedManifestStatePath(root, hostId);
+  const stat = fs.lstatSync(file, { throwIfNoEntry: false });
+  if (!stat) return false;
+  assertPrivateRuntimeStatePath(file, 'Managed host projection manifest');
+  return true;
 }
 
 export function hasPackInstallPlanState(root, planId) {
@@ -824,18 +828,27 @@ export function writeHostRealizationCheckpointState(root, checkpoint) {
 
 export function readHostManagedManifestState(root, hostId) {
   const file = hostManagedManifestStatePath(root, hostId);
+  assertPrivateRuntimeStatePath(file, 'Managed host projection manifest');
   return readRequiredState(file, 'Managed host projection manifest', hostId, 'manifest');
 }
 
 export function writeHostManagedManifestState(root, manifest) {
   const file = hostManagedManifestStatePath(root, manifest.host);
+  assertPrivateRuntimeStatePath(file, 'Managed host projection manifest', {
+    requireFile: false
+  });
   atomicWriteJson(file, manifest);
+  assertPrivateRuntimeStatePath(file, 'Managed host projection manifest');
   return { file, path: repoRelativePath(root, file) };
 }
 
 export function removeHostManagedManifestState(root, hostId) {
   const file = hostManagedManifestStatePath(root, hostId);
-  if (fs.existsSync(file)) fs.rmSync(file);
+  const stat = fs.lstatSync(file, { throwIfNoEntry: false });
+  if (stat) {
+    assertPrivateRuntimeStatePath(file, 'Managed host projection manifest');
+    fs.rmSync(file);
+  }
   return { file, path: repoRelativePath(root, file) };
 }
 

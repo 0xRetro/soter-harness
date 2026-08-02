@@ -29,6 +29,9 @@
   "fixtures": [],
   "limitations": [
     "Fetch accepts an Otter meeting ID extracted from a canonical https://otter.ai/u/MEETING_ID recording URI; it does not search the user's account or infer a meeting from a title.",
+    "Otter calendar_participants is untrusted provider metadata and is deliberately excluded from normalized output; it cannot establish participant, email, account, or CRM identity.",
+    "Otter action_items is an untrusted provider interpretation and is deliberately excluded from normalized output; Meeting Intake may derive review material only from exact normalized transcript segments.",
+    "Portable provenance exposes only the provider class, canonical authority, connected source kind, and an opaque source-reference fingerprint; provider meeting identifiers, account identifiers, and recording URIs are not repeated in provenance.",
     "Transcript response normalization remains fail-closed for unobserved response shapes until an authorized meeting response supplies private conformance evidence.",
     "The identity-only probe can establish authentication and reachability but leaves meeting.transcript.read compatibility unknown."
   ]

@@ -4,8 +4,8 @@
   "id": "context.project-work-promotion.duplicate-task-fixture",
   "runId": "run.project-work-promotion.duplicate-task-fixture",
   "createdAt": "2026-07-22T13:00:00.000Z",
-  "configurationLockFingerprint": "sha256:9c787fadd0bb08245d4d13889ae52ff1c7ea76b971273184d17a8b8297f151f8",
-  "graphFingerprint": "sha256:a55c9cc1e8964cae312450cde01556b58256d8edfed27eb0ebd0427189b78b5a",
+  "configurationLockFingerprint": "sha256:cd36d972f39a199eecfff03ece2a0b9405303851682468d7678aea6f6bf516e1",
+  "graphFingerprint": "sha256:6292b3976261ea948e78ab80ca946cf72c328cbb6cbc6effa07bd11cbf812d3b",
   "containment": "fixture",
   "entries": [
     {
@@ -116,7 +116,7 @@
         "mapping": "mapping.integration.notion.tasks-records",
         "mappingVersion": "0.2.0",
         "sourceKind": "fixture",
-        "sourceReferenceFingerprint": "sha256:8cddeb0070f5fc60fe9a798d329c80c51165bdc7349724b9ae5e139355b9bddd"
+        "sourceReferenceFingerprint": "sha256:936c53c3ece808f5fa6f91fc1f79a8dae3151b9197826fba1bc0221917dad79f"
       },
       "valueFingerprint": "sha256:e8971e07abbec77a152bdca3a053a049b602d6f8f017bc28ffb42b954de32392",
       "value": {
@@ -252,15 +252,15 @@
         "mapping": "mapping.integration.notion.tasks-records",
         "mappingVersion": "0.2.0",
         "sourceKind": "fixture",
-        "sourceReferenceFingerprint": "sha256:8cddeb0070f5fc60fe9a798d329c80c51165bdc7349724b9ae5e139355b9bddd"
+        "sourceReferenceFingerprint": "sha256:936c53c3ece808f5fa6f91fc1f79a8dae3151b9197826fba1bc0221917dad79f"
       },
-      "valueFingerprint": "sha256:cd0ae54ad1de06127a9e3481646981fb9a48d578a185b3db4365f0c9373abac8",
+      "valueFingerprint": "sha256:3874a71ae042beaa37748279f0a39f4f59dc268be7f9d658d17c1a7aa6a5f735",
       "value": {
         "candidateCount": 1,
         "candidateIds": [
           "https://www.notion.so/11111111111111111111111111111113"
         ],
-        "providerOutputFingerprint": "sha256:ad6b7191cc6017e5eed07d36e213db3765afac9d312f9c0d5ad593e499694698"
+        "providerOutputFingerprint": "sha256:fd796f7e9a995ccaab4f405067b0ef0439c8b3930fe3095b84e3894b14d3167e"
       }
     }
   ],

@@ -10,8 +10,15 @@ import {
   sha256
 } from './lib/canonical-json.mjs';
 import { renderHostProjectionCandidates } from './host-projections.mjs';
-import { fingerprintLock, lockMatchesResolution } from './resolve.mjs';
-import { privateConfigurationStatePath } from './private-configurations.mjs';
+import {
+  fingerprintLock,
+  lockMatchesResolution,
+  resolveConfiguration
+} from './resolve.mjs';
+import {
+  privateConfigurationStatePath,
+  readPrivateConfigurationState
+} from './private-configurations.mjs';
 import {
   activeConfigurationLockStatePath,
   createHostRealizationCheckpointState,
@@ -117,7 +124,16 @@ function requireNotExpired(expiresAt, currentAt, code = 'HOST_REALIZATION_REQUES
 }
 
 function modeString(stat) {
-  return (stat.mode & 0o777).toString(8).padStart(4, '0');
+  return (stat.mode & 0o7777).toString(8).padStart(4, '0');
+}
+
+function lstatIfPresent(file) {
+  try {
+    return fs.lstatSync(file);
+  } catch (error) {
+    if (error?.code === 'ENOENT') return null;
+    throw error;
+  }
 }
 
 function fileFingerprint(contentFingerprint, mode) {
@@ -177,13 +193,17 @@ function outputPath(root, relative, { allowMissingParents = true } = {}) {
   let cursor = resolvedRoot;
   for (const [index, part] of parts.entries()) {
     cursor = path.join(cursor, part);
-    if (!fs.existsSync(cursor)) {
+    const stat = lstatIfPresent(cursor);
+    if (!stat) {
       if (index === parts.length - 1) break;
       if (allowMissingParents) break;
       fail('HOST_REALIZATION_PATH_DRIFT', 'Managed output parent is missing.');
     }
-    if (fs.lstatSync(cursor).isSymbolicLink()) {
+    if (stat.isSymbolicLink()) {
       fail('HOST_REALIZATION_SYMLINK_REJECTED', 'Managed output path traverses a symbolic link.');
+    }
+    if (index < parts.length - 1 && !stat.isDirectory()) {
+      fail('HOST_REALIZATION_PATH_DRIFT', 'Managed output parent is not an ordinary directory.');
     }
   }
   return target;
@@ -201,9 +221,9 @@ function absentSnapshot() {
 
 function presentSnapshot(root, relative) {
   const file = outputPath(root, relative);
-  if (!fs.existsSync(file)) return absentSnapshot();
-  const stat = fs.lstatSync(file);
-  if (stat.isSymbolicLink() || !stat.isFile()) {
+  const stat = lstatIfPresent(file);
+  if (!stat) return absentSnapshot();
+  if (stat.isSymbolicLink() || !stat.isFile() || stat.nlink !== 1) {
     fail('HOST_REALIZATION_OUTPUT_INVALID', 'Managed output is not a regular non-symlink file.');
   }
   const mode = modeString(stat);
@@ -408,6 +428,290 @@ function priorManifestMetadata(manifest) {
     generator: manifest.generator,
     outputs: manifest.outputs
   };
+}
+
+function projectionCollectionFiles(root, relativePrefix, code) {
+  const directory = outputPath(root, relativePrefix);
+  const rootStat = lstatIfPresent(directory);
+  if (!rootStat) return [];
+  if (rootStat.isSymbolicLink() || !rootStat.isDirectory()) {
+    fail(code, 'Host projection collection path is unsafe.');
+  }
+  const files = [];
+  const visit = (current) => {
+    for (const entry of fs.readdirSync(current).sort(compareText)) {
+      const child = path.join(current, entry);
+      const stat = fs.lstatSync(child);
+      if (stat.isSymbolicLink()
+        || (!stat.isFile() && !stat.isDirectory())) {
+        fail(code, 'Host projection collection contains an unsafe entry.');
+      }
+      if (stat.isDirectory()) visit(child);
+      else files.push(repoRelativePath(root, child));
+    }
+  };
+  visit(directory);
+  return files.sort(compareText);
+}
+
+function unmanagedProjectionFootprintPresent(root, adapter) {
+  let present = false;
+  for (const projection of adapter.projections) {
+    const file = outputPath(root, projection.path);
+    if (lstatIfPresent(file)) present = true;
+  }
+  for (const collection of adapter.projectionCollections) {
+    const prefix = collection.pathPrefix.replace(/\/+$/, '');
+    if (projectionCollectionFiles(
+      root,
+      prefix,
+      'HOST_REALIZATION_UNMANAGED_COLLISION'
+    ).length) present = true;
+  }
+  return present;
+}
+
+function assertManagedProjectionCollectionInventory(root, adapter, manifest) {
+  for (const collection of adapter.projectionCollections) {
+    const prefix = collection.pathPrefix.replace(/\/+$/, '');
+    const expected = manifest.outputs
+      .map((output) => output.path)
+      .filter((outputPathValue) => outputPathValue.startsWith(prefix + '/'))
+      .sort(compareText);
+    const observed = projectionCollectionFiles(
+      root,
+      prefix,
+      'HOST_REALIZATION_MANAGED_DRIFT'
+    );
+    if (fingerprintJson(observed) !== fingerprintJson(expected)) {
+      fail(
+        'HOST_REALIZATION_MANAGED_DRIFT',
+        'Managed host projection collection inventory does not match its exact manifest.'
+      );
+    }
+  }
+}
+
+function assertManagedProjectionCandidateCurrent({
+  resolvedRoot,
+  host,
+  configurationPath,
+  manifest,
+  target
+}) {
+  const lock = resolveConfiguration({
+    root: resolvedRoot,
+    configPath: configurationPath,
+    host
+  });
+  if (fingerprintLock(lock) !== manifest.configuration.lockFingerprint
+    || lock.graphFingerprint !== manifest.configuration.graphFingerprint) {
+    fail(
+      'HOST_REALIZATION_ACTIVE_LOCK_STALE',
+      'Managed host manifest no longer matches its exact private configuration lock.'
+    );
+  }
+  const rendered = renderedForLock(resolvedRoot, lock);
+  if (fingerprintJson(manifestMetadata({ target, lock, rendered }))
+    !== fingerprintJson(priorManifestMetadata(manifest))) {
+    fail(
+      'HOST_REALIZATION_CANDIDATE_DRIFT',
+      'Managed host manifest no longer matches deterministic projection candidates.'
+    );
+  }
+  return lock;
+}
+
+function inspectCurrentManagedHostProjection({ root, host, verifyCandidate = true }) {
+  const resolvedRoot = path.resolve(root);
+  const adapterFile = resolveRepoPath(
+    resolvedRoot,
+    'soter/hosts/' + host + '/adapter.json'
+  );
+  const adapter = readJson(adapterFile);
+  if (adapter.$contract !== 'soter://contracts/host-adapter/v2'
+    || adapter.host !== host) {
+    fail('HOST_REALIZATION_HOST_INVALID', 'Host adapter does not match the runtime host.');
+  }
+
+  const manifestFile = hostManagedManifestStatePath(resolvedRoot, host);
+  if (!lstatIfPresent(manifestFile)) {
+    if (unmanagedProjectionFootprintPresent(resolvedRoot, adapter)) {
+      fail(
+        'HOST_REALIZATION_UNMANAGED_COLLISION',
+        'Host projection outputs exist without an exact managed manifest.'
+      );
+    }
+    return Object.freeze({ state: 'not-realized' });
+  }
+
+  const manifest = assertManifest(
+    resolvedRoot,
+    readHostManagedManifestState(resolvedRoot, host).manifest
+  );
+  const target = targetIdentity(resolvedRoot);
+  if (manifest.host !== host || manifest.targetFingerprint !== target.fingerprint) {
+    fail(
+      'HOST_REALIZATION_MANIFEST_TARGET_DRIFT',
+      'Managed host manifest does not match the exact runtime host and consumer root.'
+    );
+  }
+
+  const configurationPath = privateConfigurationStatePath(
+    resolvedRoot,
+    manifest.configuration.name
+  );
+  const configurationFingerprint = fingerprintJson(
+    readPrivateConfigurationState(
+      resolvedRoot,
+      manifest.configuration.name
+    ).configuration
+  );
+
+  let invalidOutput = false;
+  const outputs = [];
+  for (const output of manifest.outputs) {
+    try {
+      const observed = presentSnapshot(resolvedRoot, output.path);
+      if (observed.state !== 'present'
+        || observed.mode !== FILE_MODE
+        || observed.contentFingerprint !== output.contentFingerprint
+        || observed.fingerprint !== output.fingerprint) {
+        invalidOutput = true;
+        continue;
+      }
+      outputs.push({
+        id: output.id,
+        role: output.role,
+        mode: observed.mode,
+        contentFingerprint: observed.contentFingerprint,
+        fingerprint: observed.fingerprint
+      });
+    } catch {
+      invalidOutput = true;
+    }
+  }
+  if (invalidOutput || outputs.length !== manifest.outputs.length) {
+    fail(
+      'HOST_REALIZATION_MANAGED_DRIFT',
+      'One or more exact managed host outputs are missing, unsafe, or drifted.'
+    );
+  }
+  assertManagedProjectionCollectionInventory(resolvedRoot, adapter, manifest);
+  outputs.sort((left, right) => compareText(left.id, right.id));
+
+  const lock = verifyCandidate
+    ? assertManagedProjectionCandidateCurrent({
+      resolvedRoot,
+      host,
+      configurationPath,
+      manifest,
+      target
+    })
+    : null;
+
+  return Object.freeze({
+    state: 'realized',
+    manifest,
+    configurationFingerprint,
+    configurationPath,
+    target,
+    lock,
+    outputs
+  });
+}
+
+/**
+ * Return exact private output ownership only after the current private
+ * configuration, lock, deterministic render, manifest, and output bytes/modes
+ * all agree. This is a Kernel/Core enforcement seam, not an inspection
+ * projection and not execution authority.
+ */
+export function inspectManagedHostProjectionOwnership({ root, host }) {
+  const exact = inspectCurrentManagedHostProjection({ root, host });
+  if (exact.state === 'not-realized') {
+    return Object.freeze({ state: 'not-realized', outputPaths: Object.freeze([]) });
+  }
+  return Object.freeze({
+    state: 'realized',
+    manifestFingerprint: exact.manifest.manifestFingerprint,
+    outputPaths: Object.freeze(exact.manifest.outputs
+      .map((output) => output.path)
+      .sort(compareText))
+  });
+}
+
+/**
+ * Inspect the private, exact host-realization boundary for runtime startup.
+ *
+ * The returned facts are internal fingerprint material only. They are never
+ * projected to workspace inspection: the managed manifest, consumer-root
+ * identity, private configuration, and output paths remain private.
+ */
+export function inspectManagedHostRuntimeProjection({
+  root,
+  host,
+  governedSourceFingerprint,
+  expected = null
+}) {
+  if (typeof governedSourceFingerprint !== 'string'
+    || !/^sha256:[a-f0-9]{64}$/.test(governedSourceFingerprint)) {
+    fail(
+      'HOST_REALIZATION_RUNTIME_BASIS_INVALID',
+      'Exact governed runtime source fingerprint is required.'
+    );
+  }
+  const exact = inspectCurrentManagedHostProjection({
+    root,
+    host,
+    verifyCandidate: false
+  });
+  if (exact.state === 'not-realized') {
+    return Object.freeze({ state: 'not-realized', fingerprint: null });
+  }
+  const { manifest, configurationFingerprint, outputs } = exact;
+
+  // Reusing the startup fingerprint is safe only after the complete exact
+  // projection basis above has been independently revalidated.
+  if (expected
+    && expected.governedSourceFingerprint === governedSourceFingerprint
+    && expected.manifestFingerprint === manifest.manifestFingerprint
+    && expected.configurationFingerprint === configurationFingerprint
+    && typeof expected.fingerprint === 'string') {
+    return Object.freeze({
+      state: 'realized',
+      fingerprint: expected.fingerprint,
+      basis: expected
+    });
+  }
+
+  const currentLock = assertManagedProjectionCandidateCurrent({
+    resolvedRoot: path.resolve(root),
+    host,
+    configurationPath: exact.configurationPath,
+    manifest,
+    target: exact.target
+  });
+
+  const projectionFingerprint = fingerprintJson({
+    contract: 'soter-managed-host-runtime-projection/v1',
+    host,
+    manifestFingerprint: manifest.manifestFingerprint,
+    lockFingerprint: fingerprintLock(currentLock),
+    graphFingerprint: currentLock.graphFingerprint,
+    outputs
+  });
+  const basis = Object.freeze({
+    governedSourceFingerprint,
+    manifestFingerprint: manifest.manifestFingerprint,
+    configurationFingerprint,
+    fingerprint: projectionFingerprint
+  });
+  return Object.freeze({
+    state: 'realized',
+    fingerprint: projectionFingerprint,
+    basis
+  });
 }
 
 function scopeRows(operations) {

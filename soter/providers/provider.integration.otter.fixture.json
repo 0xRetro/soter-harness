@@ -22,6 +22,8 @@
     "soter/fixtures/providers/otter/transcripts.json"
   ],
   "limitations": [
-    "Reads deterministic local transcripts only; it does not authenticate to or represent the current state of an Otter account."
+    "Reads deterministic local transcripts only; it does not authenticate to or represent the current state of an Otter account.",
+    "The fixture projects only normalized speakers and transcript segments; provider calendar participants and action-item interpretations are excluded and grant no identity or workflow authority.",
+    "Portable provenance exposes only the provider class, canonical authority, source kind, and an opaque source-reference fingerprint; fixture paths and source identifiers remain excluded."
   ]
 }

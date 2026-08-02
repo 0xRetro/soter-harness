@@ -1542,9 +1542,13 @@ export function prepareMcp({ capability, input, settings, mappings }) {
     const page = { properties };
     if (input.body !== undefined && input.body !== null) {
       if (definition.content?.portable !== 'body'
+        || definition.content.provider !== 'page-content'
         || definition.content.providerType !== 'markdown'
         || typeof input.body !== 'string') {
-        throw providerError('validation', 'Notion page content currently requires a string body.');
+        throw providerError(
+          'validation',
+          'Notion page content requires the exact mapped markdown page-content route.'
+        );
       }
       page.content = input.body;
     }

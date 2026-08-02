@@ -7,6 +7,7 @@
   "portability": "portable",
   "inputSchema": {
     "type": "object",
+    "additionalProperties": false,
     "required": ["meetingId", "recordingUri"],
     "properties": {
       "meetingId": { "type": "string" },
@@ -15,6 +16,7 @@
   },
   "outputSchema": {
     "type": "object",
+    "additionalProperties": false,
     "required": ["meetingId", "recordingUri", "speakers", "segments", "provenance", "observedAt"],
     "properties": {
       "meetingId": { "type": "string" },
@@ -23,6 +25,7 @@
         "type": "array",
         "items": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["id", "displayName"],
           "properties": {
             "id": { "type": "string" },
@@ -34,6 +37,7 @@
         "type": "array",
         "items": {
           "type": "object",
+          "additionalProperties": false,
           "required": ["speakerId", "text", "startSeconds"],
           "properties": {
             "speakerId": { "type": "string" },
@@ -42,7 +46,20 @@
           }
         }
       },
-      "provenance": { "type": "object" },
+      "provenance": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["provider", "authority", "sourceKind", "sourceReferenceFingerprint"],
+        "properties": {
+          "provider": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "authority": { "type": "string", "minLength": 1, "maxLength": 500 },
+          "sourceKind": { "enum": ["fixture", "connected"] },
+          "sourceReferenceFingerprint": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        }
+      },
       "observedAt": { "type": "string" }
     }
   },
@@ -81,5 +98,8 @@
     "fixture": "soter/scenarios/meeting-intake/happy-path.scenario.json",
     "containedVerification": "Prove speaker and segment normalization, provenance, missing-transcript behavior, and typed errors."
   },
-  "providerLimitations": []
+  "providerLimitations": [
+    "Provider calendar_participants data is excluded from portable output because observed name-to-email pairings are not reliable identity evidence.",
+    "Provider action_items data is excluded from portable output and cannot ground summaries, commitments, tasks, or other proposed actions; only exact normalized transcript segments may do so."
+  ]
 }

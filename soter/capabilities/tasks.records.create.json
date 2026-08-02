@@ -7,6 +7,7 @@
   "portability": "portable",
   "inputSchema": {
     "type": "object",
+    "additionalProperties": false,
     "required": [
       "recordType",
       "deduplicationKey",
@@ -21,6 +22,7 @@
       },
       "deduplicationFilter": {
         "type": "object",
+        "additionalProperties": false,
         "required": [
           "field",
           "value"

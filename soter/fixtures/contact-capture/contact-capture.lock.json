@@ -304,7 +304,7 @@
         {
           "path": "soter/contracts/host-runtime-inspection.schema.json",
           "role": "definition",
-          "fingerprint": "sha256:4067b1352275a3e62cce2c404c03656521e6e7807a7b5198c47ba6ec740c13a3"
+          "fingerprint": "sha256:0a578da192bcdc598383b6cd39eb9323beabd3029074815cb07b89cf05b269fb"
         },
         {
           "path": "soter/contracts/host-tool-call.schema.json",
@@ -604,7 +604,7 @@
         {
           "path": "soter/kernel/legacy-inventory.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:c3f4d5bebbbf449d617b9af62a64e177b019ad22b5c2b937f8ca2f73fb853f75"
+          "fingerprint": "sha256:96894752ed82a93172de80a68d3eb014991db6b368fb170e1718291fdd47434d"
         },
         {
           "path": "soter/kernel/private-contained-evidence.mjs",
@@ -721,7 +721,7 @@
         {
           "path": "soter/core/configuration-transactions.selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:fdb67950ee94d2646e4981bd5278d0e771c124ac4feccfc6f4ff8d66087aed3b"
+          "fingerprint": "sha256:78eac909f9207057c1333ad00f7a29c29075ce97766cf1d12c4080576a0c1fc0"
         },
         {
           "path": "soter/core/configuration-view.mjs",
@@ -776,7 +776,7 @@
         {
           "path": "soter/core/contained-private-configurations.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:46f9d0664c9fecc3c51c5fd4d50dd113d75f009916812263060fca24423da7fe"
+          "fingerprint": "sha256:e3634bf99661f8b45a9e4503633721c3bb8d4977a4628367ee333d222f008826"
         },
         {
           "path": "soter/core/context-records.mjs",
@@ -866,7 +866,7 @@
         {
           "path": "soter/core/fixtures.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:80d3499c9bc00f8186026f41daabc957482814fd17353ab9fab5312503ecefae"
+          "fingerprint": "sha256:bf0f3c37b561ea18aee08e466483b9ff06a93d844e1c2f81253a9ec850a65fdf"
         },
         {
           "path": "soter/core/host-projections.mjs",
@@ -876,17 +876,17 @@
         {
           "path": "soter/core/host-realizations.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:f9f09f706b9bac7b42db13156113fe740552790e04d4a52199cbcb728c4fac7d"
+          "fingerprint": "sha256:39647785de59224f53b5a8f10587e4a63046cfabe7317a7ece2f821bddc35119"
         },
         {
           "path": "soter/core/host-realizations.selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:0bdbcdefbd3419b7e294c722fcd60a420bb43e76b4577ed82f749fe5783859e1"
+          "fingerprint": "sha256:ab0058cfe20402c35d132a5539e658237f735b796d9d0e107810ae71743242de"
         },
         {
           "path": "soter/core/host-runtime-inspection.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:6114a9b0f0a28da2c6d32fd33c6728deec0c9ec17ba8aadc3c975b848bcdf1fc"
+          "fingerprint": "sha256:3d2b0c8e955bd8b8dcbee4f8a8c2ddb151a76f1224723d6654c24a60a12bb212"
         },
         {
           "path": "soter/core/host-runtime.mjs",
@@ -946,7 +946,7 @@
         {
           "path": "soter/core/mcp/selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:0de3761246cfaa6def99fe4434e1f2035b7ceb3a594495dcdb4ce4682decebb5"
+          "fingerprint": "sha256:e675724d404fbedfbb113dcb5c7adab12f6c93654ae556d6dd145888c321a24b"
         },
         {
           "path": "soter/core/mcp/server.mjs",
@@ -956,7 +956,7 @@
         {
           "path": "soter/core/mcp/tools.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:d356bc0a0074ff6ff2de1cf2ab84c7838e5c52fc6dff6af57697b8f604e0632a"
+          "fingerprint": "sha256:5f9663f2db5961d75eb9cc994b74abebd4e04fe8e3c4b693c2ab67374eafa095"
         },
         {
           "path": "soter/core/operation-plans.mjs",
@@ -1001,12 +1001,12 @@
         {
           "path": "soter/core/prepared-review-batches.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:fc288a6165d1294e9dddfe7e7f50b4efee9f718daa912292c8d6cd67134509c9"
+          "fingerprint": "sha256:798400223a3ae3fb75de931d2ed9c8155adbeb42e9e2008b83de6ae2db49a33c"
         },
         {
           "path": "soter/core/prepared-review-batches.selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:5c9a1a5a22fc1459864ca68add10d9e31d8a6dfce0fc38dcc553d433956301f0"
+          "fingerprint": "sha256:d653beea6411d10bd304115151ee1430c151321d098f5c5818744fcfcd902eba"
         },
         {
           "path": "soter/core/prepared-work.mjs",
@@ -1061,7 +1061,7 @@
         {
           "path": "soter/core/resolve.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:4456ce24fe088232f5488703d4341f59227eae74f22df891e5d78a72ff9647d2"
+          "fingerprint": "sha256:bda0e536301c8bc96372ecbb2e101321dcf3a13e55fdb420e92e33bfd4e612b8"
         },
         {
           "path": "soter/core/review-projections.mjs",
@@ -1076,12 +1076,12 @@
         {
           "path": "soter/core/runtime-state.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:56c88717dc48062cc5893cdc469829de659fd25e65e2aefdde0c6796a0e8a726"
+          "fingerprint": "sha256:5e22c8de02a0e4cf5b452090ace96f94f231566cce684b4a322aadd6ee13228f"
         },
         {
           "path": "soter/core/selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:cadc81a81e6426255d21cc473a410d1875c0bd4ec62d35c25bc7e5742d46c298"
+          "fingerprint": "sha256:c9361d8dfcded0bc827c6eca7796c57ae4f8023c252012a906824369de2f44a0"
         },
         {
           "path": "soter/core/service.mjs",
@@ -1362,7 +1362,7 @@
         {
           "path": "soter/capabilities/tasks.records.create.json",
           "role": "definition",
-          "fingerprint": "sha256:0e4067246fb9221395f7f3724746f5bd3ec198d5d787f46f1c851d779705ad16"
+          "fingerprint": "sha256:bfdc51fe3f5089eb51e63fc96c3bf5b38058a926ea4db9a93d5784ddec57250d"
         },
         {
           "path": "soter/capabilities/tasks.records.read.json",
@@ -1372,7 +1372,7 @@
         {
           "path": "soter/capabilities/tasks.records.update.json",
           "role": "definition",
-          "fingerprint": "sha256:2316f41842b5ed845590e72dcf8665a8c3552c8fef327af1ee36598ec2916eda"
+          "fingerprint": "sha256:88c83a274822f152b2186d7a7c1ceee9f7f96ab23efb5ea94835ece3339aa661"
         },
         {
           "path": "soter/capabilities/tasks.schema.read.json",
@@ -1402,12 +1402,12 @@
         {
           "path": "soter/integrations/notion/fixture.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:9ec9ad01dc1c3942a3643b8f6e22e143dabf0644becc25d9da83fd4274568e87"
+          "fingerprint": "sha256:9566d8b75aa59a8e97f07b221c66fceddaed6a5884a651f749e1884f0939992f"
         },
         {
           "path": "soter/integrations/notion/mcp.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:a48202d06f634c9449f9dde2f2b999c71ad48e316c4efa08bb92413f750efff5"
+          "fingerprint": "sha256:2858b0bf4ae40840ed506fc3f0456e84664af5a777de14e060b2d76d85b7d2fa"
         },
         {
           "path": "soter/integrations/notion/meetings-records.mapping.json",
@@ -1417,7 +1417,7 @@
         {
           "path": "soter/integrations/notion/notion.selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:ab030b43f488ca508e37516922b0fd748776f2f0ec36e0416ebda9c0d785312c"
+          "fingerprint": "sha256:745bfebabfe3d581d4e37e96678d75e7e2a7c4a37420ba696595a78459c64a91"
         },
         {
           "path": "soter/integrations/notion/process-records.mapping.json",
@@ -1442,7 +1442,7 @@
         {
           "path": "soter/integrations/notion/tasks-records.mapping.json",
           "role": "definition",
-          "fingerprint": "sha256:aa65118a03c1f306c18b04e7dcbb3b1f6783b66ee2677b0de10dccd89f5d7067"
+          "fingerprint": "sha256:3dcc7657a54efe92a27d8bc6a00a649dd814d167193b9e5276e4b891c0f8d43f"
         },
         {
           "path": "soter/providers/provider.integration.notion.fixture.json",
@@ -1729,5 +1729,5 @@
       "fingerprint": "sha256:6f56276537bef2866c02d35ef88bf111329c512984393db890bfc5efaff5aadb"
     }
   ],
-  "graphFingerprint": "sha256:a81e0e0c6806ce7d9a12bdc6473fd93707078c64daaaceae0ee0e0080d314612"
+  "graphFingerprint": "sha256:0eb1e52b32563c75ca90ff2f475625a3d0d339498b6190bfda2bd72d9eb70e68"
 }

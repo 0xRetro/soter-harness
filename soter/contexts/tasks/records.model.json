@@ -187,9 +187,9 @@
         }
       ],
       "content": {
-        "kind": "none",
+        "kind": "markdown",
         "requiredOnCreate": false,
-        "summary": "Task records have no portable body content."
+        "summary": "Optional task body content; a task derived from a source record carries its grounding in the body, closing the context section with the exact source reference and quote rather than in separate provider properties."
       },
       "deduplicationFields": [
         "title"

@@ -37,6 +37,19 @@ const CREATED = '2026-07-16T15:00:00.000Z';
 const CONFIRMED = '2026-07-16T15:01:00.000Z';
 const EXPIRES = '2026-07-16T15:10:00.000Z';
 const APPLIED = '2026-07-16T15:02:00.000Z';
+const TASK_GROUNDING_FIELDS = [
+  'sourceMeetingUris',
+  'sourceQuotes',
+  'sourceSummaryFingerprints'
+];
+const TASK_NOTION_FIELDS = [
+  ['title', 'Name', 'title'],
+  ['status', 'Status', 'status'],
+  ['context', 'Context', 'select'],
+  ['projectUris', 'Project', 'relation'],
+  ['assigneeIds', 'Assigned To', 'person'],
+  ['nextActionOn', 'Next Action', 'date']
+];
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -138,24 +151,13 @@ function taskFieldBindingCandidate(root, statusProvider, contextProvider) {
     'soter/integrations/notion/tasks-records.mapping.json'
   ));
   const task = mapping.recordTypes.find((record) => record.id === 'task');
-  value.settings['integration.notion'].fieldBindings = task.fields.map((field) => {
-    if (field.portable === 'sourceQuotes') {
-      return {
-        mapping: mapping.id,
-        recordType: task.id,
-        field: field.portable,
-        state: 'unavailable',
-        reasonCode: 'PROVIDER_PROPERTY_UNAVAILABLE'
-      };
-    }
-    return {
-      mapping: mapping.id,
-      recordType: task.id,
-      field: field.portable,
-      state: 'mapped',
-      provider: field.provider
-    };
-  });
+  value.settings['integration.notion'].fieldBindings = task.fields.map((field) => ({
+    mapping: mapping.id,
+    recordType: task.id,
+    field: field.portable,
+    state: 'mapped',
+    provider: field.provider
+  }));
   return value;
 }
 
@@ -210,32 +212,19 @@ function projectPageReviewFieldBindingCandidate(root) {
       }]
     }
   ];
-  const unavailableTaskFields = new Set([
-    'sourceMeetingUris',
-    'sourceQuotes',
-    'sourceSummaryFingerprints'
-  ]);
   value.settings['integration.notion'].fieldBindings = [
     ['soter/integrations/notion/projects-records.mapping.json', 'project'],
     ['soter/integrations/notion/tasks-records.mapping.json', 'task']
   ].flatMap(([relative, recordType]) => {
     const mapping = readJson(path.join(root, relative));
     const record = mapping.recordTypes.find((item) => item.id === recordType);
-    return record.fields.map((field) => unavailableTaskFields.has(field.portable)
-      ? {
-          mapping: mapping.id,
-          recordType,
-          field: field.portable,
-          state: 'unavailable',
-          reasonCode: 'PROVIDER_PROPERTY_UNAVAILABLE'
-        }
-      : {
-          mapping: mapping.id,
-          recordType,
-          field: field.portable,
-          state: 'mapped',
-          provider: field.provider
-        });
+    return record.fields.map((field) => ({
+      mapping: mapping.id,
+      recordType,
+      field: field.portable,
+      state: 'mapped',
+      provider: field.provider
+    }));
   });
   return value;
 }
@@ -634,18 +623,79 @@ export async function selftestConfigurationTransactions(root = defaultRoot) {
       id: 'configuration-change-plan.project-review-field-bindings-selftest',
       createdAt: CREATED
     });
-    const unavailableProjectReviewFields = projectReviewCandidate
+    const taskMapping = readJson(path.join(
+      projectReviewMappings,
+      'soter/integrations/notion/tasks-records.mapping.json'
+    ));
+    const taskRecordMapping = taskMapping.recordTypes.find((record) => record.id === 'task');
+    const taskContextModel = readJson(path.join(
+      projectReviewMappings,
+      'soter/contexts/tasks/records.model.json'
+    ));
+    const portableTask = taskContextModel.recordTypes.find((record) => record.id === 'task');
+    const taskReviewBindings = projectReviewCandidate
       .settings['integration.notion'].fieldBindings
-      .filter((binding) => binding.state === 'unavailable')
-      .map((binding) => binding.field)
-      .sort();
+      .filter((binding) => binding.mapping === taskMapping.id
+        && binding.recordType === taskRecordMapping.id);
     assert(/^sha256:[a-f0-9]{64}$/.test(projectReviewPlan.plan.planFingerprint)
-      && fingerprintJson(unavailableProjectReviewFields) === fingerprintJson([
-        'sourceMeetingUris',
-        'sourceQuotes',
-        'sourceSummaryFingerprints'
-      ]),
-    'Read-only Project-page configuration rejected its exact nullable unavailable grounding fields.');
+      && fingerprintJson(taskRecordMapping.fields.map((field) => [
+        field.portable,
+        field.provider,
+        field.providerType
+      ])) === fingerprintJson(TASK_NOTION_FIELDS)
+      && fingerprintJson(taskReviewBindings.map((binding) => [
+        binding.field,
+        binding.provider,
+        binding.state
+      ])) === fingerprintJson(TASK_NOTION_FIELDS.map(([portable, provider]) => [
+        portable,
+        provider,
+        'mapped'
+      ]))
+      && fingerprintJson(taskRecordMapping.content) === fingerprintJson({
+        portable: 'body',
+        provider: 'page-content',
+        providerType: 'markdown'
+      })
+      && portableTask.content.kind === 'markdown'
+      && TASK_GROUNDING_FIELDS.every((field) => {
+        return portableTask.fields.some((candidateField) => candidateField.id === field)
+          && !taskRecordMapping.fields.some((providerField) => providerField.portable === field)
+          && !taskReviewBindings.some((binding) => binding.field === field);
+      }),
+    'Read-only Project-page configuration did not preserve the exact six-field Task mapping, markdown page-content body, and intentionally unmapped portable grounding fields.');
+    for (const groundingField of TASK_GROUNDING_FIELDS) {
+      const invalidCandidate = structuredClone(projectReviewCandidate);
+      invalidCandidate.settings['integration.notion'].fieldBindings.push({
+        mapping: taskMapping.id,
+        recordType: taskRecordMapping.id,
+        field: groundingField,
+        state: 'unavailable',
+        reasonCode: 'PROVIDER_PROPERTY_UNAVAILABLE'
+      });
+      const invalidPlanId = 'configuration-change-plan.project-review-unmapped-'
+        + groundingField.replace(/[A-Z]/g, (character) => '-' + character.toLowerCase());
+      let rejected = false;
+      try {
+        prepareConfigurationChange({
+          root: projectReviewMappings,
+          name: 'project-page-review',
+          candidateConfiguration: invalidCandidate,
+          id: invalidPlanId,
+          createdAt: CREATED
+        });
+      } catch (error) {
+        rejected = error.code === 'CONFIGURATION_CANDIDATE_INVALID'
+          && /SOTER_PACK_SETTINGS_SEMANTIC_INVARIANT/.test(error.message);
+      }
+      assert(rejected
+        && !fs.existsSync(configurationChangePlanStatePath(
+          projectReviewMappings,
+          invalidPlanId
+        )),
+      'Read-only Project-page configuration admitted obsolete provider binding for portable grounding field: '
+        + groundingField + '.');
+    }
     for (const [suffix, mapping, recordType, field] of [
       [
         'project-review-project-name-unavailable',

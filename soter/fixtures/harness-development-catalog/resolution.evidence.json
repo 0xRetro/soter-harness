@@ -10,8 +10,8 @@
     "id": "harness-development-catalog",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:8237ef3e5ba2920ad9123874f1d62df9665bfc573b38966c6559fe6960e4ea67",
-  "graphFingerprint": "sha256:6074aab07f8ddde9c78100c1c5852efd6f0cd82b2c0e1838dc1d64e3aa20d37f",
+  "configurationLockFingerprint": "sha256:8315648f159dca7704b76f2e2c47b6cd35e914faa9e797b3bb2c203b8ab54fdd",
+  "graphFingerprint": "sha256:2db3249bb5ae224343080911a44351166e81db37b8d6669dd101328f9aead194",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -308,7 +308,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:8237ef3e5ba2920ad9123874f1d62df9665bfc573b38966c6559fe6960e4ea67"
+      "fingerprint": "sha256:8315648f159dca7704b76f2e2c47b6cd35e914faa9e797b3bb2c203b8ab54fdd"
     }
   ],
   "effects": [],
