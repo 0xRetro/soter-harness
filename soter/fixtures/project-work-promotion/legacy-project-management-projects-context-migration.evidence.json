@@ -10,8 +10,8 @@
     "id": "context.projects",
     "version": "0.1.0"
   },
-  "configurationLockFingerprint": "sha256:ca6510a5d1729050b18687b583194564b416345dffd4b35cdea096ed0da559b6",
-  "graphFingerprint": "sha256:ef36ff02930b4b52d0881460f2c9f0550719f1eb9eb6e2cc7f778f2323fee494",
+  "configurationLockFingerprint": "sha256:9c787fadd0bb08245d4d13889ae52ff1c7ea76b971273184d17a8b8297f151f8",
+  "graphFingerprint": "sha256:a55c9cc1e8964cae312450cde01556b58256d8edfed27eb0ebd0427189b78b5a",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -21,7 +21,7 @@
     {
       "id": "core.runtime",
       "version": "0.1.0",
-      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+      "fingerprint": "sha256:a9c8dae0de0211a02104bbc93a94ea5021bdeadb84040dfe88778288ee465a92"
     },
     {
       "id": "context.projects",
@@ -167,17 +167,17 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/project-work-promotion/tracked-execution.evidence.json",
-      "fingerprint": "sha256:b5673d19ab819abb6f61e53e0d17f82c3dcc4c5f5278a6ab40de8e1a4b995005"
+      "fingerprint": "sha256:a0f5e1042fd81ee09b4f2094c142db8c893e2ee718e114ce5cc566bb68c6cc92"
     },
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/project-work-promotion/coordination-only.evidence.json",
-      "fingerprint": "sha256:d52286f1ad359d5160368e239c47a67035e4433614a028d112360318d8db1dad"
+      "fingerprint": "sha256:f0a0c069bf07e9fe6167ec6746f65985526e38aa29cc920e20f54bcad800bcfd"
     },
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/project-work-promotion/duplicate-task.evidence.json",
-      "fingerprint": "sha256:8040f115de43bab84f585dbec825440c8c2f66e6615b26c0fa1259589852a944"
+      "fingerprint": "sha256:480533db147afa3df8a1ad7af3ef2abee0f3b5cfb6ea9ef2c28e008bec3c7458"
     }
   ],
   "effects": [],

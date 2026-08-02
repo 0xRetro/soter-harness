@@ -6,40 +6,6 @@ import { fileURLToPath } from 'node:url';
 import { workflowEvidenceBasisForPath } from '../kernel/workflow-evidence-bases.mjs';
 import { formatDoctorReport, runConnectedDoctor, runOfflineDoctor } from './doctor.mjs';
 import {
-  finalizeMeetingIntakeConnectedContext,
-  prepareMeetingIntakeConnectedContext
-} from '../automations/meeting-intake/context.mjs';
-import {
-  finalizeEmailTriageConnectedAcquisition,
-  prepareEmailTriageConnectedAcquisition
-} from '../automations/email-triage/context.mjs';
-import {
-  finalizeTaskCaptureConnectedAcquisition,
-  prepareTaskCaptureConnectedAcquisition
-} from '../automations/task-capture/context.mjs';
-import {
-  finalizeOrganizationCaptureConnectedAcquisition,
-  prepareOrganizationCaptureConnectedAcquisition
-} from '../automations/organization-capture/context.mjs';
-import {
-  finalizeProjectCaptureConnectedAcquisition,
-  prepareProjectCaptureConnectedAcquisition
-} from '../automations/project-capture/context.mjs';
-import {
-  finalizeContactCaptureConnectedAcquisition,
-  prepareContactCaptureConnectedAcquisition
-} from '../automations/contact-capture/context.mjs';
-import {
-  finalizeProjectPulseConnectedAcquisition,
-  prepareProjectPulseConnectedAcquisition
-} from '../automations/project-pulse/context.mjs';
-import {
-  finalizeSlackConversationReviewConnectedAcquisition,
-  inspectSlackConversationReviewConnected,
-  inspectSlackConversationReviewConnectedPrivateReview,
-  prepareSlackConversationReviewConnectedAcquisition
-} from '../automations/slack-conversation-review/context.mjs';
-import {
   commitMeetingIntakeDecision,
   inspectMeetingIntakeDecisionContext
 } from '../automations/meeting-intake/decision.mjs';
@@ -162,6 +128,13 @@ import {
   inspectPreparedAutomationWork,
   prepareAutomationRun
 } from './prepared-work.mjs';
+import {
+  finalizeDeclaredAutomationAcquisition,
+  inspectDeclaredAutomationAcquisitionPrivate,
+  inspectDeclaredAutomationAcquisitionPublic,
+  prepareDeclaredAutomationAcquisition,
+  recoverDeclaredAutomationAcquisition
+} from './connected-acquisitions.mjs';
 import {
   createPreparedReviewBatch,
   inspectPreparedReviewBatchMaterial
@@ -1277,6 +1250,127 @@ async function main() {
     return;
   }
 
+  if (command === 'operator-acquisition-prepare') {
+    assertExactCommandArguments(args, {
+      valueOptions: ['--automation', '--work', '--host', '--at']
+    });
+    const prepared = await prepareDeclaredAutomationAcquisition({
+      root,
+      automationId: requiredOption(args, '--automation'),
+      workId: requiredOption(args, '--work'),
+      expectedHost: option(args, '--host'),
+      at: createdAt
+    });
+    if (json) {
+      print(prepared);
+    } else {
+      const call = prepared.currentCall;
+      process.stdout.write(
+        'Prepared declared connected acquisition ' + prepared.checkpoint.plan.id
+          + ' in state ' + prepared.checkpoint.state + '.\n'
+          + 'Current source: ' + (prepared.checkpoint.currentStepId || 'none') + '\n'
+          + (call
+            ? 'Native host tool: ' + call.transport.tool + '\n'
+              + 'Exact call ID: ' + call.id + '\n'
+            : 'Host request emitted: no\n')
+          + 'Durable checkpoint: ' + prepared.checkpointPath + '\n'
+          + 'Provider calls performed by Core: 0\n'
+          + 'Approval, continuation, retry, or write authority granted: no\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'operator-acquisition-recover') {
+    assertExactCommandArguments(args, {
+      valueOptions: [
+        '--automation',
+        '--work',
+        '--checkpoint',
+        '--checkpoint-fingerprint',
+        '--step',
+        '--call',
+        '--call-fingerprint',
+        '--host',
+        '--at'
+      ]
+    });
+    const recovered = await recoverDeclaredAutomationAcquisition({
+      root,
+      automationId: requiredOption(args, '--automation'),
+      workId: requiredOption(args, '--work'),
+      checkpointId: requiredOption(args, '--checkpoint'),
+      checkpointFingerprint: requiredOption(args, '--checkpoint-fingerprint'),
+      stepId: requiredOption(args, '--step'),
+      callId: requiredOption(args, '--call'),
+      callFingerprint: requiredOption(args, '--call-fingerprint'),
+      expectedHost: option(args, '--host'),
+      at: createdAt
+    });
+    if (json) {
+      print(recovered);
+    } else {
+      if (!recovered.currentCall
+        || recovered.currentCall.id !== recovered.recovery.replacementCallId) {
+        throw new Error(
+          'Connected-acquisition recovery did not return its exact pending replacement call.'
+        );
+      }
+      process.stdout.write(
+        'Recovered one exact failed read-only acquisition attempt.\n'
+          + 'Recovery locator: ' + recovered.recovery.id + '\n'
+          + 'Replacement attempt: ' + recovered.recovery.attempt + ' of '
+          + recovered.recovery.retry.maxAttempts + '\n'
+          + 'Exact call ID: ' + recovered.currentCall.id + '\n'
+          + 'Provider calls performed by Core: 0\n'
+          + 'Approval, reusable retry, or write authority granted: no\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'operator-acquisition-finalize') {
+    assertExactCommandArguments(args, {
+      valueOptions: ['--automation', '--work', '--checkpoint', '--host']
+    });
+    const finalized = await finalizeDeclaredAutomationAcquisition({
+      root,
+      automationId: requiredOption(args, '--automation'),
+      workId: requiredOption(args, '--work'),
+      checkpointId: requiredOption(args, '--checkpoint'),
+      expectedHost: option(args, '--host')
+    });
+    if (json) {
+      print(finalized);
+    } else {
+      process.stdout.write(
+        'Finalized the exact pack-declared connected acquisition.\n'
+          + 'Provider calls performed by Core: 0\n'
+          + 'Approval, continuation, retry, or write authority granted: no\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'operator-acquisition-inspect'
+    || command === 'operator-acquisition-private-inspect') {
+    assertExactCommandArguments(args, {
+      valueOptions: ['--automation', '--work', '--checkpoint', '--host']
+    });
+    const input = {
+      root,
+      automationId: requiredOption(args, '--automation'),
+      workId: requiredOption(args, '--work'),
+      checkpointId: requiredOption(args, '--checkpoint'),
+      expectedHost: option(args, '--host')
+    };
+    const inspected = command === 'operator-acquisition-inspect'
+      ? await inspectDeclaredAutomationAcquisitionPublic(input)
+      : await inspectDeclaredAutomationAcquisitionPrivate(input);
+    print(inspected);
+    return;
+  }
+
   if (command === 'operator-review-batch-create') {
     const batch = createPreparedReviewBatch({
       root,
@@ -1401,229 +1495,6 @@ async function main() {
     return;
   }
 
-  if (command === 'context-connected-prepare') {
-    assertExactCommandArguments(args, { valueOptions: ['--work', '--at'] });
-    const prepared = await prepareMeetingIntakeConnectedContext({
-      root,
-      workId: requiredOption(args, '--work'),
-      at: createdAt
-    });
-    if (json) {
-      print(prepared);
-    } else {
-      const call = prepared.currentCall;
-      process.stdout.write(
-        'Prepared connected meeting-intake context ' + prepared.checkpoint.plan.id
-          + ' in state ' + prepared.checkpoint.state + '.\n'
-          + 'Current source: ' + (prepared.checkpoint.currentStepId || 'none') + '\n'
-          + (call
-            ? 'Provider operation: ' + call.transport.server + '/'
-              + call.transport.operation + '\n'
-              + 'Native host tool: ' + call.transport.tool + '\n'
-              + 'Exact call ID: ' + call.id + '\n'
-            : 'Host request emitted: no\n')
-          + 'Durable checkpoint: ' + prepared.checkpointPath + '\n'
-          + 'Connected write approval accepted by this command: no\n'
-      );
-    }
-    if (!['requested', 'completed'].includes(prepared.checkpoint.state)) process.exitCode = 1;
-    return;
-  }
-
-  if (command === 'context-connected-finalize') {
-    const finalized = finalizeMeetingIntakeConnectedContext({
-      root,
-      checkpointId: requiredOption(args, '--checkpoint')
-    });
-    if (json) {
-      print(finalized);
-    } else {
-      process.stdout.write(
-        'Finalized connected context snapshot ' + finalized.snapshot.id + '.\n'
-          + 'Entries: ' + finalized.snapshot.entries.length + '\n'
-          + 'Containment: ' + finalized.snapshot.containment + '\n'
-          + 'Run state: ' + finalized.run.lifecycleState + '\n'
-          + 'Private snapshot: ' + finalized.snapshotPath + '\n'
-          + 'External writes executed: 0\n'
-      );
-    }
-    return;
-  }
-
-  if (command === 'email-context-connected-prepare') {
-    assertExactCommandArguments(args, { valueOptions: ['--work', '--at'] });
-    const prepared = await prepareEmailTriageConnectedAcquisition({
-      root,
-      workId: requiredOption(args, '--work'),
-      at: createdAt
-    });
-    if (json) {
-      print(prepared);
-    } else {
-      const call = prepared.currentCall;
-      process.stdout.write(
-        'Prepared connected Email acquisition ' + prepared.checkpoint.plan.id
-          + ' in state ' + prepared.checkpoint.state + '.\n'
-          + 'Current source: ' + (prepared.checkpoint.currentStepId || 'none') + '\n'
-          + (call
-            ? 'Provider operation: ' + call.transport.server + '/'
-              + call.transport.operation + '\n'
-              + 'Native host tool: ' + call.transport.tool + '\n'
-              + 'Exact call ID: ' + call.id + '\n'
-            : 'Host request emitted: no\n')
-          + 'Durable checkpoint: ' + prepared.checkpointPath + '\n'
-          + 'Triage judgment, approval, or write authority granted: no\n'
-      );
-    }
-    if (!['requested', 'completed'].includes(prepared.checkpoint.state)) process.exitCode = 1;
-    return;
-  }
-
-  if (command === 'slack-conversation-context-connected-prepare') {
-    assertExactCommandArguments(args, { valueOptions: ['--work', '--at'] });
-    const prepared = await prepareSlackConversationReviewConnectedAcquisition({
-      root,
-      workId: requiredOption(args, '--work'),
-      at: createdAt
-    });
-    if (json) {
-      print(prepared);
-    } else {
-      const call = prepared.currentCall;
-      process.stdout.write(
-        'Prepared connected Slack conversation review ' + prepared.checkpoint.plan.id
-          + ' in state ' + prepared.checkpoint.state + '.\n'
-          + 'Current source: ' + (prepared.checkpoint.currentStepId || 'none') + '\n'
-          + (call
-            ? 'Provider operation: ' + call.transport.server + '/'
-              + call.transport.operation + '\n'
-              + 'Native host tool: ' + call.transport.tool + '\n'
-              + 'Exact call ID: ' + call.id + '\n'
-            : 'Host request emitted: no\n')
-          + 'Durable checkpoint: ' + prepared.checkpointPath + '\n'
-          + 'Persistence proposal, approval, continuation, retry, or write authority granted: no\n'
-      );
-    }
-    if (!['requested', 'completed'].includes(prepared.checkpoint.state)) process.exitCode = 1;
-    return;
-  }
-
-  if (command === 'slack-conversation-context-connected-finalize') {
-    const finalized = finalizeSlackConversationReviewConnectedAcquisition({
-      root,
-      checkpointId: requiredOption(args, '--checkpoint')
-    });
-    if (json) {
-      print(finalized);
-    } else {
-      process.stdout.write(
-        'Finalized sanitized connected Slack conversation review ' + finalized.snapshot.id + '.\n'
-          + 'Selected conversations: ' + finalized.coverage.selectedConversationCount + '\n'
-          + 'Complete message windows: ' + finalized.coverage.messageWindowCount + '\n'
-          + 'Exact selected threads: ' + finalized.coverage.selectedThreadCount + '\n'
-          + 'Unselected rooted threads expanded: 0\n'
-          + 'Private values or external writes exposed: 0\n'
-      );
-    }
-    return;
-  }
-
-  if (command === 'slack-conversation-connected-inspect') {
-    const inspected = inspectSlackConversationReviewConnected({
-      root,
-      workId: requiredOption(args, '--work')
-    });
-    if (json) {
-      print(inspected);
-    } else {
-      process.stdout.write(
-        'Inspected sanitized connected Slack conversation review ' + inspected.snapshot.id + '.\n'
-          + 'Coverage fingerprint: ' + inspected.coverage.coverageFingerprint + '\n'
-          + 'Suspected injection count: ' + inspected.injection.count + '\n'
-          + 'Private values included: no\n'
-          + 'Authority created: no\n'
-      );
-    }
-    return;
-  }
-
-  if (command === 'slack-conversation-connected-review') {
-    print(inspectSlackConversationReviewConnectedPrivateReview({
-      root,
-      workId: requiredOption(args, '--work')
-    }));
-    return;
-  }
-
-  if (command === 'email-context-connected-finalize') {
-    const finalized = finalizeEmailTriageConnectedAcquisition({
-      root,
-      checkpointId: requiredOption(args, '--checkpoint')
-    });
-    if (json) {
-      print(finalized);
-    } else {
-      process.stdout.write(
-        'Finalized connected Email acquisition snapshot ' + finalized.snapshot.id + '.\n'
-          + 'Entries: ' + finalized.snapshot.entries.length + '\n'
-          + 'Containment: ' + finalized.snapshot.containment + '\n'
-          + 'Run state: ' + finalized.run.lifecycleState + '\n'
-          + 'Private snapshot: ' + finalized.snapshotPath + '\n'
-          + 'Triage judgments or external writes executed: 0\n'
-      );
-    }
-    return;
-  }
-
-  if (command === 'task-context-connected-prepare') {
-    assertExactCommandArguments(args, { valueOptions: ['--work', '--at'] });
-    const prepared = await prepareTaskCaptureConnectedAcquisition({
-      root,
-      workId: requiredOption(args, '--work'),
-      at: createdAt
-    });
-    if (json) {
-      print(prepared);
-    } else {
-      const call = prepared.currentCall;
-      process.stdout.write(
-        'Prepared connected Task acquisition ' + prepared.checkpoint.plan.id
-          + ' in state ' + prepared.checkpoint.state + '.\n'
-          + 'Current source: ' + (prepared.checkpoint.currentStepId || 'none') + '\n'
-          + (call
-            ? 'Provider operation: ' + call.transport.server + '/'
-              + call.transport.operation + '\n'
-              + 'Native host tool: ' + call.transport.tool + '\n'
-              + 'Exact call ID: ' + call.id + '\n'
-            : 'Host request emitted: no\n')
-          + 'Durable checkpoint: ' + prepared.checkpointPath + '\n'
-          + 'Task proposal, approval, continuation, or write authority granted: no\n'
-      );
-    }
-    if (!['requested', 'completed'].includes(prepared.checkpoint.state)) process.exitCode = 1;
-    return;
-  }
-
-  if (command === 'task-context-connected-finalize') {
-    const finalized = finalizeTaskCaptureConnectedAcquisition({
-      root,
-      checkpointId: requiredOption(args, '--checkpoint')
-    });
-    if (json) {
-      print(finalized);
-    } else {
-      process.stdout.write(
-        'Finalized connected Task acquisition snapshot ' + finalized.snapshot.id + '.\n'
-          + 'Entries: ' + finalized.snapshot.entries.length + '\n'
-          + 'Containment: ' + finalized.snapshot.containment + '\n'
-          + 'Run state: ' + finalized.run.lifecycleState + '\n'
-          + 'Private snapshot: ' + finalized.snapshotPath + '\n'
-          + 'Task decisions, proposals, approvals, or external writes executed: 0\n'
-      );
-    }
-    return;
-  }
-
   if (command === 'task-capture-decision-inspect') {
     const inspected = inspectTaskCaptureDecisionContext({
       root,
@@ -1726,55 +1597,6 @@ async function main() {
       proposalId: requiredOption(args, '--proposal')
     });
     print(material);
-    return;
-  }
-
-  if (command === 'organization-context-connected-prepare') {
-    assertExactCommandArguments(args, { valueOptions: ['--work', '--at'] });
-    const prepared = await prepareOrganizationCaptureConnectedAcquisition({
-      root,
-      workId: requiredOption(args, '--work'),
-      at: createdAt
-    });
-    if (json) {
-      print(prepared);
-    } else {
-      const call = prepared.currentCall;
-      process.stdout.write(
-        'Prepared connected Organization acquisition ' + prepared.checkpoint.plan.id
-          + ' in state ' + prepared.checkpoint.state + '.\n'
-          + 'Current source: ' + (prepared.checkpoint.currentStepId || 'none') + '\n'
-          + (call
-            ? 'Provider operation: ' + call.transport.server + '/'
-              + call.transport.operation + '\n'
-              + 'Native host tool: ' + call.transport.tool + '\n'
-              + 'Exact call ID: ' + call.id + '\n'
-            : 'Host request emitted: no\n')
-          + 'Durable checkpoint: ' + prepared.checkpointPath + '\n'
-          + 'Organization proposal, approval, continuation, or write authority granted: no\n'
-      );
-    }
-    if (!['requested', 'completed'].includes(prepared.checkpoint.state)) process.exitCode = 1;
-    return;
-  }
-
-  if (command === 'organization-context-connected-finalize') {
-    const finalized = finalizeOrganizationCaptureConnectedAcquisition({
-      root,
-      checkpointId: requiredOption(args, '--checkpoint')
-    });
-    if (json) {
-      print(finalized);
-    } else {
-      process.stdout.write(
-        'Finalized connected Organization acquisition snapshot ' + finalized.snapshot.id + '.\n'
-          + 'Entries: ' + finalized.snapshot.entries.length + '\n'
-          + 'Containment: ' + finalized.snapshot.containment + '\n'
-          + 'Run state: ' + finalized.run.lifecycleState + '\n'
-          + 'Private snapshot: ' + finalized.snapshotPath + '\n'
-          + 'Organization decisions, proposals, approvals, or external writes executed: 0\n'
-      );
-    }
     return;
   }
 
@@ -1895,55 +1717,6 @@ async function main() {
     return;
   }
 
-  if (command === 'project-capture-context-connected-prepare') {
-    assertExactCommandArguments(args, { valueOptions: ['--work', '--at'] });
-    const prepared = await prepareProjectCaptureConnectedAcquisition({
-      root,
-      workId: requiredOption(args, '--work'),
-      at: createdAt
-    });
-    if (json) {
-      print(prepared);
-    } else {
-      const call = prepared.currentCall;
-      process.stdout.write(
-        'Prepared connected Project Capture acquisition ' + prepared.checkpoint.plan.id
-          + ' in state ' + prepared.checkpoint.state + '.\n'
-          + 'Current source: ' + (prepared.checkpoint.currentStepId || 'none') + '\n'
-          + (call
-            ? 'Provider operation: ' + call.transport.server + '/'
-              + call.transport.operation + '\n'
-              + 'Native host tool: ' + call.transport.tool + '\n'
-              + 'Exact call ID: ' + call.id + '\n'
-            : 'Host request emitted: no\n')
-          + 'Durable checkpoint: ' + prepared.checkpointPath + '\n'
-          + 'Project proposal, approval, continuation, or write authority granted: no\n'
-      );
-    }
-    if (!['requested', 'completed'].includes(prepared.checkpoint.state)) process.exitCode = 1;
-    return;
-  }
-
-  if (command === 'project-capture-context-connected-finalize') {
-    const finalized = finalizeProjectCaptureConnectedAcquisition({
-      root,
-      checkpointId: requiredOption(args, '--checkpoint')
-    });
-    if (json) {
-      print(finalized);
-    } else {
-      process.stdout.write(
-        'Finalized connected Project Capture snapshot ' + finalized.snapshot.id + '.\n'
-          + 'Entries: ' + finalized.snapshot.entries.length + '\n'
-          + 'Containment: ' + finalized.snapshot.containment + '\n'
-          + 'Run state: ' + finalized.run.lifecycleState + '\n'
-          + 'Private snapshot: ' + finalized.snapshotPath + '\n'
-          + 'Project decisions, proposals, approvals, or external writes executed: 0\n'
-      );
-    }
-    return;
-  }
-
   if (command === 'project-capture-decision-inspect') {
     const inspected = inspectProjectCaptureDecisionContext({
       root,
@@ -2046,55 +1819,6 @@ async function main() {
       proposalId: requiredOption(args, '--proposal')
     });
     print(material);
-    return;
-  }
-
-  if (command === 'contact-context-connected-prepare') {
-    assertExactCommandArguments(args, { valueOptions: ['--work', '--at'] });
-    const prepared = await prepareContactCaptureConnectedAcquisition({
-      root,
-      workId: requiredOption(args, '--work'),
-      at: createdAt
-    });
-    if (json) {
-      print(prepared);
-    } else {
-      const call = prepared.currentCall;
-      process.stdout.write(
-        'Prepared connected Contact acquisition ' + prepared.checkpoint.plan.id
-          + ' in state ' + prepared.checkpoint.state + '.\n'
-          + 'Current source: ' + (prepared.checkpoint.currentStepId || 'none') + '\n'
-          + (call
-            ? 'Provider operation: ' + call.transport.server + '/'
-              + call.transport.operation + '\n'
-              + 'Native host tool: ' + call.transport.tool + '\n'
-              + 'Exact call ID: ' + call.id + '\n'
-            : 'Host request emitted: no\n')
-          + 'Durable checkpoint: ' + prepared.checkpointPath + '\n'
-          + 'Contact proposal, approval, continuation, or write authority granted: no\n'
-      );
-    }
-    if (!['requested', 'completed'].includes(prepared.checkpoint.state)) process.exitCode = 1;
-    return;
-  }
-
-  if (command === 'contact-context-connected-finalize') {
-    const finalized = finalizeContactCaptureConnectedAcquisition({
-      root,
-      checkpointId: requiredOption(args, '--checkpoint')
-    });
-    if (json) {
-      print(finalized);
-    } else {
-      process.stdout.write(
-        'Finalized connected Contact acquisition snapshot ' + finalized.snapshot.id + '.\n'
-          + 'Entries: ' + finalized.snapshot.entries.length + '\n'
-          + 'Containment: ' + finalized.snapshot.containment + '\n'
-          + 'Run state: ' + finalized.run.lifecycleState + '\n'
-          + 'Private snapshot: ' + finalized.snapshotPath + '\n'
-          + 'Contact decisions, proposals, approvals, or external writes executed: 0\n'
-      );
-    }
     return;
   }
 
@@ -2202,55 +1926,6 @@ async function main() {
       proposalId: requiredOption(args, '--proposal')
     });
     print(material);
-    return;
-  }
-
-  if (command === 'project-context-connected-prepare') {
-    assertExactCommandArguments(args, { valueOptions: ['--work', '--at'] });
-    const prepared = await prepareProjectPulseConnectedAcquisition({
-      root,
-      workId: requiredOption(args, '--work'),
-      at: createdAt
-    });
-    if (json) {
-      print(prepared);
-    } else {
-      const call = prepared.currentCall;
-      process.stdout.write(
-        'Prepared connected Project Pulse acquisition ' + prepared.checkpoint.plan.id
-          + ' in state ' + prepared.checkpoint.state + '.\n'
-          + 'Current source: ' + (prepared.checkpoint.currentStepId || 'none') + '\n'
-          + (call
-            ? 'Provider operation: ' + call.transport.server + '/'
-              + call.transport.operation + '\n'
-              + 'Native host tool: ' + call.transport.tool + '\n'
-              + 'Exact call ID: ' + call.id + '\n'
-            : 'Host request emitted: no\n')
-          + 'Durable checkpoint: ' + prepared.checkpointPath + '\n'
-          + 'Project decision, proposal, approval, continuation, or write authority granted: no\n'
-      );
-    }
-    if (!['requested', 'completed'].includes(prepared.checkpoint.state)) process.exitCode = 1;
-    return;
-  }
-
-  if (command === 'project-context-connected-finalize') {
-    const finalized = finalizeProjectPulseConnectedAcquisition({
-      root,
-      checkpointId: requiredOption(args, '--checkpoint')
-    });
-    if (json) {
-      print(finalized);
-    } else {
-      process.stdout.write(
-        'Finalized connected Project Pulse acquisition snapshot ' + finalized.snapshot.id + '.\n'
-          + 'Entries: ' + finalized.snapshot.entries.length + '\n'
-          + 'Containment: ' + finalized.snapshot.containment + '\n'
-          + 'Run state: ' + finalized.run.lifecycleState + '\n'
-          + 'Private snapshot: ' + finalized.snapshotPath + '\n'
-          + 'Project decisions, proposals, approvals, or external writes executed: 0\n'
-      );
-    }
     return;
   }
 
@@ -3293,7 +2968,7 @@ async function main() {
   }
 
   throw new Error(
-    'Usage: node soter/core/cli.mjs <legacy-checker-receipt-inspect|legacy-checker-projection-inspect|resolve|config-inspect|development-candidate-lock|development-request-create|development-result-record|development-host-evaluate|development-host-judge|development-host-finalize|development-host-evidence-historical|development-historical-evidence-batch-request|development-historical-evidence-batch-execute|development-historical-evidence-batch-recover|development-historical-evidence-batch-inspect|development-host-evidence-final|development-host-evidence-finalization-request-create|development-host-evidence-finalize-batch|development-host-evidence-finalization-rollback|development-host-evidence-finalization-verify|development-workflow-lifecycle-request-create|development-workflow-lifecycle-plan|legacy-finalization-transition-request-create|repository-cutover-request-create|repository-cutover-prepare|repository-cutover-execute|repository-cutover-recover|repository-cutover-rollback|repository-cutover-inspect|development-run-inspect|configuration-change-plan|configuration-change-request|configuration-change-confirm|configuration-change-start|configuration-change-execute|configuration-change-recover|configuration-change-inspect|host-realization-plan|host-realization-request|host-realization-confirm|host-realization-start|host-realization-execute|host-realization-recover|host-realization-inspect|pack-install-plan|pack-install-request|pack-install-confirm|pack-install-start|pack-install-execute|pack-install-recover|pack-install-inspect|operator-prepare|operator-prepared-inspect|operator-prepared-review|operator-prepared-derived-review|operator-review-batch-create|operator-review-batch|operator-connected-plan-create|operator-connected-plan|operator-inspect|connected-acceptance-inspect|operator-approval-review|prepare|context-connected-prepare|context-connected-finalize|slack-conversation-context-connected-prepare|slack-conversation-context-connected-finalize|slack-conversation-connected-inspect|slack-conversation-connected-review|meeting-intake-decision-inspect|meeting-intake-decision-commit|meeting-intake-proposal-inspect|meeting-intake-proposal-commit|meeting-intake-proposal-material|email-context-connected-prepare|email-context-connected-finalize|email-triage-decision-inspect|email-triage-decision-commit|email-triage-proposal-inspect|email-triage-proposal-commit|email-triage-proposal-material|task-context-connected-prepare|task-context-connected-finalize|task-capture-decision-inspect|task-capture-decision-commit|task-capture-proposal-inspect|task-capture-proposal-commit|task-capture-proposal-material|organization-context-connected-prepare|organization-context-connected-finalize|organization-capture-decision-inspect|organization-capture-decision-commit|organization-capture-proposal-inspect|organization-capture-proposal-commit|organization-capture-proposal-material|project-capture-context-connected-prepare|project-capture-context-connected-finalize|project-capture-decision-inspect|project-capture-decision-commit|project-capture-proposal-inspect|project-capture-proposal-commit|project-capture-proposal-material|contact-context-connected-prepare|contact-context-connected-finalize|contact-capture-decision-inspect|contact-capture-decision-commit|contact-capture-proposal-inspect|contact-capture-proposal-commit|contact-capture-proposal-material|project-context-connected-prepare|project-context-connected-finalize|project-pulse-decision-inspect|project-pulse-decision-commit|project-pulse-proposal-inspect|project-pulse-proposal-commit|project-pulse-proposal-material|proposal-connected-batch-preview|connected-approval-request|connected-approval-confirm|connected-transaction-prepare|connected-transaction-complete|connected-transaction-reconcile|doctor|probe-prepare|probe-complete|capability-complete|plan-complete|host-fail|host-get|host-list|fixtures|selftest> [options]\n'
+    'Usage: node soter/core/cli.mjs <legacy-checker-receipt-inspect|legacy-checker-projection-inspect|resolve|config-inspect|development-candidate-lock|development-request-create|development-result-record|development-host-evaluate|development-host-judge|development-host-finalize|development-host-evidence-historical|development-historical-evidence-batch-request|development-historical-evidence-batch-execute|development-historical-evidence-batch-recover|development-historical-evidence-batch-inspect|development-host-evidence-final|development-host-evidence-finalization-request-create|development-host-evidence-finalize-batch|development-host-evidence-finalization-rollback|development-host-evidence-finalization-verify|development-workflow-lifecycle-request-create|development-workflow-lifecycle-plan|legacy-finalization-transition-request-create|repository-cutover-request-create|repository-cutover-prepare|repository-cutover-execute|repository-cutover-recover|repository-cutover-rollback|repository-cutover-inspect|development-run-inspect|configuration-change-plan|configuration-change-request|configuration-change-confirm|configuration-change-start|configuration-change-execute|configuration-change-recover|configuration-change-inspect|host-realization-plan|host-realization-request|host-realization-confirm|host-realization-start|host-realization-execute|host-realization-recover|host-realization-inspect|pack-install-plan|pack-install-request|pack-install-confirm|pack-install-start|pack-install-execute|pack-install-recover|pack-install-inspect|operator-prepare|operator-prepared-inspect|operator-prepared-review|operator-prepared-derived-review|operator-acquisition-prepare|operator-acquisition-recover|operator-acquisition-finalize|operator-acquisition-inspect|operator-acquisition-private-inspect|operator-review-batch-create|operator-review-batch|operator-connected-plan-create|operator-connected-plan|operator-inspect|connected-acceptance-inspect|operator-approval-review|prepare|meeting-intake-decision-inspect|meeting-intake-decision-commit|meeting-intake-proposal-inspect|meeting-intake-proposal-commit|meeting-intake-proposal-material|email-triage-decision-inspect|email-triage-decision-commit|email-triage-proposal-inspect|email-triage-proposal-commit|email-triage-proposal-material|task-capture-decision-inspect|task-capture-decision-commit|task-capture-proposal-inspect|task-capture-proposal-commit|task-capture-proposal-material|organization-capture-decision-inspect|organization-capture-decision-commit|organization-capture-proposal-inspect|organization-capture-proposal-commit|organization-capture-proposal-material|project-capture-decision-inspect|project-capture-decision-commit|project-capture-proposal-inspect|project-capture-proposal-commit|project-capture-proposal-material|contact-capture-decision-inspect|contact-capture-decision-commit|contact-capture-proposal-inspect|contact-capture-proposal-commit|contact-capture-proposal-material|project-pulse-decision-inspect|project-pulse-decision-commit|project-pulse-proposal-inspect|project-pulse-proposal-commit|project-pulse-proposal-material|proposal-connected-batch-preview|connected-approval-request|connected-approval-confirm|connected-transaction-prepare|connected-transaction-complete|connected-transaction-reconcile|doctor|probe-prepare|probe-complete|capability-complete|plan-complete|host-fail|host-get|host-list|fixtures|selftest> [options]\n'
       + '  legacy-checker-receipt-inspect --receipt-id ID [--root PATH] [--json]\n'
       + '  legacy-checker-projection-inspect [--root PATH] [--json]\n'
       + '  resolve [--config PATH] [--host ID] [--output PATH] [--json]\n'
@@ -3349,6 +3024,11 @@ async function main() {
       + '  operator-prepared-inspect --work-id ID [--json]\n'
       + '  operator-prepared-review --work-id ID [--json]\n'
       + '  operator-prepared-derived-review --work-id ID [--json]\n'
+      + '  operator-acquisition-prepare --automation ID --work ID [--host ID] [--at TIME] [--json]\n'
+      + '  operator-acquisition-recover --automation ID --work ID --checkpoint ID --checkpoint-fingerprint HASH --step ID --call ID --call-fingerprint HASH [--host ID] [--at TIME] [--json]\n'
+      + '  operator-acquisition-finalize --automation ID --work ID --checkpoint ID [--host ID] [--json]\n'
+      + '  operator-acquisition-inspect --automation ID --work ID --checkpoint ID [--host ID] [--json]\n'
+      + '  operator-acquisition-private-inspect --automation ID --work ID --checkpoint ID [--host ID] [--json]\n'
       + '  operator-review-batch-create --work-id ID --action-id ID [--action-id ID ...] [--at TIME] [--json]\n'
       + '  operator-review-batch --batch-id ID [--json]\n'
       + '  operator-connected-plan-create --batch-id ID [--at TIME] [--json]\n'
@@ -3357,51 +3037,33 @@ async function main() {
       + '  connected-acceptance-inspect [--checkpoint ID ...] [--at TIME] [--json]\n'
       + '  operator-approval-review --request-id ID [--json]\n'
       + '  prepare --lock PATH [--scenario PATH] [--output PATH] [--evidence-dir PATH] [--json]\n'
-      + '  context-connected-prepare --work ID [--at TIME] [--json]\n'
-      + '  context-connected-finalize --checkpoint ID [--json]\n'
-      + '  slack-conversation-context-connected-prepare --work ID [--at TIME] [--json]\n'
-      + '  slack-conversation-context-connected-finalize --checkpoint ID [--json]\n'
-      + '  slack-conversation-connected-inspect --work ID [--json]\n'
-      + '  slack-conversation-connected-review --work ID [--json]\n'
       + '  meeting-intake-decision-inspect --lock PATH --snapshot ID [--json]\n'
       + '  meeting-intake-decision-commit --lock PATH --snapshot ID --decision-input PATH [--decision-id ID] [--actor ID] [--json]\n'
-      + '  email-context-connected-prepare --work ID [--at TIME] [--json]\n'
-      + '  email-context-connected-finalize --checkpoint ID [--json]\n'
       + '  email-triage-decision-inspect --lock PATH --snapshot ID [--json]\n'
       + '  email-triage-decision-commit --lock PATH --snapshot ID --decision-input PATH [--decision-id ID] [--actor ID] [--json]\n'
       + '  email-triage-proposal-inspect --lock PATH --decision ID [--json]\n'
       + '  email-triage-proposal-commit --lock PATH --decision ID --proposal-input ABSOLUTE_PATH [--proposal-id ID] [--actor ID] [--json]\n'
       + '  email-triage-proposal-material --lock PATH --proposal ID [--json]\n'
-      + '  task-context-connected-prepare --work ID [--at TIME] [--json]\n'
-      + '  task-context-connected-finalize --checkpoint ID [--json]\n'
       + '  task-capture-decision-inspect --lock PATH --snapshot ID [--at ISO] [--json]\n'
       + '  task-capture-decision-commit --lock PATH --snapshot ID [--decision-id ID] [--actor ID] [--json]\n'
       + '  task-capture-proposal-inspect --lock PATH --decision ID [--json]\n'
       + '  task-capture-proposal-commit --lock PATH --decision ID [--proposal-id ID] [--actor ID] [--json]\n'
       + '  task-capture-proposal-material --lock PATH --proposal ID [--json]\n'
-      + '  organization-context-connected-prepare --work ID [--at TIME] [--json]\n'
-      + '  organization-context-connected-finalize --checkpoint ID [--json]\n'
       + '  organization-capture-decision-inspect --lock PATH --snapshot ID [--json]\n'
       + '  organization-capture-decision-commit --lock PATH --snapshot ID [--decision-id ID] [--actor ID] [--json]\n'
       + '  organization-capture-proposal-inspect --lock PATH --decision ID [--json]\n'
       + '  organization-capture-proposal-commit --lock PATH --decision ID [--proposal-id ID] [--actor ID] [--json]\n'
       + '  organization-capture-proposal-material --lock PATH --proposal ID [--json]\n'
-      + '  project-capture-context-connected-prepare --work ID [--at TIME] [--json]\n'
-      + '  project-capture-context-connected-finalize --checkpoint ID [--json]\n'
       + '  project-capture-decision-inspect --lock PATH --snapshot ID [--json]\n'
       + '  project-capture-decision-commit --lock PATH --snapshot ID [--decision-id ID] [--actor ID] [--json]\n'
       + '  project-capture-proposal-inspect --lock PATH --decision ID [--json]\n'
       + '  project-capture-proposal-commit --lock PATH --decision ID [--proposal-id ID] [--actor ID] [--json]\n'
       + '  project-capture-proposal-material --lock PATH --proposal ID [--json]\n'
-      + '  contact-context-connected-prepare --work ID [--at TIME] [--json]\n'
-      + '  contact-context-connected-finalize --checkpoint ID [--json]\n'
       + '  contact-capture-decision-inspect --lock PATH --snapshot ID [--json]\n'
       + '  contact-capture-decision-commit --lock PATH --snapshot ID [--decision-id ID] [--actor ID] [--json]\n'
       + '  contact-capture-proposal-inspect --lock PATH --decision ID [--json]\n'
       + '  contact-capture-proposal-commit --lock PATH --decision ID [--proposal-id ID] [--actor ID] [--json]\n'
       + '  contact-capture-proposal-material --lock PATH --proposal ID [--json]\n'
-      + '  project-context-connected-prepare --work ID [--at TIME] [--json]\n'
-      + '  project-context-connected-finalize --checkpoint ID [--json]\n'
       + '  project-pulse-decision-inspect --lock PATH --snapshot ID [--json]\n'
       + '  project-pulse-decision-commit --lock PATH --snapshot ID [--decision-id ID] [--actor ID] [--json]\n'
       + '  project-pulse-proposal-inspect --lock PATH --decision ID [--json]\n'

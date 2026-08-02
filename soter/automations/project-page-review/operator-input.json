@@ -1,0 +1,40 @@
+{
+  "$contract": "soter://contracts/automation-input/v1",
+  "contractVersion": "1.0.0",
+  "id": "input.automation.project-page-review",
+  "automation": "automation.project-page-review",
+  "version": "1.0.0",
+  "fields": [
+    {
+      "id": "project",
+      "label": "Project reference",
+      "description": "Exact authoritative Project resource identity whose portable fields, related Tasks, and current page body will be reviewed.",
+      "type": "reference",
+      "required": true,
+      "exposure": "private",
+      "reference": {
+        "subject": "projects.records.project",
+        "authorityRole": "instance"
+      },
+      "constraints": {
+        "minLength": 3,
+        "maxLength": 500
+      },
+      "examples": [
+        "soter-fixture://projects/project/launch"
+      ]
+    },
+    {
+      "id": "focus",
+      "label": "Review focus",
+      "description": "Optional private operator context used only to focus selected-work review; it does not change policy, classify findings, or grant authority.",
+      "type": "string",
+      "required": false,
+      "exposure": "private",
+      "constraints": {
+        "maxLength": 500
+      }
+    }
+  ],
+  "additionalInputs": false
+}

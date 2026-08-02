@@ -113,6 +113,22 @@
               "type": "string",
               "pattern": "^[A-Za-z_$][A-Za-z0-9_$]*$"
             },
+            "inspectExport": {
+              "type": "string",
+              "pattern": "^[A-Za-z_$][A-Za-z0-9_$]*$"
+            },
+            "inspectSchema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "privateInspectExport": {
+              "type": "string",
+              "pattern": "^[A-Za-z_$][A-Za-z0-9_$]*$"
+            },
+            "privateInspectSchema": {
+              "type": "string",
+              "minLength": 1
+            },
             "containment": { "const": "connected" },
             "availability": { "$ref": "#/$defs/modeAvailability" },
             "recordRequirements": {
@@ -120,7 +136,37 @@
               "uniqueItems": true,
               "items": { "$ref": "#/$defs/recordRequirement" }
             }
-          }
+          },
+          "allOf": [
+            {
+              "if": { "required": ["privateInspectExport"] },
+              "then": {
+                "required": [
+                  "inspectExport",
+                  "inspectSchema",
+                  "privateInspectSchema"
+                ]
+              }
+            },
+            {
+              "if": { "required": ["inspectExport"] },
+              "then": { "required": ["inspectSchema"] }
+            },
+            {
+              "if": { "required": ["inspectSchema"] },
+              "then": { "required": ["inspectExport"] }
+            },
+            {
+              "if": { "required": ["privateInspectSchema"] },
+              "then": {
+                "required": [
+                  "inspectExport",
+                  "inspectSchema",
+                  "privateInspectExport"
+                ]
+              }
+            }
+          ]
         },
         "connection": {
           "type": "object",

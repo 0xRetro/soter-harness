@@ -4,9 +4,9 @@ import path from 'node:path';
 import { validateJsonSchema } from '../kernel/verify.mjs';
 import {
   fingerprintJson,
-  fingerprintPath,
-  readJson,
-  resolveRepoPath
+  fingerprintGovernedFile,
+  readGovernedFile,
+  readGovernedJson
 } from './lib/canonical-json.mjs';
 
 export const HOST_RUNTIME_REASON_CODES = Object.freeze({
@@ -25,51 +25,76 @@ function compareText(left, right) {
 function packManifestFiles(root) {
   const packsRoot = path.join(root, 'soter', 'packs');
   return fs.readdirSync(packsRoot, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
+    .filter((entry) => entry.isDirectory() || entry.isSymbolicLink())
     .map((entry) => path.join(packsRoot, entry.name, 'pack.json'))
-    .filter((file) => fs.existsSync(file))
     .sort(compareText);
+}
+
+function governedJsonWithFingerprint(root, relativePath) {
+  const exact = readGovernedFile(root, relativePath);
+  return {
+    value: JSON.parse(exact.bytes.toString('utf8')),
+    fingerprint: exact.fingerprint
+  };
 }
 
 function runtimeInventory(root, host) {
   const entries = [];
   for (const manifestFile of packManifestFiles(root)) {
-    const manifest = readJson(manifestFile);
     const manifestPath = path.relative(root, manifestFile).split(path.sep).join('/');
-    entries.push({ path: manifestPath, fingerprint: fingerprintPath(manifestFile) });
+    const exactManifest = governedJsonWithFingerprint(root, manifestPath);
+    const manifest = exactManifest.value;
+    entries.push({
+      path: manifestPath,
+      fingerprint: exactManifest.fingerprint
+    });
     for (const artifact of manifest.artifacts || []) {
       if (!ACTIVE_ARTIFACT_ROLES.has(artifact.role)) continue;
-      const artifactPath = resolveRepoPath(root, artifact.path);
-      entries.push({ path: artifact.path, fingerprint: fingerprintPath(artifactPath) });
+      entries.push({
+        path: artifact.path,
+        fingerprint: fingerprintGovernedFile(root, artifact.path)
+      });
     }
   }
 
   const adapterRelativePath = 'soter/hosts/' + host + '/adapter.json';
-  const adapterPath = resolveRepoPath(root, adapterRelativePath);
-  const adapter = readJson(adapterPath);
+  const exactAdapter = governedJsonWithFingerprint(root, adapterRelativePath);
+  const adapter = exactAdapter.value;
   if (adapter.host !== host || adapter.$contract !== 'soter://contracts/host-adapter/v2') {
     throw new Error('Host runtime adapter does not match active host ' + host + '.');
   }
-  entries.push({ path: adapterRelativePath, fingerprint: fingerprintPath(adapterPath) });
-  const definitionPath = resolveRepoPath(root, adapter.projectionDefinition.path);
-  const definition = readJson(definitionPath);
+  entries.push({
+    path: adapterRelativePath,
+    fingerprint: exactAdapter.fingerprint
+  });
+  const exactDefinition = governedJsonWithFingerprint(
+    root,
+    adapter.projectionDefinition.path
+  );
+  const definition = exactDefinition.value;
   entries.push({
     path: adapter.projectionDefinition.path,
-    fingerprint: fingerprintPath(definitionPath)
+    fingerprint: exactDefinition.fingerprint
   });
   for (const output of definition.outputs) {
-    const templatePath = resolveRepoPath(root, output.template);
-    entries.push({ path: output.template, fingerprint: fingerprintPath(templatePath) });
+    entries.push({
+      path: output.template,
+      fingerprint: fingerprintGovernedFile(root, output.template)
+    });
   }
   for (const collection of definition.collections) {
     for (const output of collection.outputs) {
-      const templatePath = resolveRepoPath(root, output.template);
-      entries.push({ path: output.template, fingerprint: fingerprintPath(templatePath) });
+      entries.push({
+        path: output.template,
+        fingerprint: fingerprintGovernedFile(root, output.template)
+      });
     }
   }
   for (const projection of adapter.projections) {
-    const projectionPath = resolveRepoPath(root, projection.path);
-    entries.push({ path: projection.path, fingerprint: fingerprintPath(projectionPath) });
+    entries.push({
+      path: projection.path,
+      fingerprint: fingerprintGovernedFile(root, projection.path)
+    });
   }
 
   const unique = new Map();
@@ -109,12 +134,10 @@ export function createHostRuntimeBasis({ root, host, startedAt = new Date().toIS
     host,
     server: Object.freeze({ name: SERVER_NAME, version: SERVER_VERSION, startedAt }),
     startupFingerprint: runtimeFingerprint(resolvedRoot, host),
-    inspectionSchema: readJson(path.join(
+    inspectionSchema: readGovernedJson(
       resolvedRoot,
-      'soter',
-      'contracts',
-      'host-runtime-inspection.schema.json'
-    ))
+      'soter/contracts/host-runtime-inspection.schema.json'
+    )
   });
 }
 

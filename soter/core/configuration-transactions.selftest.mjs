@@ -72,6 +72,21 @@ function candidate(root, marker) {
   return value;
 }
 
+function historicalActiveLock(lock) {
+  const value = structuredClone(lock);
+  value.packs[0].manifestFingerprint = 'sha256:' + '1'.repeat(64);
+  delete value.graphFingerprint;
+  value.graphFingerprint = fingerprintJson(value);
+  return value;
+}
+
+function reseal(value, property) {
+  const unsigned = structuredClone(value);
+  delete unsigned[property];
+  value[property] = fingerprintJson(unsigned);
+  return value;
+}
+
 function taskOptionMappingCandidate(root, statusProvider, contextProvider) {
   const file = path.join(root, 'soter/configurations/task-capture.config.json');
   const value = readJson(file);
@@ -111,6 +126,117 @@ function taskOptionMappingCandidate(root, statusProvider, contextProvider) {
       }]
     }
   ];
+  return value;
+}
+
+function taskFieldBindingCandidate(root, statusProvider, contextProvider) {
+  const value = taskOptionMappingCandidate(root, statusProvider, contextProvider);
+  value.settings['integration.notion'].targets.tasks
+    = 'collection://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+  const mapping = readJson(path.join(
+    root,
+    'soter/integrations/notion/tasks-records.mapping.json'
+  ));
+  const task = mapping.recordTypes.find((record) => record.id === 'task');
+  value.settings['integration.notion'].fieldBindings = task.fields.map((field) => {
+    if (field.portable === 'sourceQuotes') {
+      return {
+        mapping: mapping.id,
+        recordType: task.id,
+        field: field.portable,
+        state: 'unavailable',
+        reasonCode: 'PROVIDER_PROPERTY_UNAVAILABLE'
+      };
+    }
+    return {
+      mapping: mapping.id,
+      recordType: task.id,
+      field: field.portable,
+      state: 'mapped',
+      provider: field.provider
+    };
+  });
+  return value;
+}
+
+function projectPageReviewFieldBindingCandidate(root) {
+  const value = readJson(path.join(
+    root,
+    'soter/configurations/project-page-review.config.json'
+  ));
+  value.settings['integration.notion'].targets.projects
+    = 'collection://bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+  value.settings['integration.notion'].targets.tasks
+    = 'collection://cccccccccccccccccccccccccccccccc';
+  value.settings['integration.notion'].optionMappings = [
+    {
+      mapping: 'mapping.integration.notion.projects-records',
+      recordType: 'project',
+      field: 'projectType',
+      mode: 'exact-bijection',
+      entries: [{
+        portable: 'Internal Project',
+        provider: 'PRIVATE_PROJECT_REVIEW_TYPE_SENTINEL'
+      }]
+    },
+    {
+      mapping: 'mapping.integration.notion.projects-records',
+      recordType: 'project',
+      field: 'status',
+      mode: 'exact-bijection',
+      entries: [{
+        portable: 'Active',
+        provider: 'PRIVATE_PROJECT_REVIEW_STATUS_SENTINEL'
+      }]
+    },
+    {
+      mapping: 'mapping.integration.notion.tasks-records',
+      recordType: 'task',
+      field: 'status',
+      mode: 'exact-bijection',
+      entries: [{
+        portable: 'To Do',
+        provider: 'PRIVATE_TASK_REVIEW_STATUS_SENTINEL'
+      }]
+    },
+    {
+      mapping: 'mapping.integration.notion.tasks-records',
+      recordType: 'task',
+      field: 'context',
+      mode: 'exact-bijection',
+      entries: [{
+        portable: 'Project',
+        provider: 'PRIVATE_TASK_REVIEW_CONTEXT_SENTINEL'
+      }]
+    }
+  ];
+  const unavailableTaskFields = new Set([
+    'sourceMeetingUris',
+    'sourceQuotes',
+    'sourceSummaryFingerprints'
+  ]);
+  value.settings['integration.notion'].fieldBindings = [
+    ['soter/integrations/notion/projects-records.mapping.json', 'project'],
+    ['soter/integrations/notion/tasks-records.mapping.json', 'task']
+  ].flatMap(([relative, recordType]) => {
+    const mapping = readJson(path.join(root, relative));
+    const record = mapping.recordTypes.find((item) => item.id === recordType);
+    return record.fields.map((field) => unavailableTaskFields.has(field.portable)
+      ? {
+          mapping: mapping.id,
+          recordType,
+          field: field.portable,
+          state: 'unavailable',
+          reasonCode: 'PROVIDER_PROPERTY_UNAVAILABLE'
+        }
+      : {
+          mapping: mapping.id,
+          recordType,
+          field: field.portable,
+          state: 'mapped',
+          provider: field.provider
+        });
+  });
   return value;
 }
 
@@ -408,6 +534,186 @@ export async function selftestConfigurationTransactions(root = defaultRoot) {
         )),
       'Configuration planning admitted an invalid exact option bijection: ' + suffix + '.');
     }
+    const fieldBindingCandidate = taskFieldBindingCandidate(
+      optionMappings,
+      privateStatus,
+      privateContext
+    );
+    for (const [suffix, mutate, schemaFailure = false] of [
+      ['duplicate-field-scope', (value) => {
+        const duplicate = structuredClone(
+          value.settings['integration.notion'].fieldBindings[0]
+        );
+        duplicate.provider = 'PRIVATE_PROVIDER_DUPLICATE_FIELD_SCOPE_SENTINEL';
+        value.settings['integration.notion'].fieldBindings.push(duplicate);
+      }],
+      ['duplicate-provider-property', (value) => {
+        const bindings = value.settings['integration.notion'].fieldBindings;
+        const title = bindings.find((binding) => binding.field === 'title');
+        bindings.find((binding) => binding.field === 'status').provider = title.provider;
+      }],
+      ['unresolved-field-scope', (value) => {
+        value.settings['integration.notion'].fieldBindings[0].mapping
+          = 'mapping.integration.notion.nonexistent';
+      }],
+      ['incomplete-field-scope-set', (value) => {
+        value.settings['integration.notion'].fieldBindings
+          = value.settings['integration.notion'].fieldBindings.filter((binding) => {
+            return binding.field !== 'nextActionOn';
+          });
+      }],
+      ['missing-field-scope-set', (value) => {
+        delete value.settings['integration.notion'].fieldBindings;
+      }],
+      ['required-create-field-unavailable', (value) => {
+        const binding = value.settings['integration.notion'].fieldBindings
+          .find((item) => item.field === 'title');
+        delete binding.provider;
+        binding.state = 'unavailable';
+        binding.reasonCode = 'PROVIDER_PROPERTY_UNAVAILABLE';
+      }],
+      ['option-scope-for-unavailable-field', (value) => {
+        const binding = value.settings['integration.notion'].fieldBindings
+          .find((item) => item.field === 'context');
+        delete binding.provider;
+        binding.state = 'unavailable';
+        binding.reasonCode = 'PROVIDER_PROPERTY_UNAVAILABLE';
+      }],
+      ['fixture-target-field-binding', (value) => {
+        value.settings['integration.notion'].fieldBindings.push({
+          mapping: 'mapping.integration.notion.projects-records',
+          recordType: 'project',
+          field: 'name',
+          state: 'mapped',
+          provider: 'PRIVATE_FIXTURE_TARGET_PROVIDER_FIELD_SENTINEL'
+        });
+      }],
+      ['trailing-field-control', (value) => {
+        value.settings['integration.notion'].fieldBindings
+          .find((binding) => binding.state === 'mapped').provider
+          = 'PRIVATE_PROVIDER_FIELD_TRAILING_CONTROL_SENTINEL\u007f';
+      }, true]
+    ]) {
+      const invalidCandidate = structuredClone(fieldBindingCandidate);
+      mutate(invalidCandidate);
+      const invalidPlanId = 'configuration-change-plan.' + suffix;
+      let rejected = false;
+      try {
+        prepareConfigurationChange({
+          root: optionMappings,
+          name: 'task-capture',
+          candidateConfiguration: invalidCandidate,
+          id: invalidPlanId,
+          createdAt: CREATED
+        });
+      } catch (error) {
+        rejected = error.code === 'CONFIGURATION_CANDIDATE_INVALID'
+          && (schemaFailure
+            ? /SOTER_PACK_SETTINGS_SCHEMA/.test(error.message)
+            : /SOTER_PACK_SETTINGS_SEMANTIC_INVARIANT/.test(error.message));
+      }
+      assert(rejected
+        && !fs.existsSync(configurationChangePlanStatePath(
+          optionMappings,
+          invalidPlanId
+        )),
+      'Configuration planning admitted an invalid provider field binding: ' + suffix + '.');
+    }
+    const projectReviewMappings = copyRoot(
+      root,
+      'soter-configuration-project-review-field-mappings-'
+    );
+    roots.push(projectReviewMappings);
+    const projectReviewCandidate = projectPageReviewFieldBindingCandidate(
+      projectReviewMappings
+    );
+    const projectReviewPlan = prepareConfigurationChange({
+      root: projectReviewMappings,
+      name: 'project-page-review',
+      candidateConfiguration: projectReviewCandidate,
+      id: 'configuration-change-plan.project-review-field-bindings-selftest',
+      createdAt: CREATED
+    });
+    const unavailableProjectReviewFields = projectReviewCandidate
+      .settings['integration.notion'].fieldBindings
+      .filter((binding) => binding.state === 'unavailable')
+      .map((binding) => binding.field)
+      .sort();
+    assert(/^sha256:[a-f0-9]{64}$/.test(projectReviewPlan.plan.planFingerprint)
+      && fingerprintJson(unavailableProjectReviewFields) === fingerprintJson([
+        'sourceMeetingUris',
+        'sourceQuotes',
+        'sourceSummaryFingerprints'
+      ]),
+    'Read-only Project-page configuration rejected its exact nullable unavailable grounding fields.');
+    for (const [suffix, mapping, recordType, field] of [
+      [
+        'project-review-project-name-unavailable',
+        'mapping.integration.notion.projects-records',
+        'project',
+        'name'
+      ],
+      [
+        'project-review-task-title-unavailable',
+        'mapping.integration.notion.tasks-records',
+        'task',
+        'title'
+      ],
+      [
+        'project-review-task-status-unavailable',
+        'mapping.integration.notion.tasks-records',
+        'task',
+        'status'
+      ]
+    ]) {
+      const invalidCandidate = structuredClone(projectReviewCandidate);
+      const binding = invalidCandidate.settings['integration.notion'].fieldBindings
+        .find((item) => item.mapping === mapping
+          && item.recordType === recordType
+          && item.field === field);
+      delete binding.provider;
+      binding.state = 'unavailable';
+      binding.reasonCode = 'PROVIDER_PROPERTY_UNAVAILABLE';
+      const invalidPlanId = 'configuration-change-plan.' + suffix;
+      let rejected = false;
+      try {
+        prepareConfigurationChange({
+          root: projectReviewMappings,
+          name: 'project-page-review',
+          candidateConfiguration: invalidCandidate,
+          id: invalidPlanId,
+          createdAt: CREATED
+        });
+      } catch (error) {
+        rejected = error.code === 'CONFIGURATION_CANDIDATE_INVALID'
+          && /SOTER_PACK_SETTINGS_SEMANTIC_INVARIANT/.test(error.message);
+      }
+      assert(rejected
+        && !fs.existsSync(configurationChangePlanStatePath(
+          projectReviewMappings,
+          invalidPlanId
+        )),
+      'Read-only Project-page configuration admitted unavailable non-nullable field: '
+        + recordType + '.' + field + '.');
+    }
+    const fieldBindingPlan = prepareConfigurationChange({
+      root: optionMappings,
+      name: 'task-capture',
+      candidateConfiguration: fieldBindingCandidate,
+      id: 'configuration-change-plan.field-bindings-selftest',
+      createdAt: CREATED
+    });
+    const fieldBindingInspection = inspectConfigurationChange({
+      root: optionMappings,
+      planId: fieldBindingPlan.plan.id,
+      at: CREATED
+    });
+    const sanitizedFieldBindingInspection = JSON.stringify(fieldBindingInspection);
+    assert(!sanitizedFieldBindingInspection.includes('fieldBindings')
+      && !sanitizedFieldBindingInspection.includes('PRIVATE_PROVIDER')
+      && !sanitizedFieldBindingInspection.includes('Source Meetings')
+      && !sanitizedFieldBindingInspection.includes('Grounding'),
+    'Sanitized configuration inspection exposed private provider field bindings.');
     const optionAuthority = prepareAuthority(
       optionMappings,
       'option-mappings-selftest',
@@ -542,6 +848,487 @@ export async function selftestConfigurationTransactions(root = defaultRoot) {
       activeLockRejected = error.code === 'CONFIGURATION_ACTIVE_LOCK_STALE';
     }
     assert(activeLockRejected, 'A stale private active lock was silently replaced by a new plan.');
+
+    const activeLockSafety = copyRoot(root, 'soter-configuration-lock-safety-');
+    roots.push(activeLockSafety);
+    const activeLockSafetyCandidate = candidate(activeLockSafety, 'lock-safety-current');
+    const activeLockSafetyAuthority = prepareAuthority(
+      activeLockSafety,
+      'lock-safety-initial-selftest',
+      activeLockSafetyCandidate
+    );
+    executeConfigurationChange({
+      root: activeLockSafety,
+      checkpointId: activeLockSafetyAuthority.checkpointId,
+      at: APPLIED
+    });
+    const activeLockSafetyFile = activeConfigurationLockStatePath(
+      activeLockSafety,
+      'meeting-intake'
+    );
+    const activeLockSafetyDirectory = path.dirname(activeLockSafetyFile);
+    const assertUnsafeActiveLockRejected = (suffix) => {
+      const planId = 'configuration-change-plan.lock-safety-' + suffix + '-selftest';
+      let rejected = false;
+      try {
+        prepareConfigurationChange({
+          root: activeLockSafety,
+          name: 'meeting-intake',
+          candidateConfiguration: candidate(activeLockSafety, 'lock-safety-' + suffix),
+          id: planId,
+          createdAt: CREATED
+        });
+      } catch (error) {
+        rejected = error.code === 'CONFIGURATION_ACTIVE_LOCK_STALE';
+      }
+      assert(rejected
+        && !fs.existsSync(configurationChangePlanStatePath(activeLockSafety, planId)),
+      'Unsafe active-lock ' + suffix + ' state was read or produced a plan.');
+    };
+    if (process.platform !== 'win32') {
+      fs.chmodSync(activeLockSafetyFile, 0o644);
+      assertUnsafeActiveLockRejected('mode');
+      fs.chmodSync(activeLockSafetyFile, 0o600);
+      fs.chmodSync(activeLockSafetyFile, 0o1600);
+      assertUnsafeActiveLockRejected('special-mode');
+      fs.chmodSync(activeLockSafetyFile, 0o600);
+      fs.chmodSync(activeLockSafetyDirectory, 0o755);
+      assertUnsafeActiveLockRejected('parent-mode');
+      fs.chmodSync(activeLockSafetyDirectory, 0o700);
+    }
+    const activeLockHardlink = path.join(
+      activeLockSafety,
+      'outside-active-lock-hardlink.json'
+    );
+    fs.linkSync(activeLockSafetyFile, activeLockHardlink);
+    assertUnsafeActiveLockRejected('hardlink');
+    fs.rmSync(activeLockHardlink);
+    const activeLockBackup = path.join(
+      activeLockSafetyDirectory,
+      'meeting-intake.backup'
+    );
+    fs.renameSync(activeLockSafetyFile, activeLockBackup);
+    fs.symlinkSync(path.basename(activeLockBackup), activeLockSafetyFile);
+    assertUnsafeActiveLockRejected('symlink');
+    fs.rmSync(activeLockSafetyFile);
+    fs.renameSync(activeLockBackup, activeLockSafetyFile);
+    const exactSafetyLock = readJson(activeLockSafetyFile);
+    for (const [suffix, mutate] of [
+      ['name-binding', (lock) => { lock.configuration.name = 'other-configuration'; }],
+      ['path-binding', (lock) => {
+        lock.configuration.path = '.soter/state/configurations/other-configuration.json';
+      }],
+      ['document-binding', (lock) => {
+        lock.configuration.fingerprint = 'sha256:' + '2'.repeat(64);
+      }]
+    ]) {
+      const invalidBindingLock = structuredClone(exactSafetyLock);
+      mutate(invalidBindingLock);
+      delete invalidBindingLock.graphFingerprint;
+      invalidBindingLock.graphFingerprint = fingerprintJson(invalidBindingLock);
+      writeActiveConfigurationLockState(
+        activeLockSafety,
+        'meeting-intake',
+        invalidBindingLock
+      );
+      assertUnsafeActiveLockRejected(suffix);
+    }
+    const duplicatePackLock = structuredClone(exactSafetyLock);
+    duplicatePackLock.packs.push({
+      ...structuredClone(duplicatePackLock.packs[0]),
+      manifestFingerprint: 'sha256:' + '3'.repeat(64)
+    });
+    delete duplicatePackLock.graphFingerprint;
+    duplicatePackLock.graphFingerprint = fingerprintJson(duplicatePackLock);
+    writeActiveConfigurationLockState(
+      activeLockSafety,
+      'meeting-intake',
+      duplicatePackLock
+    );
+    assertUnsafeActiveLockRejected('duplicate-pack');
+    writeActiveConfigurationLockState(
+      activeLockSafety,
+      'meeting-intake',
+      exactSafetyLock
+    );
+
+    const refreshed = copyRoot(root, 'soter-configuration-lock-refresh-');
+    roots.push(refreshed);
+    const refreshCandidate = candidate(refreshed, 'lock-refresh');
+    const initialRefreshAuthority = prepareAuthority(
+      refreshed,
+      'lock-refresh-initial-selftest',
+      refreshCandidate
+    );
+    executeConfigurationChange({
+      root: refreshed,
+      checkpointId: initialRefreshAuthority.checkpointId,
+      at: APPLIED
+    });
+    const currentRefreshLock = readJson(
+      activeConfigurationLockStatePath(refreshed, 'meeting-intake')
+    );
+    const historicalRefreshLock = historicalActiveLock(currentRefreshLock);
+    writeActiveConfigurationLockState(refreshed, 'meeting-intake', historicalRefreshLock);
+    const hybridCandidate = candidate(refreshed, 'lock-refresh-hybrid');
+    const hybridRefreshPlan = prepareConfigurationChange({
+      root: refreshed,
+      name: 'meeting-intake',
+      candidateConfiguration: hybridCandidate,
+      id: 'configuration-change-plan.lock-refresh-hybrid-selftest',
+      createdAt: CREATED
+    });
+    const historicalAuthority = historicalRefreshLock.authorities.find(
+      (authority) => authority.id === 'authority.crm.instance'
+    );
+    const currentAuthority = currentRefreshLock.authorities.find(
+      (authority) => authority.id === 'authority.crm.instance'
+    );
+    const candidateAuthority = hybridRefreshPlan.plan.candidateLock.authorities.find(
+      (authority) => authority.id === 'authority.crm.instance'
+    );
+    const hybridAuthorityDelta = hybridRefreshPlan.plan.changes.find(
+      (change) => change.category === 'resolution'
+        && change.subject === 'authority.authority.crm.instance'
+    );
+    assert(hybridAuthorityDelta?.beforeFingerprint === fingerprintJson(historicalAuthority)
+      && hybridAuthorityDelta.afterFingerprint === fingerprintJson(candidateAuthority)
+      && hybridAuthorityDelta.afterFingerprint !== fingerprintJson(currentAuthority),
+    'Hybrid graph refresh described the fresh baseline instead of the exact final candidate lock.');
+    const refreshPlan = prepareConfigurationChange({
+      root: refreshed,
+      name: 'meeting-intake',
+      candidateConfiguration: refreshCandidate,
+      id: 'configuration-change-plan.lock-refresh-selftest',
+      createdAt: CREATED
+    });
+    const activeLockChange = refreshPlan.plan.changes.find(
+      (change) => change.id === 'configuration-change.lock.active'
+    );
+    const packResolutionChange = refreshPlan.plan.changes.find(
+      (change) => change.category === 'resolution'
+        && change.subject.startsWith('pack.')
+    );
+    const preparedRefreshInspection = inspectConfigurationChange({
+      root: refreshed,
+      planId: refreshPlan.plan.id,
+      at: APPLIED
+    });
+    assert(activeLockChange?.category === 'lock'
+      && activeLockChange.beforeFingerprint
+        === fingerprintLock(historicalRefreshLock)
+      && activeLockChange.afterFingerprint
+        === refreshPlan.plan.configuration.candidateLockFingerprint
+      && packResolutionChange?.state === 'changed'
+      && refreshPlan.plan.configuration.currentDocumentFingerprint
+        === refreshPlan.plan.configuration.candidateDocumentFingerprint
+      && refreshPlan.plan.configuration.currentLockFingerprint
+        === refreshPlan.plan.configuration.candidateLockFingerprint
+      && preparedRefreshInspection.configuration.baselineLockFingerprint
+        === fingerprintLock(historicalRefreshLock)
+      && preparedRefreshInspection.configuration.observedLockFingerprint
+        === fingerprintLock(historicalRefreshLock)
+      && preparedRefreshInspection.configuration.candidateLockFingerprint
+        === refreshPlan.plan.configuration.candidateLockFingerprint,
+    'Graph drift did not produce truthful exact active-lock and resolved-graph refresh scope.');
+    removeActiveConfigurationLockState(refreshed, 'meeting-intake');
+    const missingActiveInspection = inspectConfigurationChange({
+      root: refreshed,
+      planId: refreshPlan.plan.id,
+      at: APPLIED
+    });
+    assert(missingActiveInspection.configuration.applicability === 'stale'
+      && missingActiveInspection.configuration.observedLockFingerprint === null,
+    'Missing private active lock was misreported as the fresh computed resolution.');
+    writeActiveConfigurationLockState(refreshed, 'meeting-intake', historicalRefreshLock);
+    const refreshRequest = beginConfigurationChangeRequest({
+      root: refreshed,
+      planId: refreshPlan.plan.id,
+      id: 'configuration-change-request.lock-refresh-selftest',
+      reason: 'Request confirmation for one exact stale graph-lock refresh.',
+      createdAt: CREATED,
+      expiresAt: EXPIRES
+    });
+    const refreshConfirmation = confirmConfigurationChangeRequest({
+      root: refreshed,
+      requestId: refreshRequest.request.id,
+      id: 'configuration-change-confirmation.lock-refresh-selftest',
+      actor: { type: 'local-operator', id: 'operator.selftest' },
+      reason: 'Confirm one exact stale graph-lock refresh.',
+      confirmedAt: CONFIRMED
+    });
+    const refreshExecution = prepareConfigurationChangeExecution({
+      root: refreshed,
+      confirmationId: refreshConfirmation.confirmation.id,
+      checkpointId: 'checkpoint.configuration.lock-refresh-selftest',
+      at: APPLIED
+    });
+    const refreshDesiredFile = privateConfigurationStatePath(refreshed, 'meeting-intake');
+    const desiredBeforeRefresh = fs.readFileSync(refreshDesiredFile);
+    const desiredStatBeforeRefresh = fs.statSync(refreshDesiredFile);
+    const completedRefresh = executeConfigurationChange({
+      root: refreshed,
+      checkpointId: refreshExecution.checkpoint.id,
+      at: APPLIED
+    });
+    const desiredStatAfterRefresh = fs.statSync(refreshDesiredFile);
+    const refreshedActiveLock = readJson(
+      activeConfigurationLockStatePath(refreshed, 'meeting-intake')
+    );
+    const refreshInspection = inspectConfigurationChange({
+      root: refreshed,
+      planId: refreshPlan.plan.id,
+      checkpointId: refreshExecution.checkpoint.id,
+      at: APPLIED
+    });
+    assert(completedRefresh.state === 'completed'
+      && fingerprintLock(refreshedActiveLock)
+        === refreshPlan.plan.configuration.candidateLockFingerprint
+      && refreshInspection.configuration.applicability === 'applied'
+      && refreshInspection.configuration.baselineLockFingerprint
+        === fingerprintLock(historicalRefreshLock)
+      && refreshInspection.configuration.observedLockFingerprint
+        === refreshPlan.plan.configuration.candidateLockFingerprint
+      && fs.readFileSync(refreshDesiredFile).equals(desiredBeforeRefresh)
+      && desiredStatAfterRefresh.ino === desiredStatBeforeRefresh.ino
+      && desiredStatAfterRefresh.mtimeMs === desiredStatBeforeRefresh.mtimeMs
+      && completedRefresh.phase === 'terminal'
+      && !JSON.stringify(refreshInspection).includes('notion://private-configuration'),
+    'The exact lock-only refresh changed the desired file or produced an untruthful inspection.');
+
+    let currentRefreshRejected = false;
+    try {
+      prepareConfigurationChange({
+        root: refreshed,
+        name: 'meeting-intake',
+        candidateConfiguration: refreshCandidate,
+        id: 'configuration-change-plan.lock-refresh-noop-selftest',
+        createdAt: CREATED
+      });
+    } catch (error) {
+      currentRefreshRejected = error.code === 'CONFIGURATION_CHANGE_EMPTY';
+    }
+    assert(currentRefreshRejected,
+      'A current active lock was incorrectly accepted as another refresh transaction.');
+
+    writeActiveConfigurationLockState(refreshed, 'meeting-intake', historicalRefreshLock);
+    const rollbackRefreshPlan = prepareConfigurationChange({
+      root: refreshed,
+      name: 'meeting-intake',
+      candidateConfiguration: refreshCandidate,
+      id: 'configuration-change-plan.lock-refresh-rollback-selftest',
+      createdAt: CREATED
+    });
+    const rollbackRefreshRequest = beginConfigurationChangeRequest({
+      root: refreshed,
+      planId: rollbackRefreshPlan.plan.id,
+      id: 'configuration-change-request.lock-refresh-rollback-selftest',
+      reason: 'Exercise exact rollback of a historical active lock.',
+      createdAt: CREATED,
+      expiresAt: EXPIRES
+    });
+    const rollbackRefreshConfirmation = confirmConfigurationChangeRequest({
+      root: refreshed,
+      requestId: rollbackRefreshRequest.request.id,
+      id: 'configuration-change-confirmation.lock-refresh-rollback-selftest',
+      actor: { type: 'local-operator', id: 'operator.selftest' },
+      reason: 'Confirm the exact rollback exercise.',
+      confirmedAt: CONFIRMED
+    });
+    const rollbackRefreshExecution = prepareConfigurationChangeExecution({
+      root: refreshed,
+      confirmationId: rollbackRefreshConfirmation.confirmation.id,
+      checkpointId: 'checkpoint.configuration.lock-refresh-rollback-selftest',
+      at: APPLIED
+    });
+    const unknownRefreshState = structuredClone(refreshCandidate);
+    unknownRefreshState.host.reason
+      = 'An unknown partial lock refresh must restore the exact historical active lock.';
+    writePrivateConfigurationState(refreshed, 'meeting-intake', unknownRefreshState);
+    const rolledBackRefresh = recoverConfigurationChange({
+      root: refreshed,
+      checkpointId: rollbackRefreshExecution.checkpoint.id,
+      at: APPLIED
+    });
+    assert(rolledBackRefresh.state === 'rolled-back'
+      && fingerprintJson(readPrivateConfigurationState(
+        refreshed,
+        'meeting-intake'
+      ).configuration) === fingerprintJson(refreshCandidate)
+      && fingerprintLock(readJson(
+        activeConfigurationLockStatePath(refreshed, 'meeting-intake')
+      )) === fingerprintLock(historicalRefreshLock),
+    'Lock-refresh recovery did not restore the exact prior desired state and historical lock.');
+
+    const missingLockRowFile = configurationChangePlanStatePath(
+      refreshed,
+      rollbackRefreshPlan.plan.id
+    );
+    const missingLockRowPlan = readJson(missingLockRowFile);
+    missingLockRowPlan.changes = missingLockRowPlan.changes.filter(
+      (change) => change.category !== 'lock'
+    );
+    missingLockRowPlan.scopeFingerprint = fingerprintJson(missingLockRowPlan.changes);
+    reseal(missingLockRowPlan, 'planFingerprint');
+    writeJson(missingLockRowFile, missingLockRowPlan);
+    let missingLockRowRejected = false;
+    try {
+      inspectConfigurationChange({
+        root: refreshed,
+        planId: rollbackRefreshPlan.plan.id,
+        at: APPLIED
+      });
+    } catch (error) {
+      missingLockRowRejected = error.code === 'CONFIGURATION_PLAN_TAMPERED';
+    }
+    assert(missingLockRowRejected,
+      'A re-signed refresh plan omitted its exact active-lock row.');
+
+    for (const activeState of ['candidate', 'prior']) {
+      writeActiveConfigurationLockState(
+        refreshed,
+        'meeting-intake',
+        historicalRefreshLock
+      );
+      const directionAuthority = prepareAuthority(
+        refreshed,
+        'lock-refresh-rolling-' + activeState + '-selftest',
+        refreshCandidate
+      );
+      if (activeState === 'candidate') {
+        writeActiveConfigurationLockState(
+          refreshed,
+          'meeting-intake',
+          directionAuthority.prepared.plan.candidateLock
+        );
+      }
+      const directionCheckpointFile = configurationTransactionCheckpointStatePath(
+        refreshed,
+        directionAuthority.checkpointId
+      );
+      const directionCheckpoint = readJson(directionCheckpointFile);
+      directionCheckpoint.state = 'rolling-back';
+      directionCheckpoint.phase = 'rollback-active-lock';
+      directionCheckpoint.failure = {
+        reasonCode: 'CONFIGURATION_RECOVERY_ROLLBACK',
+        summary: 'Continue an exact planted in-progress lock-refresh rollback.'
+      };
+      reseal(directionCheckpoint, 'checkpointFingerprint');
+      writeJson(directionCheckpointFile, directionCheckpoint);
+      const directionRecovery = recoverConfigurationChange({
+        root: refreshed,
+        checkpointId: directionAuthority.checkpointId,
+        at: APPLIED
+      });
+      const repeatedDirectionRecovery = recoverConfigurationChange({
+        root: refreshed,
+        checkpointId: directionAuthority.checkpointId,
+        at: APPLIED
+      });
+      assert(directionRecovery.state === 'rolled-back'
+        && repeatedDirectionRecovery.checkpointFingerprint
+          === directionRecovery.checkpointFingerprint
+        && fingerprintLock(readJson(
+          activeConfigurationLockStatePath(refreshed, 'meeting-intake')
+        )) === fingerprintLock(historicalRefreshLock),
+      'Recovery reversed an in-progress rollback from the ' + activeState + ' lock state.');
+    }
+
+    for (const recoveryState of ['prepared', 'applying', 'verifying']) {
+      writeActiveConfigurationLockState(
+        refreshed,
+        'meeting-intake',
+        historicalRefreshLock
+      );
+      const recoveryAuthority = prepareAuthority(
+        refreshed,
+        'lock-refresh-' + recoveryState + '-selftest',
+        refreshCandidate
+      );
+      if (recoveryState === 'verifying') {
+        writeActiveConfigurationLockState(
+          refreshed,
+          'meeting-intake',
+          recoveryAuthority.prepared.plan.candidateLock
+        );
+      }
+      if (recoveryState !== 'prepared') {
+        const recoveryCheckpointFile = configurationTransactionCheckpointStatePath(
+          refreshed,
+          recoveryAuthority.checkpointId
+        );
+        const recoveryCheckpoint = readJson(recoveryCheckpointFile);
+        recoveryCheckpoint.state = recoveryState;
+        recoveryCheckpoint.phase = recoveryState === 'applying'
+          ? 'configuration-unchanged'
+          : 'verifying';
+        reseal(recoveryCheckpoint, 'checkpointFingerprint');
+        writeJson(recoveryCheckpointFile, recoveryCheckpoint);
+      }
+      const recoveredState = recoverConfigurationChange({
+        root: refreshed,
+        checkpointId: recoveryAuthority.checkpointId,
+        at: APPLIED
+      });
+      assert(recoveredState.state === 'completed'
+        && fingerprintLock(readJson(
+          activeConfigurationLockStatePath(refreshed, 'meeting-intake')
+        )) === recoveryAuthority.prepared.plan.configuration.candidateLockFingerprint,
+      'Exact ' + recoveryState + ' lock-refresh recovery did not complete the candidate.');
+    }
+
+    if (process.platform !== 'win32') {
+      writeActiveConfigurationLockState(
+        refreshed,
+        'meeting-intake',
+        historicalRefreshLock
+      );
+      const failedRollbackAuthority = prepareAuthority(
+        refreshed,
+        'lock-refresh-rollback-failure-selftest',
+        refreshCandidate
+      );
+      writeActiveConfigurationLockState(
+        refreshed,
+        'meeting-intake',
+        failedRollbackAuthority.prepared.plan.candidateLock
+      );
+      const failedRollbackCheckpointFile = configurationTransactionCheckpointStatePath(
+        refreshed,
+        failedRollbackAuthority.checkpointId
+      );
+      const failedRollbackCheckpoint = readJson(failedRollbackCheckpointFile);
+      failedRollbackCheckpoint.state = 'rolling-back';
+      failedRollbackCheckpoint.phase = 'rollback-active-lock';
+      failedRollbackCheckpoint.failure = {
+        reasonCode: 'CONFIGURATION_RECOVERY_ROLLBACK',
+        summary: 'Plant a private active-lock permission failure during rollback.'
+      };
+      reseal(failedRollbackCheckpoint, 'checkpointFingerprint');
+      writeJson(failedRollbackCheckpointFile, failedRollbackCheckpoint);
+      const refreshLockDirectory = path.dirname(
+        activeConfigurationLockStatePath(refreshed, 'meeting-intake')
+      );
+      fs.chmodSync(refreshLockDirectory, 0o755);
+      let rollbackFailureRejected = false;
+      try {
+        recoverConfigurationChange({
+          root: refreshed,
+          checkpointId: failedRollbackAuthority.checkpointId,
+          at: APPLIED
+        });
+      } catch (error) {
+        rollbackFailureRejected = error.code === 'CONFIGURATION_ROLLBACK_FAILED';
+      }
+      fs.chmodSync(refreshLockDirectory, 0o700);
+      const needsAttentionCheckpoint = readJson(failedRollbackCheckpointFile);
+      assert(rollbackFailureRejected
+        && needsAttentionCheckpoint.state === 'needs-attention'
+        && needsAttentionCheckpoint.failure.reasonCode
+          === 'CONFIGURATION_ROLLBACK_FAILED',
+      'Lock-refresh rollback failure did not persist a needs-attention checkpoint.');
+    }
+
     removeActiveConfigurationLockState(stale, 'meeting-intake');
     removePrivateConfigurationState(stale, 'meeting-intake');
     const stalePlan = prepareConfigurationChange({
@@ -658,6 +1445,44 @@ export async function selftestConfigurationTransactions(root = defaultRoot) {
       tamperRejected = error.code === 'CONFIGURATION_PLAN_TAMPERED';
     }
     assert(tamperRejected, 'Tampered private configuration plan was accepted.');
+
+    const hiddenScopePlan = prepareConfigurationChange({
+      root: tampered,
+      name: 'meeting-intake',
+      candidateConfiguration: candidate(tampered, 'hidden-scope'),
+      id: 'configuration-change-plan.hidden-scope-selftest',
+      createdAt: CREATED
+    });
+    const hiddenScopePath = configurationChangePlanStatePath(
+      tampered,
+      hiddenScopePlan.plan.id
+    );
+    const hiddenScopeDocument = readJson(hiddenScopePath);
+    hiddenScopeDocument.changes = [{
+      id: 'configuration-change.lock.active',
+      category: 'lock',
+      subject: 'active-lock',
+      state: 'changed',
+      beforeDescriptor: 'prior-active-lock',
+      afterDescriptor: 'candidate-active-lock',
+      beforeFingerprint: hiddenScopeDocument.configuration.currentLockFingerprint,
+      afterFingerprint: hiddenScopeDocument.configuration.candidateLockFingerprint
+    }];
+    hiddenScopeDocument.scopeFingerprint = fingerprintJson(hiddenScopeDocument.changes);
+    reseal(hiddenScopeDocument, 'planFingerprint');
+    writeJson(hiddenScopePath, hiddenScopeDocument);
+    let hiddenScopeRejected = false;
+    try {
+      inspectConfigurationChange({
+        root: tampered,
+        planId: hiddenScopePlan.plan.id,
+        at: APPLIED
+      });
+    } catch (error) {
+      hiddenScopeRejected = error.code === 'CONFIGURATION_PLAN_TAMPERED';
+    }
+    assert(hiddenScopeRejected,
+      'A re-signed private plan hid real candidate changes behind a forged lock-only scope.');
 
     const noFallback = copyRoot(root, 'soter-configuration-no-fallback-');
     roots.push(noFallback);

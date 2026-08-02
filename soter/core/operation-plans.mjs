@@ -13,6 +13,11 @@ import { fingerprintJson, readJson } from './lib/canonical-json.mjs';
 
 const PLAN_V2 = 'soter://contracts/operation-plan/v2';
 const CHECKPOINT_V2 = 'soter://contracts/operation-plan-checkpoint/v2';
+const READ_ONLY_EFFECTS = new Set(['read', 'disclosure']);
+const RECOVERABLE_READ_FAILURE_CODES = new Set([
+  'HOST_CALL_RATE_LIMITED',
+  'HOST_CALL_RETRYABLE_FAILURE'
+]);
 
 function contractFailures(root, value, schemaPath, label) {
   const schema = readJson(path.join(root, schemaPath));
@@ -29,8 +34,86 @@ function idPart(value) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
-function operationPlanCallId(plan, step) {
-  return 'toolcall.' + idPart(plan.id) + '.' + idPart(step.id);
+function operationPlanCallId(plan, step, attempt = 1) {
+  const base = 'toolcall.' + idPart(plan.id) + '.' + idPart(step.id);
+  return attempt === 1 ? base : base + '.attempt-' + attempt;
+}
+
+function logicalCallId(call) {
+  return call.pagination?.baseCallId || call.id;
+}
+
+function retryCallBasis(call) {
+  return {
+    runId: call.runId,
+    configuration: call.configuration || null,
+    configurationLockFingerprint: call.configurationLockFingerprint,
+    graphFingerprint: call.graphFingerprint,
+    host: call.host,
+    provider: call.provider,
+    capability: call.capability,
+    authority: call.authority,
+    declaredEffects: call.declaredEffects,
+    policyDecisions: call.policyDecisions,
+    inputFingerprint: call.inputFingerprint,
+    transport: call.transport,
+    argumentsFingerprint: call.argumentsFingerprint,
+    secretValuesExcluded: call.secretValuesExcluded
+  };
+}
+
+export function operationPlanRequestedCallFingerprint(call) {
+  return fingerprintJson({
+    id: logicalCallId(call),
+    createdAt: call.createdAt,
+    basis: retryCallBasis(call)
+  });
+}
+
+function selectedCapabilityContract(root, lock, source) {
+  const selected = lock.capabilities.filter((item) => item.id === source.capability);
+  if (selected.length !== 1) {
+    throw new Error(
+      'Operation-plan recovery requires one exact selected capability contract.'
+    );
+  }
+  const contract = readJson(path.join(
+    root,
+    'soter/capabilities/' + source.capability + '.json'
+  ));
+  if (contract.id !== selected[0].id
+    || contract.version !== selected[0].version
+    || fingerprintJson(contract) !== selected[0].contractFingerprint) {
+    throw new Error(
+      'Operation-plan recovery capability does not match the current exact lock.'
+    );
+  }
+  return { contract, selected: selected[0] };
+}
+
+function checkpointLock(root, checkpoint) {
+  const resolvedRoot = path.resolve(root);
+  const lockFile = path.resolve(resolvedRoot, checkpoint.configurationLock.path);
+  if (!lockFile.startsWith(resolvedRoot + path.sep)) {
+    throw new Error('Operation plan checkpoint lock path escapes the exact workspace root.');
+  }
+  const lock = readJson(lockFile);
+  if (fingerprintJson(lock) !== checkpoint.configurationLock.fingerprint
+    || lock.graphFingerprint !== checkpoint.graphFingerprint) {
+    throw new Error(
+      'Operation plan checkpoint recovery history does not match its exact lock.'
+    );
+  }
+  return lock;
+}
+
+function recoveryId(checkpoint, runtimeStep, attempt) {
+  return 'recovery.'
+    + checkpoint.id.slice('checkpoint.'.length)
+    + '.'
+    + idPart(runtimeStep.id)
+    + '.attempt-'
+    + attempt;
 }
 
 function checkpointFingerprint(checkpoint) {
@@ -238,12 +321,8 @@ function sourceStep(checkpoint, runtimeStep) {
   return checkpoint.plan.steps.find((step) => step.id === runtimeStep.id);
 }
 
-function assertStepCall(root, checkpoint, runtimeStep, source) {
-  if (!runtimeStep.call) {
-    throw new Error('Operation plan step ' + runtimeStep.id + ' has no call record.');
-  }
-  assertHostToolCall(root, runtimeStep.call);
-  const call = runtimeStep.call;
+function assertStepCallBinding(root, checkpoint, runtimeStep, source, call) {
+  assertHostToolCall(root, call);
   const input = runtimeStep.resolvedInput;
   if (call.runId !== checkpoint.plan.runId
     || !call.configuration
@@ -254,9 +333,27 @@ function assertStepCall(root, checkpoint, runtimeStep, source) {
     || call.capability.id !== source.capability
     || call.authority !== source.authority
     || call.provider.implementation !== source.providerImplementation
-    || call.inputFingerprint !== fingerprintJson(input)
-    || runtimeStep.state !== call.state) {
+    || call.inputFingerprint !== fingerprintJson(input)) {
     throw new Error('Operation plan step ' + runtimeStep.id + ' does not match its exact call.');
+  }
+}
+
+function assertStepCall(root, checkpoint, runtimeStep, source) {
+  if (!runtimeStep.call) {
+    throw new Error('Operation plan step ' + runtimeStep.id + ' has no call record.');
+  }
+  const call = runtimeStep.call;
+  assertStepCallBinding(root, checkpoint, runtimeStep, source, call);
+  const priorCalls = runtimeStep.priorCalls || [];
+  const expectedCallId = operationPlanCallId(
+    checkpoint.plan,
+    source,
+    priorCalls.length + 1
+  );
+  if (logicalCallId(call) !== expectedCallId || runtimeStep.state !== call.state) {
+    throw new Error(
+      'Operation plan step ' + runtimeStep.id + ' does not identify its exact logical attempt.'
+    );
   }
   if (runtimeStep.state === 'completed') {
     if (!runtimeStep.output
@@ -272,11 +369,158 @@ function assertStepCall(root, checkpoint, runtimeStep, source) {
   }
 }
 
+function assertStepRecoveryHistory(root, checkpoint, runtimeStep, source) {
+  const priorCalls = runtimeStep.priorCalls || [];
+  if (!priorCalls.length) return;
+  if (!runtimeStep.call
+    || runtimeStep.resolvedInput === null
+    || runtimeStep.resolvedInputFingerprint === null) {
+    throw new Error(
+      'Recovered operation plan step ' + runtimeStep.id
+        + ' is missing its exact current call or resolved input.'
+    );
+  }
+  const { contract } = selectedCapabilityContract(
+    root,
+    checkpointLock(root, checkpoint),
+    source
+  );
+  if (!contract.retry?.safe
+    || !Number.isInteger(contract.retry.maxAttempts)
+    || contract.retry.maxAttempts < 2
+    || contract.retry.checkpoint !== null
+    || contract.effects.length === 0
+    || contract.effects.some((effect) => !READ_ONLY_EFFECTS.has(effect))
+    || priorCalls.length + 1 > contract.retry.maxAttempts) {
+    throw new Error(
+      'Recovered operation plan step ' + runtimeStep.id
+        + ' exceeds its exact read-only retry contract.'
+    );
+  }
+  let basis = null;
+  for (let index = 0; index < priorCalls.length; index += 1) {
+    const call = priorCalls[index];
+    assertStepCallBinding(root, checkpoint, runtimeStep, source, call);
+    if (call.state !== 'failed'
+      || call.pagination
+      || !RECOVERABLE_READ_FAILURE_CODES.has(call.error?.code)
+      || logicalCallId(call) !== operationPlanCallId(checkpoint.plan, source, index + 1)) {
+      throw new Error(
+        'Recovered operation plan step ' + runtimeStep.id
+          + ' contains an ineligible or out-of-sequence prior call.'
+      );
+    }
+    const currentBasis = retryCallBasis(call);
+    if (basis && fingerprintJson(currentBasis) !== fingerprintJson(basis)) {
+      throw new Error(
+        'Recovered operation plan step ' + runtimeStep.id
+          + ' changed its exact provider request basis between attempts.'
+      );
+    }
+    basis = currentBasis;
+  }
+  if (runtimeStep.call.pagination
+    || fingerprintJson(retryCallBasis(runtimeStep.call)) !== fingerprintJson(basis)) {
+    throw new Error(
+      'Recovered operation plan step ' + runtimeStep.id
+        + ' current call does not preserve the exact failed request basis.'
+    );
+  }
+}
+
+function callForAttempt(runtimeStep, attempt) {
+  const priorCalls = runtimeStep.priorCalls || [];
+  if (attempt <= priorCalls.length) return priorCalls[attempt - 1];
+  return attempt === priorCalls.length + 1 ? runtimeStep.call : null;
+}
+
+function assertRecoveryRecords(root, checkpoint) {
+  const recoveries = checkpoint.recoveries || [];
+  const expectedCount = checkpoint.steps.reduce((count, step) => {
+    return count + (step.priorCalls || []).length;
+  }, 0);
+  if (recoveries.length !== expectedCount) {
+    throw new Error(
+      'Operation plan recovery records do not cover every exact prior attempt.'
+    );
+  }
+  if (!recoveries.length) return;
+  const lock = checkpointLock(root, checkpoint);
+  const keys = new Set();
+  const ids = new Set();
+  const replacementIds = new Set();
+  for (let index = 0; index < recoveries.length; index += 1) {
+    const recovery = recoveries[index];
+    const runtimeStep = checkpoint.steps.find((step) => step.id === recovery.stepId);
+    const source = runtimeStep ? sourceStep(checkpoint, runtimeStep) : null;
+    const failedCall = runtimeStep
+      ? callForAttempt(runtimeStep, recovery.attempt - 1)
+      : null;
+    const replacementCall = runtimeStep
+      ? callForAttempt(runtimeStep, recovery.attempt)
+      : null;
+    if (!runtimeStep
+      || !source
+      || !failedCall
+      || !replacementCall
+      || recovery.sequence !== index + 1
+      || recovery.id !== recoveryId(checkpoint, runtimeStep, recovery.attempt)
+      || ids.has(recovery.id)
+      || replacementIds.has(recovery.replacementCallId)
+      || recovery.requestedAt !== replacementCall.createdAt
+      || recovery.failedCallId !== logicalCallId(failedCall)
+      || recovery.failedCallFingerprint !== fingerprintJson(failedCall)
+      || recovery.failureCode !== failedCall.error?.code
+      || recovery.replacementCallId !== logicalCallId(replacementCall)
+      || recovery.replacementRequestFingerprint
+        !== operationPlanRequestedCallFingerprint(replacementCall)
+      || recovery.replacementArgumentsFingerprint
+        !== replacementCall.argumentsFingerprint
+      || recovery.inputFingerprint !== runtimeStep.resolvedInputFingerprint) {
+      throw new Error(
+        'Operation plan recovery record does not match its exact failed and replacement calls.'
+      );
+    }
+    const { contract, selected } = selectedCapabilityContract(root, lock, source);
+    if (fingerprintJson(recovery.capability)
+        !== fingerprintJson({ id: contract.id, version: contract.version })
+      || recovery.capabilityContractFingerprint !== selected.contractFingerprint
+      || fingerprintJson(recovery.retry) !== fingerprintJson(contract.retry)
+      || fingerprintJson(recovery.effects) !== fingerprintJson(contract.effects)
+      || fingerprintJson(recovery.authority) !== fingerprintJson({
+        state: 'exact-call-request-only',
+        providerCallPerformed: false,
+        writeAuthorityIncluded: false,
+        reusableRetryAuthorityIncluded: false
+      })) {
+      throw new Error(
+        'Operation plan recovery record does not match its exact capability and authority boundary.'
+      );
+    }
+    const key = runtimeStep.id + ':' + recovery.attempt;
+    if (keys.has(key)) {
+      throw new Error('Operation plan recovery attempts must be unique and contiguous.');
+    }
+    keys.add(key);
+    ids.add(recovery.id);
+    replacementIds.add(recovery.replacementCallId);
+  }
+  for (const step of checkpoint.steps) {
+    const priorCalls = step.priorCalls || [];
+    for (let attempt = 2; attempt <= priorCalls.length + 1; attempt += 1) {
+      if (!keys.has(step.id + ':' + attempt)) {
+        throw new Error('Operation plan recovery history contains a missing attempt.');
+      }
+    }
+  }
+}
+
 function assertBoundRuntimeStep(root, checkpoint, runtimeStep, source) {
   if (runtimeStep.state === 'pending') {
     if (runtimeStep.resolvedInput !== null
       || runtimeStep.resolvedInputFingerprint !== null
       || runtimeStep.bindingResolutions.length !== 0
+      || (runtimeStep.priorCalls || []).length !== 0
       || runtimeStep.call !== null
       || runtimeStep.output !== null
       || runtimeStep.outputFingerprint !== null
@@ -293,6 +537,7 @@ function assertBoundRuntimeStep(root, checkpoint, runtimeStep, source) {
   }
   if (expected.action === 'skip') {
     if (runtimeStep.state !== 'skipped'
+      || (runtimeStep.priorCalls || []).length !== 0
       || runtimeStep.call !== null
       || runtimeStep.output !== null
       || runtimeStep.outputFingerprint !== null
@@ -303,6 +548,7 @@ function assertBoundRuntimeStep(root, checkpoint, runtimeStep, source) {
   }
   if (expected.action === 'fail') {
     if (runtimeStep.state !== 'failed'
+      || (runtimeStep.priorCalls || []).length !== 0
       || runtimeStep.call !== null
       || runtimeStep.output !== null
       || runtimeStep.outputFingerprint !== null
@@ -327,6 +573,20 @@ export function assertOperationPlanDocument(root, plan) {
   const ids = plan.steps.map((step) => step.id);
   if (new Set(ids).size !== ids.length) {
     throw new Error('Operation plan step identifiers must be unique.');
+  }
+  const callIds = plan.steps.map((step) => operationPlanCallId(plan, step));
+  if (new Set(callIds).size !== callIds.length) {
+    throw new Error(
+      'Operation plan step identifiers must produce unique exact host-call identifiers.'
+    );
+  }
+  const recoveryIds = plan.steps.map((step) => {
+    return 'recovery.' + plan.id + '.' + idPart(step.id) + '.attempt-2';
+  });
+  if (new Set(recoveryIds).size !== recoveryIds.length) {
+    throw new Error(
+      'Operation plan step identifiers must produce unique exact recovery identifiers.'
+    );
   }
   const bindingIds = [];
   for (let index = 0; index < plan.steps.length; index += 1) {
@@ -450,7 +710,9 @@ export function assertOperationPlanCheckpoint(root, checkpoint) {
       throw new Error('Operation plan runtime steps do not preserve source order.');
     }
     assertBoundRuntimeStep(resolvedRoot, checkpoint, runtimeStep, source);
+    assertStepRecoveryHistory(resolvedRoot, checkpoint, runtimeStep, source);
   }
+  assertRecoveryRecords(resolvedRoot, checkpoint);
 
   const active = checkpoint.steps[completedPrefix] || null;
   const tail = active ? checkpoint.steps.slice(completedPrefix + 1) : [];
@@ -539,6 +801,7 @@ export function createOperationPlanCheckpoint({
     },
     plan: structuredClone(plan),
     planFingerprint: fingerprintJson(plan),
+    recoveries: [],
     steps: plan.steps.map((step, index) => ({
       id: step.id,
       sequence: index + 1,
@@ -546,6 +809,7 @@ export function createOperationPlanCheckpoint({
       resolvedInput: null,
       resolvedInputFingerprint: null,
       bindingResolutions: [],
+      priorCalls: [],
       call: null,
       output: null,
       outputFingerprint: null,
@@ -622,14 +886,18 @@ export async function requestNextOperationPlanStep({ root, lock, checkpoint, at 
 }
 
 function previousResponse(checkpoint, callId, response) {
-  const step = checkpoint.steps.find((item) => {
-    return item.call?.id === callId
-      || item.call?.pagination?.pages.some((page) => page.callId === callId);
+  const calls = checkpoint.steps.flatMap((step) => [
+    ...(step.priorCalls || []),
+    step.call
+  ].filter(Boolean));
+  const call = calls.find((item) => {
+    return item.id === callId
+      || item.pagination?.pages.some((page) => page.callId === callId);
   });
-  if (!step) return false;
-  const responseFingerprint = step.call.id === callId
-    ? step.call.responseFingerprint
-    : step.call.pagination.pages.find((page) => page.callId === callId)?.responseFingerprint;
+  if (!call) return false;
+  const responseFingerprint = call.id === callId
+    ? call.responseFingerprint
+    : call.pagination.pages.find((page) => page.callId === callId)?.responseFingerprint;
   if (!responseFingerprint) return false;
   if (responseFingerprint !== fingerprintJson(response)) {
     throw new Error('Operation plan response does not match the exact completed step call.');
@@ -699,6 +967,170 @@ export async function completeOperationPlanStep({
   };
 }
 
+export async function recoverOperationPlanReadStep({
+  root,
+  lock,
+  checkpoint,
+  checkpointFingerprint: expectedCheckpointFingerprint,
+  stepId,
+  callId,
+  callFingerprint,
+  at
+}) {
+  assertOperationPlanCheckpoint(root, checkpoint);
+  if (!Number.isFinite(Date.parse(at))
+    || Date.parse(at) < Date.parse(checkpoint.updatedAt)) {
+    throw new Error(
+      'Operation-plan read recovery time must be a valid instant at or after the current checkpoint.'
+    );
+  }
+  const existingRecovery = (checkpoint.recoveries || []).find((recovery) => {
+    return recovery.stepId === stepId
+      && recovery.failedCallId === callId
+      && recovery.failedCallFingerprint === callFingerprint;
+  });
+  if (existingRecovery) {
+    if (checkpoint.checkpointFingerprint !== expectedCheckpointFingerprint) {
+      throw new Error(
+        'Operation-plan read recovery re-entry requires the exact current checkpoint fingerprint.'
+      );
+    }
+    const currentCall = operationPlanCurrentCall(checkpoint);
+    if (!currentCall
+      || currentCall.state !== 'requested'
+      || logicalCallId(currentCall) !== existingRecovery.replacementCallId
+      || operationPlanRequestedCallFingerprint(currentCall)
+        !== existingRecovery.replacementRequestFingerprint) {
+      throw new Error(
+        'Operation-plan read recovery was already applied and its exact replacement is no longer pending.'
+      );
+    }
+    return {
+      checkpoint: structuredClone(checkpoint),
+      recovery: structuredClone(existingRecovery),
+      idempotent: true
+    };
+  }
+  if (checkpoint.checkpointFingerprint !== expectedCheckpointFingerprint) {
+    throw new Error(
+      'Operation-plan read recovery does not match the exact failed checkpoint fingerprint.'
+    );
+  }
+  const completedPrefix = checkpoint.steps.findIndex((step) => {
+    return !['completed', 'skipped'].includes(step.state);
+  });
+  const runtimeStep = completedPrefix < 0 ? null : checkpoint.steps[completedPrefix];
+  const source = runtimeStep ? sourceStep(checkpoint, runtimeStep) : null;
+  if (checkpoint.state !== 'failed'
+    || !runtimeStep
+    || !source
+    || runtimeStep.id !== stepId
+    || runtimeStep.state !== 'failed'
+    || !runtimeStep.call
+    || logicalCallId(runtimeStep.call) !== callId
+    || fingerprintJson(runtimeStep.call) !== callFingerprint
+    || runtimeStep.call.state !== 'failed'
+    || runtimeStep.call.pagination
+    || !RECOVERABLE_READ_FAILURE_CODES.has(runtimeStep.call.error?.code)) {
+    throw new Error(
+      'Operation-plan read recovery requires the exact eligible failed non-paginated step call.'
+    );
+  }
+  for (const planStep of checkpoint.plan.steps) {
+    const { contract } = selectedCapabilityContract(root, lock, planStep);
+    if (contract.effects.length === 0
+      || contract.effects.some((effect) => !READ_ONLY_EFFECTS.has(effect))) {
+      throw new Error(
+        'Operation-plan read recovery cannot reopen a plan containing non-read effects.'
+      );
+    }
+  }
+  const { contract, selected } = selectedCapabilityContract(root, lock, source);
+  if (!contract.retry?.safe) {
+    throw new Error(
+      'Operation-plan read recovery is unsafe under the exact capability retry declaration.'
+    );
+  }
+  if (contract.retry.checkpoint !== null) {
+    throw new Error(
+      'Operation-plan read recovery cannot evaluate a prose checkpoint requirement.'
+    );
+  }
+  const priorCalls = runtimeStep.priorCalls || [];
+  const currentAttempt = priorCalls.length + 1;
+  if (!Number.isInteger(contract.retry.maxAttempts)
+    || currentAttempt >= contract.retry.maxAttempts) {
+    throw new Error(
+      'Operation-plan read recovery exhausted the exact capability attempt limit.'
+    );
+  }
+  const replacementAttempt = currentAttempt + 1;
+  const prepared = await prepareHostToolCall({
+    root,
+    lock,
+    configuration: checkpoint.configuration,
+    runId: checkpoint.plan.runId,
+    callId: operationPlanCallId(checkpoint.plan, source, replacementAttempt),
+    capability: source.capability,
+    authority: source.authority,
+    containment: 'connected',
+    providerImplementation: source.providerImplementation,
+    input: runtimeStep.resolvedInput,
+    at,
+    approvedEffects: []
+  });
+  if (prepared.call.state !== 'requested'
+    || prepared.call.pagination
+    || fingerprintJson(retryCallBasis(prepared.call))
+      !== fingerprintJson(retryCallBasis(runtimeStep.call))) {
+    throw new Error(
+      'Operation-plan read recovery preflight did not reproduce the exact failed provider request.'
+    );
+  }
+  const next = structuredClone(checkpoint);
+  const nextStep = next.steps[completedPrefix];
+  nextStep.priorCalls = [...(nextStep.priorCalls || []), nextStep.call];
+  nextStep.call = prepared.call;
+  nextStep.state = 'requested';
+  nextStep.output = null;
+  nextStep.outputFingerprint = null;
+  nextStep.error = null;
+  next.updatedAt = at;
+  next.state = 'requested';
+  next.currentStepId = nextStep.id;
+  next.result = null;
+  const recovery = {
+    id: recoveryId(checkpoint, runtimeStep, replacementAttempt),
+    sequence: (next.recoveries || []).length + 1,
+    stepId: runtimeStep.id,
+    attempt: replacementAttempt,
+    requestedAt: at,
+    reasonCode: 'OPERATION_PLAN_TRANSIENT_READ_RECOVERY',
+    failureCode: runtimeStep.call.error.code,
+    failedCallId: callId,
+    failedCallFingerprint: callFingerprint,
+    replacementCallId: logicalCallId(prepared.call),
+    replacementRequestFingerprint: operationPlanRequestedCallFingerprint(prepared.call),
+    replacementArgumentsFingerprint: prepared.call.argumentsFingerprint,
+    inputFingerprint: runtimeStep.resolvedInputFingerprint,
+    capability: {
+      id: contract.id,
+      version: contract.version
+    },
+    capabilityContractFingerprint: selected.contractFingerprint,
+    retry: structuredClone(contract.retry),
+    effects: structuredClone(contract.effects),
+    authority: {
+      state: 'exact-call-request-only',
+      providerCallPerformed: false,
+      writeAuthorityIncluded: false,
+      reusableRetryAuthorityIncluded: false
+    }
+  };
+  next.recoveries = [...(next.recoveries || []), recovery];
+  return { checkpoint: next, recovery, idempotent: false };
+}
+
 export function failOperationPlanStep({
   root,
   lock,
@@ -711,9 +1143,12 @@ export function failOperationPlanStep({
   const normalized = normalizedError(error);
   const currentCall = operationPlanCurrentCall(checkpoint);
   if (!currentCall || currentCall.id !== callId) {
-    const previous = checkpoint.steps.find((step) => step.call?.id === callId);
-    if (previous?.call.error
-      && fingerprintJson(previous.call.error) === fingerprintJson(normalized)) {
+    const previous = checkpoint.steps.flatMap((step) => [
+      ...(step.priorCalls || []),
+      step.call
+    ].filter(Boolean)).find((call) => call.id === callId);
+    if (previous?.error
+      && fingerprintJson(previous.error) === fingerprintJson(normalized)) {
       return { checkpoint: structuredClone(checkpoint), idempotent: true };
     }
     throw new Error('Operation plan failure does not match the exact current step call.');

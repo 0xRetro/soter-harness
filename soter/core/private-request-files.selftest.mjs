@@ -32,16 +32,7 @@ export function selftestPrivateRequestFiles() {
   };
   try {
     const cliPath = fileURLToPath(new URL('./cli.mjs', import.meta.url));
-    const acquisitionCommands = [
-      'context-connected-prepare',
-      'email-context-connected-prepare',
-      'slack-conversation-context-connected-prepare',
-      'task-context-connected-prepare',
-      'organization-context-connected-prepare',
-      'project-capture-context-connected-prepare',
-      'contact-context-connected-prepare',
-      'project-context-connected-prepare'
-    ];
+    const acquisitionCommands = ['operator-acquisition-prepare'];
     for (const command of acquisitionCommands) {
       for (const staleOption of ['--lock', '--run', '--query', '--snapshot']) {
         const rejected = spawnSync(process.execPath, [
@@ -49,6 +40,7 @@ export function selftestPrivateRequestFiles() {
           command,
           '--root', root,
           '--json',
+          '--automation', 'automation.argument-boundary-selftest',
           '--work', 'work.argument-boundary-selftest',
           '--at', '2026-07-25T12:00:00.000Z',
           staleOption, 'legacy-caller-selected-value'
@@ -68,6 +60,42 @@ export function selftestPrivateRequestFiles() {
           )
         );
       }
+    }
+    const retiredAcquisitionAliases = [
+      'context-connected-prepare',
+      'context-connected-finalize',
+      'email-context-connected-prepare',
+      'email-context-connected-finalize',
+      'slack-conversation-context-connected-prepare',
+      'slack-conversation-context-connected-finalize',
+      'slack-conversation-connected-inspect',
+      'slack-conversation-connected-review',
+      'task-context-connected-prepare',
+      'task-context-connected-finalize',
+      'organization-context-connected-prepare',
+      'organization-context-connected-finalize',
+      'project-capture-context-connected-prepare',
+      'project-capture-context-connected-finalize',
+      'contact-context-connected-prepare',
+      'contact-context-connected-finalize',
+      'project-context-connected-prepare',
+      'project-context-connected-finalize'
+    ];
+    for (const command of retiredAcquisitionAliases) {
+      const rejected = spawnSync(process.execPath, [
+        cliPath,
+        command,
+        '--root', root,
+        '--json'
+      ], { encoding: 'utf8' });
+      assert.notEqual(rejected.status, 0, command + ' remained an executable CLI bypass.');
+      assert.equal(rejected.stdout, '');
+      assert.match(rejected.stderr, /Usage: node soter\/core\/cli\.mjs/);
+      assert.equal(
+        rejected.stderr.includes('Private snapshot:'),
+        false,
+        command + ' exposed a private durable projection.'
+      );
     }
 
     const output = path.join(external, 'request.json');

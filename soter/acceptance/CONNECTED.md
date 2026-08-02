@@ -62,6 +62,11 @@ configuration-change-inspect
 ```
 
 Confirmation performs no apply. Start is separately validated and single-use.
+If this exact candidate only refreshes a historical active lock after governed
+graph drift, the inspection must show the fingerprint-only `lock` scope,
+identifier-and-fingerprint-only `resolution` deltas, and the same
+confirmation/start/checkpoint boundary; no manual lock replacement or silent
+adoption is permitted.
 
 ## Pause 2: host-realization confirmation
 
@@ -142,10 +147,24 @@ Stage one fresh connected acquisition and follow its exact calls:
 
 ```text
 soter_stage_automation_acquisition
-soter_prepare_task_capture_context
+soter_prepare_automation_acquisition
 soter_complete_operation_plan
-soter_finalize_task_capture_context
+soter_finalize_automation_acquisition
 ```
+
+Pass `automation.task-capture` and the exact staged `work_id` to both generic
+acquisition operations, plus the completed `checkpoint_id` to finalization.
+If one exact non-paginated read fails as rate-limited or explicitly retryable,
+the host may call `soter_recover_automation_acquisition` with the exact failed
+checkpoint, checkpoint fingerprint, step, call, and failed-call fingerprint.
+Core must return an attempt-specific `currentCall` under the current exact
+read-only lock and capability retry budget. The recovery record itself is not
+provider-call authority. Re-entry requires the refreshed current checkpoint
+fingerprint and may return that same call only while it remains pending; after
+completion or plan advancement the old recovery request must fail closed and
+must never return the current call for another step. Do not recover
+authentication, authorization, validation, conflict, unavailable, not-found,
+unknown, pagination, or any write failure.
 
 Then inspect and commit the private decision and proposal, inspect the selected
 private proposal material, and compile the exact selected action:

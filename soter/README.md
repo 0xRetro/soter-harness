@@ -482,10 +482,53 @@ the selected provider mappings and private settings. A configuration therefore
 cannot pass acquisition while omitting a later create or read-back collection,
 and neither declaration contains provider-specific target names.
 
-Meeting intake also exposes `soter_prepare_meeting_intake_context` and
-`soter_finalize_meeting_intake_context`; the CLI equivalents are
-`context-connected-prepare` and `context-connected-finalize`. The prepare tool
-accepts only the exact private-active `ready-for-acquisition` prepared-work ID.
+Every declared connected acquisition uses
+`soter_prepare_automation_acquisition` and
+`soter_finalize_automation_acquisition`; the matching generic CLI commands are
+`operator-acquisition-prepare` and `operator-acquisition-finalize`. Both require
+the exact Automation and prepared-work IDs, while finalization additionally
+requires the exact completed checkpoint ID. Automation-named acquisition
+aliases are not retained because they bypassed this shared exact binding.
+Core validates the pack finalizer against the exact durable private
+checkpoint, snapshot, run, and paths, but the callable MCP/CLI finalization
+result is a closed sanitized receipt: IDs and fingerprints only, explicit
+no-authority/privacy facts, and no snapshot values, provider responses, or
+private state paths. Private selected-work review remains available only
+through a separately declared private inspector. Inspection exports must pair
+with pack-owned closed schemas. Core validates the exact schema,
+self-fingerprint, work/configuration/lock/graph/host join, no-authority facts,
+credential exclusion, and public-or-private privacy boundary before returning a
+projection. Governed runtime artifacts and acquisition modules are read only
+through realpath-confined, no-symlink-ancestor file checks.
+
+A failed acquisition read has one separate, narrow recovery boundary:
+`soter_recover_automation_acquisition` /
+`operator-acquisition-recover`. Recovery requires the exact Automation, work,
+checkpoint, checkpoint fingerprint, failed step, failed call, and failed-call
+fingerprint. Core revalidates the current private-active lock, graph, host, run,
+provider, capability contract, authority, resolved input, native transport, and
+arguments before it changes private state. It is eligible only when the entire
+operation plan declares `read`/`disclosure` effects, the exact failure is
+rate-limited or explicitly retryable, `retry.safe=true`, the capability's total
+attempt budget remains, and `retry.checkpoint=null`. The initial call is attempt
+1. Replacement calls use immutable attempt-specific IDs and preserve every
+prior terminal call in the sealed private checkpoint and run history.
+
+Recovery performs no provider call. The separately returned `currentCall` is
+the only executable replacement request; its recovery record is a locator, not
+reusable retry authority. Exact re-entry requires the refreshed current
+checkpoint fingerprint and is idempotent only while that same replacement
+remains the pending current call. After it completes or the plan advances,
+replay fails closed instead of returning a later unrelated call.
+Authentication, authorization, validation, conflict, unavailable, not-found,
+unknown, non-read, approval-bearing, exhausted, and prose-checkpoint cases
+remain failed. Paginated attempts are intentionally unsupported in this first
+recovery boundary rather than resuming an excluded cursor or merging pages
+across attempts. Connected transaction writes retain their separate
+reconciliation model and are never retried through acquisition recovery.
+
+For Meeting Intake, the prepare operation accepts only the exact private-active
+`ready-for-acquisition` prepared-work ID.
 Core reloads that work,
 its selected private review, current active lock, exact host, and bound durable
 run before returning the first ordinary plan call. After generic plan completion
@@ -499,10 +542,7 @@ marks each consumed Meetings or Tasks definition authority loaded, updates the d
 run, and pauses before writes. Provider People IDs remain unresolved references, not
 assumed portable Meeting participants or CRM Person identities.
 
-Email exposes the parallel transport-only tools
-`soter_prepare_email_triage_context` and
-`soter_finalize_email_triage_context`; the CLI equivalents are
-`email-context-connected-prepare` and `email-context-connected-finalize`.
+Email uses the same generic MCP and CLI acquisition operations.
 Preparation accepts only the exact prepared-work ID and recovers its private
 mailbox query from Core's selected-work review material; no query, lock, run, or
 snapshot is accepted from the caller. It emits one bounded
@@ -535,21 +575,16 @@ Both snapshot and decision remain private state and are excluded from workspace
 inspection, evidence, diagnostics, canonical fixtures, and general renderer
 state.
 
-The same work-owned prepare contract applies to Task Capture, Organization
-Capture, Project Capture, Contact Capture, and Project Pulse:
+The same generic work-owned prepare contract applies to every Automation with a
+current available acquisition declaration:
 
 ```text
-node soter/core/cli.mjs context-connected-prepare --work WORK_ID [--at TIME] --json
-node soter/core/cli.mjs slack-conversation-context-connected-prepare --work WORK_ID [--at TIME] --json
-node soter/core/cli.mjs email-context-connected-prepare --work WORK_ID [--at TIME] --json
-node soter/core/cli.mjs task-context-connected-prepare --work WORK_ID [--at TIME] --json
-node soter/core/cli.mjs organization-context-connected-prepare --work WORK_ID [--at TIME] --json
-node soter/core/cli.mjs project-capture-context-connected-prepare --work WORK_ID [--at TIME] --json
-node soter/core/cli.mjs contact-context-connected-prepare --work WORK_ID [--at TIME] --json
-node soter/core/cli.mjs project-context-connected-prepare --work WORK_ID [--at TIME] --json
+node soter/core/cli.mjs operator-acquisition-prepare --automation AUTOMATION_ID --work WORK_ID [--host HOST] [--at TIME] --json
+node soter/core/cli.mjs operator-acquisition-recover --automation AUTOMATION_ID --work WORK_ID --checkpoint CHECKPOINT_ID --checkpoint-fingerprint CHECKPOINT_HASH --step STEP_ID --call FAILED_CALL_ID --call-fingerprint FAILED_CALL_HASH [--host HOST] [--at TIME] --json
+node soter/core/cli.mjs operator-acquisition-finalize --automation AUTOMATION_ID --work WORK_ID --checkpoint CHECKPOINT_ID [--host HOST] --json
 ```
 
-These eight acquisition adapters, including Slack Conversation Review, derive
+These acquisition adapters, including Slack Conversation Review, derive
 the exact private-active configuration, active lock, selected private input,
 host, and Core-owned run from `WORK_ID`. Internally supplied time and
 expected-host values only tighten revalidation. A caller cannot select or
@@ -952,8 +987,8 @@ continuation, provider call, or write authority.
 For Project Pulse's durable connected path, prepare and finalize the exact
 context acquisition, then commit the deterministic decision and proposal:
 
-    node soter/core/cli.mjs project-context-connected-prepare --work WORK_ID --json
-    node soter/core/cli.mjs project-context-connected-finalize --checkpoint CHECKPOINT_ID --json
+    node soter/core/cli.mjs operator-acquisition-prepare --automation automation.project-pulse --work WORK_ID --json
+    node soter/core/cli.mjs operator-acquisition-finalize --automation automation.project-pulse --work WORK_ID --checkpoint CHECKPOINT_ID --json
     node soter/core/cli.mjs project-pulse-decision-inspect --lock LOCK --snapshot SNAPSHOT_ID --json
     node soter/core/cli.mjs project-pulse-decision-commit --lock LOCK --snapshot SNAPSHOT_ID --decision-id DECISION_ID --actor ACTOR --json
     node soter/core/cli.mjs project-pulse-proposal-inspect --lock LOCK --decision DECISION_ID --json
@@ -1360,11 +1395,22 @@ private plan document:
 `configuration-change-recover` reconciles an interrupted exact checkpoint. A
 confirmation is not start authority, a displayed next action is not execution
 authority, and a consumed confirmation cannot start a second checkpoint.
+When the governed graph changes but an existing private desired configuration
+is byte-identical, the same lifecycle presents one explicit `lock` change from
+the exact historical active-lock fingerprint to the freshly resolved candidate
+fingerprint plus identifier-and-fingerprint-only `resolution` rows for changed
+packs, capabilities, bindings, sources, authorities, effects, settings, host,
+resolver, dependencies, and projections. Core accepts the historical lock only
+when its contract, self-fingerprint, configuration name/path, and
+desired-document fingerprint remain exact. This is a confirmed local lock
+refresh, not silent adoption, issuance provenance, provider authority,
+readiness, verification, or health evidence.
 
 Meeting Intake no longer exposes the legacy direct `context` or `transaction`
 commands. Start from one exact `operator-prepare` receipt, bind its work ID to
-`context-connected-prepare`, complete each emitted read through the host boundary,
-then call `context-connected-finalize`. Decision and private held proposal
+`operator-acquisition-prepare` with the exact Automation and work IDs, complete
+each emitted read through the host boundary, then call
+`operator-acquisition-finalize` with those IDs and the exact checkpoint. Decision and private held proposal
 remain separate commands and state families. The current Meeting proposal has
 zero selectable changes under `COMPLETE_MEETING_READBACK_UNAVAILABLE`; selected
 batch, approval, single-use start, checkpoint, connected execution, and

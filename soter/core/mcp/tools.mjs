@@ -2,36 +2,6 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import * as z from 'zod/v4';
 
 import {
-  finalizeMeetingIntakeConnectedContext,
-  prepareMeetingIntakeConnectedContext
-} from '../../automations/meeting-intake/context.mjs';
-import {
-  finalizeEmailTriageConnectedAcquisition,
-  prepareEmailTriageConnectedAcquisition
-} from '../../automations/email-triage/context.mjs';
-import {
-  finalizeTaskCaptureConnectedAcquisition,
-  prepareTaskCaptureConnectedAcquisition
-} from '../../automations/task-capture/context.mjs';
-import {
-  finalizeOrganizationCaptureConnectedAcquisition,
-  prepareOrganizationCaptureConnectedAcquisition
-} from '../../automations/organization-capture/context.mjs';
-import {
-  finalizeProjectCaptureConnectedAcquisition,
-  prepareProjectCaptureConnectedAcquisition
-} from '../../automations/project-capture/context.mjs';
-import {
-  finalizeContactCaptureConnectedAcquisition,
-  prepareContactCaptureConnectedAcquisition
-} from '../../automations/contact-capture/context.mjs';
-import {
-  finalizeSlackConversationReviewConnectedAcquisition,
-  inspectSlackConversationReviewConnected,
-  inspectSlackConversationReviewConnectedPrivateReview,
-  prepareSlackConversationReviewConnectedAcquisition
-} from '../../automations/slack-conversation-review/context.mjs';
-import {
   commitMeetingIntakeDecision,
   inspectMeetingIntakeDecisionContext
 } from '../../automations/meeting-intake/decision.mjs';
@@ -101,6 +71,13 @@ import {
   inspectHostRuntime
 } from '../host-runtime-inspection.mjs';
 import { prepareAutomationRun } from '../prepared-work.mjs';
+import {
+  finalizeDeclaredAutomationAcquisition,
+  inspectDeclaredAutomationAcquisitionPrivate,
+  inspectDeclaredAutomationAcquisitionPublic,
+  prepareDeclaredAutomationAcquisition,
+  recoverDeclaredAutomationAcquisition
+} from '../connected-acquisitions.mjs';
 
 const jsonObject = z.record(z.string(), z.unknown());
 const resultSchema = { result: jsonObject };
@@ -155,15 +132,16 @@ export function createSoterMcpServer({ root, host }) {
         'Before operational work, use soter_inspect_host_runtime; if it reports SOTER_HOST_RUNTIME_STALE, restart the host runtime instead of retrying another Soter tool.',
         'Soter Core validates exact locks and runs for the active ' + host + ' host projection, then saves a private durable checkpoint before emitting a provider-neutral operation resolved to an exact native host tool.',
         'After compaction or restart, use soter_list_host_calls and soter_get_host_call to recover pending work.',
-        'Use soter_stage_automation_acquisition to validate one exact private operator input and create the zero-effect prepared-work/run boundary before invoking an Automation-specific connected acquisition tool.',
+        'Use soter_stage_automation_acquisition to validate one exact private operator input and create the zero-effect prepared-work/run boundary, then use soter_prepare_automation_acquisition with that exact Automation and work identity.',
+        'If an exact declared acquisition read fails with an eligible transient code, use soter_recover_automation_acquisition only with the exact failed checkpoint, step, call, and fingerprints. The returned currentCall is the only executable replacement; the recovery record is a locator and grants no reusable retry or write authority.',
         'Invoke exactly currentCall.transport.tool when currentCall is present; otherwise invoke checkpoint.call.transport.tool only for a checkpoint that still uses the v1 single-call contract.',
         'Return both checkpoint.id and currentCall.id for sequential plans and connected transactions because a successful completion may emit the next exact call.',
         'A needs-attention connected transaction may use soter_reconcile_connected_transaction to emit one exact read-only observation; reconciliation never retries a write and remains paused for missing or divergent state.',
-        'Completed Meeting Intake, Email, Task Capture, Project Capture, Organization Capture, Contact Capture, and Slack conversation-review acquisition plans must be finalized through their exact finalizer before their private snapshots are used.',
+        'Completed acquisition plans must be finalized through soter_finalize_automation_acquisition with the exact Automation, prepared-work, and checkpoint identities before their private snapshots are used.',
         'Email acquisition records transport facts only and pauses before triage judgment, drafts, approval, or writes.',
         'Task Capture acquisition, Project Capture acquisition, Organization Capture acquisition, Contact Capture acquisition, and Meeting Intake acquisition each bind one current prepared-work item to exact connected context, then pause before decision, proposal, approval, or writes.',
         'Slack conversation-review acquisition reads complete exact selected message windows and only exact explicitly supplied thread references; its finalizer and ordinary inspection expose counts and fingerprints only.',
-        'Use soter_inspect_slack_conversation_review_private only for an explicit selected-work private read; it exposes normalized private bodies but never provider envelopes, cursors, approval, continuation, retry, or write authority.',
+        'Use soter_inspect_automation_acquisition_private only when the exact Automation declares a private selected-work inspector; it never grants approval, continuation, retry, provider-call, or write authority.',
         'Inspect or recover exact private decision workspaces with the matching decision inspection tool, then commit only the exact grounded decision; use needs-input rather than guessing whenever the domain adapter reports unresolved issues.',
         'Use soter_inspect_task_capture_decision and soter_commit_task_capture_decision for the Task Capture decision, then soter_inspect_task_capture_proposal, soter_commit_task_capture_proposal, and soter_inspect_task_capture_proposal_material for its review-only proposal.',
         'Use soter_inspect_organization_capture_decision and soter_commit_organization_capture_decision for the Organization Capture decision, then soter_inspect_organization_capture_proposal, soter_commit_organization_capture_proposal, and soter_inspect_organization_capture_proposal_material for its review-only proposal.',
@@ -227,6 +205,144 @@ export function createSoterMcpServer({ root, host }) {
     return result(
       work,
       'Staged exact private connected-acquisition input; no provider call or execution authority was created.'
+    );
+  });
+
+  registerGuardedTool('soter_prepare_automation_acquisition', {
+    title: 'Prepare declared Soter connected acquisition',
+    description: 'Load only the exact acquisition module and prepare export declared by the current governed Automation pack, revalidate its exact staged work, private-active lock, graph, host, and durable run, then checkpoint its provider-neutral operation plan. This tool performs no provider call and grants no approval, continuation, retry, or write authority.',
+    inputSchema: {
+      automation_id: z.string().regex(/^automation\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/),
+      work_id: z.string().regex(/^work\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/),
+      at: z.string().min(20).optional()
+    },
+    outputSchema: resultSchema,
+    annotations: statefulAnnotations
+  }, async (input) => {
+    const prepared = await prepareDeclaredAutomationAcquisition({
+      root,
+      automationId: input.automation_id,
+      workId: input.work_id,
+      at: input.at,
+      expectedHost: host
+    });
+    return result(
+      prepared,
+      'Prepared the exact pack-declared acquisition checkpoint and emitted at most one native host call; no provider call or authority was created.'
+    );
+  });
+
+  registerGuardedTool('soter_recover_automation_acquisition', {
+    title: 'Recover exact failed Soter read acquisition',
+    description: 'Revalidate one exact failed pack-declared connected-acquisition checkpoint, failed step and call, current private-active lock, graph, host, run, and capability retry declaration. If and only if the whole plan is read-only, the failure is explicitly eligible, the retry declaration is mechanically safe with remaining attempts, and the exact provider request can be reproduced, Core checkpoints one attempt-specific replacement call. This tool performs no provider call and grants no approval, reusable retry, or write authority.',
+    inputSchema: {
+      automation_id: z.string().regex(/^automation\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/),
+      work_id: z.string().regex(/^work\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/),
+      checkpoint_id: z.string().regex(
+        /^checkpoint\.plan\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/
+      ),
+      checkpoint_fingerprint: z.string().regex(/^sha256:[a-f0-9]{64}$/),
+      step_id: z.string().regex(/^step\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/),
+      call_id: z.string().regex(/^toolcall\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/),
+      call_fingerprint: z.string().regex(/^sha256:[a-f0-9]{64}$/),
+      at: z.string().min(20).optional()
+    },
+    outputSchema: resultSchema,
+    annotations: completionAnnotations
+  }, async (input) => {
+    const recovered = await recoverDeclaredAutomationAcquisition({
+      root,
+      automationId: input.automation_id,
+      workId: input.work_id,
+      checkpointId: input.checkpoint_id,
+      checkpointFingerprint: input.checkpoint_fingerprint,
+      stepId: input.step_id,
+      callId: input.call_id,
+      callFingerprint: input.call_fingerprint,
+      at: input.at,
+      expectedHost: host
+    });
+    return result(
+      recovered,
+      'Checkpointed one exact attempt-specific replacement read call without invoking the provider or granting reusable retry or write authority.'
+    );
+  });
+
+  registerGuardedTool('soter_finalize_automation_acquisition', {
+    title: 'Finalize declared Soter connected acquisition',
+    description: 'Invoke only the exact finalize export declared by the current governed Automation pack after revalidating one completed operation-plan checkpoint against the requested Automation, prepared work, private-active lock, graph, host, and durable run. This tool invokes no provider and grants no approval, continuation, retry, or write authority.',
+    inputSchema: {
+      automation_id: z.string().regex(/^automation\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/),
+      work_id: z.string().regex(/^work\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/),
+      checkpoint_id: z.string().regex(
+        /^checkpoint\.plan\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/
+      )
+    },
+    outputSchema: resultSchema,
+    annotations: completionAnnotations
+  }, async (input) => {
+    const finalized = await finalizeDeclaredAutomationAcquisition({
+      root,
+      automationId: input.automation_id,
+      workId: input.work_id,
+      checkpointId: input.checkpoint_id,
+      expectedHost: host
+    });
+    return result(
+      finalized,
+      'Finalized the exact pack-declared connected acquisition without invoking a provider or creating authority.'
+    );
+  });
+
+  registerGuardedTool('soter_inspect_automation_acquisition', {
+    title: 'Inspect declared sanitized Soter acquisition',
+    description: 'For an Automation that declares a sanitized acquisition inspector, revalidate the exact completed checkpoint, prepared work, lock, graph, host, and durable run before returning the pack-owned sanitized selected-work projection. This read invokes no provider and grants no authority.',
+    inputSchema: {
+      automation_id: z.string().regex(/^automation\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/),
+      work_id: z.string().regex(/^work\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/),
+      checkpoint_id: z.string().regex(
+        /^checkpoint\.plan\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/
+      )
+    },
+    outputSchema: resultSchema,
+    annotations: readAnnotations
+  }, async (input) => {
+    const inspection = await inspectDeclaredAutomationAcquisitionPublic({
+      root,
+      automationId: input.automation_id,
+      workId: input.work_id,
+      checkpointId: input.checkpoint_id,
+      expectedHost: host
+    });
+    return result(
+      inspection,
+      'Returned the exact pack-declared sanitized selected-work acquisition inspection without provider invocation or authority.'
+    );
+  });
+
+  registerGuardedTool('soter_inspect_automation_acquisition_private', {
+    title: 'Inspect declared private selected-work Soter acquisition',
+    description: 'Explicit private selected-work read for an Automation that declares a paired private acquisition inspector. Core first revalidates the exact completed checkpoint, prepared work, lock, graph, host, and durable run. This read never grants approval, continuation, retry, provider-call, or write authority.',
+    inputSchema: {
+      automation_id: z.string().regex(/^automation\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/),
+      work_id: z.string().regex(/^work\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/),
+      checkpoint_id: z.string().regex(
+        /^checkpoint\.plan\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/
+      )
+    },
+    outputSchema: resultSchema,
+    annotations: readAnnotations
+  }, async (input) => {
+    const inspection = await inspectDeclaredAutomationAcquisitionPrivate({
+      root,
+      automationId: input.automation_id,
+      workId: input.work_id,
+      checkpointId: input.checkpoint_id,
+      expectedHost: host
+    });
+    return result(
+      inspection,
+      'Returned the exact pack-declared private selected-work acquisition inspection without provider invocation or authority.'
     );
   });
 
@@ -374,174 +490,6 @@ export function createSoterMcpServer({ root, host }) {
     );
   });
 
-  registerGuardedTool('soter_prepare_meeting_intake_context', {
-    title: 'Prepare connected meeting-intake context',
-    description: 'Build, preflight, and durably start the bounded connected source plan from one exact current Meeting Intake prepared-work record. The plan loads the policy index, exact transcript, matching CRM meeting, and only its referenced organization-to-project-to-task chain without writes.',
-    inputSchema: {
-      work_id: z.string().regex(/^work\.meeting-intake\.[a-f0-9]{24}$/),
-      at: z.string().min(20).optional()
-    },
-    outputSchema: resultSchema,
-    annotations: statefulAnnotations
-  }, async (input) => {
-    const prepared = await prepareMeetingIntakeConnectedContext({
-      root,
-      workId: input.work_id,
-      at: input.at,
-      expectedHost: host
-    });
-    return result(
-      prepared,
-      'Durably started the bounded connected meeting-intake context plan and emitted at most one native host call.'
-    );
-  });
-
-  registerGuardedTool('soter_finalize_meeting_intake_context', {
-    title: 'Finalize connected meeting-intake context',
-    description: 'Validate a completed exact context plan, require non-empty identity-matched fixed sources plus every requested related record, persist one private context snapshot, update its durable run, and pause before writes.',
-    inputSchema: {
-      checkpoint_id: z.string().min(1)
-    },
-    outputSchema: resultSchema,
-    annotations: completionAnnotations
-  }, async (input) => {
-    const finalized = finalizeMeetingIntakeConnectedContext({
-      root,
-      checkpointId: input.checkpoint_id,
-      expectedHost: host
-    });
-    return result(
-      finalized,
-      'Finalized the bounded connected context snapshot and paused its durable run before writes.'
-    );
-  });
-
-  registerGuardedTool('soter_prepare_slack_conversation_review_context', {
-    title: 'Prepare connected Slack conversation review',
-    description: 'Revalidate one exact current Slack conversation-review prepared-work item, checkpoint a fixed read-only plan, and emit at most its first private native host call. The plan reads every selected bounded message window and only exact explicitly supplied thread references. This tool performs no provider call and creates no persistence proposal, approval, continuation, retry, or write authority.',
-    inputSchema: {
-      work_id: z.string().regex(/^work\.slack-conversation-review\.[a-f0-9]{24}$/),
-      at: z.string().min(20).optional()
-    },
-    outputSchema: resultSchema,
-    annotations: statefulAnnotations
-  }, async (input) => {
-    const prepared = await prepareSlackConversationReviewConnectedAcquisition({
-      root,
-      workId: input.work_id,
-      at: input.at,
-      expectedHost: host
-    });
-    return result(
-      prepared,
-      'SLACK_CONNECTED_PLAN_PREPARED: checkpointed one exact private read-only plan and emitted at most one native host call; no provider call or authority was created.'
-    );
-  });
-
-  registerGuardedTool('soter_finalize_slack_conversation_review_context', {
-    title: 'Finalize connected Slack conversation review',
-    description: 'Revalidate complete exact conversation, message-window, and explicitly selected-thread coverage, commit one private normalized Context snapshot, and return only the closed sanitized inspection of counts, fingerprints, injection suspicion, and no-authority state. No body, reference, provider envelope, or cursor is returned.',
-    inputSchema: {
-      checkpoint_id: z.string().regex(
-        /^checkpoint\.plan\.slack-conversation-review\.connected-acquisition\.[a-f0-9]{24}$/
-      )
-    },
-    outputSchema: resultSchema,
-    annotations: completionAnnotations
-  }, async (input) => {
-    const inspection = finalizeSlackConversationReviewConnectedAcquisition({
-      root,
-      checkpointId: input.checkpoint_id,
-      expectedHost: host
-    });
-    return result(
-      inspection,
-      'SLACK_CONNECTED_INSPECTION_READY: finalized private normalized Context and returned its sanitized inspection without provider data or authority.'
-    );
-  });
-
-  registerGuardedTool('soter_inspect_slack_conversation_review', {
-    title: 'Inspect sanitized connected Slack conversation review',
-    description: 'Revalidate one exact completed selected-work snapshot and return its closed sanitized counts, fingerprints, injection suspicion, and no-authority state. This read returns no private value, conversation or thread reference, message body, participant value, provider envelope, or cursor.',
-    inputSchema: {
-      work_id: z.string().regex(/^work\.slack-conversation-review\.[a-f0-9]{24}$/)
-    },
-    outputSchema: resultSchema,
-    annotations: readAnnotations
-  }, async (input) => {
-    const inspection = inspectSlackConversationReviewConnected({
-      root,
-      workId: input.work_id,
-      expectedHost: host
-    });
-    return result(
-      inspection,
-      'SLACK_CONNECTED_INSPECTION_READY: returned one exact sanitized selected-work inspection without private values or authority.'
-    );
-  });
-
-  registerGuardedTool('soter_inspect_slack_conversation_review_private', {
-    title: 'Inspect private selected Slack conversation review',
-    description: 'Explicit private selected-work read. Revalidate one exact completed selected-work snapshot and return normalized conversation references, message bodies, and only exact explicitly selected thread bodies. This read never returns raw provider envelopes or pagination cursors and creates no persistence proposal, approval, continuation, retry, provider call, or write authority.',
-    inputSchema: {
-      work_id: z.string().regex(/^work\.slack-conversation-review\.[a-f0-9]{24}$/)
-    },
-    outputSchema: resultSchema,
-    annotations: readAnnotations
-  }, async (input) => {
-    const review = inspectSlackConversationReviewConnectedPrivateReview({
-      root,
-      workId: input.work_id,
-      expectedHost: host
-    });
-    return result(
-      review,
-      'SLACK_CONNECTED_PRIVATE_SELECTED_WORK: returned exact normalized private selected-work material without provider envelopes, cursors, or authority.'
-    );
-  });
-
-  registerGuardedTool('soter_prepare_email_triage_context', {
-    title: 'Prepare connected Email acquisition',
-    description: 'Build, preflight, and durably start the exact bounded private mailbox search sealed by one current Email prepared-work record, followed by thread expansion. This transport-only acquisition performs no triage judgment, draft generation, approval, or provider write.',
-    inputSchema: {
-      work_id: z.string().regex(/^work\.email-triage\.[a-f0-9]{24}$/),
-      at: z.string().min(20).optional()
-    },
-    outputSchema: resultSchema,
-    annotations: statefulAnnotations
-  }, async (input) => {
-    const prepared = await prepareEmailTriageConnectedAcquisition({
-      root,
-      workId: input.work_id,
-      at: input.at,
-      expectedHost: host
-    });
-    return result(
-      prepared,
-      'Durably started one bounded private Email acquisition plan and emitted at most one native host call.'
-    );
-  });
-
-  registerGuardedTool('soter_finalize_email_triage_context', {
-    title: 'Finalize connected Email acquisition',
-    description: 'Validate complete pagination and exact searched-message coverage, persist one private normalized Context snapshot, and pause before any triage judgment, draft, approval, or write.',
-    inputSchema: {
-      checkpoint_id: z.string().min(1)
-    },
-    outputSchema: resultSchema,
-    annotations: completionAnnotations
-  }, async (input) => {
-    const finalized = finalizeEmailTriageConnectedAcquisition({
-      root,
-      checkpointId: input.checkpoint_id,
-      expectedHost: host
-    });
-    return result(
-      finalized,
-      'Finalized the bounded private Email acquisition snapshot and paused before judgment or writes.'
-    );
-  });
-
   registerGuardedTool('soter_inspect_email_triage_decision', {
     title: 'Inspect Email triage decision context',
     description: 'Recover the exact private normalized Email snapshot and deterministic reduction template covering every bounded candidate. This read-only tool interprets no mail and performs no provider call.',
@@ -663,48 +611,6 @@ export function createSoterMcpServer({ root, host }) {
     return result(
       material,
       'Returned exact selected-private Email proposal material without approval, continuation, provider calls, writes, or sending.'
-    );
-  });
-
-  registerGuardedTool('soter_prepare_task_capture_context', {
-    title: 'Prepare connected Task Capture acquisition',
-    description: 'Bind one current Task prepared-work item to a durable connected plan for exact policy selection, project resolution, optional authenticated current-user identity, and bounded duplicate reads. This tool performs no provider call and creates no proposal, approval, continuation, or write authority.',
-    inputSchema: {
-      work_id: z.string().min(1),
-      at: z.string().min(20).optional()
-    },
-    outputSchema: resultSchema,
-    annotations: statefulAnnotations
-  }, async (input) => {
-    const prepared = await prepareTaskCaptureConnectedAcquisition({
-      root,
-      workId: input.work_id,
-      at: input.at,
-      expectedHost: host
-    });
-    return result(
-      prepared,
-      'Durably started one exact connected Task acquisition and emitted at most one native host call.'
-    );
-  });
-
-  registerGuardedTool('soter_finalize_task_capture_context', {
-    title: 'Finalize connected Task Capture acquisition',
-    description: 'Validate the completed exact Task acquisition, persist one private normalized Context snapshot, and pause before decision, proposal, approval, continuation, or write authority.',
-    inputSchema: {
-      checkpoint_id: z.string().min(1)
-    },
-    outputSchema: resultSchema,
-    annotations: completionAnnotations
-  }, async (input) => {
-    const finalized = finalizeTaskCaptureConnectedAcquisition({
-      root,
-      checkpointId: input.checkpoint_id,
-      expectedHost: host
-    });
-    return result(
-      finalized,
-      'Finalized the exact private Task acquisition snapshot and paused before decisions or writes.'
     );
   });
 
@@ -831,48 +737,6 @@ export function createSoterMcpServer({ root, host }) {
     );
   });
 
-  registerGuardedTool('soter_prepare_organization_capture_context', {
-    title: 'Prepare connected Organization Capture acquisition',
-    description: 'Bind one current Organization prepared-work item to a durable connected plan for exact policy selection, current schema observation, and bounded alias-aware duplicate reads. This tool performs no provider call and creates no proposal, approval, continuation, or write authority.',
-    inputSchema: {
-      work_id: z.string().min(1),
-      at: z.string().min(20).optional()
-    },
-    outputSchema: resultSchema,
-    annotations: statefulAnnotations
-  }, async (input) => {
-    const prepared = await prepareOrganizationCaptureConnectedAcquisition({
-      root,
-      workId: input.work_id,
-      at: input.at,
-      expectedHost: host
-    });
-    return result(
-      prepared,
-      'Durably started one exact connected Organization acquisition and emitted at most one native host call.'
-    );
-  });
-
-  registerGuardedTool('soter_finalize_organization_capture_context', {
-    title: 'Finalize connected Organization Capture acquisition',
-    description: 'Validate the completed exact Organization acquisition, persist one private normalized Context snapshot, and pause before decision, proposal, approval, continuation, or write authority.',
-    inputSchema: {
-      checkpoint_id: z.string().min(1)
-    },
-    outputSchema: resultSchema,
-    annotations: completionAnnotations
-  }, async (input) => {
-    const finalized = finalizeOrganizationCaptureConnectedAcquisition({
-      root,
-      checkpointId: input.checkpoint_id,
-      expectedHost: host
-    });
-    return result(
-      finalized,
-      'Finalized the exact private Organization acquisition snapshot and paused before decisions or writes.'
-    );
-  });
-
   registerGuardedTool('soter_inspect_organization_capture_decision', {
     title: 'Inspect Organization Capture decision basis',
     description: 'Revalidate one exact private connected Organization snapshot and derive ready or needs-input from current schema, deterministic classification, and bounded duplicate candidates. This read exposes fingerprints and issue codes only, performs no provider call, and grants no authority.',
@@ -994,48 +858,6 @@ export function createSoterMcpServer({ root, host }) {
     );
   });
 
-  registerGuardedTool('soter_prepare_project_capture_context', {
-    title: 'Prepare connected Project Capture acquisition',
-    description: 'Bind one current Project prepared-work item to a durable connected plan for exact policy, current schema, organization, optional current-user manager, and bounded duplicate reads. This tool performs no provider call and creates no proposal, approval, continuation, or write authority.',
-    inputSchema: {
-      work_id: z.string().min(1),
-      at: z.string().min(20).optional()
-    },
-    outputSchema: resultSchema,
-    annotations: statefulAnnotations
-  }, async (input) => {
-    const prepared = await prepareProjectCaptureConnectedAcquisition({
-      root,
-      workId: input.work_id,
-      at: input.at,
-      expectedHost: host
-    });
-    return result(
-      prepared,
-      'Durably started one exact connected Project Capture acquisition and emitted at most one native host call.'
-    );
-  });
-
-  registerGuardedTool('soter_finalize_project_capture_context', {
-    title: 'Finalize connected Project Capture acquisition',
-    description: 'Validate the completed exact Project acquisition, persist one private normalized Context snapshot, and pause before decision, proposal, approval, continuation, or write authority.',
-    inputSchema: {
-      checkpoint_id: z.string().min(1)
-    },
-    outputSchema: resultSchema,
-    annotations: completionAnnotations
-  }, async (input) => {
-    const finalized = finalizeProjectCaptureConnectedAcquisition({
-      root,
-      checkpointId: input.checkpoint_id,
-      expectedHost: host
-    });
-    return result(
-      finalized,
-      'Finalized the exact private Project acquisition snapshot and paused before decisions or writes.'
-    );
-  });
-
   registerGuardedTool('soter_inspect_project_capture_decision', {
     title: 'Inspect Project Capture decision basis',
     description: 'Revalidate one exact private connected Project snapshot and derive ready or needs-input from current schema, naming, dates, organization, manager, and duplicate candidates. This read exposes fingerprints and issue codes only, performs no provider call, and grants no authority.',
@@ -1154,48 +976,6 @@ export function createSoterMcpServer({ root, host }) {
     return result(
       material,
       'Returned exact selected-private Project Capture proposal material without approval, continuation, provider calls, or writes.'
-    );
-  });
-
-  registerGuardedTool('soter_prepare_contact_capture_context', {
-    title: 'Prepare connected Contact Capture acquisition',
-    description: 'Bind one current Contact prepared-work item to a durable connected plan for exact policy selection, current person schema observation, bounded email-or-name duplicate reads, and optional organization resolution. This tool performs no provider call and creates no proposal, approval, continuation, or write authority.',
-    inputSchema: {
-      work_id: z.string().min(1),
-      at: z.string().min(20).optional()
-    },
-    outputSchema: resultSchema,
-    annotations: statefulAnnotations
-  }, async (input) => {
-    const prepared = await prepareContactCaptureConnectedAcquisition({
-      root,
-      workId: input.work_id,
-      at: input.at,
-      expectedHost: host
-    });
-    return result(
-      prepared,
-      'Durably started one exact connected Contact acquisition and emitted at most one native host call.'
-    );
-  });
-
-  registerGuardedTool('soter_finalize_contact_capture_context', {
-    title: 'Finalize connected Contact Capture acquisition',
-    description: 'Validate the completed exact Contact acquisition, persist one private normalized Context snapshot, and pause before decision, proposal, approval, continuation, or write authority.',
-    inputSchema: {
-      checkpoint_id: z.string().min(1)
-    },
-    outputSchema: resultSchema,
-    annotations: completionAnnotations
-  }, async (input) => {
-    const finalized = finalizeContactCaptureConnectedAcquisition({
-      root,
-      checkpointId: input.checkpoint_id,
-      expectedHost: host
-    });
-    return result(
-      finalized,
-      'Finalized the exact private Contact acquisition snapshot and paused before decisions or writes.'
     );
   });
 

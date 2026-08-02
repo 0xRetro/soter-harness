@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 
-export const PRIVATE_CONTAINED_BASIS_VERSION = '1.1.0';
+export const PRIVATE_CONTAINED_BASIS_VERSION = '1.2.0';
 
 function canonicalize(value) {
   if (Array.isArray(value)) return value.map(canonicalize);
@@ -64,6 +64,7 @@ function settingsSemantics(settings) {
   const notion = portable?.['integration.notion'];
   if (notion && typeof notion === 'object' && !Array.isArray(notion)) {
     delete notion.optionMappings;
+    delete notion.fieldBindings;
   }
   return valueShape(portable);
 }

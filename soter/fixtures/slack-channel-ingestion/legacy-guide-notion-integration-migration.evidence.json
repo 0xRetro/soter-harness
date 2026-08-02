@@ -10,8 +10,8 @@
     "id": "integration.notion",
     "version": "0.2.0"
   },
-  "configurationLockFingerprint": "sha256:51acc8121ec5dcd6e9778460f4db91382885a924644c9a1505740b1ec3a3fd9d",
-  "graphFingerprint": "sha256:2136077a1ebf7d12e0b047e2cd3f9ec905fb9796766c8f1cb331e5c85cb4c85e",
+  "configurationLockFingerprint": "sha256:6d34b1747817b3c36cd9fcfd1dfd9f837f76406e2f138e81bb3424ad8a4e9bbb",
+  "graphFingerprint": "sha256:892489a7ba12b6a833859f90b7923e45fc2bcbf6744da584b13ee61f8a05e64e",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -21,7 +21,7 @@
     {
       "id": "core.runtime",
       "version": "0.1.0",
-      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+      "fingerprint": "sha256:a9c8dae0de0211a02104bbc93a94ea5021bdeadb84040dfe88778288ee465a92"
     },
     {
       "id": "context.communications",
@@ -191,12 +191,12 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/slack-channel-ingestion/identity-review.evidence.json",
-      "fingerprint": "sha256:cedd903d9e8f0a17f1e91e1d3ed78dd150612645e154ce9f472a8c7727db9232"
+      "fingerprint": "sha256:379e99bdbb1778fb299bb9adc81a4af3dcc502542ce3325e2852dbb1ce5996fe"
     },
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/slack-channel-ingestion/selected-enrichment.evidence.json",
-      "fingerprint": "sha256:1a6699bb80df67ce2e1c62d88aa49996819640264acc06ef733ec92c642f8ae2"
+      "fingerprint": "sha256:d14314d5ebe50d9301edc866ebc87e8f3f5e03de9a60a512d04468d87dbab643"
     }
   ],
   "effects": [],

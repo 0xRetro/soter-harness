@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/project-page-review-connected-inspection/v1",
+  "title": "Sanitized connected Project-page review inspection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "work",
+    "snapshot",
+    "configuration",
+    "standard",
+    "taskCoverage",
+    "findings",
+    "authority",
+    "privacy",
+    "fingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/project-page-review-connected-inspection/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "work": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fingerprint", "privateInputFingerprint"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^work\\.project-page-review\\.[a-f0-9]{24}$" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "privateInputFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fingerprint"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^context\\.project-page-review\\.connected-acquisition\\.[a-f0-9]{24}$" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lockFingerprint", "graphFingerprint", "host"],
+      "properties": {
+        "lockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "host": { "enum": ["codex", "claude"] }
+      }
+    },
+    "standard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evaluatedPolicySemanticsFingerprint",
+        "templateBodyFingerprint",
+        "templateOutlineFingerprint",
+        "pageOutlineFingerprint",
+        "templateStructureFingerprint",
+        "pageStructureFingerprint"
+      ],
+      "properties": {
+        "evaluatedPolicySemanticsFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "templateBodyFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "templateOutlineFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "pageOutlineFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "templateStructureFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "pageStructureFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "taskCoverage": { "$ref": "#/$defs/sanitizedTaskCoverage" },
+    "findings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "reasonCodes", "counts", "fingerprint"],
+      "properties": {
+        "state": { "enum": ["reviewed", "attention-required"] },
+        "reasonCodes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/reasonCode" }
+        },
+        "counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "hardFindings",
+            "missingTemplateEntries",
+            "extraTemplateEntries",
+            "relatedTasks",
+            "taskContextNotSet",
+            "taskNextActionNotSet",
+            "taskAssigneeUnassigned",
+            "templateDatabases",
+            "pageDatabases",
+            "templateCallouts",
+            "pageCallouts",
+            "templateColumns",
+            "pageColumns"
+          ],
+          "properties": {
+            "hardFindings": { "$ref": "#/$defs/count" },
+            "missingTemplateEntries": { "$ref": "#/$defs/count" },
+            "extraTemplateEntries": { "$ref": "#/$defs/count" },
+            "relatedTasks": { "$ref": "#/$defs/count" },
+            "taskContextNotSet": { "$ref": "#/$defs/count" },
+            "taskNextActionNotSet": { "$ref": "#/$defs/count" },
+            "taskAssigneeUnassigned": { "$ref": "#/$defs/count" },
+            "templateDatabases": { "$ref": "#/$defs/count" },
+            "pageDatabases": { "$ref": "#/$defs/count" },
+            "templateCallouts": { "$ref": "#/$defs/count" },
+            "pageCallouts": { "$ref": "#/$defs/count" },
+            "templateColumns": { "$ref": "#/$defs/count" },
+            "pageColumns": { "$ref": "#/$defs/count" }
+          }
+        },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "reasonCode",
+        "approvalIncluded",
+        "continuationIncluded",
+        "providerWriteIncluded",
+        "retryAuthorityIncluded"
+      ],
+      "properties": {
+        "state": { "const": "none" },
+        "reasonCode": { "const": "PROJECT_PAGE_CONNECTED_REVIEW_READ_ONLY" },
+        "approvalIncluded": { "const": false },
+        "continuationIncluded": { "const": false },
+        "providerWriteIncluded": { "const": false },
+        "retryAuthorityIncluded": { "const": false }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "privateValuesIncluded",
+        "projectReferencesIncluded",
+        "taskReferencesIncluded",
+        "unavailableTaskIdentityFingerprintsIncluded",
+        "pageBodiesIncluded",
+        "taskTitlesIncluded",
+        "rawProviderResponsesIncluded",
+        "configurationTargetsIncluded",
+        "workspaceInspectionIncluded"
+      ],
+      "properties": {
+        "privateValuesIncluded": { "const": false },
+        "projectReferencesIncluded": { "const": false },
+        "taskReferencesIncluded": { "const": false },
+        "unavailableTaskIdentityFingerprintsIncluded": { "const": false },
+        "pageBodiesIncluded": { "const": false },
+        "taskTitlesIncluded": { "const": false },
+        "rawProviderResponsesIncluded": { "const": false },
+        "configurationTargetsIncluded": { "const": false },
+        "workspaceInspectionIncluded": { "const": false }
+      }
+    },
+    "fingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+    "count": { "type": "integer", "minimum": 0 },
+    "sanitizedTaskCoverage": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "reasonCode",
+            "expectedCount",
+            "observedCount",
+            "unavailableCount",
+            "expectedIdentitySetFingerprint",
+            "observedIdentitySetFingerprint",
+            "unavailableIdentitySetFingerprint",
+            "fingerprint"
+          ],
+          "properties": {
+            "state": { "const": "complete" },
+            "reasonCode": { "const": "PROJECT_TASK_COVERAGE_COMPLETE" },
+            "expectedCount": { "$ref": "#/$defs/count" },
+            "observedCount": { "$ref": "#/$defs/count" },
+            "unavailableCount": { "const": 0 },
+            "expectedIdentitySetFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "observedIdentitySetFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "unavailableIdentitySetFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "fingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "reasonCode",
+            "expectedCount",
+            "observedCount",
+            "unavailableCount",
+            "expectedIdentitySetFingerprint",
+            "observedIdentitySetFingerprint",
+            "unavailableIdentitySetFingerprint",
+            "fingerprint"
+          ],
+          "properties": {
+            "state": { "const": "incomplete" },
+            "reasonCode": { "const": "PROJECT_TASK_COVERAGE_INCOMPLETE" },
+            "expectedCount": { "type": "integer", "minimum": 1 },
+            "observedCount": { "$ref": "#/$defs/count" },
+            "unavailableCount": { "type": "integer", "minimum": 1 },
+            "expectedIdentitySetFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "observedIdentitySetFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "unavailableIdentitySetFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "fingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        }
+      ]
+    }
+  }
+}

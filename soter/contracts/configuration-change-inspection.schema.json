@@ -106,14 +106,31 @@
       "required": ["id", "category", "subject", "state", "beforeDescriptor", "afterDescriptor", "beforeFingerprint", "afterFingerprint"],
       "properties": {
         "id": { "type": "string" },
-        "category": { "enum": ["host", "pack", "binding", "source", "authority", "effect-policy", "secret-reference", "setting"] },
+        "category": { "enum": ["host", "pack", "binding", "source", "authority", "effect-policy", "secret-reference", "setting", "resolution", "lock"] },
         "subject": { "type": "string" },
         "state": { "enum": ["added", "removed", "changed"] },
         "beforeDescriptor": { "type": ["string", "null"], "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
         "afterDescriptor": { "type": ["string", "null"], "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
         "beforeFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
         "afterFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" }
-      }
+      },
+      "allOf": [{
+        "if": {
+          "properties": { "category": { "const": "lock" } },
+          "required": ["category"]
+        },
+        "then": {
+          "properties": {
+            "id": { "const": "configuration-change.lock.active" },
+            "subject": { "const": "active-lock" },
+            "state": { "const": "changed" },
+            "beforeDescriptor": { "const": "prior-active-lock" },
+            "afterDescriptor": { "const": "candidate-active-lock" },
+            "beforeFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "afterFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        }
+      }]
     }
   }
 }

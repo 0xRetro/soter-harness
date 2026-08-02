@@ -1115,7 +1115,7 @@ async function runConnectedHost(root, host) {
     }
     assert(completedPrivateState.includes(BODY_SENTINELS[0]));
 
-    const finalized = finalizeSlackConversationReviewConnectedAcquisition({
+    const finalizedCommit = finalizeSlackConversationReviewConnectedAcquisition({
       root: temporaryRoot,
       checkpointId: execution.checkpoint.id,
       expectedHost: host
@@ -1126,12 +1126,19 @@ async function runConnectedHost(root, host) {
       work,
       host
     });
-    const replayed = finalizeSlackConversationReviewConnectedAcquisition({
+    const replayedCommit = finalizeSlackConversationReviewConnectedAcquisition({
       root: temporaryRoot,
       checkpointId: execution.checkpoint.id,
       expectedHost: host
     });
-    assert.deepEqual(replayed, finalized);
+    assert.deepEqual(replayedCommit, finalizedCommit);
+    assert.equal(finalizedCommit.snapshot.runId, work.checkpoint.runId);
+    assert.equal(finalizedCommit.checkpoint.id, execution.checkpoint.id);
+    const finalized = inspectSlackConversationReviewConnected({
+      root: temporaryRoot,
+      workId: work.id,
+      expectedHost: host
+    });
     assert.equal(finalized.configuration.host, host);
     assert.equal(finalized.coverage.complete, true);
     assert.equal(finalized.coverage.selectedConversationCount, 2);

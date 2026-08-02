@@ -29,7 +29,9 @@ import {
   createOperationPlanCheckpoint,
   failOperationPlanStep,
   operationPlanCurrentCall,
+  operationPlanRequestedCallFingerprint,
   preflightOperationPlanSteps,
+  recoverOperationPlanReadStep,
   requestNextOperationPlanStep
 } from './operation-plans.mjs';
 import {
@@ -293,12 +295,74 @@ function operationPlanIsReadOnly(root, lock, plan) {
   });
 }
 
+function readOnlyInvocation(effect) {
+  return effect.declaredEffects.length > 0
+    && effect.declaredEffects.every((declared) => READ_ONLY_PLAN_EFFECTS.has(declared));
+}
+
+function recoveryInvocationBasis(effect) {
+  return {
+    capability: effect.capability,
+    capabilityVersion: effect.capabilityVersion,
+    providerPack: effect.providerPack,
+    providerImplementation: effect.providerImplementation,
+    providerVersion: effect.providerVersion,
+    containment: effect.containment,
+    authority: effect.authority,
+    declaredEffects: effect.declaredEffects,
+    policyDecisions: effect.policyDecisions,
+    inputFingerprint: effect.inputFingerprint
+  };
+}
+
+function exactRunCallCheckpoint(run, callId) {
+  const matches = run.checkpoints.filter((checkpoint) => {
+    return checkpoint.kind === 'host-tool-call'
+      && checkpoint.id === 'host-call.' + callId
+      && checkpoint.callId === callId;
+  });
+  return matches.length === 1 ? matches[0] : null;
+}
+
+function recoveredReadFailure(run, effect) {
+  if (effect.state !== 'failed' || !readOnlyInvocation(effect)) return false;
+  if (run.effects.filter((candidate) => candidate.id === effect.id).length !== 1) {
+    return false;
+  }
+  const matchingRecoveries = run.checkpoints
+    .filter((checkpoint) => checkpoint.kind === 'operation-plan')
+    .flatMap((checkpoint) => checkpoint.recoveries || [])
+    .filter((recovery) => {
+      return recovery.failedEffectId === effect.id
+        && recovery.failedEffectId === effectIdForCallId(recovery.failedCallId);
+    });
+  if (matchingRecoveries.length !== 1) return false;
+  const recovery = matchingRecoveries[0];
+  const replacements = run.effects.filter((candidate) => {
+    return candidate.id === recovery.replacementEffectId
+      && candidate.id === effectIdForCallId(recovery.replacementCallId);
+  });
+  if (replacements.length !== 1) return false;
+  const replacement = replacements[0];
+  if (replacement.state !== 'passed'
+    || !readOnlyInvocation(replacement)
+    || fingerprintJson(recoveryInvocationBasis(effect))
+      !== fingerprintJson(recoveryInvocationBasis(replacement))) {
+    return false;
+  }
+  const failedCall = exactRunCallCheckpoint(run, recovery.failedCallId);
+  const replacementCall = exactRunCallCheckpoint(run, recovery.replacementCallId);
+  return failedCall?.state === 'failed'
+    && failedCall.callFingerprint === recovery.failedCallFingerprint
+    && replacementCall?.state === 'completed'
+    && replacementCall.requestFingerprint === recovery.replacementRequestFingerprint;
+}
+
 function assertReadOnlyFollowupRun(run) {
   if (!['context-assembled', 'paused'].includes(run.lifecycleState)) return;
   const priorEffectsAreClosedReads = run.effects.every((effect) => {
-    return effect.state === 'passed'
-      && effect.declaredEffects.length > 0
-      && effect.declaredEffects.every((declared) => READ_ONLY_PLAN_EFFECTS.has(declared));
+    return (effect.state === 'passed' || recoveredReadFailure(run, effect))
+      && readOnlyInvocation(effect);
   });
   if (run.approvals.length !== 0
     || !priorEffectsAreClosedReads
@@ -405,6 +469,7 @@ function runCheckpointEntry(call) {
     callId: call.id,
     state: call.state,
     callFingerprint: fingerprintJson(call),
+    requestFingerprint: operationPlanRequestedCallFingerprint(call),
     updatedAt: call.completedAt || call.createdAt,
     details: call.state === 'requested'
       ? 'Core emitted one provider-neutral operation resolved to an exact native host tool; the native result is pending.'
@@ -412,8 +477,12 @@ function runCheckpointEntry(call) {
   };
 }
 
+function effectIdForCallId(callId) {
+  return 'effect.' + callId.slice('toolcall.'.length);
+}
+
 function effectIdForCall(call) {
-  return 'effect.' + call.id.slice('toolcall.'.length);
+  return effectIdForCallId(call.id);
 }
 
 function invocationFromCall(call) {
@@ -488,6 +557,17 @@ function operationPlanRunEntry(checkpoint) {
     planFingerprint: checkpoint.planFingerprint,
     currentStepId: checkpoint.currentStepId,
     currentCallId: currentCall?.id || null,
+    recoveries: (checkpoint.recoveries || []).map((recovery) => ({
+      id: recovery.id,
+      stepId: recovery.stepId,
+      attempt: recovery.attempt,
+      failedCallId: recovery.failedCallId,
+      failedEffectId: effectIdForCallId(recovery.failedCallId),
+      failedCallFingerprint: recovery.failedCallFingerprint,
+      replacementCallId: recovery.replacementCallId,
+      replacementEffectId: effectIdForCallId(recovery.replacementCallId),
+      replacementRequestFingerprint: recovery.replacementRequestFingerprint
+    })),
     updatedAt: checkpoint.updatedAt,
     details: checkpoint.state === 'requested'
       ? 'Core is waiting for the exact native result for step ' + checkpoint.currentStepId + '.'
@@ -499,6 +579,9 @@ function syncRunWithOperationPlan(run, checkpoint) {
   const priorLifecycle = run.lifecycleState;
   let next = structuredClone(run);
   for (const step of checkpoint.steps) {
+    for (const priorCall of step.priorCalls || []) {
+      next = syncRunWithCheckpoint(next, { kind: 'capability', call: priorCall });
+    }
     if (!step.call) continue;
     next = syncRunWithCheckpoint(next, { kind: 'capability', call: step.call });
   }
@@ -1463,6 +1546,67 @@ export async function completeDurableOperationPlanExecution({
   });
   if (completed.idempotent) return durableResult(root, state);
   return persistDurableCheckpoint(root, completed.checkpoint, run);
+}
+
+export async function recoverDurableOperationPlanReadExecution(options) {
+  assertExactServiceArguments(options, new Set([
+    'root',
+    'checkpointId',
+    'checkpointFingerprint',
+    'stepId',
+    'callId',
+    'callFingerprint',
+    'at',
+    'expectedHost'
+  ]), 'Durable operation-plan read recovery');
+  const {
+    root,
+    checkpointId,
+    checkpointFingerprint: expectedCheckpointFingerprint,
+    stepId,
+    callId,
+    callFingerprint,
+    at,
+    expectedHost
+  } = options;
+  const state = exactCheckpoint(root, checkpointId, expectedHost);
+  const checkpoint = state.checkpoint;
+  if (checkpoint.kind !== 'operation-plan') {
+    throw new Error('Checkpoint ' + checkpointId + ' is not an operation plan.');
+  }
+  if (!operationPlanIsReadOnly(root, state.lock, checkpoint.plan)) {
+    throw new Error(
+      'Durable operation-plan recovery cannot reopen a plan containing non-read effects.'
+    );
+  }
+  const run = durableRunForCheckpoint(root, state.lockFile, state.lock, checkpoint);
+  if (!run || run.approvals.length !== 0) {
+    throw new Error(
+      'Durable operation-plan read recovery requires a run with no approval authority.'
+    );
+  }
+  const recovered = await recoverOperationPlanReadStep({
+    root,
+    lock: state.lock,
+    checkpoint,
+    checkpointFingerprint: expectedCheckpointFingerprint,
+    stepId,
+    callId,
+    callFingerprint,
+    at: atOrNow(at)
+  });
+  if (recovered.idempotent) {
+    return {
+      ...durableResult(root, state),
+      recovery: recovered.recovery,
+      idempotent: true
+    };
+  }
+  return {
+    ...persistDurableCheckpoint(root, recovered.checkpoint, run),
+    recovery: recovered.recovery,
+    idempotent: false
+  };
 }
 
 export async function completeDurableConnectedTransactionExecution({

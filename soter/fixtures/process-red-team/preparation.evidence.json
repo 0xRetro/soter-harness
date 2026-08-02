@@ -10,8 +10,8 @@
     "id": "run.process-red-team.preparation-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:b730a38e52ae8985aa4d521f141ee5464ef28e30c03d66a82efc79e569ced3f2",
-  "graphFingerprint": "sha256:4ead41034d8041a73c6cc0e6790a6f167c8af3f7b7d0631f41014d7325d7ec76",
+  "configurationLockFingerprint": "sha256:43dc66a7ce9a5d102948df6d6c58175388c96f5c9f42dcdf1e1a01b0ffc8841a",
+  "graphFingerprint": "sha256:a897f4c4e455b8af035219a4570111bc39161db908dbe126bc75d0a8081cba8d",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -21,7 +21,7 @@
     {
       "id": "core.runtime",
       "version": "0.1.0",
-      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+      "fingerprint": "sha256:a9c8dae0de0211a02104bbc93a94ea5021bdeadb84040dfe88778288ee465a92"
     },
     {
       "id": "context.process",
@@ -251,7 +251,7 @@
     {
       "role": "context-snapshot",
       "id": "context.process-red-team.preparation-fixture",
-      "fingerprint": "sha256:05afdfaa702a1f4d528ac6421e63e40b74fcb999f40c12326099451b9eb8589b"
+      "fingerprint": "sha256:26f2cd18cd7016c4321a6e23a5f2c4c0b960683d7c464f9e903c94ed6b5cf2ce"
     },
     {
       "role": "process-red-team-preview",

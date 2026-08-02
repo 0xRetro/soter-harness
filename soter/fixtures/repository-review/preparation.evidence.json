@@ -10,8 +10,8 @@
     "id": "run.repository-review.preparation-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:f30e15eb72dd6ed664e5b2ee1f29f5802e014180122c5036d2982aece73a7c5a",
-  "graphFingerprint": "sha256:ebc7bc5da6af667182057799821250706c809c390dd1ea57e151c37a5039b754",
+  "configurationLockFingerprint": "sha256:73ab603a54b8b53cce2e2627033e682877f26f3e122a2d1b6c8168c61753e699",
+  "graphFingerprint": "sha256:793f006915a45947cd629e24e285ca38ee69b22d79d94147439d7240f46ce671",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -21,7 +21,7 @@
     {
       "id": "core.runtime",
       "version": "0.1.0",
-      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+      "fingerprint": "sha256:a9c8dae0de0211a02104bbc93a94ea5021bdeadb84040dfe88778288ee465a92"
     },
     {
       "id": "context.product",
@@ -262,7 +262,7 @@
     {
       "role": "context-snapshot",
       "id": "context.repository-review.preparation-fixture",
-      "fingerprint": "sha256:0cad113d48f3df67fc8297c6d4784b550b879c98723e77f374632af9b7c15733"
+      "fingerprint": "sha256:19ee2d4f38340adac5fcdc022c6bbb97f3b2795b9c30538198458659932f02b0"
     },
     {
       "role": "repository-review-preview",

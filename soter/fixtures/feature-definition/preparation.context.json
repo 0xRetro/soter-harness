@@ -4,8 +4,8 @@
   "id": "context.feature-definition.preparation-fixture",
   "runId": "run.feature-definition.preparation-fixture",
   "createdAt": "2026-07-21T19:00:00.000Z",
-  "configurationLockFingerprint": "sha256:04fe0338560aa3ff399fbb7f69a1d4491573ca675d4e4ba01d9c29b238b4a600",
-  "graphFingerprint": "sha256:ed2dad3512b5876c293c9573b8a7f80c56954c0b2ed7f8a8e987f4179363469c",
+  "configurationLockFingerprint": "sha256:02ae6938bb00f04b76536eb70412c367edabbaea0c155206cf153f5e367d0dd1",
+  "graphFingerprint": "sha256:de3df6e89f6afb024b8a750ccbfe182a5bc8fd6d6c72bdfba323d1961ea0e551",
   "containment": "fixture",
   "entries": [
     {

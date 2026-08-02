@@ -10,8 +10,8 @@
     "id": "context.tasks",
     "version": "0.1.0"
   },
-  "configurationLockFingerprint": "sha256:5bb9bf587f258e66fc5ce2eb092d61a05e544734c723a8cc209f212a42569df9",
-  "graphFingerprint": "sha256:cbb99770c57b011bec7b722843a3fdbe536f2989da64f046c8bed3d4cc050638",
+  "configurationLockFingerprint": "sha256:f306a42577417c7340471a01729342d334c444b3d2d2fc98fb83e79a7ea3a0c4",
+  "graphFingerprint": "sha256:613b55e47f4a23d5ad22c552ad0233108f11e2d5a39dc19297128455dd4b192c",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -21,7 +21,7 @@
     {
       "id": "core.runtime",
       "version": "0.1.0",
-      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+      "fingerprint": "sha256:a9c8dae0de0211a02104bbc93a94ea5021bdeadb84040dfe88778288ee465a92"
     },
     {
       "id": "context.crm",
@@ -208,12 +208,12 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/meeting-intake/review-preparation.evidence.json",
-      "fingerprint": "sha256:47ec70da6c8b879b5bcf7e902b9cf235e55d3088df257298ee44b913dd261a61"
+      "fingerprint": "sha256:aac7f51f3de60a0e50f2da1ab0ba9ff37a7b9324d13115359e0bffd7ef72ffa4"
     },
     {
       "role": "supporting-artifact",
       "path": "soter/fixtures/meeting-intake/connected-review.evidence.json",
-      "fingerprint": "sha256:11588de8a6a0bb19d1cf0138bb1a21ddc40d64ecbca3a7089be127400fd1d348"
+      "fingerprint": "sha256:69bde36e51f89e8a5acb52f0806588a23dd390180f8340cf8ba8d3d4e06664ef"
     }
   ],
   "effects": [],

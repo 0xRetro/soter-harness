@@ -280,6 +280,17 @@ export function inspectTrackedConfigurationTemplates(root = defaultRoot) {
         'Exact provider option labels belong only in private configuration state.'
       ));
     }
+    if (Object.hasOwn(
+      document?.settings?.['integration.notion'] || {},
+      'fieldBindings'
+    )) {
+      violations.push(violation(
+        file.relative,
+        '/settings/integration.notion/fieldBindings',
+        'TRACKED_CONFIGURATION_PROVIDER_FIELD_BINDING',
+        'Exact provider property names and unavailable-property declarations belong only in private configuration state.'
+      ));
+    }
   }
   violations.sort((left, right) => {
     return compareCodepoint(

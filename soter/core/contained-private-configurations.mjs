@@ -122,13 +122,112 @@ function notionOptionMappingScope(optionMappings) {
   ));
 }
 
+function exactNotionFieldBindings(value) {
+  if (!Array.isArray(value) || value.length < 1 || value.length > 500) {
+    throw new Error('Contained Notion field bindings must be one bounded non-empty array.');
+  }
+  const scopes = new Set();
+  const providerFields = new Map();
+  return value.map((declaration) => {
+    if (!declaration
+      || typeof declaration !== 'object'
+      || Array.isArray(declaration)
+      || Object.keys(declaration).sort(compareText).join(',')
+        !== 'field,mapping,provider,recordType,state'
+      || !OPTION_MAPPING_ID.test(declaration.mapping)
+      || !OPTION_RECORD_TYPE.test(declaration.recordType)
+      || !OPTION_FIELD.test(declaration.field)
+      || declaration.state !== 'mapped'
+      || typeof declaration.provider !== 'string'
+      || declaration.provider.length < 1
+      || declaration.provider.length > 200
+      || declaration.provider.trim() !== declaration.provider
+      || !OPTION_VALUE.test(declaration.provider)) {
+      throw new Error('Contained Notion field binding declaration is malformed.');
+    }
+    const scope = [
+      declaration.mapping,
+      declaration.recordType,
+      declaration.field
+    ].join(':');
+    if (scopes.has(scope)) {
+      throw new Error('Contained Notion field binding scope is duplicated: ' + scope);
+    }
+    scopes.add(scope);
+    const recordScope = [declaration.mapping, declaration.recordType].join(':');
+    if (!providerFields.has(recordScope)) providerFields.set(recordScope, new Set());
+    if (providerFields.get(recordScope).has(declaration.provider)) {
+      throw new Error(
+        'Contained Notion field bindings map multiple portable fields to one provider property.'
+      );
+    }
+    providerFields.get(recordScope).add(declaration.provider);
+    return {
+      mapping: declaration.mapping,
+      recordType: declaration.recordType,
+      field: declaration.field,
+      state: 'mapped',
+      provider: declaration.provider
+    };
+  });
+}
+
+function containedNotionFieldBindings(root, configuration) {
+  const notionSettings = configuration.settings?.['integration.notion'];
+  const targets = notionSettings?.targets || {};
+  const boundCapabilities = new Set(
+    configuration.bindings
+      .filter((binding) => binding.providerPack === 'integration.notion')
+      .map((binding) => binding.capability)
+  );
+  const directory = path.join(root, 'soter/integrations/notion');
+  const bindings = fs.readdirSync(directory)
+    .filter((file) => file.endsWith('.mapping.json'))
+    .sort(compareText)
+    .flatMap((file) => {
+      const mapping = readJson(path.join(directory, file));
+      if (mapping?.$contract !== 'soter://contracts/provider-mapping/v1'
+        || mapping.pack !== 'integration.notion') {
+        return [];
+      }
+      return mapping.recordTypes.flatMap((record) => {
+        if (!Object.hasOwn(targets, record.target)
+          || !record.capabilities.some((capability) => boundCapabilities.has(capability))) {
+          return [];
+        }
+        return record.fields.map((field) => ({
+          mapping: mapping.id,
+          recordType: record.id,
+          field: field.portable,
+          state: 'mapped',
+          provider: field.provider
+        }));
+      });
+    })
+    .sort((left, right) => compareText(
+      [left.mapping, left.recordType, left.field].join(':'),
+      [right.mapping, right.recordType, right.field].join(':')
+    ));
+  return exactNotionFieldBindings(bindings);
+}
+
+function notionFieldBindingScope(fieldBindings) {
+  return fieldBindings.map((declaration) => ({
+    mapping: declaration.mapping,
+    recordType: declaration.recordType,
+    field: declaration.field,
+    state: declaration.state
+  }));
+}
+
 function exactContainedRealization({
   root,
   configuration,
   templateLock,
   privateLock,
   notion,
-  notionOptionMappings
+  notionOptionMappings,
+  notionFieldBindings
 }) {
   const expected = structuredClone(templateLock);
   expected.configuration.path = repoRelativePath(
@@ -153,15 +252,19 @@ function exactContainedRealization({
   const expectedNotionSettings = expected.settings?.['integration.notion'];
   if (!expectedNotionSettings
     || Object.hasOwn(expectedNotionSettings, 'optionMappings')
+    || Object.hasOwn(expectedNotionSettings, 'fieldBindings')
     || fingerprintJson(notionOptionMappings)
-      !== fingerprintJson(configuration.settings['integration.notion'].optionMappings || [])) {
+      !== fingerprintJson(configuration.settings['integration.notion'].optionMappings || [])
+    || fingerprintJson(notionFieldBindings)
+      !== fingerprintJson(configuration.settings['integration.notion'].fieldBindings || [])) {
     throw new Error(
-      'Contained private option mappings do not derive from one mapping-free tracked template.'
+      'Contained private Notion mappings do not derive from one mapping-free tracked template.'
     );
   }
   if (notionOptionMappings.length > 0) {
     expectedNotionSettings.optionMappings = structuredClone(notionOptionMappings);
   }
+  expectedNotionSettings.fieldBindings = structuredClone(notionFieldBindings);
 
   for (let index = 0; index < expected.sources.length; index += 1) {
     const expectedSource = expected.sources[index];
@@ -218,6 +321,7 @@ function exactContainedRealization({
   }
 
   const optionMappingScope = notionOptionMappingScope(notionOptionMappings);
+  const fieldBindingScope = notionFieldBindingScope(notionFieldBindings);
   const basis = {
     kind: 'private-active-contained',
     version: PRIVATE_CONTAINED_BASIS_VERSION,
@@ -237,7 +341,9 @@ function exactContainedRealization({
         (count, scope) => count + scope.entryCount,
         0
       ),
-      notionOptionMappingScopeFingerprint: fingerprintJson(optionMappingScope)
+      notionOptionMappingScopeFingerprint: fingerprintJson(optionMappingScope),
+      notionFieldBindingScopeCount: fieldBindingScope.length,
+      notionFieldBindingScopeFingerprint: fingerprintJson(fieldBindingScope)
     },
     privacy: {
       fullPrivateLockIncluded: false,
@@ -245,6 +351,7 @@ function exactContainedRealization({
       providerTargetValuesIncluded: false,
       providerSourceValuesIncluded: false,
       providerOptionValuesIncluded: false,
+      providerFieldNamesIncluded: false,
       rawProviderResponsesIncluded: false,
       privateInputsIncluded: false
     }
@@ -308,9 +415,12 @@ export function materializeContainedPrivateConfiguration({
   if (Object.hasOwn(
     configuration.settings?.['integration.notion'] || {},
     'optionMappings'
+  ) || Object.hasOwn(
+    configuration.settings?.['integration.notion'] || {},
+    'fieldBindings'
   )) {
     throw new Error(
-      'Contained private option mappings must not originate in the tracked template.'
+      'Contained private Notion mappings must not originate in the tracked template.'
     );
   }
   const notion = { targets: {}, documentUris: {}, recordUris: {} };
@@ -361,6 +471,9 @@ export function materializeContainedPrivateConfiguration({
     configuration.settings['integration.notion'].optionMappings
       = structuredClone(exactOptionMappings);
   }
+  const exactFieldBindings = containedNotionFieldBindings(resolvedRoot, configuration);
+  configuration.settings['integration.notion'].fieldBindings
+    = structuredClone(exactFieldBindings);
   const fixturePath = path.join(resolvedRoot, 'soter/fixtures/providers/notion/workspace-records.json');
   let originalFixture = null;
   if (Object.keys(notion.documentUris).length) {
@@ -397,7 +510,8 @@ export function materializeContainedPrivateConfiguration({
     templateLock,
     privateLock: lock,
     notion,
-    notionOptionMappings: exactOptionMappings
+    notionOptionMappings: exactOptionMappings,
+    notionFieldBindings: exactFieldBindings
   });
   writeActiveConfigurationLockState(resolvedRoot, configurationName, lock);
   return {

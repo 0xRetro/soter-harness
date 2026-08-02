@@ -40,6 +40,26 @@ const RESPONSE_PROFILES = new Set([
   CODEX_RESPONSE_PROFILE,
   CLAUDE_RESPONSE_PROFILE
 ]);
+const NOTION_MARKDOWN_COLORS = new Set([
+  'gray',
+  'brown',
+  'orange',
+  'yellow',
+  'green',
+  'blue',
+  'purple',
+  'pink',
+  'red',
+  'gray_bg',
+  'brown_bg',
+  'orange_bg',
+  'yellow_bg',
+  'green_bg',
+  'blue_bg',
+  'purple_bg',
+  'pink_bg',
+  'red_bg'
+]);
 const CLAUDE_TOOL_ACCESS_STATUSES = new Set([
   'available',
   'limited_free_trial',
@@ -365,6 +385,13 @@ function configuredOptionMappings(settings, mappings) {
     throw providerError('validation', 'integration.notion.optionMappings must be an array.');
   }
   const mappingById = new Map((mappings || []).map((mapping) => [mapping.id, mapping]));
+  const unavailableFieldScopes = new Set((configured.fieldBindings || [])
+    .filter((binding) => binding?.state === 'unavailable')
+    .map((binding) => optionMappingKey(
+      binding.mapping,
+      binding.recordType,
+      binding.field
+    )));
   const scopes = new Map();
   for (const declaration of declarations) {
     const mapping = mappingById.get(declaration?.mapping);
@@ -391,6 +418,12 @@ function configuredOptionMappings(settings, mappings) {
       throw providerError(
         'validation',
         'Configured Notion option mappings contain a duplicate field scope.'
+      );
+    }
+    if (unavailableFieldScopes.has(key)) {
+      throw providerError(
+        'validation',
+        'Private Notion configuration maps option values for an unavailable provider field.'
       );
     }
     const portableToProvider = new Map();
@@ -473,7 +506,7 @@ function sqlString(value) {
   return "'" + String(value).replaceAll("'", "''") + "'";
 }
 
-function recordMapping(mapping, type, capability) {
+function declaredRecordMapping(mapping, type, capability) {
   const matches = mapping.recordTypes.filter((item) => {
     return item.id === type && item.capabilities?.includes(capability);
   });
@@ -481,6 +514,123 @@ function recordMapping(mapping, type, capability) {
     throw providerError('validation', 'Notion mapping does not declare record type ' + type + '.');
   }
   return matches[0];
+}
+
+function fieldBindingKey(mapping, recordType, field) {
+  return [mapping, recordType, field].join('\0');
+}
+
+function configuredFieldBindings(settings, mappings) {
+  const configured = notionConfiguration(settings);
+  const declarations = configured.fieldBindings;
+  if (declarations === undefined) return new Map();
+  if (!Array.isArray(declarations)
+    || declarations.length < 1
+    || declarations.length > 500) {
+    throw providerError(
+      'validation',
+      'integration.notion.fieldBindings must be one bounded non-empty array.'
+    );
+  }
+  const mappingById = new Map((mappings || []).map((mapping) => [mapping.id, mapping]));
+  const scopes = new Map();
+  const providerFields = new Map();
+  for (const declaration of declarations) {
+    const mapped = declaration?.state === 'mapped';
+    const unavailable = declaration?.state === 'unavailable';
+    const validKeys = mapped
+      ? exactKeys(
+        declaration,
+        ['mapping', 'recordType', 'field', 'state', 'provider'],
+        ['mapping', 'recordType', 'field', 'state', 'provider']
+      )
+      : unavailable && exactKeys(
+        declaration,
+        ['mapping', 'recordType', 'field', 'state', 'reasonCode'],
+        ['mapping', 'recordType', 'field', 'state', 'reasonCode']
+      );
+    const mapping = mappingById.get(declaration?.mapping);
+    const records = mapping?.recordTypes?.filter((item) => {
+      return item.id === declaration?.recordType;
+    }) || [];
+    const fields = records.flatMap((record) => {
+      return record.fields.filter((field) => field.portable === declaration?.field);
+    });
+    if (!validKeys
+      || !mapping
+      || records.length !== 1
+      || fields.length !== 1
+      || (unavailable
+        && declaration.reasonCode !== 'PROVIDER_PROPERTY_UNAVAILABLE')) {
+      throw providerError(
+        'validation',
+        'A configured Notion field binding does not resolve one exact declared portable field.'
+      );
+    }
+    const key = fieldBindingKey(
+      declaration.mapping,
+      declaration.recordType,
+      declaration.field
+    );
+    if (scopes.has(key)) {
+      throw providerError(
+        'validation',
+        'Configured Notion field bindings contain a duplicate field scope.'
+      );
+    }
+    if (mapped) {
+      const provider = exactOptionName(
+        declaration.provider,
+        'Configured Notion provider property'
+      );
+      const recordKey = [declaration.mapping, declaration.recordType].join('\0');
+      if (!providerFields.has(recordKey)) providerFields.set(recordKey, new Set());
+      if (providerFields.get(recordKey).has(provider)) {
+        throw providerError(
+          'validation',
+          'Configured Notion field bindings map multiple portable fields to one provider property.'
+        );
+      }
+      providerFields.get(recordKey).add(provider);
+      scopes.set(key, { state: 'mapped', provider });
+      continue;
+    }
+    scopes.set(key, {
+      state: 'unavailable',
+      reasonCode: declaration.reasonCode
+    });
+  }
+  return scopes;
+}
+
+function recordMapping(mapping, type, capability, settings, mappings) {
+  const definition = declaredRecordMapping(mapping, type, capability);
+  const target = notionSettings(settings)[definition.target];
+  if (typeof target !== 'string' || !target.startsWith('collection://')) {
+    return definition;
+  }
+  const bindings = configuredFieldBindings(settings, mappings);
+  const fields = definition.fields.flatMap((field) => {
+    const binding = bindings.get(fieldBindingKey(mapping.id, definition.id, field.portable));
+    if (!binding) {
+      throw providerError(
+        'validation',
+        'Private Notion configuration omits one required connected field binding: '
+          + mapping.id + '/' + definition.id + '/' + field.portable + '.'
+      );
+    }
+    return binding.state === 'mapped'
+      ? [{ ...field, provider: binding.provider }]
+      : [];
+  });
+  if (fields.length < 1) {
+    throw providerError(
+      'validation',
+      'Private Notion configuration makes every field unavailable for '
+        + mapping.id + '/' + definition.id + '.'
+    );
+  }
+  return { ...definition, fields };
 }
 
 function requestLimit(input) {
@@ -921,33 +1071,283 @@ function exactCreatedPage(payload) {
   return exactObservedPageIdentity(response.pages[0], 'Notion created page');
 }
 
-function normalizedPageContent(payload, input) {
-  if (payload?.metadata?.type !== 'page') {
-    throw providerError('validation', 'Notion document fetch did not return page metadata.');
+function normalizedNotionInlineTitle(value) {
+  if (typeof value !== 'string') return null;
+  let normalized = '';
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index];
+    const escaped = value[index + 1];
+    if (character === '\\' && ['\\', '[', ']'].includes(escaped)) {
+      normalized += escaped;
+      index += 1;
+      continue;
+    }
+    normalized += character;
   }
-  const title = requiredString(payload.title, 'Notion document title');
-  requiredString(payload.url, 'Notion document URL');
-  const observed = exactObservedPageIdentity(payload, 'Notion fetched document');
-  const providerUri = observed.value;
-  if (title !== input.expectedTitle
-    || observed.normalized !== normalizedNotionPageId(input.uri)) {
+  return normalized;
+}
+
+function exactPagePropertyTitle(propertiesText, expectedTitle) {
+  if (propertiesText.length > 100000) {
     throw providerError(
-      'conflict',
-      'Notion document identity or title does not match the exact requested definition.'
+      'validation',
+      'Notion document properties exceed the bounded page-property limit.'
     );
   }
-  const envelope = requiredString(payload.text, 'Notion document content');
-  const pageStart = envelope.indexOf('<page ');
-  const pageOpenEnd = envelope.indexOf('>', pageStart);
-  const propertiesEnd = envelope.indexOf('</properties>', pageOpenEnd);
-  const pageEnd = envelope.lastIndexOf('</page>');
-  if (pageStart < 0 || pageOpenEnd < pageStart || propertiesEnd < pageOpenEnd
-    || pageEnd < propertiesEnd) {
+  const properties = requiredObject(
+    parseJsonText(propertiesText, 'Notion document properties'),
+    'Notion document properties'
+  );
+  if (Object.keys(properties).length > 500) {
+    throw providerError(
+      'validation',
+      'Notion document properties exceed the bounded property-count limit.'
+    );
+  }
+  if (Object.hasOwn(properties, 'title')) {
+    if (normalizedNotionInlineTitle(properties.title) !== expectedTitle) {
+      throw providerError(
+        'conflict',
+        'Notion document title property does not match the exact requested definition.'
+      );
+    }
+    return expectedTitle;
+  }
+  const databaseTitleCandidates = Object.values(properties).filter((value) => {
+    return normalizedNotionInlineTitle(value) === expectedTitle;
+  });
+  if (databaseTitleCandidates.length !== 1) {
+    throw providerError(
+      'conflict',
+      'Notion database document properties do not identify one exact requested title.'
+    );
+  }
+  return expectedTitle;
+}
+
+function exactNotionPagePreamble(preamble, payloadUrl) {
+  if (!preamble) return;
+  if (preamble.length > 10000 || /[<>]/u.test(preamble)) {
     throw providerError(
       'validation',
       'Notion document content does not match the observed bounded page envelope.'
     );
   }
+  const match = /^Here is the result of "view" for the Page with URL (\S+) as of (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z):$/u
+    .exec(preamble);
+  const observedAt = match?.[2];
+  const observedTime = Date.parse(observedAt || '');
+  if (!match
+    || match[1] !== payloadUrl
+    || !Number.isFinite(observedTime)
+    || new Date(observedTime).toISOString() !== observedAt) {
+    throw providerError(
+      'validation',
+      'Notion document content does not match the exact observed page preamble.'
+    );
+  }
+}
+
+function notionPageEnvelopeIdentity(pageOpen) {
+  if (typeof pageOpen !== 'string'
+    || pageOpen.length > 4096
+    || !pageOpen.startsWith('<page ')
+    || !pageOpen.endsWith('>')) {
+    throw providerError(
+      'validation',
+      'Notion document page envelope must contain one exact page identity and optional bounded icon and color.'
+    );
+  }
+  const source = pageOpen.slice('<page '.length, -1);
+  const attributes = [];
+  let cursor = 0;
+  while (cursor < source.length) {
+    const match = /^([a-z][a-z0-9-]*)="([^"]*)"/u.exec(source.slice(cursor));
+    if (!match) {
+      throw providerError(
+        'validation',
+        'Notion document page envelope must contain one exact page identity and optional bounded icon and color.'
+      );
+    }
+    attributes.push({ name: match[1], value: match[2] });
+    cursor += match[0].length;
+    if (cursor === source.length) break;
+    if (source[cursor] !== ' ' || source[cursor + 1] === ' ') {
+      throw providerError(
+        'validation',
+        'Notion document page envelope must contain one exact page identity and optional bounded icon and color.'
+      );
+    }
+    cursor += 1;
+  }
+  const names = attributes.map((attribute) => attribute.name);
+  const identities = attributes.filter((attribute) => {
+    return attribute.name === 'url' || attribute.name === 'id';
+  });
+  const icons = attributes.filter((attribute) => attribute.name === 'icon');
+  const colors = attributes.filter((attribute) => attribute.name === 'color');
+  const icon = icons[0]?.value;
+  const color = colors[0]?.value;
+  if (attributes.length < 1
+    || attributes.length > 3
+    || new Set(names).size !== names.length
+    || identities.length !== 1
+    || icons.length > 1
+    || colors.length > 1
+    || attributes.some((attribute) => {
+      return !['url', 'id', 'icon', 'color'].includes(attribute.name);
+    })
+    || (color !== undefined && !NOTION_MARKDOWN_COLORS.has(color))
+    || (icon !== undefined
+      && (icon.length < 1
+        || icon.length > 64
+        || icon.trim() !== icon
+        || /[\p{Cc}<>&]/u.test(icon)
+        || /\b(?:secret_[A-Za-z0-9]{24,}|ntn_[A-Za-z0-9]{24,}|sk-[A-Za-z0-9_-]{16,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{24,}|xox[baprs]-[A-Za-z0-9-]{10,})\b/u.test(icon)))) {
+    throw providerError(
+      'validation',
+      'Notion document page envelope must contain one exact page identity and optional bounded icon and color.'
+    );
+  }
+  return normalizedNotionPageId(identities[0].value);
+}
+
+function exactNotionPageEnvelopeIdentity(pageOpen, expectedIdentity) {
+  const observedIdentity = notionPageEnvelopeIdentity(pageOpen);
+  if (observedIdentity !== expectedIdentity) {
+    throw providerError(
+      'conflict',
+      'Notion document page envelope identifies a different page.'
+    );
+  }
+}
+
+function boundedNotionPageEnvelope(envelope, pageStart) {
+  let cursor = pageStart;
+  let depth = 0;
+  let outerOpenEnd = -1;
+  while (cursor < envelope.length) {
+    const nextOpen = envelope.indexOf('<page', cursor);
+    const nextClose = envelope.indexOf('</page', cursor);
+    let tagStart;
+    let kind;
+    if (nextOpen < 0 && nextClose < 0) break;
+    if (nextClose >= 0 && (nextOpen < 0 || nextClose < nextOpen)) {
+      tagStart = nextClose;
+      kind = 'close';
+    } else {
+      tagStart = nextOpen;
+      kind = 'open';
+    }
+    if (kind === 'open') {
+      if (!envelope.startsWith('<page ', tagStart)) {
+        throw providerError(
+          'validation',
+          'Notion document content does not match the observed bounded page envelope.'
+        );
+      }
+      const tagEnd = envelope.indexOf('>', tagStart);
+      if (tagEnd < 0) {
+        throw providerError(
+          'validation',
+          'Notion document content does not match the observed bounded page envelope.'
+        );
+      }
+      notionPageEnvelopeIdentity(envelope.slice(tagStart, tagEnd + 1));
+      depth += 1;
+      if (depth === 1) {
+        if (tagStart !== pageStart) {
+          throw providerError(
+            'validation',
+            'Notion document content does not match the observed bounded page envelope.'
+          );
+        }
+        outerOpenEnd = tagEnd;
+      }
+      cursor = tagEnd + 1;
+      continue;
+    }
+    if (!envelope.startsWith('</page>', tagStart) || depth < 1) {
+      throw providerError(
+        'validation',
+        'Notion document content does not match the observed bounded page envelope.'
+      );
+    }
+    depth -= 1;
+    const tagEnd = tagStart + '</page>'.length;
+    if (depth === 0) {
+      if (tagEnd !== envelope.length) {
+        throw providerError(
+          'validation',
+          'Notion document content does not match the observed bounded page envelope.'
+        );
+      }
+      return {
+        outerOpenEnd,
+        outerCloseStart: tagStart
+      };
+    }
+    cursor = tagEnd;
+  }
+  throw providerError(
+    'validation',
+    'Notion document content does not match the observed bounded page envelope.'
+  );
+}
+
+function normalizedPageContent(payload, input) {
+  if (payload?.metadata?.type !== 'page') {
+    throw providerError('validation', 'Notion document fetch did not return page metadata.');
+  }
+  requiredString(payload.title, 'Notion document display title');
+  const expectedTitle = requiredString(input.expectedTitle, 'Notion expected document title');
+  const payloadUrl = requiredString(payload.url, 'Notion document URL');
+  const observed = exactObservedPageIdentity(payload, 'Notion fetched document');
+  const providerUri = observed.value;
+  if (observed.normalized !== normalizedNotionPageId(input.uri)) {
+    throw providerError(
+      'conflict',
+      'Notion document identity does not match the exact requested definition.'
+    );
+  }
+  const envelope = requiredString(payload.text, 'Notion document content').trim();
+  const pageStart = envelope.indexOf('<page ');
+  const preamble = pageStart >= 0 ? envelope.slice(0, pageStart).trim() : '';
+  if (pageStart < 0) {
+    throw providerError(
+      'validation',
+      'Notion document content does not match the observed bounded page envelope.'
+    );
+  }
+  const pageEnvelope = boundedNotionPageEnvelope(envelope, pageStart);
+  const pageOpenEnd = pageEnvelope.outerOpenEnd;
+  const pageEnd = pageEnvelope.outerCloseStart;
+  const propertiesStart = envelope.indexOf('<properties>', pageOpenEnd + 1);
+  const propertiesEnd = envelope.indexOf('</properties>', pageOpenEnd + 1);
+  const ancestryMetadata = propertiesStart > pageOpenEnd
+    ? envelope.slice(pageOpenEnd + 1, propertiesStart)
+    : '';
+  if (propertiesStart <= pageOpenEnd
+    || propertiesEnd < propertiesStart
+    || propertiesEnd + '</properties>'.length > pageEnd
+    || ancestryMetadata.length > 10000
+    || ancestryMetadata.includes('<page')
+    || ancestryMetadata.includes('</page')) {
+    throw providerError(
+      'validation',
+      'Notion document content does not match the observed bounded page envelope.'
+    );
+  }
+  exactNotionPagePreamble(preamble, payloadUrl);
+  exactNotionPageEnvelopeIdentity(
+    envelope.slice(pageStart, pageOpenEnd + 1),
+    observed.normalized
+  );
+  const propertiesText = envelope.slice(
+    propertiesStart + '<properties>'.length,
+    propertiesEnd
+  ).trim();
+  const title = exactPagePropertyTitle(propertiesText, expectedTitle);
   const body = envelope.slice(propertiesEnd + '</properties>'.length, pageEnd).trim();
   if (!body || body.length > 250000) {
     throw providerError('validation', 'Notion document body is empty or outside the bounded content limit.');
@@ -1118,14 +1518,14 @@ export function prepareMcp({ capability, input, settings, mappings }) {
   const mapping = mappingDocument(mappings, capability);
   const optionMappings = configuredOptionMappings(settings, mappings);
   if (descriptor.operation === 'schema-read') {
-    const definition = recordMapping(mapping, input.recordType, capability);
+    const definition = recordMapping(mapping, input.recordType, capability, settings, mappings);
     return {
       tool: 'fetch',
       arguments: { id: targetForRecord(settings, definition) }
     };
   }
   if (descriptor.operation === 'create') {
-    const definition = recordMapping(mapping, input.recordType, capability);
+    const definition = recordMapping(mapping, input.recordType, capability, settings, mappings);
     const properties = mappedProperties({
       mapping,
       definition,
@@ -1157,7 +1557,7 @@ export function prepareMcp({ capability, input, settings, mappings }) {
     };
   }
   if (descriptor.operation === 'update') {
-    const definition = recordMapping(mapping, input.recordType, capability);
+    const definition = recordMapping(mapping, input.recordType, capability, settings, mappings);
     return {
       tool: 'update_page',
       arguments: {
@@ -1202,7 +1602,7 @@ export function prepareMcp({ capability, input, settings, mappings }) {
   const params = [];
   const targetUris = [];
   const selects = recordTypes.map((type) => {
-    const definition = recordMapping(mapping, type, capability);
+    const definition = recordMapping(mapping, type, capability, settings, mappings);
     const target = requiredString(targets[definition.target], 'Notion target ' + definition.target);
     if (!/^collection:\/\/[a-f0-9-]{32,36}$/.test(target)) {
       throw providerError('validation', 'Notion target ' + definition.target + ' is not a collection URI.');
@@ -1227,8 +1627,14 @@ export function prepareMcp({ capability, input, settings, mappings }) {
   return { tool: 'query_data_sources', arguments: { data } };
 }
 
-function decodedFields(mapping, row, capability, optionMappings) {
-  const definition = recordMapping(mapping, row.__soterType, capability);
+function decodedFields(mapping, row, capability, optionMappings, settings, mappings) {
+  const definition = recordMapping(
+    mapping,
+    row.__soterType,
+    capability,
+    settings,
+    mappings
+  );
   const raw = requiredObject(
     parseJsonText(row.__soterFields, 'Notion normalized field envelope'),
     'Notion normalized field envelope'
@@ -1252,8 +1658,22 @@ function decodedFields(mapping, row, capability, optionMappings) {
   return fields;
 }
 
-function normalizedRequestedFilterValue(mapping, capability, recordType, portable, value) {
-  const definition = recordMapping(mapping, recordType, capability);
+function normalizedRequestedFilterValue(
+  mapping,
+  capability,
+  recordType,
+  portable,
+  value,
+  settings,
+  mappings
+) {
+  const definition = recordMapping(
+    mapping,
+    recordType,
+    capability,
+    settings,
+    mappings
+  );
   const fields = definition.fields.filter((field) => field.portable === portable);
   if (fields.length !== 1) {
     throw providerError(
@@ -1264,7 +1684,7 @@ function normalizedRequestedFilterValue(mapping, capability, recordType, portabl
   return normalizedMappedIdentityValue(fields[0], value);
 }
 
-function assertRequestedRecords(records, input, mapping, capability) {
+function assertRequestedRecords(records, input, mapping, capability, settings, mappings) {
   const requestedTypes = new Set(requestedRecordTypes(input));
   let exactRecords = records;
   if (input.ids) {
@@ -1330,7 +1750,9 @@ function assertRequestedRecords(records, input, mapping, capability) {
         capability,
         record.type,
         field,
-        value
+        value,
+        settings,
+        mappings
       );
       if (fingerprintJson(record.fields[field]) !== fingerprintJson(normalized)) {
         throw providerError(
@@ -1346,7 +1768,9 @@ function assertRequestedRecords(records, input, mapping, capability) {
           capability,
           record.type,
           field,
-          value
+          value,
+          settings,
+          mappings
         );
         return fingerprintJson(record.fields[field]) === fingerprintJson(normalized);
       });
@@ -1412,9 +1836,6 @@ function normalizedRecordSchema(
   providerSchema,
   optionMappings
 ) {
-  const writable = definition.capabilities.some((capability) => {
-    return ['create', 'update'].includes(parseRecordCapability(capability)?.operation);
-  });
   const fields = definition.fields.map((field) => {
     const property = requiredObject(
       providerSchema[field.provider],
@@ -1427,6 +1848,11 @@ function normalizedRecordSchema(
           + field.providerType + ' but observed ' + String(property.type) + '.'
       );
     }
+    const writable = definition.capabilities.some((capability) => {
+      const operation = parseRecordCapability(capability)?.operation;
+      return ['create', 'update'].includes(operation)
+        && (!field.writeOperations || field.writeOperations.includes(operation));
+    });
     return {
       id: field.portable,
       writable,
@@ -1534,7 +1960,7 @@ export function completeMcp({
   const mapping = mappingDocument(mappings, capability);
   const optionMappings = configuredOptionMappings(settings, mappings);
   if (descriptor.operation === 'schema-read') {
-    const definition = recordMapping(mapping, input.recordType, capability);
+    const definition = recordMapping(mapping, input.recordType, capability, settings, mappings);
     const schema = normalizedRecordSchema(
       mapping,
       definition,
@@ -1553,14 +1979,15 @@ export function completeMcp({
           mapping: mapping.id,
           mappingVersion: mapping.version,
           recordType: schema.recordType,
-          schemaFingerprint: schema.fingerprint
+          schemaFingerprint: schema.fingerprint,
+          fieldBindingFingerprint: effectiveFieldBindingFingerprint(mapping, definition)
         })
       },
       observedAt: at
     };
   }
   if (descriptor.operation === 'create') {
-    const definition = recordMapping(mapping, input.recordType, capability);
+    const definition = recordMapping(mapping, input.recordType, capability, settings, mappings);
     const created = exactCreatedPage(payload);
     return {
       record: {
@@ -1580,7 +2007,7 @@ export function completeMcp({
     };
   }
   if (descriptor.operation === 'update') {
-    const definition = recordMapping(mapping, input.recordType, capability);
+    const definition = recordMapping(mapping, input.recordType, capability, settings, mappings);
     const updated = exactObservedPageIdentity(payload, 'Notion updated page');
     if (updated.normalized !== normalizedNotionPageId(input.id)) {
       throw providerError(
@@ -1610,7 +2037,9 @@ export function completeMcp({
   const readDefinition = recordMapping(
     mapping,
     requestedRecordTypes(input)[0],
-    capability
+    capability,
+    settings,
+    mappings
   );
   assertQueryDataSourceBinding({
     payload,
@@ -1631,14 +2060,23 @@ export function completeMcp({
     requiredObject(row, 'Notion result row ' + index);
     const type = requiredString(row.__soterType, 'Notion result type');
     const id = requiredString(row.__soterId, 'Notion result id');
-    const fields = decodedFields(mapping, row, capability, optionMappings);
+    const fields = decodedFields(
+      mapping,
+      row,
+      capability,
+      optionMappings,
+      settings,
+      mappings
+    );
     return { type, id, fields };
   });
   const records = assertRequestedRecords(
     observedRecords,
     input,
     mapping,
-    capability
+    capability,
+    settings,
+    mappings
   ).map((record) => ({
     ...record,
     version: fingerprintJson({
@@ -1659,7 +2097,8 @@ export function completeMcp({
         capability,
         input,
         mapping: mapping.id,
-        mappingVersion: mapping.version
+        mappingVersion: mapping.version,
+        fieldBindingFingerprint: effectiveFieldBindingFingerprint(mapping, readDefinition)
       })
     },
     observedAt: at
@@ -1804,6 +2243,21 @@ function sortedFieldSignature(fields) {
   })).sort((left, right) => compareCodepoint(left.provider, right.provider));
 }
 
+function effectiveFieldBindingFingerprint(mapping, definition) {
+  return fingerprintJson({
+    mapping: mapping.id,
+    mappingVersion: mapping.version,
+    recordType: definition.id,
+    fields: definition.fields.map((field) => ({
+      portable: field.portable,
+      provider: field.provider,
+      providerType: field.providerType,
+      decode: field.decode,
+      writeOperations: field.writeOperations || null
+    }))
+  });
+}
+
 function dataSourceState(payload, targetUri) {
   if (payload?.metadata?.type !== 'data_source' || typeof payload.text !== 'string') {
     throw providerError('validation', 'Notion fetch target did not return data-source metadata.');
@@ -1854,7 +2308,20 @@ function schemaObservation(step, responseProfile, response, settings, mappings) 
       'Notion schema probe did not resolve one exact current record definition.'
     );
   }
-  const definition = definitions[0];
+  const definition = recordMapping(
+    mapping,
+    step.scope.recordType,
+    step.scope.capability,
+    settings,
+    mappings
+  );
+  if (step.scope.fieldBindingFingerprint
+    !== effectiveFieldBindingFingerprint(mapping, definition)) {
+    throw providerError(
+      'conflict',
+      'Notion schema probe field bindings no longer match the exact prepared scope.'
+    );
+  }
   if (fingerprintJson(expected) !== fingerprintJson(definition.fields.map((field) => ({
     portable: field.portable,
     provider: field.provider,
@@ -1918,6 +2385,13 @@ export function prepareProbePlanMcp({
   ];
   for (const selection of recordSelections) {
     const { mapping, readCapability, record } = selection;
+    const definition = recordMapping(
+      mapping,
+      record.id,
+      readCapability,
+      settings,
+      mappings
+    );
     const mappingStepId = mapping.id.slice('mapping.'.length);
     const recordSubject = parseRecordCapability(readCapability).subject;
     const targetUri = requiredString(
@@ -1927,7 +2401,7 @@ export function prepareProbePlanMcp({
     if (!/^collection:\/\/[a-f0-9-]{32,36}$/.test(targetUri)) {
       throw providerError('validation', 'Notion target ' + record.target + ' is not a collection URI.');
     }
-    const expectedFields = record.fields.map((field) => ({
+    const expectedFields = definition.fields.map((field) => ({
       portable: field.portable,
       provider: field.provider,
       providerType: field.providerType,
@@ -1944,6 +2418,7 @@ export function prepareProbePlanMcp({
         capability: readCapability,
         mappingId: mapping.id,
         mappingVersion: mapping.version,
+        fieldBindingFingerprint: effectiveFieldBindingFingerprint(mapping, definition),
         expectedFields
       },
       tool: 'fetch',

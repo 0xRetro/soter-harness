@@ -181,7 +181,8 @@ function documentResponse({ uri, title, body }, marker) {
         metadata: { type: 'page' },
         title,
         url: uri,
-        text: '<page url="' + uri + '"><properties></properties>\n' + body + '\n</page>',
+        text: '<page url="' + uri + '"><properties>{"title":'
+          + JSON.stringify(title) + '}</properties>\n' + body + '\n</page>',
         rawProviderResponse: marker
       }
     },

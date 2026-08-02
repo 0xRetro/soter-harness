@@ -13,6 +13,7 @@ import {
   canonicalJson,
   fingerprintFile,
   fingerprintJson,
+  readGovernedJson,
   readJson,
   resolveRepoPath,
   sha256,
@@ -74,6 +75,9 @@ import { runContainedProjectPulseScenario } from '../automations/project-pulse/s
 import {
   runContainedProjectPulseConnectedWorkflow
 } from '../automations/project-pulse/connected-context.selftest.mjs';
+import {
+  runContainedProjectPageReviewScenario
+} from '../automations/project-page-review/scenario.mjs';
 import { runContainedTaskCaptureScenario } from '../automations/task-capture/scenario.mjs';
 import {
   runContainedProjectDecisionResolutionScenario
@@ -129,6 +133,7 @@ import {
 
 export const MEETING_INTAKE_FIXTURE_TIME = '2026-07-15T12:00:00.000Z';
 export const PROJECT_PULSE_FIXTURE_TIME = '2026-07-16T12:00:00.000Z';
+export const PROJECT_PAGE_REVIEW_FIXTURE_TIME = '2026-07-29T12:00:00.000Z';
 export const TASK_CAPTURE_FIXTURE_TIME = '2026-07-16T15:00:00.000Z';
 export const PROJECT_DECISION_RESOLUTION_FIXTURE_TIME = '2026-07-22T12:00:00.000Z';
 export const PROJECT_WORK_PROMOTION_FIXTURE_TIME = '2026-07-22T13:00:00.000Z';
@@ -4506,6 +4511,78 @@ export async function buildProjectPulseFixtures(root, finalization = null) {
   return fixtures;
 }
 
+export async function buildProjectPageReviewFixtures(root, finalization = null) {
+  const fixtureRoot = 'soter/fixtures/project-page-review/';
+  const lockPath = fixtureRoot + 'project-page-review.lock.json';
+  const resolutionEvidencePath = fixtureRoot + 'resolution.evidence.json';
+  const scenarioPath = 'soter/scenarios/project-page-review/preparation.scenario.json';
+  const scenarioEvidencePath = fixtureRoot + 'preparation.evidence.json';
+  const lock = resolveFixtureConfiguration(
+    root,
+    'soter/configurations/project-page-review.config.json',
+    finalization
+  );
+  const resolutionEvidence = createResolutionEvidence({
+    lock,
+    id: 'evidence.project-page-review.resolution.fixture',
+    createdAt: PROJECT_PAGE_REVIEW_FIXTURE_TIME
+  });
+  const doctor = runOfflineDoctor({
+    root,
+    lock,
+    doctorId: 'doctor.project-page-review.fixture',
+    evidenceId: resolutionEvidence.id,
+    createdAt: PROJECT_PAGE_REVIEW_FIXTURE_TIME
+  });
+  if (doctor.evidence.length !== 1
+    || canonicalJson(doctor.evidence[0]) !== canonicalJson(resolutionEvidence)) {
+    throw new Error('Project Page Review offline doctor did not reproduce resolution evidence.');
+  }
+  const execution = await runContainedProjectPageReviewScenario({
+    root,
+    lock,
+    lockPath,
+    scenarioPath,
+    workId: 'work.project-page-review.preparation-fixture',
+    scenarioEvidenceId: 'evidence.project-page-review.preparation.fixture',
+    createdAt: PROJECT_PAGE_REVIEW_FIXTURE_TIME
+  });
+  if (execution.assessment.result !== 'passed'
+    || execution.scenarioEvidence.result !== 'passed'
+    || execution.preview.proposedChanges.length !== 0
+    || execution.envelope.approvals.length !== 0
+    || execution.envelope.effects.some((effect) => {
+      return effect.declaredEffects.some((value) => {
+        return ['write', 'dispatch', 'destructive'].includes(value);
+      });
+    })) {
+    throw new Error('Project Page Review contained scenario did not prove its read-only no-authority boundary.');
+  }
+  const sanitized = canonicalJson({
+    envelope: execution.envelope,
+    evidence: execution.scenarioEvidence
+  });
+  for (const privateValue of [
+    'soter-fixture://projects/project/launch',
+    'soter-fixture://tasks/task/existing-deck',
+    'Acme launch',
+    'Send launch deck',
+    'Launch the customer program with an attributable delivery plan.',
+    'Check exact configured structure without proposing any mutation.'
+  ]) {
+    if (sanitized.includes(privateValue)) {
+      throw new Error('Project Page Review generated sanitized fixtures include private review material.');
+    }
+  }
+  return new Map([
+    [lockPath, lock],
+    [resolutionEvidencePath, resolutionEvidence],
+    [fixtureRoot + 'offline.doctor.json', doctor.report],
+    [fixtureRoot + 'preparation.run.json', execution.envelope],
+    [scenarioEvidencePath, execution.scenarioEvidence]
+  ]);
+}
+
 export async function buildTaskCaptureFixtures(root, finalization = null) {
   const lockPath = 'soter/fixtures/task-capture/task-capture.lock.json';
   const resolutionEvidenceId = 'evidence.task-capture.resolution.fixture';
@@ -6820,6 +6897,50 @@ function rebuildGeneratedDoctorFixtures(root, fixtures) {
   }
 }
 
+function assertGeneratedConfigurationCoverage(root, fixtures) {
+  const configurationDirectory = resolveRepoPath(root, 'soter/configurations');
+  const configurationNames = fs.readdirSync(configurationDirectory, {
+    withFileTypes: true
+  }).filter((entry) => entry.name.endsWith('.config.json')).map((entry) => {
+    const relativePath = 'soter/configurations/' + entry.name;
+    if (!entry.isFile()) {
+      throw new Error('Generated fixture coverage requires one ordinary tracked configuration file: '
+        + relativePath + '.');
+    }
+    const configuration = readGovernedJson(root, relativePath);
+    if (configuration?.$contract !== 'soter://contracts/configuration/v1'
+      || typeof configuration.name !== 'string') {
+      throw new Error('Generated fixture coverage found an invalid tracked configuration: '
+        + relativePath + '.');
+    }
+    return configuration.name;
+  });
+  if (new Set(configurationNames).size !== configurationNames.length) {
+    throw new Error('Generated fixture coverage found duplicate tracked configuration names.');
+  }
+
+  const lockNames = new Set();
+  const offlineDoctorNames = new Set();
+  for (const value of fixtures.values()) {
+    if (value?.$contract === 'soter://contracts/lock/v1') {
+      lockNames.add(value.configuration.name);
+    }
+    if (value?.$contract === 'soter://contracts/doctor-result/v1'
+      && value.level === 'offline') {
+      offlineDoctorNames.add(value.configuration.name);
+    }
+  }
+  const missing = configurationNames.filter((name) => {
+    return !lockNames.has(name) || !offlineDoctorNames.has(name);
+  }).sort(compareCodepoint);
+  if (missing.length) {
+    throw new Error(
+      'Every tracked configuration requires a generated exact lock and offline doctor: '
+        + missing.join(', ') + '.'
+    );
+  }
+}
+
 async function buildSoterFixturesWithFinalization(root, finalization) {
   const combined = new Map();
   const fixtureSets = [
@@ -6836,6 +6957,7 @@ async function buildSoterFixturesWithFinalization(root, finalization) {
     await buildDriveFilingFixtures(root, finalization),
     await buildMeetingIntakeFixtures(root, finalization),
     await buildProjectPulseFixtures(root, finalization),
+    await buildProjectPageReviewFixtures(root, finalization),
     await buildTaskCaptureFixtures(root, finalization),
     await buildProjectDecisionResolutionFixtures(root, finalization),
     await buildProjectWorkPromotionFixtures(root, finalization),
@@ -6855,6 +6977,7 @@ async function buildSoterFixturesWithFinalization(root, finalization) {
       combined.set(outputPath, value);
     }
   }
+  assertGeneratedConfigurationCoverage(root, combined);
   return rebuildGeneratedDoctorFixtures(root, combined);
 }
 
@@ -7116,6 +7239,7 @@ function managedGeneratedFixtureFiles(root) {
     'soter/fixtures/task-capture',
     'soter/fixtures/project-capture',
     'soter/fixtures/project-decision-resolution',
+    'soter/fixtures/project-page-review',
     'soter/fixtures/project-work-promotion',
     'soter/fixtures/organization-capture',
     'soter/fixtures/contact-capture',

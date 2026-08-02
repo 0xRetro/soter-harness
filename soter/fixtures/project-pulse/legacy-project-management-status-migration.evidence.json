@@ -10,8 +10,8 @@
     "id": "automation.project-pulse",
     "version": "0.1.0"
   },
-  "configurationLockFingerprint": "sha256:f1a6c353e163a1fd97479433405be26556aa46e77b4aaa6be71914cb82327c46",
-  "graphFingerprint": "sha256:94321ae2d22dc301363b101aa0d88284195144540129cfbfe2b992b85d52ae4b",
+  "configurationLockFingerprint": "sha256:8fefba6c90072685bac4441fc844ded8f0a6decec24792353f0c694646062a1d",
+  "graphFingerprint": "sha256:eaef2715a22c1e321bc06598a448549b905f4a2d9b3771dc5b86521723447605",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -21,7 +21,7 @@
     {
       "id": "core.runtime",
       "version": "0.1.0",
-      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+      "fingerprint": "sha256:a9c8dae0de0211a02104bbc93a94ea5021bdeadb84040dfe88778288ee465a92"
     },
     {
       "id": "context.projects",
@@ -157,22 +157,22 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/project-pulse/happy-path.evidence.json",
-      "fingerprint": "sha256:88c0740ad6f6c1abb6b5cdddf0accbb4038f480e9cd9099a864149bd8950c9b5"
+      "fingerprint": "sha256:4e4209c1d6f963b9b76dd9bca9c3727ee80a8c7912ab7c13983467dfa6422760"
     },
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/project-pulse/no-invented-progress.evidence.json",
-      "fingerprint": "sha256:5f0bb114ff89c5bd27d9df9f604cf8efa46e1c787b100d72735552c42e900618"
+      "fingerprint": "sha256:ed7dd7833af6ccc1a8c207878ed2f705b1ee65b006cd8f58cc1198da7c324edb"
     },
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/project-pulse/pressure-on-track.evidence.json",
-      "fingerprint": "sha256:d6da1dd6208e37a5ffa536f2711bbc6442c5c5966c9deeaecff667939174e010"
+      "fingerprint": "sha256:9bd7e6a52b55cbc7e08e910fb6b4e871498fa05afd6c3efd4596ee090b6d558e"
     },
     {
       "role": "supporting-artifact",
       "path": "soter/fixtures/project-pulse/connected-workflow.evidence.json",
-      "fingerprint": "sha256:01dc5c979ca69f40d7eca80bdde12d7c09375b2993e24f1e2551a4923a44522e"
+      "fingerprint": "sha256:b20dbbee80c0914cdb5c29b82431d2b360a6d58f9db1c1c6d93978c15ed1b944"
     }
   ],
   "effects": [],

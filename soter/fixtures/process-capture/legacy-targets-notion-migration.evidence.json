@@ -10,8 +10,8 @@
     "id": "integration.notion",
     "version": "0.2.0"
   },
-  "configurationLockFingerprint": "sha256:c90f0f8ea158c28bb1c7702b2f61770c9b549c38b3a4be23e467c8e12ffc987b",
-  "graphFingerprint": "sha256:ac00f74224e2d7b612f8a33718d1ca20ad2a46e456dd6704cb629fb738e1d8f5",
+  "configurationLockFingerprint": "sha256:69d3a2d3c3a9055b2e5dbb85b3336f271b549c93d388263e298e12db0a382263",
+  "graphFingerprint": "sha256:dcbd4da9d3b0aa7593e295351b7fe5f9ac39905af77ac18a695cde2236c75834",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -21,7 +21,7 @@
     {
       "id": "core.runtime",
       "version": "0.1.0",
-      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+      "fingerprint": "sha256:a9c8dae0de0211a02104bbc93a94ea5021bdeadb84040dfe88778288ee465a92"
     },
     {
       "id": "context.process",
@@ -140,7 +140,7 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/process-capture/preparation.evidence.json",
-      "fingerprint": "sha256:6efa474230af77c7f5c35643417e2a61fe289d7e61b8b3d87ee7de267916b033"
+      "fingerprint": "sha256:aeb05e381046a8debc98f2e21adfd163137429d21b4e5220e124ddc5520c42ed"
     }
   ],
   "effects": [],

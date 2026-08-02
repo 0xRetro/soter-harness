@@ -1,0 +1,31 @@
+{
+  "$contract": "soter://contracts/pack-settings/v1",
+  "contractVersion": "1.0.0",
+  "id": "settings.automation.project-page-review",
+  "pack": "automation.project-page-review",
+  "version": "0.1.0",
+  "required": true,
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "maximumOutlineEntries",
+      "semanticLabelMatcher",
+      "structuralBlockMatcher"
+    ],
+    "properties": {
+      "maximumOutlineEntries": {
+        "type": "integer",
+        "minimum": 2,
+        "maximum": 200
+      },
+      "semanticLabelMatcher": {
+        "const": "headings-and-standalone-bold/v1"
+      },
+      "structuralBlockMatcher": {
+        "const": "normalized-structural-block-tags/v1"
+      }
+    }
+  },
+  "reason": "Project-page review matcher bounds are Automation-owned; the selected Context policies and exact configured template document own the portable and workspace-specific standards."
+}

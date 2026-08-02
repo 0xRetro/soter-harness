@@ -10,8 +10,8 @@
     "id": "context.calendar",
     "version": "0.1.0"
   },
-  "configurationLockFingerprint": "sha256:2ad2b69175d6ec568bd062dc74fa4411c0fef359da6bfc121ee374a60d4e688b",
-  "graphFingerprint": "sha256:aacaacefe61ca1d416663d4e8d26ab722243a7e88376c12a1ffac5a74995aa1d",
+  "configurationLockFingerprint": "sha256:8237ef3e5ba2920ad9123874f1d62df9665bfc573b38966c6559fe6960e4ea67",
+  "graphFingerprint": "sha256:6074aab07f8ddde9c78100c1c5852efd6f0cd82b2c0e1838dc1d64e3aa20d37f",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -21,7 +21,7 @@
     {
       "id": "core.runtime",
       "version": "0.1.0",
-      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+      "fingerprint": "sha256:a9c8dae0de0211a02104bbc93a94ea5021bdeadb84040dfe88778288ee465a92"
     },
     {
       "id": "context.calendar",
@@ -341,7 +341,7 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/harness-development-catalog/resolution.evidence.json",
-      "fingerprint": "sha256:668be90563b207115f16627ca703008955877d64ee45303758b50f9a840181e2"
+      "fingerprint": "sha256:903efbda3dd63feb704a461a0a901d59a502422d3c090f25125595cb6cc91d45"
     }
   ],
   "effects": [],

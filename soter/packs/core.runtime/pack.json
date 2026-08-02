@@ -58,6 +58,7 @@
     { "path": "soter/core/configuration-transactions.selftest.mjs", "role": "evaluation" },
     { "path": "soter/core/automation-input.selftest.mjs", "role": "evaluation" },
     { "path": "soter/core/prepared-work.mjs", "role": "implementation" },
+    { "path": "soter/core/connected-acquisitions.mjs", "role": "implementation" },
     { "path": "soter/core/review-projections.mjs", "role": "implementation" },
     { "path": "soter/core/automation-proposals.mjs", "role": "implementation" },
     { "path": "soter/core/automation-proposals.selftest.mjs", "role": "evaluation" },

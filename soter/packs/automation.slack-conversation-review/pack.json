@@ -79,6 +79,10 @@
       "module": "soter/automations/slack-conversation-review/context.mjs",
       "prepareExport": "prepareSlackConversationReviewConnectedAcquisition",
       "finalizeExport": "finalizeSlackConversationReviewConnectedAcquisition",
+      "inspectExport": "inspectSlackConversationReviewConnected",
+      "inspectSchema": "soter/automations/slack-conversation-review/connected-inspection.schema.json",
+      "privateInspectExport": "inspectSlackConversationReviewConnectedPrivateReview",
+      "privateInspectSchema": "soter/automations/slack-conversation-review/connected-review.schema.json",
       "containment": "connected",
       "availability": {
         "state": "unavailable",

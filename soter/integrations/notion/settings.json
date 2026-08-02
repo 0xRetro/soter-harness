@@ -5,7 +5,10 @@
   "pack": "integration.notion",
   "version": "0.2.0",
   "required": true,
-  "semanticInvariants": ["option-mappings-exact-bijection"],
+  "semanticInvariants": [
+    "option-mappings-exact-bijection",
+    "provider-field-bindings-explicit"
+  ],
   "schema": {
     "type": "object",
     "additionalProperties": false,
@@ -139,8 +142,71 @@
             }
           }
         }
+      },
+      "fieldBindings": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 500,
+        "uniqueItems": true,
+        "items": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["mapping", "recordType", "field", "state", "provider"],
+              "properties": {
+                "mapping": {
+                  "type": "string",
+                  "pattern": "^mapping\\.integration\\.notion\\.[a-z0-9]+(?:-[a-z0-9]+)*$"
+                },
+                "recordType": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+                },
+                "field": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9]*$"
+                },
+                "state": {
+                  "const": "mapped"
+                },
+                "provider": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200,
+                  "pattern": "^(?!\\s)[^\\u0000-\\u001F\\u007F]*[^\\s\\u0000-\\u001F\\u007F]$"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["mapping", "recordType", "field", "state", "reasonCode"],
+              "properties": {
+                "mapping": {
+                  "type": "string",
+                  "pattern": "^mapping\\.integration\\.notion\\.[a-z0-9]+(?:-[a-z0-9]+)*$"
+                },
+                "recordType": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+                },
+                "field": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z][A-Za-z0-9]*$"
+                },
+                "state": {
+                  "const": "unavailable"
+                },
+                "reasonCode": {
+                  "const": "PROVIDER_PROPERTY_UNAVAILABLE"
+                }
+              }
+            }
+          ]
+        }
       }
     }
   },
-  "reason": "Notion target identities and exact provider choice values are user-specific private configuration, while portable field semantics remain owned by Context and the Integration mapping."
+  "reason": "Notion target identities, provider property bindings, explicit property absence, and exact provider choice values are user-specific private configuration, while portable field semantics remain owned by Context and the Integration mapping."
 }

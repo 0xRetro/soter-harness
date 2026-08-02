@@ -10,8 +10,8 @@
     "id": "slack-conversation-review",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:b9db51f564913e95acb33e27c8b98b627de1b31e584898ff6bfe5ca4d7dc12dd",
-  "graphFingerprint": "sha256:6ab5391d285ff3781093db6a9e5bb151d789908d0495f55bcb19173e253e9887",
+  "configurationLockFingerprint": "sha256:9c00d862f5cc8d5c5b1335cd22e0c718369bb97e594e302227073474172d681f",
+  "graphFingerprint": "sha256:288e5c2f54179378a5881fac1995cd8b8ce16d8eada00d06d50bf270f4752771",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -21,7 +21,7 @@
     {
       "id": "core.runtime",
       "version": "0.1.0",
-      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+      "fingerprint": "sha256:a9c8dae0de0211a02104bbc93a94ea5021bdeadb84040dfe88778288ee465a92"
     },
     {
       "id": "context.communications",
@@ -36,7 +36,7 @@
     {
       "id": "automation.slack-conversation-review",
       "version": "0.1.0",
-      "fingerprint": "sha256:188447b9d8de67dbb28d1a22c0d33dd2240d222b0df6c2eab68432352d7673e6"
+      "fingerprint": "sha256:bec7de8c0a1e8632ebdc7a8d0c5fdc785acfaa5e3230ab1f2fca8aa99a1a239a"
     },
     {
       "id": "integration.notion",
@@ -151,7 +151,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:b9db51f564913e95acb33e27c8b98b627de1b31e584898ff6bfe5ca4d7dc12dd"
+      "fingerprint": "sha256:9c00d862f5cc8d5c5b1335cd22e0c718369bb97e594e302227073474172d681f"
     }
   ],
   "effects": [],

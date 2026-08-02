@@ -1,0 +1,150 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "automation.project-page-review",
+  "version": "0.1.0",
+  "layer": "automation",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Reviews one exact Project record, its exact current page, every explicitly related Task, the portable Context policies, and one exact configured template outline; all content remains private selected-work material and the Automation emits no proposal, approval, continuation, or write authority.",
+  "dependencies": [
+    {
+      "pack": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Project-page review requires exact configuration locks, bounded typed reads, private selected-work material, and sanitized no-authority inspection."
+    },
+    {
+      "pack": "context.projects",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Projects Context owns portable Project identity, page-body grammar, relationships, and policy meaning."
+    },
+    {
+      "pack": "context.tasks",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Tasks Context owns Task identity, context, assignee, date, status, and Project-link meaning."
+    }
+  ],
+  "capabilities": {
+    "requires": [
+      {
+        "id": "projects.records.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Review reads the exact configured Project policies and exact selected Project record."
+      },
+      {
+        "id": "tasks.records.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Review reads every and only the Tasks explicitly related by the selected Project."
+      },
+      {
+        "id": "documents.content.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Review reads the exact configured template document and exact selected Project page body."
+      }
+    ],
+    "provides": []
+  },
+  "sourceRequirements": [
+    {
+      "purpose": "project-capture-policy",
+      "capability": "projects.records.read",
+      "authorityRole": "definition",
+      "authoritySubject": "projects.records",
+      "minimum": 1,
+      "maximum": 1,
+      "reason": "Review requires the exact portable Project capture policy for optional type, organization, manager, and body-standard semantics."
+    },
+    {
+      "purpose": "project-work-policy",
+      "capability": "projects.records.read",
+      "authorityRole": "definition",
+      "authoritySubject": "projects.records",
+      "minimum": 1,
+      "maximum": 1,
+      "reason": "Review requires the exact portable Project work policy for Project and promoted-Task distinctions."
+    },
+    {
+      "purpose": "task-work-policy",
+      "capability": "tasks.records.read",
+      "authorityRole": "definition",
+      "authoritySubject": "tasks.records",
+      "minimum": 1,
+      "maximum": 1,
+      "reason": "Review requires the exact portable Task policy so missing context, date, and unassigned ownership remain attention facts rather than invented violations."
+    },
+    {
+      "purpose": "project-page-template",
+      "capability": "documents.content.read",
+      "authorityRole": "definition",
+      "authoritySubject": "projects.records",
+      "minimum": 1,
+      "maximum": 1,
+      "reason": "One exact configured template document supplies the workspace extension outline without making provider layout canonical Context meaning."
+    }
+  ],
+  "authorities": [
+    { "role": "definition", "subject": "projects.records", "required": true },
+    { "role": "instance", "subject": "projects.records", "required": true },
+    { "role": "definition", "subject": "tasks.records", "required": true },
+    { "role": "instance", "subject": "tasks.records", "required": true },
+    { "role": "evidence", "subject": "runtime.runs", "required": true }
+  ],
+  "effects": ["read", "disclosure"],
+  "operator": {
+    "input": "soter/automations/project-page-review/operator-input.json",
+    "preparation": {
+      "module": "soter/automations/project-page-review/prepare.mjs",
+      "export": "prepareProjectPageReviewRun",
+      "containment": "fixture",
+      "derivedReviewContract": "soter/automations/project-page-review/derived-review.json"
+    },
+    "acquisition": {
+      "module": "soter/automations/project-page-review/context.mjs",
+      "prepareExport": "prepareProjectPageReviewConnectedAcquisition",
+      "finalizeExport": "finalizeProjectPageReviewConnectedAcquisition",
+      "inspectExport": "inspectProjectPageReviewConnected",
+      "inspectSchema": "soter/automations/project-page-review/connected-inspection.schema.json",
+      "privateInspectExport": "inspectProjectPageReviewConnectedPrivate",
+      "privateInspectSchema": "soter/automations/project-page-review/connected-review.schema.json",
+      "containment": "connected",
+      "recordRequirements": [
+        {
+          "capability": "projects.records.read",
+          "recordTypes": ["project-capture-policy", "project-work-policy", "project"]
+        },
+        {
+          "capability": "tasks.records.read",
+          "recordTypes": ["task-work-policy", "task"]
+        }
+      ]
+    }
+  },
+  "artifacts": [
+    { "path": "soter/automations/project-page-review/operator-input.json", "role": "definition" },
+    { "path": "soter/automations/project-page-review/settings.json", "role": "definition" },
+    { "path": "soter/automations/project-page-review/derived-review.json", "role": "definition" },
+    { "path": "soter/automations/project-page-review/connected-inspection.schema.json", "role": "definition" },
+    { "path": "soter/automations/project-page-review/connected-review.schema.json", "role": "definition" },
+    { "path": "soter/automations/project-page-review/analysis.mjs", "role": "implementation" },
+    { "path": "soter/automations/project-page-review/prepare.mjs", "role": "implementation" },
+    { "path": "soter/automations/project-page-review/context.mjs", "role": "implementation" },
+    { "path": "soter/automations/project-page-review/scenario.mjs", "role": "evaluation" },
+    { "path": "soter/automations/project-page-review/project-page-review.selftest.mjs", "role": "evaluation" },
+    { "path": "soter/automations/project-page-review/connected-context.selftest.mjs", "role": "evaluation" },
+    { "path": "soter/scenarios/project-page-review/preparation.scenario.json", "role": "evaluation" }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": ["codex", "claude"]
+  },
+  "verification": {
+    "maxLevel": "fixture",
+    "scenarios": ["soter/scenarios/project-page-review/preparation.scenario.json"]
+  }
+}

@@ -226,7 +226,7 @@
       ],
       "properties": {
         "kind": { "const": "private-active-contained" },
-        "version": { "const": "1.1.0" },
+        "version": { "const": "1.2.0" },
         "configurationName": {
           "type": "string",
           "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
@@ -246,7 +246,9 @@
             "providerFixtureDocumentCount",
             "notionOptionMappingScopeCount",
             "notionOptionMappingEntryCount",
-            "notionOptionMappingScopeFingerprint"
+            "notionOptionMappingScopeFingerprint",
+            "notionFieldBindingScopeCount",
+            "notionFieldBindingScopeFingerprint"
           ],
           "properties": {
             "notionTargetCount": { "type": "integer", "minimum": 1 },
@@ -254,7 +256,9 @@
             "providerFixtureDocumentCount": { "type": "integer", "minimum": 0 },
             "notionOptionMappingScopeCount": { "type": "integer", "minimum": 0 },
             "notionOptionMappingEntryCount": { "type": "integer", "minimum": 0 },
-            "notionOptionMappingScopeFingerprint": { "$ref": "#/$defs/fingerprint" }
+            "notionOptionMappingScopeFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "notionFieldBindingScopeCount": { "type": "integer", "minimum": 1 },
+            "notionFieldBindingScopeFingerprint": { "$ref": "#/$defs/fingerprint" }
           }
         },
         "privacy": {
@@ -266,6 +270,7 @@
             "providerTargetValuesIncluded",
             "providerSourceValuesIncluded",
             "providerOptionValuesIncluded",
+            "providerFieldNamesIncluded",
             "rawProviderResponsesIncluded",
             "privateInputsIncluded"
           ],
@@ -275,6 +280,7 @@
             "providerTargetValuesIncluded": { "const": false },
             "providerSourceValuesIncluded": { "const": false },
             "providerOptionValuesIncluded": { "const": false },
+            "providerFieldNamesIncluded": { "const": false },
             "rawProviderResponsesIncluded": { "const": false },
             "privateInputsIncluded": { "const": false }
           }

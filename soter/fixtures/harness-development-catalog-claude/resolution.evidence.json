@@ -10,8 +10,8 @@
     "id": "harness-development-catalog-claude",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:0faf9821bcb59ceb791b6dd13ccfc4337008793dd894f47541320a39c3513c52",
-  "graphFingerprint": "sha256:a2e5b5905ea555dc1d7bba724ffd9f78a538389824df8bc04cb485486bfc0f78",
+  "configurationLockFingerprint": "sha256:ff83387b05d176d2a87975b407fdd5bbf4b2cb338a9e49a4d6aaa6f77bda2773",
+  "graphFingerprint": "sha256:524ea6854ab4d63f893d04ec7db5b2ab9eb0cbf52a8a741034315ca974474aaa",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -21,7 +21,7 @@
     {
       "id": "core.runtime",
       "version": "0.1.0",
-      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+      "fingerprint": "sha256:a9c8dae0de0211a02104bbc93a94ea5021bdeadb84040dfe88778288ee465a92"
     },
     {
       "id": "context.calendar",
@@ -308,7 +308,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:0faf9821bcb59ceb791b6dd13ccfc4337008793dd894f47541320a39c3513c52"
+      "fingerprint": "sha256:ff83387b05d176d2a87975b407fdd5bbf4b2cb338a9e49a4d6aaa6f77bda2773"
     }
   ],
   "effects": [],

@@ -35,7 +35,10 @@
       "minItems": 1,
       "uniqueItems": true,
       "items": {
-        "enum": ["option-mappings-exact-bijection"]
+        "enum": [
+          "option-mappings-exact-bijection",
+          "provider-field-bindings-explicit"
+        ]
       }
     },
     "schema": {

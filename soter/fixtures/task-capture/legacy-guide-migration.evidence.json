@@ -10,8 +10,8 @@
     "id": "automation.task-capture",
     "version": "0.2.0"
   },
-  "configurationLockFingerprint": "sha256:56ec4abbbc6e05fde52bf201a8b4fe797b8e2a2a17ca1077a15b684bea593908",
-  "graphFingerprint": "sha256:d26b8bbc93e81dcee157108e67ac759d06de147484f6d6dfe2cfb88328a681a8",
+  "configurationLockFingerprint": "sha256:1c7658c752c5939a46789314d2f78d5a30419269bdc04f03a17dd1e299bc040e",
+  "graphFingerprint": "sha256:a38ff845875d6d86d235b8a2a85dfc54ac7015f63978e38f18b5532a093a2b49",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -21,7 +21,7 @@
     {
       "id": "core.runtime",
       "version": "0.1.0",
-      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+      "fingerprint": "sha256:a9c8dae0de0211a02104bbc93a94ea5021bdeadb84040dfe88778288ee465a92"
     },
     {
       "id": "context.projects",
@@ -167,12 +167,12 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/task-capture/preparation.evidence.json",
-      "fingerprint": "sha256:064d5a812990a1eca0c23d29308199e178c0495b1ff81d7a13c6899c56e8eccd"
+      "fingerprint": "sha256:1b8b2bb47766f0e44e42d7384c312afb9f77eb44e9a319c6f312a06351719db7"
     },
     {
       "role": "supporting-artifact",
       "path": "soter/fixtures/task-capture/connected-workflow.evidence.json",
-      "fingerprint": "sha256:43b662d26b0ceb3f7c8e0a8ef75bf11db05e2f9b01716113cf38efa98a65a930"
+      "fingerprint": "sha256:634940fc6480fa5a36cfa9bc109f0194a5351c028387943cbee872e8b0d7a353"
     }
   ],
   "effects": [],

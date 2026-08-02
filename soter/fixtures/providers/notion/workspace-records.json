@@ -1239,6 +1239,16 @@
     ],
     "documents": [
       {
+        "uri": "soter-fixture://configuration-template/notion/document/project-page-template",
+        "title": "Portable Project page template",
+        "body": "# Portable Project page template\n\n## Overview\n\n**Outcome**\n\n<callout />\n\n## Milestones\n\n**Current work**\n\n<database />\n<database />\n<database />\n<database />\n<database />\n<database />\n<columns />\n"
+      },
+      {
+        "uri": "soter-fixture://projects/project/launch",
+        "title": "Acme launch",
+        "body": "# Acme launch\n\n## Overview\n\n**Outcome**\n\nLaunch the customer program with an attributable delivery plan.\n\n<callout />\n\n## Milestones\n\n**Current work**\n\n<database />\n\n- [ ] Confirm launch readiness.\n"
+      },
+      {
         "uri": "https://www.notion.so/44444444444444444444444444444444",
         "title": "Reusable integrator-onboarding guide",
         "body": "# Reusable integrator-onboarding guide\n\n## Summary\n\nCaptured for definition.\n\n## Behavior / Acceptance\n\n\n\n## Current state in code\n\nNot built yet.\n\n## Relationships\n\n\n\n## Decisions & open questions\n\n"

@@ -64,11 +64,40 @@ selection inputs.
 
 Each runnable Automation declares one closed `operator.acquisition` binding:
 the exact implementation module, callable prepare/finalize exports,
-`containment=connected`, and `recordRequirements`. Kernel resolves every
+`containment=connected`, and `recordRequirements`. Any public or private
+inspector additionally declares its exact closed schema as an owned definition
+artifact. Kernel resolves every
 declared `{ capability, recordTypes }` requirement against the selected
 Integration mappings and private target settings. Missing or ambiguous target
 IDs block the private configuration; Studio must not supply a target ID,
 mapping, or fallback in the acquisition request.
+
+CLI and MCP dispatch preparation and finalization through one provider-neutral
+Core boundary using the exact Automation ID, work ID, and, for finalization,
+checkpoint ID. The dispatcher imports only the current pack-declared module and
+export and revalidates the work/run/checkpoint/lock/graph/host join. Its plan ID
+is mechanically bound as
+`plan.<automation-slug>.connected-acquisition.<prepared-work-suffix>`; another
+plan for the same run cannot satisfy the acquisition boundary. A no-decision
+review Automation may additionally declare paired `inspectExport` /
+`inspectSchema` and `privateInspectExport` / `privateInspectSchema` operations.
+Core validates every returned object against that schema, its self-fingerprint,
+exact work/configuration/lock/graph/host binding, credential and private-state
+path exclusion, and the shared no-authority/privacy invariants. The ordinary
+inspector is the sanitized projection; the private inspector is an explicit
+selected-work read. Neither inspection operation is continuation or execution
+authority.
+
+Before reporting finalization, Core reloads the exact durable private snapshot,
+run, and completed checkpoint and requires the pack return to match all three
+fingerprints and state paths. The callable finalization surface does **not**
+return that private commit projection. It returns one closed sanitized receipt
+containing only Automation/work/configuration identity, lock/graph/host,
+checkpoint/snapshot/run IDs and fingerprints, lifecycle state, explicit
+no-authority facts, and privacy exclusions. Snapshot values, raw provider
+responses, and private state paths are structurally absent. Studio obtains any
+declared private review values only through the separate selected-work private
+inspector.
 
 Automations with later connected transactions separately declare
 `operator.connection.recordRequirements`. These cover the record-backed
@@ -87,6 +116,39 @@ every private-active case the run must already be the exact Core-created
 or ask Core to adopt a repository run document. The resulting host request
 remains a checkpoint-bound transport fact and grants no approval, write, retry,
 readiness, verification, or health authority.
+
+Connected-acquisition read recovery is a distinct Core family, not transaction
+`checkpoint.resume`, `continuationRequest`, or a generic retry flag. The
+canonical callable surfaces are `operator-acquisition-recover` and
+`soter_recover_automation_acquisition`. They require exact Automation, work,
+checkpoint, checkpoint fingerprint, failed step, failed call, and failed-call
+fingerprint bindings. They can emit only one attempt-specific current call
+after the current lock, graph, host, run, capability, provider, authority,
+input, transport, arguments, read-only effects, failure code, and retry budget
+all revalidate.
+
+The durable private operation-plan checkpoint may carry `priorCalls[]` on a
+recovered step and a closed `recoveries[]` ledger. A recovery entry contains
+stable IDs and fingerprints, failure code, attempt and maximum-attempt facts,
+the exact capability-contract fingerprint, `read|disclosure` effects, and
+explicit no-provider-call/no-write/no-reusable-retry facts. It remains private
+runtime state. Workspace inspection, fixtures, catalog views, and ordinary
+prepared work must not expose resolved input, native arguments, provider
+targets, responses, private paths, or recovery authority.
+
+No Studio recovery action is canonical yet. Existing run progress may display
+the failed observation and a later attempt-specific current call after refresh,
+but a future button requires a sender-validated selected-work IPC over a closed
+recovery projection. That projection must bind the exact failed checkpoint and
+call fingerprints. `recovery.id` is only a locator; the separately returned
+`currentCall` is the only executable host request. Studio must keep recovery
+absent for pagination, non-read plans, non-eligible failures, unsafe or
+exhausted retry declarations, approvals, and any connected transaction write.
+Exact recovery re-entry requires the refreshed current checkpoint fingerprint
+and is idempotent only while the named replacement call is still pending. Once
+it completes or the plan advances, Core fails the stale request closed;
+adapters must not substitute the later current call or infer another retry
+action.
 
 ## Configuration transaction
 
@@ -108,6 +170,18 @@ checkpoint state/phase/reason code, the derived configuration `sourceKind`
 represent the candidate configuration, source inputs, settings, authority URIs,
 secret references, raw before/after values, active-lock contents, or tracked/private
 configuration paths.
+
+The closed change category `lock` represents a governed refresh after the
+canonical graph changes while the private desired configuration remains exact.
+Its row exposes only the prior and candidate lock fingerprints plus fixed
+identifier descriptors. Closed `resolution` rows identify which resolved pack,
+capability, binding, source, authority, effect, setting, dependency, host,
+resolver, or projection facts changed and expose only nullable fingerprints;
+they never expose lock bodies or private values. The refresh still requires the
+normal expiring request, exact confirmation, separately consumed start,
+checkpoint, apply, verification, and recovery lifecycle. Studio must not treat
+graph drift, the structurally valid historical lock, or the displayed rows as
+issuance provenance, reusable authority, or readiness/health proof.
 
 Map actions to Core without retaining authority in the renderer:
 
@@ -689,8 +763,8 @@ must not upgrade it into a transaction source.
 
 The executable candidate comes from a separate durable path. Core exposes:
 
-- `task-context-connected-prepare` / `soter_prepare_task_capture_context`;
-- `task-context-connected-finalize` / `soter_finalize_task_capture_context`;
+- `operator-acquisition-prepare` / `soter_prepare_automation_acquisition`;
+- `operator-acquisition-finalize` / `soter_finalize_automation_acquisition`;
 - `task-capture-decision-inspect` and `-commit` / matching MCP decision tools;
 - `task-capture-proposal-inspect`, `-commit`, and `-material` / matching MCP
   proposal tools.
@@ -808,8 +882,9 @@ authority.
 
 The separate durable review path uses:
 
-- `project-capture-context-connected-prepare` /
-  `soter_prepare_project_capture_context` and the matching finalizer;
+- `operator-acquisition-prepare` /
+  `soter_prepare_automation_acquisition` and
+  `soter_finalize_automation_acquisition`;
 - `project-capture-decision-inspect` / `-commit` and matching MCP tools;
 - `project-capture-proposal-inspect` / `-commit` for one private held proposal.
 
@@ -966,6 +1041,54 @@ creation, Product writes, and connected repository access are intentionally
 unavailable. Contained fixture evidence proves no live filesystem/Git access, provider
 identity, Product write, readiness, verification, or health.
 
+### Project Page Review projection
+
+`automation.project-page-review` is a read-only selected-Project inspection. Its
+connected acquisition reads the exact configured Project capture, Project work,
+and Task work policy definitions, the exact configured Project template, the
+selected Project, the Task records actually returned for that Project's exact
+Task relation identities, and the current Project document. It creates no
+proposal, action, approval request, confirmation, continuation request, provider
+write, retry authority, or canonical mutation.
+
+The sanitized
+`soter://contracts/project-page-review-connected-inspection/v1`
+`taskCoverage` is the mechanically derived coverage boundary:
+
+- `expectedCount` is the number of unique Task identities declared by the exact
+  normalized Project;
+- `observedCount` is the number of unique, in-scope normalized Task records
+  actually returned;
+- `unavailableCount` is the exact set difference;
+- the three identity-set fingerprints bind those exact sets without exposing
+  Task identities; and
+- `state=complete` is valid only with
+  `PROJECT_TASK_COVERAGE_COMPLETE` and zero unavailable identities.
+
+An exact strict subset remains reviewable only as
+`state=incomplete` with `PROJECT_TASK_COVERAGE_INCOMPLETE`. That reason is a
+hard operator-attention finding. Studio must show the exact counts and must not
+render the review as current, complete, supported, approval-ready, retryable, or
+executable. Duplicate returned identities and returned identities outside the
+Project relation fail closed rather than being collapsed or substituted.
+
+The private
+`soter://contracts/project-page-review-connected-review/v1` selected-work view
+adds only the unavailable Task **identity fingerprints**. It never exposes the
+raw unavailable identities. Its `tasks` array contains only actual normalized
+Task output, and the durable Task snapshot likewise contains no synthesized
+rows for unavailable identities. The sanitized inspection cannot represent any
+unavailable identity list. Neither view represents raw Task or Project URLs,
+page bodies, provider responses, configuration targets, or an executable
+action.
+
+The zero-Task case is separately exact: the Tasks acquisition step is skipped,
+the private snapshot omits the Task collection entry, and coverage is complete
+at `0/0/0`. Contained and connected tests establish only deterministic
+normalization, strict coverage accounting, selected-work privacy, and
+no-authority behavior. They do not establish live Notion completeness,
+readiness, connected verification, health, or permission to repair the page.
+
 ### Project Pulse projection
 
 The canonical workflow is `automation.project-pulse` in configuration
@@ -995,8 +1118,8 @@ status headline, summary, date, visibility, and project identity exist only in
 the selected-work `project-pulse-derived-review` companion.
 
 The executable candidate comes from a separate durable Context, decision, and
-proposal path. Core exposes the CLI operations
-`project-context-connected-prepare`, `project-context-connected-finalize`,
+proposal path. Core exposes the generic CLI operations
+`operator-acquisition-prepare`, `operator-acquisition-finalize`,
 `project-pulse-decision-inspect`, `project-pulse-decision-commit`,
 `project-pulse-proposal-inspect`, `project-pulse-proposal-commit`, and
 `project-pulse-proposal-material`. A Studio adapter may invoke the same trusted
@@ -1057,9 +1180,10 @@ companion.
 
 Connected Email acquisition is a separate private Context operation, not a new
 prepared-work or lifecycle family. Core exposes
-`soter_prepare_email_triage_context` / `soter_finalize_email_triage_context`
-and the CLI equivalents `email-context-connected-prepare` /
-`email-context-connected-finalize`. The durable v2 operation plan has exactly
+`soter_prepare_automation_acquisition` / `soter_finalize_automation_acquisition`
+with exact Automation, work, and checkpoint bindings; the CLI uses only the
+matching generic `operator-acquisition-*` commands.
+The durable v2 operation plan has exactly
 two capability steps: `mail.messages.search` and a bound
 `mail.threads.read`. If Studio later projects acquisition progress, render only
 the canonical operation-plan checkpoint/current-call facts already used by the

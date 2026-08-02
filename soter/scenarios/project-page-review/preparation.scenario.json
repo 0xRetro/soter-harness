@@ -1,0 +1,55 @@
+{
+  "$contract": "soter://contracts/scenario/v1",
+  "contractVersion": "1.0.0",
+  "id": "project-page-review.preparation",
+  "automation": "automation.project-page-review",
+  "intent": "operate",
+  "input": {
+    "project": "one exact Project reference",
+    "focus": "optional private review context"
+  },
+  "expected": {
+    "capabilityOrder": [
+      "projects.records.read",
+      "projects.records.read",
+      "tasks.records.read",
+      "documents.content.read",
+      "projects.records.read",
+      "tasks.records.read",
+      "documents.content.read"
+    ],
+    "effectModes": {
+      "read": "allow",
+      "disclosure": "allow",
+      "write": "confirm",
+      "dispatch": "prohibit",
+      "destructive": "prohibit"
+    },
+    "outcomes": [
+      "portable-policies.exactly-grounded",
+      "template-and-page.exactly-compared",
+      "related-tasks.complete",
+      "structural-drift.visible",
+      "attention-only-fields.not-promoted",
+      "proposals-and-writes.absent"
+    ],
+    "invariants": [
+      "template-is-configured-source",
+      "page-body-and-task-title.private",
+      "raw-urls-and-bodies.excluded",
+      "provider-live-view-wiring.unavailable",
+      "no-approval-continuation-or-write-authority"
+    ],
+    "evidence": [
+      "exact-lock",
+      "policy-source-fingerprints",
+      "template-and-page-fingerprints",
+      "complete-task-coverage-fingerprint",
+      "automation-owned-derived-review-contract-fingerprint",
+      "source-case-exactly-fingerprinted"
+    ]
+  },
+  "sourceCases": [
+    "soter/fixtures/providers/notion/workspace-records.json"
+  ]
+}

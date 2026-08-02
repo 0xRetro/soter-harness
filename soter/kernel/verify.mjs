@@ -107,6 +107,13 @@ function fingerprintJson(value) {
     .digest('hex');
 }
 
+function schemaObjectsAreClosed(value) {
+  if (Array.isArray(value)) return value.every(schemaObjectsAreClosed);
+  if (!value || typeof value !== 'object') return true;
+  if (value.type === 'object' && value.additionalProperties !== false) return false;
+  return Object.values(value).every(schemaObjectsAreClosed);
+}
+
 function isExactInstant(value) {
   const parsed = typeof value === 'string' ? Date.parse(value) : Number.NaN;
   return Number.isFinite(parsed) && new Date(parsed).toISOString() === value;
@@ -1108,8 +1115,72 @@ function checkPackGraph(root, documents, out, census, options = {}) {
             'connected-acquisition adapter is not a declared implementation artifact: '
               + acquisition.module,
             'Core must not execute an unowned or unfingerprinted Automation acquisition module',
-            'declare the exact acquisition module as an implementation artifact of this pack'
+              'declare the exact acquisition module as an implementation artifact of this pack'
           ));
+        }
+        const acquisitionExports = [
+          acquisition.prepareExport,
+          acquisition.finalizeExport,
+          acquisition.inspectExport,
+          acquisition.privateInspectExport
+        ].filter(Boolean);
+        if (new Set(acquisitionExports).size !== acquisitionExports.length) {
+          out.push(violation(
+            entry.file,
+            'SOTER_ACQUISITION_EXPORT_IDENTITY',
+            'connected-acquisition prepare, finalize, and inspection exports must be distinct',
+            'Core dispatches only the exact operation named by the current governed pack',
+            'give every declared connected-acquisition operation one distinct module export'
+          ));
+        }
+        if (acquisition.privateInspectExport && !acquisition.inspectExport) {
+          out.push(violation(
+            entry.file,
+            'SOTER_ACQUISITION_INSPECTION_BOUNDARY',
+            'private selected-work inspection requires a paired sanitized inspection export',
+            'private review must supplement rather than replace the ordinary sanitized projection',
+            'declare the sanitized inspectExport or remove privateInspectExport'
+          ));
+        }
+        for (const [kind, exportKey, schemaKey] of [
+          ['sanitized', 'inspectExport', 'inspectSchema'],
+          ['private selected-work', 'privateInspectExport', 'privateInspectSchema']
+        ]) {
+          const exportName = acquisition[exportKey];
+          const schemaPath = acquisition[schemaKey];
+          if (Boolean(exportName) !== Boolean(schemaPath)) {
+            out.push(violation(
+              entry.file,
+              'SOTER_ACQUISITION_INSPECTION_SCHEMA_BINDING',
+              kind + ' acquisition inspector does not declare one exact paired schema',
+              'generic Core dispatch can enforce a pack-owned projection only when its export and closed schema are paired',
+              'declare both ' + exportKey + ' and ' + schemaKey + ' or remove both'
+            ));
+            continue;
+          }
+          if (!schemaPath) continue;
+          const schemaArtifact = entry.doc.artifacts.find((artifact) => {
+            return artifact.path === schemaPath && artifact.role === 'definition';
+          });
+          const schemaFile = path.resolve(root, schemaPath);
+          let schema = null;
+          try {
+            schema = JSON.parse(fs.readFileSync(schemaFile, 'utf8'));
+          } catch {
+            schema = null;
+          }
+          if (!schemaArtifact || !schema || typeof schema.$id !== 'string'
+            || schema.type !== 'object' || schema.additionalProperties !== false
+            || !schemaObjectsAreClosed(schema)) {
+            out.push(violation(
+              entry.file,
+              'SOTER_ACQUISITION_INSPECTION_SCHEMA',
+              kind + ' acquisition inspection schema is absent, unowned, malformed, or open: '
+                + schemaPath,
+              'pack-owned inspection must be mechanically closed before generic Core can return it',
+              'declare one valid definition artifact whose every object sets additionalProperties false'
+            ));
+          }
         }
         const recordCoverage = new Set();
         for (const requirement of acquisition.recordRequirements) {
@@ -3755,6 +3826,8 @@ function checkRuntimeArtifacts(
         = privateContainedBasis.substitutions.notionOptionMappingScopeCount;
       const optionEntryCount
         = privateContainedBasis.substitutions.notionOptionMappingEntryCount;
+      const fieldBindingScopeCount
+        = privateContainedBasis.substitutions.notionFieldBindingScopeCount;
       if (lock
         && (lock.doc.configuration.name !== privateContainedBasis.configurationName
           || lock.doc.configuration.fingerprint
@@ -3767,7 +3840,8 @@ function checkRuntimeArtifacts(
             ? (optionEntryCount !== 0
               || privateContainedBasis.substitutions.notionOptionMappingScopeFingerprint
                 !== fingerprintJson([]))
-            : optionEntryCount < optionScopeCount))) {
+            : optionEntryCount < optionScopeCount)
+          || fieldBindingScopeCount < 1)) {
         out.push(violation(
           entry.file,
           'SOTER_PRIVATE_CONTAINED_APPLICABILITY',
@@ -4370,11 +4444,19 @@ function checkRuntimeArtifacts(
 function configuredOptionMappingRequirementScopes(
   configurationEntry,
   settingsDefinition,
+  configured,
   selected,
   packs,
   providerMappings
 ) {
   const requiredScopes = new Set();
+  const unavailableFields = new Set((configured?.fieldBindings || [])
+    .filter((binding) => binding?.state === 'unavailable')
+    .map((binding) => [
+      binding.mapping,
+      binding.recordType,
+      binding.field
+    ].join('|')));
   for (const packId of selected) {
     const automation = packs.get(packId)?.doc;
     if (automation?.layer !== 'automation') continue;
@@ -4404,16 +4486,238 @@ function configuredOptionMappingRequirementScopes(
         if (records.length !== 1) continue;
         for (const field of records[0].record.fields) {
           if (field.valueMapping !== 'configured-bijection') continue;
-          requiredScopes.add([
+          const scope = [
             records[0].mapping.id,
             records[0].record.id,
             field.portable
-          ].join('|'));
+          ].join('|');
+          if (!unavailableFields.has(scope)) requiredScopes.add(scope);
         }
       }
     }
   }
   return requiredScopes;
+}
+
+function configuredFieldBindingRequirementScopes(
+  configurationEntry,
+  settingsDefinition,
+  configured,
+  selected,
+  packs,
+  providerMappings
+) {
+  const requiredScopes = new Map();
+  for (const packId of selected) {
+    const automation = packs.get(packId)?.doc;
+    if (automation?.layer !== 'automation') continue;
+    const requirements = [
+      ...(automation.operator?.acquisition?.recordRequirements || []),
+      ...(automation.operator?.connection?.recordRequirements || [])
+    ];
+    for (const requirement of requirements) {
+      const bindings = configurationEntry.doc.bindings.filter((binding) => {
+        return binding.capability === requirement.capability;
+      });
+      if (bindings.length !== 1) continue;
+      const matches = [...providerMappings.values()].filter((mapping) => {
+        return mapping.doc.pack === bindings[0].providerPack
+          && mapping.doc.settingsDefinition === settingsDefinition.doc.id
+          && mapping.doc.capabilities.includes(requirement.capability);
+      });
+      for (const recordType of requirement.recordTypes) {
+        const records = matches.flatMap((mapping) => {
+          return mapping.doc.recordTypes
+            .filter((record) => {
+              return record.id === recordType
+                && record.capabilities.includes(requirement.capability);
+            })
+            .map((record) => ({ mapping, record }));
+        });
+        if (records.length !== 1) continue;
+        const target = configured?.targets?.[records[0].record.target];
+        if (typeof target !== 'string' || !target.startsWith('collection://')) {
+          continue;
+        }
+        for (const field of records[0].record.fields) {
+          const scope = [
+            records[0].mapping.doc.id,
+            records[0].record.id,
+            field.portable
+          ].join('|');
+          const existing = requiredScopes.get(scope) || {
+            mapping: records[0].mapping,
+            record: records[0].record,
+            field,
+            capabilities: new Set()
+          };
+          existing.capabilities.add(requirement.capability);
+          requiredScopes.set(scope, existing);
+        }
+      }
+    }
+  }
+  return requiredScopes;
+}
+
+function checkConfiguredFieldBindings(
+  configurationEntry,
+  settingsDefinition,
+  configured,
+  selected,
+  packs,
+  contextModels,
+  providerMappings,
+  out
+) {
+  const requiredScopes = configuredFieldBindingRequirementScopes(
+    configurationEntry,
+    settingsDefinition,
+    configured,
+    selected,
+    packs,
+    providerMappings
+  );
+  const declarations = configured?.fieldBindings;
+  const connectedTargets = Object.values(configured?.targets || {}).some((target) => {
+    return typeof target === 'string' && target.startsWith('collection://');
+  });
+  if (declarations === undefined) {
+    if (connectedTargets && requiredScopes.size > 0) {
+      out.push(violation(
+        configurationEntry.file,
+        'SOTER_PACK_SETTINGS_SEMANTIC_INVARIANT',
+        'settings.' + settingsDefinition.doc.pack
+          + ' omits private provider field bindings for selected connected Automation records',
+        'connected provider targets cannot assume workspace property names or optional property availability',
+        'configure every selected record field as exactly mapped or explicitly unavailable'
+      ));
+    }
+    return;
+  }
+  if (!Array.isArray(declarations)) return;
+  const scopes = new Set();
+  const providerFields = new Map();
+  for (const declaration of declarations) {
+    if (!declaration || typeof declaration !== 'object' || Array.isArray(declaration)) {
+      continue;
+    }
+    const scope = [
+      declaration.mapping,
+      declaration.recordType,
+      declaration.field
+    ].join('|');
+    const mapping = providerMappings.get(declaration.mapping);
+    const contextModel = mapping
+      ? contextModels.get(mapping.doc.contextModel)
+      : null;
+    const records = mapping?.doc.recordTypes?.filter((record) => {
+      return record.id === declaration.recordType;
+    }) || [];
+    const fields = records.flatMap((record) => {
+      return record.fields.filter((field) => field.portable === declaration.field);
+    });
+    const contextRecords = contextModel?.doc.recordTypes?.filter((record) => {
+      return record.id === declaration.recordType;
+    }) || [];
+    const contextFields = contextRecords.flatMap((record) => {
+      return record.fields.filter((field) => field.id === declaration.field);
+    });
+    const target = records.length === 1
+      ? configured?.targets?.[records[0].target]
+      : null;
+    if (!mapping
+      || mapping.doc.settingsDefinition !== settingsDefinition.doc.id
+      || !selected.has(mapping.doc.pack)
+      || !contextModel
+      || !selected.has(contextModel.doc.pack)
+      || records.length !== 1
+      || fields.length !== 1
+      || contextRecords.length !== 1
+      || contextFields.length !== 1
+      || typeof target !== 'string'
+      || !target.startsWith('collection://')) {
+      out.push(violation(
+        configurationEntry.file,
+        'SOTER_PACK_SETTINGS_SEMANTIC_INVARIANT',
+        'settings.' + settingsDefinition.doc.pack
+          + ' field-binding scope does not resolve one selected portable provider field: '
+          + scope,
+        'private provider field bindings must bind one selected Integration field and its Context meaning',
+        'select the owning Context and mapping or correct the record and portable field identity'
+      ));
+    }
+    if (scopes.has(scope)) {
+      out.push(violation(
+        configurationEntry.file,
+        'SOTER_PACK_SETTINGS_SEMANTIC_INVARIANT',
+        'settings.' + settingsDefinition.doc.pack
+          + ' contains a duplicate provider field-binding scope: ' + scope,
+        'one portable provider field must resolve through one private binding state',
+        'remove the duplicate field-binding scope'
+      ));
+    }
+    scopes.add(scope);
+    if (declaration.state === 'mapped') {
+      const recordScope = [declaration.mapping, declaration.recordType].join('|');
+      if (!providerFields.has(recordScope)) providerFields.set(recordScope, new Set());
+      if (providerFields.get(recordScope).has(declaration.provider)) {
+        out.push(violation(
+          configurationEntry.file,
+          'SOTER_PACK_SETTINGS_SEMANTIC_INVARIANT',
+          'settings.' + settingsDefinition.doc.pack
+            + ' maps multiple portable fields to one provider property: '
+            + recordScope + '|' + declaration.provider,
+          'one provider property cannot normalize into multiple portable meanings in the same record',
+          'map each portable field to one unique provider property'
+        ));
+      }
+      providerFields.get(recordScope).add(declaration.provider);
+    }
+    const createBound = records[0]?.capabilities?.some((capability) => {
+      return parseRecordCapability(capability)?.operation === 'create'
+        && configurationEntry.doc.bindings.some((binding) => {
+          return binding.capability === capability
+            && binding.providerPack === mapping?.doc.pack;
+        });
+    });
+    if (declaration.state === 'unavailable'
+      && requiredScopes.has(scope)
+      && contextFields[0]?.nullable === false) {
+      out.push(violation(
+        configurationEntry.file,
+        'SOTER_PACK_SETTINGS_SEMANTIC_INVARIANT',
+        'settings.' + settingsDefinition.doc.pack
+          + ' marks a selected Context-non-nullable field unavailable: ' + scope,
+        'a selected connected read cannot normalize a record whose required identity or value is structurally absent',
+        'map the required provider property or remove the Automation record requirement'
+      ));
+    } else if (declaration.state === 'unavailable'
+      && contextFields[0]?.requiredOnCreate
+      && createBound) {
+      out.push(violation(
+        configurationEntry.file,
+        'SOTER_PACK_SETTINGS_SEMANTIC_INVARIANT',
+        'settings.' + settingsDefinition.doc.pack
+          + ' marks a Context-required create field unavailable: ' + scope,
+        'a selected create route must preserve every Context-required create value',
+        'map the required provider property or remove the create binding'
+      ));
+    }
+  }
+  if (declarations.length > 0) {
+    for (const scope of requiredScopes.keys()) {
+      if (scopes.has(scope)) continue;
+      out.push(violation(
+        configurationEntry.file,
+        'SOTER_PACK_SETTINGS_SEMANTIC_INVARIANT',
+        'settings.' + settingsDefinition.doc.pack
+          + ' omits a required connected Automation field-binding scope: ' + scope,
+        'every selected connected record field must be explicitly mapped or unavailable',
+        'add the complete field-binding scope before activating the private target'
+      ));
+    }
+  }
 }
 
 function checkPackSettingSemanticInvariants(
@@ -4423,13 +4727,28 @@ function checkPackSettingSemanticInvariants(
   selected,
   packs,
   providerMappings,
+  contextModels,
   out
 ) {
   for (const invariant of settingsDefinition.doc.semanticInvariants || []) {
+    if (invariant === 'provider-field-bindings-explicit') {
+      checkConfiguredFieldBindings(
+        configurationEntry,
+        settingsDefinition,
+        configured,
+        selected,
+        packs,
+        contextModels,
+        providerMappings,
+        out
+      );
+      continue;
+    }
     if (invariant !== 'option-mappings-exact-bijection') continue;
     const requiredScopes = configuredOptionMappingRequirementScopes(
       configurationEntry,
       settingsDefinition,
+      configured,
       selected,
       packs,
       providerMappings
@@ -4453,6 +4772,13 @@ function checkPackSettingSemanticInvariants(
     }
     if (!Array.isArray(declarations)) continue;
     const scopes = new Set();
+    const unavailableFieldScopes = new Set((configured?.fieldBindings || [])
+      .filter((binding) => binding?.state === 'unavailable')
+      .map((binding) => [
+        binding.mapping,
+        binding.recordType,
+        binding.field
+      ].join('|')));
     for (const declaration of declarations) {
       if (!declaration || typeof declaration !== 'object' || Array.isArray(declaration)) {
         continue;
@@ -4497,6 +4823,16 @@ function checkPackSettingSemanticInvariants(
         ));
       }
       scopes.add(scope);
+      if (unavailableFieldScopes.has(scope)) {
+        out.push(violation(
+          configurationEntry.file,
+          'SOTER_PACK_SETTINGS_SEMANTIC_INVARIANT',
+          'settings.' + settingsDefinition.doc.pack
+            + ' maps provider option values for an explicitly unavailable field: ' + scope,
+          'an unavailable provider property cannot also carry an inert or reusable private option vocabulary',
+          'remove the option-mapping scope or map the provider field explicitly'
+        ));
+      }
       if (!Array.isArray(declaration.entries)) continue;
       const portable = declaration.entries.map((entry) => entry?.portable);
       const provider = declaration.entries.map((entry) => entry?.provider);
@@ -4670,6 +5006,7 @@ function checkConfiguration(
         selected,
         packs,
         providerMappings,
+        contextModels,
         out
       );
     }
@@ -7183,6 +7520,24 @@ function selftest(root) {
       return item.code === 'SOTER_ACQUISITION_ADAPTER_OWNERSHIP';
     })) {
       failures.push('Task Capture accepted an unowned connected-acquisition adapter');
+    }
+    fs.writeFileSync(taskPackFile, originalTaskPackText);
+
+    const duplicateTaskAcquisitionExport = JSON.parse(originalTaskPackText);
+    duplicateTaskAcquisitionExport.operator.acquisition.finalizeExport =
+      duplicateTaskAcquisitionExport.operator.acquisition.prepareExport;
+    fs.writeFileSync(
+      taskPackFile,
+      JSON.stringify(duplicateTaskAcquisitionExport, null, 2) + '\n'
+    );
+    const duplicateTaskAcquisitionExportResult = verifyConfigurationCandidate(temp, {
+      configPath: taskConfigurationFile,
+      configuration: JSON.parse(taskConfigurationText)
+    });
+    if (!duplicateTaskAcquisitionExportResult.violations.some((item) => {
+      return item.code === 'SOTER_ACQUISITION_EXPORT_IDENTITY';
+    })) {
+      failures.push('Task Capture accepted duplicate connected-acquisition export identities');
     }
     fs.writeFileSync(taskPackFile, originalTaskPackText);
 

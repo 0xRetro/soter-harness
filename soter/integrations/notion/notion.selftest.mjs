@@ -234,6 +234,25 @@ function syntheticProductFixture() {
   };
 }
 
+function withMappedFieldBindings(settings, mappings) {
+  const configured = structuredClone(settings);
+  const notion = configured['integration.notion'];
+  if (!notion || typeof notion !== 'object' || Array.isArray(notion)) return configured;
+  notion.fieldBindings = mappings.flatMap((mapping) => {
+    return mapping.recordTypes.flatMap((record) => {
+      if (!Object.hasOwn(notion.targets || {}, record.target)) return [];
+      return record.fields.map((field) => ({
+        mapping: mapping.id,
+        recordType: record.id,
+        field: field.portable,
+        state: 'mapped',
+        provider: field.provider
+      }));
+    });
+  });
+  return configured;
+}
+
 export async function selftestNotionRecordMappings(root) {
   assertClosedNotionWriteOutputs(root);
   assertClosedNotionReadOutputs(root);
@@ -599,7 +618,7 @@ export async function selftestNotionRecordMappings(root) {
     /does not declare record type feature/
   );
 
-  const settings = {
+  const settings = withMappedFieldBindings({
     'integration.notion': {
       targets: { features: 'collection://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' },
       optionMappings: [{
@@ -613,7 +632,7 @@ export async function selftestNotionRecordMappings(root) {
         ]
       }]
     }
-  };
+  }, [mapping]);
   const privateTaskProviderStatus = 'PRIVATE_PROVIDER_TASK_STATUS_SENTINEL';
   const privateTaskProviderContext = 'PRIVATE_PROVIDER_TASK_CONTEXT_SENTINEL';
   const canonicalTaskProjectUri
@@ -628,7 +647,7 @@ export async function selftestNotionRecordMappings(root) {
     taskProviderPersonUuid,
     'provider-person.secondary'
   ];
-  const taskSettings = {
+  const taskSettings = withMappedFieldBindings({
     'integration.notion': {
       targets: { tasks: 'collection://dddddddddddddddddddddddddddddddd' },
       optionMappings: [
@@ -648,7 +667,208 @@ export async function selftestNotionRecordMappings(root) {
         }
       ]
     }
+  }, [tasksMapping]);
+  const liveTaskSettings = structuredClone(taskSettings);
+  liveTaskSettings['integration.notion'].fieldBindings
+    = liveTaskSettings['integration.notion'].fieldBindings.map((binding) => {
+      if (binding.recordType !== 'task') return binding;
+      if (binding.field === 'title') {
+        return { ...binding, provider: 'Task Name' };
+      }
+      if ([
+        'sourceMeetingUris',
+        'sourceQuotes',
+        'sourceSummaryFingerprints'
+      ].includes(binding.field)) {
+        return {
+          mapping: binding.mapping,
+          recordType: binding.recordType,
+          field: binding.field,
+          state: 'unavailable',
+          reasonCode: 'PROVIDER_PROPERTY_UNAVAILABLE'
+        };
+      }
+      return binding;
+    });
+  const contradictoryTaskChoiceSettings = structuredClone(liveTaskSettings);
+  contradictoryTaskChoiceSettings['integration.notion'].fieldBindings
+    = contradictoryTaskChoiceSettings['integration.notion'].fieldBindings.map((binding) => {
+      if (binding.recordType !== 'task' || binding.field !== 'context') return binding;
+      return {
+        mapping: binding.mapping,
+        recordType: binding.recordType,
+        field: binding.field,
+        state: 'unavailable',
+        reasonCode: 'PROVIDER_PROPERTY_UNAVAILABLE'
+      };
+    });
+  await expectFailure(
+    'option mapping for unavailable connected task field',
+    () => prepareMcp({
+      capability: 'tasks.records.read',
+      input: { recordTypes: ['task'], filters: { status: 'To Do' }, limit: 1 },
+      settings: contradictoryTaskChoiceSettings,
+      mappings: [tasksMapping]
+    }),
+    /maps option values for an unavailable provider field/
+  );
+  const liveTaskSchemaResponse = {
+    structuredContent: {
+      result: {
+        metadata: { type: 'data_source' },
+        text: '<data-source url="{{collection://dddddddddddddddddddddddddddddddd}}">'
+          + '<data-source-state>'
+          + JSON.stringify({
+            schema: {
+              'Task Name': { name: 'Task Name', type: 'title' },
+              Status: {
+                name: 'Status',
+                type: 'status',
+                groups: {
+                  to_do: [{ name: privateTaskProviderStatus }],
+                  in_progress: [],
+                  complete: []
+                }
+              },
+              Context: {
+                name: 'Context',
+                type: 'select',
+                options: [{ name: privateTaskProviderContext }]
+              },
+              Project: { name: 'Project', type: 'relation' },
+              'Assigned To': { name: 'Assigned To', type: 'person' },
+              'Next Action': { name: 'Next Action', type: 'date' },
+              PM: { name: 'PM', type: 'person' },
+              'Client Contact': { name: 'Client Contact', type: 'person' }
+            }
+          })
+          + '</data-source-state></data-source>'
+      }
+    }
   };
+  const liveTaskSchema = completeMcp({
+    capability: 'tasks.schema.read',
+    authority: 'authority.tasks.instance',
+    input: { recordType: 'task' },
+    responseProfile: 'notion.codex.connector.v1',
+    response: liveTaskSchemaResponse,
+    at: AT,
+    mappings: [tasksMapping],
+    settings: liveTaskSettings
+  });
+  assert.deepEqual(
+    liveTaskSchema.schema.fields.map((field) => field.id),
+    ['assigneeIds', 'context', 'nextActionOn', 'projectUris', 'status', 'title'],
+    'Connected schema normalization must expose only explicitly mapped portable fields.'
+  );
+  assert.equal(
+    JSON.stringify(liveTaskSchema).includes('Client Contact')
+      || JSON.stringify(liveTaskSchema).includes('Task Name'),
+    false,
+    'Connected schema normalization must not disclose private provider property names.'
+  );
+  const liveTaskReadInput = {
+    recordTypes: ['task'],
+    filters: { status: 'To Do' },
+    limit: 1
+  };
+  const liveTaskReadRequest = prepareMcp({
+    capability: 'tasks.records.read',
+    input: liveTaskReadInput,
+    settings: liveTaskSettings,
+    mappings: [tasksMapping]
+  });
+  const liveTaskQuery = liveTaskReadRequest.arguments.data.query;
+  assert.equal(
+    liveTaskQuery.includes('"Task Name"')
+      && !liveTaskQuery.includes('"Source Meetings"')
+      && !liveTaskQuery.includes('"Grounding"')
+      && !liveTaskQuery.includes('"Summary Fingerprints"'),
+    true,
+    'Connected record reads must select renamed mapped properties and omit unavailable fields.'
+  );
+  const liveTaskRead = completeMcp({
+    capability: 'tasks.records.read',
+    authority: 'authority.tasks.instance',
+    input: liveTaskReadInput,
+    responseProfile: 'notion.codex.connector.v1',
+    response: {
+      structuredContent: {
+        result: {
+          results: [{
+            __soterType: 'task',
+            __soterId: 'https://www.notion.so/dddddddddddddddddddddddddddddddd',
+            __soterFields: JSON.stringify({
+              title: 'Review connected field bindings',
+              status: privateTaskProviderStatus,
+              context: privateTaskProviderContext,
+              projectUris: JSON.stringify([]),
+              assigneeIds: JSON.stringify([]),
+              nextActionOn: null,
+              rawProviderResponse: 'HOSTILE_UNDECLARED_NOTION_FIELD_SENTINEL'
+            })
+          }],
+          has_more: false
+        }
+      }
+    },
+    at: AT,
+    mappings: [tasksMapping],
+    settings: liveTaskSettings
+  });
+  assert.deepEqual(
+    Object.keys(liveTaskRead.records[0].fields).sort(),
+    ['assigneeIds', 'context', 'nextActionOn', 'projectUris', 'status', 'title'],
+    'Connected record completion must ignore undeclared provider extras and unavailable fields.'
+  );
+  assert.equal(
+    JSON.stringify(liveTaskRead).includes('HOSTILE_UNDECLARED_NOTION_FIELD_SENTINEL'),
+    false,
+    'Undeclared provider extras must not cross the normalized output boundary.'
+  );
+  const missingTaskFieldBindingSettings = structuredClone(liveTaskSettings);
+  missingTaskFieldBindingSettings['integration.notion'].fieldBindings
+    = missingTaskFieldBindingSettings['integration.notion'].fieldBindings.filter((binding) => {
+      return !(binding.recordType === 'task' && binding.field === 'nextActionOn');
+    });
+  await expectFailure(
+    'missing connected task field binding',
+    () => prepareMcp({
+      capability: 'tasks.records.read',
+      input: liveTaskReadInput,
+      settings: missingTaskFieldBindingSettings,
+      mappings: [tasksMapping]
+    }),
+    /omits one required connected field binding/
+  );
+  const duplicateTaskProviderFieldSettings = structuredClone(liveTaskSettings);
+  duplicateTaskProviderFieldSettings['integration.notion'].fieldBindings
+    .find((binding) => binding.recordType === 'task' && binding.field === 'status')
+    .provider = 'Task Name';
+  await expectFailure(
+    'duplicate connected task provider field binding',
+    () => prepareMcp({
+      capability: 'tasks.records.read',
+      input: liveTaskReadInput,
+      settings: duplicateTaskProviderFieldSettings,
+      mappings: [tasksMapping]
+    }),
+    /multiple portable fields to one provider property/
+  );
+  await expectFailure(
+    'unavailable connected task filter',
+    () => prepareMcp({
+      capability: 'tasks.records.read',
+      input: {
+        recordTypes: ['task'],
+        filters: { sourceQuotes: ['private grounding'] },
+        limit: 1
+      },
+      settings: liveTaskSettings,
+      mappings: [tasksMapping]
+    }),
+    /does not expose filter field sourceQuotes/
+  );
   const taskCreateInput = {
     recordType: 'task',
     deduplicationKey: 'task-connected-array-selftest',
@@ -667,6 +887,29 @@ export async function selftestNotionRecordMappings(root) {
       nextActionOn: '2026-07-24'
     }
   };
+  const liveTaskCreateInput = structuredClone(taskCreateInput);
+  delete liveTaskCreateInput.fields.sourceMeetingUris;
+  const liveTaskCreateRequest = prepareMcp({
+    capability: 'tasks.records.create',
+    input: liveTaskCreateInput,
+    settings: liveTaskSettings,
+    mappings: [tasksMapping]
+  });
+  assert.equal(
+    liveTaskCreateRequest.arguments.pages[0].properties['Task Name'],
+    liveTaskCreateInput.fields.title,
+    'Connected writes must use the exact private provider property binding.'
+  );
+  await expectFailure(
+    'unavailable optional connected task write',
+    () => prepareMcp({
+      capability: 'tasks.records.create',
+      input: taskCreateInput,
+      settings: liveTaskSettings,
+      mappings: [tasksMapping]
+    }),
+    /contains unmapped field task\.sourceMeetingUris/
+  );
   const taskCreateRequest = prepareMcp({
     capability: 'tasks.records.create',
     input: taskCreateInput,
@@ -1083,13 +1326,13 @@ export async function selftestNotionRecordMappings(root) {
     = 'https://app.notion.com/p/abababab-abab-abab-abab-abababababab?private=query-sentinel';
   const canonicalProcessUri
     = 'https://www.notion.so/abababababababababababababababab';
-  const processRunSettings = {
+  const processRunSettings = withMappedFieldBindings({
     'integration.notion': {
       targets: {
         'process-runs': 'collection://12121212121212121212121212121212'
       }
     }
-  };
+  }, [processMapping]);
   const processRunInput = {
     recordTypes: ['process-run'],
     filters: { processUri: processUriAlias },
@@ -1199,7 +1442,7 @@ export async function selftestNotionRecordMappings(root) {
   );
   const privateOrganizationTagA = 'PRIVATE_PROVIDER_ORGANIZATION_TAG_A_SENTINEL';
   const privateOrganizationTagB = 'PRIVATE_PROVIDER_ORGANIZATION_TAG_B_SENTINEL';
-  const organizationSettings = {
+  const organizationSettings = withMappedFieldBindings({
     'integration.notion': {
       targets: {
         organizations: 'collection://eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
@@ -1215,7 +1458,7 @@ export async function selftestNotionRecordMappings(root) {
         ]
       }]
     }
-  };
+  }, [crmMapping]);
   const organizationCreateInput = {
     recordType: 'organization',
     deduplicationKey: 'organization-option-array-selftest',
@@ -1438,9 +1681,15 @@ export async function selftestNotionRecordMappings(root) {
   });
   const currentAppDocumentProviderResult = {
     metadata: { type: 'page' },
-    title: currentAppDocumentInput.expectedTitle,
+    title: '🏗️ ' + currentAppDocumentInput.expectedTitle,
     url: 'https://app.notion.com/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
-    text: '<page id="eeee"><properties></properties>\nExact policy body.\n</page>'
+    text: 'Here is the result of "view" for the Page with URL '
+      + 'https://app.notion.com/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'
+      + ' as of 2026-07-15T06:22:07.615Z:\n'
+      + '<page url="https://app.notion.com/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee">'
+      + '<properties>'
+      + '{"Name":"Connected policy","Status":"Active"}'
+      + '</properties>\nExact policy body.\n</page>'
   };
   const currentAppDocumentRead = completeMcp({
     capability: 'documents.content.read',
@@ -1471,6 +1720,396 @@ export async function selftestNotionRecordMappings(root) {
     currentAppDocumentRead,
     'Direct Claude Notion page data must normalize identically to the governed wrapper.'
   );
+  assert.equal(
+    currentAppDocumentRead.document.title,
+    currentAppDocumentInput.expectedTitle,
+    'A decorative provider display title must not replace the exact database title property.'
+  );
+  const nestedPageBody = 'Parent policy body.\n'
+    + '<page color="blue" '
+    + 'url="https://app.notion.com/p/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa">'
+    + '<properties>{"title":"Child policy page"}</properties>\n'
+    + 'Child policy body.\n'
+    + '<page id="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb">'
+    + 'Nested child policy body.'
+    + '</page>\n'
+    + '</page>\n'
+    + 'Parent policy tail.';
+  const nestedPageDocumentRead = completeMcp({
+    capability: 'documents.content.read',
+    authority: 'authority.documents.instance',
+    input: currentAppDocumentInput,
+    responseProfile: 'notion.codex.connector.v1',
+    response: {
+      structuredContent: {
+        result: {
+          ...currentAppDocumentProviderResult,
+          text: 'Here is the result of "view" for the Page with URL '
+            + 'https://app.notion.com/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'
+            + ' as of 2026-07-15T06:22:07.615Z:\n'
+            + '<page url="https://app.notion.com/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee" '
+            + 'icon="🏗️">'
+            + '<properties>'
+            + '{"Name":"Connected policy","Status":"Active"}'
+            + '</properties>\n'
+            + nestedPageBody
+            + '\n</page>'
+        }
+      }
+    },
+    at: AT,
+    mappings: [],
+    settings: {}
+  });
+  assert.equal(
+    nestedPageDocumentRead.document.body,
+    nestedPageBody,
+    'Balanced nested Notion child pages must remain private document body content.'
+  );
+  assert.equal(
+    JSON.stringify(nestedPageDocumentRead).includes('🏗️'),
+    false,
+    'The optional Notion page icon must not enter normalized document output.'
+  );
+  const privateAncestryMarker = 'PRIVATE_NOTION_ANCESTRY_SENTINEL';
+  const ancestorPathDocumentRead = completeMcp({
+    capability: 'documents.content.read',
+    authority: 'authority.documents.instance',
+    input: currentAppDocumentInput,
+    responseProfile: 'notion.codex.connector.v1',
+    response: {
+      structuredContent: {
+        result: {
+          ...currentAppDocumentProviderResult,
+          text: '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee">\n'
+            + '<ancestor-path>\n'
+            + '<parent-data-source url="collection://'
+            + privateAncestryMarker + '"/>\n'
+            + '<ancestor-2-database url="https://app.notion.com/'
+            + 'cccccccccccccccccccccccccccccccc"/>\n'
+            + '<ancestor-3-page url="https://app.notion.com/'
+            + 'dddddddddddddddddddddddddddddddd"/>\n'
+            + '</ancestor-path>\n'
+            + '<properties>{"Name":"Connected policy"}</properties>\n'
+            + 'Ancestor-bound policy body.\n'
+            + '</page>'
+        }
+      }
+    },
+    at: AT,
+    mappings: [],
+    settings: {}
+  });
+  assert.equal(
+    ancestorPathDocumentRead.document.body,
+    'Ancestor-bound policy body.',
+    'Bounded Notion ancestry metadata must not replace or enter the outer document body.'
+  );
+  assert.equal(
+    JSON.stringify(ancestorPathDocumentRead).includes(privateAncestryMarker),
+    false,
+    'Raw Notion ancestry metadata must remain excluded from normalized output.'
+  );
+  for (const [label, text, pattern] of [
+    [
+      'substituted Notion page-envelope identity',
+      '<page url="https://app.notion.com/p/ffffffffffffffffffffffffffffffff">'
+        + '<properties>{"Name":"Connected policy"}</properties>\n'
+        + 'Substituted private body.\n</page>',
+      /identifies a different page/
+    ],
+    [
+      'duplicate Notion page-envelope identities',
+      '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" '
+        + 'id="eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee">'
+        + '<properties>{"Name":"Connected policy"}</properties>\n'
+        + 'Duplicate-bound body.\n</page>',
+      /one exact page identity/
+    ],
+    [
+      'duplicate Notion page-envelope url identity',
+      '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" '
+        + 'url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee">'
+        + '<properties>{"Name":"Connected policy"}</properties>\n'
+        + 'Duplicate identity body.\n</page>',
+      /one exact page identity/
+    ],
+    [
+      'duplicate Notion page-envelope icon',
+      '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" '
+        + 'icon="🏗️" icon="📌">'
+        + '<properties>{"Name":"Connected policy"}</properties>\n'
+        + 'Duplicate icon body.\n</page>',
+      /one exact page identity/
+    ],
+    [
+      'unknown Notion page-envelope attribute',
+      '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" '
+        + 'title="Connected policy">'
+        + '<properties>{"Name":"Connected policy"}</properties>\n'
+        + 'Unknown attribute body.\n</page>',
+      /one exact page identity/
+    ],
+    [
+      'invalid Notion page-envelope color',
+      '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" '
+        + 'color="chartreuse">'
+        + '<properties>{"Name":"Connected policy"}</properties>\n'
+        + 'Invalid color body.\n</page>',
+      /one exact page identity/
+    ],
+    [
+      'duplicate Notion page-envelope color',
+      '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" '
+        + 'color="blue" color="red_bg">'
+        + '<properties>{"Name":"Connected policy"}</properties>\n'
+        + 'Duplicate color body.\n</page>',
+      /one exact page identity/
+    ],
+    [
+      'unquoted Notion page-envelope icon',
+      '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" '
+        + 'icon=🏗️>'
+        + '<properties>{"Name":"Connected policy"}</properties>\n'
+        + 'Unquoted icon body.\n</page>',
+      /one exact page identity/
+    ],
+    [
+      'malformed quoted Notion page-envelope icon',
+      '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" '
+        + 'icon="🏗️>'
+        + '<properties>{"Name":"Connected policy"}</properties>\n'
+        + 'Malformed icon body.\n</page>',
+      /one exact page identity/
+    ],
+    [
+      'credential-shaped Notion page-envelope icon',
+      '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" '
+        + 'icon="' + ['sk', '-', '12345678901234567890'].join('') + '">'
+        + '<properties>{"Name":"Connected policy"}</properties>\n'
+        + 'Credential icon body.\n</page>',
+      /one exact page identity/
+    ],
+    [
+      'control-character Notion page-envelope icon',
+      '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" '
+        + 'icon="🏗️\u0007">'
+        + '<properties>{"Name":"Connected policy"}</properties>\n'
+        + 'Control icon body.\n</page>',
+      /one exact page identity/
+    ],
+    [
+      'oversized Notion page-envelope icon',
+      '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" '
+        + 'icon="' + 'x'.repeat(65) + '">'
+        + '<properties>{"Name":"Connected policy"}</properties>\n'
+        + 'Oversized icon body.\n</page>',
+      /one exact page identity/
+    ],
+    [
+      'unclosed nested Notion child page',
+      '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee">'
+        + '<properties>{"Name":"Connected policy"}</properties>\n'
+        + 'Parent policy body.\n'
+        + '<page url="https://app.notion.com/p/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa">'
+        + 'Unclosed child policy body.\n'
+        + '</page>',
+      /bounded page envelope/
+    ],
+    [
+      'extra nested Notion page close',
+      '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee">'
+        + '<properties>{"Name":"Connected policy"}</properties>\n'
+        + 'Parent policy body.\n'
+        + '</page></page>',
+      /bounded page envelope/
+    ],
+    [
+      'malformed nested Notion child identity',
+      '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee">'
+        + '<properties>{"Name":"Connected policy"}</properties>\n'
+        + '<page url="https://app.notion.com/p/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" '
+        + 'id="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa">'
+        + 'Malformed child policy body.'
+        + '</page>\n'
+        + '</page>',
+      /one exact page identity/
+    ],
+    [
+      'nested Notion child before outer properties',
+      '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee">'
+        + '<page url="https://app.notion.com/p/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa">'
+        + 'Child appears before the outer properties.'
+        + '</page>\n'
+        + '<properties>{"Name":"Connected policy"}</properties>\n'
+        + 'Outer policy body.\n'
+        + '</page>',
+      /bounded page envelope/
+    ],
+    [
+      'substituted nested Notion child properties',
+      '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee">'
+        + '<page url="https://app.notion.com/p/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa">'
+        + '<properties>{"Name":"Connected policy"}</properties>\n'
+        + 'Child properties must not stand in for outer properties.'
+        + '</page>\n'
+        + 'Outer policy body without properties.\n'
+        + '</page>',
+      /bounded page envelope/
+    ],
+    [
+      'substituted outer Notion page with exact child identity',
+      '<page url="https://app.notion.com/p/ffffffffffffffffffffffffffffffff">'
+        + '<properties>{"Name":"Connected policy"}</properties>\n'
+        + '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee">'
+        + 'Exact requested identity is only a child.'
+        + '</page>\n'
+        + '</page>',
+      /identifies a different page/
+    ],
+    [
+      'mismatched Notion live preamble identity',
+      'Here is the result of "view" for the Page with URL '
+        + 'https://app.notion.com/p/ffffffffffffffffffffffffffffffff'
+        + ' as of 2026-07-15T06:22:07.615Z:\n'
+        + '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee">'
+        + '<properties>{"Name":"Connected policy"}</properties>\n'
+        + 'Exact policy body.\n</page>',
+      /exact observed page preamble/
+    ],
+    [
+      'invalid Notion live preamble timestamp',
+      'Here is the result of "view" for the Page with URL '
+        + 'https://app.notion.com/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'
+        + ' as of 2026-02-30T06:22:07.615Z:\n'
+        + '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee">'
+        + '<properties>{"Name":"Connected policy"}</properties>\n'
+        + 'Exact policy body.\n</page>',
+      /exact observed page preamble/
+    ]
+  ]) {
+    await expectFailure(
+      label,
+      () => completeMcp({
+        capability: 'documents.content.read',
+        authority: 'authority.documents.instance',
+        input: currentAppDocumentInput,
+        responseProfile: 'notion.codex.connector.v1',
+        response: {
+          structuredContent: {
+            result: { ...currentAppDocumentProviderResult, text }
+          }
+        },
+        at: AT,
+        mappings: [],
+        settings: {}
+      }),
+      pattern
+    );
+  }
+  const escapedTemplateTitle = completeMcp({
+    capability: 'documents.content.read',
+    authority: 'authority.documents.instance',
+    input: {
+      ...currentAppDocumentInput,
+      expectedTitle: '[Project Template]'
+    },
+    responseProfile: 'notion.codex.connector.v1',
+    response: {
+      structuredContent: {
+        result: {
+          ...currentAppDocumentProviderResult,
+          title: '🧩 [Project Template]',
+          text: '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee">'
+            + '<properties>'
+            + JSON.stringify({
+              Name: '\\[Project Template\\]',
+              URL: 'https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
+            })
+            + '</properties>\nExact policy body.\n</page>'
+        }
+      }
+    },
+    at: AT,
+    mappings: [],
+    settings: {}
+  });
+  assert.equal(
+    escapedTemplateTitle.document.title,
+    '[Project Template]',
+    'Notion inline bracket escapes must normalize only at the bounded title-property boundary.'
+  );
+  const escapedBackslashTitle = completeMcp({
+    capability: 'documents.content.read',
+    authority: 'authority.documents.instance',
+    input: {
+      ...currentAppDocumentInput,
+      expectedTitle: 'Policy \\ Template'
+    },
+    responseProfile: 'notion.codex.connector.v1',
+    response: {
+      structuredContent: {
+        result: {
+          ...currentAppDocumentProviderResult,
+          title: 'Policy \\ Template',
+          text: '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee">'
+            + '<properties>'
+            + JSON.stringify({ title: 'Policy \\\\ Template' })
+            + '</properties>\nExact policy body.\n</page>'
+        }
+      }
+    },
+    at: AT,
+    mappings: [],
+    settings: {}
+  });
+  assert.equal(
+    escapedBackslashTitle.document.title,
+    'Policy \\ Template',
+    'Notion inline backslash escapes must normalize exactly once.'
+  );
+  for (const [label, properties, pattern] of [
+    [
+      'mismatched database title property',
+      { Name: 'Different policy', Status: 'Active' },
+      /do not identify one exact requested title/
+    ],
+    [
+      'ambiguous database title properties',
+      { Name: 'Connected policy', Alias: 'Connected policy' },
+      /do not identify one exact requested title/
+    ],
+    [
+      'mismatched standalone title property',
+      { title: 'Different policy', Name: 'Connected policy' },
+      /title property does not match/
+    ]
+  ]) {
+    await expectFailure(
+      label,
+      () => completeMcp({
+        capability: 'documents.content.read',
+        authority: 'authority.documents.instance',
+        input: currentAppDocumentInput,
+        responseProfile: 'notion.codex.connector.v1',
+        response: {
+          structuredContent: {
+            result: {
+              ...currentAppDocumentProviderResult,
+              title: currentAppDocumentInput.expectedTitle,
+              text: '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee">'
+                + '<properties>' + JSON.stringify(properties)
+                + '</properties>\nExact policy body.\n</page>'
+            }
+          }
+        },
+        at: AT,
+        mappings: [],
+        settings: {}
+      }),
+      pattern
+    );
+  }
   await expectFailure(
     'direct Claude Notion page with an undeclared top-level field',
     () => completeMcp({
@@ -1502,7 +2141,9 @@ export async function selftestNotionRecordMappings(root) {
             title: currentAppDocumentInput.expectedTitle,
             url: 'https://app.notion.com/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
             id: 'ffffffffffffffffffffffffffffffff',
-            text: '<page id="eeee"><properties></properties>\nExact policy body.\n</page>'
+            text: '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee">'
+              + '<properties>{"title":"Connected policy"}</properties>\n'
+              + 'Exact policy body.\n</page>'
           }
         }
       },
@@ -2338,11 +2979,11 @@ export async function selftestNotionRecordMappings(root) {
             'sha256:256f5a4abc251f35838c5e60c0bca9f92bfe3e4e4690bea826ceed901001a9c0'
         }
       },
-      settings: {
+      settings: withMappedFieldBindings({
         'integration.notion': {
           targets: { channels: 'collection://bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' }
         }
-      },
+      }, [communicationsMapping]),
       mappings: [communicationsMapping]
     }),
     /cannot use field outside its declared write scope: channel\.conversationIdentityFingerprint/
@@ -3093,11 +3734,11 @@ export async function selftestNotionRecordMappings(root) {
       capabilities: ['crm.records.read'],
       authorities: ['authority.crm.instance']
     },
-    settings: {
+    settings: withMappedFieldBindings({
       'integration.notion': {
         targets: { organizations: 'collection://cccccccccccccccccccccccccccccccc' }
       }
-    },
+    }, [crmMapping]),
     mappings: [crmMapping]
   });
   const communicationsProbe = prepareProbePlanMcp({
@@ -3105,14 +3746,14 @@ export async function selftestNotionRecordMappings(root) {
       capabilities: ['communications.records.read'],
       authorities: ['authority.communications.instance']
     },
-    settings: {
+    settings: withMappedFieldBindings({
       'integration.notion': {
         targets: { channels: 'collection://bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' }
       }
-    },
+    }, [communicationsMapping]),
     mappings: [communicationsMapping]
   });
-  const taskProbeSettings = {
+  const taskProbeSettings = withMappedFieldBindings({
     'integration.notion': {
       targets: {
         policies: 'collection://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
@@ -3123,7 +3764,7 @@ export async function selftestNotionRecordMappings(root) {
         taskSettings['integration.notion'].optionMappings
       )
     }
-  };
+  }, [projectsMapping, tasksMapping]);
   const taskScopedProbe = prepareProbePlanMcp({
     plan: {
       capabilities: [
@@ -3159,14 +3800,14 @@ export async function selftestNotionRecordMappings(root) {
       capabilities: ['communications.records.read'],
       authorities: ['authority.communications.definition']
     },
-    settings: {
+    settings: withMappedFieldBindings({
       'integration.notion': {
         targets: {
           policies: 'collection://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
           channels: 'collection://bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
         }
       }
-    },
+    }, [communicationsMapping]),
     mappings: [communicationsMapping],
     operatorRecordRequirements: [{
       capability: 'communications.records.read',
@@ -3178,14 +3819,14 @@ export async function selftestNotionRecordMappings(root) {
       capabilities: ['communications.records.read'],
       authorities: ['authority.communications.instance']
     },
-    settings: {
+    settings: withMappedFieldBindings({
       'integration.notion': {
         targets: {
           policies: 'collection://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
           channels: 'collection://bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
         }
       }
-    },
+    }, [communicationsMapping]),
     mappings: [communicationsMapping]
   });
   await expectFailure(
@@ -3195,11 +3836,11 @@ export async function selftestNotionRecordMappings(root) {
         capabilities: ['communications.records.read'],
         authorities: ['authority.communications.definition']
       },
-      settings: {
+      settings: withMappedFieldBindings({
         'integration.notion': {
           targets: { policies: 'collection://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }
         }
-      },
+      }, [communicationsMapping]),
       mappings: [communicationsMapping],
       operatorRecordRequirements: [{
         capability: 'communications.records.read',
@@ -3218,11 +3859,11 @@ export async function selftestNotionRecordMappings(root) {
         capabilities: ['communications.records.read'],
         authorities: ['authority.communications.definition']
       },
-      settings: {
+      settings: withMappedFieldBindings({
         'integration.notion': {
           targets: { policies: 'collection://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }
         }
-      },
+      }, [communicationsMapping, duplicateCommunicationsMapping]),
       mappings: [communicationsMapping, duplicateCommunicationsMapping],
       operatorRecordRequirements: [{
         capability: 'communications.records.read',
@@ -3344,7 +3985,7 @@ export async function selftestNotionRecordMappings(root) {
         authorities: ['authority.tasks.instance']
       },
       settings: missingTaskProbeOptionSettings,
-      mappings: [tasksMapping],
+      mappings: [projectsMapping, tasksMapping],
       at: AT
     }),
     /does not map one required portable choice field/
@@ -3366,7 +4007,7 @@ export async function selftestNotionRecordMappings(root) {
         authorities: ['authority.tasks.instance']
       },
       settings: taskProbeSettings,
-      mappings: [tasksMapping],
+      mappings: [projectsMapping, tasksMapping],
       at: AT
     }),
     /does not cover the exact current provider choice set/

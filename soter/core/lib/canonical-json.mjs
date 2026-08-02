@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 export function canonicalize(value) {
   if (Array.isArray(value)) {
@@ -61,6 +62,130 @@ export function fingerprintPath(target) {
     fingerprint: fingerprintFile(file)
   }));
   return fingerprintJson({ type: 'directory', entries });
+}
+
+function governedRoot(root) {
+  const resolved = path.resolve(root);
+  const stat = fs.lstatSync(resolved);
+  if (!stat.isDirectory() || stat.isSymbolicLink()) {
+    throw new Error('Governed repository root must be one exact ordinary directory.');
+  }
+  return {
+    path: resolved,
+    realpath: fs.realpathSync(resolved)
+  };
+}
+
+function governedFileState(root, requestedPath) {
+  const exactRoot = governedRoot(root);
+  const resolved = resolveRepoPath(exactRoot.path, requestedPath);
+  const relative = path.relative(exactRoot.path, resolved);
+  if (!relative || relative.startsWith('..' + path.sep) || path.isAbsolute(relative)) {
+    throw new Error('Governed artifact must be one exact repository-relative file.');
+  }
+  const parts = relative.split(path.sep);
+  let current = exactRoot.path;
+  for (const [index, part] of parts.entries()) {
+    current = path.join(current, part);
+    const stat = fs.lstatSync(current);
+    if (stat.isSymbolicLink()) {
+      throw new Error('Governed artifact path cannot contain symbolic links.');
+    }
+    const leaf = index === parts.length - 1;
+    if ((!leaf && !stat.isDirectory())
+      || (leaf && (!stat.isFile() || stat.nlink !== 1))) {
+      throw new Error(
+        leaf
+          ? 'Governed artifact must be one exact ordinary singly linked file.'
+          : 'Governed artifact parent must be one exact ordinary directory.'
+      );
+    }
+  }
+  const realpath = fs.realpathSync(resolved);
+  if (realpath !== exactRoot.realpath
+    && !realpath.startsWith(exactRoot.realpath + path.sep)) {
+    throw new Error('Governed artifact real path escapes the repository root.');
+  }
+  const stat = fs.lstatSync(resolved);
+  return {
+    path: resolved,
+    realpath,
+    dev: stat.dev,
+    ino: stat.ino,
+    size: stat.size,
+    mtimeMs: stat.mtimeMs,
+    mode: stat.mode,
+    nlink: stat.nlink
+  };
+}
+
+function sameGovernedFile(left, right) {
+  return left.path === right.path
+    && left.realpath === right.realpath
+    && left.dev === right.dev
+    && left.ino === right.ino
+    && left.size === right.size
+    && left.mtimeMs === right.mtimeMs
+    && left.mode === right.mode
+    && left.nlink === right.nlink;
+}
+
+export function resolveGovernedFile(root, requestedPath) {
+  return governedFileState(root, requestedPath).path;
+}
+
+export function readGovernedFile(root, requestedPath) {
+  const before = governedFileState(root, requestedPath);
+  const noFollow = fs.constants.O_NOFOLLOW || 0;
+  const descriptor = fs.openSync(before.path, fs.constants.O_RDONLY | noFollow);
+  try {
+    const opened = fs.fstatSync(descriptor);
+    if (!opened.isFile() || opened.nlink !== 1
+      || opened.dev !== before.dev || opened.ino !== before.ino) {
+      throw new Error('Governed artifact changed before its exact read.');
+    }
+    const bytes = fs.readFileSync(descriptor);
+    const afterRead = fs.fstatSync(descriptor);
+    const after = governedFileState(root, requestedPath);
+    if (afterRead.dev !== opened.dev || afterRead.ino !== opened.ino
+      || afterRead.size !== opened.size || afterRead.mtimeMs !== opened.mtimeMs
+      || afterRead.mode !== opened.mode || afterRead.nlink !== 1
+      || !sameGovernedFile(before, after)) {
+      throw new Error('Governed artifact changed during its exact read.');
+    }
+    return {
+      path: before.path,
+      bytes,
+      fingerprint: sha256(bytes),
+      state: before
+    };
+  } finally {
+    fs.closeSync(descriptor);
+  }
+}
+
+export function fingerprintGovernedFile(root, requestedPath) {
+  return readGovernedFile(root, requestedPath).fingerprint;
+}
+
+export function readGovernedJson(root, requestedPath) {
+  const exact = readGovernedFile(root, requestedPath);
+  return JSON.parse(exact.bytes.toString('utf8'));
+}
+
+export async function importGovernedModule(root, requestedPath) {
+  const before = readGovernedFile(root, requestedPath);
+  const imported = await import(
+    pathToFileURL(before.path).href
+      + '?soter-governed-artifact='
+      + before.fingerprint.slice('sha256:'.length)
+  );
+  const after = readGovernedFile(root, requestedPath);
+  if (before.fingerprint !== after.fingerprint
+    || !sameGovernedFile(before.state, after.state)) {
+    throw new Error('Governed module changed during its exact import.');
+  }
+  return imported;
 }
 
 export function readJson(file) {

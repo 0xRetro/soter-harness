@@ -1,0 +1,255 @@
+{
+  "$contract": "soter://contracts/configuration/v1",
+  "contractVersion": "1.0.0",
+  "name": "project-page-review",
+  "base": {
+    "kernel": "kernel.soter",
+    "core": "core.runtime"
+  },
+  "packs": [
+    {
+      "id": "context.projects",
+      "source": "dependency",
+      "reason": "Projects Context owns portable Project, page-body, relationship, and policy meaning."
+    },
+    {
+      "id": "context.tasks",
+      "source": "dependency",
+      "reason": "Tasks Context owns portable Task, assignee, date, context, status, and Project-link meaning."
+    },
+    {
+      "id": "automation.project-page-review",
+      "source": "user",
+      "reason": "The user selected one exact private read-only Project page and related-Task review."
+    },
+    {
+      "id": "integration.notion",
+      "source": "binding",
+      "reason": "The contained configuration binds provider-neutral Project, Task, and document reads to typed Notion fixtures."
+    }
+  ],
+  "bindings": [
+    {
+      "capability": "projects.records.read",
+      "providerPack": "integration.notion",
+      "authorities": [
+        "authority.projects.definition",
+        "authority.projects.instance"
+      ],
+      "secretRef": "secret-ref.notion",
+      "reason": "The configured provider supplies exact portable Project policy and Project records."
+    },
+    {
+      "capability": "tasks.records.read",
+      "providerPack": "integration.notion",
+      "authorities": [
+        "authority.tasks.definition",
+        "authority.tasks.instance"
+      ],
+      "secretRef": "secret-ref.notion",
+      "reason": "The configured provider supplies the exact portable Task policy and every Task related by the Project."
+    },
+    {
+      "capability": "documents.content.read",
+      "providerPack": "integration.notion",
+      "authorities": [
+        "authority.projects.definition",
+        "authority.projects.instance"
+      ],
+      "secretRef": "secret-ref.notion",
+      "reason": "The configured provider supplies the exact template document and current Project page body."
+    }
+  ],
+  "sources": [
+    {
+      "id": "source.policy.project-page-review.capture",
+      "capability": "projects.records.read",
+      "authority": "authority.projects.definition",
+      "input": {
+        "recordTypes": ["project-capture-policy"],
+        "ids": ["policy.project-capture"],
+        "limit": 2
+      },
+      "readiness": {
+        "mode": "probe-read",
+        "reason": "Connected readiness must prove the exact Project capture policy selection can be read and normalized."
+      },
+      "consumers": [
+        {
+          "pack": "automation.project-page-review",
+          "purpose": "project-capture-policy",
+          "subjects": ["project-page-review"],
+          "reason": "The portable capture policy owns base Project type, organization, manager, and body-standard semantics."
+        }
+      ],
+      "reason": "The Project capture policy remains portable Context meaning and is selected independently of the workspace template."
+    },
+    {
+      "id": "source.policy.project-page-review.work",
+      "capability": "projects.records.read",
+      "authority": "authority.projects.definition",
+      "input": {
+        "recordTypes": ["project-work-policy"],
+        "ids": ["policy.projects"],
+        "limit": 2
+      },
+      "readiness": {
+        "mode": "probe-read",
+        "reason": "Connected readiness must prove the exact Project work policy selection can be read and normalized."
+      },
+      "consumers": [
+        {
+          "pack": "automation.project-page-review",
+          "purpose": "project-work-policy",
+          "subjects": ["project-page-review"],
+          "reason": "The Project work policy preserves the boundary between page work items and promoted Tasks."
+        }
+      ],
+      "reason": "The shared Project work policy remains provider-neutral Context meaning."
+    },
+    {
+      "id": "source.policy.project-page-review.tasks",
+      "capability": "tasks.records.read",
+      "authority": "authority.tasks.definition",
+      "input": {
+        "recordTypes": ["task-work-policy"],
+        "ids": ["policy.tasks"],
+        "limit": 2
+      },
+      "readiness": {
+        "mode": "probe-read",
+        "reason": "Connected readiness must prove the exact Task policy selection can be read and normalized."
+      },
+      "consumers": [
+        {
+          "pack": "automation.project-page-review",
+          "purpose": "task-work-policy",
+          "subjects": ["project-page-review"],
+          "reason": "The Task policy prevents attention-only missing fields from being promoted into invented canonical violations."
+        }
+      ],
+      "reason": "The shared Task work policy remains provider-neutral Context meaning."
+    },
+    {
+      "id": "source.template.project-page-review",
+      "capability": "documents.content.read",
+      "authority": "authority.projects.definition",
+      "input": {
+        "uri": "soter-fixture://configuration-template/notion/document/project-page-template",
+        "expectedTitle": "Portable Project page template"
+      },
+      "readiness": {
+        "mode": "probe-read",
+        "reason": "Connected readiness must prove the exact configured template body can be read without retaining its private values."
+      },
+      "consumers": [
+        {
+          "pack": "automation.project-page-review",
+          "purpose": "project-page-template",
+          "subjects": ["project-page-review"],
+          "reason": "The exact template supplies a workspace extension outline; its labels do not become portable Context ownership."
+        }
+      ],
+      "reason": "Workspace-specific semantic labels are selected by one exact document source instead of being hard-coded in Automation settings."
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.projects.definition",
+      "role": "definition",
+      "subject": "projects.records",
+      "uri": "soter-fixture://configuration-template/notion/authority/project-policies",
+      "reason": "Portable Project policies and the selected template definition identify the exact review standard."
+    },
+    {
+      "id": "authority.projects.instance",
+      "role": "instance",
+      "subject": "projects.records",
+      "uri": "soter-fixture://configuration-template/notion/authority/projects",
+      "reason": "The selected Project record and current page body are authoritative only for their observed state."
+    },
+    {
+      "id": "authority.tasks.definition",
+      "role": "definition",
+      "subject": "tasks.records",
+      "uri": "soter-fixture://configuration-template/notion/authority/task-policies",
+      "reason": "The selected Task policy owns portable Task meaning."
+    },
+    {
+      "id": "authority.tasks.instance",
+      "role": "instance",
+      "subject": "tasks.records",
+      "uri": "soter-fixture://configuration-template/notion/authority/tasks",
+      "reason": "The exact related Task records are authoritative only for their observed state."
+    },
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "uri": "soter-fixture://configuration-template/notion/account/operator",
+      "reason": "The provider supplies typed reads without becoming Project or Task semantic authority."
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "uri": "soter-state://runs",
+      "reason": "Private local runtime state owns the exact selected work, bodies, titles, identifiers, and derived review."
+    }
+  ],
+  "effectPolicies": {
+    "read": {
+      "mode": "allow",
+      "reason": "Exact Project policy, Task policy, template, Project, related-Task, and current-page reads are allowed for private review."
+    },
+    "disclosure": {
+      "mode": "allow",
+      "reason": "Private selected Project and Task values may enter local selected-work state but not general inspection, fixtures, logs, or evidence."
+    },
+    "write": {
+      "mode": "confirm",
+      "reason": "The selected Integration carries write capabilities for other workflows, but Project-page review declares none and emits no proposal, approval, continuation, or write authority."
+    },
+    "dispatch": {
+      "mode": "prohibit",
+      "reason": "Project-page review sends and publishes nothing."
+    },
+    "destructive": {
+      "mode": "prohibit",
+      "reason": "Project-page review deletes, archives, and mutates nothing."
+    }
+  },
+  "secretRefs": [
+    {
+      "id": "secret-ref.notion",
+      "provider": "host",
+      "key": "NOTION_OAUTH"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "reason": "This tracked configuration exercises the Codex projection while the pack remains compatible with Codex and Claude."
+  },
+  "settings": {
+    "integration.notion": {
+      "targets": {
+        "policies": "soter-fixture://configuration-template/notion/collection/policies",
+        "organizations": "soter-fixture://configuration-template/notion/collection/organizations",
+        "contacts": "soter-fixture://configuration-template/notion/collection/contacts",
+        "projects": "soter-fixture://configuration-template/notion/collection/projects",
+        "updates": "soter-fixture://configuration-template/notion/collection/updates",
+        "tasks": "soter-fixture://configuration-template/notion/collection/tasks",
+        "meetings": "soter-fixture://configuration-template/notion/collection/meetings",
+        "documents": "soter-fixture://configuration-template/notion/collection/documents",
+        "channels": "soter-fixture://configuration-template/notion/collection/channels"
+      }
+    },
+    "automation.project-page-review": {
+      "maximumOutlineEntries": 100,
+      "semanticLabelMatcher": "headings-and-standalone-bold/v1",
+      "structuralBlockMatcher": "normalized-structural-block-tags/v1"
+    }
+  }
+}

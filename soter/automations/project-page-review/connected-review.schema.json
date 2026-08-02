@@ -1,0 +1,350 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/project-page-review-connected-review/v1",
+  "title": "Private selected-work connected Project-page review",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "createdAt",
+    "work",
+    "snapshot",
+    "configuration",
+    "project",
+    "tasks",
+    "taskCoverage",
+    "findings",
+    "authority",
+    "privacy",
+    "fingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/project-page-review-connected-review/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "work": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fingerprint", "checkpointFingerprint", "privateInputFingerprint"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^work\\.project-page-review\\.[a-f0-9]{24}$" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "checkpointFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "privateInputFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fingerprint", "runId"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^context\\.project-page-review\\.connected-acquisition\\.[a-f0-9]{24}$" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "runId": {
+          "type": "string",
+          "pattern": "^run\\.project-page-review\\.connected-acquisition\\.[a-f0-9]{24}$"
+        }
+      }
+    },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "lockFingerprint", "graphFingerprint", "host"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "lockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "host": { "enum": ["codex", "claude"] }
+      }
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identityFingerprint",
+        "name",
+        "projectType",
+        "status",
+        "organizationIdentityFingerprints",
+        "bodyFingerprint",
+        "templateBodyFingerprint",
+        "templateOutline",
+        "pageOutline",
+        "missingOutlineEntries",
+        "extraOutlineEntries",
+        "templateStructuralCounts",
+        "pageStructuralCounts",
+        "reasonCodes",
+        "fingerprint"
+      ],
+      "properties": {
+        "identityFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "projectType": { "type": ["string", "null"], "maxLength": 200 },
+        "status": { "type": ["string", "null"], "maxLength": 200 },
+        "organizationIdentityFingerprints": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/fingerprint" }
+        },
+        "bodyFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "templateBodyFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "templateOutline": { "$ref": "#/$defs/outline" },
+        "pageOutline": { "$ref": "#/$defs/outline" },
+        "missingOutlineEntries": { "$ref": "#/$defs/outline" },
+        "extraOutlineEntries": { "$ref": "#/$defs/outline" },
+        "templateStructuralCounts": { "$ref": "#/$defs/structureCounts" },
+        "pageStructuralCounts": { "$ref": "#/$defs/structureCounts" },
+        "reasonCodes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/reasonCode" }
+        },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "identityFingerprint",
+          "title",
+          "status",
+          "context",
+          "nextActionOn",
+          "assigneeIdentityFingerprints",
+          "projectIdentityFingerprints",
+          "reasonCodes",
+          "fingerprint"
+        ],
+        "properties": {
+          "identityFingerprint": { "$ref": "#/$defs/fingerprint" },
+          "title": { "type": "string", "minLength": 1, "maxLength": 500 },
+          "status": { "type": ["string", "null"], "maxLength": 200 },
+          "context": { "type": ["string", "null"], "maxLength": 200 },
+          "nextActionOn": { "type": ["string", "null"], "maxLength": 100 },
+          "assigneeIdentityFingerprints": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "$ref": "#/$defs/fingerprint" }
+          },
+          "projectIdentityFingerprints": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "$ref": "#/$defs/fingerprint" }
+          },
+          "reasonCodes": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "$ref": "#/$defs/reasonCode" }
+          },
+          "fingerprint": { "$ref": "#/$defs/fingerprint" }
+        }
+      }
+    },
+    "taskCoverage": { "$ref": "#/$defs/privateTaskCoverage" },
+    "findings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "reasonCodes", "counts", "fingerprint"],
+      "properties": {
+        "state": { "enum": ["reviewed", "attention-required"] },
+        "reasonCodes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/reasonCode" }
+        },
+        "counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "hardFindings",
+            "missingTemplateEntries",
+            "extraTemplateEntries",
+            "relatedTasks",
+            "taskContextNotSet",
+            "taskNextActionNotSet",
+            "taskAssigneeUnassigned",
+            "templateDatabases",
+            "pageDatabases",
+            "templateCallouts",
+            "pageCallouts",
+            "templateColumns",
+            "pageColumns"
+          ],
+          "properties": {
+            "hardFindings": { "$ref": "#/$defs/count" },
+            "missingTemplateEntries": { "$ref": "#/$defs/count" },
+            "extraTemplateEntries": { "$ref": "#/$defs/count" },
+            "relatedTasks": { "$ref": "#/$defs/count" },
+            "taskContextNotSet": { "$ref": "#/$defs/count" },
+            "taskNextActionNotSet": { "$ref": "#/$defs/count" },
+            "taskAssigneeUnassigned": { "$ref": "#/$defs/count" },
+            "templateDatabases": { "$ref": "#/$defs/count" },
+            "pageDatabases": { "$ref": "#/$defs/count" },
+            "templateCallouts": { "$ref": "#/$defs/count" },
+            "pageCallouts": { "$ref": "#/$defs/count" },
+            "templateColumns": { "$ref": "#/$defs/count" },
+            "pageColumns": { "$ref": "#/$defs/count" }
+          }
+        },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "reasonCode",
+        "approvalIncluded",
+        "continuationIncluded",
+        "providerWriteIncluded",
+        "retryAuthorityIncluded"
+      ],
+      "properties": {
+        "state": { "const": "none" },
+        "reasonCode": { "const": "PROJECT_PAGE_CONNECTED_REVIEW_SELECTED_WORK_ONLY" },
+        "approvalIncluded": { "const": false },
+        "continuationIncluded": { "const": false },
+        "providerWriteIncluded": { "const": false },
+        "retryAuthorityIncluded": { "const": false }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope",
+        "projection",
+        "semanticLabelsIncluded",
+        "taskTitlesIncluded",
+        "unavailableTaskIdentityFingerprintsIncluded",
+        "rawUrlsIncluded",
+        "rawPageBodiesIncluded",
+        "rawProviderResponsesIncluded",
+        "configurationTargetsIncluded",
+        "workspaceInspectionIncluded",
+        "evidenceIncluded",
+        "canonicalArtifactsIncluded"
+      ],
+      "properties": {
+        "scope": { "const": "private-local-selected-work" },
+        "projection": { "const": "explicit-selected-work-only" },
+        "semanticLabelsIncluded": { "const": true },
+        "taskTitlesIncluded": { "const": true },
+        "unavailableTaskIdentityFingerprintsIncluded": { "const": true },
+        "rawUrlsIncluded": { "const": false },
+        "rawPageBodiesIncluded": { "const": false },
+        "rawProviderResponsesIncluded": { "const": false },
+        "configurationTargetsIncluded": { "const": false },
+        "workspaceInspectionIncluded": { "const": false },
+        "evidenceIncluded": { "const": false },
+        "canonicalArtifactsIncluded": { "const": false }
+      }
+    },
+    "fingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+    "count": { "type": "integer", "minimum": 0 },
+    "privateTaskCoverage": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "reasonCode",
+            "expectedCount",
+            "observedCount",
+            "unavailableCount",
+            "expectedIdentitySetFingerprint",
+            "observedIdentitySetFingerprint",
+            "unavailableIdentitySetFingerprint",
+            "unavailableIdentityFingerprints",
+            "fingerprint"
+          ],
+          "properties": {
+            "state": { "const": "complete" },
+            "reasonCode": { "const": "PROJECT_TASK_COVERAGE_COMPLETE" },
+            "expectedCount": { "$ref": "#/$defs/count" },
+            "observedCount": { "$ref": "#/$defs/count" },
+            "unavailableCount": { "const": 0 },
+            "expectedIdentitySetFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "observedIdentitySetFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "unavailableIdentitySetFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "unavailableIdentityFingerprints": {
+              "type": "array",
+              "maxItems": 0
+            },
+            "fingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "reasonCode",
+            "expectedCount",
+            "observedCount",
+            "unavailableCount",
+            "expectedIdentitySetFingerprint",
+            "observedIdentitySetFingerprint",
+            "unavailableIdentitySetFingerprint",
+            "unavailableIdentityFingerprints",
+            "fingerprint"
+          ],
+          "properties": {
+            "state": { "const": "incomplete" },
+            "reasonCode": { "const": "PROJECT_TASK_COVERAGE_INCOMPLETE" },
+            "expectedCount": { "type": "integer", "minimum": 1 },
+            "observedCount": { "$ref": "#/$defs/count" },
+            "unavailableCount": { "type": "integer", "minimum": 1 },
+            "expectedIdentitySetFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "observedIdentitySetFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "unavailableIdentitySetFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "unavailableIdentityFingerprints": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 100,
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/fingerprint" }
+            },
+            "fingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        }
+      ]
+    },
+    "outline": {
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "level", "label"],
+        "properties": {
+          "kind": { "enum": ["heading", "label"] },
+          "level": { "type": "integer", "minimum": 0, "maximum": 6 },
+          "label": { "type": "string", "minLength": 1, "maxLength": 500 }
+        }
+      }
+    },
+    "structureCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["database", "callout", "columns"],
+      "properties": {
+        "database": { "$ref": "#/$defs/count" },
+        "callout": { "$ref": "#/$defs/count" },
+        "columns": { "$ref": "#/$defs/count" }
+      }
+    }
+  }
+}

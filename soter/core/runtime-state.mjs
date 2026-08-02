@@ -73,6 +73,39 @@ function atomicCreateJson(file, value) {
   }
 }
 
+function assertPrivateRuntimeStatePath(file, label, { requireFile = true } = {}) {
+  const directory = path.dirname(file);
+  const ancestors = [
+    path.dirname(path.dirname(directory)),
+    path.dirname(directory),
+    directory
+  ];
+  for (const item of ancestors) {
+    const stat = fs.lstatSync(item, { throwIfNoEntry: false });
+    if (!stat) continue;
+    if (!stat.isDirectory() || stat.isSymbolicLink()) {
+      throw new Error(label + ' parent directory is invalid.');
+    }
+  }
+  const directoryStat = fs.lstatSync(directory, { throwIfNoEntry: false });
+  if (directoryStat
+    && process.platform !== 'win32'
+    && (directoryStat.mode & 0o7777) !== 0o700) {
+    throw new Error(label + ' parent directory must use mode 0700.');
+  }
+  const stat = fs.lstatSync(file, { throwIfNoEntry: false });
+  if (!stat) {
+    if (requireFile) throw new Error(label + ' does not exist.');
+    return;
+  }
+  if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1) {
+    throw new Error(label + ' must be one regular unlinked file.');
+  }
+  if (process.platform !== 'win32' && (stat.mode & 0o7777) !== 0o600) {
+    throw new Error(label + ' must use mode 0600.');
+  }
+}
+
 export function runtimeStateRoot(root) {
   return resolveRepoPath(root, STATE_ROOT);
 }
@@ -386,7 +419,10 @@ export function hasPackInstallManagedManifestState(root) {
 }
 
 export function hasActiveConfigurationLockState(root, configurationName) {
-  return fs.existsSync(activeConfigurationLockStatePath(root, configurationName));
+  return Boolean(fs.lstatSync(
+    activeConfigurationLockStatePath(root, configurationName),
+    { throwIfNoEntry: false }
+  ));
 }
 
 export function hasDevelopmentRequestState(root, requestId) {
@@ -676,18 +712,24 @@ export function writeConfigurationTransactionCheckpointState(root, checkpoint) {
 
 export function readActiveConfigurationLockState(root, configurationName) {
   const file = activeConfigurationLockStatePath(root, configurationName);
+  assertPrivateRuntimeStatePath(file, 'Active configuration lock');
   return readRequiredState(file, 'Active configuration lock', configurationName, 'lock');
 }
 
 export function writeActiveConfigurationLockState(root, configurationName, lock) {
   const file = activeConfigurationLockStatePath(root, configurationName);
+  assertPrivateRuntimeStatePath(file, 'Active configuration lock', { requireFile: false });
   atomicWriteJson(file, lock);
+  assertPrivateRuntimeStatePath(file, 'Active configuration lock');
   return { file, path: repoRelativePath(root, file) };
 }
 
 export function removeActiveConfigurationLockState(root, configurationName) {
   const file = activeConfigurationLockStatePath(root, configurationName);
-  if (fs.existsSync(file)) fs.rmSync(file);
+  if (fs.lstatSync(file, { throwIfNoEntry: false })) {
+    assertPrivateRuntimeStatePath(file, 'Active configuration lock');
+    fs.rmSync(file);
+  }
   return { file, path: repoRelativePath(root, file) };
 }
 

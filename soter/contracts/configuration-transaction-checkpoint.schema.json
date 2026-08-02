@@ -16,7 +16,7 @@
     "createdAt": { "type": "string", "minLength": 20 },
     "updatedAt": { "type": "string", "minLength": 20 },
     "state": { "enum": ["prepared", "applying", "verifying", "completed", "rolling-back", "rolled-back", "needs-attention"] },
-    "phase": { "enum": ["prepared", "configuration-written", "active-lock-written", "verifying", "rollback-configuration", "rollback-active-lock", "terminal"] },
+    "phase": { "enum": ["prepared", "configuration-unchanged", "configuration-written", "active-lock-written", "verifying", "rollback-configuration", "rollback-active-lock", "terminal"] },
     "plan": { "$ref": "#/$defs/reference" },
     "request": { "$ref": "#/$defs/reference" },
     "confirmation": { "$ref": "#/$defs/reference" },

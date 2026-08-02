@@ -1,0 +1,40 @@
+{
+  "$contract": "soter://contracts/automation-derived-review/v1",
+  "contractVersion": "1.0.0",
+  "automation": "automation.project-page-review",
+  "kind": "project-page-review-derived-review",
+  "items": [
+    {
+      "kind": "project-page-detail",
+      "fields": [
+        { "id": "projectIdentityFingerprint", "label": "Project identity fingerprint", "type": "text" },
+        { "id": "name", "label": "Project name", "type": "text" },
+        { "id": "projectType", "label": "Project type", "type": "string-list" },
+        { "id": "status", "label": "Project status", "type": "string-list" },
+        { "id": "organizationIdentityFingerprints", "label": "Organization relationship fingerprints", "type": "string-list" },
+        { "id": "bodyFingerprint", "label": "Current page-body fingerprint", "type": "text" },
+        { "id": "templateFingerprint", "label": "Exact template fingerprint", "type": "text" },
+        { "id": "templateOutline", "label": "Template semantic outline", "type": "string-list" },
+        { "id": "pageOutline", "label": "Page semantic outline", "type": "string-list" },
+        { "id": "missingOutlineEntries", "label": "Missing semantic outline entries", "type": "string-list" },
+        { "id": "extraOutlineEntries", "label": "Additional semantic outline entries", "type": "string-list" },
+        { "id": "templateStructuralCounts", "label": "Template structural block counts", "type": "string-list" },
+        { "id": "pageStructuralCounts", "label": "Page structural block counts", "type": "string-list" },
+        { "id": "reasonCodes", "label": "Review reason codes", "type": "string-list" }
+      ]
+    },
+    {
+      "kind": "project-task-detail",
+      "fields": [
+        { "id": "taskIdentityFingerprint", "label": "Task identity fingerprint", "type": "text" },
+        { "id": "title", "label": "Task title", "type": "text" },
+        { "id": "status", "label": "Task status", "type": "string-list" },
+        { "id": "context", "label": "Task context", "type": "string-list" },
+        { "id": "nextActionOn", "label": "Next action date", "type": "string-list" },
+        { "id": "assigneeIdentityFingerprints", "label": "Assignee identity fingerprints", "type": "string-list" },
+        { "id": "projectIdentityFingerprints", "label": "Project relationship fingerprints", "type": "string-list" },
+        { "id": "reasonCodes", "label": "Review reason codes", "type": "string-list" }
+      ]
+    }
+  ]
+}

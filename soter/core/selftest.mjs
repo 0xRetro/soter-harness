@@ -221,30 +221,11 @@ function notionOptionMapping(mapping, recordType, field, entries) {
 }
 
 function materializePrivateNotionTargetLock(root, configurationName, host = 'codex') {
-  const configuration = structuredClone(readJson(path.join(
+  return materializeContainedPrivateConfiguration({
     root,
-    'soter/configurations',
-    configurationName + '.config.json'
-  )));
-  const targets = configuration.settings?.['integration.notion']?.targets || {};
-  if (Object.keys(targets).length === 0) {
-    throw new Error('Core selftest private Notion target configuration is empty.');
-  }
-  for (const [key, value] of Object.entries(targets)) {
-    if (!value.startsWith('soter-fixture://configuration-template/notion/collection/')) {
-      throw new Error('Core selftest private Notion target did not begin from a portable template.');
-    }
-    targets[key] = 'collection://' + fingerprintJson({
-      kind: 'core-selftest-notion-target',
-      name: configurationName + ':' + key
-    }).slice('sha256:'.length, 'sha256:'.length + 32);
-  }
-  writePrivateConfigurationState(root, configurationName, configuration);
-  return resolveConfiguration({
-    root,
-    configPath: privateConfigurationStatePath(root, configurationName),
+    configurationName,
     host
-  });
+  }).lock;
 }
 
 function notionPageResponse({ uri, title, body, privateMarker = null }) {
@@ -255,7 +236,8 @@ function notionPageResponse({ uri, title, body, privateMarker = null }) {
         metadata: { type: 'page' },
         title,
         url: uri,
-        text: 'Here is the result of "view" for the requested page.\n'
+        text: 'Here is the result of "view" for the Page with URL ' + uri
+          + ' as of 2026-07-15T06:22:07.615Z:\n'
           + '<page url="' + uri + '">\n'
           + '<ancestor-path></ancestor-path>\n'
           + '<properties>{"title":' + JSON.stringify(title) + '}</properties>\n'

@@ -6,7 +6,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { readPrivateJsonInput } from './canonical-json.mjs';
+import {
+  readGovernedFile,
+  readPrivateJsonInput
+} from './canonical-json.mjs';
 
 const file = fileURLToPath(import.meta.url);
 const repositoryRoot = path.resolve(path.dirname(file), '..', '..', '..');
@@ -92,9 +95,23 @@ export function selftestPrivateJsonInput() {
         /modes 0600 and 0700/
       );
       fs.chmodSync(privateDirectory, 0o700);
+
+      const governedRoot = path.join(temporaryRoot, 'governed-root');
+      const governedOutside = path.join(temporaryRoot, 'governed-outside');
+      fs.mkdirSync(governedRoot);
+      fs.mkdirSync(governedOutside);
+      fs.writeFileSync(
+        path.join(governedOutside, 'adapter.mjs'),
+        'export const source = "outside";\n'
+      );
+      fs.symlinkSync(governedOutside, path.join(governedRoot, 'linked-parent'), 'dir');
+      rejects(
+        () => readGovernedFile(governedRoot, 'linked-parent/adapter.mjs'),
+        /symbolic links/
+      );
     }
 
-    process.stdout.write('Private JSON input selftest passed.\n');
+    process.stdout.write('Private JSON input and governed artifact selftest passed.\n');
     return true;
   } finally {
     fs.rmSync(temporaryRoot, { recursive: true, force: true });

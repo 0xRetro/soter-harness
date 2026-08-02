@@ -10,8 +10,8 @@
     "id": "host.claude",
     "version": "0.3.1"
   },
-  "configurationLockFingerprint": "sha256:876581b6c7325d62526e757422f1cbc4be378a89e18b5f84f28efe8a2444b579",
-  "graphFingerprint": "sha256:d5e5ec943f612e70d3716b1ec253c82ae36252cbfb13291759731097b056c340",
+  "configurationLockFingerprint": "sha256:7678c5b8bd370bc6284a3aed0f3ba962cdb1a32098a8eb9a6a59f7271a1c58e6",
+  "graphFingerprint": "sha256:f6e0f161afc14cee0979650e4579940aff447728a7499a4f8fed73306f322e42",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -21,7 +21,7 @@
     {
       "id": "core.runtime",
       "version": "0.1.0",
-      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+      "fingerprint": "sha256:a9c8dae0de0211a02104bbc93a94ea5021bdeadb84040dfe88778288ee465a92"
     }
   ],
   "host": {
@@ -115,7 +115,7 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/claude-host-projection/resolution.evidence.json",
-      "fingerprint": "sha256:6e5f7ea48d32cf3374d12eef950aa4f6a61ad80a79f1ad3837fd3435968f2052"
+      "fingerprint": "sha256:6ee1a24ae1c4f2de32180ca1f663f00710a976788dd052eb43410d85661fc6df"
     },
     {
       "role": "supporting-artifact",

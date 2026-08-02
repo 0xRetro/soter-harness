@@ -27,6 +27,10 @@ import {
   loadExactPreparedAutomationAcquisition,
   prepareAutomationRun
 } from './prepared-work.mjs';
+import {
+  assertDeclaredAutomationAcquisitionPlanIdentity,
+  prepareDeclaredAutomationAcquisition
+} from './connected-acquisitions.mjs';
 
 const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -305,6 +309,64 @@ export async function selftestPreparedWork(root = defaultRoot) {
     assert.equal(
       exactAcquisition.acquisition.prepareExport,
       'prepareProjectPulseConnectedAcquisition'
+    );
+    const connectedPlanId = 'plan.project-pulse.connected-acquisition.'
+      + connected.id.slice('work.project-pulse.'.length);
+    assert.equal(
+      assertDeclaredAutomationAcquisitionPlanIdentity({
+        automationId: 'automation.project-pulse',
+        workId: connected.id,
+        planId: connectedPlanId
+      }),
+      connectedPlanId
+    );
+    assert.throws(
+      () => assertDeclaredAutomationAcquisitionPlanIdentity({
+        automationId: 'automation.project-pulse',
+        workId: connected.id,
+        planId: 'plan.project-pulse.unrelated-review.'
+          + connected.id.slice('work.project-pulse.'.length)
+      }),
+      (error) => error.code === 'PREPARED_ACQUISITION_CHECKPOINT_INVALID'
+    );
+    await assert.rejects(
+      prepareDeclaredAutomationAcquisition({
+        root: temporaryRoot,
+        workId: connected.id,
+        automationId: 'automation.project-pulse',
+        expectedHost: 'codex',
+        at: '2026-07-16T14:01:05.400Z',
+        lockPath: connected.configuration.lockPath
+      }),
+      /accepts only its exact declared arguments/
+    );
+    const declaredProjectPulseAcquisition =
+      await prepareDeclaredAutomationAcquisition({
+        root: temporaryRoot,
+        workId: connected.id,
+        automationId: 'automation.project-pulse',
+        expectedHost: 'codex',
+        at: '2026-07-16T14:01:05.500Z'
+      });
+    assert.equal(
+      declaredProjectPulseAcquisition.checkpoint.plan.runId,
+      connected.checkpoint.runId,
+      'Generic acquisition dispatch must bind Project Pulse to its exact staged run.'
+    );
+    assert.equal(
+      declaredProjectPulseAcquisition.currentCall?.capability?.id,
+      'projects.records.read',
+      'Generic acquisition dispatch must make the pack-declared Project Pulse plan callable.'
+    );
+    await assert.rejects(
+      prepareDeclaredAutomationAcquisition({
+        root: temporaryRoot,
+        workId: connected.id,
+        automationId: 'automation.task-capture',
+        expectedHost: 'codex',
+        at: '2026-07-16T14:01:05.600Z'
+      }),
+      (error) => error.code === 'PREPARED_ACQUISITION_BINDING_INVALID'
     );
     const repeatedConnected = await prepareAutomationRun({
       root: temporaryRoot,

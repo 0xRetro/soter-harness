@@ -300,7 +300,7 @@ export async function selftestPreparedReviewBatches(root = defaultRoot) {
     );
 
     const taskTitle = 'PRIVATE_TASK_BATCH_TITLE_SENTINEL';
-    const taskDate = '2026-07-29';
+    const taskDate = '2099-12-31';
     const taskWork = await prepareAutomationRun({
       root: temporaryRoot,
       automationId: 'automation.task-capture',

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -20,6 +21,9 @@ import {
   renderHostProjectionCandidates
 } from '../host-projections.mjs';
 import { materializeContainedPrivateConfiguration } from '../contained-private-configurations.mjs';
+import {
+  assertDeclaredAutomationAcquisitionFinalization
+} from '../connected-acquisitions.mjs';
 import { inspectWorkspace } from '../inspection.mjs';
 import {
   privateConfigurationStatePath,
@@ -29,6 +33,8 @@ import { resolveConfiguration } from '../resolve.mjs';
 import { prepareRunEnvelope } from '../run.mjs';
 import {
   failDurableHostExecution,
+  getExactDurableContextSnapshot,
+  getExactDurableHostExecution,
   prepareDurableCapabilityExecution,
   prepareDurableOperationPlanExecution
 } from '../service.mjs';
@@ -51,6 +57,69 @@ const PRIVATE_PROJECT_STATUS_OPTION = 'PRIVATE_PROVIDER_PROJECT_STATUS_MCP_SENTI
 
 function compareText(left, right) {
   return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function exactPrivateFinalizationProjection({
+  root,
+  lockPath,
+  checkpointId,
+  snapshotId,
+  expectedHost
+}) {
+  const snapshot = getExactDurableContextSnapshot({
+    root,
+    lockPath,
+    snapshotId,
+    expectedHost
+  });
+  const execution = getExactDurableHostExecution({
+    root,
+    checkpointId,
+    expectedHost
+  });
+  return {
+    checkpoint: execution.checkpoint,
+    checkpointPath: execution.checkpointPath,
+    snapshot: snapshot.snapshot,
+    snapshotPath: snapshot.snapshotPath,
+    run: snapshot.run,
+    runPath: snapshot.runPath
+  };
+}
+
+function assertSanitizedFinalizationReceipt(root, receipt, privateSentinels) {
+  const serialized = JSON.stringify(receipt);
+  const exactKeys = [
+    'authority',
+    'automation',
+    'checkpoint',
+    'configuration',
+    'kind',
+    'privacy',
+    'receiptFingerprint',
+    'run',
+    'snapshot',
+    'version',
+    'work'
+  ];
+  if (fingerprintJson(Object.keys(receipt).sort()) !== fingerprintJson(exactKeys)
+    || receipt.kind !== 'connected-acquisition-finalization-receipt'
+    || receipt.authority?.state !== 'none'
+    || receipt.privacy?.snapshotValuesIncluded !== false
+    || receipt.privacy?.providerResponsesIncluded !== false
+    || receipt.privacy?.privateStatePathsIncluded !== false
+    || serialized.includes('.soter/state/')
+    || serialized.includes(root)
+    || privateSentinels.some((sentinel) => serialized.includes(sentinel))) {
+    throw new Error(
+      'MCP acquisition finalization did not preserve the closed sanitized receipt boundary.'
+    );
+  }
+  const unsigned = structuredClone(receipt);
+  delete unsigned.receiptFingerprint;
+  if (receipt.receiptFingerprint !== fingerprintJson(unsigned)) {
+    throw new Error('MCP acquisition finalization receipt fingerprint is invalid.');
+  }
 }
 
 function optionMapping(mapping, recordType, field, portable, provider) {
@@ -450,7 +519,8 @@ function notionPageResponse({ uri, title, body, marker = null }) {
         metadata: { type: 'page' },
         title,
         url: uri,
-        text: 'Here is the result of "view" for the requested page.\n'
+        text: 'Here is the result of "view" for the Page with URL ' + uri
+          + ' as of 2026-07-15T06:22:07.615Z:\n'
           + '<page url="' + uri + '">\n'
           + '<ancestor-path></ancestor-path>\n'
           + '<properties>{"title":' + JSON.stringify(title) + '}</properties>\n'
@@ -769,14 +839,10 @@ async function selftest(root) {
       'soter_complete_operation_plan',
       'soter_complete_provider_probe',
       'soter_fail_host_call',
-      'soter_finalize_contact_capture_context',
-      'soter_finalize_email_triage_context',
-      'soter_finalize_meeting_intake_context',
-      'soter_finalize_organization_capture_context',
-      'soter_finalize_project_capture_context',
-      'soter_finalize_slack_conversation_review_context',
-      'soter_finalize_task_capture_context',
+      'soter_finalize_automation_acquisition',
       'soter_get_host_call',
+      'soter_inspect_automation_acquisition',
+      'soter_inspect_automation_acquisition_private',
       'soter_inspect_contact_capture_decision',
       'soter_inspect_contact_capture_proposal',
       'soter_inspect_contact_capture_proposal_material',
@@ -793,21 +859,14 @@ async function selftest(root) {
       'soter_inspect_project_capture_decision',
       'soter_inspect_project_capture_proposal',
       'soter_inspect_project_capture_proposal_material',
-      'soter_inspect_slack_conversation_review',
-      'soter_inspect_slack_conversation_review_private',
       'soter_inspect_task_capture_decision',
       'soter_inspect_task_capture_proposal',
       'soter_inspect_task_capture_proposal_material',
       'soter_list_host_calls',
-      'soter_prepare_contact_capture_context',
-      'soter_prepare_email_triage_context',
-      'soter_prepare_meeting_intake_context',
-      'soter_prepare_organization_capture_context',
-      'soter_prepare_project_capture_context',
+      'soter_prepare_automation_acquisition',
       'soter_prepare_provider_probe',
-      'soter_prepare_slack_conversation_review_context',
-      'soter_prepare_task_capture_context',
       'soter_reconcile_connected_transaction',
+      'soter_recover_automation_acquisition',
       'soter_stage_automation_acquisition'
     ];
     if (JSON.stringify(names) !== JSON.stringify(expectedNames)) {
@@ -820,17 +879,16 @@ async function selftest(root) {
       throw new Error('The MCP projection exposed generic connected-write approval input.');
     }
     const workOwnedAcquisitionTools = new Set([
-      'soter_prepare_contact_capture_context',
-      'soter_prepare_email_triage_context',
-      'soter_prepare_meeting_intake_context',
-      'soter_prepare_organization_capture_context',
-      'soter_prepare_project_capture_context',
-      'soter_prepare_slack_conversation_review_context',
-      'soter_prepare_task_capture_context'
+      'soter_prepare_automation_acquisition',
+      'soter_recover_automation_acquisition',
+      'soter_finalize_automation_acquisition',
+      'soter_inspect_automation_acquisition',
+      'soter_inspect_automation_acquisition_private'
     ]);
     for (const tool of listed.tools.filter((item) => workOwnedAcquisitionTools.has(item.name))) {
       const input = JSON.stringify(tool.inputSchema);
       if (!input.includes('work_id')
+        || !input.includes('automation_id')
         || input.includes('lock_path')
         || input.includes('run_path')
         || input.includes('"query"')
@@ -853,7 +911,10 @@ async function selftest(root) {
       'soter_commit_contact_capture_proposal',
       'soter_commit_email_triage_decision',
       'soter_commit_email_triage_proposal',
-      'soter_inspect_slack_conversation_review_private',
+      'soter_prepare_automation_acquisition',
+      'soter_recover_automation_acquisition',
+      'soter_finalize_automation_acquisition',
+      'soter_inspect_automation_acquisition_private',
       'soter_stage_automation_acquisition',
       'soter_commit_meeting_intake_decision',
       'soter_commit_meeting_intake_proposal',
@@ -934,6 +995,47 @@ async function selftest(root) {
     if (restoredRuntime.runtime.state !== 'current'
       || restoredRuntime.runtime.currentFingerprint !== currentRuntime.runtime.startupFingerprint) {
       throw new Error('MCP host runtime inspection did not recover after exact behavior restoration.');
+    }
+    if (process.platform !== 'win32') {
+      const governedDirectory = path.join(
+        root,
+        'soter',
+        'automations',
+        'feature-capture'
+      );
+      const governedBackup = governedDirectory + '.runtime-symlink-selftest-backup';
+      const externalRoot = fs.mkdtempSync(path.join(
+        os.tmpdir(),
+        'soter-runtime-symlink-selftest-'
+      ));
+      const externalDirectory = path.join(externalRoot, 'feature-capture');
+      fs.cpSync(governedDirectory, externalDirectory, { recursive: true });
+      try {
+        fs.renameSync(governedDirectory, governedBackup);
+        fs.symlinkSync(externalDirectory, governedDirectory, 'dir');
+        const symlinkedRuntime = await call(client, 'soter_inspect_host_runtime', {});
+        if (symlinkedRuntime.runtime.state !== 'stale'
+          || symlinkedRuntime.runtime.reasonCode !== 'SOTER_HOST_RUNTIME_STALE'
+          || symlinkedRuntime.runtime.currentFingerprint !== null) {
+          throw new Error(
+            'MCP host runtime inspection accepted a byte-identical governed artifact through an escaping parent symlink.'
+          );
+        }
+      } finally {
+        if (fs.existsSync(governedDirectory)) fs.unlinkSync(governedDirectory);
+        if (fs.existsSync(governedBackup)) {
+          fs.renameSync(governedBackup, governedDirectory);
+        }
+        fs.rmSync(externalRoot, { recursive: true, force: true });
+      }
+      const restoredAfterSymlink = await call(client, 'soter_inspect_host_runtime', {});
+      if (restoredAfterSymlink.runtime.state !== 'current'
+        || restoredAfterSymlink.runtime.currentFingerprint
+          !== currentRuntime.runtime.startupFingerprint) {
+        throw new Error(
+          'MCP host runtime inspection did not recover after removing the governed parent symlink.'
+        );
+      }
     }
 
     const completedRun = JSON.parse(fs.readFileSync(path.join(root, runPath), 'utf8'));
@@ -1702,7 +1804,8 @@ async function selftest(root) {
     }
     const connectedContextLock = JSON.parse(fs.readFileSync(path.join(root, lockPath), 'utf8'));
     const contextPolicyBindings = applicablePolicySources(connectedContextLock);
-    const preparedContext = await call(client, 'soter_prepare_meeting_intake_context', {
+    const preparedContext = await call(client, 'soter_prepare_automation_acquisition', {
+      automation_id: 'automation.meeting-intake',
       work_id: meetingPreparedWork.id,
       at: '2026-07-15T12:00:09.000Z'
     });
@@ -1714,9 +1817,98 @@ async function selftest(root) {
         !== 'mcp__codex_apps__notion_fetch') {
       throw new Error('MCP connected context did not emit its exact first source call.');
     }
-    await expectToolError(client, 'soter_finalize_meeting_intake_context', {
+    await expectToolError(client, 'soter_prepare_automation_acquisition', {
+      automation_id: 'automation.task-capture',
+      work_id: meetingPreparedWork.id,
+      at: '2026-07-15T12:00:09.100Z'
+    }, 'does not match the requested Automation');
+    await expectToolError(client, 'soter_finalize_automation_acquisition', {
+      automation_id: 'automation.meeting-intake',
+      work_id: meetingPreparedWork.id,
       checkpoint_id: preparedContext.checkpoint.id
     }, 'completed operation plan');
+    const failedPreparedContext = await call(client, 'soter_fail_host_call', {
+      checkpoint_id: preparedContext.checkpoint.id,
+      call_id: preparedContext.currentCall.id,
+      error_kind: 'rate-limit',
+      at: '2026-07-15T12:00:09.200Z'
+    });
+    const failedPreparedStep = failedPreparedContext.checkpoint.steps.find((step) => {
+      return step.id === preparedContext.checkpoint.currentStepId;
+    });
+    if (failedPreparedContext.checkpoint.state !== 'failed'
+      || failedPreparedStep?.state !== 'failed'
+      || failedPreparedStep?.error?.code !== 'HOST_CALL_RATE_LIMITED'
+      || failedPreparedStep?.call?.id !== preparedContext.currentCall.id) {
+      throw new Error(
+        'MCP connected-acquisition recovery fixture did not preserve the exact failed read.'
+      );
+    }
+    const failedPreparedCallFingerprint = fingerprintJson(failedPreparedStep.call);
+    const privateStatePathBeforeRejectedRecovery = path.join(root, '.soter');
+    const privateStateFingerprintBeforeRejectedRecovery
+      = privateStateTreeFingerprint(privateStatePathBeforeRejectedRecovery);
+    const rejectedRecovery = await client.callTool({
+      name: 'soter_recover_automation_acquisition',
+      arguments: {
+        automation_id: 'automation.meeting-intake',
+        work_id: meetingPreparedWork.id,
+        checkpoint_id: failedPreparedContext.checkpoint.id,
+        checkpoint_fingerprint: failedPreparedContext.checkpoint.checkpointFingerprint,
+        step_id: failedPreparedStep.id,
+        call_id: failedPreparedStep.call.id,
+        call_fingerprint: 'sha256:' + '0'.repeat(64),
+        at: '2026-07-15T12:00:09.300Z'
+      }
+    });
+    const rejectedRecoveryProjection = JSON.stringify(rejectedRecovery);
+    if (!rejectedRecovery.isError
+      || !rejectedRecoveryProjection.includes(
+        'Connected-acquisition read recovery was not eligible'
+      )
+      || rejectedRecoveryProjection.includes(root)
+      || rejectedRecoveryProjection.includes('MCP_PRIVATE_MEETING_GOAL_SENTINEL')
+      || privateStateTreeFingerprint(privateStatePathBeforeRejectedRecovery)
+        !== privateStateFingerprintBeforeRejectedRecovery) {
+      throw new Error(
+        'MCP connected-acquisition recovery did not reject an inexact call binding without mutation.'
+      );
+    }
+    const recoveredPreparedContext = await call(
+      client,
+      'soter_recover_automation_acquisition',
+      {
+        automation_id: 'automation.meeting-intake',
+        work_id: meetingPreparedWork.id,
+        checkpoint_id: failedPreparedContext.checkpoint.id,
+        checkpoint_fingerprint: failedPreparedContext.checkpoint.checkpointFingerprint,
+        step_id: failedPreparedStep.id,
+        call_id: failedPreparedStep.call.id,
+        call_fingerprint: failedPreparedCallFingerprint,
+        at: '2026-07-15T12:00:09.400Z'
+      }
+    );
+    if (recoveredPreparedContext.idempotent
+      || recoveredPreparedContext.checkpoint.state !== 'requested'
+      || recoveredPreparedContext.checkpoint.currentStepId !== failedPreparedStep.id
+      || recoveredPreparedContext.currentCall?.id
+        !== failedPreparedStep.call.id + '.attempt-2'
+      || recoveredPreparedContext.currentCall?.argumentsFingerprint
+        !== failedPreparedStep.call.argumentsFingerprint
+      || recoveredPreparedContext.recovery?.failedCallId !== failedPreparedStep.call.id
+      || recoveredPreparedContext.recovery?.replacementCallId
+        !== recoveredPreparedContext.currentCall.id
+      || recoveredPreparedContext.recovery?.authority?.providerCallPerformed !== false
+      || recoveredPreparedContext.recovery?.authority?.writeAuthorityIncluded !== false
+      || recoveredPreparedContext.recovery?.authority?.reusableRetryAuthorityIncluded !== false
+      || recoveredPreparedContext.run.effects.some((effect) => effect.state === 'passed')
+      || JSON.stringify(recoveredPreparedContext).includes(
+        'MCP_PRIVATE_MEETING_GOAL_SENTINEL'
+      )) {
+      throw new Error(
+        'MCP connected-acquisition recovery did not emit one exact no-authority replacement read.'
+      );
+    }
     const contextMarkers = [
       ...contextPolicyBindings.map((_, index) => 'private-mcp-context-policy-body-' + index),
       'private-mcp-context-transcript-marker',
@@ -1899,11 +2091,67 @@ async function selftest(root) {
       },
       at: '2026-07-15T12:00:15.000Z'
     });
-    const finalizedContext = await call(client, 'soter_finalize_meeting_intake_context', {
+    const finalizedContextReceipt = await call(client, 'soter_finalize_automation_acquisition', {
+      automation_id: 'automation.meeting-intake',
+      work_id: meetingPreparedWork.id,
       checkpoint_id: preparedContext.checkpoint.id
     });
+    assertSanitizedFinalizationReceipt(root, finalizedContextReceipt, [
+      ...contextMarkers,
+      'rawProviderResponse',
+      connectedRecording,
+      mcpOrganizationId,
+      mcpProjectId,
+      mcpTaskId
+    ]);
+    const finalizedContext = exactPrivateFinalizationProjection({
+      root,
+      lockPath,
+      checkpointId: preparedContext.checkpoint.id,
+      snapshotId: finalizedContextReceipt.snapshot.id,
+      expectedHost: 'codex'
+    });
+    await assertDeclaredAutomationAcquisitionFinalization({
+      root,
+      automationId: 'automation.meeting-intake',
+      workId: meetingPreparedWork.id,
+      checkpointId: preparedContext.checkpoint.id,
+      expectedHost: 'codex',
+      finalized: finalizedContext
+    });
+    await assert.rejects(
+      assertDeclaredAutomationAcquisitionFinalization({
+        root,
+        automationId: 'automation.meeting-intake',
+        workId: meetingPreparedWork.id,
+        checkpointId: preparedContext.checkpoint.id,
+        expectedHost: 'codex',
+        finalized: {}
+      }),
+      (error) => error.code === 'PREPARED_ACQUISITION_ADAPTER_INVALID',
+      'Generic acquisition finalization must reject a declared finalizer that returns no durable snapshot.'
+    );
+    const substitutedFinalization = structuredClone(finalizedContext);
+    substitutedFinalization.snapshot = {
+      ...substitutedFinalization.snapshot,
+      id: 'snapshot.context.substituted'
+    };
+    await assert.rejects(
+      assertDeclaredAutomationAcquisitionFinalization({
+        root,
+        automationId: 'automation.meeting-intake',
+        workId: meetingPreparedWork.id,
+        checkpointId: preparedContext.checkpoint.id,
+        expectedHost: 'codex',
+        finalized: substitutedFinalization
+      }),
+      (error) => error.code === 'PREPARED_ACQUISITION_ADAPTER_INVALID',
+      'Generic acquisition finalization must reject a substituted durable snapshot result.'
+    );
     const cliFinalizedContext = runCli(root, [
-      'context-connected-finalize',
+      'operator-acquisition-finalize',
+      '--automation', 'automation.meeting-intake',
+      '--work', meetingPreparedWork.id,
       '--checkpoint', preparedContext.checkpoint.id
     ]);
     assertPrivateFile(path.join(root, finalizedContext.snapshotPath));
@@ -1933,7 +2181,8 @@ async function selftest(root) {
       || finalizedContext.run?.context
         ?.find((entry) => entry.authority === 'authority.tasks.definition')?.status !== 'loaded'
       || finalizedContext.run?.lifecycleState !== 'paused'
-      || cliFinalizedContext.snapshotPath !== finalizedContext.snapshotPath
+      || cliFinalizedContext.receiptFingerprint
+        !== finalizedContextReceipt.receiptFingerprint
       || contextMarkers.some((marker) => contextDurableContents.includes(marker))) {
       throw new Error(
         'MCP and CLI connected-context projections drifted or persisted a raw response: '
@@ -1977,7 +2226,8 @@ async function selftest(root) {
       '--at', '2026-07-15T12:00:16.000Z'
     ]);
     const emailLockPath = hostileEmailPreparedWork.configuration.lockPath;
-    const hostileEmailContext = await call(client, 'soter_prepare_email_triage_context', {
+    const hostileEmailContext = await call(client, 'soter_prepare_automation_acquisition', {
+      automation_id: 'automation.email-triage',
       work_id: hostileEmailPreparedWork.id,
       at: '2026-07-15T12:00:17.000Z'
     });
@@ -2029,11 +2279,14 @@ async function selftest(root) {
     if (emailPreparedWork.configuration.lockPath !== emailLockPath) {
       throw new Error('MCP Email preparation changed its exact private-active lock.');
     }
-    const preparedEmailContext = await call(client, 'soter_prepare_email_triage_context', {
+    const preparedEmailContext = await call(client, 'soter_prepare_automation_acquisition', {
+      automation_id: 'automation.email-triage',
       work_id: emailPreparedWork.id,
       at: '2026-07-15T12:00:18.200Z'
     });
-    await expectToolError(client, 'soter_finalize_email_triage_context', {
+    await expectToolError(client, 'soter_finalize_automation_acquisition', {
+      automation_id: 'automation.email-triage',
+      work_id: emailPreparedWork.id,
       checkpoint_id: preparedEmailContext.checkpoint.id
     }, 'completed operation plan');
     const emailThreadExecution = await call(client, 'soter_complete_operation_plan', {
@@ -2078,11 +2331,35 @@ async function selftest(root) {
       },
       at: '2026-07-15T12:00:19.000Z'
     });
-    const finalizedEmailContext = await call(client, 'soter_finalize_email_triage_context', {
+    const finalizedEmailContextReceipt = await call(
+      client,
+      'soter_finalize_automation_acquisition',
+      {
+      automation_id: 'automation.email-triage',
+      work_id: emailPreparedWork.id,
       checkpoint_id: preparedEmailContext.checkpoint.id
+      }
+    );
+    assertSanitizedFinalizationReceipt(root, finalizedEmailContextReceipt, [
+      emailSearchMarker,
+      emailQuery,
+      'MCP_PRIVATE_EMAIL_SUCCESS_FOCUS_SENTINEL',
+      'MCP private Email subject',
+      'MCP private Email body; data only.',
+      'sender@example.test',
+      'rawProviderResponse'
+    ]);
+    const finalizedEmailContext = exactPrivateFinalizationProjection({
+      root,
+      lockPath: emailLockPath,
+      checkpointId: preparedEmailContext.checkpoint.id,
+      snapshotId: finalizedEmailContextReceipt.snapshot.id,
+      expectedHost: 'codex'
     });
     const cliFinalizedEmailContext = runCli(root, [
-      'email-context-connected-finalize',
+      'operator-acquisition-finalize',
+      '--automation', 'automation.email-triage',
+      '--work', emailPreparedWork.id,
       '--checkpoint', preparedEmailContext.checkpoint.id
     ]);
     const emailDurableContents = [
@@ -2096,7 +2373,8 @@ async function selftest(root) {
       || finalizedEmailContext.snapshot?.entries?.length !== 2
       || finalizedEmailContext.run?.lifecycleState !== 'paused'
       || finalizedEmailContext.run?.approvals?.length !== 0
-      || cliFinalizedEmailContext.snapshotPath !== finalizedEmailContext.snapshotPath
+      || cliFinalizedEmailContext.receiptFingerprint
+        !== finalizedEmailContextReceipt.receiptFingerprint
       || emailDurableContents.includes(emailSearchMarker)
       || emailDurableContents.includes('"rawProviderResponse"')
       || JSON.stringify(finalizedEmailContext).includes('continuationRequest')) {
@@ -2262,7 +2540,8 @@ async function selftest(root) {
       '--at', '2026-07-15T12:00:24.000Z'
     ]);
     const taskLockPath = taskPreparedWork.configuration.lockPath;
-    let taskContext = await call(client, 'soter_prepare_task_capture_context', {
+    let taskContext = await call(client, 'soter_prepare_automation_acquisition', {
+      automation_id: 'automation.task-capture',
       work_id: taskPreparedWork.id,
       at: '2026-07-15T12:00:26.000Z'
     });
@@ -2392,11 +2671,31 @@ async function selftest(root) {
       },
       at: '2026-07-15T12:00:31.000Z'
     });
-    const finalizedTaskContext = await call(client, 'soter_finalize_task_capture_context', {
+    const finalizedTaskContextReceipt = await call(
+      client,
+      'soter_finalize_automation_acquisition',
+      {
+      automation_id: 'automation.task-capture',
+      work_id: taskPreparedWork.id,
       checkpoint_id: taskContext.checkpoint.id
+      }
+    );
+    assertSanitizedFinalizationReceipt(root, finalizedTaskContextReceipt, [
+      ...taskRawMarkers,
+      taskTitle,
+      'rawProviderResponse'
+    ]);
+    const finalizedTaskContext = exactPrivateFinalizationProjection({
+      root,
+      lockPath: taskLockPath,
+      checkpointId: taskContext.checkpoint.id,
+      snapshotId: finalizedTaskContextReceipt.snapshot.id,
+      expectedHost: 'codex'
     });
     const cliFinalizedTaskContext = runCli(root, [
-      'task-context-connected-finalize',
+      'operator-acquisition-finalize',
+      '--automation', 'automation.task-capture',
+      '--work', taskPreparedWork.id,
       '--checkpoint', taskContext.checkpoint.id
     ]);
     const taskDurableContents = [
@@ -2408,7 +2707,8 @@ async function selftest(root) {
       || finalizedTaskContext.snapshot?.entries?.length !== 5
       || finalizedTaskContext.run?.lifecycleState !== 'paused'
       || finalizedTaskContext.run?.approvals?.length !== 0
-      || cliFinalizedTaskContext.snapshotPath !== finalizedTaskContext.snapshotPath
+      || cliFinalizedTaskContext.receiptFingerprint
+        !== finalizedTaskContextReceipt.receiptFingerprint
       || taskRawMarkers.some((marker) => taskDurableContents.includes(marker))) {
       throw new Error('MCP Task acquisition drifted, leaked raw responses, or granted authority.');
     }
@@ -2760,7 +3060,8 @@ async function selftest(root) {
       '--at', '2026-07-15T12:00:12.500Z'
     ]);
     const cliPreparedContext = runCli(root, [
-      'context-connected-prepare',
+      'operator-acquisition-prepare',
+      '--automation', 'automation.meeting-intake',
       '--work', cliMeetingPreparedWork.id,
       '--at', '2026-07-15T12:00:13.000Z'
     ]);

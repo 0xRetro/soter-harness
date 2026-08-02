@@ -140,6 +140,13 @@ withRoot((temporary) => {
         mode: 'exact-bijection',
         entries: [{ portable: 'To Do', provider: 'Workspace-only queued state' }]
       }],
+      fieldBindings: [{
+        mapping: 'mapping.integration.notion.tasks-records',
+        recordType: 'task',
+        field: 'title',
+        state: 'mapped',
+        provider: 'Workspace-only task title'
+      }],
       token: 'xoxb-private-runtime-value'
     })
   );
@@ -167,6 +174,16 @@ expectViolation((document) => {
     }]
   }];
 }, 'TRACKED_CONFIGURATION_PROVIDER_OPTION_MAPPING');
+
+expectViolation((document) => {
+  document.settings['integration.notion'].fieldBindings = [{
+    mapping: 'mapping.integration.notion.tasks-records',
+    recordType: 'task',
+    field: 'title',
+    state: 'mapped',
+    provider: 'Workspace-only task title'
+  }];
+}, 'TRACKED_CONFIGURATION_PROVIDER_FIELD_BINDING');
 
 expectViolation((document) => {
   document.authorities[1].uri = 'notion://workspace/0123456789abcdef0123456789abcdef';
@@ -207,5 +224,5 @@ expectViolation((document) => {
 }, 'TRACKED_CONFIGURATION_FIXTURE_NAMESPACE');
 
 process.stdout.write(
-  'Tracked configuration portability selftest passed: live Notion targets and option mappings, Slack, email, credential, and path values are rejected; portable URIs, stable identifiers, .example identities, and private override isolation remain exact.\n'
+  'Tracked configuration portability selftest passed: live Notion targets, field bindings, and option mappings, Slack, email, credential, and path values are rejected; portable URIs, stable identifiers, .example identities, and private override isolation remain exact.\n'
 );

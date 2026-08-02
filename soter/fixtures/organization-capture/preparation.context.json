@@ -4,8 +4,8 @@
   "id": "context.organization-capture.preparation-fixture",
   "runId": "run.organization-capture.preparation-fixture",
   "createdAt": "2026-07-21T12:00:00.000Z",
-  "configurationLockFingerprint": "sha256:0db8d8f48ad0d478911cbbdce0cd71dab7a87a7e10e588399d03be15aee2e61e",
-  "graphFingerprint": "sha256:b3cf8233f7cf750a00121582591e1b42f01ae84454b701bbe5d449025bb3c35b",
+  "configurationLockFingerprint": "sha256:c13bca597f09bd1b1c0791008434c19a2766a1f5a66fbdd8263a8f9fc0c66b14",
+  "graphFingerprint": "sha256:93ba39c1aeb24117a0271398c12a778a3593c55fcb06889c0045a876c53a599b",
   "containment": "fixture",
   "entries": [
     {

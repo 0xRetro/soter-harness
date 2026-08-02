@@ -4,8 +4,8 @@
   "id": "context.email-triage.preparation-fixture",
   "runId": "run.email-triage.preparation-fixture",
   "createdAt": "2026-07-16T16:00:00.000Z",
-  "configurationLockFingerprint": "sha256:c1ecb4cb946b2f30808dc881ebf30261bb4e4c238d41ceced0f41e975cf81502",
-  "graphFingerprint": "sha256:7423c8496b0aea010a986cdc98341692785b78850ad1c1aef2680e7bbd9f256f",
+  "configurationLockFingerprint": "sha256:61565ea2a31942e3ed205db2f47165905e3c3abe8b426d1a2308583237769e69",
+  "graphFingerprint": "sha256:575458aaa282b309538743ebcd13e0e4f4cc8d1199dfb9579838483a466664e9",
   "containment": "fixture",
   "entries": [
     {

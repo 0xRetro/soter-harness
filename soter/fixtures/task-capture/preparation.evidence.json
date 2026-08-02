@@ -10,8 +10,8 @@
     "id": "run.task-capture.preparation-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:56ec4abbbc6e05fde52bf201a8b4fe797b8e2a2a17ca1077a15b684bea593908",
-  "graphFingerprint": "sha256:d26b8bbc93e81dcee157108e67ac759d06de147484f6d6dfe2cfb88328a681a8",
+  "configurationLockFingerprint": "sha256:1c7658c752c5939a46789314d2f78d5a30419269bdc04f03a17dd1e299bc040e",
+  "graphFingerprint": "sha256:a38ff845875d6d86d235b8a2a85dfc54ac7015f63978e38f18b5532a093a2b49",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -21,7 +21,7 @@
     {
       "id": "core.runtime",
       "version": "0.1.0",
-      "fingerprint": "sha256:6bbad7735d9f4b108edde91ce3889b0ec6f34c7d31c1768a5cbc6ffdb0abaed5"
+      "fingerprint": "sha256:a9c8dae0de0211a02104bbc93a94ea5021bdeadb84040dfe88778288ee465a92"
     },
     {
       "id": "context.projects",
@@ -261,7 +261,7 @@
     {
       "role": "context-snapshot",
       "id": "context.task-capture.preparation-fixture",
-      "fingerprint": "sha256:c30d501d257ee16608564f84e2dab81e1adf081ec5d795d819f789626be3dcaf"
+      "fingerprint": "sha256:ddd81f0fa56b89fb6c124e0dbaf6a1b6c0d4b998d74f95517a78a5c5498b7763"
     },
     {
       "role": "task-create-preview",

@@ -1,0 +1,524 @@
+{
+  "$contract": "soter://contracts/evidence/v2",
+  "contractVersion": "2.0.0",
+  "id": "evidence.project-page-review.preparation.fixture",
+  "createdAt": "2026-07-29T12:00:00.000Z",
+  "claimFamily": "behavior",
+  "claim": "The exact declared scenario was executed against fixture providers and assessed from observed capability, policy, outcome, invariant, and evidence states.",
+  "subject": {
+    "type": "run",
+    "id": "run.project-page-review.preparation-fixture",
+    "version": null
+  },
+  "configurationLockFingerprint": "sha256:4182cf95a9a6681e09ac2380b65d9aeb1661f5ad3e8869cae89a02aed3922a35",
+  "graphFingerprint": "sha256:fe8ee482ddafb7af28974d06e2a7f30dafe21f5c2b18ebc948238939e7ea8ff5",
+  "dependencies": [
+    {
+      "id": "kernel.soter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+    },
+    {
+      "id": "core.runtime",
+      "version": "0.1.0",
+      "fingerprint": "sha256:a9c8dae0de0211a02104bbc93a94ea5021bdeadb84040dfe88778288ee465a92"
+    },
+    {
+      "id": "context.projects",
+      "version": "0.1.0",
+      "fingerprint": "sha256:e8b68449ec9582d769c56d9b9cdf9ed3a6f220c15593a614ac13e9a656cf0ce5"
+    },
+    {
+      "id": "context.tasks",
+      "version": "0.1.0",
+      "fingerprint": "sha256:5d516369250d03e1a270d7ac6c0dfe3a19d790eafab4a7971e1b11a36d282555"
+    },
+    {
+      "id": "automation.project-page-review",
+      "version": "0.1.0",
+      "fingerprint": "sha256:ae0ce0ed0114878ca2ea5f62cc463874a2c891e4d18946df4fa11d3ffdf3a3ef"
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "fingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
+  },
+  "integrations": [
+    {
+      "id": "integration.notion",
+      "version": "0.2.0",
+      "manifestFingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5",
+      "evidenceMaturity": "declared"
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "declarationFingerprint": "sha256:1cc9527616152d9233824bc94810c12de40aee046a2d9c8fe6e3ccbafc16681f"
+    },
+    {
+      "id": "authority.projects.definition",
+      "role": "definition",
+      "subject": "projects.records",
+      "declarationFingerprint": "sha256:7bc75a5ac442db4f610f4cced83eb3e5e182ff87925394fa74c101bf579c7882"
+    },
+    {
+      "id": "authority.projects.instance",
+      "role": "instance",
+      "subject": "projects.records",
+      "declarationFingerprint": "sha256:37d848cb75e8eaeee8b14e93fcc7ea7b593a8c611cf1fd71455dae47186e2b85"
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "declarationFingerprint": "sha256:8c83d8d92b5f86625795f39d9c48a86ab87fc57ad709dd4183bd5304a650875b"
+    },
+    {
+      "id": "authority.tasks.definition",
+      "role": "definition",
+      "subject": "tasks.records",
+      "declarationFingerprint": "sha256:bffdc18da3e2646f42fa5319ef508fbacef69a371630679b80be17a182100d3b"
+    },
+    {
+      "id": "authority.tasks.instance",
+      "role": "instance",
+      "subject": "tasks.records",
+      "declarationFingerprint": "sha256:9a3c8226a9cf26d9ac5baa8b428ba019c13c31023d33e079de17380c038a5317"
+    }
+  ],
+  "evaluator": {
+    "id": "automation.project-page-review.scenario-evaluator",
+    "version": "0.1.0",
+    "level": "fixture"
+  },
+  "environment": {
+    "containment": "fixture",
+    "runtime": "node"
+  },
+  "acceptanceCriteria": [
+    "The scenario fingerprint and configuration lock exactly match the assessed run.",
+    "Observed capability order exactly matches the declared capability order.",
+    "Resolved effect policy modes exactly match the declared scenario modes.",
+    "Every declared outcome, invariant, and evidence requirement has an observed assessment."
+  ],
+  "result": "passed",
+  "outcomes": [
+    {
+      "id": "portable-policies.exactly-grounded",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "template-and-page.exactly-compared",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "related-tasks.complete",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "structural-drift.visible",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "attention-only-fields.not-promoted",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "proposals-and-writes.absent",
+      "category": "outcome",
+      "state": "passed"
+    },
+    {
+      "id": "template-is-configured-source",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "page-body-and-task-title.private",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "raw-urls-and-bodies.excluded",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "provider-live-view-wiring.unavailable",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "no-approval-continuation-or-write-authority",
+      "category": "invariant",
+      "state": "passed"
+    },
+    {
+      "id": "exact-lock",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "policy-source-fingerprints",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "template-and-page-fingerprints",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "complete-task-coverage-fingerprint",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "automation-owned-derived-review-contract-fingerprint",
+      "category": "evidence",
+      "state": "passed"
+    },
+    {
+      "id": "source-case-exactly-fingerprinted",
+      "category": "evidence",
+      "state": "passed"
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "scenario",
+      "id": "project-page-review.preparation",
+      "path": "soter/scenarios/project-page-review/preparation.scenario.json",
+      "fingerprint": "sha256:9a629ec7553308647b3ccdb697995d77936b6f9d326f9b13c6baf2a4ae512e8f"
+    },
+    {
+      "role": "source-case",
+      "path": "soter/fixtures/providers/notion/workspace-records.json",
+      "fingerprint": "sha256:0103452ca2b87258651039928309ebdec477cbea65c5c7b4c69365707ae600ea"
+    },
+    {
+      "role": "scenario-assessment",
+      "runId": "run.project-page-review.preparation-fixture",
+      "capabilityOrder": {
+        "expected": [
+          "projects.records.read",
+          "projects.records.read",
+          "tasks.records.read",
+          "documents.content.read",
+          "projects.records.read",
+          "tasks.records.read",
+          "documents.content.read"
+        ],
+        "observed": [
+          "projects.records.read",
+          "projects.records.read",
+          "tasks.records.read",
+          "documents.content.read",
+          "projects.records.read",
+          "tasks.records.read",
+          "documents.content.read"
+        ],
+        "state": "passed"
+      },
+      "effectModes": {
+        "expected": {
+          "read": "allow",
+          "disclosure": "allow",
+          "write": "confirm",
+          "dispatch": "prohibit",
+          "destructive": "prohibit"
+        },
+        "observed": {
+          "destructive": "prohibit",
+          "disclosure": "allow",
+          "dispatch": "prohibit",
+          "read": "allow",
+          "write": "confirm"
+        },
+        "state": "passed"
+      },
+      "observationFingerprint": "sha256:a2a8aae64f5e9872385f921120c02d91405dee79f50df8fb0e032efb980cb8d7"
+    },
+    {
+      "role": "context-snapshot",
+      "id": "context.project-page-review.preparation-fixture",
+      "fingerprint": "sha256:01358adb524d6c08b4c206aaa60fd01e514f4e16ea337477317ec56b9f6f2716"
+    },
+    {
+      "role": "project-page-review-preview",
+      "fingerprint": "sha256:af16af808f921199acd134e2bc253ef7fec75b9082c2eb2bdab3288f80c59384"
+    }
+  ],
+  "effects": [
+    {
+      "id": "effect.project-page-review.project-capture-policy.fixture",
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.projects.definition",
+      "startedAt": "2026-07-29T12:00:00.000Z",
+      "completedAt": "2026-07-29T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact Project policy, Task policy, template, Project, related-Task, and current-page reads are allowed for private review."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Private selected Project and Task values may enter local selected-work state but not general inspection, fixtures, logs, or evidence."
+        }
+      ],
+      "inputFingerprint": "sha256:b0e20d8e3bb2ea1877f6904862968a4fd65d4881fd66b21d705a071f4222b824",
+      "state": "passed",
+      "outputFingerprint": "sha256:26cc8e4c05b80ca12c16eba053c28ccf2b50fe3af94785c443b376d7ff692b26",
+      "error": null
+    },
+    {
+      "id": "effect.project-page-review.project-work-policy.fixture",
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.projects.definition",
+      "startedAt": "2026-07-29T12:00:00.000Z",
+      "completedAt": "2026-07-29T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact Project policy, Task policy, template, Project, related-Task, and current-page reads are allowed for private review."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Private selected Project and Task values may enter local selected-work state but not general inspection, fixtures, logs, or evidence."
+        }
+      ],
+      "inputFingerprint": "sha256:7926a96bd072cf583c91ebd9105ecf2d29785d3c39ef5156e41487cfac8c6d3b",
+      "state": "passed",
+      "outputFingerprint": "sha256:4fde23ba24d0bfe4caf2fdcf29f521338520478ca4847d40ddfc8f39107aee80",
+      "error": null
+    },
+    {
+      "id": "effect.project-page-review.task-work-policy.fixture",
+      "capability": "tasks.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.tasks.definition",
+      "startedAt": "2026-07-29T12:00:00.000Z",
+      "completedAt": "2026-07-29T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact Project policy, Task policy, template, Project, related-Task, and current-page reads are allowed for private review."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Private selected Project and Task values may enter local selected-work state but not general inspection, fixtures, logs, or evidence."
+        }
+      ],
+      "inputFingerprint": "sha256:0ccfce214fc97fa3c9c56904f1674602a9495fe339d14b7b1b5e36d6ef85e001",
+      "state": "passed",
+      "outputFingerprint": "sha256:77d1f01c7017ae22f26a6c6dff520ad7381116de4093744f34811b3a9a889514",
+      "error": null
+    },
+    {
+      "id": "effect.project-page-review.template.fixture",
+      "capability": "documents.content.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.projects.definition",
+      "startedAt": "2026-07-29T12:00:00.000Z",
+      "completedAt": "2026-07-29T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact Project policy, Task policy, template, Project, related-Task, and current-page reads are allowed for private review."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Private selected Project and Task values may enter local selected-work state but not general inspection, fixtures, logs, or evidence."
+        }
+      ],
+      "inputFingerprint": "sha256:d4162a4c5beb4c6501ccf9abd8f78c66f6cbb1232d4b02c64b7b880f442daaf6",
+      "state": "passed",
+      "outputFingerprint": "sha256:26cd8f698be890b0a71f90f24f16c8dee4454126203ca292a2932c8bd213e0f3",
+      "error": null
+    },
+    {
+      "id": "effect.project-page-review.project.fixture",
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.projects.instance",
+      "startedAt": "2026-07-29T12:00:00.000Z",
+      "completedAt": "2026-07-29T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact Project policy, Task policy, template, Project, related-Task, and current-page reads are allowed for private review."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Private selected Project and Task values may enter local selected-work state but not general inspection, fixtures, logs, or evidence."
+        }
+      ],
+      "inputFingerprint": "sha256:ae05d383d4f3c959cd5f97c498f27932047523747c265889c62940c5271e7596",
+      "state": "passed",
+      "outputFingerprint": "sha256:f1c72e9e5b00c3416cf119ffb8abb6f12e397601b7524cfdea005fcafd108ab1",
+      "error": null
+    },
+    {
+      "id": "effect.project-page-review.tasks.fixture",
+      "capability": "tasks.records.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.tasks.instance",
+      "startedAt": "2026-07-29T12:00:00.000Z",
+      "completedAt": "2026-07-29T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact Project policy, Task policy, template, Project, related-Task, and current-page reads are allowed for private review."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Private selected Project and Task values may enter local selected-work state but not general inspection, fixtures, logs, or evidence."
+        }
+      ],
+      "inputFingerprint": "sha256:d19ab73fb1d5771619f7371637a1bb0577477d6813ce7736c5813c38f411959d",
+      "state": "passed",
+      "outputFingerprint": "sha256:2b1f27076c947aadc357c0656e1b40855172a4117353fda2ca1d22199507916d",
+      "error": null
+    },
+    {
+      "id": "effect.project-page-review.document.fixture",
+      "capability": "documents.content.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.2.0",
+      "containment": "fixture",
+      "authority": "authority.projects.instance",
+      "startedAt": "2026-07-29T12:00:00.000Z",
+      "completedAt": "2026-07-29T12:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact Project policy, Task policy, template, Project, related-Task, and current-page reads are allowed for private review."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Private selected Project and Task values may enter local selected-work state but not general inspection, fixtures, logs, or evidence."
+        }
+      ],
+      "inputFingerprint": "sha256:27cd49177f0c42cfd6057d4a3b79dee34db0c0d1c91628b08d7088dda27b8db5",
+      "state": "passed",
+      "outputFingerprint": "sha256:e97bc080f4c33b9daf6820a7838631b4d45b195d6290a04c6bb71bfc2746e17e",
+      "error": null
+    }
+  ],
+  "failures": [],
+  "warnings": [],
+  "skipped": [],
+  "limitations": [
+    "This is deterministic fixture evidence. It does not establish connected credentials, provider reachability, host conformance, or live behavior."
+  ],
+  "freshness": {
+    "policy": "Valid only while every configuration-lock fingerprint remains unchanged.",
+    "validUntil": null
+  },
+  "supersedes": null,
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Credential references and credential values are excluded."
+    ]
+  }
+}

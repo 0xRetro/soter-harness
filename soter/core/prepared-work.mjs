@@ -1,11 +1,18 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
 
 import { validateJsonSchema } from '../kernel/verify.mjs';
 import { createAutomationPreparationEvidence } from './evidence.mjs';
 import { containsCredentialMaterial } from './host-runtime.mjs';
-import { fingerprintJson, readJson, repoRelativePath, resolveRepoPath } from './lib/canonical-json.mjs';
+import {
+  fingerprintJson,
+  importGovernedModule,
+  readJson,
+  readGovernedJson,
+  repoRelativePath,
+  resolveGovernedFile,
+  resolveRepoPath
+} from './lib/canonical-json.mjs';
 import { fingerprintLock, lockMatchesResolution, resolveConfiguration } from './resolve.mjs';
 import { prepareRunEnvelope } from './run.mjs';
 import {
@@ -78,7 +85,7 @@ function walkJson(directory) {
 }
 
 function validate(root, value, contractPath, label) {
-  const failures = validateJsonSchema(value, readJson(path.join(root, contractPath)));
+  const failures = validateJsonSchema(value, readGovernedJson(root, contractPath));
   if (failures.length) {
     throw new Error(label + ' does not satisfy its contract: '
       + failures.slice(0, 8).map((item) => item.path + ' ' + item.message).join('; '));
@@ -386,41 +393,59 @@ function loadAutomation(root, automationId) {
   if (typeof automationId !== 'string' || !/^automation\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/.test(automationId)) {
     throw new TypeError('Automation id is invalid.');
   }
-  const packPath = path.join(root, 'soter', 'packs', automationId, 'pack.json');
-  const pack = readJson(packPath);
+  const packRelativePath = 'soter/packs/' + automationId + '/pack.json';
+  const pack = readGovernedJson(root, packRelativePath);
+  validate(root, pack, 'soter/contracts/pack.schema.json', 'Automation pack');
   if (pack.id !== automationId || pack.layer !== 'automation') {
     throw new Error('Prepared work requires one exact Automation pack.');
   }
   if (!pack.operator?.preparation) {
     throw new Error(automationId + ' does not declare a prepared-work adapter.');
   }
-  const inputPath = resolveRepoPath(root, pack.operator.input);
-  const input = readJson(inputPath);
+  const input = readGovernedJson(root, pack.operator.input);
   if (input.$contract !== 'soter://contracts/automation-input/v1' || input.automation !== automationId) {
     throw new Error('Automation input declaration does not match ' + automationId + '.');
   }
   validate(root, input, 'soter/contracts/automation-input.schema.json', 'Automation input');
-  const modulePath = resolveRepoPath(root, pack.operator.preparation.module);
+  const modulePath = resolveGovernedFile(root, pack.operator.preparation.module);
   const artifact = pack.artifacts.find((item) => item.path === pack.operator.preparation.module
     && item.role === 'implementation');
-  if (!artifact || !fs.statSync(modulePath).isFile()) {
+  if (!artifact) {
     throw new Error('Prepared-work adapter must be a declared Automation implementation artifact.');
   }
   let acquisition = null;
   if (pack.operator.acquisition) {
-    const acquisitionPath = resolveRepoPath(root, pack.operator.acquisition.module);
+    const acquisitionPath = resolveGovernedFile(root, pack.operator.acquisition.module);
     const acquisitionArtifact = pack.artifacts.find((item) => {
       return item.path === pack.operator.acquisition.module && item.role === 'implementation';
     });
-    if (!acquisitionArtifact || !fs.statSync(acquisitionPath).isFile()) {
+    if (!acquisitionArtifact) {
       throw new Error(
         'Connected-acquisition adapter must be a declared Automation implementation artifact.'
       );
     }
+    for (const schemaKey of ['inspectSchema', 'privateInspectSchema']) {
+      const schemaPath = pack.operator.acquisition[schemaKey];
+      if (!schemaPath) continue;
+      const schemaArtifact = pack.artifacts.find((item) => {
+        return item.path === schemaPath && item.role === 'definition';
+      });
+      if (!schemaArtifact) {
+        throw new Error(
+          'Connected-acquisition inspection schema must be a declared Automation definition artifact.'
+        );
+      }
+      resolveGovernedFile(root, schemaPath);
+    }
     acquisition = {
+      module: pack.operator.acquisition.module,
       modulePath: acquisitionPath,
       prepareExport: pack.operator.acquisition.prepareExport,
       finalizeExport: pack.operator.acquisition.finalizeExport,
+      inspectExport: pack.operator.acquisition.inspectExport || null,
+      privateInspectExport: pack.operator.acquisition.privateInspectExport || null,
+      inspectSchema: pack.operator.acquisition.inspectSchema || null,
+      privateInspectSchema: pack.operator.acquisition.privateInspectSchema || null,
       availability: structuredClone(
         pack.operator.acquisition.availability || { state: 'available' }
       ),
@@ -436,7 +461,7 @@ function loadAutomation(root, automationId) {
     if (!definitionArtifact) {
       throw new Error('Automation derived review contract must be a declared definition artifact.');
     }
-    derivedReviewDefinition = readJson(resolveRepoPath(root, derivedReviewPath));
+    derivedReviewDefinition = readGovernedJson(root, derivedReviewPath);
     validate(
       root,
       derivedReviewDefinition,
@@ -449,8 +474,10 @@ function loadAutomation(root, automationId) {
     derivedReviewDefinitionMap(derivedReviewDefinition);
   }
   return {
+    root,
     pack,
     input,
+    module: pack.operator.preparation.module,
     modulePath,
     exportName: pack.operator.preparation.export,
     derivedReviewDefinition,
@@ -490,11 +517,20 @@ function requireConnectedAcquisitionDeclaration(automation) {
 
 async function assertConnectedAcquisitionDeclaration(automation) {
   const acquisition = requireConnectedAcquisitionDeclaration(automation);
-  const module = await import(pathToFileURL(automation.acquisition.modulePath).href);
-  if (typeof module[acquisition.prepareExport] !== 'function'
-    || typeof module[acquisition.finalizeExport] !== 'function') {
+  const module = await importGovernedModule(
+    automation.root,
+    automation.acquisition.module
+  );
+  const declaredExports = [
+    acquisition.prepareExport,
+    acquisition.finalizeExport,
+    acquisition.inspectExport,
+    acquisition.privateInspectExport
+  ].filter(Boolean);
+  if (new Set(declaredExports).size !== declaredExports.length
+    || declaredExports.some((name) => typeof module[name] !== 'function')) {
     throw invalidAdapter(
-      'Connected-acquisition prepare and finalize exports must both be callable.'
+      'Connected-acquisition declared exports must be distinct and callable.'
     );
   }
   return acquisition;
@@ -1682,7 +1718,7 @@ export async function prepareAutomationRun({
 
   let prepared;
   try {
-    const module = await import(pathToFileURL(automation.modulePath).href);
+    const module = await importGovernedModule(automation.root, automation.module);
     const adapter = module[automation.exportName];
     if (typeof adapter !== 'function') throw invalidAdapter('Automation preparation export is not callable.');
     prepared = assertAutomationPreparationAdapterResult(resolvedRoot, await adapter({

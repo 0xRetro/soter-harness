@@ -1186,7 +1186,7 @@ export interface ConfigurationChangeInspection {
     fingerprint: string;
     changes: Array<{
       id: string;
-      category: 'host' | 'pack' | 'binding' | 'source' | 'authority' | 'effect-policy' | 'secret-reference' | 'setting';
+      category: 'host' | 'pack' | 'binding' | 'source' | 'authority' | 'effect-policy' | 'secret-reference' | 'setting' | 'resolution' | 'lock';
       subject: string;
       state: 'added' | 'removed' | 'changed';
       beforeDescriptor: string | null;

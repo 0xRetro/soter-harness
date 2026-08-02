@@ -1446,7 +1446,7 @@ export function finalizeSlackConversationReviewConnectedAcquisition({
     }
   };
   try {
-    commitDurableContextSnapshot({
+    return commitDurableContextSnapshot({
       root: resolvedRoot,
       checkpointId,
       snapshot,
@@ -1493,11 +1493,6 @@ export function finalizeSlackConversationReviewConnectedAcquisition({
       error
     );
   }
-  return inspectSlackConversationReviewConnected({
-    root: resolvedRoot,
-    workId: shape.workId,
-    expectedHost
-  });
 }
 
 export function slackConversationReviewConnectedSnapshotId(workId) {
