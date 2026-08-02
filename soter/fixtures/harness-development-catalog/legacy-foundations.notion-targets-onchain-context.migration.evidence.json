@@ -10,8 +10,8 @@
     "id": "context.onchain",
     "version": "0.1.0"
   },
-  "configurationLockFingerprint": "sha256:506ab9e8558a720d1eeba44a9775f373cbca7d4df3ea57b08ba351f66e4743df",
-  "graphFingerprint": "sha256:1d8d324dc0314dffab6cff47934f21585ffaf5c75b7b38c91fd260b9724fda9f",
+  "configurationLockFingerprint": "sha256:e50a63336a4885c179107d69f6824a561e4a073c47890e41117e07087213063c",
+  "graphFingerprint": "sha256:9cfe631337fc8f603cfbabdd2596145dd9f3bd23dcb083df3685a99e39d8039c",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -341,7 +341,7 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/harness-development-catalog/resolution.evidence.json",
-      "fingerprint": "sha256:58c5f9ca0d38be8627cfc726d766aff4028b5ee35d9878077fc8495ae96c0c7f"
+      "fingerprint": "sha256:ec25071488d0662d2db762b2068739110c88e509215a0363bd3c67e10fa89e2a"
     }
   ],
   "effects": [],

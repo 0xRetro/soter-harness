@@ -303,7 +303,8 @@ instructions; requires observable rather than self-reported evaluation verdicts;
 goldens to exact source, graph, configuration, and host fingerprints; and requires exact
 parity or intentional-change evidence before a fallback disappears. Scaffolding is
 derived from the governing contract. Legacy Markdown molds remain compatibility inputs,
-not definition authority. Ordinary development does not require an ADR, host-specific
+not definition authority. Ordinary development has no separate numbered decision
+ceremony; rationale stays with governed artifacts and exact change evidence. Host-specific
 line budgets stay host-scoped, and repository merge policy does not substitute for Core
 effect authority.
 

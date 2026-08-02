@@ -6,7 +6,7 @@
   "level": "offline",
   "configuration": {
     "name": "email-triage",
-    "lockFingerprint": "sha256:febb9ceccab728fb92fe62193168d29c0be81bf5160aacb702e9640a2ca95414"
+    "lockFingerprint": "sha256:0b9df7c7d1ecf9826d94cb7ec99576a4d7936f45832b8d524abb287f5301a395"
   },
   "states": {
     "valid": "passed",

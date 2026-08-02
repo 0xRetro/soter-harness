@@ -4,8 +4,8 @@
   "id": "context.repository-review.preparation-fixture",
   "runId": "run.repository-review.preparation-fixture",
   "createdAt": "2026-07-21T20:00:00.000Z",
-  "configurationLockFingerprint": "sha256:6628befe9e02043a3f1caa0b547d686631cc4d25468e76d5b9b40876bf61a6fb",
-  "graphFingerprint": "sha256:5dea147a605397681ec98c1ac569276edf2f7c2f81eca11ea4992dce77ad0868",
+  "configurationLockFingerprint": "sha256:750749ebcf7414c462111e5637f36b9e782d99b7925f8240a1aadcad90170110",
+  "graphFingerprint": "sha256:555f2bde7056fb0c8dbdeb67b7162963543eaa6a03ebd51bf5cf5802a5b0a286",
   "containment": "fixture",
   "entries": [
     {

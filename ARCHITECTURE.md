@@ -1260,18 +1260,17 @@ agree. `valid=passed` does not promote readiness, connected verification, or
 health; those remain unknown until their separate evidence exists. Creating a
 new file without switching authority never counts as completion.
 
-### Decision history
+### Change rationale
 
-Existing ADRs remain a historical archive. They are not a runtime dependency,
-a required README section, or mandatory ceremony for ordinary development.
-The architecture, contracts, tests, migration manifest, and change history
-should normally contain the rationale needed to continue the work.
+V2 has no dedicated ADR archive, global numbering scheme, or separate decision
+ceremony. Rationale belongs beside the authority it explains: in architecture,
+contracts, tests, migration records, exact development evidence, and Git change
+history.
 
-A lightweight decision note is reserved for a rare cross-cutting choice that
-changes a public contract, security or authority boundary, compatibility
-promise, or expensive-to-reverse direction and whose rationale cannot live
-clearly beside the affected architecture. Such notes explain constraints; they
-do not substitute for executable contracts or evidence.
+For a rare cross-cutting choice, record the constraints and tradeoffs in the
+affected canonical artifact or its governed change evidence. Rationale never
+substitutes for executable contracts, authority, or evidence, and it does not
+create a parallel Decisions system.
 
 ### Target migration proof
 

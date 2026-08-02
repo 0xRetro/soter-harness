@@ -244,7 +244,7 @@
     },
     {
       "id": "mandatory-adr-ceremony-retired",
-      "decision": "Ordinary development does not require an ADR; historical decisions remain evidence and exceptional records stay optional."
+      "decision": "V2 has no ADR workflow or separate numbered decision archive; rationale stays with governed artifacts, exact development evidence, and change history."
     },
     {
       "id": "host-line-budgets-host-scoped",

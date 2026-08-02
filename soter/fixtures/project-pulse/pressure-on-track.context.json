@@ -4,8 +4,8 @@
   "id": "context.project-pulse.pressure-on-track-fixture",
   "runId": "run.project-pulse.pressure-on-track-fixture",
   "createdAt": "2026-07-16T12:00:00.000Z",
-  "configurationLockFingerprint": "sha256:5e33fc1e23b2304a4349be872494dd749433a5c83d27eeeccf4643f8af5a29cc",
-  "graphFingerprint": "sha256:a099cf0911efe6a1122d50ef48a7cede0de8667c0621d6672a5c3dd3eb230bbe",
+  "configurationLockFingerprint": "sha256:8414047b2ca40496d599b027fc053f3c374f104e1a6b25ef4484649f9696b622",
+  "graphFingerprint": "sha256:1f367a15cc91704767a31bdc9d855a6654a2ce3208d83b77d31e9cc2f45c86dd",
   "containment": "fixture",
   "entries": [
     {

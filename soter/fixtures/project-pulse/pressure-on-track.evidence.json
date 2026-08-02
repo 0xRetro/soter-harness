@@ -10,8 +10,8 @@
     "id": "run.project-pulse.pressure-on-track-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:5e33fc1e23b2304a4349be872494dd749433a5c83d27eeeccf4643f8af5a29cc",
-  "graphFingerprint": "sha256:a099cf0911efe6a1122d50ef48a7cede0de8667c0621d6672a5c3dd3eb230bbe",
+  "configurationLockFingerprint": "sha256:8414047b2ca40496d599b027fc053f3c374f104e1a6b25ef4484649f9696b622",
+  "graphFingerprint": "sha256:1f367a15cc91704767a31bdc9d855a6654a2ce3208d83b77d31e9cc2f45c86dd",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -226,7 +226,7 @@
     {
       "role": "context-snapshot",
       "id": "context.project-pulse.pressure-on-track-fixture",
-      "fingerprint": "sha256:7413a80b666465cda31e3bda18c9f5a2db5836084a38782a31227de415fd2f36"
+      "fingerprint": "sha256:4cd3c6e83cdcf0239a94fbc52afffb240a44e9fbe582ca2b8f86951f06b1d067"
     },
     {
       "role": "project-pulse-preview",

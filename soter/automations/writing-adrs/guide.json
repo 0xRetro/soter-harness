@@ -1,13 +1,13 @@
 {
   "contractVersion": "2.0.0",
   "id": "workflow-guide.writing-adrs",
-  "contentFingerprint": "sha256:97f364166b2393cbf367f52ef2add6d49d75f5f6efba94ed84bb219a2e4408bd",
+  "contentFingerprint": "sha256:8befea742e7e2a5d365d8b1b41d453cfa891df4e03081c7966f5271f0c9ed950",
   "$contract": "soter://contracts/workflow-guide/v2",
   "workflow": {
     "id": "automation.writing-adrs",
     "version": "0.1.0",
     "definitionPath": "soter/automations/writing-adrs/definition.json",
-    "definitionFingerprint": "sha256:252d1fb66ca390be56782dc42358a0528fddd3b94cec7fc4a69556f75cf63378",
+    "definitionFingerprint": "sha256:f85e6d8365b61587db28ab0b4cdfd7979ce096b0a8e91f5058966cac57bf1904",
     "evaluationSetPath": "soter/automations/writing-adrs/evaluations.json",
     "evaluationSetFingerprint": "sha256:d26f8279032d7e0b32309a9260c80a0aec6197b91fe5f7879ddf30bdb1bbd599"
   },

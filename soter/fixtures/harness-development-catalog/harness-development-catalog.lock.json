@@ -549,7 +549,7 @@
         {
           "path": "soter/kernel/development-governance.json",
           "role": "definition",
-          "fingerprint": "sha256:c432335ee42a69e3c7af71d13acf7cb2061b91f5b902581328ff78cf09f8e03f"
+          "fingerprint": "sha256:8a041ce9c24b061241dac9bde9cef734d0402b33738f72474cffdf2c7755ff6d"
         },
         {
           "path": "soter/kernel/development-governance.selftest.mjs",
@@ -1673,7 +1673,7 @@
         {
           "path": "soter/automations/writing-adrs/definition.json",
           "role": "definition",
-          "fingerprint": "sha256:2e726715ae5f6342f50bcc3ffc201b859312808e302415c2f0ea637cce097c99"
+          "fingerprint": "sha256:ce72b0ac5ab0369792013eaf15da854df41db0610680b7fc2999a47cbe9420f2"
         },
         {
           "path": "soter/automations/writing-adrs/evaluations.json",
@@ -1683,7 +1683,7 @@
         {
           "path": "soter/automations/writing-adrs/guide.json",
           "role": "definition",
-          "fingerprint": "sha256:65e5509edf88e1aec130e81557d45d89628f106bb53934ec94dec06f35baf135"
+          "fingerprint": "sha256:b7d15b1d583dab873fc6d0df2758c2d1b5f14f82d58280150cfb67e7cf6a7cdb"
         }
       ]
     }
@@ -2131,5 +2131,5 @@
       "fingerprint": "sha256:ed8b3ed8e861b0e638fc1ecb5e12e059a8d5f176265ae4e878fdb205d4725dce"
     }
   ],
-  "graphFingerprint": "sha256:1d8d324dc0314dffab6cff47934f21585ffaf5c75b7b38c91fd260b9724fda9f"
+  "graphFingerprint": "sha256:9cfe631337fc8f603cfbabdd2596145dd9f3bd23dcb083df3685a99e39d8039c"
 }

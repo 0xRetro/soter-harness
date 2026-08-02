@@ -10,8 +10,8 @@
     "id": "automation.project-pulse",
     "version": "0.1.0"
   },
-  "configurationLockFingerprint": "sha256:5e33fc1e23b2304a4349be872494dd749433a5c83d27eeeccf4643f8af5a29cc",
-  "graphFingerprint": "sha256:a099cf0911efe6a1122d50ef48a7cede0de8667c0621d6672a5c3dd3eb230bbe",
+  "configurationLockFingerprint": "sha256:8414047b2ca40496d599b027fc053f3c374f104e1a6b25ef4484649f9696b622",
+  "graphFingerprint": "sha256:1f367a15cc91704767a31bdc9d855a6654a2ce3208d83b77d31e9cc2f45c86dd",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -157,7 +157,7 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/project-pulse/pressure-on-track.evidence.json",
-      "fingerprint": "sha256:c1c7341e74661f7815db65918901d9bc7ece532c4804cd697d4f9175593249e4"
+      "fingerprint": "sha256:5c2df487b782ddf1b3daf23f3ec93156d9a114c669e2e0553928a39642229f7c"
     }
   ],
   "effects": [],

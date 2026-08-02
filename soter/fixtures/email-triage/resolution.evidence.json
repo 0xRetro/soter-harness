@@ -10,8 +10,8 @@
     "id": "email-triage",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:febb9ceccab728fb92fe62193168d29c0be81bf5160aacb702e9640a2ca95414",
-  "graphFingerprint": "sha256:77c355f760b1f6cc3cbea353d360c8ea33c079571b4b7d61063f9fca0994488e",
+  "configurationLockFingerprint": "sha256:0b9df7c7d1ecf9826d94cb7ec99576a4d7936f45832b8d524abb287f5301a395",
+  "graphFingerprint": "sha256:3fbaf506d1a3f39dbe5764b0544808d8aa7c70667a21e8137826b29ac6e136bd",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -128,7 +128,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:febb9ceccab728fb92fe62193168d29c0be81bf5160aacb702e9640a2ca95414"
+      "fingerprint": "sha256:0b9df7c7d1ecf9826d94cb7ec99576a4d7936f45832b8d524abb287f5301a395"
     }
   ],
   "effects": [],

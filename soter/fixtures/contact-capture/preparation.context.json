@@ -4,8 +4,8 @@
   "id": "context.contact-capture.preparation-fixture",
   "runId": "run.contact-capture.preparation-fixture",
   "createdAt": "2026-07-21T14:00:00.000Z",
-  "configurationLockFingerprint": "sha256:c3e1665e4d95effd7458bb519979ce78fbb303db7b895f8cecaeeee0e4cf3ff2",
-  "graphFingerprint": "sha256:4cc116e4727c269159be9148b4fb6cafac37cba82e7d1303e3874934e7e71911",
+  "configurationLockFingerprint": "sha256:4878d34f6347a68ef91f88d52a993b6341399b28145bd4e7436d3a6dca2c51a3",
+  "graphFingerprint": "sha256:af99bb97b7f259fda5de6817d6facc52d458fd9383bae47bf1ee3ce0537cab3f",
   "containment": "fixture",
   "entries": [
     {

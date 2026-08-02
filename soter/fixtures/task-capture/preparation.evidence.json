@@ -10,8 +10,8 @@
     "id": "run.task-capture.preparation-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:6e813a22a0023867d469ee012959a2a4916ccb4d819b4063ec2985d6ddcb0e00",
-  "graphFingerprint": "sha256:32cef9f72614f0de278b8db1994c60847b8f3b6cd025d86d9e0ece4454668282",
+  "configurationLockFingerprint": "sha256:f1029c025a6331b6763564d4cb2d856e01bf3fd1ec28ae9f2f38ef8674a296a9",
+  "graphFingerprint": "sha256:a8d00ad86cf50f2e87bbd3a941732a06164a223a342e65af4435db9adbb3985d",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -261,7 +261,7 @@
     {
       "role": "context-snapshot",
       "id": "context.task-capture.preparation-fixture",
-      "fingerprint": "sha256:624bb5332088fa3096ad039bfab6a1890bf2e0c250265659423a3521c2960c99"
+      "fingerprint": "sha256:0399da086593a45614bc309b1c04d88821d3eee0346454904bd1f474880a04da"
     },
     {
       "role": "task-create-preview",

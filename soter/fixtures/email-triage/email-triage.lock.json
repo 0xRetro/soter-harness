@@ -549,7 +549,7 @@
         {
           "path": "soter/kernel/development-governance.json",
           "role": "definition",
-          "fingerprint": "sha256:c432335ee42a69e3c7af71d13acf7cb2061b91f5b902581328ff78cf09f8e03f"
+          "fingerprint": "sha256:8a041ce9c24b061241dac9bde9cef734d0402b33738f72474cffdf2c7755ff6d"
         },
         {
           "path": "soter/kernel/development-governance.selftest.mjs",
@@ -1613,5 +1613,5 @@
       "fingerprint": "sha256:5f334c0ba368c6ff88c0925c48998a5bb4c69e0b355f408687127b8980b731a9"
     }
   ],
-  "graphFingerprint": "sha256:77c355f760b1f6cc3cbea353d360c8ea33c079571b4b7d61063f9fca0994488e"
+  "graphFingerprint": "sha256:3fbaf506d1a3f39dbe5764b0544808d8aa7c70667a21e8137826b29ac6e136bd"
 }

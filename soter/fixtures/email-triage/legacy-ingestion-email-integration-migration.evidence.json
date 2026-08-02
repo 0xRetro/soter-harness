@@ -10,8 +10,8 @@
     "id": "integration.gmail",
     "version": "0.1.0"
   },
-  "configurationLockFingerprint": "sha256:febb9ceccab728fb92fe62193168d29c0be81bf5160aacb702e9640a2ca95414",
-  "graphFingerprint": "sha256:77c355f760b1f6cc3cbea353d360c8ea33c079571b4b7d61063f9fca0994488e",
+  "configurationLockFingerprint": "sha256:0b9df7c7d1ecf9826d94cb7ec99576a4d7936f45832b8d524abb287f5301a395",
+  "graphFingerprint": "sha256:3fbaf506d1a3f39dbe5764b0544808d8aa7c70667a21e8137826b29ac6e136bd",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -156,7 +156,7 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/email-triage/preparation.evidence.json",
-      "fingerprint": "sha256:4b3c3d2786b23e6550790f76990580b9196fe8a650e7214a891f0170d2fe65b0"
+      "fingerprint": "sha256:2d34e79678d11a02288d06f74bf96a28bbfe0e791689d57898240dcd9d670d87"
     }
   ],
   "effects": [],

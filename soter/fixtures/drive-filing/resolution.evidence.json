@@ -10,8 +10,8 @@
     "id": "drive-filing",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:58947f5d9e9075afe6c4f70c949749f642021f0ecf0b66c6caa6c3d7f337df44",
-  "graphFingerprint": "sha256:1b49c1cce21ef30b6c74f9233596550ae2d4d1731be55dd8cc20c0dfedd960a5",
+  "configurationLockFingerprint": "sha256:b2a84bd82ac1e97905dfedd9d251b0f72065ad1e1b515ab175b9c5588c9b5ec5",
+  "graphFingerprint": "sha256:51ae2842e1ec0d5185f5c342040047ba274d36e5d933bfcee78cbad52e6f6745",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -179,7 +179,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:58947f5d9e9075afe6c4f70c949749f642021f0ecf0b66c6caa6c3d7f337df44"
+      "fingerprint": "sha256:b2a84bd82ac1e97905dfedd9d251b0f72065ad1e1b515ab175b9c5588c9b5ec5"
     }
   ],
   "effects": [],

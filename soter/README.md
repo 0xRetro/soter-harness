@@ -1230,8 +1230,8 @@ Authoring a Policy Standard, and Validating Resources. Each
 evaluation set, development request/result contracts, workspace policy, supported
 hosts, and effect boundary. Generic Notion create/update remains a domain
 Automation plus typed Integration mapping, not a provider-shaped user workflow.
-Decisions may be attached as optional development evidence; ADR numbering is not
-an execution requirement.
+Change rationale may be attached to exact development evidence; v2 has no separate
+numbered decision archive or execution ceremony.
 
 Candidate guides are preview-only and excluded from host realization. Activation
 requires expectation-withheld agent evidence for Codex and Claude, exact target
