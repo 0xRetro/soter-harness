@@ -67,6 +67,11 @@ function fail(code, message) {
   throw error;
 }
 
+function stableFailureCode(error, fallback) {
+  const code = typeof error?.code === 'string' ? error.code : '';
+  return /^HOST_REALIZATION_[A-Z0-9_]+$/.test(code) ? code : fallback;
+}
+
 function compareText(left, right) {
   return left.localeCompare(right, 'en');
 }
@@ -1691,9 +1696,7 @@ function rollbackHostRealization(root, chain, currentAt, reasonCode, summary) {
     checkpoint.phase = 'terminal';
     checkpoint.updatedAt = currentAt;
     checkpoint.failure = {
-      reasonCode: typeof error?.code === 'string'
-        ? error.code
-        : 'HOST_REALIZATION_ROLLBACK_FAILED',
+      reasonCode: stableFailureCode(error, 'HOST_REALIZATION_ROLLBACK_FAILED'),
       summary: 'Automatic host realization rollback could not establish exact prior state.'
     };
     return persistCheckpoint(root, checkpoint);
@@ -1802,7 +1805,7 @@ export function executeHostRealization({ root, checkpointId, at: currentAt, faul
       resolvedRoot,
       chain,
       currentAt,
-      typeof error?.code === 'string' ? error.code : 'HOST_REALIZATION_EXECUTION_FAILED',
+      stableFailureCode(error, 'HOST_REALIZATION_EXECUTION_FAILED'),
       'Host realization stopped and attempted exact rollback.'
     );
   }
@@ -1881,7 +1884,7 @@ export function recoverHostRealization({ root, checkpointId, at: currentAt, faul
       resolvedRoot,
       checkpoint,
       currentAt,
-      typeof error?.code === 'string' ? error.code : 'HOST_REALIZATION_RECOVERY_FAILED',
+      stableFailureCode(error, 'HOST_REALIZATION_RECOVERY_FAILED'),
       'Host realization recovery could not establish one exact checkpoint state.'
     );
   }

@@ -10,8 +10,8 @@
     "id": "automation.filing-a-drive-artifact",
     "version": "0.2.0"
   },
-  "configurationLockFingerprint": "sha256:84696f0fb6c5d324caf022f98800d750386c7d8ab4b3b26cd69bec673413f1f6",
-  "graphFingerprint": "sha256:614c4b0fe0e4dbd4596e7cb15b56462e2b5f2c113a2b78e7426b6af64be213ac",
+  "configurationLockFingerprint": "sha256:58947f5d9e9075afe6c4f70c949749f642021f0ecf0b66c6caa6c3d7f337df44",
+  "graphFingerprint": "sha256:1b49c1cce21ef30b6c74f9233596550ae2d4d1731be55dd8cc20c0dfedd960a5",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -202,7 +202,7 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/drive-filing/preparation.evidence.json",
-      "fingerprint": "sha256:86783f47ba4135c1b54fcc6dcbf77a4b93a11d5a8fed96c9787aabb8e04e8fa5"
+      "fingerprint": "sha256:3f66153b383f45a50a2a07cab8abfa919bcbeaa48261f863102dcbf8403f010e"
     }
   ],
   "effects": [],

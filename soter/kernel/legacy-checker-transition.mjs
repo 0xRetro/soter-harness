@@ -9,6 +9,7 @@ import {
   fingerprintJson,
   readJson
 } from '../core/lib/canonical-json.mjs';
+import { inspectManagedHostProjectionOwnership } from '../core/host-realizations.mjs';
 import { validateJsonSchema } from './verify.mjs';
 import {
   assertLegacyInventoryCurrent,
@@ -75,6 +76,20 @@ const LEGACY_CLAUDE_HOST_GUARD_REFERENCES = new Set([
 ]);
 const RECEIPT_ID_RE = /^legacy-checker-run[.][a-f0-9]{64}$/;
 const HASH_RE = /^sha256:[a-f0-9]{64}$/;
+
+function managedHostOutputPaths(root) {
+  const outputs = new Set();
+  for (const host of ['codex', 'claude']) {
+    try {
+      const ownership = inspectManagedHostProjectionOwnership({ root, host });
+      if (ownership.state !== 'realized') continue;
+      for (const outputPath of ownership.outputPaths) outputs.add(outputPath);
+    } catch {
+      // Missing, stale, malformed, or drifted private ownership fails closed.
+    }
+  }
+  return outputs;
+}
 
 const CLAUDE_HOST_COMPLETION_BINDINGS = Object.freeze([
   ['.claude/.claude-plugin/plugin.json', 'host.claude', 'soter/hosts/claude/adapter.json'],
@@ -1231,10 +1246,11 @@ function legacyCheckerRemovalDecision(root, inventory) {
   } catch {
     governedProjection = null;
   }
+  const managedOutputs = managedHostOutputPaths(root);
   const remainingOperationalDeletions = RECEIPT_GATED_OPERATIONAL_DELETIONS.filter((entry) => {
     try {
       fs.lstatSync(path.join(root, entry.path));
-      return true;
+      return !managedOutputs.has(entry.path);
     } catch (error) {
       return error?.code !== 'ENOENT';
     }

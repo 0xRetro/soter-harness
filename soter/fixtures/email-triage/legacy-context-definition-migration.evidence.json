@@ -10,8 +10,8 @@
     "id": "context.email",
     "version": "0.1.0"
   },
-  "configurationLockFingerprint": "sha256:0a60737f961210248f029a9147e5b3fdb44b8411e1789a9b8a09f69c00c6d81d",
-  "graphFingerprint": "sha256:917614c8d9c943fc80b0bdc0702dac1ec7834567b5da1d4e6149d3ce7e158429",
+  "configurationLockFingerprint": "sha256:febb9ceccab728fb92fe62193168d29c0be81bf5160aacb702e9640a2ca95414",
+  "graphFingerprint": "sha256:77c355f760b1f6cc3cbea353d360c8ea33c079571b4b7d61063f9fca0994488e",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -161,7 +161,7 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/email-triage/preparation.evidence.json",
-      "fingerprint": "sha256:53ff5deefc25c067a8386fdd808bc0c2532004d3cb4a0ac7adff204aacdbf62e"
+      "fingerprint": "sha256:4b3c3d2786b23e6550790f76990580b9196fe8a650e7214a891f0170d2fe65b0"
     }
   ],
   "effects": [],

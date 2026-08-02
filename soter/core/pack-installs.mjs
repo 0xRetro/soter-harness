@@ -72,6 +72,11 @@ function fail(code, message) {
   throw new PackInstallError(code, message);
 }
 
+function stableFailureCode(error, fallback) {
+  const code = typeof error?.code === 'string' ? error.code : '';
+  return /^PACK_INSTALL_[A-Z0-9_]+$/.test(code) ? code : fallback;
+}
+
 function compareCodepoint(left, right) {
   const leftPoints = [...left].map((value) => value.codePointAt(0));
   const rightPoints = [...right].map((value) => value.codePointAt(0));
@@ -1988,9 +1993,7 @@ export function executePackInstall({
     executeCheckpoint(source, targetRoot, state.plan, state.checkpoint, at, faultAfter);
   } catch (error) {
     if (error?.injected) throw error;
-    const code = typeof error?.code === 'string' && /^PACK_INSTALL_[A-Z0-9_]+$/.test(error.code)
-      ? error.code
-      : 'PACK_INSTALL_EXECUTION_FAILED';
+    const code = stableFailureCode(error, 'PACK_INSTALL_EXECUTION_FAILED');
     try {
       if (hasCandidateFileState(targetRoot, state.plan)
         || classifyManifest(source, targetRoot, state.plan, state.checkpoint).state === 'candidate') {
@@ -1999,9 +2002,7 @@ export function executePackInstall({
         markFailed(source, targetRoot, state.checkpoint, code, at);
       }
     } catch (rollbackError) {
-      const rollbackCode = typeof rollbackError?.code === 'string'
-        ? rollbackError.code
-        : 'PACK_INSTALL_ROLLBACK_FAILED';
+      const rollbackCode = stableFailureCode(rollbackError, 'PACK_INSTALL_ROLLBACK_FAILED');
       markNeedsAttention(source, targetRoot, state.checkpoint, rollbackCode, at);
     }
     throw new PackInstallError(code, 'Pack install execution stopped at a stable checkpoint.');
@@ -2061,7 +2062,7 @@ export function recoverPackInstall({
     }
   } catch (error) {
     if (error?.injected) throw error;
-    const code = typeof error?.code === 'string' ? error.code : 'PACK_INSTALL_RECOVERY_FAILED';
+    const code = stableFailureCode(error, 'PACK_INSTALL_RECOVERY_FAILED');
     markNeedsAttention(source, targetRoot, state.checkpoint, code, at);
     throw new PackInstallError(code, 'Pack install recovery requires operator attention.');
   }

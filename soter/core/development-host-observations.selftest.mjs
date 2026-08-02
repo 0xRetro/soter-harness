@@ -570,12 +570,26 @@ function selftestHistoricalCandidateLockBinding() {
 }
 
 function copyContainedRepository(sourceRoot, targetRoot) {
+  const isPrivateHostProjection = (sourcePath) => {
+    const relative = path.relative(sourceRoot, sourcePath).split(path.sep).join('/');
+    return ['AGENTS.md', 'CLAUDE.md', '.mcp.json'].includes(relative)
+      || relative === '.agents'
+      || relative.startsWith('.agents/')
+      || relative === '.codex'
+      || relative.startsWith('.codex/')
+      || relative === '.claude/skills'
+      || relative.startsWith('.claude/skills/');
+  };
   for (const entry of fs.readdirSync(sourceRoot, { withFileTypes: true })) {
     if (['.git', '.soter', 'node_modules'].includes(entry.name)) continue;
     fs.cpSync(
       path.join(sourceRoot, entry.name),
       path.join(targetRoot, entry.name),
-      { recursive: true, preserveTimestamps: true }
+      {
+        recursive: true,
+        preserveTimestamps: true,
+        filter: (sourcePath) => !isPrivateHostProjection(sourcePath)
+      }
     );
   }
 }
@@ -732,9 +746,15 @@ function activatePersistableForgeGraph(root, historicalByHost) {
       host
     };
   });
-  const sourceFilesRemoved = FORGE_SOURCE_PATHS.every((sourcePath) => {
-    return !fs.existsSync(resolveRepoPath(root, sourcePath));
+  const retiredEvaluationSources = FORGE_SOURCE_PATHS.filter((sourcePath) => {
+    return sourcePath.startsWith('.claude/evals/');
   });
+  const sourceFilesRemoved = definition.source.presence === 'removed'
+    && guide.source.presence === 'removed'
+    && evaluations.cases.every((testCase) => testCase.source.presence === 'removed')
+    && retiredEvaluationSources.every((sourcePath) => {
+      return !fs.existsSync(resolveRepoPath(root, sourcePath));
+    });
   if (sourceFilesRemoved) {
     assert.equal(definition.lifecycle.activation.state, 'active');
     assert.equal(definition.source.presence, 'removed');

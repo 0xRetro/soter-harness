@@ -10,8 +10,8 @@
     "id": "automation.feature-capture",
     "version": "0.1.0"
   },
-  "configurationLockFingerprint": "sha256:9dd20e07025e250e69c55068ed756f1f74967951bb11156c91a4fd17a7adf5b4",
-  "graphFingerprint": "sha256:5c9b5a65bf21538671467637ab33fbbcc89ddb7d184a072cc67d9cf2b767e3d8",
+  "configurationLockFingerprint": "sha256:a051a718be01a43e3e3c3430cde2a093250acad59b30f1ca09ac4e2adaa8f50c",
+  "graphFingerprint": "sha256:8084ee121da00cce5a4fdd11b36e4f429b0da3c05dde27197d4a113a3b69fbf6",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -150,7 +150,7 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/feature-capture/preparation.evidence.json",
-      "fingerprint": "sha256:c21332bdd5167c1c0f48788b1f99b640b282809744a0e6ee3fc8a782280be3f7"
+      "fingerprint": "sha256:6a1ac21b8f0ebeb74f9ce324499e12ee671bfc1d0d351b13ce69719f497dd3b4"
     }
   ],
   "effects": [],

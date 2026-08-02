@@ -10,8 +10,8 @@
     "id": "configuration.project-work-promotion",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:cd36d972f39a199eecfff03ece2a0b9405303851682468d7678aea6f6bf516e1",
-  "graphFingerprint": "sha256:6292b3976261ea948e78ab80ca946cf72c328cbb6cbc6effa07bd11cbf812d3b",
+  "configurationLockFingerprint": "sha256:04ccab1d5d9bbefd6526c4e4ef7e657782137102d36e43e23c6609ece064fe65",
+  "graphFingerprint": "sha256:512ce6ca89416e3dfe597c91de4027c6161c6e6aabf99ab43987c6d487be3a07",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -162,17 +162,17 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/project-work-promotion/tracked-execution.evidence.json",
-      "fingerprint": "sha256:4aae83e031018e0ecc6e9d59e8bce5748dbce4c048e5c9942cac36f17f56da4e"
+      "fingerprint": "sha256:5dac5130c1f8176980887fd04774a3fd3812ea93d6b63c5b194466342d24cb0c"
     },
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/project-work-promotion/coordination-only.evidence.json",
-      "fingerprint": "sha256:a7708ac73e7737b63524b999c7da80a4fc4a8522edaaadb2abeea5613b14b29b"
+      "fingerprint": "sha256:d00c248ee3a34608ac4ebf77ed7b5c42151f9086b9656b3963411c382b1911eb"
     },
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/project-work-promotion/duplicate-task.evidence.json",
-      "fingerprint": "sha256:2ee79995a707d6bc281d57f32f80cae9d922cc80eac89bec50cedf62729d1ce9"
+      "fingerprint": "sha256:27799019e9a64d2b12794ed0c12d79fb0bb47296df7fb8be21bb405fcc14675a"
     }
   ],
   "effects": [],

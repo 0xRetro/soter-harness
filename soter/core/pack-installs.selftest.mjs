@@ -472,6 +472,101 @@ export async function selftestPackInstalls(root = defaultRoot) {
       assert.equal(recovered.claims.installedRegistry, 'passed', marker);
     }
 
+    const executionFailureTarget = path.join(temporary, 'target-filesystem-execution-failure');
+    fs.mkdirSync(executionFailureTarget);
+    const executionFailure = prepareCeremony(
+      sourceRoot,
+      executionFailureTarget,
+      [baseV1.capsulePath],
+      'filesystem-execution-failure'
+    );
+    expectCode('PACK_INSTALL_FAULT_INJECTED', () => executePackInstall({
+      sourceRoot,
+      targetRoot: executionFailureTarget,
+      checkpointId: executionFailure.checkpointId,
+      at: executedAt,
+      faultAfter: 'file:0:write'
+    }));
+    const executionFailureOutput = path.join(executionFailureTarget, sharedV1.path);
+    const originalLstatSync = fs.lstatSync;
+    try {
+      fs.lstatSync = function guardedLstatSync(file, options) {
+        if (path.resolve(file) === executionFailureOutput) {
+          const error = new Error('Contained filesystem permission failure.');
+          error.code = 'EACCES';
+          throw error;
+        }
+        return originalLstatSync.call(fs, file, options);
+      };
+      expectCode('PACK_INSTALL_EXECUTION_FAILED', () => executePackInstall({
+        sourceRoot,
+        targetRoot: executionFailureTarget,
+        checkpointId: executionFailure.checkpointId,
+        at: executedAt
+      }));
+    } finally {
+      fs.lstatSync = originalLstatSync;
+    }
+    const executionFailureInspection = inspectPackInstall({
+      sourceRoot,
+      targetRoot: executionFailureTarget,
+      checkpointId: executionFailure.checkpointId,
+      at: recoveredAt
+    });
+    assert.equal(executionFailureInspection.checkpoint.state, 'needs-attention');
+    assert.equal(
+      executionFailureInspection.checkpoint.reasonCode,
+      'PACK_INSTALL_ROLLBACK_FAILED'
+    );
+    assert(!JSON.stringify(executionFailureInspection).includes('EACCES'));
+
+    const recoveryFailureTarget = path.join(temporary, 'target-filesystem-recovery-failure');
+    fs.mkdirSync(recoveryFailureTarget);
+    const recoveryFailure = prepareCeremony(
+      sourceRoot,
+      recoveryFailureTarget,
+      [baseV1.capsulePath],
+      'filesystem-recovery-failure'
+    );
+    expectCode('PACK_INSTALL_FAULT_INJECTED', () => executePackInstall({
+      sourceRoot,
+      targetRoot: recoveryFailureTarget,
+      checkpointId: recoveryFailure.checkpointId,
+      at: executedAt,
+      faultAfter: 'file:0:write'
+    }));
+    const recoveryFailureOutput = path.join(recoveryFailureTarget, sharedV1.path);
+    try {
+      fs.lstatSync = function guardedLstatSync(file, options) {
+        if (path.resolve(file) === recoveryFailureOutput) {
+          const error = new Error('Contained filesystem permission failure.');
+          error.code = 'EPERM';
+          throw error;
+        }
+        return originalLstatSync.call(fs, file, options);
+      };
+      expectCode('PACK_INSTALL_RECOVERY_FAILED', () => recoverPackInstall({
+        sourceRoot,
+        targetRoot: recoveryFailureTarget,
+        checkpointId: recoveryFailure.checkpointId,
+        at: recoveredAt
+      }));
+    } finally {
+      fs.lstatSync = originalLstatSync;
+    }
+    const recoveryFailureInspection = inspectPackInstall({
+      sourceRoot,
+      targetRoot: recoveryFailureTarget,
+      checkpointId: recoveryFailure.checkpointId,
+      at: recoveredAt
+    });
+    assert.equal(recoveryFailureInspection.checkpoint.state, 'needs-attention');
+    assert.equal(
+      recoveryFailureInspection.checkpoint.reasonCode,
+      'PACK_INSTALL_RECOVERY_FAILED'
+    );
+    assert(!JSON.stringify(recoveryFailureInspection).includes('EPERM'));
+
     const attentionTarget = path.join(temporary, 'target-needs-attention');
     fs.mkdirSync(attentionTarget);
     const attention = prepareCeremony(sourceRoot, attentionTarget, [baseV1.capsulePath], 'needs-attention');

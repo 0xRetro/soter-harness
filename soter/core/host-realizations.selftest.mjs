@@ -57,26 +57,34 @@ function copyRuntime(sourceRoot, label) {
     const migration = readJson(path.join(root, 'soter/migrations', name));
     for (const item of migration.items || []) {
       const source = path.join(sourceRoot, item.sourcePath);
-      if (!fs.existsSync(source)) {
-        const tombstones = legacyInventory.items.filter((candidate) => {
-          return candidate.sourcePath === item.sourcePath
-            && candidate.sourceFingerprint === item.sourceFingerprint
-            && candidate.sourcePresence === 'removed'
-            && ['migrated', 'retired'].includes(candidate.state)
-            && candidate.targets.length > 0
-            && candidate.targets.every((target) => {
-              return ['migrated', 'retired'].includes(target.state)
-                && target.fallback === 'removed'
-                && target.evidence.length > 0;
-            });
-        });
-        if (tombstones.length !== 1) {
-          throw new Error(
-            'Host realization selftest found a missing migration source without one exact completed tombstone: '
-              + item.sourcePath
-          );
-        }
+      const tombstones = legacyInventory.items.filter((candidate) => {
+        return candidate.sourcePath === item.sourcePath
+          && candidate.sourceFingerprint === item.sourceFingerprint
+          && candidate.sourcePresence === 'removed'
+          && ['migrated', 'retired'].includes(candidate.state)
+          && candidate.targets.length > 0
+          && candidate.targets.every((target) => {
+            return ['migrated', 'retired'].includes(target.state)
+              && target.fallback === 'removed'
+              && target.evidence.length > 0;
+          });
+      });
+      if (tombstones.length === 1) {
+        // A private generated host projection may reuse a retired legacy path.
+        // It is not an operational legacy source and must not enter the fixture root.
         continue;
+      }
+      if (tombstones.length > 1) {
+        throw new Error(
+          'Host realization selftest found duplicate completed tombstones for: '
+            + item.sourcePath
+        );
+      }
+      if (!fs.existsSync(source)) {
+        throw new Error(
+          'Host realization selftest found a missing migration source without one exact completed tombstone: '
+            + item.sourcePath
+        );
       }
       const sourceStat = fs.lstatSync(source);
       if (sourceStat.isSymbolicLink() || !sourceStat.isFile()) {
@@ -612,6 +620,33 @@ export async function selftestHostRealizations(sourceRoot) {
       checkpointId: crashing.execution.checkpoint.id,
       at: '2026-07-16T12:09:00.000Z'
     }).state, 'completed');
+
+    const filesystemFailure = copyRuntime(sourceRoot, 'filesystem-failure');
+    roots.push(filesystemFailure);
+    activate(filesystemFailure, 'meeting-intake');
+    const filesystemAuthority = authority(filesystemFailure, 'filesystem-failure');
+    const originalMkdirSync = fs.mkdirSync;
+    let filesystemStopped;
+    try {
+      fs.mkdirSync = function guardedMkdirSync(file, options) {
+        if (path.resolve(file) === path.join(filesystemFailure, '.codex')) {
+          const error = new Error('Contained filesystem permission failure.');
+          error.code = 'EACCES';
+          throw error;
+        }
+        return originalMkdirSync.call(fs, file, options);
+      };
+      filesystemStopped = executeHostRealization({
+        root: filesystemFailure,
+        checkpointId: filesystemAuthority.execution.checkpoint.id,
+        at: EXECUTED
+      });
+    } finally {
+      fs.mkdirSync = originalMkdirSync;
+    }
+    assert.equal(filesystemStopped.state, 'rolled-back');
+    assert.equal(filesystemStopped.failure.reasonCode, 'HOST_REALIZATION_EXECUTION_FAILED');
+    assert(!JSON.stringify(filesystemStopped).includes('EACCES'));
 
     const beforeOutputCrash = copyRuntime(sourceRoot, 'before-output-crash');
     roots.push(beforeOutputCrash);

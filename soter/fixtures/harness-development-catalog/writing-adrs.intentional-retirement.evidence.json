@@ -10,8 +10,8 @@
     "id": "automation.writing-adrs",
     "version": "0.1.0"
   },
-  "configurationLockFingerprint": "sha256:8315648f159dca7704b76f2e2c47b6cd35e914faa9e797b3bb2c203b8ab54fdd",
-  "graphFingerprint": "sha256:2db3249bb5ae224343080911a44351166e81db37b8d6669dd101328f9aead194",
+  "configurationLockFingerprint": "sha256:506ab9e8558a720d1eeba44a9775f373cbca7d4df3ea57b08ba351f66e4743df",
+  "graphFingerprint": "sha256:1d8d324dc0314dffab6cff47934f21585ffaf5c75b7b38c91fd260b9724fda9f",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -351,7 +351,7 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/harness-development-catalog/resolution.evidence.json",
-      "fingerprint": "sha256:0fb58fa2e62a41accc4c47a01ae565e71e21ab341aaa4d96e7c61817ecd2da18"
+      "fingerprint": "sha256:58c5f9ca0d38be8627cfc726d766aff4028b5ee35d9878077fc8495ae96c0c7f"
     }
   ],
   "effects": [],

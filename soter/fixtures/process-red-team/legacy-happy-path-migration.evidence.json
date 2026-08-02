@@ -10,8 +10,8 @@
     "id": "automation.process-red-team",
     "version": "0.1.0"
   },
-  "configurationLockFingerprint": "sha256:38e626ee8315bea57d0ce8e520f9eabf66f7d34a7f1740a4014f53899c234efc",
-  "graphFingerprint": "sha256:9715435351e3b3317911d4268445a8085b193a0a9258e451d1318ae7117eb468",
+  "configurationLockFingerprint": "sha256:8a919f0a069205777569fd3c5d0c30106030fab0c16292cc1377478bd244a85a",
+  "graphFingerprint": "sha256:669a129e4d54c55db450d60afaa3b2597a459469ac29b0f85ec72282830e4193",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -140,7 +140,7 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/process-red-team/preparation.evidence.json",
-      "fingerprint": "sha256:4fb09920100a0690ceeeb238247defa83b9f37eb46357925ddb94ae7d0db7839"
+      "fingerprint": "sha256:670cbdb4409d997375eeb7e7c6986addd43be828ae6f5e418288d3366338e906"
     }
   ],
   "effects": [],

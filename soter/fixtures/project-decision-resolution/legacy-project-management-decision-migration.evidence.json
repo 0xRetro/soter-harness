@@ -10,8 +10,8 @@
     "id": "automation.project-decision-resolution",
     "version": "0.1.0"
   },
-  "configurationLockFingerprint": "sha256:b3267e2dac3ec2a682287dd269c66128d52c12d75ca75a226e82860a247fe92c",
-  "graphFingerprint": "sha256:94526f9b656b02411b55bf5bd58be614dabc4a552e22b51db34f93b44e997e32",
+  "configurationLockFingerprint": "sha256:b14e12cba120a0b8a8f0d63c4f32d1d4f1bc7ef51dfbb816331a228b791086af",
+  "graphFingerprint": "sha256:2cc63212480e24fc76cf39f6b281782fd52d251bdeaeddaa4129187f42efab4d",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -150,12 +150,12 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/project-decision-resolution/happy-path.evidence.json",
-      "fingerprint": "sha256:a45c0c69d380c32051602cbaed3c504116cd06129692879a714ead2198a040d4"
+      "fingerprint": "sha256:ca7df915071394efb46521022425327f1c38def5387c029cad41875db7e400e8"
     },
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/project-decision-resolution/missing-why.evidence.json",
-      "fingerprint": "sha256:56e1cc15f6ecb7d37b6b6050a3aa81f03b6b5bdb8d9602bd312130f30ce01b7c"
+      "fingerprint": "sha256:c66c117b5f5dd3b014811655e6e475530dfc32deb426752d817de2a92def6d97"
     }
   ],
   "effects": [],

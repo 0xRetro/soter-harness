@@ -13,9 +13,9 @@
   },
   "configurationLock": {
     "path": "soter/fixtures/project-pulse/project-pulse.lock.json",
-    "fingerprint": "sha256:4c0e1477c24c64fbab88de0e686f1f15a0cb16f6ca0631ee232de6b1a00f7828"
+    "fingerprint": "sha256:5e33fc1e23b2304a4349be872494dd749433a5c83d27eeeccf4643f8af5a29cc"
   },
-  "graphFingerprint": "sha256:b86ec5b1190996ceac0376d60bc24f251f780507ef0d7543756f1023e6ee7da4",
+  "graphFingerprint": "sha256:a099cf0911efe6a1122d50ef48a7cede0de8667c0621d6672a5c3dd3eb230bbe",
   "context": [
     {
       "subject": "notion.workspace",
@@ -24,7 +24,7 @@
       "uri": "soter-fixture://configuration-template/notion/account/operator",
       "declarationFingerprint": "sha256:e3e11d347b7a0109668facaeb7b12311023da39949d1328bfd918c53a406c756",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:4c0e1477c24c64fbab88de0e686f1f15a0cb16f6ca0631ee232de6b1a00f7828",
+      "provenance": "configuration-lock:sha256:5e33fc1e23b2304a4349be872494dd749433a5c83d27eeeccf4643f8af5a29cc",
       "freshness": "unknown"
     },
     {
@@ -54,7 +54,7 @@
       "uri": "soter-state://runs",
       "declarationFingerprint": "sha256:29aefe23c870f66c4c851f271e58223059743752e2d73572e812bd7f2ef29379",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:4c0e1477c24c64fbab88de0e686f1f15a0cb16f6ca0631ee232de6b1a00f7828",
+      "provenance": "configuration-lock:sha256:5e33fc1e23b2304a4349be872494dd749433a5c83d27eeeccf4643f8af5a29cc",
       "freshness": "unknown"
     },
     {
@@ -64,7 +64,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/task-policies",
       "declarationFingerprint": "sha256:9c445d27249ac5d8b56dc4f153c08b59dc1d8e6b6b3793eb6d257dbc176e0c86",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:4c0e1477c24c64fbab88de0e686f1f15a0cb16f6ca0631ee232de6b1a00f7828",
+      "provenance": "configuration-lock:sha256:5e33fc1e23b2304a4349be872494dd749433a5c83d27eeeccf4643f8af5a29cc",
       "freshness": "unknown"
     },
     {
@@ -215,7 +215,7 @@
     {
       "id": "context.project-pulse.no-invented-progress-fixture",
       "type": "context-snapshot",
-      "fingerprint": "sha256:a80e06eefda56835915ce7db7e953c5f35b75f73381c81ece105c651f88696a7"
+      "fingerprint": "sha256:6ffd553cd9f164ac3c7326e267f243040b9a07d553b44630ff62a8df0edfdc08"
     },
     {
       "id": "preview.project-pulse.no-invented-progress",

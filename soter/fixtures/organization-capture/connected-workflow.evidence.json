@@ -7,11 +7,11 @@
   "claim": "One fixture-contained connected-route workflow preserved exact private review, approval, single-use start, write, and read-after-write verification boundaries without a live provider effect.",
   "subject": {
     "type": "run",
-    "id": "run.organization-capture.connected-acquisition.b29d493c291c99bd43a8aa97",
+    "id": "run.organization-capture.connected-acquisition.e9ea563d4b8bae5a1226c100",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:0b9d42f9545973cf0ccdf988f49b51edc0b0001f4b34a71a7f617e732ca928e7",
-  "graphFingerprint": "sha256:82fa7d07d1e888b836f23b22ea9dc04f6688ac7426bf149387a41fa91d81b4ad",
+  "configurationLockFingerprint": "sha256:f4be8e657ecc428d0445a1f17218422b04cc7711cd3ee2578185d93aac83edb9",
+  "graphFingerprint": "sha256:953a641e013408bb89c3f9889763dca4cfe6a9c3670aea392711e43075993261",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -130,43 +130,43 @@
   "artifacts": [
     {
       "role": "prepared-work",
-      "id": "work.organization-capture.b29d493c291c99bd43a8aa97",
-      "fingerprint": "sha256:bff81628b6e18472e4b4b97895e756499b730469a958a7e1fcdb73164ec80896"
+      "id": "work.organization-capture.e9ea563d4b8bae5a1226c100",
+      "fingerprint": "sha256:929dc17a5aa492f9d7473d42453457e0b2e54bf014bdebdbea23d993b1baa3a6"
     },
     {
       "role": "automation-decision",
       "id": "decision.organization-capture.connected-selftest",
-      "fingerprint": "sha256:5826f516d2f8b1c0ffdfdfb59f4fedfbd1129460e88fdcc5ef62e5c21ce62054"
+      "fingerprint": "sha256:0d74447df9431cec4ead79b8f93e4807d797b5839ea2362a378d20bcc0c3e133"
     },
     {
       "role": "automation-proposal",
       "id": "proposal.organization-capture.connected-selftest",
-      "fingerprint": "sha256:5d7665ad6002d5b4874f6813a2e098f3c71b5d62b50b3b37ae053c2fa1075179"
+      "fingerprint": "sha256:19803b145043a02084efbe455b484e199a7b19d3269b9183ff784cbe462b74c8"
     },
     {
       "role": "connected-change-set",
       "id": "changeset.organization-capture.connected-selftest",
-      "fingerprint": "sha256:fa45f2c0ed3e1042b742ba750f786be334af211a9c07933aca6ac432e62b8ae7"
+      "fingerprint": "sha256:4d36b822190236821baafa98041cb3b55858933778d43ae26a0d65756a181f5a"
     },
     {
       "role": "connected-operation-batch",
       "id": "batch.organization-capture.connected-selftest",
-      "fingerprint": "sha256:50f530c2da91f53ee6c67720df971ed4aecc55b1508855c694dbde546f352096"
+      "fingerprint": "sha256:7baf1598b214cf2fe997cfa9c3c14eb28ae72cfe497cf0e7e6aee85e96cf8f0b"
     },
     {
       "role": "approval",
       "id": "approval.organization-capture.connected-selftest",
-      "fingerprint": "sha256:adc135d1da7fb46e651c383d479ad7a2c907dfb1abd82bfe778ac3df68a59c8e"
+      "fingerprint": "sha256:fe796bc68e56caf9293e6dc90805702dc7ce1b20c1b43296b17971695d92f37e"
     },
     {
       "role": "approval-consumption",
       "id": "approval-consumption.organization-capture.connected-selftest",
-      "fingerprint": "sha256:beca0cb264c84fcf40d7b42b7c24a1d73a895feec1fe39383a9e82f0fe94a127"
+      "fingerprint": "sha256:27b026865cb3cd9ec02600b466de3860ef85d0f0527399f323e9d7c1d03df9b5"
     },
     {
       "role": "connected-transaction-checkpoint",
       "id": "checkpoint.transaction.organization-capture.connected-selftest",
-      "fingerprint": "sha256:48495d9b96b91639ecb077f86e1f2bcc9d34320fe438521f8a0457a18d8ddeee"
+      "fingerprint": "sha256:19d6a4875cf73d27b80e129791657754ef251afcac3f9e4861182eb4c6e6c652"
     }
   ],
   "effects": [],
@@ -196,10 +196,10 @@
     "version": "1.2.0",
     "configurationName": "organization-capture",
     "privateConfigurationFingerprint": "sha256:132ab31e625a3b3d358e64c460f3dcd8dafa87af108ba6abe98f191e9a1c6ee8",
-    "privateLockFingerprint": "sha256:0b9d42f9545973cf0ccdf988f49b51edc0b0001f4b34a71a7f617e732ca928e7",
-    "privateGraphFingerprint": "sha256:82fa7d07d1e888b836f23b22ea9dc04f6688ac7426bf149387a41fa91d81b4ad",
-    "trackedTemplateLockFingerprint": "sha256:a329a1083edda89b5124e3d25a6f87d572dee88e301f9c2193a44c92ce9d8c35",
-    "trackedTemplateGraphFingerprint": "sha256:98c998b907c0185433fe9fe2aaeb46a13ea10066e362f60cd14e399335cb64d9",
+    "privateLockFingerprint": "sha256:f4be8e657ecc428d0445a1f17218422b04cc7711cd3ee2578185d93aac83edb9",
+    "privateGraphFingerprint": "sha256:953a641e013408bb89c3f9889763dca4cfe6a9c3670aea392711e43075993261",
+    "trackedTemplateLockFingerprint": "sha256:5cc6320336aa1ef35d3413aa1369cf1888b56d4e4375b14e63ed290923c9829e",
+    "trackedTemplateGraphFingerprint": "sha256:6e7cd4bf6b662638c8d1a3147b7cbdee3fd66fe752725103936ff35f29877252",
     "applicabilityProjectionFingerprint": "sha256:90f6832a4f6f984196e9393bd6a98bbfd74cb048919a244ac627a35cb29477a3",
     "substitutions": {
       "notionTargetCount": 8,
@@ -221,6 +221,6 @@
       "rawProviderResponsesIncluded": false,
       "privateInputsIncluded": false
     },
-    "basisFingerprint": "sha256:78b8510d8c45724b284f2cca712e740b82138000d891d2112699ec59ef9bda8b"
+    "basisFingerprint": "sha256:f6b048a3049839af377c1477bd446d56e47a31cde15c6d8e2eca8ccabd788238"
   }
 }

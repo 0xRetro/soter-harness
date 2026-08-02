@@ -10,8 +10,8 @@
     "id": "automation.project-pulse",
     "version": "0.1.0"
   },
-  "configurationLockFingerprint": "sha256:4c0e1477c24c64fbab88de0e686f1f15a0cb16f6ca0631ee232de6b1a00f7828",
-  "graphFingerprint": "sha256:b86ec5b1190996ceac0376d60bc24f251f780507ef0d7543756f1023e6ee7da4",
+  "configurationLockFingerprint": "sha256:5e33fc1e23b2304a4349be872494dd749433a5c83d27eeeccf4643f8af5a29cc",
+  "graphFingerprint": "sha256:a099cf0911efe6a1122d50ef48a7cede0de8667c0621d6672a5c3dd3eb230bbe",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -157,22 +157,22 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/project-pulse/happy-path.evidence.json",
-      "fingerprint": "sha256:3ac2e9aa4d0bf5989fade911538e499b69ce02a6b724d5e662d8b2cb34e62395"
+      "fingerprint": "sha256:2e8c46880b605735c48f04b1de0e404ba3623b41e940d8b3a5938a68ae48cf78"
     },
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/project-pulse/no-invented-progress.evidence.json",
-      "fingerprint": "sha256:089c4a241c462380da7903222a7096bfc156c50ee7eaafa5638c547f4d45b9c9"
+      "fingerprint": "sha256:fb038733a9def656b584c5fb838df3c5932f818b8b8435d50a7f9a2983db5c37"
     },
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/project-pulse/pressure-on-track.evidence.json",
-      "fingerprint": "sha256:04e6ed0bc86345e2e75103a9f93f66189bc723e34bcabd19a867a5f3db6428ad"
+      "fingerprint": "sha256:c1c7341e74661f7815db65918901d9bc7ece532c4804cd697d4f9175593249e4"
     },
     {
       "role": "supporting-artifact",
       "path": "soter/fixtures/project-pulse/connected-workflow.evidence.json",
-      "fingerprint": "sha256:0067abc27f4723dd8f2a83d06a389dd572fe6e006f9d36bad0615d1f0e592dce"
+      "fingerprint": "sha256:a92beccebfff4ad43c2317545bee559d3c3d88a14270e1a707a92c5daf73cb97"
     }
   ],
   "effects": [],

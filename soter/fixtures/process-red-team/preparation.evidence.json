@@ -10,8 +10,8 @@
     "id": "run.process-red-team.preparation-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:38e626ee8315bea57d0ce8e520f9eabf66f7d34a7f1740a4014f53899c234efc",
-  "graphFingerprint": "sha256:9715435351e3b3317911d4268445a8085b193a0a9258e451d1318ae7117eb468",
+  "configurationLockFingerprint": "sha256:8a919f0a069205777569fd3c5d0c30106030fab0c16292cc1377478bd244a85a",
+  "graphFingerprint": "sha256:669a129e4d54c55db450d60afaa3b2597a459469ac29b0f85ec72282830e4193",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -251,7 +251,7 @@
     {
       "role": "context-snapshot",
       "id": "context.process-red-team.preparation-fixture",
-      "fingerprint": "sha256:30d3661a739f07746bcab78e0c56ee85e2b49a40e3c84a6346cc1949a2b4f74a"
+      "fingerprint": "sha256:b887049ad7d72acdd5cf04cb470246b9351a6578fb6ffe4d2b493553c9d3d0cf"
     },
     {
       "role": "process-red-team-preview",

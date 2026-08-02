@@ -10,8 +10,8 @@
     "id": "automation.meeting-intake",
     "version": "0.1.0"
   },
-  "configurationLockFingerprint": "sha256:034ddf1fa51f68d481e2d49ae81fbb622f584c10baa83920e2504dbb3d87b99a",
-  "graphFingerprint": "sha256:bf3daca7cc41fe67ec2bdd394fef6b91e140d5948ff227426d50fb72a8b6f2d9",
+  "configurationLockFingerprint": "sha256:f7575f8d1abed6bc88e7436fc78234260ab38ead6c96ebdc5b21fbd6ff7a8dab",
+  "graphFingerprint": "sha256:00c1a49260ac30fb04f8591a0b4c9927ce7c81cf432a58384f67c90c37c144bf",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -218,12 +218,12 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/meeting-intake/review-preparation.evidence.json",
-      "fingerprint": "sha256:09f8167323fb58704302cf63203bc8d17aba48733043a307d08f0ec7e3bdceaf"
+      "fingerprint": "sha256:b99fefa0d5fc18a44264d8a105f176bfaaf9df790020000291e4001140b78ea7"
     },
     {
       "role": "supporting-artifact",
       "path": "soter/fixtures/meeting-intake/connected-review.evidence.json",
-      "fingerprint": "sha256:1e46d1823a61a41048bb24ceb75653f5f7b94c405cee1a7ebcd3d149a72fbbe3"
+      "fingerprint": "sha256:420aed1f3533c6a7a7186d7617cc2b33cf232e3421abcf7bdd177e01dd7aa2fd"
     }
   ],
   "effects": [],

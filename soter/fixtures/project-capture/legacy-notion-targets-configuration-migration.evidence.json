@@ -10,8 +10,8 @@
     "id": "configuration.project-capture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:015ef33f34e38ce9d3b7d6206e7329026d0e29271fe94fd80ea0c1caebd5d87e",
-  "graphFingerprint": "sha256:b2ade6b632d5f53e14a5dedb3e96e6b50a9c53f1d2d2b964adf907839cc8bfdc",
+  "configurationLockFingerprint": "sha256:aba59618d2abe784627aa1087d82b1a470ea55927780e60a7ddd90c46c851e92",
+  "graphFingerprint": "sha256:f0287675f9d98496a84048e88bb4724bf9f7d6e8f74c736f5f29544ba761cd05",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -162,12 +162,12 @@
     {
       "role": "supporting-evidence",
       "path": "soter/fixtures/project-capture/preparation.evidence.json",
-      "fingerprint": "sha256:8fb076dadf68ab1364b86e58828b660a2be9f8f701773e5d44d664772a1c388c"
+      "fingerprint": "sha256:15dcca0cf0fff85fbf90469777ce6351a0a1ca3c11ae8347667ebc713a365bdd"
     },
     {
       "role": "supporting-artifact",
       "path": "soter/fixtures/project-capture/connected-review.evidence.json",
-      "fingerprint": "sha256:2b09873a2e69ac6cde2370a02dd931d8c16255bb44cc7308b4ff5ff46b03f948"
+      "fingerprint": "sha256:571979c32d5af371d642b639c69ce8123fdbcbf1207fab407c0884d4bc4172b3"
     }
   ],
   "effects": [],

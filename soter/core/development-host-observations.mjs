@@ -9,6 +9,7 @@ import {
   workflowLegacySourceProjection
 } from '../kernel/workflow-guides.mjs';
 import { containsCredentialMaterial } from './host-runtime.mjs';
+import { inspectManagedHostProjectionOwnership } from './host-realizations.mjs';
 import {
   isDevelopmentCandidateLockPath,
   readDevelopmentCandidateLock
@@ -1172,12 +1173,26 @@ function assertFinalWorkflowBasis({
     path: sourcePath,
     fingerprint
   })).sort((left, right) => left.path < right.path ? -1 : left.path > right.path ? 1 : 0);
+  const managedOutputPaths = new Set();
+  for (const host of ['codex', 'claude']) {
+    try {
+      const ownership = inspectManagedHostProjectionOwnership({ root, host });
+      if (ownership.state === 'realized') {
+        for (const outputPath of ownership.outputPaths) managedOutputPaths.add(outputPath);
+      }
+    } catch {
+      // Fail closed: malformed, stale, or drifted ownership cannot excuse an occupied tombstone path.
+    }
+  }
   if (finalSources.some((source) => source.presence !== 'removed')
     || fingerprintJson(sourceArtifacts) !== fingerprintJson(expectedSourceArtifacts)
-    || finalSources.some((source) => fs.existsSync(resolveRepoPath(root, source.path)))) {
+    || finalSources.some((source) => {
+      return fs.existsSync(resolveRepoPath(root, source.path))
+        && !managedOutputPaths.has(source.path);
+    })) {
     throw codedError(
       'DEVELOPMENT_ACTIVATION_EVIDENCE_SOURCE_TOMBSTONE_INVALID',
-      'Final activation requires every exact workflow skill and evaluation source to remain absent under its sealed tombstone.'
+      'Final activation requires every exact legacy source to remain absent or be replaced by an exact current managed host projection.'
     );
   }
   const selectedPack = lock.packs.filter((pack) => pack.id === workflowId);
