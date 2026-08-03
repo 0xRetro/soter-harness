@@ -100,11 +100,11 @@ function taskFieldsFromMaterial(materialAction) {
 export function compileTaskCaptureConnectedOperations({ batch, material }) {
   const automationId = batch.work?.automationId || batch.automationId;
   if (automationId !== 'automation.task-capture'
-    || material.batch.id !== batch.id
-    || material.batch.fingerprint !== batch.fingerprint
+    || material.selection.id !== batch.id
+    || material.selection.fingerprint !== batch.fingerprint
     || batch.actions.length !== 1
     || material.actions.length !== 1) {
-    throw new Error('Task Capture connected compiler requires one exact selected Task review batch.');
+    throw new Error('Task Capture connected compiler requires one exact review-only candidate selection.');
   }
   const materialAction = material.actions[0];
   const selection = materialAction.selection;

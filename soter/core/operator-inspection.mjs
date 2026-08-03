@@ -652,10 +652,6 @@ export function inspectConnectedOperatorActivity({
       maturity: {
         state: 'not-evaluated',
         reasonCode: OPERATOR_REASON_CODES.FAMILY_NOT_EVALUATED_BY_OPERATOR_INSPECTION
-      },
-      migration: {
-        state: 'not-evaluated',
-        reasonCode: OPERATOR_REASON_CODES.FAMILY_NOT_EVALUATED_BY_OPERATOR_INSPECTION
       }
     },
     privacy: {

@@ -3,7 +3,7 @@
   "contractVersion": "1.0.0",
   "id": "provider.integration.notion.fixture",
   "pack": "integration.notion",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "containment": "fixture",
   "runtime": {
     "engine": "node",
@@ -81,16 +81,16 @@
     },
     {
       "id": "projects.records.read",
-      "version": "1.0.0"
+      "version": "1.1.0"
     },
     {
       "id": "projects.records.create",
       "version": "1.0.0"
     },
-    {
-      "id": "projects.records.update",
-      "version": "1.0.0"
-    },
+      {
+        "id": "projects.records.update",
+        "version": "1.1.0"
+      },
     {
       "id": "projects.schema.read",
       "version": "1.0.0"

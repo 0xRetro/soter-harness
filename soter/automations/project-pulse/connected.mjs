@@ -306,12 +306,12 @@ function compileStatus(materialAction, sequence, selectedActionIds) {
 export function compileProjectPulseConnectedOperations({ batch, material }) {
   const automationId = batch.work?.automationId || batch.automationId;
   if (automationId !== 'automation.project-pulse'
-    || material.batch.id !== batch.id
-    || material.batch.fingerprint !== batch.fingerprint
+    || material.selection.id !== batch.id
+    || material.selection.fingerprint !== batch.fingerprint
     || batch.actions.length < 1
     || batch.actions.length > 2
     || material.actions.length !== batch.actions.length) {
-    throw new Error('Project Pulse connected compiler requires one exact selected review batch.');
+    throw new Error('Project Pulse connected compiler requires one exact review-only candidate selection.');
   }
   const selectedActionIds = batch.actions.map((action) => action.id);
   const allowedOrder = selectedActionIds.length === 2

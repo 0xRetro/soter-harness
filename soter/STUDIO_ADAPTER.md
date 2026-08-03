@@ -1,21 +1,20 @@
-# Studio adapter and migration note
+# Studio adapter contract
 
-This note is the boundary between the provider-neutral Soter target and the
-provisional Studio renderer. Studio is a projection. It does not own approval,
-transaction, verification, reconciliation, compensation, proof, maturity, or
-migration authority.
+This document defines the boundary between provider-neutral Soter and Studio.
+Studio is a projection. It does not own approval, transaction, verification,
+reconciliation, compensation, proof, or maturity authority.
 
 ## Configuration preview
 
 Continue using `configuration-preview/v1`; its renderer shape and read-only
-Electron boundary are unchanged. Core now derives `draft.lockFingerprint` and
+Electron boundary are unchanged. Core derives `draft.lockFingerprint` and
 `draft.graphFingerprint` only by validating the complete in-memory candidate
 through Kernel and resolving it through the canonical resolver. Studio must not
 reconstruct a lock from `changes`, retain the candidate as authority, or expose
 apply. Candidate diagnostics use the stable
-`SOTER_CONFIGURATION_PREVIEW_*` namespace and may now cover any Kernel-owned
+`SOTER_CONFIGURATION_PREVIEW_*` namespace and may cover any Kernel-owned
 configuration invariant, including pack settings, bindings, authorities,
-sources, scenarios, migrations, effects, and host compatibility.
+sources, scenarios, effects, and host compatibility.
 
 Every preview, prepared-work request, and workspace-inspection item carries an
 explicit `configurationBasis`. Use `tracked-contained` only for checked-in,
@@ -26,7 +25,7 @@ stale. Studio must submit this basis explicitly, render the returned fact, and
 must never infer it from a path or silently fall back from `private-active` to a
 tracked template.
 
-Connected work now starts through one generic, explicit staging boundary.
+Connected work starts through one generic, explicit staging boundary.
 Studio sends the selected Automation ID, configuration name,
 `configurationBasis=private-active`, and the private operator input to its
 sender-validated local Core operation. Core calls `prepareAutomationRun` with
@@ -138,7 +137,7 @@ targets, responses, private paths, or recovery authority.
 
 No Studio recovery action is canonical yet. Existing run progress may display
 the failed observation and a later attempt-specific current call after refresh,
-but a future button requires a sender-validated selected-work IPC over a closed
+but a retry control requires a sender-validated selected-work IPC over a closed
 recovery projection. That projection must bind the exact failed checkpoint and
 call fingerprints. `recovery.id` is only a locator; the separately returned
 `currentCall` is the only executable host request. Studio must keep recovery
@@ -152,7 +151,7 @@ action.
 
 ## Configuration transaction
 
-Configuration apply is now a separate provider-neutral local authority family;
+Configuration apply is a separate provider-neutral local authority family;
 do not adapt it through connected provider approvals or a Studio-owned write.
 The lifecycle is:
 
@@ -180,7 +179,7 @@ resolver, or projection facts changed and expose only nullable fingerprints;
 they never expose lock bodies or private values. The refresh still requires the
 normal expiring request, exact confirmation, separately consumed start,
 checkpoint, apply, verification, and recovery lifecycle. Studio must not treat
-graph drift, the structurally valid historical lock, or the displayed rows as
+graph drift, the structurally valid prior lock, or the displayed rows as
 issuance provenance, reusable authority, or readiness/health proof.
 
 Map actions to Core without retaining authority in the renderer:
@@ -208,7 +207,7 @@ Once an active lock exists, missing, malformed, permission-drifted, or stale
 private desired state fails closed without falling back to the template. A completed local apply validates
 the deterministic host candidates in its lock but does not inspect or write
 consumer host files, and does not
-promote readiness, verification, health, proof, or migration. Keep all apply
+promote readiness, verification, health, or proof. Keep all apply
 controls disabled until the Studio main/preload boundary calls these exact Core
 operations and preserves their coded failure envelope.
 
@@ -259,10 +258,11 @@ Core operations map directly:
 
 `resume.permittedNextAction` is display guidance, never authority. Enable an
 execute action only for the separately returned exact checkpoint ID; enable
-recovery only for that checkpoint. There is no raw confirmation token, generic
-retry, adoption, force-overwrite, shared-output, managed-region, installer,
-uninstall, host-launch, or provider action in version 1. Root development files
-and legacy Claude trees are deliberately not managed without an exact manifest.
+recovery only for that checkpoint. The whole-file host-realization contract has
+no raw confirmation token, generic retry, adoption, force-overwrite,
+shared-output, managed-region, installer, uninstall, host-launch, or provider
+action. Root development files and existing unmanaged host files are not
+managed without an exact manifest.
 
 Stable failure families use `HOST_REALIZATION_*`. Important adapter codes
 include `HOST_REALIZATION_UNMANAGED_COLLISION`,
@@ -276,16 +276,15 @@ include `HOST_REALIZATION_UNMANAGED_COLLISION`,
 `HOST_REALIZATION_RECOVERY_STATE_UNKNOWN`. Transport adapters must preserve
 the stable code while replacing thrown prose with fixed sanitized UI copy.
 
-Studio should delete or reject any provisional host-output renderer,
-confirmation store, reusable permission, force/adopt switch, retry flag, or
-health promotion. Retain generic exact-scope, lifecycle, checkpoint, failure,
-and claim-boundary components; map them to the fields above. Do not add host
-realization UI until this canonical family and its contained fixtures are the
-integration base.
+Studio renders host realization only from this canonical family. It has no
+independent host-output model, confirmation store, reusable permission,
+force/adopt switch, retry flag, or health-promotion rule. Generic exact-scope,
+lifecycle, checkpoint, failure, and claim-boundary components consume the
+fields above.
 
 ## Distribution foundation
 
-Distribution is an inspection-only Kernel family in this milestone. It has no
+Distribution is an inspection-only Kernel family. It has no
 approval, confirmation, consumption, checkpoint, continuation, install,
 configuration, host-realization, publication, or provider operation for Studio
 to invoke. Build/verify occurs only through the contained local Kernel module
@@ -350,13 +349,13 @@ marketplace, legal sufficiency, publisher identity, and trust remain
 `not-evaluated`; installed, configured, ready, verified, healthy, and network
 availability remain `unknown`.
 
-Studio may reuse catalog, constraint, fingerprint, blocker, limitation, and
-claim-boundary components. It must not add Build, Fetch, Install, Upgrade,
+Studio reuses catalog, constraint, fingerprint, blocker, limitation, and
+claim-boundary components. It does not expose Build, Fetch, Install, Upgrade,
 Configure, Realize, Sign, Trust, Publish, Redistribute, Marketplace, or
-Auto-update actions. A resolved bundle is not an executable plan, and neither
-inspection is reusable authority. No provisional Studio distribution schema,
-release resolver, legal inference, or hidden starter-setting model should be
-retained.
+Auto-update actions from Distribution. A resolved bundle is not an executable
+plan, neither inspection is reusable authority, and Studio has no independent
+distribution schema, release resolver, legal inference, or hidden
+starter-setting model.
 
 ## Pack installation
 
@@ -376,8 +375,8 @@ Studio consumes only `pack-install-inspection/v1`. It may render:
 - optional bundle identity/digest/resolution fingerprint;
 - dependency rows with consumer, dependency, constraint, optionality, selected
   version, `satisfied|degraded`, and stable reason code;
-- ordered create/replace/remove effects with pack, artifact role, migration-role
-  flag, nullable before/after fingerprints, reason code, and effect fingerprint;
+- ordered create/replace/remove effects with pack, artifact role, nullable
+  before/after fingerprints, reason code, and effect fingerprint;
 - request window, confirmation actor/time, single-use consumption, checkpoint
   completed/current/pending steps, manifest state, blocker, and the derived
   `resume` object; and
@@ -410,18 +409,17 @@ collision, managed/target drift, symlink/path/hardlink/mode rejection, plan or
 request expiry, consumed confirmation, verification failure, rollback failure,
 and recovery ambiguity.
 
-Studio may retain its generic exact-scope, ceremony, checkpoint, blocker,
-recovery, and claim-boundary components. Delete or reject any UI-owned install
-plan, dependency resolver, confirmation store, reusable permission, path-based
-renderer state, force/adopt switch, generic retry, fetch, uninstall, migration,
-configure, host-realize, package-manager, network, publication, or trust action.
-Fixture reconciliation order is: finalize Kernel/Core/pack declarations,
-regenerate canonical fixtures once, map the typed inspection fixture, then run
-Core, freshness, doctor, MCP, Studio, privacy, and packaged Electron gates.
+Studio uses its generic exact-scope, ceremony, checkpoint, blocker, recovery,
+and claim-boundary components. It has no UI-owned install plan, dependency
+resolver, confirmation store, reusable permission, path-based renderer state,
+force/adopt switch, generic retry, fetch, uninstall, configure, host-realize,
+package-manager, network, publication, or trust action. After a governed graph
+change, regenerate canonical fixtures once and run Core, freshness, doctor,
+MCP, Studio, privacy, and packaged Electron gates.
 
-Intentionally unsupported in v1: network acquisition, registry lookup,
-uninstall, package-manager dependencies, configuration mutation, host
-realization, migration execution, publication/signature/trust, and any action
+The pack-install contract intentionally does not support network acquisition,
+registry lookup, uninstall, package-manager dependencies, configuration
+mutation, host realization, publication/signature/trust, or any action
 derived solely from a bundle/release inspection. Completion proves local bytes
 and managed ownership only; configured, ready, verified, and healthy remain
 `unknown`.
@@ -482,7 +480,7 @@ provides:
 - a separate checkpoint-bound `continuationRequest` containing the exact
   checkpoint/call reference and its fingerprint when Core can identify a
   permitted continuation; and
-- separate proof, maturity, and migration families, all explicitly
+- separate proof and maturity families, both explicitly
   `not-evaluated` by this projection.
 
 `scope.changes[].beforeFingerprint` and `scope.changes[].afterFingerprint` are
@@ -532,8 +530,8 @@ portable CRM record create/update v1 family and the generic pack-compiled v2
 operation shape. For v2, `before.state=not-required` with
 `PRIOR_VALUE_NOT_REQUIRED` is distinct from
 `absent-required/DEDUPLICATION_ABSENCE_REQUIRED`; Studio must not infer a prior
-value. Email's older private prepared connected candidate plan remains
-review-only and must not be adapted into an approval request.
+value. Email's private `review-only-candidate-preview/v1` remains a current
+no-authority candidate preview and must not be adapted into an approval request.
 
 `permittedNextAction` is not executable authority. Studio may enable recovery
 only when `continuationRequest` is present, then must submit that exact
@@ -542,51 +540,30 @@ current call or reconciliation state, and returns the separately stored exact
 host request. The inspection projection omits provider arguments and cannot be
 used as a bearer token.
 
-## Delete, map, and retain
+## Studio authority boundary
 
-Delete from the Studio/Core proposal:
+Studio invokes `beginProposalConnectedApprovalRequest`,
+`confirmProposalConnectedApprovalRequest`, and
+`prepareDurableConnectedTransactionExecution({ approvalId })`. Transaction
+activity comes only from `inspectConnectedOperatorActivity`; the canonical
+confirmation identity is `approval.confirmation`, recovery reads the single
+canonical `resume` object, and exact-scope fields come from `configuration`,
+`scope`, `approval`, and `verification.criteria`.
 
-- `operator-confirmation.schema.json` and its confirmation fingerprint family;
-- private `operator-confirmations` state and its read/write helpers;
-- any Studio-owned approval validation or reusable confirmation object;
-- any Studio-owned transaction lifecycle that duplicates the connected
-  transaction checkpoint; and
-- any `safeToRetry` field or inference from legacy recovery prose.
-
-Map:
-
-- Studio `beginOperatorApproval` to `beginProposalConnectedApprovalRequest`;
-- Studio `confirmOperatorApproval` to `confirmProposalConnectedApprovalRequest`;
-- Studio start to `prepareDurableConnectedTransactionExecution({ approvalId })`;
-- Studio transaction inbox reads to `inspectConnectedOperatorActivity`;
-- `confirmationId` to `approval.confirmation.id`;
-- `confirmationFingerprint` to `approval.confirmation.fingerprint`;
-- recovery display to the single canonical `resume` object; and
-- exact-scope ledger fields to `configuration`, `scope`, `approval`,
-  and `verification.criteria`.
-
-Retain:
-
-- Electron sandbox and private-state hygiene;
-- renderer components, accessibility behavior, generic queue and lifecycle
-  presentation, exact-scope ledger, capability tape, verification ledger, and
-  a non-interactive `compensation=not-required` boundary;
-- the shared Meeting Intake/Project Pulse presentation types; and
-- sanitized UI-only fixtures, provided they are labeled non-authoritative and
-  mapped to canonical projection facts before enabling actions.
-
-Studio's provisional `operator-work/v1` may remain temporarily as a renderer
-view model for pre-transaction preparation. It must not be persisted or treated
-as transaction authority after adaptation. Transaction fields should be
-replaced by `operator-inspection/v1`, not synchronized in two stores.
+Studio has no independent approval validator, reusable confirmation object,
+transaction lifecycle, or `safeToRetry` authority. Its Electron sandbox,
+private-state hygiene, accessible queue and lifecycle presentation, exact-scope
+ledger, capability tape, verification ledger, and sanitized UI fixtures remain
+presentation boundaries over canonical facts. `operator-inspection/v1` owns
+transaction state; renderer view models are not persisted as authority.
 
 ## Host runtime applicability
 
 `host-runtime-inspection/v1` is a separate Core/MCP transport projection. If
 Studio surfaces it, map the exact `runtime.state`, startup/current
 fingerprints, `reasonCode`, `restartRequired`, and `permittedNextAction` fields.
-Do not merge them into prepared-work, approval, checkpoint, proof, maturity, or
-migration state. Map the exact branches as follows:
+Do not merge them into prepared-work, approval, checkpoint, proof, or maturity
+state. Map the exact branches as follows:
 
 | Runtime state | Reason code | Fingerprints | Guidance only |
 |---|---|---|---|
@@ -602,10 +579,10 @@ continuation request. No private state, provider response, credential value,
 provider action, readiness, verification, or health claim is representable in
 this inspection.
 
-## Lifecycle label mapping
+## Lifecycle projection
 
-The twelve Studio labels are presentation coverage, not one canonical state
-machine:
+Studio lifecycle labels are presentation states assembled from distinct
+canonical families, not one canonical state machine:
 
 | Studio label | Canonical source |
 |---|---|
@@ -621,24 +598,21 @@ machine:
 | `verification-failed` | `verification.state=failed`; checkpoint may permit an exact read-only reconciliation request. |
 | `completed` | checkpoint is `completed` and its required verification criteria passed; proof maturity remains unevaluated. |
 
-Unknown or pre-transaction prepared-work states should keep actions disabled
-with Studio's `RESUME_DECISION_UNAVAILABLE` fallback and
-`inspect-checkpoint`. Do not synthesize a canonical transaction decision for
-them. The former Studio-only `rolling-back` and `rolled-back` labels are
-unsupported by the connected v2 projection and must not be inferred from
+Unknown or pre-transaction prepared-work states keep actions disabled with
+`RESUME_DECISION_UNAVAILABLE` and `inspect-checkpoint`. Studio does not
+synthesize a canonical transaction decision for them. `rolling-back` and
+`rolled-back` are not connected-transaction states and cannot be inferred from
 manual recovery prose.
 
-## Reason-code mapping
+## Reason-code projection
 
-| Studio provisional code | Canonical treatment |
+| Reason code | Canonical treatment |
 |---|---|
-| `AUTHORITY_PERMISSION_MISSING` | Reserved unchanged for a future prepared-work blocker projection; a connected batch cannot reach approval with this blocker. |
 | `REQUIRED_INPUT_MISSING` | Canonical prepared-work blocker; not emitted by connected transaction inspection. |
 | `CHECKPOINT_STALE` | Canonical unchanged; emitted for exact-lock applicability drift. |
 | `READ_AFTER_WRITE_MISMATCH` | Canonical unchanged; emitted by failed verification criteria. |
-| `COMPENSATION_FAILED` | Unsupported by connected v2; map no state from this legacy/UI-only code. Use the exact checkpoint blocker or reconciliation reason instead. |
-| `CONFIRMATION_EXPIRED` | Rename to `APPROVAL_REQUEST_EXPIRED`; request and approval share one window and there is no independent confirmation authority. |
-| `RESUME_DECISION_UNAVAILABLE` | Studio fallback for an unadapted or prepared-work view only; canonical connected inspections always return a reason-coded decision. |
+| `APPROVAL_REQUEST_EXPIRED` | The request and approval share one window; confirmation is not independent authority. |
+| `RESUME_DECISION_UNAVAILABLE` | Presentation-only state for prepared work without a canonical resume decision; it grants no action. |
 
 ## Prepared-work and private review boundary
 
@@ -667,7 +641,7 @@ identifier value, while a private field cannot represent `value` at all;
 
 Examples remain presentation aids, never domain authority. Preparation fixture
 evidence must explicitly say that it establishes neither connected readiness,
-execution, external write verification, proof maturity, nor migration state.
+execution, external write verification, nor proof maturity.
 The preparation receipt also states mechanically that it grants no approval,
 one-time start consumption, execution, or write authority.
 
@@ -717,14 +691,11 @@ Map failures by `error.code`, never by prose:
 | `PREPARED_REVIEW_MATERIAL_WRITE_FAILED` | Report local private-state write failure; no review surface is available. |
 
 Private review material remains display-only. Task Capture, Organization
-Capture, Contact Capture, Feature Capture, and Feature Definition can derive a
-selected review batch and private
-authority-free connected candidate plan, but any future write still requires a
-separately supported transaction batch, expiring approval request, exact
-confirmation, one-time consumption, and connected checkpoint.
-Project Capture is stricter: its candidate remains visible in selected-work
-private review, but `COMPLETE_PROJECT_READBACK_UNAVAILABLE` makes its action held
-and leaves no selectable batch or connected plan.
+Capture, Contact Capture, Project Capture, Project Page Reconciliation, Feature
+Capture, and Feature Definition can derive a review-only candidate selection
+and private candidate preview. Those families never become write authority;
+supported writes use a separate transaction batch, expiring approval request,
+exact confirmation, one-time consumption, and connected checkpoint.
 
 Derived private review is a separate sender-validated selected-work call to
 `inspectPreparedAutomationDerivedReviewMaterial({ root, workId })`. Use the same
@@ -738,7 +709,7 @@ catalog, runs, proof, logs, diagnostics, or adapter fixtures.
 ### Task Capture projection
 
 The canonical workflow is `automation.task-capture` in configuration
-`task-capture`. Studio should retain its generic prepared-work renderer and map
+`task-capture`. Studio uses its generic prepared-work renderer and maps
 the input declaration in exact order:
 
 | Field | Type | Required | Exposure | Meaning |
@@ -766,8 +737,8 @@ one `task-create` item in declared order: `title`, `status`, `context`,
 values are empty string lists when omitted. Request them only through the
 selected private review boundary.
 
-The generic selected-batch APIs still accept the one exact proposed prepared
-action. Their `prepared-connected-plan/v1` remains
+The generic candidate-selection APIs accept the one exact proposed prepared
+action. Their `review-only-candidate-preview/v1` remains
 `state=blocked-review-only`, `executable=false`, and `authority=none`; Studio
 must not upgrade it into a transaction source.
 
@@ -805,11 +776,11 @@ fingerprints only. Its exact fields are `snapshot.{id,fingerprint,containment}`,
 `outcome.{state,issueCodes,duplicateCandidateCount,projectFingerprint,taskAfterFingerprint}`,
 and `authority.{state,reasonCode}`. Schema availability and its fingerprint are
 sealed decision facts, not additional inspection fields. Its optional `at` is
-the current inspection time and defaults to now. Core preserves the historical
+the current inspection time and defaults to now. Core preserves the prior
 fingerprint projection, but a required finite-age Context observation that is
 no longer current forces
 `outcome.state=needs-input` with `TASK_CONTEXT_STALE`; Studio must not keep
-displaying the historical result as ready. `TASK_STATUS_VALUE_UNAVAILABLE` or
+displaying the previous result as ready. `TASK_STATUS_VALUE_UNAVAILABLE` or
 `TASK_CONTEXT_VALUE_UNAVAILABLE` means the current normalized schema cannot
 represent the exact portable Task proposal. Either issue, a duplicate, or a
 context conflict yields `needs-input`; Studio must not offer a proposal action.
@@ -874,11 +845,10 @@ The contained preview kind is `project-capture-preview` with one
 intersects the candidate Project Type with policy and current schema, pins date
 order, prepares a private candidate body supplement, and checks a bounded
 exact-name duplicate set. A policy-, profile-, schema-, organization-, date-,
-and duplicate-clean candidate has one `held` action with
-`COMPLETE_PROJECT_READBACK_UNAVAILABLE` and zero proposed changes. Core currently
-supports only one verification observation per operation, so it cannot prove
-both the mapped Project fields and private body. Any contradiction remains a
-held action under its more specific preparation reason. `manager-reference-bound` and
+and duplicate-clean candidate has one proposed `project-create` action bound to
+`projects.records.create` and one exact proposed change. Any contradiction
+holds the action, clears its change fingerprint, and produces no proposed
+change. `manager-reference-bound` and
 `client-contact-state` remain explicit `unavailable` facts in either case.
 
 The selected-work companion is `project-capture-derived-review` with one
@@ -896,21 +866,77 @@ The separate durable review path uses:
   `soter_prepare_automation_acquisition` and
   `soter_finalize_automation_acquisition`;
 - `project-capture-decision-inspect` / `-commit` and matching MCP tools;
-- `project-capture-proposal-inspect` / `-commit` for one private held proposal.
+- `project-capture-proposal-inspect`, `-commit`, and `-material` for one private
+  no-authority proposal.
 
 Connected acquisition grounds exact policy, complete portable creation-profile
 set, current schema, organization, and duplicate candidates, then pauses. It
 never invokes `workspace.identity.read`. A ready decision produces one exact
-private proposal whose create action is held with
-`COMPLETE_PROJECT_READBACK_UNAVAILABLE`. The active graph declares no
-Project-create capability, provider binding, or connected compiler.
+private proposal whose clean create action is selectable. Submit that exact
+action through the generic connected-proposal boundary. The compiler emits one
+`projects.records.create`, an exact duplicate-absence precondition, and one
+content-inclusive `projects.records.read` verification bound to the created
+record ID, expected title, mapped fields, and normalized markdown body. The
+read uses one provider page fetch; it does not combine independent observations
+or infer provider-template side effects.
 
-Studio must keep batch, approval, confirmation, start, checkpoint, execute,
-retry, reconcile, and recovery controls absent for Project Capture. Contained
-evidence proves only normalized local acquisition, decision, private review,
-and absence of authority. It does not prove a create, field or body read-back,
-live Notion authentication, permission, provider behavior, readiness,
-connected verification, or health.
+The generic approval and checkpoint lifecycle applies unchanged: expiring
+request, selected-activity private review, exact confirmation, single-use
+start, precondition, write, read-back verification, and checkpoint-bound
+reconciliation. Retry is prohibited and automatic delete/rollback is
+unavailable. Contained evidence proves only this normalized local sequence. It
+does not prove live Notion authentication, permission, provider conformance,
+readiness, connected verification, or health.
+
+### Project Page Reconciliation projection
+
+The canonical workflow is `automation.project-page-reconciliation` in
+configuration `project-page-reconciliation`. Render its exact declared input order:
+private Project reference `project`, optional identifier `projectType`, optional
+identifier `status`, and the paired optional private string lists `oldTexts` and
+`newTexts`. The paired lists must be present together, have equal nonzero length,
+and remain private selected-work material. Studio must not accept a database ID,
+provider mapping, arbitrary property name, append instruction, or generic page
+mutation.
+
+The contained preview kind is `project-page-reconciliation-preview`. Its one
+complete collection can contain a `project-properties-update` row, a
+`project-body-update` row, or both. Property review is limited to portable
+`projectType` and `status`; all unselected Project fields remain exactly preserved.
+Body review contains only nonempty exact one-match substitutions against the original
+observed body. A substitution may lengthen or shorten selected text, but it cannot
+replace the entire body or preserve the old text as an append/prepend surrogate.
+Proposed rows bind their same-row private detail and exact change
+fingerprints. `combined-execution-atomicity=sequential-non-atomic` must remain
+visible when both actions exist.
+
+The selected private companion is
+`project-page-reconciliation-derived-review`. Its property item carries the exact
+before/after field documents and body fingerprint. Its body item carries the exact
+before/after field documents, prior/after body fingerprints, ordered replacement
+IDs, and exact old/new text. These values may appear only in the selected-work or
+selected-proposal private folio, never queue rows, workspace inspection, evidence,
+diagnostics, checked-in sanitized fixtures, or error prose.
+
+The durable route uses the generic acquisition operations, the five exact
+Project Page Reconciliation decision/proposal CLI or MCP operations, and then the
+generic selected-proposal batch, approval, confirmation, single-use start, and
+connected checkpoint families. Studio may select a nonempty exact subset of the
+proposal's action IDs, but it does not originate action IDs or create approval
+authority. Each operation re-reads the exact Project through the content-inclusive
+mapping before its write and again for verification. The body operation in a
+combined batch expects the already-verified property state. Identity, field, body,
+or lock drift fails closed.
+
+Retry is prohibited. Combined writes are not externally atomic; ambiguous outcomes
+and later-operation failures enter checkpoint-bound needs-attention and read-only
+reconciliation. Empty deletion, whole-page replacement, old-text-preserving append
+or prepend, replace-all, provider-structural editing, generic non-Project update,
+automatic compensation, and a generic Notion fallback are intentionally unavailable.
+Capture remains one reviewed domain record at a
+time; Studio must not recreate arbitrary bulk or free-form Notion create
+surface. Contained evidence does not establish live Notion authentication,
+permission, conformance, readiness, verification, or health.
 
 ### Organization and Contact Capture projection
 
@@ -1007,11 +1033,12 @@ and scope values live only in the `feature-definition-derived-review` companion.
 it never becomes a status write. `FEATURE_NOT_PLANNED` or an unsupported body/template
 holds the body action.
 
-Both packs deliberately omit proposal and connection declarations. A generic selected
-review batch remains display-only, and connected-plan compilation must fail closed.
+Both packs deliberately omit proposal and connection declarations. A generic
+review-only candidate selection remains display-only, and candidate-preview
+compilation fails closed.
 Studio must keep approval, confirm, start, execute, retry, reconcile, and recovery
-controls absent. It must not fall back to the removed Claude guides, direct Notion
-calls, or fixture writes. Contained evidence proves only exact local preparation and
+controls absent. It must not substitute host guides, direct Notion calls, or
+fixture writes. Contained evidence proves only exact local preparation and
 privacy; live provider authentication, permission, conformance, readiness,
 verification, and health remain unknown.
 
@@ -1102,7 +1129,7 @@ readiness, connected verification, health, or permission to repair the page.
 ### Project Pulse projection
 
 The canonical workflow is `automation.project-pulse` in configuration
-`project-pulse`. Retain the generic prepared-work renderer and map the input
+`project-pulse`. Studio uses its generic prepared-work renderer and maps the input
 declaration in exact order:
 
 | Field | Type | Required | Exposure | Meaning |
@@ -1219,12 +1246,12 @@ A ready decision resolves every and only the exact candidate set and requires
 bounded subject/body citations, explicit provider-`IMPORTANT` non-authority,
 and fail-closed injection handling. It is still `authority=none` in product
 terms: the run remains paused and no prepared-work receipt, private derived
-review, draft, proposed change, review batch, approval, continuation request,
+review, draft, proposed change, candidate selection, approval, continuation request,
 or provider action exists. Studio should not add a lifecycle state or action
 control for this boundary. `needs-input` is a durable abstention and should be
 shown as missing judgment, not failed execution.
 
-A ready decision now has one separate connected review-only proposal path:
+A ready decision has one separate connected review-only proposal path:
 
 - `soter_inspect_email_triage_proposal` / CLI
   `email-triage-proposal-inspect` returns the exact private decision and a
@@ -1283,64 +1310,65 @@ unavailable. `mail.labels.read` and `mail.drafts.list` are exact portable
 verification interfaces. Their contained behavior and the Codex Gmail label
 translator have synthetic coverage; no live connected behavior is proven.
 
-The established private field ID `labelName` now declares the display label
+The private field ID `labelName` declares the display label
 “Exact label name.” Treat its value as the exact configured display name; do
 not infer a provider label ID from it or from presentation prose. Automation-
-owned label items now carry required `messageIds: string[]` containing exact
+owned label items carry required `messageIds: string[]` containing exact
 active provider message IDs. Draft items carry required
 `replyMessageId: string`. Neither field is a thread ID, RFC822 message ID,
 subject line, or renderer-generated reference. They must remain inside selected
-private material and the private connected plan.
+private material and the private candidate preview.
 
 The owning Email Context definition is `context.email.processing` version
 `3.0.0`. It mechanically distinguishes provider message IDs, provider thread
 IDs, and RFC822 deduplication IDs; declares label application as message-scoped;
 uses configured label names; and prohibits implicit label creation. This adds
-no new Studio field or authority. Studio should retain the field map above and
+no new Studio field or authority. Studio uses the field map above and
 must not substitute thread IDs, RFC822 IDs, or provider label IDs. The triage
 freshness rule is timestamp-free: skip only when every active inbox message
 already carries `AI/Triaged`; retain any thread with an active untriaged
 message.
 
-Core now supports a distinct generic selection step before connected approval:
+Core supports a distinct generic selection step before connected approval:
 
-- `createPreparedReviewBatch({root,workId,actionIds,createdAt})` accepts only a
+- `createReviewOnlyCandidateSelection({root,workId,actionIds,createdAt})` accepts only a
   non-empty unique subset of exact proposed action IDs and returns
-  `prepared-review-batch/v1`;
-- `inspectPreparedReviewBatchMaterial({root,batchId})` returns
-  `prepared-review-batch-material/v1` for one selected private batch;
-- CLI equivalents are `operator-review-batch-create` and
-  `operator-review-batch`.
+  `review-only-candidate-selection/v1`;
+- `inspectReviewOnlyCandidateSelectionMaterial({root,selectionId})` returns
+  `review-only-candidate-selection-material/v1` for one selected private candidate set;
+- CLI equivalents are `operator-review-only-candidate-selection-create` and
+  `operator-review-only-candidate-selection`.
 
 Studio may render checkboxes only for `state=proposed` actions, send exact IDs
 to Core, and then display Core's canonical selected order. Never permit held,
 prohibited, none, or handoff actions to enter the selection. The sanitized
-batch contains no private values. The private material returns the exact
+selection contains no private values. The private material returns the exact
 declared context/proposed items joined through the selected row and value
-fingerprints. Use sender-validated selected-batch IPC envelopes and clear the
-material when batch selection ends; do not cache it in queue, catalog, runs,
+fingerprints. Use sender-validated candidate-selection IPC envelopes and clear
+the material when selection ends; do not cache it in queue, catalog, runs,
 proof, logs, or workspace inspection.
 
 Both results are review facts with `authority=none`. For Email, Task Capture,
 Organization Capture, Contact Capture, and Project Pulse
-the batch remains `state=review-only` and carries
-`CONNECTED_PLAN_NOT_COMPILED` plus
+the selection remains `state=review-only` and carries
+`REVIEW_ONLY_CANDIDATE_PREVIEW_NOT_CREATED` plus
 `CONNECTED_VERIFICATION_NOT_PROVEN`. Do not render an approval ceremony,
 confirmation action, continuation, retry, provider request, or execution button
 from either object. These APIs belong to the separate contained prepared-work
 family and remain non-authoritative; do not route a connected proposal through
 them.
 
-Core now exposes `createPreparedConnectedPlan({root,batchId,createdAt})` and
-`inspectPreparedConnectedPlan({root,planId})`, with CLI equivalents
-`operator-connected-plan-create` and `operator-connected-plan`. The returned
-`prepared-connected-plan/v1` is private selected-plan state: it contains exact
-provider arguments and therefore must use a sender-validated selected-plan IPC
+Core exposes `createReviewOnlyCandidatePreview({root,selectionId,createdAt})`
+and `inspectReviewOnlyCandidatePreview({root,candidatePreviewId})`, with CLI
+equivalents `operator-review-only-candidate-preview-create` and
+`operator-review-only-candidate-preview`. The returned
+`review-only-candidate-preview/v1` is private selected-candidate state: it
+contains exact provider arguments and therefore must use a sender-validated candidate-preview IPC
 boundary and must never enter queue, workspace inspection, runs, proof, logs,
 diagnostics, canonical fixtures, or general renderer state. It is always
 `state=blocked-review-only`, `executable=false`, and `authority=none`.
 
-The plan mechanically maps each exact selected action to one ordered
+The preview mechanically maps each exact selected action to one ordered
 operation. Core supplies `authority`, `provider.pack`, and nullable
 `provider.connectedImplementation`; the Automation compiler supplies portable
 inputs, idempotency binding, a read-only verification request and expectation,
@@ -1353,40 +1381,40 @@ message identity remain private. Label apply/read operations name
 `provider.connectedImplementation=null`. A null provider remains an exact
 unavailable state, not permission to fall back to the fixture provider.
 
-Task Capture plans contain one exact task-create value and therefore use the
-same selected-plan privacy boundary. Their create, precondition, and
+Task Capture previews contain one exact task-create value and therefore use the
+same candidate-preview privacy boundary. Their create, precondition, and
 verification provider is `provider.integration.notion.mcp` under
 `authority.tasks.instance`. This route metadata is not transaction authority or
 connected readiness.
 
-Project Capture cannot create a selected review batch or
-`prepared-connected-plan/v1`: its sole action is held with
-`COMPLETE_PROJECT_READBACK_UNAVAILABLE` and its preview has zero proposed
-changes. Preserve the private candidate review, but do not infer provider
-arguments or synthesize approval, start, execution, retry, reconciliation, or
-provider body-read claims.
+Project Capture previews contain one exact Project create and use the same
+candidate-preview privacy boundary. The create, duplicate-absence precondition, and
+content-inclusive verification route through
+`provider.integration.notion.mcp` under `authority.projects.instance`. This
+route metadata remains no-authority review output; only the separately durable
+proposal transaction can issue an approval request or start.
 
-Organization Capture and Contact Capture plans each contain one exact private
-create value and use the same selected-plan privacy boundary. Their
+Organization Capture and Contact Capture previews each contain one exact
+private create value and use the same candidate-preview privacy boundary. Their
 precondition, create, and verification route is
 `provider.integration.notion.mcp` under `authority.crm.instance`. The current
 schema and duplicate-resolution basis stays sealed to the durable proposal;
 route metadata is not transaction authority or connected readiness.
 
-Project Pulse prepared plans use the same private boundary and accept only the
+Project Pulse candidate previews use the same private boundary and accept only the
 complete document-update/status-create action group in canonical order. They
 remain review-only compiler output and cannot substitute for the separate
 durable Project proposal, request, confirmation, consumed start, or checkpoint.
 
-Studio may display a quiet private “compiled candidate” ledger if useful, but
+Studio may display a quiet private review-only candidate preview ledger, but
 must keep every approval, confirmation, continuation, execute, retry, and
-reconcile control disabled. Every plan retains
+reconcile control disabled. Every preview retains
 `CONNECTED_TRANSACTION_RUNTIME_NOT_SUPPORTED`,
 `CONNECTED_VERIFICATION_NOT_PROVEN`, and
-`SELECTED_ACTIVITY_PRIVATE_APPROVAL_REVIEW_NOT_AVAILABLE`. Draft or mixed plans
+`SELECTED_ACTIVITY_PRIVATE_APPROVAL_REVIEW_NOT_AVAILABLE`. Draft or mixed previews
 also retain `CONNECTED_PROVIDER_NOT_DECLARED`; a label-only plan does not.
 The non-null Gmail provider is route metadata, not readiness or execution
-authority. Do not reinterpret the prepared review batch or plan as
+authority. Do not reinterpret the candidate selection or preview as
 `connected-change-set/v2`, `connected-operation-batch/v2`, or
 `approval-request/v1`.
 
@@ -1421,14 +1449,14 @@ logs, diagnostics, and adapter fixtures must contain only stable facts, reason
 codes, counts, and fingerprints. Artifact content is never acquired and must not
 be representable in either projection.
 
-This migration deliberately declares no proposal adapter or connected compiler.
-`createPreparedReviewBatch` may preserve a selected review subset as
-authority-free private review, but `createPreparedConnectedPlan` fails closed
-with `PREPARED_CONNECTED_PLAN_COMPILER_INVALID`. Studio must keep approval,
+This workflow declares no proposal adapter or connected compiler.
+`createReviewOnlyCandidateSelection` may preserve a selected review subset as
+authority-free private review, but `createReviewOnlyCandidatePreview` fails
+closed with `REVIEW_ONLY_CANDIDATE_PREVIEW_COMPILER_INVALID`. Studio must keep approval,
 confirmation, start, execute, retry, reconcile, and recovery controls absent for
-Drive Filing. It must not fall back to fixture writes, the removed Claude guide,
-native Drive actions, or Notion APIs. A future connected compiler is a separate
-governed milestone.
+Drive Filing. It must not substitute fixture writes, host guides, native Drive
+actions, or Notion APIs. A connected compiler remains unsupported and requires
+a separate governed change.
 
 Stable Drive reason codes include:
 
@@ -1481,29 +1509,26 @@ boundary's current time. `PROPOSAL_CONNECTED_BATCH_CONTEXT_STALE` creates no new
 request, approval, consumption, checkpoint, current host request, or provider
 call. This is a Core-wide proposal-transaction code, not a Task-only state.
 
-Email label actions, the single Task, Organization, or Contact create, and the
-complete Project Pulse group have declared connected write and exact read-back
+Email label actions, the single Task, Organization, Project, or Contact create,
+and the complete Project Pulse group have declared connected write and exact read-back
 providers. Email draft-only or mixed selections fail before request creation
 with `PROPOSAL_CONNECTED_BATCH_PROVIDER_UNAVAILABLE`; keep the proposal review
 visible and show no approval ceremony. There is no fallback to the fixture
 provider. Email send, digest persistence, label removal, compensation, and
 automatic write retry remain unsupported.
 
-Project Capture and Meeting Intake remain before this selection boundary.
-Project Capture actions use `COMPLETE_PROJECT_READBACK_UNAVAILABLE`; Meeting
-Intake summary and Task-fold actions use
-`COMPLETE_MEETING_READBACK_UNAVAILABLE`. Both previews expose zero proposed
-changes. The reason is mechanical: Core currently supports only one verification
-observation per operation, while Project Capture requires mapped fields plus
-body and Meeting Intake requires all summary fields plus body. Meeting Intake's
+Meeting Intake remains before this selection boundary. Its summary and Task-fold
+actions use `COMPLETE_MEETING_READBACK_UNAVAILABLE`, and its preview exposes
+zero proposed changes. Meeting Intake requires all summary fields plus body, and its
 Task fold belongs to the same complete group and cannot be selected separately.
 Studio may render the private held candidates and exact reason codes, but must
 not render a selection, batch, approval, confirmation, start, checkpoint,
 provider request, execute, retry, reconcile, recovery, or verified-outcome
-control for either workflow.
+control for that workflow.
 
-For a successful Email label, Task, Organization, or Contact create, or complete
-Project Pulse preview, invoke the v2 authority path through
+For a successful Email label, Task, Organization, Project, or Contact create,
+Project Page Reconciliation update, or complete Project Pulse preview, invoke
+the v2 authority path through
 `beginProposalConnectedApprovalRequest`, selected-request
 `inspectConnectedApprovalReviewMaterial`, and
 `confirmProposalConnectedApprovalRequest`. Studio may display the private
@@ -1556,7 +1581,7 @@ may be observed again. There is no v2 compensation execution; render its plan
 as the canonical immutable `not-required` fact and render manual recovery only
 from the blocker/reconciliation facts.
 Keep approval, consumption, checkpoint, verification, reconciliation, proof,
-maturity, and migration as separate families.
+and maturity as separate families.
 
 Stable generic connected/v2 reason codes to map without parsing prose include:
 
@@ -1567,8 +1592,11 @@ Stable generic connected/v2 reason codes to map without parsing prose include:
 
 Stable held-review reason codes to map without parsing prose include:
 
-- `COMPLETE_PROJECT_READBACK_UNAVAILABLE`; and
 - `COMPLETE_MEETING_READBACK_UNAVAILABLE`.
+
+Stable Project Capture review codes include
+`PROJECT_CREATE_READY_FOR_REVIEW` for the exact selectable candidate plus the
+specific `PROJECT_*` contradiction codes emitted when that candidate is held.
 
 Stable Email/v2 reason codes to map without parsing prose include:
 
@@ -1600,18 +1628,18 @@ Organization and Contact additionally use `ORGANIZATION_CREATE_AMBIGUOUS`,
 the delete codes as explicit manual recovery boundaries; none grants retry,
 removal, compensation, or rollback authority.
 
-Retain the generic queue, exact-scope ledger, selected private approval review,
+Studio uses the generic queue, exact-scope ledger, selected private approval review,
 capability tape, checkpoint resume object, verification ledger, and recovery
-brief. Add v2 contract types and map them mechanically. Delete or reject any
+brief. The renderer consumes v2 contract types mechanically and has no
 Studio-owned Email compiler, batch, request, confirmation, retry, continuation,
-transaction, or provider-readiness state. Do not expose native provider
+transaction, or provider-readiness state. It never exposes native provider
 arguments, raw response bodies, private query/draft/body text, or raw
 before/after values in sanitized inspection or UI fixtures.
 
 ## Slack channel-ingestion preparation
 
-`automation.slack-channel-ingestion` uses the existing generic prepared-work,
-private review, selected-batch, and connected-plan boundaries; Studio must not add a
+`automation.slack-channel-ingestion` uses the generic prepared-work, private
+review, candidate-selection, and candidate-preview boundaries; Studio must not add a
 Slack-specific selection token or transaction authority.
 
 - `phase=identity-review` renders the complete itemized identity collection and the
@@ -1704,79 +1732,36 @@ credentials, readiness, verified connected behavior, or health.
 
 ## Harness Development Catalog
 
-The `harness-development-catalog` configuration selects ten definition-only Automation
-packs. These are portable catalog facts, not prepared work and not an operator runtime.
-If Studio presents them, use only the canonical definition facts:
+The Codex and Claude development configurations select seven active governed
+workflows: Running Evals, Forge, Reviewing Forge Output, Promoting Pieces,
+Auditing a Schema, Authoring a Policy Standard, and Validating Resources.
+These are workflow facts, not operator work or independent execution authority.
 
-- `availability.state=definition-only`;
-- `reasonCode=AUTOMATION_RUNTIME_NOT_IMPLEMENTED`;
-- `authority=none`;
-- `permittedNextAction=design-runtime-slice`;
-- `normalization.runtimeParity=not-evaluated`; and
-- `normalization.behaviorAuthority=none`.
+Host-guided work begins through `soter_create_development_request`, which
+derives the current active configuration, lock, and realized host and
+fingerprints the normalized target set inside Core. The caller supplies the
+smallest canonical requested local-effect subset; it cannot select another
+configuration or predeclare target fingerprints. `soter_inspect_development_run`
+returns the same sanitized `development-run-inspection/v1` after revalidation.
+Its `applicability` and discriminated `requestBoundary` report current, stale,
+or closed state plus declared and effective effects. Provider read/write,
+publication, merge, protected-root mutation, and host realization remain
+separate authority. The projection omits target paths, requested-outcome text,
+raw diffs, transcripts, and private state paths. A realized skill without this
+exact current request remains guidance only; permitted-next-action text is not
+execution authority.
 
-Every selected pack has no operator declaration, capabilities, authorities, effects,
-or executable scenarios, while the configuration prohibits all five effects. Studio
-must render these workflows as inspectable and unavailable—not as queue items, runnable
-commands, disabled approvals awaiting configuration, or host-installed skills. The
-normalized evaluation sets are behavior expectations only and must not be labeled
-passing tests or verification evidence. Legacy source paths and fingerprints are
-migration provenance; do not expose private local absolute paths or raw source content.
+Studio may render each workflow's current definition, guide, evaluation set,
+host compatibility, exact fingerprints, declared effects, and normal evidence.
+Development request/result records remain the authority for bounded workspace
+work. A realized skill is a host projection of the selected guide; it grants no
+provider, publication, merge, protected-root, configuration, approval, or
+host-realization authority.
 
-If Studio renders `development-historical-evidence-batch-inspection/v1`, its
-`basis.hostGraphFingerprints` is the closed exact pair `{claude,codex}`. The two
-values are deliberately distinct because each candidate lock seals its own host
-adapter and projection. Keep them as host-scoped basis facts; do not collapse
-them into one graph, infer host parity, or treat either fingerprint as launch,
-authentication, readiness, verification, health, or fallback-removal authority.
-
-`development-governance/v1` is also not an operator-work contract. It is an inspectable
-Kernel policy assigning develop-intent responsibility across Kernel, Core, Automation,
-Integration, host adapters, and configuration. Its lifecycle, quality requirements, and
-bridge evidence grant no preparation, file-write, host-task, confirmation, continuation,
-publication, or external-effect authority. Studio may identify the policy as declared
-governance, but it must not synthesize a development queue item or infer that any
-definition-only workflow, Claude task allowlist, hook, or legacy fallback has migrated.
-
-## Legacy foundation tombstones
-
-`legacy-foundations.migration.json` and the `claude-host-projection` fixture set expose
-migration facts only. Calendar, Docs, and Onchain are completed intentional-change
-migrations: their legacy system cards are absent and their closed Context models own
-portable meaning without provider, capture, synchronization, or runtime authority. Sky
-is also migrated: its exact ordered vocabulary is target-owned, its legacy card and
-mixed-Lexicon rows are absent, and its Context pack still exposes no capability or
-effect. Every remaining responsibility is target-owned or explicitly retired according
-to its exact inventory tombstone. None are
-queue items, current provider records, or connected readiness. Automation targets in this slice are definition-only and
-grant no preparation, approval, continuation, or execution authority. The Notion
-Integration migration record identifies provider-translation ownership but does not expose
-credentials, native arguments, or live provider conformance.
-
-Claude host migration evidence proves exact target ownership or explicit retirement and
-deliberate non-adoption. Studio must not present removed plugin, MCP, hook, settings,
-platform, task-delivery, or checker files as generated outputs, installed host behavior,
-or launch proof. Final tombstones require `sourcePresence=removed`, a
-`migrated|retired` state, `fallback=removed`, and exact evidence for every binding; no
-action control may be derived from these facts. Sanitized views may show source role,
-target layer, state, reason, and limitations, but never raw legacy contents, private
-paths, credentials, provider responses, or a readiness/health badge.
-
-If Studio summarizes the complete legacy inventory, it must render `stateCounts` as
-source aggregates and `bindingStateCounts` as target responsibilities. It must not
-collapse them into one number or infer parity from an aggregate. The final inventory
-contains 143 migrated-or-retired source tombstones and zero mapped or bridged sources;
-Studio must read binding counts from the canonical inspection rather than hard-code
-them. Final migration records exact authority transfer or intentional retirement only;
-it does not establish runtime readiness, connected verification, or health.
-
-Migration-family evidence may now identify an exact selected configuration subject as
-`{type:"configuration", id:"configuration.<name>", version:null}`. That fact records an
-authority transition for the exact configuration artifact only; it is not a versioned
-pack, executable request, readiness signal, or provider result. Studio may show the
-configuration ID, target fingerprint, migration state, parity decision, and limitations,
-but must not expose configured collection values from the private configuration or infer
-that the mixed legacy source is fully migrated.
+`development-governance/v1` is an inspectable Kernel policy assigning
+develop-intent responsibility across Kernel, Core, Automation, Integration,
+host adapters, and configuration. Studio must not synthesize a development
+queue item or infer runtime authority from the policy itself.
 
 ## Fixture adaptation
 
@@ -1785,10 +1770,10 @@ The sanitized canonical lifecycle fixture is
 has `authority=none-example-only` and may seed renderer adapters without
 establishing provider behavior.
 
-After Studio deletes or maps its overlapping Core proposal:
+After a governed contract or Core projection changes:
 
 1. Regenerate target fixtures with `node soter/core/cli.mjs fixtures --update`.
-2. Regenerate any Studio adapter fixtures from the canonical lifecycle fixture
+2. Regenerate Studio adapter fixtures from the canonical lifecycle fixture
    and real `operator-inspect` output with private values replaced by stable
    synthetic identifiers and fingerprints.
 3. Run `node soter/kernel/verify.mjs`, `node soter/core/cli.mjs selftest`,

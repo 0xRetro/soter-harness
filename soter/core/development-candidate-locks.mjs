@@ -12,6 +12,7 @@ import { fingerprintLock, lockMatchesResolution, resolveConfiguration } from './
 const DIRECTORY = '.soter/state/development-candidate-locks';
 const SAFE_WORKFLOW = /^automation[.][a-z0-9]+(?:-[a-z0-9]+)*$/;
 const SAFE_HOST = /^(?:codex|claude)$/;
+const SAFE_FINGERPRINT = /^sha256:[a-f0-9]{64}$/;
 
 function fail(code, message, cause = null) {
   const error = cause ? new Error(message, { cause }) : new Error(message);
@@ -19,11 +20,13 @@ function fail(code, message, cause = null) {
   throw error;
 }
 
-function exactId(workflowId, host) {
-  if (!SAFE_WORKFLOW.test(workflowId || '') || !SAFE_HOST.test(host || '')) {
-    fail('DEVELOPMENT_CANDIDATE_LOCK_INPUT_INVALID', 'Candidate lock workflow or host identity is invalid.');
+function exactId(workflowId, host, lockFingerprint) {
+  if (!SAFE_WORKFLOW.test(workflowId || '')
+    || !SAFE_HOST.test(host || '')
+    || !SAFE_FINGERPRINT.test(lockFingerprint || '')) {
+    fail('DEVELOPMENT_CANDIDATE_LOCK_INPUT_INVALID', 'Candidate lock workflow, host, or content fingerprint is invalid.');
   }
-  return `development-candidate-lock.${host}.${workflowId.slice('automation.'.length)}`;
+  return `development-candidate-lock.${host}.${workflowId.slice('automation.'.length)}.${lockFingerprint.slice('sha256:'.length)}`;
 }
 
 function assertPrivateDirectory(directory, rootRealPath) {
@@ -63,9 +66,12 @@ function ensureCandidateDirectory(root, create) {
   return current;
 }
 
-export function developmentCandidateLockStatePath(root, workflowId, host) {
+export function developmentCandidateLockStatePath(root, workflowId, host, lockFingerprint) {
   const directory = ensureCandidateDirectory(root, false);
-  return resolveRepoPath(root, `${repoRelativePath(root, directory)}/${exactId(workflowId, host)}.json`);
+  return resolveRepoPath(
+    root,
+    `${repoRelativePath(root, directory)}/${exactId(workflowId, host, lockFingerprint)}.json`
+  );
 }
 
 export function isDevelopmentCandidateLockPath(root, lockPath) {
@@ -131,9 +137,10 @@ function assertPrivateFile(file) {
 export function resolveDevelopmentCandidateLock({ root, configPath, workflowId, host }) {
   const resolvedRoot = path.resolve(root);
   const lock = resolveExact({ root: resolvedRoot, configPath, workflowId, host });
+  const lockFingerprint = fingerprintLock(lock);
   return {
     lock,
-    lockFingerprint: fingerprintLock(lock),
+    lockFingerprint,
     graphFingerprint: lock.graphFingerprint,
     workflow: { id: workflowId, version: lock.packs.find((item) => item.id === workflowId).version },
     host: { id: lock.host.id, adapter: lock.host.adapter, manifestFingerprint: lock.host.manifestFingerprint },
@@ -141,17 +148,20 @@ export function resolveDevelopmentCandidateLock({ root, configPath, workflowId, 
       kind: 'private-development-lock-only',
       grantsExecution: false,
       grantsApproval: false,
-      grantsMigration: false,
       grantsPublication: false,
       grantsMerge: false,
       grantsProviderRead: false,
       grantsProviderWrite: false,
-      grantsHostRealization: false,
-      grantsFallbackRemoval: false
+      grantsHostRealization: false
     },
     path: repoRelativePath(
       resolvedRoot,
-      developmentCandidateLockStatePath(resolvedRoot, workflowId, lock.host.id)
+      developmentCandidateLockStatePath(
+        resolvedRoot,
+        workflowId,
+        lock.host.id,
+        lockFingerprint
+      )
     )
   };
 }
@@ -160,7 +170,10 @@ export function materializeDevelopmentCandidateLock({ root, configPath, workflow
   const resolvedRoot = path.resolve(root);
   const exact = resolveDevelopmentCandidateLock({ root: resolvedRoot, configPath, workflowId, host });
   const directory = ensureCandidateDirectory(resolvedRoot, true);
-  const file = path.join(directory, exactId(workflowId, exact.host.id) + '.json');
+  const file = path.join(
+    directory,
+    exactId(workflowId, exact.host.id, exact.lockFingerprint) + '.json'
+  );
   if (fs.existsSync(file)) {
     assertPrivateFile(file);
     const existing = readJson(file);
@@ -183,17 +196,35 @@ export function materializeDevelopmentCandidateLock({ root, configPath, workflow
   return { ...exact, path: repoRelativePath(resolvedRoot, file) };
 }
 
-export function readDevelopmentCandidateLock({ root, lockPath, workflowId, requireCurrent = true }) {
+export function readDevelopmentCandidateLock({
+  root,
+  lockPath,
+  workflowId,
+  requireCurrent = true,
+  expectedLockFingerprint = null
+}) {
   const resolvedRoot = path.resolve(root);
   const file = resolveRepoPath(resolvedRoot, lockPath);
   const name = path.basename(file);
-  const match = name.match(/^development-candidate-lock[.](codex|claude)[.]([a-z0-9]+(?:-[a-z0-9]+)*)[.]json$/);
+  const match = name.match(/^development-candidate-lock[.](codex|claude)[.]([a-z0-9]+(?:-[a-z0-9]+)*)[.]([a-f0-9]{64})[.]json$/);
+  const pathFingerprint = match ? 'sha256:' + match[3] : null;
   if (!match || workflowId !== `automation.${match[2]}`
-    || file !== developmentCandidateLockStatePath(resolvedRoot, workflowId, match[1])) {
+    || file !== developmentCandidateLockStatePath(
+      resolvedRoot,
+      workflowId,
+      match[1],
+      pathFingerprint
+    )) {
     fail('DEVELOPMENT_CANDIDATE_LOCK_PATH_INVALID', 'Candidate lock path does not bind the exact workflow and host.');
   }
   assertPrivateFile(file);
   const lock = readJson(file);
+  const observedFingerprint = fingerprintLock(lock);
+  if (observedFingerprint !== pathFingerprint
+    || (expectedLockFingerprint !== null
+      && expectedLockFingerprint !== observedFingerprint)) {
+    fail('DEVELOPMENT_CANDIDATE_LOCK_TAMPERED', 'Candidate lock bytes do not match the content-addressed private path or expected request binding.');
+  }
   exactWorkflowSelection(lock, workflowId);
   if (requireCurrent) {
     let comparison;
@@ -213,7 +244,7 @@ export function readDevelopmentCandidateLock({ root, lockPath, workflowId, requi
   }
   return {
     lock,
-    lockFingerprint: fingerprintLock(lock),
+    lockFingerprint: observedFingerprint,
     graphFingerprint: lock.graphFingerprint,
     path: repoRelativePath(resolvedRoot, file)
   };

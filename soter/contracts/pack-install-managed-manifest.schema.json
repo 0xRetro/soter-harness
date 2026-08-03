@@ -119,7 +119,7 @@
       "properties": {
         "pack": { "$ref": "#/$defs/packId" },
         "path": { "$ref": "#/$defs/relativePath" },
-        "role": { "enum": ["manifest", "definition", "implementation", "projection", "evaluation", "fixture", "migration"] },
+        "role": { "enum": ["manifest", "definition", "implementation", "projection", "evaluation", "fixture"] },
         "mode": { "enum": ["0644", "0755"] },
         "contentFingerprint": { "$ref": "#/$defs/fingerprint" },
         "fingerprint": { "$ref": "#/$defs/fingerprint" }

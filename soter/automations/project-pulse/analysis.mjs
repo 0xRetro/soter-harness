@@ -317,7 +317,7 @@ export function analyzeProjectPulse({
       'Milestone progress uses exact work-item-to-task title inheritance within one project; unmatched project tasks and unchecked unpromoted work items are never presented as promoted task completion.',
       'Health is a required operator judgment. Automation only checks exact contradictions and applies explicitly selected milestone tags.',
       'A milestone completion checkbox remains part of the separately confirmed exact document batch; task completion alone never writes it during preparation.',
-      'This deterministic analysis creates no approval, continuation, provider call, write, proof, maturity, or migration authority.'
+      'This deterministic analysis creates no approval, continuation, provider call, write, proof, or maturity authority.'
     ]
   };
 }

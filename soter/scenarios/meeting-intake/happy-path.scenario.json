@@ -56,8 +56,5 @@
       "complete-meeting-readback-unavailable",
       "zero-authority-state"
     ]
-  },
-  "sourceCases": [
-    ".claude/evals/processing-a-meeting/happy-path.md"
-  ]
+  }
 }

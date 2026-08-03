@@ -8,7 +8,6 @@ import {
   resolveRepoPath
 } from '../../core/lib/canonical-json.mjs';
 import { fingerprintLock } from '../../core/resolve.mjs';
-import { fingerprintLegacySource } from '../../kernel/legacy-inventory.mjs';
 import { prepareProcessRedTeamRun } from './prepare.mjs';
 
 const AUTOMATION_ID = 'automation.process-red-team';
@@ -93,11 +92,6 @@ export async function runContainedProcessRedTeamScenario({
 }) {
   const resolvedRoot = path.resolve(root);
   const loaded = loadScenario(resolvedRoot, scenarioPath);
-  const sourceCaseArtifacts = loaded.scenario.sourceCases.map((sourcePath) => ({
-    role: 'source-case',
-    path: sourcePath,
-    fingerprint: fingerprintLegacySource(resolvedRoot, sourcePath)
-  }));
   const baseInput = {
     processUri: 'soter-fixture://process/definition/wallet-penny-test',
     includeLatestRun: true,
@@ -210,9 +204,7 @@ export async function runContainedProcessRedTeamScenario({
       'process-source-fingerprint': /^sha256:[a-f0-9]{64}$/.test(targetEntry.valueFingerprint || ''),
       'related-source-fingerprints': [standardsEntry, runsEntry].every((entry) => /^sha256:[a-f0-9]{64}$/.test(entry.valueFingerprint || '')),
       'schema-observation-fingerprint': /^sha256:[a-f0-9]{64}$/.test(schemaEntry.value.schema.fingerprint || ''),
-      'private-values-sanitized': privateValues.every((value) => !sanitized.includes(value)),
-      'source-cases-exactly-fingerprinted': sourceCaseArtifacts.length === 3
-        && sourceCaseArtifacts.every((artifact) => /^sha256:[a-f0-9]{64}$/.test(artifact.fingerprint))
+      'private-values-sanitized': privateValues.every((value) => !sanitized.includes(value))
     }
   };
   const assessment = assessmentFor({
@@ -231,7 +223,6 @@ export async function runContainedProcessRedTeamScenario({
     envelope: happy.envelope,
     scenario: loaded.scenario,
     scenarioPath: loaded.path,
-    sourceCaseArtifacts,
     assessment,
     evaluatorId: 'automation.process-red-team.scenario-evaluator',
     id: scenarioEvidenceId,

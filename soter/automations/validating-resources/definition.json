@@ -8,31 +8,12 @@
   "ownership": {
     "layer": "automation",
     "domain": "resource-governance",
-    "legacyLayer": "skill",
     "responsibility": "outcome-definition"
   },
   "lifecycle": {
     "state": "active-host-guided",
-    "activation": {
-      "state": "active",
-      "reasonCode": "WORKFLOW_HOST_GUIDANCE_ACTIVE",
-      "proceduralAuthority": "target",
-      "delivery": "host-skill",
-      "behaviorParity": "intentional-change",
-      "evidence": [
-        {
-          "path": "soter/evidence/development/development-agent-migration-evidence.claude.validating-resources.json",
-          "fingerprint": "sha256:627350e3995bb370c1b52546a30bceae72e5c3397cdfd0f3a92b54a77a58e638",
-          "host": "claude"
-        },
-        {
-          "path": "soter/evidence/development/development-agent-migration-evidence.codex.validating-resources.json",
-          "fingerprint": "sha256:177a657b5891df68215061b81c93f69bad7ba19b467de3cc78b02e9cd8fd2b95",
-          "host": "codex"
-        }
-      ],
-      "permittedNextAction": "invoke-through-selected-host"
-    },
+    "reasonCode": "WORKFLOW_HOST_GUIDANCE_ACTIVE",
+    "delivery": "host-skill",
     "development": {
       "requestContract": {
         "id": "soter://contracts/development-request/v1",
@@ -161,19 +142,13 @@
     "disclosure",
     "write"
   ],
-  "source": {
-    "presence": "removed",
-    "legacyPath": ".claude/skills/validating-resources/SKILL.md",
-    "legacyFingerprint": "sha256:38aecb4f889d9ccab50edf578d0a571a0b2ef5639f2db589ecd30567b3ee651c"
-  },
   "privacy": {
-    "rawSourceIncluded": false,
     "workspaceSpecificValuesIncluded": false,
     "credentialsIncluded": false,
     "privateInputsIncluded": false
   },
   "limitations": [
-    "This normalized definition preserves inspectable intent only; it has no operator runtime, provider binding, effect authority, or behavior parity.",
-    "The fingerprinted legacy source remains canonical until a separate implemented and evidenced runtime migration removes that fallback."
+    "This definition declares workflow outcomes and boundaries; it does not itself grant execution, provider, publication, merge, or host-realization authority.",
+    "Behavior evidence and effects remain scoped to exact governed development requests and current workflow fingerprints."
   ]
 }

@@ -20,12 +20,12 @@
     {
       "id": "automation.project-capture",
       "source": "user",
-      "reason": "The user selected private, deduplicated Project candidate preparation. The current configuration stops at held review and grants no create authority."
+      "reason": "The user selected private, deduplicated Project candidate preparation plus separately confirmed, single-use, verified creation."
     },
     {
       "id": "integration.notion",
       "source": "binding",
-      "reason": "The configured policy, organization, project schema, and duplicate candidates live in Notion. No Project-create capability is selected."
+      "reason": "The configured policy, organization, project schema, duplicate candidates, Project create, and complete Project read-back are mapped through Notion without transferring Project meaning to the provider."
     }
   ],
   "bindings": [
@@ -57,6 +57,15 @@
       ],
       "secretRef": "secret-ref.notion",
       "reason": "Notion supplies a normalized current project schema observation before any create proposal."
+    },
+    {
+      "capability": "projects.records.create",
+      "providerPack": "integration.notion",
+      "authorities": [
+        "authority.projects.instance"
+      ],
+      "secretRef": "secret-ref.notion",
+      "reason": "Notion translates one exact separately approved portable Project create; the binding itself grants no write authority."
     }
   ],
   "sources": [
@@ -176,7 +185,7 @@
     },
     "write": {
       "mode": "confirm",
-      "reason": "The selected Integration exposes separately governed write capabilities, so any write still requires confirmation. Project Capture itself declares no write capability: COMPLETE_PROJECT_READBACK_UNAVAILABLE holds its candidate before proposal selection, batch, approval, one-time start, checkpoint, provider write, or verification authority."
+      "reason": "One exact Project create requires private proposal review, an expiring approval request, exact confirmation, separately consumed single-use start authority, a durable checkpoint, and complete fields-and-body read-back."
     },
     "dispatch": {
       "mode": "prohibit",

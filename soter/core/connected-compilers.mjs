@@ -383,7 +383,7 @@ export async function compileAutomationConnectedSelection({
   } catch (error) {
     throw codedError(
       'CONNECTED_COMPILER_INVALID',
-      'The Automation connected compiler rejected or failed its exact selected batch.',
+      'The Automation connected compiler rejected or failed its exact candidate selection.',
       error
     );
   }
@@ -472,7 +472,7 @@ export async function compileAutomationConnectedSelection({
     || [...selected.keys()].some((id) => !represented.has(id))) {
     throw codedError(
       'CONNECTED_COMPILER_INVALID',
-      'Every selected review action must compile to at least one exact operation.'
+      'Every selected candidate action must compile to at least one exact operation.'
     );
   }
   if (containsCredentialMaterial(operations)) {
@@ -498,7 +498,7 @@ export async function evaluateAutomationConnectedObservation({
   if (fingerprintJson(context.compiler) !== fingerprintJson(compiler)) {
     throw codedError(
       'CONNECTED_COMPILER_INVALID',
-      'Connected verification evaluator does not match the exact compiled batch.'
+      'Connected verification evaluator does not match the exact candidate preview.'
     );
   }
   const observation = phase === 'precondition' ? operation.precondition : operation.verification;

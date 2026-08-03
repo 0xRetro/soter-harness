@@ -40,11 +40,7 @@
       "exact-lock",
       "policy-source-fingerprint",
       "identity-coverage-fingerprint",
-      "private-values-sanitized",
-      "source-cases-exactly-fingerprinted"
+      "private-values-sanitized"
     ]
-  },
-  "sourceCases": [
-    ".claude/evals/ingesting-slack-channels/pressure-full-board-sweep.md"
-  ]
+  }
 }

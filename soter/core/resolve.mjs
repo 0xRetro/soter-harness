@@ -10,11 +10,7 @@ import {
   repoRelativePath,
   resolveRepoPath
 } from './lib/canonical-json.mjs';
-import {
-  renderHostProjectionCandidates,
-  renderHostProjectionCandidatesForEvidenceFinalization
-} from './host-projections.mjs';
-import { assertLegacyFinalizationCandidateBasis } from './legacy-finalization.mjs';
+import { renderHostProjectionCandidates } from './host-projections.mjs';
 import {
   isPrivateConfigurationPath,
   readPrivateConfigurationState
@@ -136,8 +132,7 @@ export function resolveConfigurationValue({
   file,
   configuration,
   verification,
-  host,
-  evidenceFinalizationWorkflowIds = null
+  host
 }) {
   const resolution = selectedResolution(verification, configuration.name);
 
@@ -241,19 +236,13 @@ export function resolveConfigurationValue({
         + incompatiblePacks.join(', ') + '.'
     );
   }
-  const renderProjection = evidenceFinalizationWorkflowIds === null
-    ? renderHostProjectionCandidates
-    : renderHostProjectionCandidatesForEvidenceFinalization;
-  const renderedProjections = renderProjection({
+  const renderedProjections = renderHostProjectionCandidates({
     root: resolvedRoot,
     adapter: hostAdapter,
     configurationId: configuration.name,
     packIds: packs.map((pack) => pack.id),
     capabilityIds: capabilities.map((capability) => capability.id),
-    effectPolicies: configuration.effectPolicies,
-    ...(evidenceFinalizationWorkflowIds === null
-      ? {}
-      : { workflowIds: evidenceFinalizationWorkflowIds })
+    effectPolicies: configuration.effectPolicies
   });
   const projections = renderedProjections.outputs.map((projection) => ({
     id: projection.id,
@@ -317,86 +306,6 @@ export function resolveConfiguration({ root, configPath, host } = {}) {
     ? candidateVerification(resolvedRoot, file, configuration)
     : verifySoter(resolvedRoot, { includeRuntimeArtifacts: false });
   requireCleanGraph(verification);
-  return resolveConfigurationValue({ resolvedRoot, file, configuration, verification, host });
-}
-
-/**
- * Compute, without writing, the two final host locks needed by one closed
- * all-workflow evidence publication batch. Ordinary resolution remains strict:
- * callers cannot use this path to realize a host or bless a partial workflow
- * set, and every non-evidence static invariant must already pass.
- */
-export function resolveDevelopmentEvidenceFinalizationConfiguration(options = {}) {
-  const keys = Object.keys(options).sort(compareText);
-  if (fingerprintJson(keys) !== fingerprintJson([
-    'configPath',
-    'host',
-    'root',
-    'workflowIds'
-  ])) {
-    throw new Error('Development evidence finalization resolver accepts only its exact declared arguments.');
-  }
-  const { root, configPath, host, workflowIds } = options;
-  if (!Array.isArray(workflowIds)
-    || workflowIds.length === 0
-    || new Set(workflowIds).size !== workflowIds.length) {
-    throw new Error('Development evidence finalization resolver requires one exact workflow set.');
-  }
-  const resolvedRoot = path.resolve(root);
-  const file = configurationFile(resolvedRoot, configPath);
-  if (isPrivateConfigurationPath(resolvedRoot, file)) {
-    throw new Error('Development evidence finalization resolves tracked portable configuration templates only.');
-  }
-  const configuration = readJson(file);
-  if (configuration.$contract !== 'soter://contracts/configuration/v1') {
-    throw new Error('Not a Soter configuration: ' + repoRelativePath(resolvedRoot, file));
-  }
-  const verification = verifySoter(resolvedRoot, { includeRuntimeArtifacts: false });
-  requireCleanGraph(verification);
-  return resolveConfigurationValue({
-    resolvedRoot,
-    file,
-    configuration,
-    verification,
-    host,
-    evidenceFinalizationWorkflowIds: [...workflowIds]
-  });
-}
-
-/**
- * Resolves a lock only for a fully tombstoned migration candidate whose complete
- * declared evidence set is the graph's sole remaining blocker. This is not a
- * fallback for ordinary invalid graphs and it grants no runtime authority.
- */
-export function resolveLegacyFinalizationConfiguration({
-  root,
-  configPath,
-  host,
-  expectedInventoryFingerprint,
-  checkerReceipt,
-  evidencePaths,
-  ...unknown
-} = {}) {
-  if (Object.keys(unknown).length > 0) {
-    throw new Error('Legacy finalization configuration request contains an unknown field.');
-  }
-  const resolvedRoot = path.resolve(root || path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..'));
-  const file = configurationFile(resolvedRoot, configPath);
-  if (isPrivateConfigurationPath(resolvedRoot, file)) {
-    throw new Error('Legacy finalization resolves tracked portable configuration templates only.');
-  }
-  const configuration = readJson(file);
-  if (configuration.$contract !== 'soter://contracts/configuration/v1') {
-    throw new Error('Not a Soter configuration: ' + repoRelativePath(resolvedRoot, file));
-  }
-  const verification = verifySoter(resolvedRoot, { includeRuntimeArtifacts: false });
-  assertLegacyFinalizationCandidateBasis({
-    root: resolvedRoot,
-    expectedInventoryFingerprint,
-    checkerReceipt,
-    evidencePaths,
-    verification
-  });
   return resolveConfigurationValue({ resolvedRoot, file, configuration, verification, host });
 }
 

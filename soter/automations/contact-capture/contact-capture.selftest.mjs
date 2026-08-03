@@ -11,8 +11,8 @@ import {
   inspectPreparedAutomationReviewMaterial,
   prepareAutomationRun
 } from '../../core/prepared-work.mjs';
-import { createPreparedConnectedPlan } from '../../core/prepared-connected-plans.mjs';
-import { createPreparedReviewBatch } from '../../core/prepared-review-batches.mjs';
+import { createReviewOnlyCandidatePreview } from '../../core/review-only-candidate-previews.mjs';
+import { createReviewOnlyCandidateSelection } from '../../core/review-only-candidate-selections.mjs';
 import { resolveConfiguration } from '../../core/resolve.mjs';
 import { runContainedContactCaptureScenario } from './scenario.mjs';
 
@@ -123,27 +123,27 @@ export async function selftestContactCapture(root = defaultRoot) {
     ]);
 
     const action = work.preview.collections[0].rows[0].actions[0];
-    const batch = createPreparedReviewBatch({
+    const selection = createReviewOnlyCandidateSelection({
       root: temporaryRoot,
       workId: work.id,
       actionIds: [action.id],
       createdAt: '2026-07-21T12:01:30.000Z'
     });
-    const plan = await createPreparedConnectedPlan({
+    const preview = await createReviewOnlyCandidatePreview({
       root: temporaryRoot,
-      batchId: batch.id,
+      selectionId: selection.id,
       createdAt: '2026-07-21T12:02:00.000Z'
     });
-    assert.equal(plan.state, 'blocked-review-only');
-    assert.equal(plan.executable, false);
-    assert.equal(plan.privacy.authority, 'none');
-    assert.equal(plan.operations.length, 1);
-    assert.equal(plan.operations[0].capability, 'crm.records.create');
-    assert.deepEqual(plan.operations[0].precondition.input.filtersAny, [
+    assert.equal(preview.state, 'blocked-review-only');
+    assert.equal(preview.executable, false);
+    assert.equal(preview.privacy.authority, 'none');
+    assert.equal(preview.operations.length, 1);
+    assert.equal(preview.operations[0].capability, 'crm.records.create');
+    assert.deepEqual(preview.operations[0].precondition.input.filtersAny, [
       { email: 'private.contact@example.invalid' },
       { name: privateInput.name }
     ]);
-    assert.deepEqual(plan.operations[0].input.fields, {
+    assert.deepEqual(preview.operations[0].input.fields, {
       name: privateInput.name,
       email: 'private.contact@example.invalid',
       role: 'Engineering',
@@ -158,8 +158,8 @@ export async function selftestContactCapture(root = defaultRoot) {
       source: privateInput.source,
       organizationUris: ['soter-fixture://crm/organization/acme']
     });
-    assert.equal(plan.operations[0].ambiguity.retry, 'prohibited');
-    assert.equal(plan.operations[0].recovery.mode, 'manual-required');
+    assert.equal(preview.operations[0].ambiguity.retry, 'prohibited');
+    assert.equal(preview.operations[0].recovery.mode, 'manual-required');
 
     const inspection = inspectWorkspace({ root: temporaryRoot });
     const sanitized = JSON.stringify({ work, inspection });

@@ -5,17 +5,23 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { inspectWorkspace } from '../../core/inspection.mjs';
-import { createContainedConnectedReviewEvidence } from '../../core/evidence.mjs';
+import { createContainedConnectedWorkflowEvidence } from '../../core/evidence.mjs';
 import {
   materializeContainedPrivateConfiguration
 } from '../../core/contained-private-configurations.mjs';
 import {
+  fingerprintJson,
   fingerprintPath,
   readJson,
   repoRelativePath,
   resolveRepoPath,
   writeJson
 } from '../../core/lib/canonical-json.mjs';
+import {
+  beginProposalConnectedApprovalRequest,
+  confirmProposalConnectedApprovalRequest
+} from '../../core/operator-authority.mjs';
+import { inspectConnectedApprovalReviewMaterial } from '../../core/connected-approval-review.mjs';
 import { createProposalConnectedBatch } from '../../core/proposal-connected-batches.mjs';
 import {
   inspectPreparedAutomationWork,
@@ -23,11 +29,16 @@ import {
 } from '../../core/prepared-work.mjs';
 import { runStatePath } from '../../core/runtime-state.mjs';
 import { prepareRunEnvelope } from '../../core/run.mjs';
-import { completeDurableOperationPlanExecution } from '../../core/service.mjs';
+import {
+  completeDurableConnectedTransactionExecution,
+  completeDurableOperationPlanExecution,
+  prepareDurableConnectedTransactionExecution
+} from '../../core/service.mjs';
 import {
   finalizeProjectCaptureConnectedAcquisition,
   prepareProjectCaptureConnectedAcquisition
 } from './context.mjs';
+import { evaluateProjectCaptureConnectedVerification } from './connected.mjs';
 import {
   commitProjectCaptureDecision,
   inspectProjectCaptureDecisionContext
@@ -193,6 +204,46 @@ function schemaResponse(marker, projectsCollectionUri) {
           + JSON.stringify({ schema })
           + '\n</data-source-state>\n</data-source>',
         rawProviderResponse: marker
+      }
+    },
+    isError: false
+  };
+}
+
+function createResponse(recordId, marker) {
+  return {
+    structuredContent: {
+      result: {
+        pages: [{ id: recordId, url: recordId }],
+        rawProviderResponse: marker
+      }
+    },
+    isError: false
+  };
+}
+
+function projectContentResponse({ recordId, fields, body, marker }) {
+  const properties = {
+    Name: fields.name,
+    Type: providerOption('projectType', fields.projectType),
+    Status: providerOption('status', fields.status),
+    'Start Date': fields.startDate ?? null,
+    'Target End Date': fields.targetEndDate ?? null,
+    Organization: fields.organizationUris,
+    Tasks: fields.taskUris ?? [],
+    rawProviderResponse: marker
+  };
+  return {
+    structuredContent: {
+      result: {
+        metadata: { type: 'page' },
+        title: marker,
+        url: recordId,
+        text: '<page url="' + recordId + '"><properties>'
+          + JSON.stringify(properties)
+          + '</properties>\n'
+          + body
+          + '\n</page>'
       }
     },
     isError: false
@@ -439,33 +490,182 @@ export async function runContainedProjectCaptureConnectedWorkflow(
     assert(JSON.stringify(material).includes(privateInput.targetEndDate));
 
     const action = committedProposal.proposal.review.collections[0].rows[0].actions[0];
-    assert.equal(action.state, 'held');
-    assert.equal(action.reasonCode, 'COMPLETE_PROJECT_READBACK_UNAVAILABLE');
-    assert.equal(action.capability, null);
-    assert.equal(action.effect, null);
-    assert(!Object.hasOwn(action, 'changeFingerprint'));
-    assert.equal(committedProposal.proposal.review.proposedChanges.length, 0);
-    const authorityStateBeforeSelection = fingerprintPath(
-      path.join(temporaryRoot, '.soter', 'state')
-    );
-    await assert.rejects(
-      () => createProposalConnectedBatch({
-        root: temporaryRoot,
-        lockPath: primary.lockPath,
-        proposalId: committedProposal.proposal.id,
-        actionIds: [action.id],
-        changeSetId: 'changeset.project-capture.connected-selftest',
-        batchId: 'batch.project-capture.connected-selftest',
-        createdAt: '2026-07-20T12:00:09.000Z',
-        expectedHost: 'codex'
-      }),
-      (error) => error?.code === 'PROPOSAL_CONNECTED_BATCH_SELECTION_INVALID'
-    );
+    assert.equal(action.id, 'action.project-capture.create');
+    assert.equal(action.state, 'proposed');
+    assert.equal(action.reasonCode, 'PROJECT_CREATE_READY_FOR_REVIEW');
+    assert.equal(action.capability, 'projects.records.create');
+    assert.equal(action.effect, 'write');
+    assert.match(action.changeFingerprint, /^sha256:[a-f0-9]{64}$/);
+    assert.equal(committedProposal.proposal.review.proposedChanges.length, 1);
+
+    const compiled = await createProposalConnectedBatch({
+      root: temporaryRoot,
+      lockPath: primary.lockPath,
+      proposalId: committedProposal.proposal.id,
+      actionIds: [action.id],
+      changeSetId: 'changeset.project-capture.connected-selftest',
+      batchId: 'batch.project-capture.connected-selftest',
+      createdAt: '2026-07-20T12:00:09.000Z',
+      expectedHost: 'codex'
+    });
+    assert.equal(compiled.authority.state, 'none');
+    assert.equal(compiled.providerCallsExecuted, 0);
+    assert.equal(compiled.externalWritesPerformed, 0);
+    assert.equal(compiled.batch.operations.length, 1);
+    assert.equal(compiled.batch.operations[0].capability, 'projects.records.create');
+    assert.equal(compiled.batch.operations[0].precondition.capability, 'projects.records.read');
+    assert.equal(compiled.batch.operations[0].verification.capability, 'projects.records.read');
+    assert.equal(compiled.batch.operations[0].verification.input.limit, 1);
     assert.equal(
-      fingerprintPath(path.join(temporaryRoot, '.soter', 'state')),
-      authorityStateBeforeSelection,
-      'Selecting the held Project proposal must create no batch, approval, start, or write checkpoint state.'
+      compiled.batch.operations[0].verification.input.content.expectedTitle,
+      privateInput.name
     );
+    assert.equal(compiled.batch.operations[0].ambiguity.retry, 'prohibited');
+    assert.equal(compiled.batch.operations[0].recovery.mode, 'manual-required');
+
+    const requested = await beginProposalConnectedApprovalRequest({
+      root: temporaryRoot,
+      configurationBasis: 'private-active',
+      lockPath: primary.lockPath,
+      runPath: committedProposal.runPath,
+      batch: compiled.batch,
+      changeSet: compiled.changeSet,
+      id: 'approval-request.project-capture.connected-selftest',
+      reason: 'Review and approve this exact Project create, body, and absence precondition.',
+      createdAt: '2026-07-20T12:00:10.000Z',
+      expiresAt: '2026-07-20T12:10:10.000Z'
+    });
+    const approvalReview = inspectConnectedApprovalReviewMaterial({
+      root: temporaryRoot,
+      requestId: requested.request.id
+    });
+    assert.equal(approvalReview.completeness.state, 'complete');
+    assert.equal(approvalReview.operations.length, 1);
+    assert.equal(approvalReview.privacy.approvalAuthorityIncluded, false);
+    assert(JSON.stringify(approvalReview).includes(privateInput.name));
+    assert(JSON.stringify(approvalReview).includes(privateInput.overview));
+
+    const confirmed = await confirmProposalConnectedApprovalRequest({
+      root: temporaryRoot,
+      requestId: requested.request.id,
+      approvalId: 'approval.project-capture.connected-selftest',
+      actor: 'operator.selftest',
+      reason: 'The exact private Project fields, complete body, absence check, and verification were reviewed.',
+      confirmedAt: '2026-07-20T12:00:11.000Z'
+    });
+    assert.equal(
+      confirmed.approval.scope.operationBatchFingerprint,
+      compiled.batch.batchFingerprint
+    );
+
+    const started = await prepareDurableConnectedTransactionExecution({
+      root: temporaryRoot,
+      approvalId: confirmed.approval.id,
+      at: '2026-07-20T12:00:12.000Z',
+      expectedHost: 'codex'
+    });
+    const replayedStart = await prepareDurableConnectedTransactionExecution({
+      root: temporaryRoot,
+      approvalId: confirmed.approval.id,
+      at: '2026-07-20T12:00:12.500Z',
+      expectedHost: 'codex'
+    });
+    assert.equal(started.approvalConsumption.state, 'started');
+    assert.equal(
+      replayedStart.checkpoint.checkpointFingerprint,
+      started.checkpoint.checkpointFingerprint,
+      'The consumed start authorization must resolve only to its existing exact checkpoint.'
+    );
+    assert.equal(started.currentCall.capability.id, 'projects.records.read');
+
+    const precondition = await completeDurableConnectedTransactionExecution({
+      root: temporaryRoot,
+      checkpointId: started.checkpoint.id,
+      callId: started.currentCall.id,
+      response: recordResponse([], 'RAW_PROJECT_PRECONDITION_RESPONSE_SENTINEL'),
+      at: '2026-07-20T12:00:13.000Z',
+      expectedHost: 'codex'
+    });
+    assert.equal(precondition.currentCall.capability.id, 'projects.records.create');
+    assert.equal(precondition.checkpoint.current.stage, 'write');
+    assert(!JSON.stringify(precondition).includes('RAW_PROJECT_PRECONDITION_RESPONSE_SENTINEL'));
+
+    const createdRecordId = 'https://www.notion.so/33333333333333333333333333333333';
+    const written = await completeDurableConnectedTransactionExecution({
+      root: temporaryRoot,
+      checkpointId: precondition.checkpoint.id,
+      callId: precondition.currentCall.id,
+      response: createResponse(createdRecordId, 'RAW_PROJECT_CREATE_RESPONSE_SENTINEL'),
+      at: '2026-07-20T12:00:14.000Z',
+      expectedHost: 'codex'
+    });
+    assert.equal(written.currentCall.capability.id, 'projects.records.read');
+    assert.equal(written.checkpoint.current.stage, 'verify');
+    assert(!JSON.stringify(written).includes('RAW_PROJECT_CREATE_RESPONSE_SENTINEL'));
+
+    const operation = compiled.batch.operations[0];
+    const exactProjectFields = operation.review.after.reviewValue.fields;
+    const exactVerificationInput = {
+      recordTypes: ['project'],
+      ids: [createdRecordId],
+      content: { expectedTitle: privateInput.name },
+      limit: 1
+    };
+    assert.equal(written.currentCall.inputFingerprint, fingerprintJson(exactVerificationInput));
+    assert.equal(evaluateProjectCaptureConnectedVerification({
+      operation,
+      resolvedInput: exactVerificationInput,
+      output: {
+        records: [{
+          type: 'project',
+          id: createdRecordId,
+          fields: structuredClone(exactProjectFields),
+          body: operation.input.body + '\nHOSTILE_UNAPPROVED_BODY_MUTATION'
+        }]
+      }
+    }).state, 'failed');
+    assert.equal(evaluateProjectCaptureConnectedVerification({
+      operation,
+      resolvedInput: exactVerificationInput,
+      output: {
+        records: [{
+          type: 'project',
+          id: createdRecordId,
+          fields: {
+            ...structuredClone(exactProjectFields),
+            taskUris: ['https://www.notion.so/44444444444444444444444444444444']
+          },
+          body: operation.input.body
+        }]
+      }
+    }).state, 'failed', 'Unapproved mapped relations must fail exact Project read-back.');
+    assert.equal(operation.ambiguity.retry, 'prohibited');
+
+    const verified = await completeDurableConnectedTransactionExecution({
+      root: temporaryRoot,
+      checkpointId: written.checkpoint.id,
+      callId: written.currentCall.id,
+      response: projectContentResponse({
+        recordId: createdRecordId,
+        fields: exactProjectFields,
+        body: operation.input.body,
+        marker: 'RAW_PROJECT_VERIFICATION_RESPONSE_SENTINEL'
+      }),
+      at: '2026-07-20T12:00:15.000Z',
+      expectedHost: 'codex'
+    });
+    assert.equal(verified.checkpoint.state, 'completed', JSON.stringify({
+      state: verified.checkpoint.state,
+      result: verified.checkpoint.result,
+      operations: verified.checkpoint.operations,
+      blockers: verified.checkpoint.blockers,
+      verification: verified.checkpoint.verification,
+      reconciliation: verified.checkpoint.reconciliation
+    }, null, 2));
+    assert.equal(verified.checkpoint.result.state, 'completed');
+    assert.equal(verified.checkpoint.operations[0].state, 'applied');
+    assert.equal(verified.currentCall, null);
+    assert(!JSON.stringify(verified).includes('RAW_PROJECT_VERIFICATION_RESPONSE_SENTINEL'));
 
     const serialized = JSON.stringify({
       inspection: inspectWorkspace(temporaryRoot),
@@ -502,17 +702,21 @@ export async function runContainedProjectCaptureConnectedWorkflow(
       canonicalBefore,
       'Connected Project workflow must not mutate canonical Soter artifacts.'
     );
-    return createContainedConnectedReviewEvidence({
+    return createContainedConnectedWorkflowEvidence({
       lock,
       privateContainedBasis,
-      id: 'evidence.project-capture.connected-review.fixture',
+      id: 'evidence.project-capture.connected-workflow.fixture',
       createdAt: AT,
       automationId: 'automation.project-capture',
-      runId: committedProposal.proposal.runId,
+      runId: compiled.batch.runId,
       work: prepared,
       decision: committed.decision,
       proposal: committedProposal.proposal,
-      heldReasonCode: 'COMPLETE_PROJECT_READBACK_UNAVAILABLE'
+      changeSet: compiled.changeSet,
+      batch: compiled.batch,
+      approval: confirmed.approval,
+      approvalConsumption: started.approvalConsumption,
+      checkpoint: verified.checkpoint
     });
   } finally {
     fs.rmSync(temporaryRoot, { recursive: true, force: true });

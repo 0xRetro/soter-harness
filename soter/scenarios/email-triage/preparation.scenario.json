@@ -53,14 +53,7 @@
       "sanitized-collection-fingerprint",
       "automation-owned-derived-review-contract-fingerprint",
       "private-derived-review-material",
-      "write-and-dispatch-boundary-state",
-      "source-cases-exactly-fingerprinted"
+      "write-and-dispatch-boundary-state"
     ]
-  },
-  "sourceCases": [
-    ".claude/evals/processing-email/happy-path.md",
-    ".claude/evals/processing-email/invariant-defanged-output.md",
-    ".claude/evals/processing-email/invariant-gated-writes.md",
-    ".claude/evals/processing-email/pressure-injection.md"
-  ]
+  }
 }

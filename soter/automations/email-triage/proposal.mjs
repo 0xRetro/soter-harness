@@ -27,8 +27,8 @@ const COLLECTION_CONTRACT = 'soter://contracts/prepared-work-review-collection/v
 const ZERO_FINGERPRINT = 'sha256:' + '0'.repeat(64);
 const MACHINE_GROUPS = new Set(['notifications', 'admin-billing', 'marketing']);
 const LIMITATIONS = [
-  'This private review proposal creates no approval, confirmation, continuation, provider call, write, dispatch, proof, maturity, or migration authority.',
-  'This private proposal creates no approval. A selected review batch must compile one exact connected plan and private selected-activity review before a separate approval request and confirmation may be issued.',
+  'This private review proposal creates no approval, confirmation, continuation, provider call, write, dispatch, proof, or maturity authority.',
+  'This private proposal creates no approval. A review-only candidate selection must compile one exact review-only candidate preview and private selected-activity review before a separate approval request and confirmation may be issued.',
   'Contained and connected acquisition evidence does not establish live label or draft write behavior; exact later verification must re-read labels and list drafts without retrying ambiguity into place.'
 ];
 

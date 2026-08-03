@@ -9,13 +9,13 @@
   "lifecycleState": "paused",
   "automation": {
     "id": "automation.project-capture",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "configurationLock": {
     "path": "soter/fixtures/project-capture/project-capture.lock.json",
-    "fingerprint": "sha256:2b803432242ec29fc52e76fe330990c6de214acd543e0c32613cecda566b8a26"
+    "fingerprint": "sha256:6d6e322809ced5a09e7cebbe2b545a2e7e8a552d8b5fda6a3978b9d905380841"
   },
-  "graphFingerprint": "sha256:c2d75548e999bc841a49b5b4aaa21a4c17e822827dbc2646ef5238c806ddbd85",
+  "graphFingerprint": "sha256:4cc1c070f24e64ba20e3865acc6a19a82249d94f3668aa62c7a83980d6993f26",
   "context": [
     {
       "subject": "crm.records",
@@ -24,7 +24,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/crm-policies",
       "declarationFingerprint": "sha256:3d57e543eb317047a3dd1e66c7ebc375a14da087d8d149eb037df7598d6b2484",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:2b803432242ec29fc52e76fe330990c6de214acd543e0c32613cecda566b8a26",
+      "provenance": "configuration-lock:sha256:6d6e322809ced5a09e7cebbe2b545a2e7e8a552d8b5fda6a3978b9d905380841",
       "freshness": "unknown"
     },
     {
@@ -34,7 +34,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/crm",
       "declarationFingerprint": "sha256:0edb7b21a2e593cfa664cb28593a14be80d1f7a1b22a60ec1e31590d346d4e0b",
       "status": "loaded",
-      "provenance": "fixture:sha256:4c54c7abaf267122a32fa5e1956cd81cdba5dc63ac9e8ad937cba8fe2b5d858f",
+      "provenance": "fixture:sha256:4fc90fb8fbd502d836d804204eebdd05f806d494f184d8eeed0fff9e655cce68",
       "freshness": "passed"
     },
     {
@@ -44,7 +44,7 @@
       "uri": "soter-fixture://configuration-template/notion/account/operator",
       "declarationFingerprint": "sha256:ac5069cd8caaa12d0875e257a94dfe28297822278cb3eaab9dcbe9fa112517d5",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:2b803432242ec29fc52e76fe330990c6de214acd543e0c32613cecda566b8a26",
+      "provenance": "configuration-lock:sha256:6d6e322809ced5a09e7cebbe2b545a2e7e8a552d8b5fda6a3978b9d905380841",
       "freshness": "unknown"
     },
     {
@@ -54,7 +54,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/policies",
       "declarationFingerprint": "sha256:4a961816259ea34ff12258c4d1b9067b344b617f72a1ad918d20d77d1b2dea00",
       "status": "loaded",
-      "provenance": "fixture:sha256:c38d9524b9f6592299c17416f7534ebee14de93a9392d84214153d2f1cd2f1b4",
+      "provenance": "fixture:sha256:fda7a2360fdb58137ef07b9106521f581ae5859338d9a992d4d71579adb8b030",
       "freshness": "passed"
     },
     {
@@ -64,7 +64,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/projects",
       "declarationFingerprint": "sha256:44a2e8e607b9d5daba783d081ed12d0049201922355964a4c9300dd7c8f5f9f7",
       "status": "loaded",
-      "provenance": "fixture:sha256:6f643c0854912efc3a4958a6bd89112dad3ed8a80337a369ef6f637f7e665743",
+      "provenance": "fixture:sha256:db2bd334685257e0ad72677573efc39043fae7722879d226fb74e6b7c2e226c1",
       "freshness": "passed"
     },
     {
@@ -74,7 +74,7 @@
       "uri": "soter-state://runs",
       "declarationFingerprint": "sha256:b6e3b94a81e9cf35143a6c5e6e686a4ea26b27bbdd09eaa5ccb559a361a45a5e",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:2b803432242ec29fc52e76fe330990c6de214acd543e0c32613cecda566b8a26",
+      "provenance": "configuration-lock:sha256:6d6e322809ced5a09e7cebbe2b545a2e7e8a552d8b5fda6a3978b9d905380841",
       "freshness": "unknown"
     }
   ],
@@ -83,7 +83,7 @@
       "capability": "crm.records.read",
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "authorities": [
         "authority.crm.definition",
         "authority.crm.instance"
@@ -95,10 +95,23 @@
       "reason": "Notion resolves the exact selected CRM Organization without transferring CRM ownership into Projects Context."
     },
     {
-      "capability": "projects.records.read",
+      "capability": "projects.records.create",
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
+      "authorities": [
+        "authority.projects.instance"
+      ],
+      "effects": [
+        "write"
+      ],
+      "reason": "Notion translates one exact separately approved portable Project create; the binding itself grants no write authority."
+    },
+    {
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.1.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.4.0",
       "authorities": [
         "authority.projects.definition",
         "authority.projects.instance"
@@ -113,7 +126,7 @@
       "capability": "projects.schema.read",
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "authorities": [
         "authority.projects.instance"
       ],
@@ -128,12 +141,12 @@
     "id": "codex",
     "adapter": "host.codex",
     "version": "0.3.1",
-    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0",
+    "manifestFingerprint": "sha256:845e7cecf13f9865f967d3078176bb0d4f0565b18506484b10499d5f60a26621",
     "projectionDefinition": {
       "id": "host-projection.codex",
       "version": "0.3.0",
       "path": "soter/hosts/codex/projection.json",
-      "fingerprint": "sha256:76cd84436a3b5e7f00edcc8a0be3cdff64f53e488b13107a8bf56603b9600490"
+      "fingerprint": "sha256:09fe78fb567ec40ac12e71e1bd5304f44246669a23fe8ac84c5eef755cb95727"
     },
     "projectionGenerator": {
       "id": "core.host-projection-generator",
@@ -151,7 +164,7 @@
     },
     "write": {
       "mode": "confirm",
-      "reason": "The selected Integration exposes separately governed write capabilities, so any write still requires confirmation. Project Capture itself declares no write capability: COMPLETE_PROJECT_READBACK_UNAVAILABLE holds its candidate before proposal selection, batch, approval, one-time start, checkpoint, provider write, or verification authority."
+      "reason": "One exact Project create requires private proposal review, an expiring approval request, exact confirmation, separately consumed single-use start authority, a durable checkpoint, and complete fields-and-body read-back."
     },
     "dispatch": {
       "mode": "prohibit",
@@ -189,17 +202,17 @@
     {
       "id": "context.project-capture.preparation-fixture",
       "type": "context-snapshot",
-      "fingerprint": "sha256:a3370dceee5ffb050cb9c30c60becfc0fade0e2d809ca59b4bb3326e3240d300"
+      "fingerprint": "sha256:288c02b29a529865c02453382ef2d2bdd403d63413465bb47e7ae2d9e9f30809"
     }
   ],
   "effects": [
     {
       "id": "effect.project-capture.preparation.policy.fixture",
       "capability": "projects.records.read",
-      "capabilityVersion": "1.0.0",
+      "capabilityVersion": "1.1.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "containment": "fixture",
       "authority": "authority.projects.definition",
       "startedAt": "2026-07-21T15:00:00.000Z",
@@ -224,16 +237,16 @@
       ],
       "inputFingerprint": "sha256:b0e20d8e3bb2ea1877f6904862968a4fd65d4881fd66b21d705a071f4222b824",
       "state": "passed",
-      "outputFingerprint": "sha256:a34e92292db9d69b5e5d7faf19e9a860db848d831c8ee1de0ead30632f1df566",
+      "outputFingerprint": "sha256:7e6af1f0c6936f5d88e1faf6107402749fbf4fa5b539e9bda9c43ccd4cae84a7",
       "error": null
     },
     {
       "id": "effect.project-capture.preparation.profile.fixture",
       "capability": "projects.records.read",
-      "capabilityVersion": "1.0.0",
+      "capabilityVersion": "1.1.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "containment": "fixture",
       "authority": "authority.projects.definition",
       "startedAt": "2026-07-21T15:00:00.000Z",
@@ -258,7 +271,7 @@
       ],
       "inputFingerprint": "sha256:822670ac8de29e73a981b35ccace52f28cff739ec13654743c4a4c6ae45fdfe9",
       "state": "passed",
-      "outputFingerprint": "sha256:7afcc647df9c46b51a16456236e16c96a67ed84246a7c605df07baa32f19c704",
+      "outputFingerprint": "sha256:1d6d4669939e1e3c253e67a265927df6536d9832657dedfc72b20771c5b86346",
       "error": null
     },
     {
@@ -267,7 +280,7 @@
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "containment": "fixture",
       "authority": "authority.projects.instance",
       "startedAt": "2026-07-21T15:00:00.000Z",
@@ -292,7 +305,7 @@
       ],
       "inputFingerprint": "sha256:8d79985b7663f302c80e79fdb082d575b9f9299469782ac4baa1aecc5839e2eb",
       "state": "passed",
-      "outputFingerprint": "sha256:f542020066f89b20f424fa8b18c45796c5f6df2847e7793c845b1322bf08f826",
+      "outputFingerprint": "sha256:f614db843c4dfd60176ddfa2b4428ac8c47e577683f552de27ae3f06dac1384a",
       "error": null
     },
     {
@@ -301,7 +314,7 @@
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "containment": "fixture",
       "authority": "authority.crm.instance",
       "startedAt": "2026-07-21T15:00:00.000Z",
@@ -326,16 +339,16 @@
       ],
       "inputFingerprint": "sha256:11ddea95593b913c925d7e7c9debed4cdd0ad4944b63ca1584974d1a9592ad43",
       "state": "passed",
-      "outputFingerprint": "sha256:15189a1c9b5c4f6226f9542b79752fbafdf1a7ffc827c99c73f754dbbaa410d0",
+      "outputFingerprint": "sha256:f0ba1c490e397f73bb283d6265cec4d3c45ddb92d5754950abdf653fd1a1f0ee",
       "error": null
     },
     {
       "id": "effect.project-capture.preparation.duplicates.fixture",
       "capability": "projects.records.read",
-      "capabilityVersion": "1.0.0",
+      "capabilityVersion": "1.1.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "containment": "fixture",
       "authority": "authority.projects.instance",
       "startedAt": "2026-07-21T15:00:00.000Z",
@@ -360,7 +373,7 @@
       ],
       "inputFingerprint": "sha256:1b93ef903b309416e92de47f19ccb44c7bc72d66e53d838d6cf7138ef5a6f174",
       "state": "passed",
-      "outputFingerprint": "sha256:7497e605e930d1a93575fefc3817bed9352ea1370b1b3de2e660032a63694565",
+      "outputFingerprint": "sha256:fc25fdd2f565edebbfee4d7067c31b9cc86b8fa7a0b350bf598908fd1b0d0bdb",
       "error": null
     }
   ],
@@ -368,6 +381,6 @@
   "scenario": {
     "id": "project-capture.preparation",
     "path": "soter/scenarios/project-capture/preparation.scenario.json",
-    "fingerprint": "sha256:af81a8bc5b0a51f11ec328e1c9ad6d1e89807a0cf5e945f3d2c4fc5b363d0cd3"
+    "fingerprint": "sha256:4e16544cc2fbb8482e6c1f958e533360af6a177e1c3bc937ee4bd588dbe76135"
   }
 }

@@ -6,7 +6,7 @@
   "level": "offline",
   "configuration": {
     "name": "process-capture",
-    "lockFingerprint": "sha256:36db63ff9887faa4c31973c63f9971054974f48d598059a3ed036a49cb3fbb06"
+    "lockFingerprint": "sha256:75c39e4c54766ca7b390406629b728c0c5314ea4fb195a43a42160f7d69a04ca"
   },
   "states": {
     "valid": "passed",

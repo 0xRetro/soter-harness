@@ -69,6 +69,37 @@ function assertMappedWriteFields(definition, values, operation) {
   }
 }
 
+function exactRecordUpdatePatch(input) {
+  if (!input
+    || typeof input !== 'object'
+    || Array.isArray(input)
+    || Object.keys(input).some((key) => {
+      return !['recordType', 'id', 'expectedVersion', 'patch'].includes(key);
+    })
+    || !['recordType', 'id', 'expectedVersion', 'patch'].every((key) => {
+      return Object.hasOwn(input, key);
+    })
+    || typeof input.recordType !== 'string'
+    || !input.recordType.trim()
+    || input.recordType.trim() !== input.recordType
+    || typeof input.id !== 'string'
+    || !input.id.trim()
+    || input.id.trim() !== input.id
+    || typeof input.expectedVersion !== 'string'
+    || !input.expectedVersion.trim()
+    || input.expectedVersion.trim() !== input.expectedVersion
+    || !input.patch
+    || typeof input.patch !== 'object'
+    || Array.isArray(input.patch)
+    || Object.keys(input.patch).length < 1) {
+    throw providerError(
+      'validation',
+      'Notion fixture updates require one closed exact record identity, expected version, and non-empty patch.'
+    );
+  }
+  return Object.keys(input.patch).sort(compareCodepoint);
+}
+
 function assertMappedBodyContent(definition, body) {
   if (body === undefined || body === null) return false;
   if (definition.content?.portable !== 'body'
@@ -105,18 +136,71 @@ function requestedRecordTypes(input) {
   return recordTypes;
 }
 
+function exactProjectContentRead(capability, input, mapping, recordTypes) {
+  if (!Object.hasOwn(input || {}, 'content')) return null;
+  const content = input.content;
+  if (capability !== 'projects.records.read'
+    || !content
+    || typeof content !== 'object'
+    || Array.isArray(content)
+    || Object.keys(content).length !== 1
+    || typeof content.expectedTitle !== 'string'
+    || !content.expectedTitle
+    || content.expectedTitle.trim() !== content.expectedTitle
+    || content.expectedTitle.length > 200
+    || recordTypes.length !== 1
+    || !Array.isArray(input.ids)
+    || input.ids.length !== 1
+    || input.limit !== 1) {
+    throw providerError(
+      'validation',
+      'Notion Project content reads require one exact record type, id, expected title, and limit.'
+    );
+  }
+  const definition = recordMapping(mapping, recordTypes[0], capability);
+  if (definition.content?.portable !== 'body'
+    || definition.content.provider !== 'page-content'
+    || definition.content.providerType !== 'markdown') {
+    throw providerError(
+      'validation',
+      'Notion Project content reads require one exact mapped markdown page-content route.'
+    );
+  }
+  const titleFields = definition.fields.filter((field) => field.providerType === 'title');
+  if (titleFields.length !== 1) {
+    throw providerError(
+      'validation',
+      'Notion Project content reads require one exact mapped title field.'
+    );
+  }
+  return {
+    expectedTitle: content.expectedTitle,
+    titleField: titleFields[0]
+  };
+}
+
 function recordId(recordType, deduplicationKey) {
   const suffix = crypto.createHash('sha256').update(deduplicationKey).digest('hex').slice(0, 12);
   return recordType + '.' + suffix;
 }
 
-function projectedRecord(record, requestedIds) {
+function projectedRecord(record, requestedIds, body = undefined) {
+  const projectedBody = body === undefined && Object.hasOwn(record, 'body')
+    ? structuredClone(record.body)
+    : body;
   return {
     type: record.type,
     id: record.id,
-    version: record.version,
+    version: body === undefined
+      ? record.version
+      : fingerprintJson({
+        type: record.type,
+        id: record.id,
+        fields: record.fields,
+        body
+      }),
     fields: structuredClone(record.fields),
-    ...(Object.hasOwn(record, 'body') ? { body: structuredClone(record.body) } : {}),
+    ...(projectedBody === undefined ? {} : { body: projectedBody }),
     identityBinding: requestedIds
       ? {
         state: 'exact-request',
@@ -291,19 +375,63 @@ export async function invoke({ capability, input, authority, fixtures, mappings,
     }
     const recordTypes = requestedRecordTypes(input);
     for (const recordType of recordTypes) recordMapping(mapping, recordType, capability);
+    const contentRead = exactProjectContentRead(capability, input, mapping, recordTypes);
     const requestedTypes = new Set(recordTypes);
     const requestedIds = input.ids ? new Set(input.ids) : null;
     const filters = Object.entries(input.filters || {});
     const filtersAny = (input.filtersAny || []).map((candidate) => Object.entries(candidate));
-    const records = fixture.data.records.filter((record) => {
+    const selected = fixture.data.records.filter((record) => {
       return requestedTypes.has(record.type)
         && (!requestedIds || requestedIds.has(record.id))
         && filters.every(([field, value]) => record.fields?.[field] === value)
         && (!filtersAny.length || filtersAny.some((candidate) => {
           return candidate.every(([field, value]) => record.fields?.[field] === value);
         }));
-    }).slice(0, input.limit || 100)
-      .map((record) => projectedRecord(record, requestedIds));
+    }).slice(0, input.limit || 100);
+    let contentBody;
+    if (contentRead) {
+      if (selected.length !== 1) {
+        throw providerError(
+          'not-found',
+          'Notion Project content fixture did not resolve one exact requested record.'
+        );
+      }
+      const [record] = selected;
+      if (record.fields?.[contentRead.titleField.portable] !== contentRead.expectedTitle) {
+        throw providerError(
+          'conflict',
+          'Notion Project content fixture record title does not match the exact requested title.'
+        );
+      }
+      const documents = (fixture.data.documents || []).filter((document) => {
+        return document.uri === record.id;
+      });
+      if (documents.length !== 1) {
+        throw providerError(
+          'not-found',
+          'Notion Project content fixture did not resolve one exact mapped document body.'
+        );
+      }
+      const [document] = documents;
+      if (document.title !== contentRead.expectedTitle) {
+        throw providerError(
+          'conflict',
+          'Notion Project content fixture document title does not match the exact requested title.'
+        );
+      }
+      if (typeof document.body !== 'string'
+        || !document.body.trim()
+        || document.body.length > 250000) {
+        throw providerError(
+          'validation',
+          'Notion Project content fixture body is empty or outside the bounded content limit.'
+        );
+      }
+      contentBody = document.body;
+    }
+    const records = selected.map((record) => {
+      return projectedRecord(record, requestedIds, contentBody);
+    });
     return {
       records,
       provenance: provenance(authority, fixture, capability, mapping),
@@ -325,15 +453,36 @@ export async function invoke({ capability, input, authority, fixtures, mappings,
         observedAt: at || fixture.observedAt
       };
     }
+    const storedFields = input.recordType === 'project'
+      ? Object.fromEntries(definition.fields.map((field) => {
+          if (Object.hasOwn(input.fields, field.portable)) {
+            return [field.portable, structuredClone(input.fields[field.portable])];
+          }
+          return [field.portable, field.decode === 'json' ? [] : null];
+        }))
+      : { ...input.fields };
     const record = {
       type: input.recordType,
       id: recordId(input.recordType, input.deduplicationKey),
       version: '1',
       deduplicationKey: input.deduplicationKey,
-      fields: { ...input.fields },
-      ...(bodyPresent ? { body: input.body } : {})
+      fields: storedFields,
+      ...(bodyPresent && input.recordType !== 'project' ? { body: input.body } : {})
     };
     fixture.data.records.push(record);
+    if (bodyPresent) {
+      const titleField = definition.fields.find((field) => field.providerType === 'title');
+      const title = titleField ? storedFields[titleField.portable] : null;
+      if (typeof title !== 'string' || !title
+        || (fixture.data.documents || []).some((document) => document.uri === record.id)) {
+        throw providerError(
+          'validation',
+          'Notion fixture create could not bind one exact new mapped document body.'
+        );
+      }
+      fixture.data.documents ||= [];
+      fixture.data.documents.push({ uri: record.id, title, body: input.body });
+    }
     return {
       record,
       created: true,
@@ -342,6 +491,7 @@ export async function invoke({ capability, input, authority, fixtures, mappings,
     };
   }
   if (descriptor.operation === 'update') {
+    const changedFields = exactRecordUpdatePatch(input);
     const definition = recordMapping(mapping, input.recordType, capability);
     assertMappedWriteFields(definition, input.patch, 'update');
     const record = fixture.data.records.find((item) => {
@@ -351,7 +501,6 @@ export async function invoke({ capability, input, authority, fixtures, mappings,
     if (record.version !== input.expectedVersion) {
       throw providerError('conflict', 'Expected version ' + input.expectedVersion + ' but found ' + record.version + '.');
     }
-    const changedFields = Object.keys(input.patch).sort();
     record.fields = { ...record.fields, ...input.patch };
     record.version = String(Number(record.version) + 1);
     return {

@@ -1,15 +1,15 @@
 {
   "contractVersion": "2.0.0",
   "id": "workflow-guide.promoting-pieces",
-  "contentFingerprint": "sha256:9e3871b30f50bbf9b0063828aaf4f41bf1e9ab46fb3c5d1b5487ee3e320101cd",
+  "contentFingerprint": "sha256:44fb9ab12cf9ec6794d4bddef5634c934786fe483a6537b186d3f8f1c7508c46",
   "$contract": "soter://contracts/workflow-guide/v2",
   "workflow": {
     "id": "automation.promoting-pieces",
     "version": "0.1.0",
     "definitionPath": "soter/automations/promoting-pieces/definition.json",
-    "definitionFingerprint": "sha256:0983eddb3c6a85598ada2cbf6e04e53be7a45b97903c88b86f8476d6759f828b",
+    "definitionFingerprint": "sha256:4b844f209cec6db000d38f239b8b5a45ac019b45b68f93d0f764754bc6cb77e5",
     "evaluationSetPath": "soter/automations/promoting-pieces/evaluations.json",
-    "evaluationSetFingerprint": "sha256:eda0240bb92e646ce37926e8ba27813c7a18382968b2721b242fe8505043aef6"
+    "evaluationSetFingerprint": "sha256:6b3bf87aacec04c39a0bb0f37ba060f1eb3933988175d416c53e382be22fe873"
   },
   "skill": {
     "name": "promoting-pieces",
@@ -22,21 +22,7 @@
   "status": {
     "state": "active",
     "reasonCode": "WORKFLOW_GUIDE_ACTIVE",
-    "proceduralAuthority": "target",
-    "behaviorParity": "passed",
     "delivery": "host-skill",
-    "evidence": [
-      {
-        "path": "soter/evidence/development/development-agent-migration-evidence.claude.promoting-pieces.json",
-        "fingerprint": "sha256:7e659d3db92d90b242693364a105822e96e40509fedcecb44025b528e5445f6e",
-        "host": "claude"
-      },
-      {
-        "path": "soter/evidence/development/development-agent-migration-evidence.codex.promoting-pieces.json",
-        "fingerprint": "sha256:6e811cc894ebbbf796b81e23f43d8a1bf3ff75a316827572d08471a655380a52",
-        "host": "codex"
-      }
-    ],
     "permittedNextAction": "invoke-through-selected-host"
   },
   "authority": {
@@ -163,21 +149,14 @@
       "target": "automation.reviewing-forge-output"
     }
   ],
-  "source": {
-    "presence": "removed",
-    "legacyPath": ".claude/skills/promoting-pieces/SKILL.md",
-    "legacyFingerprint": "sha256:461fb180f91518633cab26c19b567b3d41dbcb6a614d01591b3cb5ede2c02dcf",
-    "normalization": "behavior-preserving-with-explicit-authority-boundary"
-  },
   "privacy": {
-    "rawSourceIncluded": false,
     "workspaceSpecificValuesIncluded": false,
     "credentialsIncluded": false,
     "privateInputsIncluded": false,
     "providerResponsesIncluded": false
   },
   "limitations": [
-    "This procedural promotion guide grants no metadata-write, merge, publication, or host-realization authority.",
-    "Adoption requires independent exact host-skill behavior evidence and a separate governed fallback-removal decision."
+    "This guide provides procedural guidance only and grants no worker dispatch, file-write, publication, provider, merge, or host-realization authority.",
+    "Behavior evidence requires an exact private request and an independently observed fresh-worker run through a trusted host boundary."
   ]
 }

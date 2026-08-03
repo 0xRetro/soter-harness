@@ -3,7 +3,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { workflowEvidenceBasisForPath } from '../kernel/workflow-evidence-bases.mjs';
 import { formatDoctorReport, runConnectedDoctor, runOfflineDoctor } from './doctor.mjs';
 import {
   commitMeetingIntakeDecision,
@@ -25,6 +24,10 @@ import {
   commitProjectCaptureDecision,
   inspectProjectCaptureDecisionContext
 } from '../automations/project-capture/decision.mjs';
+import {
+  commitProjectPageReconciliationDecision,
+  inspectProjectPageReconciliationDecisionContext
+} from '../automations/project-page-reconciliation/decision.mjs';
 import {
   commitContactCaptureDecision,
   inspectContactCaptureDecisionContext
@@ -54,6 +57,11 @@ import {
   inspectProjectCaptureProposalMaterial
 } from '../automations/project-capture/proposal.mjs';
 import {
+  commitProjectPageReconciliationProposal,
+  inspectProjectPageReconciliationProposalDecision,
+  inspectProjectPageReconciliationProposalMaterial
+} from '../automations/project-page-reconciliation/proposal.mjs';
+import {
   commitContactCaptureProposal,
   inspectContactCaptureProposalDecision,
   inspectContactCaptureProposalMaterial
@@ -74,7 +82,6 @@ import {
 } from './evidence.mjs';
 import {
   checkSoterFixtures,
-  writeLegacyFinalizationFixtures,
   writeSoterFixtures
 } from './fixtures.mjs';
 import {
@@ -88,13 +95,6 @@ import {
   resolveRepoPath,
   writeJson
 } from './lib/canonical-json.mjs';
-import {
-  readLegacyFinalizationFixtureRequest
-} from './legacy-finalization.mjs';
-import {
-  inspectLegacyCheckerRunProjection,
-  inspectLegacyCheckerRunReceipt
-} from '../kernel/legacy-checker-run.mjs';
 import {
   fingerprintLock,
   lockMatchesResolution,
@@ -121,7 +121,6 @@ import {
 import { createProposalConnectedBatch } from './proposal-connected-batches.mjs';
 import { inspectConnectedApprovalReviewMaterial } from './connected-approval-review.mjs';
 import { inspectConnectedOperatorActivity } from './operator-inspection.mjs';
-import { inspectConnectedAcceptance } from './connected-acceptance-inspection.mjs';
 import {
   inspectPreparedAutomationDerivedReviewMaterial,
   inspectPreparedAutomationReviewMaterial,
@@ -136,13 +135,13 @@ import {
   recoverDeclaredAutomationAcquisition
 } from './connected-acquisitions.mjs';
 import {
-  createPreparedReviewBatch,
-  inspectPreparedReviewBatchMaterial
-} from './prepared-review-batches.mjs';
+  createReviewOnlyCandidateSelection,
+  inspectReviewOnlyCandidateSelectionMaterial
+} from './review-only-candidate-selections.mjs';
 import {
-  createPreparedConnectedPlan,
-  inspectPreparedConnectedPlan
-} from './prepared-connected-plans.mjs';
+  createReviewOnlyCandidatePreview,
+  inspectReviewOnlyCandidatePreview
+} from './review-only-candidate-previews.mjs';
 import {
   beginConfigurationChangeRequest,
   confirmConfigurationChangeRequest,
@@ -182,36 +181,6 @@ import {
   runDevelopmentHostEvaluation,
   runDevelopmentHostJudgment
 } from './development-host-runner.mjs';
-import {
-  buildDevelopmentHistoricalEvidenceBatchRequest,
-  executeDevelopmentHistoricalEvidenceBatch,
-  inspectDevelopmentHistoricalEvidenceBatch,
-  recoverDevelopmentHistoricalEvidenceBatch
-} from './development-historical-evidence-batch.mjs';
-import {
-  buildDevelopmentHostEvidenceFinalizationRequest,
-  finalizeDevelopmentHostEvidenceBatch,
-  rollbackCompletedDevelopmentHostEvidenceFinalization,
-  verifyDevelopmentHostEvidenceFinalization
-} from './development-host-evidence-finalization.mjs';
-import {
-  buildDevelopmentWorkflowLifecycleFinalizationRequest,
-  planDevelopmentWorkflowLifecycleFinalization
-} from './development-workflow-lifecycle-finalization.mjs';
-import {
-  buildRepositoryCutoverRequest,
-  executeRepositoryCutover,
-  inspectRepositoryCutover,
-  prepareRepositoryCutover,
-  recoverRepositoryCutover,
-  rollbackRepositoryCutover
-} from './repository-cutover.mjs';
-import {
-  buildLegacyFinalizationTransitionRequest
-} from './legacy-transition-finalization.mjs';
-import {
-  persistCanonicalPrivateRequest
-} from './private-request-files.mjs';
 
 const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -302,37 +271,6 @@ async function main() {
   const json = args.includes('--json');
   const createdAt = option(args, '--at', new Date().toISOString());
   const idPart = nowIdPart(createdAt);
-
-  if (command === 'legacy-checker-receipt-inspect') {
-    assertExactCommandArguments(args, { valueOptions: ['--receipt-id'] });
-    const receiptId = requiredOption(args, '--receipt-id');
-    const result = inspectLegacyCheckerRunReceipt({ root, receiptId });
-    if (json) print(result);
-    else process.stdout.write(
-      'Inspected historical legacy checker receipt ' + result.receipt.id + '.\n'
-        + 'Receipt fingerprint: ' + result.receipt.receiptFingerprint + '\n'
-        + 'Checker-visible tree: '
-          + result.receipt.basis.checkerVisibleInputTree.treeFingerprint + '\n'
-        + 'Migration or fallback-removal authority: none\n'
-    );
-    return;
-  }
-
-  if (command === 'legacy-checker-projection-inspect') {
-    assertExactCommandArguments(args, {});
-    const projection = inspectLegacyCheckerRunProjection({ root });
-    if (json) print(projection);
-    else process.stdout.write(
-      'Inspected governed sanitized legacy checker projection ' + projection.id + '.\n'
-        + 'Projection fingerprint: ' + projection.projectionFingerprint + '\n'
-        + 'Receipt fingerprint: ' + projection.receipt.fingerprint + '\n'
-        + 'Checker-visible tree: '
-          + projection.basis.checkerVisibleInputTree.treeFingerprint + '\n'
-        + 'Private receipt path or raw output included: no\n'
-        + 'Migration or fallback-removal authority: none\n'
-    );
-    return;
-  }
 
   if (command === 'resolve') {
     const configPath = option(args, '--config');
@@ -850,20 +788,7 @@ async function main() {
 
   if (command === 'doctor') {
     const lockPath = requiredOption(args, '--lock');
-    const resolvedLockPath = resolveRepoPath(root, lockPath);
-    const historicalBasis = workflowEvidenceBasisForPath(
-      repoRelativePath(root, resolvedLockPath)
-    );
-    if (historicalBasis) {
-      const error = new Error(
-        'SOTER_HISTORICAL_EVIDENCE_LOCK_NOT_OPERATIONAL: '
-          + historicalBasis.path
-          + ' is an immutable workflow-evidence basis, not an operational doctor lock.'
-      );
-      error.code = 'SOTER_HISTORICAL_EVIDENCE_LOCK_NOT_OPERATIONAL';
-      throw error;
-    }
-    const lock = readJson(resolvedLockPath);
+    const lock = readJson(resolveRepoPath(root, lockPath));
     const level = option(args, '--level', 'offline');
     if (!['offline', 'connected'].includes(level)) {
       throw new Error('doctor --level must be offline or connected; canary execution is not implemented.');
@@ -1175,19 +1100,6 @@ async function main() {
     return;
   }
 
-  if (command === 'connected-acceptance-inspect') {
-    assertExactCommandArguments(args, {
-      valueOptions: ['--checkpoint', '--at'],
-      repeatableValueOptions: ['--checkpoint']
-    });
-    print(inspectConnectedAcceptance({
-      root,
-      checkpointIds: options(args, '--checkpoint'),
-      generatedAt: createdAt
-    }));
-    return;
-  }
-
   if (command === 'operator-approval-review') {
     const material = inspectConnectedApprovalReviewMaterial({
       root,
@@ -1371,62 +1283,62 @@ async function main() {
     return;
   }
 
-  if (command === 'operator-review-batch-create') {
-    const batch = createPreparedReviewBatch({
+  if (command === 'operator-review-only-candidate-selection-create') {
+    const selection = createReviewOnlyCandidateSelection({
       root,
       workId: requiredOption(args, '--work-id'),
       actionIds: options(args, '--action-id'),
       createdAt
     });
     if (json) {
-      print(batch);
+      print(selection);
     } else {
       process.stdout.write(
-        'Created immutable prepared review batch ' + batch.id + '.\n'
-          + 'Selected actions: ' + batch.scope.selectedActionCount + ' of '
-          + batch.scope.availableActionCount + '\n'
-          + 'Partial subset: ' + (batch.scope.partial ? 'yes' : 'no') + '\n'
+        'Created immutable review-only candidate selection ' + selection.id + '.\n'
+          + 'Selected actions: ' + selection.scope.selectedActionCount + ' of '
+          + selection.scope.availableActionCount + '\n'
+          + 'Partial subset: ' + (selection.scope.partial ? 'yes' : 'no') + '\n'
           + 'Approval, continuation, and execution authority: none\n'
       );
     }
     return;
   }
 
-  if (command === 'operator-review-batch') {
-    const material = inspectPreparedReviewBatchMaterial({
+  if (command === 'operator-review-only-candidate-selection') {
+    const material = inspectReviewOnlyCandidateSelectionMaterial({
       root,
-      batchId: requiredOption(args, '--batch-id')
+      selectionId: requiredOption(args, '--selection-id')
     });
     print(material);
     return;
   }
 
-  if (command === 'operator-connected-plan-create') {
-    const plan = await createPreparedConnectedPlan({
+  if (command === 'operator-review-only-candidate-preview-create') {
+    const preview = await createReviewOnlyCandidatePreview({
       root,
-      batchId: requiredOption(args, '--batch-id'),
+      selectionId: requiredOption(args, '--selection-id'),
       createdAt
     });
     if (json) {
-      print(plan);
+      print(preview);
     } else {
       process.stdout.write(
-        'Compiled private connected candidate plan ' + plan.id + '.\n'
-          + 'Operations: ' + plan.operations.length + '\n'
+        'Created private review-only candidate preview ' + preview.id + '.\n'
+          + 'Operations: ' + preview.operations.length + '\n'
           + 'Executable: no\n'
           + 'Approval, continuation, execution, and retry authority: none\n'
-          + 'Blockers:\n  - ' + plan.blockers.join('\n  - ') + '\n'
+          + 'Blockers:\n  - ' + preview.blockers.join('\n  - ') + '\n'
       );
     }
     return;
   }
 
-  if (command === 'operator-connected-plan') {
-    const plan = await inspectPreparedConnectedPlan({
+  if (command === 'operator-review-only-candidate-preview') {
+    const preview = await inspectReviewOnlyCandidatePreview({
       root,
-      planId: requiredOption(args, '--plan-id')
+      candidatePreviewId: requiredOption(args, '--candidate-preview-id')
     });
-    print(plan);
+    print(preview);
     return;
   }
 
@@ -1814,6 +1726,132 @@ async function main() {
 
   if (command === 'project-capture-proposal-material') {
     const material = inspectProjectCaptureProposalMaterial({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      proposalId: requiredOption(args, '--proposal')
+    });
+    print(material);
+    return;
+  }
+
+  if (command === 'project-page-reconciliation-decision-inspect') {
+    assertExactCommandArguments(args, { valueOptions: ['--lock', '--snapshot'] });
+    const inspected = inspectProjectPageReconciliationDecisionContext({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      snapshotId: requiredOption(args, '--snapshot')
+    });
+    if (json) {
+      print(inspected);
+    } else {
+      process.stdout.write(
+        'Inspected private Project Page Reconciliation decision basis '
+          + inspected.snapshot.id + '.\n'
+          + 'Derived state: ' + inspected.outcome.state + '\n'
+          + 'Selected actions: ' + inspected.outcome.actionIds.length + '\n'
+          + 'Preview fingerprint: ' + inspected.outcome.previewFingerprint + '\n'
+          + 'Project fingerprint: ' + inspected.outcome.projectFingerprint + '\n'
+          + 'Decision or write authority created: no\nProvider calls executed: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'project-page-reconciliation-decision-commit') {
+    assertExactCommandArguments(args, {
+      valueOptions: ['--lock', '--snapshot', '--decision-id', '--actor', '--at']
+    });
+    const committed = commitProjectPageReconciliationDecision({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      snapshotId: requiredOption(args, '--snapshot'),
+      id: option(
+        args,
+        '--decision-id',
+        'decision.project-page-reconciliation.' + idPart
+      ),
+      producer: {
+        kind: 'user',
+        id: option(args, '--actor', 'user'),
+        host: null
+      },
+      at: createdAt
+    });
+    if (json) {
+      print(committed);
+    } else {
+      process.stdout.write(
+        'Committed Project Page Reconciliation decision ' + committed.decision.id + '.\n'
+          + 'State: ' + committed.decision.state + '\n'
+          + 'Decision fingerprint: ' + committed.decision.decisionFingerprint + '\n'
+          + 'Private decision: ' + committed.decisionPath + '\n'
+          + 'Proposal, approval, continuation, or provider writes created: no\n'
+      );
+    }
+    if (committed.decision.state !== 'ready') process.exitCode = 1;
+    return;
+  }
+
+  if (command === 'project-page-reconciliation-proposal-inspect') {
+    assertExactCommandArguments(args, { valueOptions: ['--lock', '--decision'] });
+    const inspected = inspectProjectPageReconciliationProposalDecision({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      decisionId: requiredOption(args, '--decision')
+    });
+    if (json) {
+      print(inspected);
+    } else {
+      process.stdout.write(
+        'Inspected private Project Page Reconciliation proposal basis '
+          + inspected.decision.id + '.\n'
+          + 'Selected actions: ' + inspected.decision.actionIds.length + '\n'
+          + 'Preview fingerprint: ' + inspected.decision.previewFingerprint + '\n'
+          + 'Proposal, approval, continuation, and provider writes created: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'project-page-reconciliation-proposal-commit') {
+    assertExactCommandArguments(args, {
+      valueOptions: ['--lock', '--decision', '--proposal-id', '--actor', '--at']
+    });
+    const committed = commitProjectPageReconciliationProposal({
+      root,
+      lockPath: requiredOption(args, '--lock'),
+      decisionId: requiredOption(args, '--decision'),
+      id: option(
+        args,
+        '--proposal-id',
+        'proposal.project-page-reconciliation.' + idPart
+      ),
+      input: {},
+      producer: {
+        kind: 'user',
+        id: option(args, '--actor', 'user'),
+        host: null
+      },
+      at: createdAt
+    });
+    if (json) {
+      print(committed);
+    } else {
+      process.stdout.write(
+        'Committed Project Page Reconciliation review proposal '
+          + committed.proposal.id + '.\n'
+          + 'Proposal fingerprint: ' + committed.proposal.proposalFingerprint + '\n'
+          + 'Private proposal: ' + committed.proposalPath + '\n'
+          + 'Selected private material: ' + committed.materialPath + '\n'
+          + 'Approval, continuation, provider calls, and writes created: 0\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'project-page-reconciliation-proposal-material') {
+    assertExactCommandArguments(args, { valueOptions: ['--lock', '--proposal'] });
+    const material = inspectProjectPageReconciliationProposalMaterial({
       root,
       lockPath: requiredOption(args, '--lock'),
       proposalId: requiredOption(args, '--proposal')
@@ -2358,7 +2396,7 @@ async function main() {
           + 'Workflow: ' + inspection.workflow.id + '@' + inspection.workflow.version + '\n'
           + 'Host: ' + inspection.host.id + '\n'
           + 'Lock fingerprint: ' + inspection.lockFingerprint + '\n'
-          + 'Execution, migration, provider, merge, realization, or fallback-removal authority: none\n'
+          + 'Execution, provider, merge, realization, or promotion authority: none\n'
       );
     }
     return;
@@ -2408,7 +2446,7 @@ async function main() {
       process.stdout.write(
         'Recorded scoped development evidence for ' + recorded.inspection.request.id + '.\n'
           + 'State: ' + recorded.inspection.progress.state + '\n'
-          + 'Fallback-removal authority: none\n'
+          + 'Promotion authority: none\n'
       );
     }
     return;
@@ -2427,7 +2465,7 @@ async function main() {
           + 'Fresh worker processes: ' + evaluated.summary.runCount + '\n'
           + 'Independent judgment required: yes\n'
           + 'Raw prompts and transcripts returned or inspected: no\n'
-          + 'Activation, migration, or fallback-removal authority: none\n'
+          + 'Activation or promotion authority: none\n'
       );
     }
     return;
@@ -2446,7 +2484,7 @@ async function main() {
           + 'Fresh judge processes: ' + judged.summary.reviewCount + '\n'
           + 'Guided cases passed: ' + (judged.summary.guidedPassed ? 'yes' : 'no') + '\n'
           + 'Worker self-report accepted as judgment: no\n'
-          + 'Activation, migration, or fallback-removal authority: none\n'
+          + 'Activation or promotion authority: none\n'
       );
     }
     return;
@@ -2466,274 +2504,9 @@ async function main() {
           + 'Host: ' + finalized.observation.host.id + '\n'
           + 'Guided runs: ' + finalized.observation.runs.filter((run) => run.arm === 'guided').length + '\n'
           + 'Worker self-report accepted as judgment: no\n'
-          + 'Activation, migration, or fallback-removal authority: none\n'
+          + 'Activation or promotion authority: none\n'
       );
     }
-    return;
-  }
-
-  if (command === 'development-host-evidence-historical') {
-    assertExactCommandArguments(args, { valueOptions: ['--request-id'] });
-    requiredOption(args, '--request-id');
-    throw new Error(
-      'DEVELOPMENT_MIGRATION_EVIDENCE_BATCH_REQUIRED: standalone historical evidence publication is retired; use development-historical-evidence-batch-request and the exact fourteen-chain batch.'
-    );
-  }
-
-  if (command === 'development-historical-evidence-batch-request') {
-    assertExactCommandArguments(args, {
-      valueOptions: ['--id', '--created-at', '--valid-until', '--workflows']
-    });
-    print(buildDevelopmentHistoricalEvidenceBatchRequest({
-      root,
-      id: requiredOption(args, '--id'),
-      createdAt: requiredOption(args, '--created-at'),
-      validUntil: requiredOption(args, '--valid-until'),
-      workflows: readPrivateJsonInput(root, requiredOption(args, '--workflows'))
-    }));
-    return;
-  }
-
-  if (command === 'development-historical-evidence-batch-execute'
-    || command === 'development-historical-evidence-batch-recover') {
-    assertExactCommandArguments(args, { valueOptions: ['--request', '--at'] });
-    const input = {
-      root,
-      requestPath: requiredOption(args, '--request'),
-      at: requiredOption(args, '--at')
-    };
-    print(command === 'development-historical-evidence-batch-execute'
-      ? executeDevelopmentHistoricalEvidenceBatch(input)
-      : recoverDevelopmentHistoricalEvidenceBatch(input));
-    return;
-  }
-
-  if (command === 'development-historical-evidence-batch-inspect') {
-    assertExactCommandArguments(args, { valueOptions: ['--request'] });
-    print(inspectDevelopmentHistoricalEvidenceBatch({
-      root,
-      requestPath: requiredOption(args, '--request')
-    }));
-    return;
-  }
-
-  if (command === 'development-host-evidence-final') {
-    assertExactCommandArguments(args, {
-      valueOptions: ['--request-id', '--lock', '--at']
-    });
-    requiredOption(args, '--request-id');
-    requiredOption(args, '--lock');
-    requiredOption(args, '--at');
-    throw new Error(
-      'DEVELOPMENT_ACTIVATION_EVIDENCE_BATCH_REQUIRED: standalone final evidence publication is retired; use development-host-evidence-finalize-batch.'
-    );
-  }
-
-  if (command === 'development-host-evidence-finalization-request-create') {
-    assertExactCommandArguments(args, {
-      valueOptions: [
-        '--id',
-        '--created-at',
-        '--valid-until',
-        '--legacy-finalization',
-        '--workflows',
-        '--output'
-      ]
-    });
-    const request = buildDevelopmentHostEvidenceFinalizationRequest({
-      root,
-      legacyFinalizationPath: requiredOption(args, '--legacy-finalization'),
-      id: requiredOption(args, '--id'),
-      createdAt: requiredOption(args, '--created-at'),
-      validUntil: requiredOption(args, '--valid-until'),
-      workflows: readPrivateJsonInput(root, requiredOption(args, '--workflows'))
-    });
-    print(persistCanonicalPrivateRequest({
-      root,
-      outputPath: requiredOption(args, '--output'),
-      request,
-      kind: 'development-host-evidence-finalization-request'
-    }));
-    return;
-  }
-
-  if (command === 'development-host-evidence-finalize-batch') {
-    assertExactCommandArguments(args, {
-      valueOptions: ['--request', '--legacy-finalization', '--at']
-    });
-    const result = finalizeDevelopmentHostEvidenceBatch({
-      root,
-      requestPath: requiredOption(args, '--request'),
-      legacyFinalizationPath: requiredOption(args, '--legacy-finalization'),
-      at: requiredOption(args, '--at')
-    });
-    print(result);
-    return;
-  }
-
-  if (command === 'development-host-evidence-finalization-verify') {
-    assertExactCommandArguments(args, {
-      valueOptions: ['--request', '--legacy-finalization', '--at']
-    });
-    const result = verifyDevelopmentHostEvidenceFinalization({
-      root,
-      requestPath: requiredOption(args, '--request'),
-      legacyFinalizationPath: requiredOption(args, '--legacy-finalization'),
-      at: requiredOption(args, '--at')
-    });
-    print(result);
-    return;
-  }
-
-  if (command === 'development-host-evidence-finalization-rollback') {
-    assertExactCommandArguments(args, {
-      valueOptions: ['--request', '--at']
-    });
-    const result = rollbackCompletedDevelopmentHostEvidenceFinalization({
-      root,
-      requestPath: requiredOption(args, '--request'),
-      at: requiredOption(args, '--at')
-    });
-    print(result);
-    return;
-  }
-
-  if (command === 'development-workflow-lifecycle-request-create') {
-    assertExactCommandArguments(args, {
-      valueOptions: ['--id', '--created-at', '--output']
-    });
-    const request = buildDevelopmentWorkflowLifecycleFinalizationRequest({
-      root,
-      id: requiredOption(args, '--id'),
-      createdAt: requiredOption(args, '--created-at')
-    });
-    print(persistCanonicalPrivateRequest({
-      root,
-      outputPath: requiredOption(args, '--output'),
-      request,
-      kind: 'development-workflow-lifecycle-finalization-request'
-    }));
-    return;
-  }
-
-  if (command === 'development-workflow-lifecycle-plan') {
-    assertExactCommandArguments(args, { valueOptions: ['--request'] });
-    const plan = planDevelopmentWorkflowLifecycleFinalization({
-      root,
-      requestPath: requiredOption(args, '--request')
-    });
-    print(plan);
-    return;
-  }
-
-  if (command === 'legacy-finalization-transition-request-create') {
-    assertExactCommandArguments(args, {
-      valueOptions: [
-        '--id',
-        '--created-at',
-        '--valid-until',
-        '--at',
-        '--lifecycle-request',
-        '--checker-receipt',
-        '--output',
-        '--fixture-output'
-      ]
-    });
-    const outputPath = requiredOption(args, '--output');
-    const fixtureOutputPath = requiredOption(args, '--fixture-output');
-    if (path.resolve(outputPath) === path.resolve(fixtureOutputPath)) {
-      throw new Error(
-        'legacy-finalization-transition-request-create requires distinct --output and --fixture-output paths.'
-      );
-    }
-    const request = await buildLegacyFinalizationTransitionRequest({
-      root,
-      id: requiredOption(args, '--id'),
-      createdAt: requiredOption(args, '--created-at'),
-      validUntil: requiredOption(args, '--valid-until'),
-      at: requiredOption(args, '--at'),
-      lifecycleRequestPath: requiredOption(args, '--lifecycle-request'),
-      checkerReceipt: readPrivateJsonInput(root, requiredOption(args, '--checker-receipt'))
-    });
-    const fixture = persistCanonicalPrivateRequest({
-      root,
-      outputPath: fixtureOutputPath,
-      request: request.fixtureRequest,
-      kind: 'legacy-finalization-fixture-request'
-    });
-    const transition = persistCanonicalPrivateRequest({
-      root,
-      outputPath,
-      request,
-      kind: 'legacy-finalization-transition-request'
-    });
-    print({ transition, fixture });
-    return;
-  }
-
-  if (command === 'repository-cutover-request-create') {
-    assertExactCommandArguments(args, {
-      valueOptions: [
-        '--id',
-        '--created-at',
-        '--lifecycle-request',
-        '--transition-request',
-        '--fixture-finalization-request',
-        '--output'
-      ]
-    });
-    const request = buildRepositoryCutoverRequest({
-      root,
-      id: requiredOption(args, '--id'),
-      createdAt: requiredOption(args, '--created-at'),
-      lifecycleRequestPath: requiredOption(args, '--lifecycle-request'),
-      transitionRequestPath: requiredOption(args, '--transition-request'),
-      fixtureFinalizationRequestPath: requiredOption(args, '--fixture-finalization-request')
-    });
-    print(persistCanonicalPrivateRequest({
-      root,
-      outputPath: requiredOption(args, '--output'),
-      request,
-      kind: 'repository-cutover-request'
-    }));
-    return;
-  }
-
-  if (command === 'repository-cutover-prepare') {
-    assertExactCommandArguments(args, { valueOptions: ['--request', '--at'] });
-    const inspection = await prepareRepositoryCutover({
-      root,
-      requestPath: requiredOption(args, '--request'),
-      at: requiredOption(args, '--at')
-    });
-    print(inspection);
-    return;
-  }
-
-  if (command === 'repository-cutover-execute'
-    || command === 'repository-cutover-recover'
-    || command === 'repository-cutover-rollback') {
-    assertExactCommandArguments(args, { valueOptions: ['--checkpoint-id', '--at'] });
-    const input = {
-      root,
-      checkpointId: requiredOption(args, '--checkpoint-id'),
-      at: requiredOption(args, '--at')
-    };
-    const inspection = command === 'repository-cutover-execute'
-      ? executeRepositoryCutover(input)
-      : command === 'repository-cutover-recover'
-        ? recoverRepositoryCutover(input)
-        : rollbackRepositoryCutover(input);
-    print(inspection);
-    return;
-  }
-
-  if (command === 'repository-cutover-inspect') {
-    assertExactCommandArguments(args, { valueOptions: ['--checkpoint-id'] });
-    print(inspectRepositoryCutover({
-      root,
-      checkpointId: requiredOption(args, '--checkpoint-id')
-    }));
     return;
   }
 
@@ -2758,11 +2531,12 @@ async function main() {
     const { selftest } = await import('./selftest.mjs');
     const { selftestPrivateJsonInput } = await import('./lib/canonical-json.selftest.mjs');
     const { selftestPreparedWork } = await import('./prepared-work.selftest.mjs');
-    const { selftestConnectedAcceptanceInspection } = await import(
-      './connected-acceptance-inspection.selftest.mjs'
+    const { selftestReviewOnlyCandidateSelections } = await import(
+      './review-only-candidate-selections.selftest.mjs'
     );
-    const { selftestPreparedReviewBatches } = await import('./prepared-review-batches.selftest.mjs');
-    const { selftestPreparedConnectedPlans } = await import('./prepared-connected-plans.selftest.mjs');
+    const { selftestReviewOnlyCandidatePreviews } = await import(
+      './review-only-candidate-previews.selftest.mjs'
+    );
     const { selftestAutomationProposals } = await import('./automation-proposals.selftest.mjs');
     const { selftestConfigurationTransactions } = await import('./configuration-transactions.selftest.mjs');
     const { selftestHostRealizations } = await import('./host-realizations.selftest.mjs');
@@ -2777,15 +2551,6 @@ async function main() {
     const { selftestDevelopmentHostRunner } = await import(
       './development-host-runner.selftest.mjs'
     );
-    const { selftestLegacyFinalization } = await import('./legacy-finalization.selftest.mjs');
-    const { selftestLegacyTransitionFinalization } = await import(
-      './legacy-transition-finalization.selftest.mjs'
-    );
-    const { selftestDevelopmentWorkflowLifecycleFinalization } = await import(
-      './development-workflow-lifecycle-finalization.selftest.mjs'
-    );
-    const { selftestRepositoryCutover } = await import('./repository-cutover.selftest.mjs');
-    const { selftestPrivateRequestFiles } = await import('./private-request-files.selftest.mjs');
     const { selftestEmailConnectedContext } = await import(
       '../automations/email-triage/connected-context.selftest.mjs'
     );
@@ -2806,6 +2571,12 @@ async function main() {
     );
     const { selftestProjectCaptureConnectedContext } = await import(
       '../automations/project-capture/connected-context.selftest.mjs'
+    );
+    const { selftestProjectPageReconciliation } = await import(
+      '../automations/project-page-reconciliation/project-page-reconciliation.selftest.mjs'
+    );
+    const { selftestProjectPageReconciliationConnectedContext } = await import(
+      '../automations/project-page-reconciliation/connected-context.selftest.mjs'
     );
     const { selftestContactCapture } = await import(
       '../automations/contact-capture/contact-capture.selftest.mjs'
@@ -2849,10 +2620,9 @@ async function main() {
     const suites = [
       ['core', () => selftest(root)],
       ['private-json-input', () => selftestPrivateJsonInput()],
-      ['connected-acceptance-inspection', () => selftestConnectedAcceptanceInspection(root)],
       ['prepared-work', () => selftestPreparedWork(root)],
-      ['prepared-review-batches', () => selftestPreparedReviewBatches(root)],
-      ['prepared-connected-plans', () => selftestPreparedConnectedPlans(root)],
+      ['review-only-candidate-selections', () => selftestReviewOnlyCandidateSelections(root)],
+      ['review-only-candidate-previews', () => selftestReviewOnlyCandidatePreviews(root)],
       ['automation-proposals', () => selftestAutomationProposals(root)],
       ['configuration-transactions', () => selftestConfigurationTransactions(root)],
       ['host-realizations', () => selftestHostRealizations(root)],
@@ -2861,14 +2631,6 @@ async function main() {
       ['development-runs', () => selftestDevelopmentRuns(root)],
       ['development-host-observations', () => selftestDevelopmentHostObservations(root)],
       ['development-host-runner', () => selftestDevelopmentHostRunner(root)],
-      ['legacy-finalization', () => selftestLegacyFinalization(root)],
-      ['legacy-transition-finalization', () => selftestLegacyTransitionFinalization(root)],
-      [
-        'development-workflow-lifecycle-finalization',
-        () => selftestDevelopmentWorkflowLifecycleFinalization(root)
-      ],
-      ['repository-cutover', () => selftestRepositoryCutover(root)],
-      ['private-request-files', () => selftestPrivateRequestFiles()],
       ['email-connected-context', () => selftestEmailConnectedContext(root)],
       ['task-capture-connected-context', () => selftestTaskCaptureConnectedContext(root)],
       ['project-pulse-connected-context', () => selftestProjectPulseConnectedContext(root)],
@@ -2879,6 +2641,11 @@ async function main() {
       ],
       ['project-capture', () => selftestProjectCapture(root)],
       ['project-capture-connected-context', () => selftestProjectCaptureConnectedContext(root)],
+      ['project-page-reconciliation', () => selftestProjectPageReconciliation(root)],
+      [
+        'project-page-reconciliation-connected-context',
+        () => selftestProjectPageReconciliationConnectedContext(root)
+      ],
       ['contact-capture', () => selftestContactCapture(root)],
       ['contact-capture-connected-context', () => selftestContactCaptureConnectedContext(root)],
       ['drive-filing', () => selftestDriveFiling(root)],
@@ -2896,8 +2663,22 @@ async function main() {
       ['project-work-promotion', () => selftestProjectWorkPromotion(root)],
       ['notion-record-mappings', () => selftestNotionRecordMappings(root)]
     ];
+    if (args.includes('--list-suites')) {
+      process.stdout.write(suites.map(([name]) => name).join('\n') + '\n');
+      return;
+    }
+    const selectedSuite = option(args, '--suite');
+    if (selectedSuite !== null && !suites.some(([name]) => name === selectedSuite)) {
+      throw new Error(
+        'Unknown selftest suite ' + selectedSuite
+          + '. Use --list-suites for the exact names.'
+      );
+    }
+    const selected = selectedSuite === null
+      ? suites
+      : suites.filter(([name]) => name === selectedSuite);
     const failedSuites = [];
-    for (const [name, run] of suites) {
+    for (const [name, run] of selected) {
       try {
         const result = await run();
         if (!result) {
@@ -2914,12 +2695,12 @@ async function main() {
     }
     if (failedSuites.length) {
       process.stderr.write(
-        'CORE SELFTEST SUMMARY: ' + failedSuites.length + ' of ' + suites.length
+        'CORE SELFTEST SUMMARY: ' + failedSuites.length + ' of ' + selected.length
           + ' suites failed: ' + failedSuites.join(', ') + '.\n'
       );
     } else {
       process.stdout.write(
-        'CORE SELFTEST SUMMARY: all ' + suites.length + ' suites passed.\n'
+        'CORE SELFTEST SUMMARY: all ' + selected.length + ' suites passed.\n'
       );
     }
     process.exitCode = failedSuites.length ? 1 : 0;
@@ -2928,22 +2709,10 @@ async function main() {
 
   if (command === 'fixtures') {
     const fixtureModes = args.filter((argument) => {
-      return ['--check', '--update', '--finalize'].includes(argument);
+      return ['--check', '--update'].includes(argument);
     });
     if (fixtureModes.length !== 1) {
-      throw new Error('fixtures requires exactly one of --check, --update, or --finalize.');
-    }
-    if (fixtureModes[0] === '--finalize') {
-      const finalization = readLegacyFinalizationFixtureRequest(
-        root,
-        requiredOption(args, '--finalize')
-      );
-      const fixtures = await writeLegacyFinalizationFixtures(root, finalization);
-      process.stdout.write(
-        'Updated ' + fixtures.size
-          + ' generated Core fixtures through the exact legacy-finalization boundary.\n'
-      );
-      return;
+      throw new Error('fixtures requires exactly one of --check or --update.');
     }
     if (fixtureModes[0] === '--update') {
       const fixtures = await writeSoterFixtures(root);
@@ -2964,13 +2733,11 @@ async function main() {
       process.exitCode = result.matches ? 0 : 1;
       return;
     }
-    throw new Error('fixtures requires --check, --update, or --finalize ABSOLUTE_PRIVATE_PATH.');
+    throw new Error('fixtures requires --check or --update.');
   }
 
   throw new Error(
-    'Usage: node soter/core/cli.mjs <legacy-checker-receipt-inspect|legacy-checker-projection-inspect|resolve|config-inspect|development-candidate-lock|development-request-create|development-result-record|development-host-evaluate|development-host-judge|development-host-finalize|development-host-evidence-historical|development-historical-evidence-batch-request|development-historical-evidence-batch-execute|development-historical-evidence-batch-recover|development-historical-evidence-batch-inspect|development-host-evidence-final|development-host-evidence-finalization-request-create|development-host-evidence-finalize-batch|development-host-evidence-finalization-rollback|development-host-evidence-finalization-verify|development-workflow-lifecycle-request-create|development-workflow-lifecycle-plan|legacy-finalization-transition-request-create|repository-cutover-request-create|repository-cutover-prepare|repository-cutover-execute|repository-cutover-recover|repository-cutover-rollback|repository-cutover-inspect|development-run-inspect|configuration-change-plan|configuration-change-request|configuration-change-confirm|configuration-change-start|configuration-change-execute|configuration-change-recover|configuration-change-inspect|host-realization-plan|host-realization-request|host-realization-confirm|host-realization-start|host-realization-execute|host-realization-recover|host-realization-inspect|pack-install-plan|pack-install-request|pack-install-confirm|pack-install-start|pack-install-execute|pack-install-recover|pack-install-inspect|operator-prepare|operator-prepared-inspect|operator-prepared-review|operator-prepared-derived-review|operator-acquisition-prepare|operator-acquisition-recover|operator-acquisition-finalize|operator-acquisition-inspect|operator-acquisition-private-inspect|operator-review-batch-create|operator-review-batch|operator-connected-plan-create|operator-connected-plan|operator-inspect|connected-acceptance-inspect|operator-approval-review|prepare|meeting-intake-decision-inspect|meeting-intake-decision-commit|meeting-intake-proposal-inspect|meeting-intake-proposal-commit|meeting-intake-proposal-material|email-triage-decision-inspect|email-triage-decision-commit|email-triage-proposal-inspect|email-triage-proposal-commit|email-triage-proposal-material|task-capture-decision-inspect|task-capture-decision-commit|task-capture-proposal-inspect|task-capture-proposal-commit|task-capture-proposal-material|organization-capture-decision-inspect|organization-capture-decision-commit|organization-capture-proposal-inspect|organization-capture-proposal-commit|organization-capture-proposal-material|project-capture-decision-inspect|project-capture-decision-commit|project-capture-proposal-inspect|project-capture-proposal-commit|project-capture-proposal-material|contact-capture-decision-inspect|contact-capture-decision-commit|contact-capture-proposal-inspect|contact-capture-proposal-commit|contact-capture-proposal-material|project-pulse-decision-inspect|project-pulse-decision-commit|project-pulse-proposal-inspect|project-pulse-proposal-commit|project-pulse-proposal-material|proposal-connected-batch-preview|connected-approval-request|connected-approval-confirm|connected-transaction-prepare|connected-transaction-complete|connected-transaction-reconcile|doctor|probe-prepare|probe-complete|capability-complete|plan-complete|host-fail|host-get|host-list|fixtures|selftest> [options]\n'
-      + '  legacy-checker-receipt-inspect --receipt-id ID [--root PATH] [--json]\n'
-      + '  legacy-checker-projection-inspect [--root PATH] [--json]\n'
+    'Usage: node soter/core/cli.mjs <resolve|config-inspect|development-candidate-lock|development-request-create|development-result-record|development-host-evaluate|development-host-judge|development-host-finalize|development-run-inspect|configuration-change-plan|configuration-change-request|configuration-change-confirm|configuration-change-start|configuration-change-execute|configuration-change-recover|configuration-change-inspect|host-realization-plan|host-realization-request|host-realization-confirm|host-realization-start|host-realization-execute|host-realization-recover|host-realization-inspect|pack-install-plan|pack-install-request|pack-install-confirm|pack-install-start|pack-install-execute|pack-install-recover|pack-install-inspect|operator-prepare|operator-prepared-inspect|operator-prepared-review|operator-prepared-derived-review|operator-acquisition-prepare|operator-acquisition-recover|operator-acquisition-finalize|operator-acquisition-inspect|operator-acquisition-private-inspect|operator-review-only-candidate-selection-create|operator-review-only-candidate-selection|operator-review-only-candidate-preview-create|operator-review-only-candidate-preview|operator-inspect|operator-approval-review|prepare|meeting-intake-decision-inspect|meeting-intake-decision-commit|meeting-intake-proposal-inspect|meeting-intake-proposal-commit|meeting-intake-proposal-material|email-triage-decision-inspect|email-triage-decision-commit|email-triage-proposal-inspect|email-triage-proposal-commit|email-triage-proposal-material|task-capture-decision-inspect|task-capture-decision-commit|task-capture-proposal-inspect|task-capture-proposal-commit|task-capture-proposal-material|organization-capture-decision-inspect|organization-capture-decision-commit|organization-capture-proposal-inspect|organization-capture-proposal-commit|organization-capture-proposal-material|project-capture-decision-inspect|project-capture-decision-commit|project-capture-proposal-inspect|project-capture-proposal-commit|project-capture-proposal-material|project-page-reconciliation-decision-inspect|project-page-reconciliation-decision-commit|project-page-reconciliation-proposal-inspect|project-page-reconciliation-proposal-commit|project-page-reconciliation-proposal-material|contact-capture-decision-inspect|contact-capture-decision-commit|contact-capture-proposal-inspect|contact-capture-proposal-commit|contact-capture-proposal-material|project-pulse-decision-inspect|project-pulse-decision-commit|project-pulse-proposal-inspect|project-pulse-proposal-commit|project-pulse-proposal-material|proposal-connected-batch-preview|connected-approval-request|connected-approval-confirm|connected-transaction-prepare|connected-transaction-complete|connected-transaction-reconcile|doctor|probe-prepare|probe-complete|capability-complete|plan-complete|host-fail|host-get|host-list|fixtures|selftest> [options]\n'
       + '  resolve [--config PATH] [--host ID] [--output PATH] [--json]\n'
       + '  config-inspect [--config PATH] [--host ID | --lock PATH] [--output PATH] [--json]\n'
       + '  development-candidate-lock --config PATH --workflow ID --host <codex|claude> [--json]\n'
@@ -2979,25 +2746,6 @@ async function main() {
       + '  development-host-evaluate --request-id ID --executable ABSOLUTE_PRIVATE_PATH [--json]\n'
       + '  development-host-judge --request-id ID --executable ABSOLUTE_PRIVATE_PATH [--json]\n'
       + '  development-host-finalize --request-id ID [--judgment ABSOLUTE_PRIVATE_HUMAN_ATTESTATION_PATH] [--json]\n'
-      + '  development-host-evidence-historical --request-id ID [--json]\n'
-      + '  development-historical-evidence-batch-request --id ID --created-at TIME --valid-until TIME --workflows ABSOLUTE_PRIVATE_PATH [--json]\n'
-      + '  development-historical-evidence-batch-execute --request ABSOLUTE_PRIVATE_PATH --at TIME [--json]\n'
-      + '  development-historical-evidence-batch-recover --request ABSOLUTE_PRIVATE_PATH --at TIME [--json]\n'
-      + '  development-historical-evidence-batch-inspect --request ABSOLUTE_PRIVATE_PATH [--json]\n'
-      + '  development-host-evidence-final --request-id ID --lock GOVERNED_FIXTURE_LOCK_PATH --at TIME [--json]\n'
-      + '  development-host-evidence-finalization-request-create --id ID --created-at TIME --valid-until TIME --legacy-finalization ABSOLUTE_PRIVATE_PATH --workflows ABSOLUTE_PRIVATE_PATH --output ABSOLUTE_PRIVATE_PATH [--json]\n'
-      + '  development-host-evidence-finalize-batch --request ABSOLUTE_PRIVATE_PATH --legacy-finalization ABSOLUTE_PRIVATE_PATH --at TIME [--json]\n'
-      + '  development-host-evidence-finalization-rollback --request ABSOLUTE_PRIVATE_PATH --at TIME [--json]\n'
-      + '  development-host-evidence-finalization-verify --request ABSOLUTE_PRIVATE_PATH --legacy-finalization ABSOLUTE_PRIVATE_PATH --at TIME [--json]\n'
-      + '  development-workflow-lifecycle-request-create --id ID --created-at TIME --output ABSOLUTE_PRIVATE_PATH [--json]\n'
-      + '  development-workflow-lifecycle-plan --request ABSOLUTE_PRIVATE_PATH [--json]\n'
-      + '  legacy-finalization-transition-request-create --id ID --created-at TIME --valid-until TIME --at TIME --lifecycle-request ABSOLUTE_PRIVATE_PATH --checker-receipt ABSOLUTE_PRIVATE_PATH --output ABSOLUTE_PRIVATE_PATH --fixture-output ABSOLUTE_PRIVATE_PATH [--json]\n'
-      + '  repository-cutover-request-create --id ID --created-at TIME --lifecycle-request ABSOLUTE_PRIVATE_PATH --transition-request ABSOLUTE_PRIVATE_PATH --fixture-finalization-request ABSOLUTE_PRIVATE_PATH --output ABSOLUTE_PRIVATE_PATH [--json]\n'
-      + '  repository-cutover-prepare --request ABSOLUTE_PRIVATE_PATH --at TIME [--json]\n'
-      + '  repository-cutover-execute --checkpoint-id ID --at TIME [--json]\n'
-      + '  repository-cutover-recover --checkpoint-id ID --at TIME [--json]\n'
-      + '  repository-cutover-rollback --checkpoint-id ID --at TIME [--json]\n'
-      + '  repository-cutover-inspect --checkpoint-id ID [--json]\n'
       + '  development-run-inspect --request-id ID [--json]\n'
       + '  configuration-change-plan --configuration NAME --candidate ABSOLUTE_PRIVATE_PATH [--plan-id ID] [--at TIME] [--json]\n'
       + '  configuration-change-request --plan-id ID --reason TEXT --expires-at TIME [--request-id ID] [--at TIME] [--json]\n'
@@ -3029,12 +2777,11 @@ async function main() {
       + '  operator-acquisition-finalize --automation ID --work ID --checkpoint ID [--host ID] [--json]\n'
       + '  operator-acquisition-inspect --automation ID --work ID --checkpoint ID [--host ID] [--json]\n'
       + '  operator-acquisition-private-inspect --automation ID --work ID --checkpoint ID [--host ID] [--json]\n'
-      + '  operator-review-batch-create --work-id ID --action-id ID [--action-id ID ...] [--at TIME] [--json]\n'
-      + '  operator-review-batch --batch-id ID [--json]\n'
-      + '  operator-connected-plan-create --batch-id ID [--at TIME] [--json]\n'
-      + '  operator-connected-plan --plan-id ID [--json]\n'
+      + '  operator-review-only-candidate-selection-create --work-id ID --action-id ID [--action-id ID ...] [--at TIME] [--json]\n'
+      + '  operator-review-only-candidate-selection --selection-id ID [--json]\n'
+      + '  operator-review-only-candidate-preview-create --selection-id ID [--at TIME] [--json]\n'
+      + '  operator-review-only-candidate-preview --candidate-preview-id ID [--json]\n'
       + '  operator-inspect [--request-id ID | --approval-id ID | --checkpoint ID] [--at TIME] [--json]\n'
-      + '  connected-acceptance-inspect [--checkpoint ID ...] [--at TIME] [--json]\n'
       + '  operator-approval-review --request-id ID [--json]\n'
       + '  prepare --lock PATH [--scenario PATH] [--output PATH] [--evidence-dir PATH] [--json]\n'
       + '  meeting-intake-decision-inspect --lock PATH --snapshot ID [--json]\n'
@@ -3059,6 +2806,11 @@ async function main() {
       + '  project-capture-proposal-inspect --lock PATH --decision ID [--json]\n'
       + '  project-capture-proposal-commit --lock PATH --decision ID [--proposal-id ID] [--actor ID] [--json]\n'
       + '  project-capture-proposal-material --lock PATH --proposal ID [--json]\n'
+      + '  project-page-reconciliation-decision-inspect --lock PATH --snapshot ID [--json]\n'
+      + '  project-page-reconciliation-decision-commit --lock PATH --snapshot ID [--decision-id ID] [--actor ID] [--at ISO] [--json]\n'
+      + '  project-page-reconciliation-proposal-inspect --lock PATH --decision ID [--json]\n'
+      + '  project-page-reconciliation-proposal-commit --lock PATH --decision ID [--proposal-id ID] [--actor ID] [--at ISO] [--json]\n'
+      + '  project-page-reconciliation-proposal-material --lock PATH --proposal ID [--json]\n'
       + '  contact-capture-decision-inspect --lock PATH --snapshot ID [--json]\n'
       + '  contact-capture-decision-commit --lock PATH --snapshot ID [--decision-id ID] [--actor ID] [--json]\n'
       + '  contact-capture-proposal-inspect --lock PATH --decision ID [--json]\n'
@@ -3086,6 +2838,7 @@ async function main() {
       + '  host-fail --checkpoint ID [--call ID] --kind KIND [--at TIME] [--json]\n'
       + '  host-get --checkpoint ID\n'
       + '  host-list [--state requested|completed|failed|needs-attention|blocked]\n'
+      + '  selftest [--suite NAME | --list-suites]\n'
       + '  fixtures <--check|--update> [--json]'
   );
 }

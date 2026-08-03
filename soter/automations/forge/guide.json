@@ -1,15 +1,15 @@
 {
   "contractVersion": "2.0.0",
   "id": "workflow-guide.forge",
-  "contentFingerprint": "sha256:6b6ef145613ba555ebd0ea112112118329eb22e850432c276da5df76984adc48",
+  "contentFingerprint": "sha256:f3af619d2aa22eddba90fe294aac43be61b55ba89e8bef6c2a17fa6fca828a3f",
   "$contract": "soter://contracts/workflow-guide/v2",
   "workflow": {
     "id": "automation.forge",
     "version": "0.1.0",
     "definitionPath": "soter/automations/forge/definition.json",
-    "definitionFingerprint": "sha256:e81450ad678bc460314ee99927ec169ec8fd1b160a560491d05ffd2df56f74f7",
+    "definitionFingerprint": "sha256:ba86e0985c2b260e10728b0ef79c4747a292459253e19bc83a1da7bb497f4332",
     "evaluationSetPath": "soter/automations/forge/evaluations.json",
-    "evaluationSetFingerprint": "sha256:affe1cc5acbdd2d543a2662e8e880d527fdf5f9865a93b0c5707bebd8057f69d"
+    "evaluationSetFingerprint": "sha256:5a876308ed3164bf28c2625218eb6f5e1d7a84adf1420788a919f3cf2afef7f9"
   },
   "skill": {
     "name": "forge",
@@ -22,21 +22,7 @@
   "status": {
     "state": "active",
     "reasonCode": "WORKFLOW_GUIDE_ACTIVE",
-    "proceduralAuthority": "target",
-    "behaviorParity": "passed",
     "delivery": "host-skill",
-    "evidence": [
-      {
-        "path": "soter/evidence/development/development-agent-migration-evidence.claude.forge.json",
-        "fingerprint": "sha256:2b28dd9ff0d0b87e14e25bac1e9a7ce535d0982871e3fffa36aec106060f33c1",
-        "host": "claude"
-      },
-      {
-        "path": "soter/evidence/development/development-agent-migration-evidence.codex.forge.json",
-        "fingerprint": "sha256:6b1ca49b3e1ed60cc54f6d974e89e43461f34bf042f93886e96979f9fe6826a9",
-        "host": "codex"
-      }
-    ],
     "permittedNextAction": "invoke-through-selected-host"
   },
   "authority": {
@@ -68,7 +54,7 @@
       "id": "check-territory",
       "sequence": 2,
       "instructions": [
-        "Inspect existing manifests, definitions, exclusions, contracts, and migration bindings for overlapping responsibility.",
+        "Inspect existing manifests, definitions, exclusions, contracts, and compatibility constraints for overlapping responsibility.",
         "When overlap exists, extend or correct the current owner instead of creating a second authority.",
         "State the exact gap that remains after the territory review."
       ],
@@ -96,7 +82,7 @@
       "id": "draft-governed-artifacts",
       "sequence": 4,
       "instructions": [
-        "Derive the artifact shape from its governing contract and include identity, ownership, purpose, dependencies, effects, limitations, verification, and migration impact.",
+        "Derive the artifact shape from its governing contract and include identity, ownership, purpose, dependencies, effects, limitations, verification, and compatibility and upgrade impact.",
         "Counter every observed baseline rationalization with a mechanical invariant or explicit procedural safeguard.",
         "Keep provider details in Integration, domain meaning in Context, orchestration in Automation, runtime authority in Core, and host delivery in adapters."
       ],
@@ -119,7 +105,7 @@
         "Add broader gates only when a changed transitive artifact or generated graph makes their previous evidence stale."
       ],
       "stopConditions": [
-        "Stop adoption on any unresolved correctness, security, privacy, authority, migration, or claim-boundary failure."
+        "Stop adoption on any unresolved correctness, security, privacy, authority, compatibility, upgrade, or claim-boundary failure."
       ]
     },
     {
@@ -141,7 +127,7 @@
     "Every proposed new system namespace states an exact linked-or-withheld birth-decision disposition and rationale.",
     "A real missing contract or behavior establishes why the artifact exists.",
     "Applicable adversarial checks fail without the boundary and pass with it.",
-    "Privacy, effects, evidence maturity, migration impact, and limitations remain explicit.",
+    "Privacy, effects, evidence maturity, compatibility and upgrade impact, and limitations remain explicit.",
     "Adoption, publication, installation, and realization remain separate authorized actions."
   ],
   "gotchas": [
@@ -174,7 +160,7 @@
     {
       "id": "architecture",
       "kind": "architecture",
-      "label": "Soter responsibility and migration architecture",
+      "label": "Soter responsibility and compatibility architecture",
       "target": "ARCHITECTURE.md"
     },
     {
@@ -190,21 +176,14 @@
       "target": "soter://contracts/development-governance/v1"
     }
   ],
-  "source": {
-    "presence": "removed",
-    "legacyPath": ".claude/skills/forge/SKILL.md",
-    "legacyFingerprint": "sha256:f5708137623689d2a44f0864a379c389ec805a845795b05cf94d6c4ea3d22c69",
-    "normalization": "behavior-preserving-with-explicit-authority-boundary"
-  },
   "privacy": {
-    "rawSourceIncluded": false,
     "workspaceSpecificValuesIncluded": false,
     "credentialsIncluded": false,
     "privateInputsIncluded": false,
     "providerResponsesIncluded": false
   },
   "limitations": [
-    "This procedural guide has no file-write, merge, publication, installation, realization, or external-effect authority.",
-    "Adoption requires independent exact host-skill behavior evidence and a separate governed fallback-removal decision."
+    "This guide provides procedural guidance only and grants no worker dispatch, file-write, publication, provider, merge, or host-realization authority.",
+    "Behavior evidence requires an exact private request and an independently observed fresh-worker run through a trusted host boundary."
   ]
 }

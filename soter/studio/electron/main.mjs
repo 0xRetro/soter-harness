@@ -8,6 +8,14 @@ import {
   inspectEmailTriageProposalMaterial,
   loadEmailTriageProposal
 } from '../../automations/email-triage/proposal.mjs';
+import {
+  inspectProjectCaptureProposalMaterial,
+  loadProjectCaptureProposal
+} from '../../automations/project-capture/proposal.mjs';
+import {
+  inspectProjectPageReconciliationProposalMaterial,
+  loadProjectPageReconciliationProposal
+} from '../../automations/project-page-reconciliation/proposal.mjs';
 import { inspectWorkspace } from '../../core/inspection.mjs';
 import { previewConfiguration } from '../../core/configuration-preview.mjs';
 import {
@@ -52,13 +60,13 @@ import {
   prepareAutomationRun
 } from '../../core/prepared-work.mjs';
 import {
-  createPreparedReviewBatch,
-  inspectPreparedReviewBatchMaterial
-} from '../../core/prepared-review-batches.mjs';
+  createReviewOnlyCandidateSelection,
+  inspectReviewOnlyCandidateSelectionMaterial
+} from '../../core/review-only-candidate-selections.mjs';
 import {
-  createPreparedConnectedPlan,
-  inspectPreparedConnectedPlan
-} from '../../core/prepared-connected-plans.mjs';
+  createReviewOnlyCandidatePreview,
+  inspectReviewOnlyCandidatePreview
+} from '../../core/review-only-candidate-previews.mjs';
 import {
   prepareDurableConnectedTransactionExecution,
   prepareDurableConnectedTransactionReconciliation
@@ -105,34 +113,35 @@ const connectedApprovalReviewErrorCodes = new Set([
   'CONNECTED_APPROVAL_REVIEW_MATERIAL_BINDING_INVALID',
   'CONNECTED_APPROVAL_REVIEW_MATERIAL_CREDENTIAL_REJECTED'
 ]);
-const preparedReviewBatchErrorCodes = new Set([
-  'PREPARED_REVIEW_BATCH_MISSING',
-  'PREPARED_REVIEW_BATCH_MALFORMED',
-  'PREPARED_REVIEW_BATCH_TAMPERED',
-  'PREPARED_REVIEW_BATCH_BINDING_INVALID',
-  'PREPARED_REVIEW_BATCH_SELECTION_INVALID',
-  'PREPARED_REVIEW_BATCH_STALE',
-  'PREPARED_REVIEW_BATCH_WRITE_FAILED'
+const reviewOnlyCandidateSelectionErrorCodes = new Set([
+  'REVIEW_ONLY_CANDIDATE_SELECTION_MISSING',
+  'REVIEW_ONLY_CANDIDATE_SELECTION_MALFORMED',
+  'REVIEW_ONLY_CANDIDATE_SELECTION_TAMPERED',
+  'REVIEW_ONLY_CANDIDATE_SELECTION_BINDING_INVALID',
+  'REVIEW_ONLY_CANDIDATE_SELECTION_INVALID',
+  'REVIEW_ONLY_CANDIDATE_SELECTION_STALE',
+  'REVIEW_ONLY_CANDIDATE_SELECTION_WRITE_FAILED'
 ]);
-const preparedReviewBatchMaterialErrorCodes = new Set([
-  ...preparedReviewBatchErrorCodes,
-  'PREPARED_REVIEW_BATCH_MATERIAL_MALFORMED',
-  'PREPARED_REVIEW_BATCH_MATERIAL_TAMPERED',
-  'PREPARED_REVIEW_BATCH_MATERIAL_BINDING_INVALID',
-  'PREPARED_REVIEW_BATCH_MATERIAL_CREDENTIAL_REJECTED'
+const reviewOnlyCandidateSelectionMaterialErrorCodes = new Set([
+  ...reviewOnlyCandidateSelectionErrorCodes,
+  'REVIEW_ONLY_CANDIDATE_SELECTION_MATERIAL_MALFORMED',
+  'REVIEW_ONLY_CANDIDATE_SELECTION_MATERIAL_TAMPERED',
+  'REVIEW_ONLY_CANDIDATE_SELECTION_MATERIAL_BINDING_INVALID',
+  'REVIEW_ONLY_CANDIDATE_SELECTION_MATERIAL_CREDENTIAL_REJECTED'
 ]);
-const preparedConnectedPlanErrorCodes = new Set([
-  'PREPARED_CONNECTED_PLAN_BINDING_INVALID',
-  'PREPARED_CONNECTED_PLAN_COMPILER_INVALID',
-  'PREPARED_CONNECTED_PLAN_CREDENTIAL_REJECTED',
-  'PREPARED_CONNECTED_PLAN_LOCK_INVALID',
-  'PREPARED_CONNECTED_PLAN_MALFORMED',
-  'PREPARED_CONNECTED_PLAN_MISSING',
-  'PREPARED_CONNECTED_PLAN_SOURCE_INVALID',
-  'PREPARED_CONNECTED_PLAN_STALE',
-  'PREPARED_CONNECTED_PLAN_TAMPERED',
-  'PREPARED_CONNECTED_PLAN_VERIFICATION_INVALID',
-  'PREPARED_CONNECTED_PLAN_WRITE_FAILED'
+const reviewOnlyCandidatePreviewErrorCodes = new Set([
+  'REVIEW_ONLY_CANDIDATE_PREVIEW_BINDING_INVALID',
+  'REVIEW_ONLY_CANDIDATE_PREVIEW_COMPILER_INVALID',
+  'REVIEW_ONLY_CANDIDATE_PREVIEW_CREDENTIAL_REJECTED',
+  'REVIEW_ONLY_CANDIDATE_PREVIEW_LOCK_INVALID',
+  'REVIEW_ONLY_CANDIDATE_PREVIEW_MALFORMED',
+  'REVIEW_ONLY_CANDIDATE_PREVIEW_MISSING',
+  'REVIEW_ONLY_CANDIDATE_PREVIEW_SOURCE_INVALID',
+  'REVIEW_ONLY_CANDIDATE_PREVIEW_STALE',
+  'REVIEW_ONLY_CANDIDATE_PREVIEW_TAMPERED',
+  'REVIEW_ONLY_CANDIDATE_PREVIEW_VERIFICATION_INVALID',
+  'REVIEW_ONLY_CANDIDATE_PREVIEW_VERIFICATION_RECEIPT_REQUIRED',
+  'REVIEW_ONLY_CANDIDATE_PREVIEW_WRITE_FAILED'
 ]);
 const automationProposalErrorCodes = new Set([
   'AUTOMATION_PROPOSAL_MISSING',
@@ -186,6 +195,38 @@ const hostRealizationCode = /^HOST_REALIZATION_[A-Z0-9_]+$/;
 const distributionCode = /^(PACK_RELEASE|BUNDLE|DISTRIBUTION)_[A-Z0-9_]+$/;
 const packInstallCode = /^PACK_INSTALL_[A-Z0-9_]+$/;
 const stableReasonCode = /^[A-Z][A-Z0-9_]{0,127}$/;
+const automationProposalAdapters = new Map([
+  [
+    'email-triage',
+    {
+      automationId: 'automation.email-triage',
+      idNamespace: 'email-triage',
+      reviewLabel: 'Email triage',
+      load: loadEmailTriageProposal,
+      inspectMaterial: inspectEmailTriageProposalMaterial
+    }
+  ],
+  [
+    'project-capture',
+    {
+      automationId: 'automation.project-capture',
+      idNamespace: 'project-capture',
+      reviewLabel: 'Project Capture',
+      load: loadProjectCaptureProposal,
+      inspectMaterial: inspectProjectCaptureProposalMaterial
+    }
+  ],
+  [
+    'project-page-reconciliation',
+    {
+      automationId: 'automation.project-page-reconciliation',
+      idNamespace: 'project-page-reconciliation',
+      reviewLabel: 'Project Page Reconciliation',
+      load: loadProjectPageReconciliationProposal,
+      inspectMaterial: inspectProjectPageReconciliationProposalMaterial
+    }
+  ]
+]);
 
 function sanitizedConnectedActionError(error, {
   allowedCodes,
@@ -353,7 +394,6 @@ function watchWorkspace(root, window) {
     'soter/hosts',
     'soter/providers',
     'soter/scenarios',
-    'soter/migrations',
     'soter/fixtures'
   ];
   const watchers = [];
@@ -452,13 +492,22 @@ function automationProposalLock(root, request) {
     error.code = 'AUTOMATION_PROPOSAL_STALE';
     throw error;
   }
+  const adapter = automationProposalAdapters.get(request.configurationName);
+  if (!adapter || !lock.packs.some((pack) => pack.id === adapter.automationId)) {
+    const error = new Error('Automation proposal route is not selected by this exact configuration lock.');
+    error.code = 'AUTOMATION_PROPOSAL_BINDING_INVALID';
+    throw error;
+  }
   return {
-    proposalId: request.proposalId,
-    lockPath: repoRelativePath(
-      root,
-      activeConfigurationLockStatePath(root, request.configurationName)
-    ),
-    expectedHost: lock.host.id
+    adapter,
+    exact: {
+      proposalId: request.proposalId,
+      lockPath: repoRelativePath(
+        root,
+        activeConfigurationLockStatePath(root, request.configurationName)
+      ),
+      expectedHost: lock.host.id
+    }
   };
 }
 
@@ -1234,7 +1283,7 @@ async function createWindow() {
       };
     }
   });
-  ipcMain.handle('operator:review-batch-create', async (event, request) => {
+  ipcMain.handle('operator:review-only-candidate-selection-create', async (event, request) => {
     assertSender(event);
     if (!request || typeof request !== 'object' || Array.isArray(request)
       || Object.keys(request).length !== 2
@@ -1242,12 +1291,12 @@ async function createWindow() {
       || !Array.isArray(request.actionIds)
       || request.actionIds.length < 1
       || request.actionIds.some((id) => typeof id !== 'string')) {
-      throw new TypeError('Prepared review selection requires one exact work id and proposed action ids.');
+      throw new TypeError('Review-only candidate selection requires one exact work id and proposed action ids.');
     }
     try {
       return {
         ok: true,
-        batch: createPreparedReviewBatch({
+        selection: createReviewOnlyCandidateSelection({
           root,
           workId: request.workId,
           actionIds: request.actionIds,
@@ -1258,51 +1307,51 @@ async function createWindow() {
       return {
         ok: false,
         error: {
-          code: typeof error?.code === 'string' && preparedReviewBatchErrorCodes.has(error.code)
+          code: typeof error?.code === 'string' && reviewOnlyCandidateSelectionErrorCodes.has(error.code)
             ? error.code
-            : 'PREPARED_REVIEW_BATCH_ADAPTER_UNAVAILABLE',
+            : 'REVIEW_ONLY_CANDIDATE_SELECTION_ADAPTER_UNAVAILABLE',
           message: 'The exact review-only selection is unavailable for this prepared work.'
         }
       };
     }
   });
-  ipcMain.handle('operator:review-batch', async (event, request) => {
+  ipcMain.handle('operator:review-only-candidate-selection', async (event, request) => {
     assertSender(event);
     if (!request || typeof request !== 'object' || Array.isArray(request)
       || Object.keys(request).length !== 1
-      || typeof request.batchId !== 'string') {
-      throw new TypeError('Selected-batch private review requires one exact batch id.');
+      || typeof request.selectionId !== 'string') {
+      throw new TypeError('Review-only candidate material requires one exact selection id.');
     }
     try {
       return {
         ok: true,
-        material: inspectPreparedReviewBatchMaterial({ root, batchId: request.batchId })
+        material: inspectReviewOnlyCandidateSelectionMaterial({ root, selectionId: request.selectionId })
       };
     } catch (error) {
       return {
         ok: false,
         error: {
-          code: typeof error?.code === 'string' && preparedReviewBatchMaterialErrorCodes.has(error.code)
+          code: typeof error?.code === 'string' && reviewOnlyCandidateSelectionMaterialErrorCodes.has(error.code)
             ? error.code
-            : 'PREPARED_REVIEW_BATCH_MATERIAL_ADAPTER_UNAVAILABLE',
-          message: 'Private selected-batch review material is unavailable.'
+            : 'REVIEW_ONLY_CANDIDATE_SELECTION_MATERIAL_ADAPTER_UNAVAILABLE',
+          message: 'Private review-only candidate selection material is unavailable.'
         }
       };
     }
   });
-  ipcMain.handle('operator:connected-plan-create', async (event, request) => {
+  ipcMain.handle('operator:review-only-candidate-preview-create', async (event, request) => {
     assertSender(event);
     if (!request || typeof request !== 'object' || Array.isArray(request)
       || Object.keys(request).length !== 1
-      || typeof request.batchId !== 'string') {
-      throw new TypeError('Prepared connected candidate requires one exact review batch id.');
+      || typeof request.selectionId !== 'string') {
+      throw new TypeError('Review-only candidate preview requires one exact selection id.');
     }
     try {
       return {
         ok: true,
-        plan: await createPreparedConnectedPlan({
+        preview: await createReviewOnlyCandidatePreview({
           root,
-          batchId: request.batchId,
+          selectionId: request.selectionId,
           createdAt: new Date().toISOString()
         })
       };
@@ -1310,34 +1359,34 @@ async function createWindow() {
       return {
         ok: false,
         error: {
-          code: typeof error?.code === 'string' && preparedConnectedPlanErrorCodes.has(error.code)
+          code: typeof error?.code === 'string' && reviewOnlyCandidatePreviewErrorCodes.has(error.code)
             ? error.code
-            : 'PREPARED_CONNECTED_PLAN_ADAPTER_UNAVAILABLE',
-          message: 'The private compiled candidate is unavailable for this review batch.'
+            : 'REVIEW_ONLY_CANDIDATE_PREVIEW_ADAPTER_UNAVAILABLE',
+          message: 'The private review-only candidate preview is unavailable for this selection.'
         }
       };
     }
   });
-  ipcMain.handle('operator:connected-plan', async (event, request) => {
+  ipcMain.handle('operator:review-only-candidate-preview', async (event, request) => {
     assertSender(event);
     if (!request || typeof request !== 'object' || Array.isArray(request)
       || Object.keys(request).length !== 1
-      || typeof request.planId !== 'string') {
-      throw new TypeError('Selected-plan private review requires one exact plan id.');
+      || typeof request.candidatePreviewId !== 'string') {
+      throw new TypeError('Private review-only candidate preview requires one exact preview id.');
     }
     try {
       return {
         ok: true,
-        plan: await inspectPreparedConnectedPlan({ root, planId: request.planId })
+        preview: await inspectReviewOnlyCandidatePreview({ root, candidatePreviewId: request.candidatePreviewId })
       };
     } catch (error) {
       return {
         ok: false,
         error: {
-          code: typeof error?.code === 'string' && preparedConnectedPlanErrorCodes.has(error.code)
+          code: typeof error?.code === 'string' && reviewOnlyCandidatePreviewErrorCodes.has(error.code)
             ? error.code
-            : 'PREPARED_CONNECTED_PLAN_ADAPTER_UNAVAILABLE',
-          message: 'Private compiled candidate material is unavailable.'
+            : 'REVIEW_ONLY_CANDIDATE_PREVIEW_ADAPTER_UNAVAILABLE',
+          message: 'Private review-only candidate preview material is unavailable.'
         }
       };
     }
@@ -1345,10 +1394,10 @@ async function createWindow() {
   ipcMain.handle('operator:automation-proposal', async (event, request) => {
     assertSender(event);
     try {
-      const exact = automationProposalLock(root, request);
+      const { adapter, exact } = automationProposalLock(root, request);
       return {
         ok: true,
-        proposal: loadEmailTriageProposal({ root, ...exact }).proposal
+        proposal: adapter.load({ root, ...exact }).proposal
       };
     } catch (error) {
       const code = typeof error?.code === 'string'
@@ -1368,10 +1417,10 @@ async function createWindow() {
   ipcMain.handle('operator:automation-proposal-material', async (event, request) => {
     assertSender(event);
     try {
-      const exact = automationProposalLock(root, request);
+      const { adapter, exact } = automationProposalLock(root, request);
       return {
         ok: true,
-        material: inspectEmailTriageProposalMaterial({ root, ...exact })
+        material: adapter.inspectMaterial({ root, ...exact })
       };
     } catch (error) {
       const code = typeof error?.code === 'string'
@@ -1398,7 +1447,7 @@ async function createWindow() {
         || request.actionIds.some((id) => typeof id !== 'string')) {
         throw new TypeError('Connected proposal preview requires one exact proposal and proposed action IDs.');
       }
-      const exact = automationProposalLock(root, {
+      const { adapter, exact } = automationProposalLock(root, {
         proposalId: request.proposalId,
         configurationName: request.configurationName,
         lockFingerprint: request.lockFingerprint
@@ -1410,8 +1459,8 @@ async function createWindow() {
           root,
           ...exact,
           actionIds: request.actionIds,
-          changeSetId: 'changeset.email-triage.' + id,
-          batchId: 'batch.email-triage.' + id,
+          changeSetId: `changeset.${adapter.idNamespace}.${id}`,
+          batchId: `batch.${adapter.idNamespace}.${id}`,
           createdAt: new Date().toISOString()
         })
       };
@@ -1439,15 +1488,15 @@ async function createWindow() {
         || !request.preview || typeof request.preview !== 'object') {
         throw new TypeError('Connected approval request requires one exact canonical proposal preview.');
       }
-      const exact = automationProposalLock(root, request.proposal);
-      const proposal = loadEmailTriageProposal({ root, ...exact });
+      const { adapter, exact } = automationProposalLock(root, request.proposal);
+      const proposal = adapter.load({ root, ...exact });
       const batch = request.preview.batch;
       const changeSet = request.preview.changeSet;
       if (batch?.$contract !== 'soter://contracts/connected-operation-batch/v2') {
-        throw new TypeError('Email proposal approval requires the canonical v2 connected operation batch.');
+        throw new TypeError('Automation proposal approval requires the canonical v2 connected operation batch.');
       }
       const createdAt = new Date();
-      const id = 'approval-request.email-triage.' + randomUUID();
+      const id = `approval-request.${adapter.idNamespace}.${randomUUID()}`;
       const begun = await beginProposalConnectedApprovalRequest({
         root,
         configurationBasis: 'private-active',
@@ -1456,7 +1505,7 @@ async function createWindow() {
         batch,
         changeSet,
         id,
-        reason: 'Review and approve this exact selected Email proposal subset.',
+        reason: `Review and approve this exact selected ${adapter.reviewLabel} proposal subset.`,
         createdAt: createdAt.toISOString(),
         expiresAt: new Date(createdAt.getTime() + 10 * 60 * 1000).toISOString()
       });

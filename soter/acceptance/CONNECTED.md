@@ -62,7 +62,7 @@ configuration-change-inspect
 ```
 
 Confirmation performs no apply. Start is separately validated and single-use.
-If this exact candidate only refreshes a historical active lock after governed
+If this exact candidate only refreshes a prior active lock after governed
 graph drift, the inspection must show the fingerprint-only `lock` scope,
 identifier-and-fingerprint-only `resolution` deltas, and the same
 confirmation/start/checkpoint boundary; no manual lock replacement or silent
@@ -210,22 +210,16 @@ read-back through Pause 3. An ambiguous result or `needs-attention` state permit
 only checkpoint-bound read-only reconciliation. Never retry the create and
 never silently delete the canary; no delete compensation exists.
 
-## Final truth and current canaries
+## Final truth and canary reporting
 
-The final report must preserve each host independently:
+The final report must preserve each host independently. It may report a
+completed transaction only when that exact host checkpoint and read-back are
+verified. A checkpoint in `needs-attention` remains unresolved even when a
+separate external read observes the intended record; do not retry the create,
+relabel the checkpoint, or silently delete the canary. An unavailable provider
+acquisition remains explicitly not evaluated.
 
-- The current Claude canary has a completed transaction checkpoint and verified
-  read-back.
-- The historical Codex canary completed one write. Its pre-fix checkpoint
-  remains `needs-attention` because the old decoder rejected a valid provider
-  person identity during verification and reconciliation. Current code
-  separately normalized and verified the live record, but it cannot rewrite a
-  checkpoint sealed to the old graph. Do not create another Task, relabel the
-  checkpoint, or treat external read-back as checkpoint completion.
-- Slack connected acquisition is unavailable and not evaluated.
-
-A report may state that the exact observed Claude transaction completed and
-that the exact Codex record exists under the corrected decoder. It may not
-aggregate those facts into host parity, broad readiness, global verification,
-or health. `valid` may pass for the local graph while `ready`, `verified`, and
+Do not aggregate individual canary observations into host parity, broad
+readiness, global verification, or health. `valid` may pass for the local graph
+while `ready`, `verified`, and
 `healthy` remain unknown outside the exact observations.

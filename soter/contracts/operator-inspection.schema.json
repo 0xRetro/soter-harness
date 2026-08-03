@@ -117,11 +117,10 @@
     },
     "families": {
       "type": "object", "additionalProperties": false,
-      "required": ["proof", "maturity", "migration"],
+      "required": ["proof", "maturity"],
       "properties": {
         "proof": { "$ref": "#/$defs/unprojectedFamily" },
-        "maturity": { "$ref": "#/$defs/unprojectedFamily" },
-        "migration": { "$ref": "#/$defs/unprojectedFamily" }
+        "maturity": { "$ref": "#/$defs/unprojectedFamily" }
       }
     },
     "privacy": {

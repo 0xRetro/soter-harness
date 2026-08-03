@@ -1,0 +1,38 @@
+{
+  "$contract": "soter://contracts/automation-derived-review/v1",
+  "contractVersion": "1.0.0",
+  "automation": "automation.project-page-reconciliation",
+  "kind": "project-page-reconciliation-derived-review",
+  "items": [
+    {
+      "kind": "project-properties-update",
+      "fields": [
+        { "id": "projectId", "label": "Project identity", "type": "text" },
+        { "id": "expectedTitle", "label": "Expected Project title", "type": "text" },
+        { "id": "expectedVersion", "label": "Current Project version", "type": "text" },
+        { "id": "beforeProjectType", "label": "Current Project type", "type": "string-list" },
+        { "id": "afterProjectType", "label": "Proposed Project type", "type": "string-list" },
+        { "id": "beforeStatus", "label": "Current Project status", "type": "string-list" },
+        { "id": "afterStatus", "label": "Proposed Project status", "type": "string-list" },
+        { "id": "patchFields", "label": "Exact changed property names", "type": "string-list" },
+        { "id": "beforeFieldsJson", "label": "Exact current Project fields", "type": "text" },
+        { "id": "afterFieldsJson", "label": "Exact proposed Project fields", "type": "text" },
+        { "id": "bodyFingerprint", "label": "Preserved page-body fingerprint", "type": "text" }
+      ]
+    },
+    {
+      "kind": "project-body-update",
+      "fields": [
+        { "id": "projectId", "label": "Project identity", "type": "text" },
+        { "id": "expectedTitle", "label": "Expected Project title", "type": "text" },
+        { "id": "expectedBodyFingerprint", "label": "Current page-body fingerprint", "type": "text" },
+        { "id": "afterBodyFingerprint", "label": "Proposed page-body fingerprint", "type": "text" },
+        { "id": "beforeFieldsJson", "label": "Exact current Project fields", "type": "text" },
+        { "id": "afterFieldsJson", "label": "Exact proposed Project fields", "type": "text" },
+        { "id": "updateIds", "label": "Exact replacement identities", "type": "string-list" },
+        { "id": "oldTexts", "label": "Exact current text regions", "type": "string-list" },
+        { "id": "newTexts", "label": "Exact replacement text regions", "type": "string-list" }
+      ]
+    }
+  ]
+}

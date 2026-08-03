@@ -442,20 +442,26 @@ function executableBinding({ executablePath, hostId }) {
   }
   let canonical;
   let entryKind;
+  let entryIdentity;
+  let targetIdentity;
   let mode;
   let binaryFingerprint;
   try {
-    const entry = fs.lstatSync(executablePath);
+    const entry = fs.lstatSync(executablePath, { bigint: true });
     entryKind = entry.isSymbolicLink() ? 'symlink' : entry.isFile() ? 'regular-file' : null;
-    if (!entryKind || entry.nlink !== 1) {
+    if (!entryKind || entry.nlink < 1n) {
       throw new Error('not one regular-file or symlink executable entry');
     }
+    entryIdentity = executableFilesystemIdentity(entry, {
+      linkTarget: entryKind === 'symlink' ? fs.readlinkSync(executablePath) : null
+    });
     canonical = fs.realpathSync(executablePath);
-    const stat = fs.statSync(canonical);
-    mode = stat.mode & 0o7777;
-    if (!stat.isFile() || stat.nlink !== 1 || !ALLOWED_EXECUTABLE_MODES.has(mode)) {
-      throw new Error('not one executable regular file');
+    const stat = fs.statSync(canonical, { bigint: true });
+    mode = Number(stat.mode & 0o7777n);
+    if (!stat.isFile() || stat.nlink < 1n || !ALLOWED_EXECUTABLE_MODES.has(mode)) {
+      throw new Error('not an executable regular file');
     }
+    targetIdentity = executableFilesystemIdentity(stat);
     binaryFingerprint = fingerprintFile(canonical);
   } catch (error) {
     throw codedError('DEVELOPMENT_HOST_EXECUTABLE_INVALID', 'Trusted host executable is unavailable or not executable.', error);
@@ -464,6 +470,8 @@ function executableBinding({ executablePath, hostId }) {
     path: executablePath,
     canonicalPath: canonical,
     entryKind,
+    entryIdentity,
+    targetIdentity,
     id: profile.executableId,
     mode,
     binaryFingerprint,
@@ -491,17 +499,35 @@ function executableBinding({ executablePath, hostId }) {
   };
 }
 
+function executableFilesystemIdentity(stat, { linkTarget = null } = {}) {
+  return {
+    device: String(stat.dev),
+    inode: String(stat.ino),
+    linkCount: String(stat.nlink),
+    mode: String(stat.mode & 0o7777n),
+    size: String(stat.size),
+    modifiedAtNanoseconds: String(stat.mtimeNs),
+    changedAtNanoseconds: String(stat.ctimeNs),
+    linkTarget
+  };
+}
+
 function assertExecutableStillExact(executable) {
   try {
-    const entry = fs.lstatSync(executable.path);
+    const entry = fs.lstatSync(executable.path, { bigint: true });
+    const entryKind = entry.isSymbolicLink() ? 'symlink' : entry.isFile() ? 'regular-file' : null;
+    const entryIdentity = executableFilesystemIdentity(entry, {
+      linkTarget: entryKind === 'symlink' ? fs.readlinkSync(executable.path) : null
+    });
     const canonical = fs.realpathSync(executable.path);
-    const stat = fs.statSync(canonical);
-    const mode = stat.mode & 0o7777;
+    const stat = fs.statSync(canonical, { bigint: true });
+    const targetIdentity = executableFilesystemIdentity(stat);
+    const mode = Number(stat.mode & 0o7777n);
     if (canonical !== executable.canonicalPath
-      || (entry.isSymbolicLink() ? 'symlink' : entry.isFile() ? 'regular-file' : null) !== executable.entryKind
-      || entry.nlink !== 1
+      || entryKind !== executable.entryKind
+      || JSON.stringify(entryIdentity) !== JSON.stringify(executable.entryIdentity)
       || !stat.isFile()
-      || stat.nlink !== 1
+      || JSON.stringify(targetIdentity) !== JSON.stringify(executable.targetIdentity)
       || mode !== executable.mode
       || !ALLOWED_EXECUTABLE_MODES.has(mode)
       || fingerprintFile(canonical) !== executable.binaryFingerprint) {
@@ -728,8 +754,7 @@ function fixedExecutionAuthority() {
     grantsProviderRead: false,
     grantsProviderWrite: false,
     grantsHostRealization: false,
-    grantsPromotion: false,
-    grantsFallbackRemoval: false
+    grantsPromotion: false
   };
 }
 
@@ -1514,8 +1539,7 @@ function fixedJudgmentAuthority() {
     grantsProviderRead: false,
     grantsProviderWrite: false,
     grantsHostRealization: false,
-    grantsPromotion: false,
-    grantsFallbackRemoval: false
+    grantsPromotion: false
   };
 }
 
@@ -2100,7 +2124,7 @@ function resultOutcome({ request, execution, judgment, postWorkspace }) {
     },
     decisionEvidence: [],
     limitations: [
-      'This private result records an independently judged isolated host evaluation and grants no activation, migration, or fallback-removal authority.'
+      'This private result records an independently judged isolated host evaluation and grants no execution, publication, merge, or promotion authority.'
     ]
   };
 }
@@ -2110,6 +2134,7 @@ function resultWorkspaceBinding(workspace) {
     rootIdentityFingerprint: workspace.rootIdentityFingerprint,
     revisionFingerprint: workspace.revisionFingerprint,
     treeFingerprint: workspace.treeFingerprint,
+    untargetedTreeFingerprint: workspace.untargetedTreeFingerprint,
     exactInputState: workspace.exactInputState,
     policyFingerprint: workspace.policyFingerprint,
     settingsFingerprint: workspace.settingsFingerprint
@@ -2168,6 +2193,7 @@ function buildObservation({ request, result, execution }) {
       projectionDefinitionFingerprint: request.host.projectionDefinitionFingerprint,
       evaluatedInstructionFingerprint: request.host.evaluatedInstructionFingerprint,
       candidateProjectionFingerprint: request.host.candidateProjectionFingerprint,
+      managedManifestFingerprint: request.host.managedManifestFingerprint,
       observer: {
         id: execution.adapter.id,
         version: execution.adapter.version,
@@ -2222,8 +2248,7 @@ function buildObservation({ request, result, execution }) {
       grantsProviderRead: false,
       grantsProviderWrite: false,
       grantsHostRealization: false,
-      grantsPromotion: false,
-      grantsFallbackRemoval: false
+      grantsPromotion: false
     },
     privacy: {
       absolutePathsIncluded: false,

@@ -38,7 +38,7 @@
       "organization.exactly-resolved",
       "duplicates.bounded",
       "project-create.candidate-reviewable",
-      "project-create.write-authority-unavailable"
+      "project-create.preparation-grants-no-write-authority"
     ],
     "invariants": [
       "private-project-material-excluded-from-inspection",
@@ -57,11 +57,7 @@
       "organization-read-fingerprint",
       "duplicate-query-fingerprint",
       "private-project-material-sanitized",
-      "write-boundary-state",
-      "source-cases-exactly-fingerprinted"
+      "write-boundary-state"
     ]
-  },
-  "sourceCases": [
-    ".claude/systems/project-management.md"
-  ]
+  }
 }

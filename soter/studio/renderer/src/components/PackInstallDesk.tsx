@@ -110,7 +110,7 @@ export function PackInstallDesk() {
             <div><dt>Fetch</dt><dd>prohibited</dd></div>
             <div><dt>Downgrade</dt><dd>blocked</dd></div>
             <div><dt>Unmanaged collision</dt><dd>blocked</dd></div>
-            <div><dt>Migration execution</dt><dd>not performed</dd></div>
+            <div><dt>Uninstall</dt><dd>prohibited</dd></div>
           </dl>
         </div>
       ) : (
@@ -154,7 +154,7 @@ export function PackInstallDesk() {
                   return (
                     <div role="row" key={effect.id} className={current ? 'is-current' : completed ? 'is-complete' : ''}>
                       <code role="cell">{String(effect.sequence + 1).padStart(2, '0')}</code>
-                      <span role="cell"><strong>{effect.pack}</strong><small>{effect.role}{effect.migrationRole ? ' · migration file only' : ''}</small></span>
+                      <span role="cell"><strong>{effect.pack}</strong><small>{effect.role}</small></span>
                       <StateMark state={effect.action} compact />
                       <code role="cell" title={effect.beforeFingerprint || undefined}>{shortFingerprint(effect.beforeFingerprint)}</code>
                       <code role="cell" title={effect.afterFingerprint || undefined}>{shortFingerprint(effect.afterFingerprint)}</code>
@@ -201,7 +201,7 @@ export function PackInstallDesk() {
               ['Verified', inspection.claims.verified],
               ['Healthy', inspection.claims.healthy]
             ] as const).map(([label, state]) => <article key={label}><span>{label}</span><StateMark state={state} compact /></article>)}</div>
-            <p>No fetch, uninstall, configuration mutation, host realization, migration execution, package manager, network, publication, or trust promotion is authorized by this inspection.</p>
+            <p>No fetch, uninstall, configuration mutation, host realization, package manager, network, publication, or trust promotion is authorized by this inspection.</p>
           </section>
 
           {inspection.checkpoint && ['completed', 'rolled-back', 'failed'].includes(inspection.checkpoint.state) && <button className="pack-install-reset" onClick={reset}>Close exact install transaction</button>}

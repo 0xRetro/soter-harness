@@ -8,6 +8,33 @@ import { PreparedWorkDossier } from './PreparedWorkDossier';
 import { StateMark } from './StateMark';
 
 type ExampleState = (typeof lifecycleFixture.states)[number];
+type AutomationProposalRoute = {
+  automationId: string;
+  configurationName: string;
+  label: string;
+  placeholder: string;
+};
+
+const automationProposalRoutes = new Map<string, AutomationProposalRoute>([
+  ['automation.email-triage', {
+    automationId: 'automation.email-triage',
+    configurationName: 'email-triage',
+    label: 'Email triage',
+    placeholder: 'proposal.email-triage…'
+  }],
+  ['automation.project-capture', {
+    automationId: 'automation.project-capture',
+    configurationName: 'project-capture',
+    label: 'Project Capture',
+    placeholder: 'proposal.project-capture…'
+  }],
+  ['automation.project-page-reconciliation', {
+    automationId: 'automation.project-page-reconciliation',
+    configurationName: 'project-page-reconciliation',
+    label: 'Project Page Reconciliation',
+    placeholder: 'proposal.project-page-reconciliation…'
+  }]
+]);
 
 export function OperatorView({
   snapshot,
@@ -182,6 +209,14 @@ export function OperatorView({
     && workflow.configuration === configuration.name
     && workflow.configurationBasis === configuration.configurationBasis
   );
+  const proposalRoute = exactConfigurationBinding
+    ? automationProposalRoutes.get(workflow.id) || null
+    : null;
+  const exactProposalRoute = proposalRoute
+    && proposalRoute.configurationName === configuration?.name
+    && proposalRoute.automationId === workflow.id
+    ? proposalRoute
+    : null;
   const canPrepareContained = Boolean(
     workflow.operator?.preparation.supported
     &&
@@ -331,7 +366,7 @@ export function OperatorView({
   }
 
   async function inspectAutomationProposal() {
-    if (workflow.id !== 'automation.email-triage' || !configuration?.lockFingerprint
+    if (!exactProposalRoute || !configuration?.lockFingerprint
       || !proposalId.trim() || proposalBusy) return;
     const epoch = proposalEpoch.current + 1;
     proposalEpoch.current = epoch;
@@ -357,6 +392,14 @@ export function OperatorView({
     if (proposalEpoch.current !== epoch) return;
     if (!inspected.ok) {
       setAutomationProposalError(inspected.error);
+      setProposalBusy(false);
+      return;
+    }
+    if (inspected.proposal.automation.id !== exactProposalRoute.automationId) {
+      setAutomationProposalError({
+        code: 'AUTOMATION_PROPOSAL_BINDING_INVALID',
+        message: 'The selected review-only proposal is unavailable.'
+      });
       setProposalBusy(false);
       return;
     }
@@ -673,11 +716,11 @@ export function OperatorView({
             </section>
           ) : <section className="operator-input-gap"><span className="operator-desk-index">A</span><div><strong>Input contract unavailable</strong><p>Studio will not invent automation fields.</p></div></section>}
 
-          {workflow.id === 'automation.email-triage' && (
-            <section className="proposal-access" aria-label="Exact Email proposal access">
+          {exactProposalRoute && (
+            <section className="proposal-access" aria-label={`Exact ${exactProposalRoute.label} proposal access`}>
               <header><span className="operator-desk-index">R</span><div><strong>Open review-only proposal</strong><code>selected proposal · local private state</code></div></header>
               <label htmlFor="operator-proposal-id">Exact proposal ID</label>
-              <input id="operator-proposal-id" type="text" value={proposalId} placeholder="proposal.email-triage…" onChange={(event) => {
+              <input id="operator-proposal-id" type="text" value={proposalId} placeholder={exactProposalRoute.placeholder} onChange={(event) => {
                 proposalEpoch.current += 1;
                 setProposalId(event.target.value);
                 setAutomationProposal(null);

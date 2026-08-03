@@ -62,7 +62,7 @@ export function assertProcessReviewSources({
   const targetTypes = exactStrings(process.fields?.writeTargetTypes || [], 'Write target types');
   const declaredClaims = exactStrings(process.fields?.declaredClaims || [], 'Process declared claims');
   if (!policyUris.length || targetTypes.length !== 1) {
-    throw new Error('Process review target must declare exact policy identities and one bounded write-target schema in this milestone.');
+    throw new Error('Process review target must declare exact policy identities and one bounded write-target schema.');
   }
   const policies = policyOutput?.records || [];
   if (policies.length !== policyUris.length

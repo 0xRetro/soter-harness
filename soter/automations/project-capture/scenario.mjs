@@ -9,7 +9,6 @@ import {
   resolveRepoPath
 } from '../../core/lib/canonical-json.mjs';
 import { fingerprintLock } from '../../core/resolve.mjs';
-import { fingerprintLegacySource } from '../../kernel/legacy-inventory.mjs';
 import { prepareProjectCaptureRun } from './prepare.mjs';
 
 const AUTOMATION_ID = 'automation.project-capture';
@@ -46,8 +45,7 @@ function factsFor({
   envelope,
   snapshot,
   preview,
-  derivedReview,
-  sourceCaseArtifacts
+  derivedReview
 }) {
   const policyEntry = snapshot.entries.find((entry) => entry.id === 'context.project-capture.policy');
   const profileEntry = snapshot.entries.find((entry) => entry.id === 'context.project-capture.profile');
@@ -98,15 +96,9 @@ function factsFor({
       return /^\t- \[ \] (?:@[0-9]{4}-[0-9]{2}-[0-9]{2} - )?[^,]+ - .+$/.test(line)
         && privateBody.split(line).length === 2;
     });
-  const boundaryHeld = envelope.lifecycleState === 'paused'
+  const preparationGrantsNoWriteAuthority = envelope.lifecycleState === 'paused'
     && envelope.approvals.length === 0
-    && envelope.effects.every((effect) => !effect.declaredEffects.includes('write'))
-    && preview.proposedChanges.length === 0;
-  const sourceCasesFingerprinted = sourceCaseArtifacts.length > 0
-    && sourceCaseArtifacts.every((artifact) => {
-      return artifact.role === 'source-case'
-        && /^sha256:[a-f0-9]{64}$/.test(artifact.fingerprint);
-    });
+    && envelope.effects.every((effect) => !effect.declaredEffects.includes('write'));
   const organizationRecord = exactRequestedContextRecord(organizationEntry.value, {
     recordType: 'organization',
     requestedId: input.organization
@@ -136,18 +128,18 @@ function factsFor({
         && duplicateEntry.value.candidateIds.length === 0
         && factValue(preview, 'duplicate-candidate-count') === 0,
       'project-create.candidate-reviewable': preview.kind === 'project-capture-preview'
-        && preview.proposedChanges.length === 0
+        && preview.proposedChanges.length === 1
         && preview.privateReview.state === 'available'
         && preview.collections.length === 1
         && reviewAction?.kind === 'project-create'
-        && reviewAction?.state === 'held'
-        && reviewAction?.capability === null
-        && reviewAction?.effect === null
-        && reviewAction?.reasonCode === 'COMPLETE_PROJECT_READBACK_UNAVAILABLE'
-        && !Object.hasOwn(reviewAction || {}, 'changeFingerprint')
-        && reviewRow?.flags.includes('COMPLETE_PROJECT_READBACK_UNAVAILABLE')
+        && reviewAction?.state === 'proposed'
+        && reviewAction?.capability === 'projects.records.create'
+        && reviewAction?.effect === 'write'
+        && reviewAction?.reasonCode === 'PROJECT_CREATE_READY_FOR_REVIEW'
+        && /^sha256:[a-f0-9]{64}$/.test(reviewAction?.changeFingerprint || '')
+        && reviewRow?.flags.length === 0
         && /^sha256:[a-f0-9]{64}$/.test(reviewRow?.privateDetailFingerprint || ''),
-      'project-create.write-authority-unavailable': boundaryHeld
+      'project-create.preparation-grants-no-write-authority': preparationGrantsNoWriteAuthority
     },
     invariants: {
       'private-project-material-excluded-from-inspection': privateMaterialSanitized,
@@ -166,7 +158,7 @@ function factsFor({
       'deduplicate-before-create': envelope.effects.length === 5
         && envelope.effects[4].capability === 'projects.records.read'
         && duplicateEntry.value.providerOutputFingerprint === envelope.effects[4].outputFingerprint,
-      'no-write-or-approval-during-preparation': boundaryHeld
+      'no-write-or-approval-during-preparation': preparationGrantsNoWriteAuthority
     },
     evidence: {
       'exact-lock': envelope.configurationLock.fingerprint === fingerprintLock(lock)
@@ -179,10 +171,9 @@ function factsFor({
         && /^sha256:[a-f0-9]{64}$/.test(duplicateEntry.value.providerOutputFingerprint),
       'private-project-material-sanitized': privateMaterialSanitized
         && projectItem.fingerprint === reviewRow.privateDetailFingerprint,
-      'write-boundary-state': boundaryHeld
+      'write-boundary-state': preparationGrantsNoWriteAuthority
         && envelope.effectPolicies.write.mode === 'confirm'
-        && envelope.effectPolicies.dispatch.mode === 'prohibit',
-      'source-cases-exactly-fingerprinted': sourceCasesFingerprinted
+        && envelope.effectPolicies.dispatch.mode === 'prohibit'
     }
   };
 }
@@ -232,11 +223,6 @@ export async function runContainedProjectCaptureScenario({
 }) {
   const resolvedRoot = path.resolve(root);
   const loaded = loadScenario(resolvedRoot, scenarioPath);
-  const sourceCaseArtifacts = loaded.scenario.sourceCases.map((sourcePath) => ({
-    role: 'source-case',
-    path: sourcePath,
-    fingerprint: fingerprintLegacySource(resolvedRoot, sourcePath)
-  }));
   const input = {
     name: 'SCENARIO_PRIVATE_SHORT_SENTINEL: Partner launch',
     organizationShortName: 'SCENARIO_PRIVATE_SHORT_SENTINEL',
@@ -270,8 +256,7 @@ export async function runContainedProjectCaptureScenario({
     envelope: execution.envelope,
     snapshot: execution.snapshot,
     preview: execution.preview,
-    derivedReview: execution.derivedReview,
-    sourceCaseArtifacts
+    derivedReview: execution.derivedReview
   });
   const assessment = assessmentFor({
     scenario: loaded.scenario,
@@ -294,7 +279,6 @@ export async function runContainedProjectCaptureScenario({
     envelope: execution.envelope,
     scenario: loaded.scenario,
     scenarioPath: loaded.path,
-    sourceCaseArtifacts,
     assessment,
     evaluatorId: 'automation.project-capture.scenario-evaluator',
     id: scenarioEvidenceId,

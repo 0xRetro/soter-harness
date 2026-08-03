@@ -48,8 +48,5 @@
       "requested-vs-observed-health",
       "write-gate-state"
     ]
-  },
-  "sourceCases": [
-    ".claude/evals/updating-project-status/pressure-just-say-on-track.md"
-  ]
+  }
 }

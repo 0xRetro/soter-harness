@@ -8,7 +8,6 @@ import {
   resolveRepoPath
 } from '../../core/lib/canonical-json.mjs';
 import { fingerprintLock } from '../../core/resolve.mjs';
-import { fingerprintLegacySource } from '../../kernel/legacy-inventory.mjs';
 import { prepareRepositoryReviewRun } from './prepare.mjs';
 
 const AUTOMATION_ID = 'automation.repository-review';
@@ -88,11 +87,6 @@ export async function runContainedRepositoryReviewScenario({
 }) {
   const resolvedRoot = path.resolve(root);
   const loaded = loadScenario(resolvedRoot, scenarioPath);
-  const sourceCaseArtifacts = loaded.scenario.sourceCases.map((sourcePath) => ({
-    role: 'source-case',
-    path: sourcePath,
-    fingerprint: fingerprintLegacySource(resolvedRoot, sourcePath)
-  }));
   const input = {
     repositoryUri: 'repo-fixture://process-platform',
     scope: 'product-capabilities'
@@ -163,9 +157,7 @@ export async function runContainedRepositoryReviewScenario({
       'duplicate-query-fingerprint': /^sha256:[a-f0-9]{64}$/.test(
         duplicateEntry.value.providerOutputFingerprint
       ),
-      'private-values-sanitized': privateValues.every((value) => !sanitized.includes(value)),
-      'source-cases-exactly-fingerprinted': sourceCaseArtifacts.length === 4
-        && sourceCaseArtifacts.every((artifact) => /^sha256:[a-f0-9]{64}$/.test(artifact.fingerprint))
+      'private-values-sanitized': privateValues.every((value) => !sanitized.includes(value))
     }
   };
   const assessment = assessmentFor({
@@ -182,7 +174,6 @@ export async function runContainedRepositoryReviewScenario({
     envelope: execution.envelope,
     scenario: loaded.scenario,
     scenarioPath: loaded.path,
-    sourceCaseArtifacts,
     assessment,
     evaluatorId: 'automation.repository-review.scenario-evaluator',
     id: scenarioEvidenceId,

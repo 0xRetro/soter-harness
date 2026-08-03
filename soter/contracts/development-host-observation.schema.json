@@ -167,6 +167,7 @@
         "rootIdentityFingerprint",
         "revisionFingerprint",
         "treeFingerprint",
+        "untargetedTreeFingerprint",
         "exactInputState",
         "policyFingerprint",
         "settingsFingerprint"
@@ -175,6 +176,7 @@
         "rootIdentityFingerprint": { "$ref": "#/$defs/fingerprint" },
         "revisionFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
         "treeFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "untargetedTreeFingerprint": { "$ref": "#/$defs/fingerprint" },
         "exactInputState": { "enum": ["clean", "dirty", "unknown"] },
         "policyFingerprint": { "$ref": "#/$defs/fingerprint" },
         "settingsFingerprint": { "$ref": "#/$defs/fingerprint" }
@@ -201,6 +203,7 @@
         "projectionDefinitionFingerprint",
         "evaluatedInstructionFingerprint",
         "candidateProjectionFingerprint",
+        "managedManifestFingerprint",
         "observer"
       ],
       "properties": {
@@ -214,6 +217,7 @@
         "projectionDefinitionFingerprint": { "$ref": "#/$defs/fingerprint" },
         "evaluatedInstructionFingerprint": { "$ref": "#/$defs/fingerprint" },
         "candidateProjectionFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "managedManifestFingerprint": { "$ref": "#/$defs/fingerprint" },
         "observer": {
           "type": "object",
           "additionalProperties": false,
@@ -448,8 +452,7 @@
         "grantsProviderRead",
         "grantsProviderWrite",
         "grantsHostRealization",
-        "grantsPromotion",
-        "grantsFallbackRemoval"
+        "grantsPromotion"
       ],
       "properties": {
         "kind": { "const": "host-observation-only" },
@@ -460,8 +463,7 @@
         "grantsProviderRead": { "const": false },
         "grantsProviderWrite": { "const": false },
         "grantsHostRealization": { "const": false },
-        "grantsPromotion": { "const": false },
-        "grantsFallbackRemoval": { "const": false }
+        "grantsPromotion": { "const": false }
       }
     },
     "privacy": {

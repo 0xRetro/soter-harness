@@ -4,8 +4,8 @@
   "id": "context.drive-filing.preparation-fixture",
   "runId": "run.drive-filing.preparation-fixture",
   "createdAt": "2026-07-21T16:00:00.000Z",
-  "configurationLockFingerprint": "sha256:b2a84bd82ac1e97905dfedd9d251b0f72065ad1e1b515ab175b9c5588c9b5ec5",
-  "graphFingerprint": "sha256:51ae2842e1ec0d5185f5c342040047ba274d36e5d933bfcee78cbad52e6f6745",
+  "configurationLockFingerprint": "sha256:d82981781f5f8a348dae16f711766a9db0630d94d85d23d9611443d1f36a7c3e",
+  "graphFingerprint": "sha256:b2eb96a3fa64cc88fd239e507ff101a62003c34861edce012fe9baa6cc83d837",
   "containment": "fixture",
   "entries": [
     {
@@ -247,18 +247,18 @@
       "capability": "crm.records.read",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "observedAt": "2026-07-21T16:00:00.000Z",
       "freshness": "passed",
       "provenance": {
         "provider": "notion-fixture",
         "authority": "authority.crm.instance",
         "mapping": "mapping.integration.notion.crm-records",
-        "mappingVersion": "0.2.0",
+        "mappingVersion": "0.4.0",
         "sourceKind": "fixture",
-        "sourceReferenceFingerprint": "sha256:fd85f9564b1ed60751a76a06a093dff0cdbc9be8ffc3d947da190bd90e15f95d"
+        "sourceReferenceFingerprint": "sha256:695362ddec9479c1b1408af45993aa93b6bd1371b4439609b0ee3a4fe9beab9d"
       },
-      "valueFingerprint": "sha256:4a8987db78f5f66a0ed289bff54ba213948bf9b1c570f791e5cb423bed21b1a8",
+      "valueFingerprint": "sha256:1f1dbfc759026e73f724d76218999a1049356c981fb4a08596b0217003e21bf0",
       "value": {
         "records": [
           {
@@ -282,9 +282,9 @@
           "provider": "notion-fixture",
           "authority": "authority.crm.instance",
           "mapping": "mapping.integration.notion.crm-records",
-          "mappingVersion": "0.2.0",
+          "mappingVersion": "0.4.0",
           "sourceKind": "fixture",
-          "sourceReferenceFingerprint": "sha256:fd85f9564b1ed60751a76a06a093dff0cdbc9be8ffc3d947da190bd90e15f95d"
+          "sourceReferenceFingerprint": "sha256:695362ddec9479c1b1408af45993aa93b6bd1371b4439609b0ee3a4fe9beab9d"
         },
         "observedAt": "2026-07-21T16:00:00.000Z"
       }
@@ -297,7 +297,7 @@
       "capability": "workspace.identity.read",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "observedAt": "2026-07-21T16:00:00.000Z",
       "freshness": "passed",
       "provenance": {

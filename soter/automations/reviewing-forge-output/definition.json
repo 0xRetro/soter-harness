@@ -8,31 +8,12 @@
   "ownership": {
     "layer": "automation",
     "domain": "harness-development",
-    "legacyLayer": "skill",
     "responsibility": "outcome-definition"
   },
   "lifecycle": {
     "state": "active-host-guided",
-    "activation": {
-      "state": "active",
-      "reasonCode": "WORKFLOW_HOST_GUIDANCE_ACTIVE",
-      "proceduralAuthority": "target",
-      "delivery": "host-skill",
-      "behaviorParity": "passed",
-      "evidence": [
-        {
-          "path": "soter/evidence/development/development-agent-migration-evidence.claude.reviewing-forge-output.json",
-          "fingerprint": "sha256:b097bb24168d2f99fe257155d618b61d49d0ffe24fdea13a4a4e59c1d47ae6aa",
-          "host": "claude"
-        },
-        {
-          "path": "soter/evidence/development/development-agent-migration-evidence.codex.reviewing-forge-output.json",
-          "fingerprint": "sha256:321e16445084b0e5661e4edf15047ae34fe224a56d3a76ddc0acecb96978f909",
-          "host": "codex"
-        }
-      ],
-      "permittedNextAction": "invoke-through-selected-host"
-    },
+    "reasonCode": "WORKFLOW_HOST_GUIDANCE_ACTIVE",
+    "delivery": "host-skill",
     "development": {
       "requestContract": {
         "id": "soter://contracts/development-request/v1",
@@ -112,7 +93,7 @@
     {
       "id": "report-findings",
       "sequence": 4,
-      "outcome": "Rank actionable correctness, security, migration, and claim-boundary findings with exact evidence.",
+      "outcome": "Rank actionable correctness, security, compatibility, upgrade, and claim-boundary findings with exact evidence.",
       "requirements": [
         "Bind every input and observation to one exact governed source or explicit operator decision."
       ],
@@ -150,19 +131,13 @@
     "read",
     "disclosure"
   ],
-  "source": {
-    "presence": "removed",
-    "legacyPath": ".claude/skills/reviewing-forge-output/SKILL.md",
-    "legacyFingerprint": "sha256:503fa0b867edab40e1996d7d3329a49358f281bc482bda66f6b0dbd8cee85370"
-  },
   "privacy": {
-    "rawSourceIncluded": false,
     "workspaceSpecificValuesIncluded": false,
     "credentialsIncluded": false,
     "privateInputsIncluded": false
   },
   "limitations": [
-    "This normalized definition preserves inspectable intent only; it has no operator runtime, provider binding, effect authority, or behavior parity.",
-    "The fingerprinted legacy source remains canonical until a separate implemented and evidenced runtime migration removes that fallback."
+    "This definition declares workflow outcomes and boundaries; it does not itself grant execution, provider, publication, merge, or host-realization authority.",
+    "Behavior evidence and effects remain scoped to exact governed development requests and current workflow fingerprints."
   ]
 }

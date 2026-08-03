@@ -10,18 +10,18 @@
     "id": "run.slack-channel-ingestion.preparation-fixture.selected",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:96baa0b1b192c534ab22ead6930a8697b5320e603e182eaaf1c34344f8cf7566",
-  "graphFingerprint": "sha256:bdcea20bf8fe942708790b976522c52b48a74b1831102e84dabe295f68d9d4b7",
+  "configurationLockFingerprint": "sha256:1815d38dd509de1f2f832af0040e398343c7ea759359eb4a8a6457ce867eb5c7",
+  "graphFingerprint": "sha256:1af21232e7be56aa80b87cb83b10bcf335f0183e454966ffa625b6a457748387",
   "dependencies": [
     {
       "id": "kernel.soter",
       "version": "0.1.0",
-      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+      "fingerprint": "sha256:a329fb60fdd3e46a9cdce1b0f6d5ea574812105be6bd235eb998a347c3339bfa"
     },
     {
       "id": "core.runtime",
       "version": "0.1.0",
-      "fingerprint": "sha256:a9c8dae0de0211a02104bbc93a94ea5021bdeadb84040dfe88778288ee465a92"
+      "fingerprint": "sha256:b922eb238bd0cd0c3a77bc63d68f92ceab0a78d60a13bea430a9ed48f8be4c1c"
     },
     {
       "id": "context.communications",
@@ -45,8 +45,8 @@
     },
     {
       "id": "integration.notion",
-      "version": "0.2.0",
-      "fingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5"
+      "version": "0.4.0",
+      "fingerprint": "sha256:cff95b234f5cc4339b13202be4fa4101dc767d755afd99ca336a4c17894c2d9d"
     },
     {
       "id": "integration.slack",
@@ -58,13 +58,13 @@
     "id": "codex",
     "adapter": "host.codex",
     "version": "0.3.1",
-    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
+    "manifestFingerprint": "sha256:845e7cecf13f9865f967d3078176bb0d4f0565b18506484b10499d5f60a26621"
   },
   "integrations": [
     {
       "id": "integration.notion",
-      "version": "0.2.0",
-      "manifestFingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5",
+      "version": "0.4.0",
+      "manifestFingerprint": "sha256:cff95b234f5cc4339b13202be4fa4101dc767d755afd99ca336a4c17894c2d9d",
       "evidenceMaturity": "declared"
     },
     {
@@ -226,11 +226,6 @@
       "id": "private-values-sanitized",
       "category": "evidence",
       "state": "passed"
-    },
-    {
-      "id": "source-cases-exactly-fingerprinted",
-      "category": "evidence",
-      "state": "passed"
     }
   ],
   "artifacts": [
@@ -238,17 +233,7 @@
       "role": "scenario",
       "id": "slack-channel-ingestion.selected-enrichment",
       "path": "soter/scenarios/slack-channel-ingestion/selected-enrichment.scenario.json",
-      "fingerprint": "sha256:eb337f977607c4f3b9c5549c9c8dff5665afa8e8f7a3b2431bbda32d75077039"
-    },
-    {
-      "role": "source-case",
-      "path": ".claude/evals/ingesting-slack-channels/happy-path.md",
-      "fingerprint": "sha256:21ebf4d251553fe7e6e4cb2ba4024568cd2ce515ab9bb7dff3eb652ee1a7b069"
-    },
-    {
-      "role": "source-case",
-      "path": ".claude/evals/ingesting-slack-channels/invariant-no-fabricated-members.md",
-      "fingerprint": "sha256:623453977f2bd020f1f151cbe18748c2391494ec7cd7b864d933cab885d01b3f"
+      "fingerprint": "sha256:f04fae5c55c323996ee1b8be7a0fa728b5d403bfb6fa71fda953c5e07260ed96"
     },
     {
       "role": "scenario-assessment",
@@ -293,17 +278,17 @@
         },
         "state": "passed"
       },
-      "observationFingerprint": "sha256:938dbe0e6a16f4c660995aaac1067adac31194de639dd43ad77b50cc48927716"
+      "observationFingerprint": "sha256:68a6211ee77cfa963d8d6d93e7121281f74e3177a160c94259e672f7fcfe9e6e"
     },
     {
       "role": "identity-context-snapshot",
       "id": "context.slack-channel-ingestion.preparation-fixture.identity",
-      "fingerprint": "sha256:17ff411c90519b19143584ba670367b0abb5eed9ea33594595908b4e9341db1c"
+      "fingerprint": "sha256:eee47660363f7dcaa40bbbba67e5b499014976a5ddc57c935e382f3089bf279f"
     },
     {
       "role": "selected-context-snapshot",
       "id": "context.slack-channel-ingestion.preparation-fixture.selected",
-      "fingerprint": "sha256:5134029c6675aa1e30fabebf32c16152663a09e59677b2e67bd3005ef4b36cb8"
+      "fingerprint": "sha256:761307744b15650d837b777a1719242ab821117a8ba8b8a21cc79308fccd9814"
     },
     {
       "role": "identity-review-preview",
@@ -321,7 +306,7 @@
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "containment": "fixture",
       "authority": "authority.communications.definition",
       "startedAt": "2026-07-21T21:00:00.000Z",
@@ -346,7 +331,7 @@
       ],
       "inputFingerprint": "sha256:3ae3da867127bbe47f7e2206bdadd81bd34ea4840a3417ec644ef977688f4d41",
       "state": "passed",
-      "outputFingerprint": "sha256:d7bb68d1712106fb59e267eee65d0fbe1defaa6d068ac7649fab07a0fc8c9b5c",
+      "outputFingerprint": "sha256:691252202e48fa61a8f55538c28be62c68232cf9854555edb78848fa74859a46",
       "error": null
     },
     {
@@ -389,7 +374,7 @@
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "containment": "fixture",
       "authority": "authority.communications.instance",
       "startedAt": "2026-07-21T21:00:00.000Z",
@@ -414,7 +399,7 @@
       ],
       "inputFingerprint": "sha256:f4f49293523c02863a7912f37d68bf9d67b6223c131f5bd9ffbf2ff5ffdb3fcf",
       "state": "passed",
-      "outputFingerprint": "sha256:74660a8c15889aba4e6e9e7f7ac06651fc599c2a93112fc664e4199c9dd93e57",
+      "outputFingerprint": "sha256:f655816d8eabcd3194cd37323a1010bf82d355aed9a8c4e0f6f803d6e6e6c364",
       "error": null
     },
     {
@@ -423,7 +408,7 @@
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "containment": "fixture",
       "authority": "authority.communications.instance",
       "startedAt": "2026-07-21T21:00:00.000Z",
@@ -448,7 +433,7 @@
       ],
       "inputFingerprint": "sha256:4c4ee45ecbc0afd6998f3f29925ec571a2b643b596f8c3a79faa8ee6e1290656",
       "state": "passed",
-      "outputFingerprint": "sha256:a98c47f4c0abb12902669e3a252f442272f2dfb84484784c7553d43dce04fbb4",
+      "outputFingerprint": "sha256:80737b94116ac467f40e5767d1a06c84ae21f86bee6f3324c0b10a19f325cffb",
       "error": null
     },
     {
@@ -525,7 +510,7 @@
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "containment": "fixture",
       "authority": "authority.crm.instance",
       "startedAt": "2026-07-21T21:00:00.000Z",
@@ -550,7 +535,7 @@
       ],
       "inputFingerprint": "sha256:10cb13f32c0593c4c5cfd437faa7bb3c6fd705abeccfd11ff76798eb25653be4",
       "state": "passed",
-      "outputFingerprint": "sha256:089d940051d78a907039bf975d3686ec611a25a548088e4ace5dc5a503430795",
+      "outputFingerprint": "sha256:375d4cb7e9a918907af76d75e8e54b0bc810b9c9e95570fcb127e860691a1e47",
       "error": null
     },
     {
@@ -559,7 +544,7 @@
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "containment": "fixture",
       "authority": "authority.crm.instance",
       "startedAt": "2026-07-21T21:00:00.000Z",
@@ -584,7 +569,7 @@
       ],
       "inputFingerprint": "sha256:ccec5b7ea3270566a6c78fb204eb6206e0603533e943b2aca7556545fc87873c",
       "state": "passed",
-      "outputFingerprint": "sha256:6739de3b3182a6f1281c93f96b78e88bcdd2946da44c1dfd6b7361b6e6c091e4",
+      "outputFingerprint": "sha256:7cb69d0f050b4c4a8cfdf8f982b1449bbfea39cd583ac57e7db3bb2c844bfcf8",
       "error": null
     }
   ],

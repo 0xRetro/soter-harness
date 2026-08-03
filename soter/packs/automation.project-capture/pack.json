@@ -2,11 +2,11 @@
   "$contract": "soter://contracts/pack/v1",
   "contractVersion": "1.0.0",
   "id": "automation.project-capture",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "layer": "automation",
   "releaseStage": "experimental",
   "evidenceMaturity": "declared",
-  "summary": "Grounds one private Project or Deal candidate against an exact portable creation profile, current policy, schema, organization, and duplicate observations, then stops at a private held review. Project creation is intentionally unavailable because Core currently supports only one verification observation per operation and cannot prove the required complete fields-and-body read-back.",
+  "summary": "Grounds one private Project or Deal candidate against an exact portable creation profile, current policy, schema, organization, and duplicate observations, then compiles one exact Project create for separately approved, single-use, checkpointed execution with complete fields-and-body read-back.",
   "dependencies": [
     {
       "pack": "core.runtime",
@@ -31,7 +31,7 @@
     "requires": [
       {
         "id": "projects.records.read",
-        "version": "^1.0.0",
+        "version": "^1.1.0",
         "optional": false,
         "reason": "Preparation must load one exact policy, the complete creation-profile set, and bounded duplicate Project candidates."
       },
@@ -46,6 +46,12 @@
         "version": "^1.0.0",
         "optional": false,
         "reason": "Preparation must observe current project fields and exact Type and Status options before a candidate can be reviewed."
+      },
+      {
+        "id": "projects.records.create",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "One exact reviewed Project candidate may enter Core's separately confirmed transaction boundary."
       }
     ],
     "provides": []
@@ -87,6 +93,11 @@
       "required": true
     },
     {
+      "role": "provider",
+      "subject": "notion.workspace",
+      "required": true
+    },
+    {
       "role": "evidence",
       "subject": "runtime.runs",
       "required": true
@@ -94,7 +105,8 @@
   ],
   "effects": [
     "read",
-    "disclosure"
+    "disclosure",
+    "write"
   ],
   "operator": {
     "input": "soter/automations/project-capture/operator-input.json",
@@ -120,6 +132,17 @@
         },
         { "capability": "crm.records.read", "recordTypes": ["organization"] },
         { "capability": "projects.schema.read", "recordTypes": ["project"] }
+      ]
+    },
+    "connection": {
+      "module": "soter/automations/project-capture/connected.mjs",
+      "compileExport": "compileProjectCaptureConnectedOperations",
+      "evaluateExport": "evaluateProjectCaptureConnectedVerification",
+      "recordRequirements": [
+        {
+          "capability": "projects.records.create",
+          "recordTypes": ["project"]
+        }
       ]
     },
     "proposal": {
@@ -173,6 +196,10 @@
     },
     {
       "path": "soter/automations/project-capture/proposal.mjs",
+      "role": "implementation"
+    },
+    {
+      "path": "soter/automations/project-capture/connected.mjs",
       "role": "implementation"
     },
     {

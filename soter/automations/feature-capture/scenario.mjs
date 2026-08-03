@@ -8,7 +8,6 @@ import {
   resolveRepoPath
 } from '../../core/lib/canonical-json.mjs';
 import { fingerprintLock } from '../../core/resolve.mjs';
-import { fingerprintLegacySource } from '../../kernel/legacy-inventory.mjs';
 import { prepareFeatureCaptureRun } from './prepare.mjs';
 
 const AUTOMATION_ID = 'automation.feature-capture';
@@ -97,11 +96,6 @@ export async function runContainedFeatureCaptureScenario({
 }) {
   const resolvedRoot = path.resolve(root);
   const loaded = loadScenario(resolvedRoot, scenarioPath);
-  const sourceCaseArtifacts = loaded.scenario.sourceCases.map((sourcePath) => ({
-    role: 'source-case',
-    path: sourcePath,
-    fingerprint: fingerprintLegacySource(resolvedRoot, sourcePath)
-  }));
   const inputs = {
     happy: {
       name: 'Reusable integrator onboarding',
@@ -235,9 +229,7 @@ export async function runContainedFeatureCaptureScenario({
       'policy-fingerprint': /^sha256:[a-f0-9]{64}$/.test(happyPolicy?.value?.definitionFingerprint || ''),
       'schema-fingerprint': /^sha256:[a-f0-9]{64}$/.test(happySchema?.value?.schema?.fingerprint || ''),
       'duplicate-query-fingerprint': /^sha256:[a-f0-9]{64}$/.test(happyCandidates?.value?.providerOutputFingerprint || ''),
-      'private-values-sanitized': privateValues.every((value) => !serialized.includes(value)),
-      'source-cases-exactly-fingerprinted': sourceCaseArtifacts.length === 4
-        && sourceCaseArtifacts.every((artifact) => /^sha256:[a-f0-9]{64}$/.test(artifact.fingerprint))
+      'private-values-sanitized': privateValues.every((value) => !serialized.includes(value))
     }
   };
   const assessment = assessmentFor({
@@ -257,7 +249,6 @@ export async function runContainedFeatureCaptureScenario({
     envelope: happy.envelope,
     scenario: loaded.scenario,
     scenarioPath: loaded.path,
-    sourceCaseArtifacts,
     assessment,
     evaluatorId: 'automation.feature-capture.scenario-evaluator',
     id: scenarioEvidenceId,

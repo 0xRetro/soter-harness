@@ -1,40 +1,22 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { validateJsonSchema } from '../kernel/verify.mjs';
-import { workflowEvidenceBasisLockPaths } from '../kernel/workflow-evidence-bases.mjs';
 import { readJson } from './lib/canonical-json.mjs';
 import { aggregateProofStates, inspectWorkspace } from './inspection.mjs';
 import { prepareAutomationRun } from './prepared-work.mjs';
 import { writePrivateConfigurationState } from './private-configurations.mjs';
 import { resolveConfiguration } from './resolve.mjs';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-for (const historicalLockPath of workflowEvidenceBasisLockPaths()) {
-  const rejectedDoctor = spawnSync(process.execPath, [
-    path.join(root, 'soter/core/cli.mjs'),
-    'doctor',
-    '--root',
-    root,
-    '--lock',
-    historicalLockPath,
-    '--json'
-  ], {
-    encoding: 'utf8'
-  });
-  assert.notEqual(rejectedDoctor.status, 0,
-    'Doctor accepted historical workflow-evidence basis ' + historicalLockPath + '.');
-  assert.match(
-    rejectedDoctor.stderr,
-    /SOTER_HISTORICAL_EVIDENCE_LOCK_NOT_OPERATIONAL/,
-    'Doctor did not return the stable historical-basis rejection code for '
-      + historicalLockPath + '.'
-  );
-}
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const root = fs.mkdtempSync(path.join(os.tmpdir(), 'soter-inspection-tracked-selftest-'));
+fs.cpSync(path.join(repositoryRoot, 'soter'), path.join(root, 'soter'), { recursive: true });
+fs.copyFileSync(path.join(repositoryRoot, 'package.json'), path.join(root, 'package.json'));
+fs.copyFileSync(path.join(repositoryRoot, 'package-lock.json'), path.join(root, 'package-lock.json'));
+process.once('exit', () => fs.rmSync(root, { recursive: true, force: true }));
 const first = inspectWorkspace({ root });
 const second = inspectWorkspace({ root });
 const failures = validateJsonSchema(first, readJson(path.join(root, 'soter/contracts/workspace-inspection.schema.json')));
@@ -175,32 +157,10 @@ assert.equal(new Set(first.graph.nodes.map((item) => item.id)).size, first.graph
 assert.equal(new Set(first.graph.edges.map((item) => item.id)).size, first.graph.edges.length,
   'Workspace graph edge IDs must remain unique across configurations.');
 assert(first.configurations.every((item) => item.lockState === 'current'),
-  'The finalized multi-configuration fixture graph must provide a current exact lock for every configuration.');
+  'The tracked multi-configuration fixture graph must provide a current exact lock for every configuration.');
 assert.equal(first.proof.states.valid, 'passed');
 assert.notEqual(first.proof.states.ready, 'passed',
   'Current exact locks do not promote offline readiness without connected evidence.');
-const meetingMigrationStates = Object.fromEntries(
-  first.workflows
-    .find((item) => item.id === 'automation.meeting-intake')
-    ?.scenarios.map((scenario) => [scenario.id, scenario.migrationState]) || []
-);
-assert.equal(meetingMigrationStates['meeting-intake.preparation'], 'migrated',
-  'An exact scenario target must retain its mechanically bound migration state.');
-assert.equal(meetingMigrationStates['meeting-intake.happy-path'], 'target-native',
-  'A target-native scenario must not become unknown or claim migration without an exact target binding.');
-const emailMigrationStates = Object.fromEntries(
-  first.workflows
-    .find((item) => item.id === 'automation.email-triage')
-    ?.scenarios.map((scenario) => [scenario.id, scenario.migrationState]) || []
-);
-assert.equal(emailMigrationStates['email-triage.preparation'], 'migrated');
-assert.equal(emailMigrationStates['email-triage.happy-path'], 'target-native');
-assert(first.workflows
-  .filter((workflow) => workflow.migration.state === 'migrated')
-  .flatMap((workflow) => workflow.scenarios)
-  .every((scenario) => scenario.migrationState !== 'unknown'),
-  'A completed workflow migration must distinguish exact migrated targets from target-native scenarios.');
-
 const halfStateRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'soter-inspection-basis-selftest-'));
 try {
   fs.cpSync(path.join(root, 'soter'), path.join(halfStateRoot, 'soter'), { recursive: true });
@@ -255,20 +215,10 @@ try {
     aggregateProofStates(proofObservations),
     'Workspace proof aggregation must not depend on configuration ordering.'
   );
-  const historicalLockPath = path.join(
-    temporaryRoot,
-    'soter/fixtures/harness-development-catalog-final/codex.lock.json'
-  );
-  const historicalLock = readJson(historicalLockPath);
   const currentOperationalLock = resolveConfiguration({
     root: temporaryRoot,
     configPath: 'soter/configurations/harness-development-catalog.config.json'
   });
-  assert.notEqual(
-    currentOperationalLock.graphFingerprint,
-    historicalLock.graphFingerprint,
-    'The planted operational renewal must differ from its immutable historical evidence basis.'
-  );
   const operationalLockPath = path.join(
     temporaryRoot,
     'soter/fixtures/harness-development-catalog/harness-development-catalog.lock.json'
@@ -283,14 +233,14 @@ try {
       return item.name === 'harness-development-catalog';
     })?.lockState,
     'current',
-    'An immutable historical evidence basis conflicted with the renewed operational lock.'
+    'The renewed operational lock must remain current.'
   );
   assert.equal(
     renewedOperationalSnapshot.proof.checks.find((item) => {
       return item.id === 'harness-development-catalog:core.lock-current';
     })?.state,
     'passed',
-    'Operational proof selected the immutable historical evidence basis instead of the renewed lock.'
+    'Operational proof must select the renewed current lock.'
   );
 
   const conflictingOperationalLock = structuredClone(currentOperationalLock);

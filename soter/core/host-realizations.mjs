@@ -647,6 +647,54 @@ export function inspectManagedHostProjectionOwnership({ root, host }) {
 }
 
 /**
+ * Revalidate the immutable managed-host basis used by an already-issued
+ * request after an exact governed source target may have changed. This keeps
+ * root identity, private configuration bytes, manifest integrity, output
+ * bytes/modes/inventory, and global ownership collision checks exact while
+ * deliberately skipping only the current graph re-render.
+ */
+export function inspectHistoricalManagedHostProjectionBasis({
+  root,
+  host,
+  manifestFingerprint: expectedManifestFingerprint,
+  configurationFingerprint: expectedConfigurationFingerprint
+}) {
+  const resolvedRoot = path.resolve(root);
+  const exact = inspectCurrentManagedHostProjection({
+    root: resolvedRoot,
+    host,
+    verifyCandidate: false
+  });
+  if (exact.state !== 'realized'
+    || exact.manifest.manifestFingerprint !== expectedManifestFingerprint
+    || exact.configurationFingerprint !== expectedConfigurationFingerprint) {
+    fail(
+      'HOST_REALIZATION_HISTORICAL_BASIS_STALE',
+      'Historical managed host projection basis no longer matches its exact request.'
+    );
+  }
+  const rows = manifests(resolvedRoot, exact.target);
+  const selected = rows.filter((row) => row.manifest.host === host);
+  if (selected.length !== 1
+    || selected[0].manifest.manifestFingerprint !== expectedManifestFingerprint) {
+    fail(
+      'HOST_REALIZATION_HISTORICAL_BASIS_STALE',
+      'Historical managed host ownership is missing, duplicated, or colliding.'
+    );
+  }
+  return Object.freeze({
+    state: 'realized',
+    manifestFingerprint: exact.manifest.manifestFingerprint,
+    configurationFingerprint: exact.configurationFingerprint,
+    targetFingerprint: exact.target.fingerprint,
+    outputsFingerprint: fingerprintJson(exact.outputs),
+    ownedPathsFingerprint: fingerprintJson(
+      exact.manifest.outputs.map((output) => output.path).sort(compareText)
+    )
+  });
+}
+
+/**
  * Inspect the private, exact host-realization boundary for runtime startup.
  *
  * The returned facts are internal fingerprint material only. They are never

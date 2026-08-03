@@ -48,8 +48,5 @@
       "unsupported-claim-disposition",
       "effect-decision"
     ]
-  },
-  "sourceCases": [
-    ".claude/evals/updating-project-status/invariant-no-invented-progress.md"
-  ]
+  }
 }

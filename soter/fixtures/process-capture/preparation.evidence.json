@@ -10,18 +10,18 @@
     "id": "run.process-capture.preparation-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:36db63ff9887faa4c31973c63f9971054974f48d598059a3ed036a49cb3fbb06",
-  "graphFingerprint": "sha256:83b82d22ae1b35307fe16390c5990c9d94b39c273d46523c5e0337da73f78736",
+  "configurationLockFingerprint": "sha256:75c39e4c54766ca7b390406629b728c0c5314ea4fb195a43a42160f7d69a04ca",
+  "graphFingerprint": "sha256:8b3e2a0b7601138fa82fd46ad09c67994d8c8904ac0ecb68d8738f32ed7de98d",
   "dependencies": [
     {
       "id": "kernel.soter",
       "version": "0.1.0",
-      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+      "fingerprint": "sha256:a329fb60fdd3e46a9cdce1b0f6d5ea574812105be6bd235eb998a347c3339bfa"
     },
     {
       "id": "core.runtime",
       "version": "0.1.0",
-      "fingerprint": "sha256:a9c8dae0de0211a02104bbc93a94ea5021bdeadb84040dfe88778288ee465a92"
+      "fingerprint": "sha256:b922eb238bd0cd0c3a77bc63d68f92ceab0a78d60a13bea430a9ed48f8be4c1c"
     },
     {
       "id": "context.process",
@@ -31,25 +31,25 @@
     {
       "id": "automation.process-capture",
       "version": "0.1.0",
-      "fingerprint": "sha256:4ebfec8890197ea5eac9bff57e6a82727e3cf0dd1b220ac14c7c905181a57a9d"
+      "fingerprint": "sha256:cba19993d7b58734c29aa79eb21cdf14733cbf317a159ad3c439aa08c2485a88"
     },
     {
       "id": "integration.notion",
-      "version": "0.2.0",
-      "fingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5"
+      "version": "0.4.0",
+      "fingerprint": "sha256:cff95b234f5cc4339b13202be4fa4101dc767d755afd99ca336a4c17894c2d9d"
     }
   ],
   "host": {
     "id": "codex",
     "adapter": "host.codex",
     "version": "0.3.1",
-    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
+    "manifestFingerprint": "sha256:845e7cecf13f9865f967d3078176bb0d4f0565b18506484b10499d5f60a26621"
   },
   "integrations": [
     {
       "id": "integration.notion",
-      "version": "0.2.0",
-      "manifestFingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5",
+      "version": "0.4.0",
+      "manifestFingerprint": "sha256:cff95b234f5cc4339b13202be4fa4101dc767d755afd99ca336a4c17894c2d9d",
       "evidenceMaturity": "declared"
     }
   ],
@@ -185,11 +185,6 @@
       "id": "private-values-sanitized",
       "category": "evidence",
       "state": "passed"
-    },
-    {
-      "id": "source-cases-exactly-fingerprinted",
-      "category": "evidence",
-      "state": "passed"
     }
   ],
   "artifacts": [
@@ -197,22 +192,7 @@
       "role": "scenario",
       "id": "process-capture.preparation",
       "path": "soter/scenarios/process-capture/preparation.scenario.json",
-      "fingerprint": "sha256:a0652693bb886f94ed595fd4dfb3a760f2e7ef0b07749a5f7229507fcad1f0a6"
-    },
-    {
-      "role": "source-case",
-      "path": ".claude/evals/capturing-a-process/happy-path.md",
-      "fingerprint": "sha256:4bb978ddb9cd4904d131d1e052b84948fd491343efc65e0043f1fd0f19286fab"
-    },
-    {
-      "role": "source-case",
-      "path": ".claude/evals/capturing-a-process/invariant-no-task-spawn.md",
-      "fingerprint": "sha256:c7d783d082f507227fda7032ff43617cf289e2d46a9ad219237d6c090328b2f9"
-    },
-    {
-      "role": "source-case",
-      "path": ".claude/evals/capturing-a-process/pressure-invent-option.md",
-      "fingerprint": "sha256:5ad360ebf7c5fe23304391204a0ccb649e5dec534d104dabe139449be6dfd3b9"
+      "fingerprint": "sha256:bedda7bd3bc432a829b6385519497f87b927e2b40b2648c26f572fd04e70322d"
     },
     {
       "role": "scenario-assessment",
@@ -251,12 +231,12 @@
         },
         "state": "passed"
       },
-      "observationFingerprint": "sha256:fab644caaf3a82e5c4c31fb558cebf3d5faa100fc81fd4be3aed8a4b0a47cb40"
+      "observationFingerprint": "sha256:4d7dddfd1d11844340564436c9ce43f300f39c26831fe4410dfd20ac722ca042"
     },
     {
       "role": "context-snapshot",
       "id": "context.process-capture.preparation-fixture",
-      "fingerprint": "sha256:6fe8247aeec5e5c54fe00df3d952ffc475f85657b99085a12624b4a94b0162a3"
+      "fingerprint": "sha256:c479259b3c7e42383f3963c124dee27f1fb8c253398d0fb94f70c18b3023ac48"
     },
     {
       "role": "process-capture-preview",
@@ -282,7 +262,7 @@
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "containment": "fixture",
       "authority": "authority.process.definition",
       "startedAt": "2026-07-21T22:00:00.000Z",
@@ -307,7 +287,7 @@
       ],
       "inputFingerprint": "sha256:1dbfc726d79a0cbe64bc78cb6b7a8007a7192d536182fe8295286a9abec042ef",
       "state": "passed",
-      "outputFingerprint": "sha256:1af5b518f0d9089a2c1c038014d0d313b3d79c77ea7b980612ee9978ca5b71d9",
+      "outputFingerprint": "sha256:9d84a5c9ef6d0dd283b0809cffbcc918bce7d4ecc517b34bd9b3f90e77d198e1",
       "error": null
     },
     {
@@ -316,7 +296,7 @@
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "containment": "fixture",
       "authority": "authority.process.instance",
       "startedAt": "2026-07-21T22:00:00.000Z",
@@ -341,7 +321,7 @@
       ],
       "inputFingerprint": "sha256:87993f01733c1f061cdc5b871ceca707dd967dd14f74cfe779e450f3c450b00b",
       "state": "passed",
-      "outputFingerprint": "sha256:cc8f5964cc6e6cc33dd7f0645bae39865c8a1209a988a42326c164ffe1cf570e",
+      "outputFingerprint": "sha256:2ad0db2e21598a631225b9ba0fa5e062e661d9f4c3955f160e3c0cf90d52bcad",
       "error": null
     },
     {
@@ -350,7 +330,7 @@
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "containment": "fixture",
       "authority": "authority.process.instance",
       "startedAt": "2026-07-21T22:00:00.000Z",
@@ -375,7 +355,7 @@
       ],
       "inputFingerprint": "sha256:22383fc177afc4b31fd0ae6d473d75c1a5c560b9278fe229331246a6166e8d4e",
       "state": "passed",
-      "outputFingerprint": "sha256:e2ae217888ddf0417c65fc782ab3359480e635c9016e738194b04344b3c84ddb",
+      "outputFingerprint": "sha256:cf4fb334e29fc0544ebc6eae3a7d5cda466d20137db409047ede840ac78c0882",
       "error": null
     },
     {
@@ -384,7 +364,7 @@
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "containment": "fixture",
       "authority": "authority.process.instance",
       "startedAt": "2026-07-21T22:00:00.000Z",
@@ -409,7 +389,7 @@
       ],
       "inputFingerprint": "sha256:7693594c6ff6646cdc1222f9309fa9b76980aac83d596520f03db161ebbf87d1",
       "state": "passed",
-      "outputFingerprint": "sha256:4c33f6e698d25c4cc99054560b5b0a4682fc1746dc60cf2ed6418ae139bde9ee",
+      "outputFingerprint": "sha256:ea966acccdb6b599ee47add0cf29e202b86bd8c05e1a717fa7567e9c931b50fb",
       "error": null
     },
     {
@@ -418,7 +398,7 @@
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "containment": "fixture",
       "authority": "authority.process.instance",
       "startedAt": "2026-07-21T22:00:00.000Z",
@@ -443,7 +423,7 @@
       ],
       "inputFingerprint": "sha256:488a02e0ef6d23134969345373e3e734689e6501f9838c5b0992e0a2d5dd6ac4",
       "state": "passed",
-      "outputFingerprint": "sha256:ebde0dedc935db4dad35d541359faacd17947597f986111fe61d4d2001531094",
+      "outputFingerprint": "sha256:0e283e6c0dad9cbbb1ff3b0f21fc18f57944f24c6467982d2546badc9446666c",
       "error": null
     }
   ],

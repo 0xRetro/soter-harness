@@ -45,8 +45,5 @@
       "complete-group-fingerprint",
       "write-boundary-state"
     ]
-  },
-  "sourceCases": [
-    ".claude/systems/project-management.md"
-  ]
+  }
 }

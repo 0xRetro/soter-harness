@@ -311,7 +311,7 @@ function buildDecision({ root, lock, snapshot, run, id, createdAt, producer }) {
       },
       organization: evaluated.organization,
       limitations: [
-        'This private decision binds exact prepared input and current connected observations but grants no approval, continuation, provider call, write, proof, or migration authority.',
+        'This private decision binds exact prepared input and current connected observations but grants no approval, continuation, provider call, write, or proof authority.',
         'A ready decision may produce a separate private review proposal; exact batch selection, approval, one-time start consumption, checkpoint execution, and verification remain separate.'
       ]
     },

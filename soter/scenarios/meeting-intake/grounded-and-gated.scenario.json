@@ -45,8 +45,5 @@
       "private-complete-group-review",
       "complete-meeting-readback-unavailable"
     ]
-  },
-  "sourceCases": [
-    ".claude/evals/processing-a-meeting/invariant-grounded-and-gated.md"
-  ]
+  }
 }

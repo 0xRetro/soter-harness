@@ -48,8 +48,5 @@
       "not-created-dispositions",
       "effect-decision"
     ]
-  },
-  "sourceCases": [
-    ".claude/evals/processing-a-meeting/pressure-stale-meeting.md"
-  ]
+  }
 }

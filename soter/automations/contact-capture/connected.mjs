@@ -128,12 +128,12 @@ function personFromMaterial(materialAction) {
 export function compileContactCaptureConnectedOperations({ batch, material }) {
   const automationId = batch.work?.automationId || batch.automationId;
   if (automationId !== 'automation.contact-capture'
-    || material.batch.id !== batch.id
-    || material.batch.fingerprint !== batch.fingerprint
+    || material.selection.id !== batch.id
+    || material.selection.fingerprint !== batch.fingerprint
     || batch.actions.length !== 1
     || material.actions.length !== 1) {
     throw new Error(
-      'Contact Capture connected compiler requires one exact selected review batch.'
+      'Contact Capture connected compiler requires one exact review-only candidate selection.'
     );
   }
   const materialAction = material.actions[0];

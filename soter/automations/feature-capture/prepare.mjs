@@ -503,7 +503,7 @@ export async function prepareFeatureCaptureRun({
     outcomes: [
       { id: 'feature-policy-grounded', label: 'Exact Product feature workflow policy grounded', state: 'supported', basis: ['context.feature-capture.policy'], limitation: 'The policy selection and contained definition do not establish connected provider state.' },
       { id: 'feature-schema-grounded', label: 'Current configured feature board schema grounded', state: 'supported', basis: ['context.feature-capture.schema'], limitation: 'One contained schema observation does not establish future compatibility, permission, or readiness.' },
-      { id: 'feature-create-review', label: 'Complete feature create prepared', state: result.ready ? 'proposed' : 'blocked', basis: entries.map((entry) => entry.id), limitation: result.ready ? 'The fingerprint-only proposal grants no approval or execution authority; connected create is unavailable in this migration slice.' : 'The create remains held until every surfaced why, option, and duplicate blocker is resolved.' },
+      { id: 'feature-create-review', label: 'Complete feature create prepared', state: result.ready ? 'proposed' : 'blocked', basis: entries.map((entry) => entry.id), limitation: result.ready ? 'The fingerprint-only proposal grants no approval or execution authority; connected create is unavailable for this workflow.' : 'The create remains held until every surfaced why, option, and duplicate blocker is resolved.' },
       { id: 'external-write-boundary', label: 'All external writes held behind separate authority', state: 'supported', basis: entries.map((entry) => entry.id), limitation: 'Preparation performs no provider write and declares no connected compiler.' }
     ],
     preview: result.preview,

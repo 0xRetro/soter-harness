@@ -222,13 +222,13 @@ function directClaudePayload(response, kind) {
   return false;
 }
 
-function directPayloadKind(capability) {
+function directPayloadKind(capability, input = null) {
   if (capability === 'workspace.identity.read') return 'self';
   if (capability === 'documents.content.read') return 'page';
   if (capability === 'documents.content.update') return 'update';
   const descriptor = parseRecordCapability(capability);
   if (descriptor?.operation === 'schema-read') return 'data-source';
-  if (descriptor?.operation === 'read') return 'query';
+  if (descriptor?.operation === 'read') return input?.content ? 'page' : 'query';
   if (descriptor?.operation === 'create') return 'create';
   if (descriptor?.operation === 'update') return 'update';
   return null;
@@ -661,6 +661,88 @@ function requestedRecordTypes(input) {
   return recordTypes;
 }
 
+function exactRecordUpdatePatch(input) {
+  requiredObject(input, 'Notion record update');
+  if (!exactKeys(
+    input,
+    ['recordType', 'id', 'expectedVersion', 'patch'],
+    ['recordType', 'id', 'expectedVersion', 'patch']
+  )) {
+    throw providerError(
+      'validation',
+      'Notion record updates require one closed exact record identity, expected version, and patch.'
+    );
+  }
+  requiredString(input.recordType, 'Notion update record type');
+  requiredString(input.id, 'Notion update record identity');
+  requiredString(input.expectedVersion, 'Notion update expected version');
+  if (input.recordType.trim() !== input.recordType
+    || input.id.trim() !== input.id
+    || input.expectedVersion.trim() !== input.expectedVersion) {
+    throw providerError(
+      'validation',
+      'Notion record update identities and expected versions must be exact trimmed values.'
+    );
+  }
+  const patch = requiredObject(input.patch, 'Notion update patch');
+  const changedFields = Object.keys(patch).sort(compareCodepoint);
+  if (changedFields.length < 1) {
+    throw providerError('validation', 'Notion update patch must contain at least one exact field.');
+  }
+  return changedFields;
+}
+
+function exactProjectContentRead(capability, input, mapping, settings, mappings) {
+  if (!Object.hasOwn(input || {}, 'content')) return null;
+  const content = input.content;
+  const recordTypes = requestedRecordTypes(input);
+  if (capability !== 'projects.records.read'
+    || !content
+    || typeof content !== 'object'
+    || Array.isArray(content)
+    || !exactKeys(content, ['expectedTitle'], ['expectedTitle'])
+    || typeof content.expectedTitle !== 'string'
+    || !content.expectedTitle
+    || content.expectedTitle.trim() !== content.expectedTitle
+    || content.expectedTitle.length > 200
+    || !Array.isArray(input.ids)
+    || input.ids.length !== 1
+    || input.limit !== 1) {
+    throw providerError(
+      'validation',
+      'Connected Notion Project content reads require one exact record type, id, expected title, and limit.'
+    );
+  }
+  const definition = recordMapping(
+    mapping,
+    recordTypes[0],
+    capability,
+    settings,
+    mappings
+  );
+  if (definition.content?.portable !== 'body'
+    || definition.content.provider !== 'page-content'
+    || definition.content.providerType !== 'markdown') {
+    throw providerError(
+      'validation',
+      'Connected Notion Project content reads require one exact mapped markdown page-content route.'
+    );
+  }
+  const titleFields = definition.fields.filter((field) => field.providerType === 'title');
+  if (titleFields.length !== 1) {
+    throw providerError(
+      'validation',
+      'Connected Notion Project content reads require one exact mapped title field.'
+    );
+  }
+  return {
+    definition,
+    expectedTitle: content.expectedTitle,
+    requestedId: input.ids[0],
+    titleField: titleFields[0]
+  };
+}
+
 const OPAQUE_PROVIDER_PERSON_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
 const HYPHENATED_UUID = /^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/;
 const COMPACT_UUID = /^[0-9A-Fa-f]{32}$/;
@@ -1087,7 +1169,7 @@ function normalizedNotionInlineTitle(value) {
   return normalized;
 }
 
-function exactPagePropertyTitle(propertiesText, expectedTitle) {
+function exactPageProperties(propertiesText) {
   if (propertiesText.length > 100000) {
     throw providerError(
       'validation',
@@ -1104,6 +1186,10 @@ function exactPagePropertyTitle(propertiesText, expectedTitle) {
       'Notion document properties exceed the bounded property-count limit.'
     );
   }
+  return properties;
+}
+
+function exactPagePropertyTitle(properties, expectedTitle) {
   if (Object.hasOwn(properties, 'title')) {
     if (normalizedNotionInlineTitle(properties.title) !== expectedTitle) {
       throw providerError(
@@ -1347,12 +1433,13 @@ function normalizedPageContent(payload, input) {
     propertiesStart + '<properties>'.length,
     propertiesEnd
   ).trim();
-  const title = exactPagePropertyTitle(propertiesText, expectedTitle);
+  const properties = exactPageProperties(propertiesText);
+  const title = exactPagePropertyTitle(properties, expectedTitle);
   const body = envelope.slice(propertiesEnd + '</properties>'.length, pageEnd).trim();
   if (!body || body.length > 250000) {
     throw providerError('validation', 'Notion document body is empty or outside the bounded content limit.');
   }
-  return { title, providerUri, body };
+  return { title, providerUri, body, properties };
 }
 
 function documentUpdates(input) {
@@ -1561,6 +1648,7 @@ export function prepareMcp({ capability, input, settings, mappings }) {
     };
   }
   if (descriptor.operation === 'update') {
+    exactRecordUpdatePatch(input);
     const definition = recordMapping(mapping, input.recordType, capability, settings, mappings);
     return {
       tool: 'update_page',
@@ -1602,6 +1690,43 @@ export function prepareMcp({ capability, input, settings, mappings }) {
   }
   requiredObject(input.filters || {}, 'Notion record filters');
   const identityScope = exactRecordReadIdentityScope(input.ids);
+  const contentRead = exactProjectContentRead(
+    capability,
+    input,
+    mapping,
+    settings,
+    mappings
+  );
+  if (contentRead) {
+    for (const [field, value] of Object.entries(input.filters || {})) {
+      normalizedRequestedFilterValue(
+        mapping,
+        capability,
+        contentRead.definition.id,
+        field,
+        value,
+        settings,
+        mappings
+      );
+    }
+    for (const candidate of input.filtersAny || []) {
+      for (const [field, value] of Object.entries(candidate)) {
+        normalizedRequestedFilterValue(
+          mapping,
+          capability,
+          contentRead.definition.id,
+          field,
+          value,
+          settings,
+          mappings
+        );
+      }
+    }
+    return {
+      tool: 'fetch',
+      arguments: { id: identityScope.comparisons[0] }
+    };
+  }
   const targets = notionSettings(settings);
   const params = [];
   const targetUris = [];
@@ -1657,6 +1782,85 @@ function decodedFields(mapping, row, capability, optionMappings, settings, mappi
       field,
       normalized,
       'portable'
+    );
+  }
+  return fields;
+}
+
+function decodedPageFieldValue(field, properties) {
+  if (!Object.hasOwn(properties, field.provider)) {
+    throw providerError(
+      'validation',
+      'Notion fetched Project content omitted mapped property ' + field.portable + '.'
+    );
+  }
+  let value = properties[field.provider];
+  if (field.decode === 'json' && typeof value === 'string') {
+    value = parseJsonText(value, 'Notion fetched Project field ' + field.portable);
+  }
+  if (field.providerType === 'title') {
+    value = normalizedNotionInlineTitle(value);
+  }
+  if (value === null) return null;
+  if (field.decode === 'json') {
+    if (!Array.isArray(value)
+      || value.length > 100
+      || value.some((item) => typeof item !== 'string')) {
+      throw providerError(
+        'validation',
+        'Notion fetched Project field ' + field.portable
+          + ' does not match its exact mapped array shape.'
+      );
+    }
+    return value;
+  }
+  if (field.providerType === 'checkbox') {
+    if (typeof value !== 'boolean') {
+      throw providerError(
+        'validation',
+        'Notion fetched Project field ' + field.portable
+          + ' does not match its exact mapped boolean shape.'
+      );
+    }
+    return value;
+  }
+  if (typeof value !== 'string'
+    || (field.providerType === 'date' && !/^\d{4}-\d{2}-\d{2}$/.test(value))) {
+    throw providerError(
+      'validation',
+      'Notion fetched Project field ' + field.portable
+        + ' does not match its exact mapped scalar shape.'
+    );
+  }
+  return value;
+}
+
+function decodedPageFields({
+  mapping,
+  definition,
+  properties,
+  expectedTitle,
+  optionMappings
+}) {
+  const fields = {};
+  for (const field of definition.fields) {
+    const decoded = decodedPageFieldValue(field, properties);
+    const normalized = normalizedDecodedMappedIdentityValue(field, decoded);
+    fields[field.portable] = mappedChoiceValue(
+      optionMappings,
+      mapping,
+      definition,
+      field,
+      normalized,
+      'portable'
+    );
+  }
+  const titleFields = definition.fields.filter((field) => field.providerType === 'title');
+  if (titleFields.length !== 1
+    || fields[titleFields[0].portable] !== expectedTitle) {
+    throw providerError(
+      'conflict',
+      'Notion fetched Project title does not match the exact requested title.'
     );
   }
   return fields;
@@ -1884,7 +2088,7 @@ export function completeMcp({
   settings
 }) {
   const payload = requiredObject(
-    nativePayload(response, responseProfile, directPayloadKind(capability)),
+    nativePayload(response, responseProfile, directPayloadKind(capability, input)),
     'Notion query result'
   );
   if (capability === 'workspace.identity.read') {
@@ -2011,6 +2215,7 @@ export function completeMcp({
     };
   }
   if (descriptor.operation === 'update') {
+    const changedFields = exactRecordUpdatePatch(input);
     const definition = recordMapping(mapping, input.recordType, capability, settings, mappings);
     const updated = exactObservedPageIdentity(payload, 'Notion updated page');
     if (updated.normalized !== normalizedNotionPageId(input.id)) {
@@ -2025,7 +2230,7 @@ export function completeMcp({
         id: canonicalNotionPageUri(input.id),
         fields: normalizedPortableWriteFields(definition, input.patch)
       },
-      changedFields: Object.keys(input.patch).sort(),
+      changedFields,
       provenance: {
         provider: 'notion-mcp',
         authority,
@@ -2037,6 +2242,68 @@ export function completeMcp({
   }
   if (descriptor.operation !== 'read') {
     throw providerError('validation', 'Notion MCP adapter does not implement ' + capability + '.');
+  }
+  const contentRead = exactProjectContentRead(
+    capability,
+    input,
+    mapping,
+    settings,
+    mappings
+  );
+  if (contentRead) {
+    const normalized = normalizedPageContent(payload, {
+      uri: contentRead.requestedId,
+      expectedTitle: contentRead.expectedTitle
+    });
+    const fields = decodedPageFields({
+      mapping,
+      definition: contentRead.definition,
+      properties: normalized.properties,
+      expectedTitle: contentRead.expectedTitle,
+      optionMappings
+    });
+    const [record] = assertRequestedRecords(
+      [{
+        type: contentRead.definition.id,
+        id: normalized.providerUri,
+        fields,
+        body: normalized.body
+      }],
+      input,
+      mapping,
+      capability,
+      settings,
+      mappings
+    );
+    return {
+      records: [{
+        ...record,
+        version: fingerprintJson({
+          type: record.type,
+          id: record.id,
+          fields: record.fields,
+          body: record.body
+        })
+      }],
+      provenance: {
+        provider: 'notion-mcp',
+        authority,
+        mapping: mapping.id,
+        mappingVersion: mapping.version,
+        sourceKind: 'connected',
+        sourceReferenceFingerprint: fingerprintJson({
+          capability,
+          input,
+          mapping: mapping.id,
+          mappingVersion: mapping.version,
+          fieldBindingFingerprint: effectiveFieldBindingFingerprint(
+            mapping,
+            contentRead.definition
+          )
+        })
+      },
+      observedAt: at
+    };
   }
   const readDefinition = recordMapping(
     mapping,

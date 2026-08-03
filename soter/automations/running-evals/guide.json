@@ -1,15 +1,15 @@
 {
   "contractVersion": "2.0.0",
   "id": "workflow-guide.running-evals",
-  "contentFingerprint": "sha256:bd5c7a4ff2f2975ea69cff34bf5d6171207f61548e0eacfee389faab54bc151d",
+  "contentFingerprint": "sha256:771570636d382fdf6c47ce5e258e642d6300087ada923a6041e64a46c913c986",
   "$contract": "soter://contracts/workflow-guide/v2",
   "workflow": {
     "id": "automation.running-evals",
     "version": "0.1.0",
     "definitionPath": "soter/automations/running-evals/definition.json",
-    "definitionFingerprint": "sha256:c426697b37cfc10a5d875ba01c9ede88a0c09418db86ac27def034f01a04ed5d",
+    "definitionFingerprint": "sha256:cf85fdd19f2115dc40ec99d630d78b0584d1fbc77e3665ee4406e62b09ba10fd",
     "evaluationSetPath": "soter/automations/running-evals/evaluations.json",
-    "evaluationSetFingerprint": "sha256:c8a29735e68382144bfad3a763a2ee859596ce692baac2d33c93808af24ed03e"
+    "evaluationSetFingerprint": "sha256:dfcc62e80753636393fac069535483314bfaa0d29467bc7a768670b49ee7a65b"
   },
   "skill": {
     "name": "running-evals",
@@ -22,21 +22,7 @@
   "status": {
     "state": "active",
     "reasonCode": "WORKFLOW_GUIDE_ACTIVE",
-    "proceduralAuthority": "target",
-    "behaviorParity": "passed",
     "delivery": "host-skill",
-    "evidence": [
-      {
-        "path": "soter/evidence/development/development-agent-migration-evidence.claude.running-evals.json",
-        "fingerprint": "sha256:f76fc0cac43c29168be484153db7c5e8bd810f2bf637c2b11a8dee59381c049d",
-        "host": "claude"
-      },
-      {
-        "path": "soter/evidence/development/development-agent-migration-evidence.codex.running-evals.json",
-        "fingerprint": "sha256:c5086ff5556241faf970f71769bc8b9f5624e78a9ee37178e7d5ed962fb61bdd",
-        "host": "codex"
-      }
-    ],
     "permittedNextAction": "invoke-through-selected-host"
   },
   "authority": {
@@ -187,21 +173,14 @@
       "target": "soter://contracts/development-governance/v1"
     }
   ],
-  "source": {
-    "presence": "removed",
-    "legacyPath": ".claude/skills/running-evals/SKILL.md",
-    "legacyFingerprint": "sha256:82ed2174bdfb2ec24cece2db915468aa06b58c6e033e81a13b5b6b14c1dd04a9",
-    "normalization": "behavior-preserving-with-explicit-authority-boundary"
-  },
   "privacy": {
-    "rawSourceIncluded": false,
     "workspaceSpecificValuesIncluded": false,
     "credentialsIncluded": false,
     "privateInputsIncluded": false,
     "providerResponsesIncluded": false
   },
   "limitations": [
-    "This procedural guide grants no worker dispatch, file-write, publication, provider, or golden-update authority.",
+    "This guide provides procedural guidance only and grants no worker dispatch, file-write, publication, provider, merge, or host-realization authority.",
     "Behavior evidence requires an exact private request and an independently observed fresh-worker run through a trusted host boundary."
   ]
 }

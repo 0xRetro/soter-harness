@@ -168,7 +168,7 @@ const batch = {
   actions: selectedActions.map(({ action }) => structuredClone(action))
 };
 const material = {
-  batch: { id: batch.id, fingerprint: batch.fingerprint },
+  selection: { id: batch.id, fingerprint: batch.fingerprint },
   actions: selectedActions.map(({ row, action }) => ({
     selection: structuredClone(action),
     proposed: structuredClone(connectedReview.derivedReview.items.find((item) => {
@@ -254,7 +254,7 @@ const partialBatch = {
   actions: [structuredClone(batch.actions[1])]
 };
 const partialMaterial = {
-  batch: { id: partialBatch.id, fingerprint: partialBatch.fingerprint },
+  selection: { id: partialBatch.id, fingerprint: partialBatch.fingerprint },
   actions: [structuredClone(material.actions[1])]
 };
 assert.throws(
@@ -262,4 +262,4 @@ assert.throws(
   /partial selection is not allowed/
 );
 
-process.stdout.write('Project Pulse shared-policy, exact-batch compilation, verification, and abstention selftest passed.\n');
+process.stdout.write('Project Pulse shared-policy, exact candidate selection, verification, and abstention selftest passed.\n');

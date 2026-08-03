@@ -38,11 +38,9 @@ assert.deepEqual(policy.artifactModel.roles, [
   'implementation',
   'projection',
   'evaluation',
-  'fixture',
-  'migration'
+  'fixture'
 ]);
 assert.equal(policy.artifactModel.scaffolding, 'derived-from-governing-contract');
-assert.equal(policy.artifactModel.legacyMarkdownTemplates, 'compatibility-only');
 
 assert.deepEqual(
   policy.lifecycle.map((item) => item.sequence),
@@ -60,19 +58,6 @@ assert.equal(policy.evaluationPolicy.workerContext, 'fresh-and-expectations-with
 assert.equal(policy.evaluationPolicy.verdictBasis, 'observable-artifacts-and-effects');
 assert.equal(policy.evaluationPolicy.selfReportSufficient, false);
 assert.equal(policy.governance.decisionRecords, 'optional-for-ordinary-development');
-assert.equal(policy.governance.fallbackRemoval, 'exact-parity-or-intentional-change-evidence');
-
-const changeIds = new Set(policy.intentionalChanges.map((item) => item.id));
-for (const required of [
-  'markdown-classification-retired',
-  'copy-template-authority-retired',
-  'mandatory-adr-ceremony-retired',
-  'host-line-budgets-host-scoped',
-  'human-only-merge-not-runtime-authority',
-  'definition-only-not-executable'
-]) {
-  assert(changeIds.has(required), `missing intentional change ${required}`);
-}
 
 const contractIds = new Set(
   fs.readdirSync(path.join(root, 'soter/contracts'))
@@ -98,8 +83,8 @@ assert.deepEqual(pack.effects, []);
 
 const serialized = JSON.stringify(policy);
 for (const forbidden of ['.claude/', 'notion', 'slack', 'gmail']) {
-  assert(!serialized.includes(forbidden), `development policy contains provider or legacy coupling: ${forbidden}`);
+  assert(!serialized.includes(forbidden), `development policy contains provider coupling: ${forbidden}`);
 }
 assert(!/(?:^|[\s"'])\/(?:[^/\s"']+\/)*[^/\s"']+/.test(serialized), 'development policy contains an absolute workspace path');
 
-process.stdout.write('Development governance selftest passed: ownership, contract-derived scaffolding, develop lifecycle, evaluation isolation, intentional changes, privacy, and zero authority remain exact.\n');
+process.stdout.write('Development governance selftest passed: ownership, contract-derived scaffolding, present-tense lifecycle, evaluation isolation, privacy, and zero authority remain exact.\n');

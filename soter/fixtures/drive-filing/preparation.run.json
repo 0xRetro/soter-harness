@@ -13,9 +13,9 @@
   },
   "configurationLock": {
     "path": "soter/fixtures/drive-filing/drive-filing.lock.json",
-    "fingerprint": "sha256:b2a84bd82ac1e97905dfedd9d251b0f72065ad1e1b515ab175b9c5588c9b5ec5"
+    "fingerprint": "sha256:d82981781f5f8a348dae16f711766a9db0630d94d85d23d9611443d1f36a7c3e"
   },
-  "graphFingerprint": "sha256:51ae2842e1ec0d5185f5c342040047ba274d36e5d933bfcee78cbad52e6f6745",
+  "graphFingerprint": "sha256:b2eb96a3fa64cc88fd239e507ff101a62003c34861edce012fe9baa6cc83d837",
   "context": [
     {
       "subject": "crm.records",
@@ -24,7 +24,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/policies",
       "declarationFingerprint": "sha256:5dcd7b166e69d5be3bf39ed57adf225ede8a4a2bd73d0d4800b3a38981ebce8d",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:b2a84bd82ac1e97905dfedd9d251b0f72065ad1e1b515ab175b9c5588c9b5ec5",
+      "provenance": "configuration-lock:sha256:d82981781f5f8a348dae16f711766a9db0630d94d85d23d9611443d1f36a7c3e",
       "freshness": "unknown"
     },
     {
@@ -34,7 +34,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/crm",
       "declarationFingerprint": "sha256:22b1ce681f68bd1f0ca80c9d22975e60bb675940630b26709005d8fd291757de",
       "status": "loaded",
-      "provenance": "fixture:sha256:95e56dfb96d036c87621bf1b37a7a4d00e90df7b9ac75505c67171301b1e8432",
+      "provenance": "fixture:sha256:e587645946d76ad1b88197c5586e6db9df4987957ae49c7c86ca69f6a2d16b28",
       "freshness": "passed"
     },
     {
@@ -64,7 +64,7 @@
       "uri": "soter-fixture://configuration-template/storage/provider/google-drive",
       "declarationFingerprint": "sha256:01a83215e98a812ba14b9b0e2013835e4165a31cbde2b54c6cdef42094b4f334",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:b2a84bd82ac1e97905dfedd9d251b0f72065ad1e1b515ab175b9c5588c9b5ec5",
+      "provenance": "configuration-lock:sha256:d82981781f5f8a348dae16f711766a9db0630d94d85d23d9611443d1f36a7c3e",
       "freshness": "unknown"
     },
     {
@@ -84,7 +84,7 @@
       "uri": "soter-state://runs",
       "declarationFingerprint": "sha256:8c419343899d33fbd2ef0b1c128c9b04b32ec716905dd04ae0934b803b0b9cad",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:b2a84bd82ac1e97905dfedd9d251b0f72065ad1e1b515ab175b9c5588c9b5ec5",
+      "provenance": "configuration-lock:sha256:d82981781f5f8a348dae16f711766a9db0630d94d85d23d9611443d1f36a7c3e",
       "freshness": "unknown"
     },
     {
@@ -113,7 +113,7 @@
       "capability": "crm.records.read",
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "authorities": [
         "authority.crm.instance"
       ],
@@ -134,7 +134,7 @@
       "effects": [
         "write"
       ],
-      "reason": "A future separately authorized exact batch may create one document-index record; this migration slice has no connected implementation."
+      "reason": "A future separately authorized exact batch may create one document-index record; this workflow has no connected implementation."
     },
     {
       "capability": "documents.records.read",
@@ -216,13 +216,13 @@
       "effects": [
         "write"
       ],
-      "reason": "A future separately authorized exact batch may create one shortcut; this migration slice has no connected implementation."
+      "reason": "A future separately authorized exact batch may create one shortcut; this workflow has no connected implementation."
     },
     {
       "capability": "workspace.identity.read",
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "authorities": [
         "authority.notion.provider"
       ],
@@ -237,12 +237,12 @@
     "id": "codex",
     "adapter": "host.codex",
     "version": "0.3.1",
-    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0",
+    "manifestFingerprint": "sha256:845e7cecf13f9865f967d3078176bb0d4f0565b18506484b10499d5f60a26621",
     "projectionDefinition": {
       "id": "host-projection.codex",
       "version": "0.3.0",
       "path": "soter/hosts/codex/projection.json",
-      "fingerprint": "sha256:76cd84436a3b5e7f00edcc8a0be3cdff64f53e488b13107a8bf56603b9600490"
+      "fingerprint": "sha256:09fe78fb567ec40ac12e71e1bd5304f44246669a23fe8ac84c5eef755cb95727"
     },
     "projectionGenerator": {
       "id": "core.host-projection-generator",
@@ -293,7 +293,7 @@
     {
       "id": "context.drive-filing.preparation-fixture",
       "type": "context-snapshot",
-      "fingerprint": "sha256:2c58032a36a5930a8aeb7f6284842ccdba5d5ae404668e24d512bb998bd98487"
+      "fingerprint": "sha256:e55fe13ed9d4d9a2f3245da54f8a121ed3b6644b91f884094d531d9a211ba922"
     }
   ],
   "effects": [
@@ -439,7 +439,7 @@
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "containment": "fixture",
       "authority": "authority.crm.instance",
       "startedAt": "2026-07-21T16:00:00.000Z",
@@ -464,7 +464,7 @@
       ],
       "inputFingerprint": "sha256:11ddea95593b913c925d7e7c9debed4cdd0ad4944b63ca1584974d1a9592ad43",
       "state": "passed",
-      "outputFingerprint": "sha256:4a8987db78f5f66a0ed289bff54ba213948bf9b1c570f791e5cb423bed21b1a8",
+      "outputFingerprint": "sha256:1f1dbfc759026e73f724d76218999a1049356c981fb4a08596b0217003e21bf0",
       "error": null
     },
     {
@@ -473,7 +473,7 @@
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "containment": "fixture",
       "authority": "authority.notion.provider",
       "startedAt": "2026-07-21T16:00:00.000Z",
@@ -506,6 +506,6 @@
   "scenario": {
     "id": "filing-a-drive-artifact.preparation",
     "path": "soter/scenarios/filing-a-drive-artifact/preparation.scenario.json",
-    "fingerprint": "sha256:77ec538a0b88e006fe2e364ebe1d68316ab9582ca64f3a789f2af717f0ba8d81"
+    "fingerprint": "sha256:97b6b8e8fbdd53ce9c96066aec86d1ab573db4d0407c7d063884dea120c59dee"
   }
 }

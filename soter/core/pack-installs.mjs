@@ -629,7 +629,6 @@ function planFileEffects({ targetRoot, priorManifest, loaded }) {
       pack: output.pack,
       path: relative,
       role: output.role,
-      migrationRole: output.role === 'migration',
       prior,
       candidate,
       reasonCode: `PACK_INSTALL_FILE_${action.toUpperCase()}`,
@@ -764,7 +763,7 @@ export function preparePackInstall({
     scopeFingerprint,
     limitations: [
       'Installation uses only exact already-local verified capsules and performs no network fetch.',
-      'Local materialization does not configure packs, realize a host, run a package manager, or execute migrations.',
+      'Local materialization does not configure packs, realize a host, run a package manager, or execute installation scripts.',
       'Unsigned and untrusted release, publisher, license, readiness, verification, and health boundaries remain unchanged.'
     ],
     planFingerprint: null
@@ -1060,7 +1059,6 @@ function sanitizeEffect(effect) {
     action: effect.action,
     pack: effect.pack,
     role: effect.role,
-    migrationRole: effect.migrationRole,
     beforeFingerprint: effect.prior.fingerprint,
     afterFingerprint: effect.candidate.fingerprint,
     reasonCode: effect.reasonCode,
@@ -1334,7 +1332,6 @@ export function inspectPackInstall({
       uninstall: false,
       configure: false,
       realizeHost: false,
-      executeMigration: false,
       runPackageManager: false,
       network: false,
       publish: false,
@@ -1353,7 +1350,7 @@ export function inspectPackInstall({
     },
     limitations: [
       'This inspection reports deterministic local materialization only and carries no executable authority.',
-      'Installation does not configure packs, realize a host, run package managers, execute migrations, or use a network.',
+      'Installation does not configure packs, realize a host, run package managers or installation scripts, or use a network.',
       'Publisher identity, legal sufficiency, trust, readiness, verification, health, and connected behavior remain unevaluated.'
     ],
     inspectionFingerprint: null

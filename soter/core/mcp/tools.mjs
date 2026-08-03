@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import * as z from 'zod/v4';
 
@@ -22,6 +25,10 @@ import {
   inspectProjectCaptureDecisionContext
 } from '../../automations/project-capture/decision.mjs';
 import {
+  commitProjectPageReconciliationDecision,
+  inspectProjectPageReconciliationDecisionContext
+} from '../../automations/project-page-reconciliation/decision.mjs';
+import {
   commitContactCaptureDecision,
   inspectContactCaptureDecisionContext
 } from '../../automations/contact-capture/decision.mjs';
@@ -45,6 +52,11 @@ import {
   inspectProjectCaptureProposalDecision,
   inspectProjectCaptureProposalMaterial
 } from '../../automations/project-capture/proposal.mjs';
+import {
+  commitProjectPageReconciliationProposal,
+  inspectProjectPageReconciliationProposalDecision,
+  inspectProjectPageReconciliationProposalMaterial
+} from '../../automations/project-page-reconciliation/proposal.mjs';
 import {
   commitContactCaptureProposal,
   inspectContactCaptureProposalDecision,
@@ -78,6 +90,16 @@ import {
   prepareDeclaredAutomationAcquisition,
   recoverDeclaredAutomationAcquisition
 } from '../connected-acquisitions.mjs';
+import {
+  buildDevelopmentEvaluationInvocation,
+  inspectDevelopmentRun,
+  prepareDevelopmentRequest
+} from '../development-runs.mjs';
+import { materializeDevelopmentCandidateLock } from '../development-candidate-locks.mjs';
+import {
+  readActiveConfigurationLockState,
+  readHostManagedManifestState
+} from '../runtime-state.mjs';
 
 const jsonObject = z.record(z.string(), z.unknown());
 const resultSchema = { result: jsonObject };
@@ -97,6 +119,60 @@ const readAnnotations = {
   idempotentHint: true,
   openWorldHint: false
 };
+const developmentId = z.string().regex(/^[a-z0-9]+(?:[.-][a-z0-9]+)*$/);
+const developmentWorkflowId = z.string().regex(/^automation\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/);
+const developmentRequestId = z.string().regex(
+  /^development-request\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/
+);
+const developmentTargetPath = z.string()
+  .min(1)
+  .max(300)
+  .regex(/^[A-Za-z0-9._-]+(?:\/[A-Za-z0-9._-]+)*$/)
+  .refine((value) => {
+    return value !== '.'
+      && value !== '..'
+      && !value.split('/').some((part) => part === '.' || part === '..');
+  }, 'Target path must be one normalized repository-relative path.');
+const localDevelopmentEffect = z.enum([
+  'local-workspace-read',
+  'local-workspace-write',
+  'local-command',
+  'subagent-dispatch'
+]);
+const requestedDevelopmentEffects = z.array(localDevelopmentEffect)
+  .min(1)
+  .max(4)
+  .refine((value) => new Set(value).size === value.length, 'Requested effects must be unique.')
+  .refine((value) => {
+    const order = [
+      'local-workspace-read',
+      'local-workspace-write',
+      'local-command',
+      'subagent-dispatch'
+    ];
+    return value.every((item, index) => order.indexOf(item) > order.indexOf(value[index - 1]));
+  }, 'Requested effects must use canonical order.');
+const developmentInvocation = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('develop'),
+    profile: z.enum(['exact', 'bounded', 'open']),
+    requested_outcome: z.string().min(12).max(2000),
+    requested_effects: requestedDevelopmentEffects,
+    targets: z.array(z.object({
+      id: developmentId,
+      path: developmentTargetPath
+    }).strict()).min(1).max(50)
+  }).strict(),
+  z.object({
+    kind: z.literal('evaluation-suite'),
+    requested_effects: z.tuple([
+      z.literal('local-workspace-read'),
+      z.literal('local-workspace-write'),
+      z.literal('local-command'),
+      z.literal('subagent-dispatch')
+    ])
+  }).strict()
+]);
 
 function result(value, summary) {
   const structuredContent = { result: value };
@@ -130,6 +206,59 @@ function blockedRuntimeResult(inspection) {
   };
 }
 
+function developmentFailure(code, message) {
+  const value = { code, message };
+  return {
+    isError: true,
+    content: [{ type: 'text', text: code + ': ' + message }],
+    structuredContent: { result: value }
+  };
+}
+
+function safeDevelopmentFailure(error, fallbackCode) {
+  let code = typeof error?.code === 'string'
+    && error.code.startsWith('DEVELOPMENT_REQUEST_')
+    ? error.code
+    : fallbackCode;
+  if (typeof error?.code === 'string'
+    && error.code.startsWith('DEVELOPMENT_CANDIDATE_LOCK_')) {
+    code = error.code.includes('STALE') || error.code.includes('REENTRY')
+      ? 'DEVELOPMENT_REQUEST_BINDING_STALE'
+      : 'DEVELOPMENT_REQUEST_BINDING_INVALID';
+  }
+  if (typeof error?.code === 'string'
+    && error.code.startsWith('DEVELOPMENT_RESULT_')) {
+    code = error.code.includes('STALE')
+      ? 'DEVELOPMENT_RESULT_STALE'
+      : 'DEVELOPMENT_RESULT_INVALID';
+  }
+  if (typeof error?.code === 'string'
+    && error.code.startsWith('DEVELOPMENT_INSPECTION_')) {
+    code = 'DEVELOPMENT_INSPECTION_INVALID';
+  }
+  const messages = {
+    DEVELOPMENT_INSPECTION_INVALID: 'The sanitized development inspection could not be derived from the exact private request and result state.',
+    DEVELOPMENT_REQUEST_BINDING_INVALID: 'The development request does not bind a valid selected workflow, target, configuration, or host.',
+    DEVELOPMENT_REQUEST_BINDING_STALE: 'The exact development workflow, lock, workspace, or host binding is stale.',
+    DEVELOPMENT_REQUEST_COVERAGE_INCOMPLETE: 'The exact development evaluation coverage is incomplete.',
+    DEVELOPMENT_REQUEST_EFFECT_POLICY_INVALID: 'The selected configuration does not grant the required request-scoped local development effects.',
+    DEVELOPMENT_REQUEST_HOST_REALIZATION_STALE: 'The selected active workflow is not exactly realized by the current managed host projection.',
+    DEVELOPMENT_REQUEST_MALFORMED: 'The private development request is malformed.',
+    DEVELOPMENT_REQUEST_NOT_FOUND: 'The exact private development request does not exist.',
+    DEVELOPMENT_REQUEST_PRIVATE_MATERIAL_INVALID: 'The private development request contains prohibited credential, path, provider, or raw-diff material.',
+    DEVELOPMENT_REQUEST_PRIVATE_STATE_INVALID: 'The private development request state is unsafe, linked, mispermissioned, malformed, or unreadable.',
+    DEVELOPMENT_REQUEST_REENTRY_MISMATCH: 'The request identity already binds different immutable private development inputs.',
+    DEVELOPMENT_REQUEST_TARGET_INVALID: 'A development target is unavailable, unsafe, or not one exact repository-relative file.',
+    DEVELOPMENT_REQUEST_TARGET_STALE: 'An exact development target is now unavailable, unsafe, protected, managed, or byte-stale.',
+    DEVELOPMENT_REQUEST_TAMPERED: 'The exact private development request fingerprint is invalid.',
+    DEVELOPMENT_REQUEST_UNAVAILABLE: 'The governed development request operation is unavailable.',
+    DEVELOPMENT_REQUEST_WORKSPACE_STALE: 'The development workspace changed outside the exact authorized target set.',
+    DEVELOPMENT_RESULT_INVALID: 'The private development result is malformed, tampered, unsafe, or does not bind its exact request.',
+    DEVELOPMENT_RESULT_STALE: 'The private development result no longer matches its exact current workspace or request basis.'
+  };
+  return developmentFailure(code, messages[code] || messages[fallbackCode]);
+}
+
 export function createSoterMcpServer({ root, host }) {
   if (!host) throw new Error('Soter MCP server requires an active host identity.');
   const server = new McpServer(
@@ -139,6 +268,7 @@ export function createSoterMcpServer({ root, host }) {
         'Before operational work, use soter_inspect_host_runtime; follow only its guidance action. A stale runtime with action none has no automatic recovery route and must be repaired outside inspection; restart only when the exact action is restart-host-runtime. If it reports SOTER_HOST_RUNTIME_NOT_REALIZED, realize the declared host outputs first because no restart or retry can satisfy them.',
         'Soter Core validates exact locks and runs for the active ' + host + ' host projection, then saves a private durable checkpoint before emitting a provider-neutral operation resolved to an exact native host tool.',
         'After compaction or restart, use soter_list_host_calls and soter_get_host_call to recover pending work.',
+        'Before using an active host-guided development workflow, use soter_create_development_request with its exact target set and the smallest requested local-effect subset. Core derives the selected configuration from the current managed host realization. Then use soter_inspect_development_run to recover only sanitized current, stale, or closed request/result facts. The private request grants no provider, approval, publication, merge, protected-root, or host-realization authority.',
         'Use soter_stage_automation_acquisition to validate one exact private operator input and create the zero-effect prepared-work/run boundary, then use soter_prepare_automation_acquisition with that exact Automation and work identity.',
         'If an exact declared acquisition read fails with an eligible transient code, use soter_recover_automation_acquisition only with the exact failed checkpoint, step, call, and fingerprints. The returned currentCall is the only executable replacement; the recovery record is a locator and grants no reusable retry or write authority.',
         'Invoke exactly currentCall.transport.tool when currentCall is present; otherwise invoke checkpoint.call.transport.tool only for a checkpoint that still uses the v1 single-call contract.',
@@ -153,6 +283,7 @@ export function createSoterMcpServer({ root, host }) {
         'Use soter_inspect_task_capture_decision and soter_commit_task_capture_decision for the Task Capture decision, then soter_inspect_task_capture_proposal, soter_commit_task_capture_proposal, and soter_inspect_task_capture_proposal_material for its review-only proposal.',
         'Use soter_inspect_organization_capture_decision and soter_commit_organization_capture_decision for the Organization Capture decision, then soter_inspect_organization_capture_proposal, soter_commit_organization_capture_proposal, and soter_inspect_organization_capture_proposal_material for its review-only proposal.',
         'Use soter_inspect_project_capture_decision and soter_commit_project_capture_decision for the Project Capture decision, then soter_inspect_project_capture_proposal, soter_commit_project_capture_proposal, and soter_inspect_project_capture_proposal_material for its review-only proposal.',
+        'Use soter_inspect_project_page_reconciliation_decision and soter_commit_project_page_reconciliation_decision for the Project Page Reconciliation decision, then soter_inspect_project_page_reconciliation_proposal, soter_commit_project_page_reconciliation_proposal, and soter_inspect_project_page_reconciliation_proposal_material for its review-only exact property and one-match body change proposal.',
         'Use soter_inspect_contact_capture_decision and soter_commit_contact_capture_decision for the Contact Capture decision, then soter_inspect_contact_capture_proposal, soter_commit_contact_capture_proposal, and soter_inspect_contact_capture_proposal_material for its review-only proposal.',
         'Use soter_inspect_email_triage_decision and soter_commit_email_triage_decision for Email judgment, then soter_inspect_email_triage_proposal, soter_commit_email_triage_proposal, and soter_inspect_email_triage_proposal_material for its review-only proposal.',
         'Use soter_inspect_meeting_intake_decision and soter_commit_meeting_intake_decision for Meeting Intake judgment, then soter_inspect_meeting_intake_proposal, soter_commit_meeting_intake_proposal, and soter_inspect_meeting_intake_proposal_material for its review-only proposal.',
@@ -172,6 +303,20 @@ export function createSoterMcpServer({ root, host }) {
   const registerGuardedTool = (name, specification, handler) => {
     return server.registerTool(name, specification, guard(handler));
   };
+  const registerGuardedDevelopmentTool = (
+    name,
+    specification,
+    fallbackCode,
+    handler
+  ) => {
+    return registerGuardedTool(name, specification, async (...args) => {
+      try {
+        return await handler(...args);
+      } catch (error) {
+        return safeDevelopmentFailure(error, fallbackCode);
+      }
+    });
+  };
 
   server.registerTool('soter_inspect_host_runtime', {
     title: 'Inspect Soter host runtime',
@@ -183,6 +328,86 @@ export function createSoterMcpServer({ root, host }) {
     return result(
       currentRuntimeInspection(),
       'Inspected whether the loaded Soter host runtime matches the current governed behavior.'
+    );
+  });
+
+  registerGuardedDevelopmentTool('soter_create_development_request', {
+    title: 'Create exact private Soter development request',
+    description: 'Derive the exact private-active configuration from the current managed MCP host realization, materialize its content-addressed current candidate lock, require the selected workflow guide to be exactly realized, bind the smallest explicitly requested local-effect subset and exact safe repository-relative targets, then create one private development request. The sanitized inspection excludes requested outcome and target paths. This tool emits no command or provider call and grants no provider, approval, publication, merge, protected-root, or host-realization authority.',
+    inputSchema: z.object({
+      workflow_id: developmentWorkflowId,
+      request_id: developmentRequestId,
+      invocation: developmentInvocation,
+      at: z.string().min(20).optional()
+    }).strict(),
+    outputSchema: resultSchema,
+    annotations: completionAnnotations
+  }, 'DEVELOPMENT_REQUEST_UNAVAILABLE', async (input) => {
+    let manifest;
+    let activeLock;
+    try {
+      manifest = readHostManagedManifestState(root, host).manifest;
+      activeLock = readActiveConfigurationLockState(
+        root,
+        manifest.configuration.name
+      ).lock;
+    } catch (error) {
+      const failure = new Error('Current realized host binding is unavailable.');
+      failure.code = 'DEVELOPMENT_REQUEST_HOST_REALIZATION_STALE';
+      failure.cause = error;
+      throw failure;
+    }
+    const candidate = materializeDevelopmentCandidateLock({
+      root,
+      configPath: activeLock.configuration.path,
+      workflowId: input.workflow_id,
+      host
+    });
+    if (candidate.lock?.configuration?.name !== manifest.configuration.name
+      || candidate.lockFingerprint !== manifest.configuration.lockFingerprint
+      || candidate.graphFingerprint !== manifest.configuration.graphFingerprint
+      || candidate.host?.id !== host) {
+      const error = new Error('Development candidate lock binding is invalid.');
+      error.code = 'DEVELOPMENT_REQUEST_HOST_REALIZATION_STALE';
+      throw error;
+    }
+    const lockPath = candidate.path;
+    const invocation = input.invocation.kind === 'evaluation-suite'
+      ? buildDevelopmentEvaluationInvocation({ root, workflowId: input.workflow_id })
+      : {
+          kind: 'develop',
+          profile: input.invocation.profile,
+          requestedOutcome: input.invocation.requested_outcome,
+          requestedLocalEffects: [...input.invocation.requested_effects],
+          targets: input.invocation.targets.map((target) => ({ ...target }))
+        };
+    const prepared = prepareDevelopmentRequest({
+      root,
+      lockPath,
+      workflowId: input.workflow_id,
+      requestId: input.request_id,
+      invocation,
+      createdAt: input.at || null
+    });
+    return result(
+      prepared.inspection,
+      'Created or recovered one exact private development request and returned only its sanitized no-provider-authority inspection.'
+    );
+  });
+
+  registerGuardedDevelopmentTool('soter_inspect_development_run', {
+    title: 'Inspect sanitized Soter development run',
+    description: 'Revalidate one exact private development request and any recorded result against its immutable workflow, host, lock, workspace, and policy bindings, then return only the sanitized inspection. This read excludes requested outcome, target paths, raw diffs, transcripts, provider responses, credentials, and private state paths and grants no authority.',
+    inputSchema: z.object({
+      request_id: developmentRequestId
+    }).strict(),
+    outputSchema: resultSchema,
+    annotations: readAnnotations
+  }, 'DEVELOPMENT_REQUEST_NOT_FOUND', async (input) => {
+    const inspection = inspectDevelopmentRun({ root, requestId: input.request_id });
+    return result(
+      inspection,
+      'Returned the exact sanitized development run inspection without executing work or granting authority.'
     );
   });
 
@@ -983,6 +1208,127 @@ export function createSoterMcpServer({ root, host }) {
     return result(
       material,
       'Returned exact selected-private Project Capture proposal material without approval, continuation, provider calls, or writes.'
+    );
+  });
+
+  registerGuardedTool('soter_inspect_project_page_reconciliation_decision', {
+    title: 'Inspect Project Page Reconciliation decision basis',
+    description: 'Revalidate one exact private connected Project Page Reconciliation snapshot and derive the exact property and body action identities from current Project fields, version, page body, policy, and schema. This read exposes fingerprints and action IDs only, performs no provider call, and grants no authority.',
+    inputSchema: {
+      lock_path: z.string().min(1),
+      snapshot_id: z.string().min(1)
+    },
+    outputSchema: resultSchema,
+    annotations: readAnnotations
+  }, async (input) => {
+    const inspected = inspectProjectPageReconciliationDecisionContext({
+      root,
+      lockPath: input.lock_path,
+      snapshotId: input.snapshot_id,
+      expectedHost: host
+    });
+    return result(
+      inspected,
+      'Inspected the deterministic Project Page Reconciliation decision basis without creating decision state or authority.'
+    );
+  });
+
+  registerGuardedTool('soter_commit_project_page_reconciliation_decision', {
+    title: 'Commit grounded Project Page Reconciliation decision',
+    description: 'Deterministically bind the exact prepared input, Project fields and version, mapped page body, portable policy, writable schema, and bounded proposed action identities into one private decision. This tool creates no proposal, approval, continuation, provider call, or write authority.',
+    inputSchema: {
+      lock_path: z.string().min(1),
+      snapshot_id: z.string().min(1),
+      decision_id: z.string().min(1),
+      at: z.string().min(20).optional()
+    },
+    outputSchema: resultSchema,
+    annotations: statefulAnnotations
+  }, async (input) => {
+    const committed = commitProjectPageReconciliationDecision({
+      root,
+      lockPath: input.lock_path,
+      snapshotId: input.snapshot_id,
+      id: input.decision_id,
+      producer: { kind: 'host', id: 'host.' + host, host },
+      at: input.at,
+      expectedHost: host
+    });
+    return result(
+      committed,
+      'Committed one exact private Project Page Reconciliation decision without proposal, approval, continuation, provider calls, or writes.'
+    );
+  });
+
+  registerGuardedTool('soter_inspect_project_page_reconciliation_proposal', {
+    title: 'Inspect Project Page Reconciliation proposal basis',
+    description: 'Recover one exact ready private Project Page Reconciliation decision and its deterministic proposal fingerprint and action basis. This selected-decision read performs no provider call and grants no authority.',
+    inputSchema: {
+      lock_path: z.string().min(1),
+      decision_id: z.string().min(1)
+    },
+    outputSchema: resultSchema,
+    annotations: readAnnotations
+  }, async (input) => {
+    const inspected = inspectProjectPageReconciliationProposalDecision({
+      root,
+      lockPath: input.lock_path,
+      decisionId: input.decision_id,
+      expectedHost: host
+    });
+    return result(
+      inspected,
+      'Recovered the exact Project Page Reconciliation proposal basis without proposal state, approval, continuation, provider calls, or writes.'
+    );
+  });
+
+  registerGuardedTool('soter_commit_project_page_reconciliation_proposal', {
+    title: 'Commit Project Page Reconciliation review proposal',
+    description: 'Deterministically create one sanitized Project Page Reconciliation proposal plus selected-private companion from an exact ready decision. It preserves property and page-body changes as distinct selectable actions and creates no approval, continuation, provider call, or write authority.',
+    inputSchema: {
+      lock_path: z.string().min(1),
+      decision_id: z.string().min(1),
+      proposal_id: z.string().min(1),
+      at: z.string().min(20).optional()
+    },
+    outputSchema: resultSchema,
+    annotations: statefulAnnotations
+  }, async (input) => {
+    const committed = commitProjectPageReconciliationProposal({
+      root,
+      lockPath: input.lock_path,
+      decisionId: input.decision_id,
+      id: input.proposal_id,
+      input: {},
+      producer: { kind: 'host', id: 'host.' + host, host },
+      at: input.at,
+      expectedHost: host
+    });
+    return result(
+      committed,
+      'Committed one exact private Project Page Reconciliation review proposal without approval, continuation, provider calls, or writes.'
+    );
+  });
+
+  registerGuardedTool('soter_inspect_project_page_reconciliation_proposal_material', {
+    title: 'Inspect selected Project Page Reconciliation proposal material',
+    description: 'Return complete private Project fields, version, mapped page-body fingerprints, and exact one-match replacements for one selected proposal after revalidating its decision, prepared work, lock, rows, actions, and content bindings. This read grants no authority and performs no provider call.',
+    inputSchema: {
+      lock_path: z.string().min(1),
+      proposal_id: z.string().min(1)
+    },
+    outputSchema: resultSchema,
+    annotations: readAnnotations
+  }, async (input) => {
+    const material = inspectProjectPageReconciliationProposalMaterial({
+      root,
+      lockPath: input.lock_path,
+      proposalId: input.proposal_id,
+      expectedHost: host
+    });
+    return result(
+      material,
+      'Returned exact selected-private Project Page Reconciliation proposal material without approval, continuation, provider calls, or writes.'
     );
   });
 

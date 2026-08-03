@@ -49,13 +49,7 @@
       "schema-observation-fingerprint",
       "duplicate-query-fingerprints",
       "private-values-sanitized",
-      "write-boundary-state",
-      "source-cases-exactly-fingerprinted"
+      "write-boundary-state"
     ]
-  },
-  "sourceCases": [
-    ".claude/evals/capturing-an-org/happy-path.md",
-    ".claude/evals/capturing-an-org/invariant-sector-not-type.md",
-    ".claude/evals/capturing-an-org/pressure-guess-type.md"
-  ]
+  }
 }

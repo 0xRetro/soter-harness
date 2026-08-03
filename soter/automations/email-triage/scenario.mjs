@@ -8,7 +8,6 @@ import {
   resolveRepoPath
 } from '../../core/lib/canonical-json.mjs';
 import { fingerprintLock } from '../../core/resolve.mjs';
-import { fingerprintLegacySource } from '../../kernel/legacy-inventory.mjs';
 import { prepareEmailTriageRun } from './prepare.mjs';
 
 const AUTOMATION_ID = 'automation.email-triage';
@@ -41,7 +40,7 @@ function fieldValue(item, fieldId) {
   return item?.fields.find((field) => field.id === fieldId)?.reviewValue;
 }
 
-function factsFor({ lock, envelope, snapshot, preview, derivedReview, sourceCaseArtifacts }) {
+function factsFor({ lock, envelope, snapshot, preview, derivedReview }) {
   const window = preview.collections.find((collection) => collection.id === 'collection.email.window');
   const outputs = preview.collections.find((collection) => collection.id === 'collection.email.outputs');
   if (!window || !outputs) throw new Error('Email scenario requires exact window and output review collections.');
@@ -70,11 +69,6 @@ function factsFor({ lock, envelope, snapshot, preview, derivedReview, sourceCase
   const exclusionCounts = Object.fromEntries(window.coverage.exclusions.map((item) => {
     return [item.reasonCode, item.count];
   }));
-  const sourceCasesFingerprinted = sourceCaseArtifacts.length > 0
-    && sourceCaseArtifacts.every((artifact) => {
-      return artifact.role === 'source-case'
-        && /^sha256:[a-f0-9]{64}$/.test(artifact.fingerprint);
-    });
   const entry = snapshot.entries.find((item) => item.id === 'context.email-triage.window');
   const defanged = !LIVE_REMOTE_URL.test(serializedPrivate)
     && !LIVE_REMOTE_URL.test(serializedSanitized)
@@ -156,8 +150,7 @@ function factsFor({ lock, envelope, snapshot, preview, derivedReview, sourceCase
         === fingerprintJson(derivedReview),
       'write-and-dispatch-boundary-state': boundaryHeld
         && envelope.effectPolicies.write.mode === 'confirm'
-        && envelope.effectPolicies.dispatch.mode === 'prohibit',
-      'source-cases-exactly-fingerprinted': sourceCasesFingerprinted
+        && envelope.effectPolicies.dispatch.mode === 'prohibit'
     }
   };
 }
@@ -207,11 +200,6 @@ export async function runContainedEmailTriageScenario({
 }) {
   const resolvedRoot = path.resolve(root);
   const loaded = loadScenario(resolvedRoot, scenarioPath);
-  const sourceCaseArtifacts = loaded.scenario.sourceCases.map((sourcePath) => ({
-    role: 'source-case',
-    path: sourcePath,
-    fingerprint: fingerprintLegacySource(resolvedRoot, sourcePath)
-  }));
   const execution = await prepareEmailTriageRun({
     root: resolvedRoot,
     lock,
@@ -221,7 +209,7 @@ export async function runContainedEmailTriageScenario({
     input: {
       query: 'in:inbox newer_than:1d',
       scope: 'triage-drafts-handoffs-digest',
-      focus: 'contained migration evidence'
+      focus: 'contained behavioral evidence'
     },
     createdAt
   });
@@ -230,8 +218,7 @@ export async function runContainedEmailTriageScenario({
     envelope: execution.envelope,
     snapshot: execution.snapshot,
     preview: execution.preview,
-    derivedReview: execution.derivedReview,
-    sourceCaseArtifacts
+    derivedReview: execution.derivedReview
   });
   const assessment = assessmentFor({
     scenario: loaded.scenario,
@@ -258,7 +245,6 @@ export async function runContainedEmailTriageScenario({
     envelope: execution.envelope,
     scenario: loaded.scenario,
     scenarioPath: loaded.path,
-    sourceCaseArtifacts,
     assessment,
     evaluatorId: 'automation.email-triage.scenario-evaluator',
     id: scenarioEvidenceId,

@@ -32,7 +32,18 @@
     },
     "census": {
       "type": "object",
-      "additionalProperties": { "type": "integer", "minimum": 0 }
+      "additionalProperties": false,
+      "required": ["configurations", "packs", "capabilities", "providers", "hosts", "scenarios", "fixtureActivity", "runtimeActivity"],
+      "properties": {
+        "configurations": { "type": "integer", "minimum": 0 },
+        "packs": { "type": "integer", "minimum": 0 },
+        "capabilities": { "type": "integer", "minimum": 0 },
+        "providers": { "type": "integer", "minimum": 0 },
+        "hosts": { "type": "integer", "minimum": 0 },
+        "scenarios": { "type": "integer", "minimum": 0 },
+        "fixtureActivity": { "type": "integer", "minimum": 0 },
+        "runtimeActivity": { "type": "integer", "minimum": 0 }
+      }
     },
     "proof": { "$ref": "#/$defs/proof" },
     "configurations": {
@@ -315,7 +326,7 @@
           "const": { "state": "available" }
         },
         "boundary": {
-          "const": "private fixture-contained preparation only; no connected provider call, approval, execution, write, proof, maturity, or migration authority"
+          "const": "private fixture-contained preparation only; no connected provider call, approval, execution, write, proof, or maturity authority"
         }
       }
     },
@@ -331,14 +342,14 @@
         "resultState": { "const": "ready-for-acquisition" },
         "availability": { "$ref": "#/$defs/modeAvailabilityFact" },
         "boundary": {
-          "const": "stages exact private input and the current active lock only; no provider call, acquired context, approval, continuation, execution, write, readiness, verification, proof, maturity, or migration authority"
+          "const": "stages exact private input and the current active lock only; no provider call, acquired context, approval, continuation, execution, write, readiness, verification, proof, or maturity authority"
         }
       }
     },
     "workflow": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "label", "summary", "version", "configuration", "configurationBasis", "host", "hostCompatibility", "effects", "requiredCapabilities", "dependencies", "bindings", "operator", "scenarios", "migration"],
+      "required": ["id", "label", "summary", "version", "configuration", "configurationBasis", "host", "hostCompatibility", "effects", "requiredCapabilities", "dependencies", "bindings", "operator", "scenarios"],
       "properties": {
         "id": { "type": "string" },
         "label": { "type": "string" },
@@ -425,7 +436,7 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["id", "status", "intent", "outcomes", "invariants", "evidence", "sourceCases", "migrationState", "execution"],
+            "required": ["id", "status", "intent", "outcomes", "invariants", "evidence", "execution"],
             "properties": {
               "id": { "type": "string" },
               "status": {
@@ -435,10 +446,6 @@
               "outcomes": { "$ref": "#/$defs/stringArray" },
               "invariants": { "$ref": "#/$defs/stringArray" },
               "evidence": { "$ref": "#/$defs/stringArray" },
-              "sourceCases": { "$ref": "#/$defs/stringArray" },
-              "migrationState": {
-                "enum": ["current", "mapped", "bridged", "migrated", "retired", "target-native", "unknown"]
-              },
               "execution": {
                 "type": ["object", "null"],
                 "additionalProperties": false,
@@ -483,16 +490,6 @@
                 }
               }
             }
-          }
-        },
-        "migration": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["id", "state", "limitations"],
-          "properties": {
-            "id": { "$ref": "#/$defs/nullableString" },
-            "state": { "type": "string" },
-            "limitations": { "$ref": "#/$defs/stringArray" }
           }
         }
       }

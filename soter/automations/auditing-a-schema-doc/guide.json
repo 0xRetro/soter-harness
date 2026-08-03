@@ -1,15 +1,15 @@
 {
   "contractVersion": "2.0.0",
   "id": "workflow-guide.auditing-a-schema-doc",
-  "contentFingerprint": "sha256:290cbc3b277d98604b6dfdff487db48a22b8d3de050f8e2c3a1e8c44f53e2659",
+  "contentFingerprint": "sha256:362645fcb61623c0e2e74e037cfbd2139de4ca812ebbe272d616c735f564cc47",
   "$contract": "soter://contracts/workflow-guide/v2",
   "workflow": {
     "id": "automation.auditing-a-schema-doc",
     "version": "0.1.0",
     "definitionPath": "soter/automations/auditing-a-schema-doc/definition.json",
-    "definitionFingerprint": "sha256:d94d5f6256bcb322855b06fe9d47474d81513fe2cc0da38db803a4d1b657ecc1",
+    "definitionFingerprint": "sha256:fbe7d64a37c0bdc11e3c923f87a5d559a02c3c4d29f09912f284dc2e4d323408",
     "evaluationSetPath": "soter/automations/auditing-a-schema-doc/evaluations.json",
-    "evaluationSetFingerprint": "sha256:b305f9939e9159749cd47982601e422879e642539a5c454f694cc37d0a0c72d0"
+    "evaluationSetFingerprint": "sha256:3a7b0b889caaae03bef2f10edc27f178380b057bd0e134d09c2516cf505a8570"
   },
   "skill": {
     "name": "auditing-a-schema-doc",
@@ -22,21 +22,7 @@
   "status": {
     "state": "active",
     "reasonCode": "WORKFLOW_GUIDE_ACTIVE",
-    "proceduralAuthority": "target",
-    "behaviorParity": "passed",
     "delivery": "host-skill",
-    "evidence": [
-      {
-        "path": "soter/evidence/development/development-agent-migration-evidence.claude.auditing-a-schema-doc.json",
-        "fingerprint": "sha256:2b29c601a0695b7670cee443cdc7a86403a31f841041c77770c1e7698fffa136",
-        "host": "claude"
-      },
-      {
-        "path": "soter/evidence/development/development-agent-migration-evidence.codex.auditing-a-schema-doc.json",
-        "fingerprint": "sha256:e816c616120aca98ab0d956ba667dd32af013ab50b830a58ff2dfb21cd6e1a8e",
-        "host": "codex"
-      }
-    ],
     "permittedNextAction": "invoke-through-selected-host"
   },
   "authority": {
@@ -109,6 +95,7 @@
       "sequence": 5,
       "instructions": [
         "Present the full classified diff, proposed exact changes, unresolved decisions, and verification plan before requesting any effect authority.",
+        "When the current development request has no effect authority, stop at the review and state that a separate governed effect operation would be required; do not ask for confirmation or imply that confirmation alone would authorize a write.",
         "After separate exact confirmation, use the configured update boundary for document or template changes and the governed repository change boundary for mirror changes.",
         "Re-fetch every changed authority and verify the intended region, mirror, freshness statement, and preservation claims."
       ],
@@ -166,27 +153,20 @@
       "target": "context.policy"
     },
     {
-      "id": "update-workflow",
-      "kind": "workflow",
-      "label": "Bounded existing-record update workflow",
-      "target": "automation.updating-a-notion-page"
+      "id": "document-update-capability",
+      "kind": "capability",
+      "label": "Provider-neutral document content update capability",
+      "target": "documents.content.update"
     }
   ],
-  "source": {
-    "presence": "removed",
-    "legacyPath": ".claude/skills/auditing-a-schema-doc/SKILL.md",
-    "legacyFingerprint": "sha256:c5ee36f0224bceaa1e2e83cbd622eae6ca114f52c3ff472e67a92d4e338d4647",
-    "normalization": "behavior-preserving-with-explicit-authority-boundary"
-  },
   "privacy": {
-    "rawSourceIncluded": false,
     "workspaceSpecificValuesIncluded": false,
     "credentialsIncluded": false,
     "privateInputsIncluded": false,
     "providerResponsesIncluded": false
   },
   "limitations": [
-    "This procedural guide grants no provider write, repository write, approval, or execution authority.",
-    "Adoption requires independent exact host-skill behavior evidence and a separate governed fallback-removal decision."
+    "This guide provides procedural guidance only and grants no worker dispatch, file-write, publication, provider, merge, or host-realization authority.",
+    "Behavior evidence requires an exact private request and an independently observed fresh-worker run through a trusted host boundary."
   ]
 }

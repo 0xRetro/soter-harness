@@ -7,6 +7,7 @@ import {
   beginHostRealizationRequest,
   confirmHostRealizationRequest,
   executeHostRealization,
+  inspectManagedHostProjectionOwnership,
   inspectHostRealization,
   prepareHostRealization,
   prepareHostRealizationExecution,
@@ -32,7 +33,6 @@ import {
 } from './runtime-state.mjs';
 import { fingerprintJson, readJson, sha256 } from './lib/canonical-json.mjs';
 import { validateJsonSchema } from '../kernel/verify.mjs';
-import { assertLegacyInventoryCurrent } from '../kernel/legacy-inventory.mjs';
 
 const CREATED = '2026-07-16T12:00:00.000Z';
 const CONFIRMED = '2026-07-16T12:05:00.000Z';
@@ -48,53 +48,6 @@ function copyRuntime(sourceRoot, label) {
   fs.cpSync(path.join(sourceRoot, 'soter'), path.join(root, 'soter'), { recursive: true });
   fs.copyFileSync(path.join(sourceRoot, 'package.json'), path.join(root, 'package.json'));
   fs.copyFileSync(path.join(sourceRoot, 'package-lock.json'), path.join(root, 'package-lock.json'));
-  const legacyInventory = readJson(path.join(
-    sourceRoot,
-    'soter/migrations/legacy-inventory.json'
-  ));
-  for (const name of fs.readdirSync(path.join(root, 'soter/migrations'))) {
-    if (!name.endsWith('.json')) continue;
-    const migration = readJson(path.join(root, 'soter/migrations', name));
-    for (const item of migration.items || []) {
-      const source = path.join(sourceRoot, item.sourcePath);
-      const tombstones = legacyInventory.items.filter((candidate) => {
-        return candidate.sourcePath === item.sourcePath
-          && candidate.sourceFingerprint === item.sourceFingerprint
-          && candidate.sourcePresence === 'removed'
-          && ['migrated', 'retired'].includes(candidate.state)
-          && candidate.targets.length > 0
-          && candidate.targets.every((target) => {
-            return ['migrated', 'retired'].includes(target.state)
-              && target.fallback === 'removed'
-              && target.evidence.length > 0;
-          });
-      });
-      if (tombstones.length === 1) {
-        // A private generated host projection may reuse a retired legacy path.
-        // It is not an operational legacy source and must not enter the fixture root.
-        continue;
-      }
-      if (tombstones.length > 1) {
-        throw new Error(
-          'Host realization selftest found duplicate completed tombstones for: '
-            + item.sourcePath
-        );
-      }
-      if (!fs.existsSync(source)) {
-        throw new Error(
-          'Host realization selftest found a missing migration source without one exact completed tombstone: '
-            + item.sourcePath
-        );
-      }
-      const sourceStat = fs.lstatSync(source);
-      if (sourceStat.isSymbolicLink() || !sourceStat.isFile()) {
-        throw new Error('Host realization selftest accepts regular migration sources only: ' + item.sourcePath);
-      }
-      const target = path.join(root, item.sourcePath);
-      fs.mkdirSync(path.dirname(target), { recursive: true });
-      fs.copyFileSync(source, target);
-    }
-  }
   return root;
 }
 
@@ -215,10 +168,6 @@ export async function selftestHostRealizations(sourceRoot) {
 
     const codexNotionTool = copyRuntime(sourceRoot, 'codex-notion-tool');
     roots.push(codexNotionTool);
-    const historicalCodexBasis = readJson(path.join(
-      codexNotionTool,
-      'soter/fixtures/harness-development-catalog-final/codex.lock.json'
-    ));
     const codexAdapterFile = path.join(
       codexNotionTool,
       'soter/hosts/codex/adapter.json'
@@ -233,28 +182,23 @@ export async function selftestHostRealizations(sourceRoot) {
     const codexQueryMapping = currentCodexAdapter.mcpServers
       .find((server) => server.id === 'notion')
       ?.toolMappings.find((mapping) => mapping.logical === 'query_data_sources');
-    assert.equal(historicalCodexBasis.host.version, '0.3.0');
     assert.equal(currentCodexAdapter.version, '0.3.1');
     assert.equal(
       codexQueryMapping?.native,
       'mcp__codex_apps__notion_query_data_sources',
       'Current Codex adapter did not select the corrected native Notion query tool.'
     );
-    assert.equal(
-      fingerprintJson(JSON.parse(originalCodexProjection)),
-      historicalCodexBasis.host.projectionDefinition.fingerprint,
-      'Codex Notion tool correction unexpectedly changed the generated host projection.'
-    );
     const codexLock = activate(codexNotionTool, 'harness-development-catalog');
     assert.equal(codexLock.host.version, '0.3.1');
-    const expectUnsupportedCodexDrift = () => {
-      assert.throws(
-        () => resolveConfiguration({
-          root: codexNotionTool,
-          configPath: 'soter/configurations/harness-development-catalog.config.json'
-        }),
-        (error) => error.code
-          === 'HOST_PROJECTION_WORKFLOW_FINAL_EVIDENCE_APPLICABILITY_STALE'
+    const expectCodexDriftToInvalidateActiveLock = () => {
+      const drifted = resolveConfiguration({
+        root: codexNotionTool,
+        configPath: 'soter/configurations/harness-development-catalog.config.json'
+      });
+      assert.notEqual(
+        fingerprintLock(drifted),
+        fingerprintLock(codexLock),
+        'Host adapter or projection drift did not invalidate the exact active lock.'
       );
     };
     const codexMetadataDrift = JSON.parse(originalCodexAdapter);
@@ -263,7 +207,7 @@ export async function selftestHostRealizations(sourceRoot) {
       codexAdapterFile,
       JSON.stringify(codexMetadataDrift, null, 2) + '\n'
     );
-    expectUnsupportedCodexDrift();
+    expectCodexDriftToInvalidateActiveLock();
     fs.writeFileSync(codexAdapterFile, originalCodexAdapter);
     const codexMappingDrift = JSON.parse(originalCodexAdapter);
     codexMappingDrift.mcpServers.find((server) => server.id === 'notion')
@@ -273,7 +217,7 @@ export async function selftestHostRealizations(sourceRoot) {
       codexAdapterFile,
       JSON.stringify(codexMappingDrift, null, 2) + '\n'
     );
-    expectUnsupportedCodexDrift();
+    expectCodexDriftToInvalidateActiveLock();
     fs.writeFileSync(codexAdapterFile, originalCodexAdapter);
     const codexOldQueryMapping = JSON.parse(originalCodexAdapter);
     codexOldQueryMapping.mcpServers.find((server) => server.id === 'notion')
@@ -283,7 +227,7 @@ export async function selftestHostRealizations(sourceRoot) {
       codexAdapterFile,
       JSON.stringify(codexOldQueryMapping, null, 2) + '\n'
     );
-    expectUnsupportedCodexDrift();
+    expectCodexDriftToInvalidateActiveLock();
     fs.writeFileSync(codexAdapterFile, originalCodexAdapter);
     const codexProjectionDrift = JSON.parse(originalCodexProjection);
     codexProjectionDrift.limitations.push('Hostile unrelated Codex projection drift.');
@@ -291,20 +235,12 @@ export async function selftestHostRealizations(sourceRoot) {
       codexProjectionFile,
       JSON.stringify(codexProjectionDrift, null, 2) + '\n'
     );
-    expectUnsupportedCodexDrift();
+    expectCodexDriftToInvalidateActiveLock();
     fs.writeFileSync(codexProjectionFile, originalCodexProjection);
 
     const claudeRootMcp = copyRuntime(sourceRoot, 'claude-root-mcp');
     roots.push(claudeRootMcp);
     const claudeLock = activate(claudeRootMcp, 'harness-development-catalog-claude');
-    const historicalClaudeBasis = readJson(path.join(
-      claudeRootMcp,
-      'soter/fixtures/harness-development-catalog-final/claude.lock.json'
-    ));
-    assert(historicalClaudeBasis.projections.some((projection) => {
-      return projection.id === 'output.claude.tools'
-        && projection.path === '.claude/.mcp.json';
-    }), 'Immutable historical Claude evidence basis no longer preserves its observed MCP path.');
     assert(claudeLock.projections.some((projection) => {
       return projection.id === 'output.claude.tools' && projection.path === '.mcp.json';
     }), 'Current Claude lock did not select the corrected root MCP path.');
@@ -318,27 +254,28 @@ export async function selftestHostRealizations(sourceRoot) {
     );
     const originalClaudeAdapter = fs.readFileSync(claudeAdapterFile, 'utf8');
     const originalClaudeProjection = fs.readFileSync(claudeProjectionFile, 'utf8');
-    const expectUnsupportedClaudeDrift = () => {
-      assert.throws(
-        () => resolveConfiguration({
-          root: claudeRootMcp,
-          configPath: 'soter/configurations/harness-development-catalog-claude.config.json'
-        }),
-        (error) => error.code
-          === 'HOST_PROJECTION_WORKFLOW_FINAL_EVIDENCE_APPLICABILITY_STALE'
+    const expectClaudeDriftToInvalidateActiveLock = () => {
+      const drifted = resolveConfiguration({
+        root: claudeRootMcp,
+        configPath: 'soter/configurations/harness-development-catalog-claude.config.json'
+      });
+      assert.notEqual(
+        fingerprintLock(drifted),
+        fingerprintLock(claudeLock),
+        'Host adapter or projection drift did not invalidate the exact active lock.'
       );
     };
     const metadataDrift = JSON.parse(originalClaudeAdapter);
     metadataDrift.limitations.push('Hostile unrelated adapter drift.');
     fs.writeFileSync(claudeAdapterFile, JSON.stringify(metadataDrift, null, 2) + '\n');
-    expectUnsupportedClaudeDrift();
+    expectClaudeDriftToInvalidateActiveLock();
     fs.writeFileSync(claudeAdapterFile, originalClaudeAdapter);
     const toolDrift = JSON.parse(originalClaudeAdapter);
     toolDrift.mcpServers.find((server) => server.id === 'notion')
       .toolMappings.find((mapping) => mapping.logical === 'fetch').native
         = 'Notion:hostile-unreviewed-fetch';
     fs.writeFileSync(claudeAdapterFile, JSON.stringify(toolDrift, null, 2) + '\n');
-    expectUnsupportedClaudeDrift();
+    expectClaudeDriftToInvalidateActiveLock();
     fs.writeFileSync(claudeAdapterFile, originalClaudeAdapter);
     const projectionDrift = JSON.parse(originalClaudeProjection);
     projectionDrift.limitations.push('Hostile unrelated projection drift.');
@@ -346,7 +283,7 @@ export async function selftestHostRealizations(sourceRoot) {
       claudeProjectionFile,
       JSON.stringify(projectionDrift, null, 2) + '\n'
     );
-    expectUnsupportedClaudeDrift();
+    expectClaudeDriftToInvalidateActiveLock();
     fs.writeFileSync(claudeProjectionFile, originalClaudeProjection);
     const claudeAuthority = authority(
       claudeRootMcp,
@@ -367,7 +304,10 @@ export async function selftestHostRealizations(sourceRoot) {
       '.claude/skills/running-evals/SKILL.md'
     )), 'Current Claude realization omitted an active governed workflow skill.');
     assertMode(path.join(claudeRootMcp, '.mcp.json'), '0644');
-    assertLegacyInventoryCurrent(claudeRootMcp);
+    assert.equal(inspectManagedHostProjectionOwnership({
+      root: claudeRootMcp,
+      host: 'claude'
+    }).state, 'realized');
     const unmanagedClaudeSkill = path.join(
       claudeRootMcp,
       '.claude/skills/unmanaged-neighbor/SKILL.md'
@@ -375,11 +315,14 @@ export async function selftestHostRealizations(sourceRoot) {
     fs.mkdirSync(path.dirname(unmanagedClaudeSkill), { recursive: true });
     fs.writeFileSync(unmanagedClaudeSkill, 'Unmanaged neighboring skill.\n', { mode: 0o644 });
     assert.throws(
-      () => assertLegacyInventoryCurrent(claudeRootMcp),
+      () => inspectManagedHostProjectionOwnership({ root: claudeRootMcp, host: 'claude' }),
       (error) => error.code === 'HOST_REALIZATION_MANAGED_DRIFT'
     );
     fs.rmSync(path.dirname(unmanagedClaudeSkill), { recursive: true, force: true });
-    assertLegacyInventoryCurrent(claudeRootMcp);
+    assert.equal(inspectManagedHostProjectionOwnership({
+      root: claudeRootMcp,
+      host: 'claude'
+    }).state, 'realized');
 
     const exactClaudeManifest = structuredClone(
       readHostManagedManifestState(claudeRootMcp, 'claude').manifest
@@ -409,12 +352,15 @@ export async function selftestHostRealizations(sourceRoot) {
     forgedClaudeManifest.outputs.sort((left, right) => left.path.localeCompare(right.path, 'en'));
     writeHostManagedManifestState(claudeRootMcp, resealManifest(forgedClaudeManifest));
     assert.throws(
-      () => assertLegacyInventoryCurrent(claudeRootMcp),
+      () => inspectManagedHostProjectionOwnership({ root: claudeRootMcp, host: 'claude' }),
       (error) => error.code === 'HOST_REALIZATION_CANDIDATE_DRIFT'
     );
     writeHostManagedManifestState(claudeRootMcp, exactClaudeManifest);
     fs.rmSync(path.dirname(inventedClaudeSkill), { recursive: true, force: true });
-    assertLegacyInventoryCurrent(claudeRootMcp);
+    assert.equal(inspectManagedHostProjectionOwnership({
+      root: claudeRootMcp,
+      host: 'claude'
+    }).state, 'realized');
 
     const credentialTemplate = copyRuntime(sourceRoot, 'credential-template');
     roots.push(credentialTemplate);

@@ -10,18 +10,18 @@
     "id": "project-page-review",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:d66548ea62598c94c7c920865cb8a0953faffe167dbb468aae73f08fbf28a205",
-  "graphFingerprint": "sha256:dd46c347d85914dcb1239747821345830142032041d05af58cf2015603afccd7",
+  "configurationLockFingerprint": "sha256:5f383255d22951526aab4a4497844efce6f7222d41f049418402af475d2271c1",
+  "graphFingerprint": "sha256:12ed37ca16220596362da0d8a0160c391125034b77520990e9f35710b3da1d92",
   "dependencies": [
     {
       "id": "kernel.soter",
       "version": "0.1.0",
-      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+      "fingerprint": "sha256:a329fb60fdd3e46a9cdce1b0f6d5ea574812105be6bd235eb998a347c3339bfa"
     },
     {
       "id": "core.runtime",
       "version": "0.1.0",
-      "fingerprint": "sha256:a9c8dae0de0211a02104bbc93a94ea5021bdeadb84040dfe88778288ee465a92"
+      "fingerprint": "sha256:b922eb238bd0cd0c3a77bc63d68f92ceab0a78d60a13bea430a9ed48f8be4c1c"
     },
     {
       "id": "context.projects",
@@ -40,21 +40,21 @@
     },
     {
       "id": "integration.notion",
-      "version": "0.2.0",
-      "fingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5"
+      "version": "0.4.0",
+      "fingerprint": "sha256:cff95b234f5cc4339b13202be4fa4101dc767d755afd99ca336a4c17894c2d9d"
     }
   ],
   "host": {
     "id": "codex",
     "adapter": "host.codex",
     "version": "0.3.1",
-    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
+    "manifestFingerprint": "sha256:845e7cecf13f9865f967d3078176bb0d4f0565b18506484b10499d5f60a26621"
   },
   "integrations": [
     {
       "id": "integration.notion",
-      "version": "0.2.0",
-      "manifestFingerprint": "sha256:6fb5e52744fb5f8e2a9274cb41dae11c59bc940c62ffecce8431f8032a47c7b5",
+      "version": "0.4.0",
+      "manifestFingerprint": "sha256:cff95b234f5cc4339b13202be4fa4101dc767d755afd99ca336a4c17894c2d9d",
       "evidenceMaturity": "declared"
     }
   ],
@@ -134,7 +134,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:d66548ea62598c94c7c920865cb8a0953faffe167dbb468aae73f08fbf28a205"
+      "fingerprint": "sha256:5f383255d22951526aab4a4497844efce6f7222d41f049418402af475d2271c1"
     }
   ],
   "effects": [],

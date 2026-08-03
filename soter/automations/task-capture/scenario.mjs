@@ -9,7 +9,6 @@ import {
   resolveRepoPath
 } from '../../core/lib/canonical-json.mjs';
 import { fingerprintLock } from '../../core/resolve.mjs';
-import { fingerprintLegacySource } from '../../kernel/legacy-inventory.mjs';
 import { prepareTaskCaptureRun } from './prepare.mjs';
 
 const AUTOMATION_ID = 'automation.task-capture';
@@ -40,7 +39,7 @@ function observedEffectModes(envelope, expected) {
   ]));
 }
 
-function factsFor({ lock, input, envelope, snapshot, preview, sourceCaseArtifacts }) {
+function factsFor({ lock, input, envelope, snapshot, preview }) {
   const policyEntry = snapshot.entries.find((entry) => entry.id === 'context.task-capture.policy');
   const projectEntry = snapshot.entries.find((entry) => entry.id === 'context.task-capture.project');
   const identityEntry = snapshot.entries.find((entry) => entry.id === 'context.task-capture.identity');
@@ -65,11 +64,6 @@ function factsFor({ lock, input, envelope, snapshot, preview, sourceCaseArtifact
     && envelope.approvals.length === 0
     && envelope.effects.every((effect) => !effect.declaredEffects.includes('write'))
     && preview.proposedChanges.length === 1;
-  const sourceCasesFingerprinted = sourceCaseArtifacts.length > 0
-    && sourceCaseArtifacts.every((artifact) => {
-      return artifact.role === 'source-case'
-        && /^sha256:[a-f0-9]{64}$/.test(artifact.fingerprint);
-    });
   const exactProjectResolved = factValue(preview, 'project-identity') === projectRecord.id;
   const titleSanitized = !serializedSanitized.includes(input.title)
     && !serializedSanitized.includes(input.assignee)
@@ -125,8 +119,7 @@ function factsFor({ lock, input, envelope, snapshot, preview, sourceCaseArtifact
       'private-title-sanitized': titleSanitized,
       'write-boundary-state': boundaryHeld
         && envelope.effectPolicies.write.mode === 'confirm'
-        && envelope.effectPolicies.dispatch.mode === 'prohibit',
-      'source-cases-exactly-fingerprinted': sourceCasesFingerprinted
+        && envelope.effectPolicies.dispatch.mode === 'prohibit'
     }
   };
 }
@@ -176,11 +169,6 @@ export async function runContainedTaskCaptureScenario({
 }) {
   const resolvedRoot = path.resolve(root);
   const loaded = loadScenario(resolvedRoot, scenarioPath);
-  const sourceCaseArtifacts = loaded.scenario.sourceCases.map((sourcePath) => ({
-    role: 'source-case',
-    path: sourcePath,
-    fingerprint: fingerprintLegacySource(resolvedRoot, sourcePath)
-  }));
   const input = {
     title: 'Fix the Notion push retry logic so failed writes do not get lost',
     project: 'soter-fixture://projects/project/launch',
@@ -202,8 +190,7 @@ export async function runContainedTaskCaptureScenario({
     input,
     envelope: execution.envelope,
     snapshot: execution.snapshot,
-    preview: execution.preview,
-    sourceCaseArtifacts
+    preview: execution.preview
   });
   const assessment = assessmentFor({
     scenario: loaded.scenario,
@@ -226,7 +213,6 @@ export async function runContainedTaskCaptureScenario({
     envelope: execution.envelope,
     scenario: loaded.scenario,
     scenarioPath: loaded.path,
-    sourceCaseArtifacts,
     assessment,
     evaluatorId: 'automation.task-capture.scenario-evaluator',
     id: scenarioEvidenceId,

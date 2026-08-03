@@ -74,6 +74,6 @@
     }
   ],
   "limitations": [
-    "This definition projects local deterministic guidance, the Soter Core route, and selected active explicit-only workflow skills; candidate and legacy Claude skills, hooks, settings, plugin files, task allowlists, and checker delivery are not silently adopted as generated outputs."
+    "This definition projects local deterministic guidance, the Soter Core route, and selected active explicit-only workflow skills; unselected or unmanaged Claude skills, hooks, settings, plugin files, task allowlists, and checker delivery are not silently adopted as generated outputs."
   ]
 }

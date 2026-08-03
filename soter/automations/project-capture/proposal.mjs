@@ -30,9 +30,9 @@ const PROPOSAL_TYPE = 'project-capture.review-proposal';
 const REVIEW_KIND = 'project-capture-review';
 const ZERO_FINGERPRINT = 'sha256:' + '0'.repeat(64);
 const LIMITATIONS = [
-  'This private review proposal creates no approval, confirmation, continuation, provider call, write, proof, maturity, or migration authority.',
-  'The exact private Project candidate is held and cannot enter a connected batch while complete mapped-field and body read-back is unavailable.',
-  'No connected compiler is declared by this Automation. This proposal exposes zero proposed changes and creates no batch, approval request, confirmation, one-time start consumption, checkpoint, provider-write, or verification authority.'
+  'This private review proposal creates no approval, confirmation, continuation, provider call, write, proof, or maturity authority.',
+  'Only one exact proposed Project create may enter a separately reviewed connected batch; approval request, confirmation, one-time start consumption, checkpoint execution, and complete fields-and-body verification remain separate.',
+  'Provider-native templates, linked views, manager and client-contact relations, existing Task, Document, and channel links, and multiple-owner milestone work items remain unavailable in this narrow portable profile.'
 ];
 
 function codedError(code, message, cause = null) {
@@ -100,15 +100,16 @@ function buildReview({ root, decision, derivedReviewDefinition }) {
   });
   const action = preview.collections[0]?.rows[0]?.actions[0];
   if (projectFingerprint !== project.afterFingerprint
-    || preview.proposedChanges.length !== 0
+    || preview.proposedChanges.length !== 1
+    || preview.proposedChanges[0].id !== 'action.project-capture.create'
     || action?.id !== 'action.project-capture.create'
-    || action?.state !== 'held'
-    || action?.reasonCode !== 'COMPLETE_PROJECT_READBACK_UNAVAILABLE'
-    || action?.capability !== null
-    || action?.effect !== null
-    || Object.hasOwn(action || {}, 'changeFingerprint')) {
+    || action?.state !== 'proposed'
+    || action?.reasonCode !== 'PROJECT_CREATE_READY_FOR_REVIEW'
+    || action?.capability !== 'projects.records.create'
+    || action?.effect !== 'write'
+    || typeof action?.changeFingerprint !== 'string') {
     throw new Error(
-      'Project Capture proposal cannot reconstruct one exact held Project candidate from the decision.'
+      'Project Capture proposal cannot reconstruct one exact ready Project create from the decision.'
     );
   }
   const review = {

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://automations/project-page-reconciliation/proposal/v1",
+  "title": "Project page reconciliation review proposal",
+  "type": "object",
+  "required": ["$contract", "id", "automation", "decision", "proposalType", "review"],
+  "properties": {
+    "$contract": { "const": "soter://contracts/automation-proposal/v1" },
+    "id": {
+      "type": "string",
+      "pattern": "^proposal\\.project-page-reconciliation\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "automation": {
+      "type": "object",
+      "required": ["id"],
+      "properties": { "id": { "const": "automation.project-page-reconciliation" } }
+    },
+    "decision": {
+      "type": "object",
+      "required": ["id", "decisionType"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^decision\\.project-page-reconciliation\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "decisionType": { "const": "project-page-reconciliation.grounded-change" }
+      }
+    },
+    "proposalType": { "const": "project-page-reconciliation.review-proposal" },
+    "review": {
+      "type": "object",
+      "required": ["$contract", "kind", "privateReview"],
+      "properties": {
+        "$contract": { "const": "soter://contracts/automation-review/v1" },
+        "kind": { "const": "project-page-reconciliation-review" },
+        "privateReview": {
+          "type": "object",
+          "required": ["state"],
+          "properties": { "state": { "const": "available" } }
+        }
+      }
+    }
+  }
+}

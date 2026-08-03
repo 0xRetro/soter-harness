@@ -41,6 +41,8 @@ import {
 } from '../service.mjs';
 import {
   activeConfigurationLockStatePath,
+  developmentRequestStatePath,
+  readHostManagedManifestState,
   runStatePath,
   writeActiveConfigurationLockState,
   writeHostManagedManifestState,
@@ -661,6 +663,12 @@ function createFixtureRoot() {
       'harness-development-catalog.config.json'
     ))
   );
+  const developmentLock = resolveConfiguration({
+    root,
+    configPath: privateConfigurationStatePath(root, 'harness-development-catalog'),
+    host: 'codex'
+  });
+  writeActiveConfigurationLockState(root, 'harness-development-catalog', developmentLock);
   taskPolicyId = task.notion.recordUris['policy.tasks'];
   if (!/^https:\/\/www\.notion\.so\/[a-f0-9]{32}$/.test(taskPolicyId || '')) {
     throw new Error('Contained Task configuration did not materialize its exact private policy identity.');
@@ -748,7 +756,8 @@ async function assertUnrealizedHostRuntimes() {
           || inspection.authority.providerCallsPermitted
           || inspection.authority.writesPermitted) {
           throw new Error(
-            host + ' did not report its exact unrealized no-authority host-runtime state.'
+            host + ' did not report its exact unrealized no-authority host-runtime state: '
+              + JSON.stringify(inspection)
           );
         }
         const inspectionSchema = readJson(path.join(
@@ -1010,6 +1019,18 @@ async function expectToolError(client, name, args, message) {
   }
 }
 
+function assertSafeMcpFailure(response, code, privateSentinels = []) {
+  const serialized = JSON.stringify(response);
+  if (!response.isError
+    || response.structuredContent?.result?.code !== code
+    || privateSentinels.some((sentinel) => serialized.includes(sentinel))) {
+    throw new Error(
+      'MCP failure did not preserve stable code and private-material exclusion for '
+        + code + ': ' + serialized
+    );
+  }
+}
+
 async function expectError(action, message) {
   let observed;
   try {
@@ -1200,11 +1221,14 @@ async function selftest(root) {
       'soter_commit_organization_capture_proposal',
       'soter_commit_project_capture_decision',
       'soter_commit_project_capture_proposal',
+      'soter_commit_project_page_reconciliation_decision',
+      'soter_commit_project_page_reconciliation_proposal',
       'soter_commit_task_capture_decision',
       'soter_commit_task_capture_proposal',
       'soter_complete_capability_call',
       'soter_complete_operation_plan',
       'soter_complete_provider_probe',
+      'soter_create_development_request',
       'soter_fail_host_call',
       'soter_finalize_automation_acquisition',
       'soter_get_host_call',
@@ -1213,6 +1237,7 @@ async function selftest(root) {
       'soter_inspect_contact_capture_decision',
       'soter_inspect_contact_capture_proposal',
       'soter_inspect_contact_capture_proposal_material',
+      'soter_inspect_development_run',
       'soter_inspect_email_triage_decision',
       'soter_inspect_email_triage_proposal',
       'soter_inspect_email_triage_proposal_material',
@@ -1226,6 +1251,9 @@ async function selftest(root) {
       'soter_inspect_project_capture_decision',
       'soter_inspect_project_capture_proposal',
       'soter_inspect_project_capture_proposal_material',
+      'soter_inspect_project_page_reconciliation_decision',
+      'soter_inspect_project_page_reconciliation_proposal',
+      'soter_inspect_project_page_reconciliation_proposal_material',
       'soter_inspect_task_capture_decision',
       'soter_inspect_task_capture_proposal',
       'soter_inspect_task_capture_proposal_material',
@@ -1245,6 +1273,222 @@ async function selftest(root) {
     })) {
       throw new Error('The MCP projection exposed generic connected-write approval input.');
     }
+    const developmentCreateTool = listed.tools.find((tool) => {
+      return tool.name === 'soter_create_development_request';
+    });
+    const developmentInspectTool = listed.tools.find((tool) => {
+      return tool.name === 'soter_inspect_development_run';
+    });
+    if (!developmentCreateTool
+      || !developmentInspectTool
+      || developmentCreateTool.annotations?.readOnlyHint !== false
+      || developmentCreateTool.annotations?.idempotentHint !== true
+      || developmentInspectTool.annotations?.readOnlyHint !== true
+      || JSON.stringify(developmentCreateTool.inputSchema).includes('configuration_name')
+      || JSON.stringify(developmentCreateTool.inputSchema).includes('lock_path')
+      || JSON.stringify(developmentCreateTool.inputSchema).includes('before_fingerprint')
+      || JSON.stringify(developmentCreateTool.inputSchema).includes('provider')
+      || JSON.stringify(developmentInspectTool.inputSchema).includes('path')) {
+      throw new Error(
+        'Development MCP tools do not preserve their strict candidate-lock, Core-fingerprinted, sanitized boundary.'
+      );
+    }
+
+    const developmentRequestId = 'development-request.mcp-schema-audit';
+    const developmentTarget = 'soter/contracts/host-runtime-inspection.schema.json';
+    const privateDevelopmentOutcome = 'PRIVATE_DEVELOPMENT_OUTCOME_SENTINEL review the exact schema without editing it.';
+    const developmentArguments = {
+      workflow_id: 'automation.auditing-a-schema-doc',
+      request_id: developmentRequestId,
+      invocation: {
+        kind: 'develop',
+        profile: 'exact',
+        requested_outcome: privateDevelopmentOutcome,
+        requested_effects: ['local-workspace-read'],
+        targets: [{ id: 'target.host-runtime-inspection', path: developmentTarget }]
+      },
+      at: fixtureTime
+    };
+    const createdDevelopment = await call(
+      client,
+      'soter_create_development_request',
+      developmentArguments
+    );
+    const serializedDevelopment = JSON.stringify(createdDevelopment);
+    if (createdDevelopment.$contract !== 'soter://contracts/development-run-inspection/v1'
+      || createdDevelopment.request.id !== developmentRequestId
+      || createdDevelopment.workflow.id !== 'automation.auditing-a-schema-doc'
+      || createdDevelopment.host.id !== 'codex'
+      || createdDevelopment.configuration.name !== 'harness-development-catalog'
+      || createdDevelopment.invocation.kind !== 'develop'
+      || createdDevelopment.progress.state !== 'requested'
+      || createdDevelopment.authority.kind !== 'inspection-only'
+      || createdDevelopment.authority.grantsExecution
+      || createdDevelopment.authority.grantsApproval
+      || createdDevelopment.authority.grantsProviderRead
+      || createdDevelopment.authority.grantsPublication
+      || createdDevelopment.authority.grantsMerge
+      || createdDevelopment.authority.grantsProviderWrite
+      || createdDevelopment.authority.grantsProtectedRootMutation
+      || createdDevelopment.authority.grantsHostRealization
+      || createdDevelopment.applicability.state !== 'current'
+      || createdDevelopment.requestBoundary.state !== 'current'
+      || createdDevelopment.requestBoundary.reasonCode !== 'DEVELOPMENT_REQUEST_CURRENT'
+      || createdDevelopment.requestBoundary.permittedNextAction !== 'perform-request-scoped-development'
+      || createdDevelopment.requestBoundary.declared.localWorkspaceRead !== 'request-scoped'
+      || createdDevelopment.requestBoundary.declared.localWorkspaceWrite !== 'not-requested'
+      || createdDevelopment.requestBoundary.declared.localCommand !== 'not-requested'
+      || createdDevelopment.requestBoundary.declared.subagentDispatch !== 'not-requested'
+      || fingerprintJson(createdDevelopment.requestBoundary.declared)
+        !== fingerprintJson(createdDevelopment.requestBoundary.effective)
+      || createdDevelopment.privacy.targetPathsIncluded
+      || createdDevelopment.privacy.requestedOutcomeIncluded
+      || serializedDevelopment.includes(privateDevelopmentOutcome)
+      || serializedDevelopment.includes(developmentTarget)
+      || serializedDevelopment.includes(root)
+      || serializedDevelopment.includes('.soter/state/')) {
+      throw new Error(
+        'Development request creation did not return the exact sanitized no-authority inspection.'
+      );
+    }
+    const requestStateFile = developmentRequestStatePath(root, developmentRequestId);
+    assertPrivateFile(requestStateFile);
+    if (process.platform !== 'win32'
+      && (fs.statSync(path.dirname(requestStateFile)).mode & 0o777) !== 0o700) {
+      throw new Error('Private development request directory does not use mode 0700.');
+    }
+    const privateDevelopmentRequest = readJson(requestStateFile);
+    if (privateDevelopmentRequest.invocation.requestedOutcome !== privateDevelopmentOutcome
+      || privateDevelopmentRequest.invocation.targets[0].path !== developmentTarget
+      || privateDevelopmentRequest.invocation.targets[0].beforeFingerprint
+        !== fingerprintPath(path.join(root, developmentTarget))
+      || !privateDevelopmentRequest.configuration.lockPath.startsWith(
+        '.soter/state/development-candidate-locks/'
+      )
+      || !/[.][a-f0-9]{64}[.]json$/.test(privateDevelopmentRequest.configuration.lockPath)
+      || privateDevelopmentRequest.invocation.requestedLocalEffects.join(',')
+        !== 'local-workspace-read'
+      || privateDevelopmentRequest.effectBoundary.localWorkspaceRead !== 'request-scoped'
+      || privateDevelopmentRequest.effectBoundary.localWorkspaceWrite !== 'not-requested'
+      || privateDevelopmentRequest.effectBoundary.localCommand !== 'not-requested'
+      || privateDevelopmentRequest.effectBoundary.subagentDispatch !== 'not-requested'
+      || privateDevelopmentRequest.host.managedManifestFingerprint
+        !== readHostManagedManifestState(root, 'codex').manifest.manifestFingerprint
+      || privateDevelopmentRequest.effectBoundary.providerRead !== 'separate-authority'
+      || privateDevelopmentRequest.effectBoundary.providerWrite !== 'separate-authority'
+      || privateDevelopmentRequest.authority.providerTransactionAuthority !== 'none'
+      || privateDevelopmentRequest.authority.approvalAuthority !== 'none'
+      || privateDevelopmentRequest.authority.publicationAuthority !== 'none'
+      || privateDevelopmentRequest.authority.mergeAuthority !== 'none'
+      || privateDevelopmentRequest.authority.hostRealizationAuthority !== 'none') {
+      throw new Error(
+        'Private MCP development request did not bind exact targets and request-scoped local effects.'
+      );
+    }
+    const inspectedDevelopment = await call(client, 'soter_inspect_development_run', {
+      request_id: developmentRequestId
+    });
+    if (inspectedDevelopment.inspectionFingerprint !== createdDevelopment.inspectionFingerprint
+      || JSON.stringify(inspectedDevelopment).includes(privateDevelopmentOutcome)
+      || JSON.stringify(inspectedDevelopment).includes(developmentTarget)) {
+      throw new Error('Development run inspection did not recover the same sanitized exact request.');
+    }
+    const reenteredDevelopment = await call(
+      client,
+      'soter_create_development_request',
+      developmentArguments
+    );
+    if (reenteredDevelopment.request.fingerprint !== createdDevelopment.request.fingerprint) {
+      throw new Error('Exact MCP development request re-entry was not idempotent.');
+    }
+
+    const changedOutcomeSentinel = 'PRIVATE_CHANGED_DEVELOPMENT_OUTCOME_SENTINEL';
+    const changedDevelopment = await client.callTool({
+      name: 'soter_create_development_request',
+      arguments: {
+        ...developmentArguments,
+        invocation: {
+          ...developmentArguments.invocation,
+          requested_outcome: changedOutcomeSentinel + ' must not replace exact state.'
+        }
+      }
+    });
+    assertSafeMcpFailure(
+      changedDevelopment,
+      'DEVELOPMENT_REQUEST_REENTRY_MISMATCH',
+      [privateDevelopmentOutcome, changedOutcomeSentinel, developmentTarget, root]
+    );
+
+    const developmentCredentialSentinel = 'sk-' + 'PRIVATE_DEVELOPMENT_CREDENTIAL_SENTINEL';
+    const rejectedCredential = await client.callTool({
+      name: 'soter_create_development_request',
+      arguments: {
+        ...developmentArguments,
+        request_id: 'development-request.mcp-private-material',
+        invocation: {
+          ...developmentArguments.invocation,
+          requested_outcome: 'Review this prohibited credential ' + developmentCredentialSentinel + ' safely.'
+        }
+      }
+    });
+    assertSafeMcpFailure(
+      rejectedCredential,
+      'DEVELOPMENT_REQUEST_PRIVATE_MATERIAL_INVALID',
+      [developmentCredentialSentinel, developmentTarget, root]
+    );
+    if (fs.existsSync(developmentRequestStatePath(
+      root,
+      'development-request.mcp-private-material'
+    ))) {
+      throw new Error('Rejected private development material created durable request state.');
+    }
+
+    const unselectedWorkflowDevelopment = await client.callTool({
+      name: 'soter_create_development_request',
+      arguments: {
+        ...developmentArguments,
+        workflow_id: 'automation.unavailable-workflow',
+        request_id: 'development-request.mcp-unselected-workflow'
+      }
+    });
+    assertSafeMcpFailure(
+      unselectedWorkflowDevelopment,
+      'DEVELOPMENT_REQUEST_BINDING_INVALID',
+      [privateDevelopmentOutcome, developmentTarget, root]
+    );
+    if (fs.existsSync(developmentRequestStatePath(
+      root,
+      'development-request.mcp-unselected-workflow'
+    ))) {
+      throw new Error('Unselected development workflow created durable request state.');
+    }
+
+    const missingDevelopment = await client.callTool({
+      name: 'soter_inspect_development_run',
+      arguments: { request_id: 'development-request.mcp-missing' }
+    });
+    assertSafeMcpFailure(
+      missingDevelopment,
+      'DEVELOPMENT_REQUEST_NOT_FOUND',
+      [root, '.soter/state/']
+    );
+
+    const openDevelopmentInput = await client.callTool({
+      name: 'soter_create_development_request',
+      arguments: {
+        ...developmentArguments,
+        request_id: 'development-request.mcp-open-input',
+        unexpected_authority: 'provider-write'
+      }
+    });
+    if (!openDevelopmentInput.isError
+      || fs.existsSync(developmentRequestStatePath(
+        root,
+        'development-request.mcp-open-input'
+      ))) {
+      throw new Error('Development MCP input schema accepted an undeclared authority field.');
+    }
+
     const workOwnedAcquisitionTools = new Set([
       'soter_prepare_automation_acquisition',
       'soter_recover_automation_acquisition',
@@ -1264,6 +1508,31 @@ async function selftest(root) {
           'Connected acquisition MCP input is not derived exclusively from exact prepared work: '
             + tool.name
         );
+      }
+    }
+    const projectPageReconciliationTools = listed.tools.filter((item) => {
+      return item.name.includes('project_page_reconciliation');
+    });
+    if (projectPageReconciliationTools.length !== 5) {
+      throw new Error('Project Page Reconciliation did not expose exactly five guarded decision and proposal tools.');
+    }
+    for (const tool of projectPageReconciliationTools) {
+      const input = JSON.stringify(tool.inputSchema);
+      for (const forbidden of [
+        'action_ids',
+        'approval',
+        'body',
+        'new_texts',
+        'old_texts',
+        'project_id',
+        'provider_response'
+      ]) {
+        if (input.includes(forbidden)) {
+          throw new Error(
+            'Project Page Reconciliation MCP input exposed private values or independent authority: '
+              + tool.name + ' / ' + forbidden
+          );
+        }
       }
     }
     const hostFailureTool = listed.tools.find((item) => item.name === 'soter_fail_host_call');
@@ -1289,11 +1558,14 @@ async function selftest(root) {
       'soter_commit_organization_capture_proposal',
       'soter_commit_project_capture_decision',
       'soter_commit_project_capture_proposal',
+      'soter_commit_project_page_reconciliation_decision',
+      'soter_commit_project_page_reconciliation_proposal',
       'soter_commit_task_capture_decision',
       'soter_commit_task_capture_proposal',
       'Contact Capture acquisition',
       'Organization Capture acquisition',
       'Project Capture acquisition',
+      'Project Page Reconciliation decision',
       'Task Capture acquisition'
     ];
     const missingInstructionFacts = requiredInstructionFacts.filter((fact) => {
@@ -3752,7 +4024,7 @@ async function selftest(root) {
       }).length !== 2
       || !meetingProposalActions.some((action) => {
         return action.id === 'action.meeting-intake.unsupported-effects'
-          && action.reasonCode === 'MEETING_LEGACY_EFFECTS_UNAVAILABLE';
+          && action.reasonCode === 'MEETING_UNSUPPORTED_EFFECTS_UNAVAILABLE';
       })
       || committedMeetingProposal.proposal.review.proposedChanges.length !== 0
       || inspectedMeetingProposalMaterial.authority?.state !== 'none'

@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/review-only-candidate-selection/v1",
+  "title": "Soter immutable review-only candidate selection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "id", "fingerprint", "createdAt",
+    "work", "configuration", "preview", "state", "effects", "scope",
+    "actions", "blockers", "privacy"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/review-only-candidate-selection/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^review-only-candidate-selection\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "fingerprint": { "$ref": "#/$defs/fingerprint" },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "work": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "fingerprint", "checkpointId", "checkpointFingerprint",
+        "automationId", "automationVersion"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^work\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "checkpointId": { "type": "string", "minLength": 1 },
+        "checkpointFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "automationId": {
+          "type": "string",
+          "pattern": "^automation\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "automationVersion": { "$ref": "#/$defs/version" }
+      }
+    },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name", "path", "lockPath", "configurationBasis", "lockFingerprint", "graphFingerprint", "host"
+      ],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "lockPath": { "type": "string", "minLength": 1 },
+        "configurationBasis": { "enum": ["tracked-contained", "private-active"] },
+        "lockFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "host": { "type": "string", "minLength": 1 }
+      }
+    },
+    "preview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind", "fingerprint", "privateReviewKind", "privateReviewContentFingerprint"
+      ],
+      "properties": {
+        "kind": { "type": "string", "minLength": 1 },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "privateReviewKind": { "type": "string", "minLength": 1 },
+        "privateReviewContentFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "state": { "const": "review-only" },
+    "effects": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["write", "dispatch", "destructive"] }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["availableActionCount", "selectedActionCount", "partial", "fingerprint"],
+      "properties": {
+        "availableActionCount": { "type": "integer", "minimum": 1 },
+        "selectedActionCount": { "type": "integer", "minimum": 1 },
+        "partial": { "type": "boolean" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "actions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "items": { "$ref": "#/$defs/action" }
+    },
+    "blockers": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "CONNECTED_COMPILER_NOT_DECLARED",
+          "REVIEW_ONLY_CANDIDATE_PREVIEW_NOT_CREATED",
+          "CONNECTED_VERIFICATION_NOT_PROVEN"
+        ]
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope", "authority", "projection", "privateValuesIncluded",
+        "providerArgumentsIncluded", "rawProviderResponsesIncluded",
+        "credentialValuesIncluded", "workspaceInspectionIncluded",
+        "evidenceIncluded", "canonicalArtifactsIncluded",
+        "approvalAuthorityIncluded", "continuationAuthorityIncluded",
+        "executionAuthorityIncluded"
+      ],
+      "properties": {
+        "scope": { "const": "private-local-review-only-candidate-selection" },
+        "authority": { "const": "none" },
+        "projection": { "const": "review-only-candidate-selection-only" },
+        "privateValuesIncluded": { "const": false },
+        "providerArgumentsIncluded": { "const": false },
+        "rawProviderResponsesIncluded": { "const": false },
+        "credentialValuesIncluded": { "const": false },
+        "workspaceInspectionIncluded": { "const": false },
+        "evidenceIncluded": { "const": false },
+        "canonicalArtifactsIncluded": { "const": false },
+        "approvalAuthorityIncluded": { "const": false },
+        "continuationAuthorityIncluded": { "const": false },
+        "executionAuthorityIncluded": { "const": false }
+      }
+    }
+  },
+  "$defs": {
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "nullableFingerprint": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "sequence", "kind", "reasonCode", "capability", "effect", "source",
+        "subjectFingerprint", "sourceActionFingerprint", "changeFingerprint",
+        "contextValueFingerprint", "proposedValueFingerprint"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "kind": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+        "capability": { "type": "string", "minLength": 3 },
+        "effect": { "enum": ["write", "dispatch", "destructive"] },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["collectionId", "rowId", "rowFingerprint"],
+          "properties": {
+            "collectionId": {
+              "type": "string",
+              "pattern": "^collection\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+            },
+            "rowId": { "type": "string", "pattern": "^row\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+            "rowFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        "subjectFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "sourceActionFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "changeFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "contextValueFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+        "proposedValueFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    }
+  }
+}

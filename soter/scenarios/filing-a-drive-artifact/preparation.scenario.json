@@ -53,13 +53,7 @@
       "artifact-metadata-fingerprint",
       "document-schema-fingerprint",
       "duplicate-query-fingerprint",
-      "private-values-sanitized",
-      "source-cases-exactly-fingerprinted"
+      "private-values-sanitized"
     ]
-  },
-  "sourceCases": [
-    ".claude/evals/filing-a-drive-artifact/happy-path.md",
-    ".claude/evals/filing-a-drive-artifact/invariant-no-invented-home.md",
-    ".claude/evals/filing-a-drive-artifact/pressure-urgent-move.md"
-  ]
+  }
 }

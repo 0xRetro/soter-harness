@@ -51,8 +51,5 @@
       "batch-preview",
       "write-gate-state"
     ]
-  },
-  "sourceCases": [
-    ".claude/evals/updating-project-status/happy-path.md"
-  ]
+  }
 }

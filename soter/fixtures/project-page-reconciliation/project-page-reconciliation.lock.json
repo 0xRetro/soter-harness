@@ -1,0 +1,1577 @@
+{
+  "$contract": "soter://contracts/lock/v1",
+  "contractVersion": "1.0.0",
+  "configuration": {
+    "name": "project-page-reconciliation",
+    "path": "soter/configurations/project-page-reconciliation.config.json",
+    "fingerprint": "sha256:8c8df801dcc9a3e392f9d019d7ca41f88a9695f618edcec79d0a7f68fcb3d178",
+    "hostSelection": {
+      "id": "codex",
+      "source": "configuration"
+    }
+  },
+  "resolver": {
+    "id": "core.resolver",
+    "version": "0.5.0"
+  },
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:845e7cecf13f9865f967d3078176bb0d4f0565b18506484b10499d5f60a26621",
+    "projectionDefinition": {
+      "id": "host-projection.codex",
+      "version": "0.3.0",
+      "path": "soter/hosts/codex/projection.json",
+      "fingerprint": "sha256:09fe78fb567ec40ac12e71e1bd5304f44246669a23fe8ac84c5eef755cb95727"
+    },
+    "projectionGenerator": {
+      "id": "core.host-projection-generator",
+      "version": "2.1.0"
+    }
+  },
+  "packs": [
+    {
+      "id": "kernel.soter",
+      "version": "0.1.0",
+      "layer": "kernel",
+      "releaseStage": "experimental",
+      "evidenceMaturity": "declared",
+      "source": "base",
+      "reason": "Required kernel foundation: Governs how Soter systems are defined, validated, evaluated, changed, versioned, and packaged.",
+      "manifestFingerprint": "sha256:a329fb60fdd3e46a9cdce1b0f6d5ea574812105be6bd235eb998a347c3339bfa",
+      "artifacts": [
+        {
+          "path": "soter/contracts/approval-consumption.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:958c57bfd423b84a1e52cea83381041e9c76148bf40226206e3a0b1b03741622"
+        },
+        {
+          "path": "soter/contracts/approval-request.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:c9112b2ad033cc33a9e87e66155d0702bde1b973ddd52e0633fcb580a60e894b"
+        },
+        {
+          "path": "soter/contracts/approval-v2.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:feae91914e78e6e4b4fc49e673c8bc7552dbe26ee90183510f73195c8f7036db"
+        },
+        {
+          "path": "soter/contracts/automation-decision.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:334b911e00786ad82aa7b6dcb11c9bd800b85b37fc0c89b97017d0d8a40b4c35"
+        },
+        {
+          "path": "soter/contracts/automation-derived-review.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:884e75499af499c9ffbadac6d0f7a9b8218221019630fdee55327c2906c46204"
+        },
+        {
+          "path": "soter/contracts/automation-input.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:8d19534fca778429baa6711feaafdda529e2c0ff10537e5bc69a13c4214d31de"
+        },
+        {
+          "path": "soter/contracts/automation-proposal-material.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:5b741699c01f316b5d61a650fd61c67a0acde4b79108d73da0aee89cc56914bb"
+        },
+        {
+          "path": "soter/contracts/automation-proposal.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:a8718190ce316e75ecc60ee6e55552473cce4f9a6430170d27372d0376548b28"
+        },
+        {
+          "path": "soter/contracts/automation-review.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:4e7d4762d290723eb68ca112142615a6406f0c5bbb1fc8134de2fd9c3860f853"
+        },
+        {
+          "path": "soter/contracts/bundle-inspection.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:29dc465ab445b9a16e8269c7c66511f2d6271f51df0d1b0287d8932af66318db"
+        },
+        {
+          "path": "soter/contracts/bundle.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:990f5160fb7f3013fa46279daeac8f5e6c5b24d4d225d8c8d9801adbfd90b2d3"
+        },
+        {
+          "path": "soter/contracts/capability-provider.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:4a2c1baaff854b870d90f6a875fca4928fb9b8746485cca6e0b4045b9020dabd"
+        },
+        {
+          "path": "soter/contracts/capability.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:5c91ac8b02b6f66c75e61cb6440d771f9976fea8430d259df5d964f8a6963e5e"
+        },
+        {
+          "path": "soter/contracts/configuration-change-confirmation.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:ecbaf017973732dcf0421108e054483e095d8cfcb45f82170bdc7b8b7182751c"
+        },
+        {
+          "path": "soter/contracts/configuration-change-consumption.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:3e97509e3d6708f4cd6af513a850cb2b7d6413ae567541707a74163e74316197"
+        },
+        {
+          "path": "soter/contracts/configuration-change-inspection.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:9e176b518fc498eb8ebc2866d3cffde345f595bb203132dc3fd4e578a5c260e1"
+        },
+        {
+          "path": "soter/contracts/configuration-change-plan.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:d047c1a3f3f07446734ee4334b7eccfa46e27ace93e85e0cb784fe0475ab8574"
+        },
+        {
+          "path": "soter/contracts/configuration-change-request.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:d30aa296147b639b11c9c34cbd171fd29373eedae9c99870cb40398f99a5c147"
+        },
+        {
+          "path": "soter/contracts/configuration-preview.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:1b654b80e2fdd96dad55335e01de4c7a8dc1646803fbf53c4b75f1b35e3fbaad"
+        },
+        {
+          "path": "soter/contracts/configuration-transaction-checkpoint.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:c648c56d3e1c91614be38723858b337864c3371c15fa77443c1cb4ce0d02481f"
+        },
+        {
+          "path": "soter/contracts/configuration-view.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:6f3a5f99369c36d0fe26b470357d19c63010648eda309bea90746ac1b0fb5bbf"
+        },
+        {
+          "path": "soter/contracts/configuration.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:2b1a002e906c795f64376cf6f1eb06bf0df93500964e5c70dd62c2e6002f5a3e"
+        },
+        {
+          "path": "soter/contracts/connected-approval-review-material.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:a83dd69d64eb7372c606a43badc36e89e6d492ae2742522413cf77b26acccfab"
+        },
+        {
+          "path": "soter/contracts/connected-change-set-v2.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:4d5c48bdb2fc065dbbb5481b9d6ec835d2f5f29536aa13d103a3654215dab332"
+        },
+        {
+          "path": "soter/contracts/connected-operation-batch-v2.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:b649d0038ee11a24ebfc05594d87d38eed0721c10bace21661438ccc3fc07f70"
+        },
+        {
+          "path": "soter/contracts/connected-transaction-checkpoint-v2.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:45452492430e2720d7817871b45517c9831dbfb3104b4b93c5ed86c3358f1ae3"
+        },
+        {
+          "path": "soter/contracts/context-record-model.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:cd3f197a0d7090af3f87300eb2c0cd20ed3e757972e1fbbc5795c0695bb076cb"
+        },
+        {
+          "path": "soter/contracts/context-snapshot.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:19d0f7e29a2d471f4998c39d986aa4f2c96555ca57184073ab5c8b85e597df1b"
+        },
+        {
+          "path": "soter/contracts/context-vocabulary.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:ba40fb4c5508713175f34aaa6b47311c9e05ae6dae4c2433dc66d369d59818d4"
+        },
+        {
+          "path": "soter/contracts/development-governance.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:b19a3dbd760ef7d8748aad4d0c21262cf79a2193bebea84f1e6f1a97d32a2fca"
+        },
+        {
+          "path": "soter/contracts/development-host-execution.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:004dcc04a74c6e9ba427cef0080b462d99e81cb4367b9a175368d00afb6eec12"
+        },
+        {
+          "path": "soter/contracts/development-host-judgment.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:5db10625caa95659734c2718e3294e7c09679db752a25d8326d09f45740ce106"
+        },
+        {
+          "path": "soter/contracts/development-host-observation.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:5bd5c15281285fff4459bff1942f7c9d1556831b2135a045e89e2f36fcdea30c"
+        },
+        {
+          "path": "soter/contracts/development-request.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:6fed9974614bb8dad2a795bb00a12251d23df6415ac5d1ec69db42f16035b5ab"
+        },
+        {
+          "path": "soter/contracts/development-result.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:4614bc2943669da54d0349469e706a5e9f57d6546b264f7e7e9bca002829d19d"
+        },
+        {
+          "path": "soter/contracts/development-run-inspection.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:215fb3673cb1fef488e2351a4b0862e6a889a8e4926df70ad63d4304f61d48e6"
+        },
+        {
+          "path": "soter/contracts/doctor-result.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:c300c610c6db2a848b9dc1b2b39d72c99a3f7dcef086299d1def222ec70c275d"
+        },
+        {
+          "path": "soter/contracts/email-context-model.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:b5ab0e7dd44c216c5735f9b576c230e8e6f27df228688780e28869a552a0c65b"
+        },
+        {
+          "path": "soter/contracts/evidence-v2.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:25394d73486f6c179ffe201d56b312e5f171d3c7536c098cc72b5d76e1730fce"
+        },
+        {
+          "path": "soter/contracts/host-adapter.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:a23ec5a20c5d14146d6eb021480c6faa4ee17d2bfc83605d6ac02532e7782fd8"
+        },
+        {
+          "path": "soter/contracts/host-call-checkpoint.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:8c232ebe89d7eeb22bbafc547549e9d301ea2ebe6d5520c74947449a1b83008d"
+        },
+        {
+          "path": "soter/contracts/host-managed-manifest.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:77983afb1c9328b6423203d979db766457ccdbc277517532ec371b7c8aab024e"
+        },
+        {
+          "path": "soter/contracts/host-projection-definition.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:3fbfbbb60b389b6b21bef9ca095e8189810bcf787b68942066209b043ada7dc2"
+        },
+        {
+          "path": "soter/contracts/host-realization-checkpoint.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:c3e3efa23828896a280e168758c2265086c5f186e63b16aeea94d5949d4879bc"
+        },
+        {
+          "path": "soter/contracts/host-realization-confirmation.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:6f4898a3ef0e8cf4d059f2083a45b17966ef921edce2f02046e0b83b64dfc885"
+        },
+        {
+          "path": "soter/contracts/host-realization-consumption.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:11ebefd3b633700d4becacd143dac88a11ce4cf8423e7ec6dc1274a554b7b638"
+        },
+        {
+          "path": "soter/contracts/host-realization-inspection.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:917b23ae853f7e3834709dc6f9547bb89d44e745515543a1acf126c8a0d6ccbf"
+        },
+        {
+          "path": "soter/contracts/host-realization-plan.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:c783040d195010be8709af52e366c0a6b4897bd9bb935486cb34395ebbc2fdb0"
+        },
+        {
+          "path": "soter/contracts/host-realization-request.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:3ab23fc8c0d1ad8e7d1d6b089072ef2e40365506ec45efaac8c914e0885b0aee"
+        },
+        {
+          "path": "soter/contracts/host-runtime-inspection.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:0a578da192bcdc598383b6cd39eb9323beabd3029074815cb07b89cf05b269fb"
+        },
+        {
+          "path": "soter/contracts/host-tool-call.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:6aef1237322be1858912dd07bd1bd0a7b22bf08b15e8ece9f4c24ae64f897dd9"
+        },
+        {
+          "path": "soter/contracts/lock.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:9af9e1d101faf7a7067d5a9e610ea18a0f65cf894af14aa4ec12c9d5c51a0bd7"
+        },
+        {
+          "path": "soter/contracts/operation-plan-checkpoint-v2.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:35af6110fde6c7eafc01d1a1c44fc9e8fdf4d63ce1eaca8d08ccec4ac6ba677b"
+        },
+        {
+          "path": "soter/contracts/operation-plan-v2.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:3c4164a37c5acf68b6382abbd8b2a3f58da66411053670cb76da1bab3cabf411"
+        },
+        {
+          "path": "soter/contracts/operator-input-summary.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:28feef07cf1c738c98af4081005e5e92aea2335fa6d717586dac24c7dbec78bd"
+        },
+        {
+          "path": "soter/contracts/operator-inspection-fixture-set.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:82a5b3b3c6ce3709427477a9ba3b08cfcc3c55a0dc9bfa480a6a0c4e8da41886"
+        },
+        {
+          "path": "soter/contracts/operator-inspection.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:c7b5afec9b94c4d601083176d6457c707e489d57c3ab151eac086d23ec18cb5d"
+        },
+        {
+          "path": "soter/contracts/pack-install-checkpoint.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:70f772c0144d1009669bc88bc8b03a6fc24ff9b84f2b61a624d7371fe2087237"
+        },
+        {
+          "path": "soter/contracts/pack-install-confirmation.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:dc619320844eef62dd95e0d3bb193a18f03d21c8f2baa7fbeea1fd0a3914740d"
+        },
+        {
+          "path": "soter/contracts/pack-install-consumption.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:6ffe3964a29e4c777d44927661c5e66db034ed3508618448461a83065f3ede7c"
+        },
+        {
+          "path": "soter/contracts/pack-install-inspection.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:869650a5ed3bd3254f707a30a58dd0c99ee4755dc2ab07a0dbb4d9dd9fce1e6a"
+        },
+        {
+          "path": "soter/contracts/pack-install-managed-manifest.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:51b02edc56180e39ba707398b9849a907497460d1b11e9666beeffc4aa45bf75"
+        },
+        {
+          "path": "soter/contracts/pack-install-plan.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:07915024ed21864d94d0f75962a387300b8fee178ea04cdc76f9b470e761fd8c"
+        },
+        {
+          "path": "soter/contracts/pack-install-request.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:3fc67395ecb6cb91908bcf5913fd1aa5f0e10202f9f1f2a0f1e1d24bf88ea140"
+        },
+        {
+          "path": "soter/contracts/pack-release-inspection.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:bc27eace561205176d2d18499f21d90c4049e0a72db425fee49a1da543de5dde"
+        },
+        {
+          "path": "soter/contracts/pack-release.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:c64d8c43474ccc61a5283cefb19933b2b73d71789c2a3beda36c10f09de3a21d"
+        },
+        {
+          "path": "soter/contracts/pack-settings.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:485011306d899d23dca1bb42f504a9428177c7fc3db2a3ff5f359f21f0da0dce"
+        },
+        {
+          "path": "soter/contracts/pack.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:38c55628f4a05b0abb85d68c1d6c34dc47c76e1ae3524e1f7a75c80233348207"
+        },
+        {
+          "path": "soter/contracts/prepared-work-derived-review-material.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:343fcad6b7141aeb462831bf5b135d83ca477691768bc9af992a9dc250672b7a"
+        },
+        {
+          "path": "soter/contracts/prepared-work-review-material.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:4d65b2dd505308991f84ba0f35a88d27ccfcdd2ec8b9e99b578453028df4d843"
+        },
+        {
+          "path": "soter/contracts/prepared-work.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:29e21faae5a49c40cedefd78ca176928d9c9e46c5542f81ed12ac57c58fcf74f"
+        },
+        {
+          "path": "soter/contracts/project-capture-policy.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:5147896f9fb7b8e5f61879fa646401ef7704bd9577005dc5937bfc58d7452deb"
+        },
+        {
+          "path": "soter/contracts/project-work-policy.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:9e890310dc726ef4d08acfb12d48e0173ac455ec7e95acca0b7b001b8a944ae5"
+        },
+        {
+          "path": "soter/contracts/provider-fixture.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:873767db20d0f22976f5a2119178cfafe97558252d0c79e552d478c778ee78d5"
+        },
+        {
+          "path": "soter/contracts/provider-mapping.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:b9abcdda22319715c834c54329092c305dac5f133742c2b639bf8fa392c00de6"
+        },
+        {
+          "path": "soter/contracts/provider-probe-attempt.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:3a26afa2490da4e379f0b3d2bafa9ddb128fac6eb821183cd832100d5094c396"
+        },
+        {
+          "path": "soter/contracts/provider-probe-plan-checkpoint.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:a8328aaa4752a17962f0ba108693354eaeb06be9bdcbe3b666ba1307ae6e2371"
+        },
+        {
+          "path": "soter/contracts/provider-probe-v2.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:1d97e9fdab49b9346ca307f4ee2ecc257d1b83e1afa7a653a3e868652365e486"
+        },
+        {
+          "path": "soter/contracts/review-only-candidate-preview.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:ed67a1b8b94c190bb9c4a6bf58717da66e69de148f8201048ed48b923b00f231"
+        },
+        {
+          "path": "soter/contracts/review-only-candidate-selection-material.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:d169acb5d10accac8da7813baba0226395a6756c5efa265a9cac23ca6645f90c"
+        },
+        {
+          "path": "soter/contracts/review-only-candidate-selection.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:28c8807fb6a5dd806dbdbe7483f166e109f2f97ffad35d46ad7cff09d39251c5"
+        },
+        {
+          "path": "soter/contracts/run-envelope.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:a7077828f28e89590fec6ce5a312a6a0fded0ecdf94715019d2b507591ac4121"
+        },
+        {
+          "path": "soter/contracts/scenario.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:57a26385c76671f6e9df2766036c959b1e1db4b964a58f52283d651e7de084f1"
+        },
+        {
+          "path": "soter/contracts/task-work-policy.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:23ea3e093077d64abbe23c9df3a298ca229cac2f3359f8483e554b6609444a43"
+        },
+        {
+          "path": "soter/contracts/workflow-definition.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:ef7692030136f1dc733b493205764c7540c0f9cbd165b7d8c409c0f8a78bd1d0"
+        },
+        {
+          "path": "soter/contracts/workflow-evaluation-set.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:96928dae5999381d184d8c8680a0e25b3e060d067cdb51a5f0380bcaaa075ded"
+        },
+        {
+          "path": "soter/contracts/workflow-guide.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:73222f6db0bf908cbb644877faa9b42a17dacb546a87e56af02ded7421ad90b7"
+        },
+        {
+          "path": "soter/contracts/workspace-inspection.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:0adf4aa4299d21d925293450de677f726cef06c4cad8fdc9429ffe700d57d061"
+        },
+        {
+          "path": "soter/kernel/architecture-foundations.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:3beb9a52592cf486347b3c5186a80b95386d8d17c574eef3fd27eb7b9513750a"
+        },
+        {
+          "path": "soter/kernel/configuration-template-portability.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:f71a49d83600329894bbea0515e3b1c9412072759d2a4171b01405ee4799a0ca"
+        },
+        {
+          "path": "soter/kernel/configuration-template-portability.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:7d51ec7d36465a703517248bdf97f595f89137ee3799a223088f36985494c2cd"
+        },
+        {
+          "path": "soter/kernel/development-catalog.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:7c2d517ac6075c47393903090c955099f1e1de3129aae6e464bdc3f5eddcd353"
+        },
+        {
+          "path": "soter/kernel/development-governance.json",
+          "role": "definition",
+          "fingerprint": "sha256:d8688a10fe8151a60d279d75cc2e34f3ed39dbac2811ea77504489d9037b7ef3"
+        },
+        {
+          "path": "soter/kernel/development-governance.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:17ba175f6649e3b2f2e1211875091ccc7aa8314812338872b28da1f5bd450d4a"
+        },
+        {
+          "path": "soter/kernel/development-workspace.settings.json",
+          "role": "definition",
+          "fingerprint": "sha256:a9b0f4b4d730d8e60994c22992fac8d87e537c955cc6fc32f4587a64153bfe0b"
+        },
+        {
+          "path": "soter/kernel/distribution.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:ef9123c4c9505b0d25bc54d7539dd5acad8e2ab58d57a370a1271432530f4de9"
+        },
+        {
+          "path": "soter/kernel/distribution.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:85d0ad58a21e448ea5b9ba1371d8a6c88fa3302ec154db82b8465ec639fe0d55"
+        },
+        {
+          "path": "soter/kernel/private-contained-evidence.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:6c0bad91fd79d7d3e443322e699f54d2caaf46e325d2443dbe8a160dc3d1281a"
+        },
+        {
+          "path": "soter/kernel/record-capabilities.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:2e48b7c9968a425917e6be40f621d97ab97c8b9e964685531602cd4b5cb1d371"
+        },
+        {
+          "path": "soter/kernel/verify.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:8b85a2e235c4398caa5c75be1808d1649e95eb951c2d477862287fd547d1afa4"
+        },
+        {
+          "path": "soter/kernel/workflow-guides.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:945490db5753d82b85ad7b311f44988b8002a433acadf57d333333475a9bea0a"
+        },
+        {
+          "path": "soter/kernel/workflow-guides.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:b58a688579d4b8b7f69d3dbb70a0a65c191da5fc11e0fba0da38ee24708346e5"
+        }
+      ]
+    },
+    {
+      "id": "core.runtime",
+      "version": "0.1.0",
+      "layer": "core",
+      "releaseStage": "experimental",
+      "evidenceMaturity": "declared",
+      "source": "base",
+      "reason": "Required core foundation: Provides configuration resolution, context assembly, capability binding, effect policy, durable host execution services, evidence, and health.",
+      "manifestFingerprint": "sha256:b922eb238bd0cd0c3a77bc63d68f92ceab0a78d60a13bea430a9ed48f8be4c1c",
+      "artifacts": [
+        {
+          "path": "package-lock.json",
+          "role": "implementation",
+          "fingerprint": "sha256:3a9bba8d922526c69315dc36fc83baa5ea2477fcb474c12753fd1e5eebb6f518"
+        },
+        {
+          "path": "package.json",
+          "role": "implementation",
+          "fingerprint": "sha256:5fe7013c569f60b6c39da105e66a94c19b60b3ae3ab3321e3034201f87cd5ed9"
+        },
+        {
+          "path": "soter/core/automation-input.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:a20382314b9374e1f683d6e651e252dbde8715bcd81ee1d1e6c7133279c4a7af"
+        },
+        {
+          "path": "soter/core/automation-proposals.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:652f7d542f3be68e587b5734fc1763b6ac060d5f8c905b5357547eff8d983fda"
+        },
+        {
+          "path": "soter/core/automation-proposals.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:fac464f56f82ff72db7655ba873646816c0abe2d1a0c904464bf039a5731f662"
+        },
+        {
+          "path": "soter/core/capabilities.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:4de7bcbd5d42860cd1af052280d215e6f5f413c734bb97c3207072cd2c1c17f2"
+        },
+        {
+          "path": "soter/core/cli.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:cf2cd7869e29c94bdc692bfdcae3671ff8877042f02c69d59f364dfdab0d94fa"
+        },
+        {
+          "path": "soter/core/configuration-preview.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:2cb87e2b4671efa489f48e1c431db2491e723c3cb2d3c504165d6783d9069f78"
+        },
+        {
+          "path": "soter/core/configuration-preview.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:e75fb6ed43485af5f04bef2965135d41b81e36918a47b63e44d7a3b84a6ca68b"
+        },
+        {
+          "path": "soter/core/configuration-transactions.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:1fca4e88883db89e1e1a579e34dcd26fac760e18f3670baa7193450679ff10c8"
+        },
+        {
+          "path": "soter/core/configuration-transactions.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:78eac909f9207057c1333ad00f7a29c29075ce97766cf1d12c4080576a0c1fc0"
+        },
+        {
+          "path": "soter/core/configuration-view.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:b7623a70db45c9503c7e82c9668d7a850f6afa925a551f1dd091e8e2d41edce7"
+        },
+        {
+          "path": "soter/core/connected-acquisitions.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:92a1c3bb919d004aa44eac7637156ecc731f89813f851b129b89cffb34fdbf02"
+        },
+        {
+          "path": "soter/core/connected-approval-review.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:22b5335672f473af3940a7ce571c1b7e4c0e51f80bf2ee720ac40f1ae71fe282"
+        },
+        {
+          "path": "soter/core/connected-compilers.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:538133004f4f15cacc63615d6a934707217075da3bffc51ee1fb7a460b1c5334"
+        },
+        {
+          "path": "soter/core/connected-configuration.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:f352bc20d0f608833e2b22d70ce34d792ad4bd03395fdec14a7d478fad6c5561"
+        },
+        {
+          "path": "soter/core/connected-input-bindings.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:a3173e4ec4f628e57f46e1307298eedb111fa6fe90fbf732dde44fad97ce1a84"
+        },
+        {
+          "path": "soter/core/connected-scope.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:31aea18d62287df7f991ba3526e31c99a37f33ae3d345d963d5eb0fd4ec9601e"
+        },
+        {
+          "path": "soter/core/connected-transactions.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:d4d3dec46bcf95519395075371624c33ed0643bd306f3aa18e1164e554e2204f"
+        },
+        {
+          "path": "soter/core/contained-private-configurations.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:e3634bf99661f8b45a9e4503633721c3bb8d4977a4628367ee333d222f008826"
+        },
+        {
+          "path": "soter/core/context-records.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:910edba1e94b660c57ca09cf296735e81b5b3ca6a366cfb443f589dc69e893fa"
+        },
+        {
+          "path": "soter/core/development-candidate-locks.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:d0b4e97dcd774bf61661f7a15cd3b041246a0ec7e4f93aaeb9c5ac44c5defb77"
+        },
+        {
+          "path": "soter/core/development-candidate-locks.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:025ef9a5a70ff2760c0f78e8e401232202858715551b44eeea60db74bf982965"
+        },
+        {
+          "path": "soter/core/development-host-observations.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:8b40b8d48399495420a8f71e1ccc7327df1244725d7f62a88d7aa163676b8324"
+        },
+        {
+          "path": "soter/core/development-host-observations.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:4100554cc6673429894420d1c031a511aa794bec6c47ea10cf76609c9a8c96db"
+        },
+        {
+          "path": "soter/core/development-host-runner.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:fb1b89fde5f2f0b66738b0782ba62afb9128637ef70b3f761dbd8c9185891733"
+        },
+        {
+          "path": "soter/core/development-host-runner.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:2ee9c8eed0fdf40d2a6222fda8ef900ba9183f23c3cb3d047f9424ee12dfa406"
+        },
+        {
+          "path": "soter/core/development-runs.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:020287e3193947e5a5f0bcd3137d1d3ffe10317c0f29270871477c6414c7a394"
+        },
+        {
+          "path": "soter/core/development-runs.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:4fbdf5e26ef33300646448947998031da00f72fb81ed1b863240a106c9f683a3"
+        },
+        {
+          "path": "soter/core/doctor.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:27cfb716edf6a371e3d8bd8052d092908789f88dd7eaf5423a87490d856cbcdf"
+        },
+        {
+          "path": "soter/core/evidence.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:585efaa1e6de2ac152e2356927e602a37686aa14bb729254ad590e355cc43419"
+        },
+        {
+          "path": "soter/core/fixtures-materialization.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:1898ba46a0587cc9c7c966b1a79896b1e04bf9f6d4b35f1d19b95cd8b4e9c80c"
+        },
+        {
+          "path": "soter/core/fixtures.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:cb9d7b88754f56c38736e19c3fe9de399fa6104d0bb1a29db785e73a881546af"
+        },
+        {
+          "path": "soter/core/host-projections.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:1364ddece6ce849def3ae705ebd7aa4094ac27860b1fff3a11c285c369efc6ce"
+        },
+        {
+          "path": "soter/core/host-realizations.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:e844d55a1881d65e83490d12370d5b05024dadccd8630f7e30bf89184a28f74e"
+        },
+        {
+          "path": "soter/core/host-realizations.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:1ba8d88ef964db334c3ce491d1911efa1d3db372c96bea826bd733a70e635c2f"
+        },
+        {
+          "path": "soter/core/host-runtime-inspection.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:3d2b0c8e955bd8b8dcbee4f8a8c2ddb151a76f1224723d6654c24a60a12bb212"
+        },
+        {
+          "path": "soter/core/host-runtime.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:241b3ca24407f88e7889474f5bb9ce7116a5afb04e0cca99dbdc3b4d545de574"
+        },
+        {
+          "path": "soter/core/host-tools.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:5fba62321c862ebf9c9e54037cdf580791c75509014cfb15479f3d1e50c34b30"
+        },
+        {
+          "path": "soter/core/inspection.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:a6e92864c814dd1492303f3f7789345fafec881c1bf617bc653d94893a1ba0f1"
+        },
+        {
+          "path": "soter/core/inspection.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:181c04e11c0f31ec7cf7a89c2e59c667cbabf48ac2d73bb6c8610732415e86c0"
+        },
+        {
+          "path": "soter/core/lib/canonical-json.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:9e10813403ed7e3b54477797e24bdb00ebfa22a407b1d9d215724b3c622ddf29"
+        },
+        {
+          "path": "soter/core/lib/canonical-json.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:5dd5a020b624b7ee7c46c9c6a3fce7ccfba939c571eae8ed5ffc2cd16ad0df9b"
+        },
+        {
+          "path": "soter/core/maturity.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:0a4ced025c2676e4483b2a0e0da6924efa84200c1e39dd168acff8eb327af712"
+        },
+        {
+          "path": "soter/core/mcp/selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:4102082ce5c92bc1dc377b9c89d7d6b9c2670c8fd22b7aefb777c1e0bd1817ba"
+        },
+        {
+          "path": "soter/core/mcp/server.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:6819cfb708f4d0c65f48d755b11323f25619b15610c6d0cb39f1903bb59f3443"
+        },
+        {
+          "path": "soter/core/mcp/tools.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:e015a13a039ca0cd56eead13fbec22e14c52316938488a38dac51518969c9b33"
+        },
+        {
+          "path": "soter/core/operation-plans.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:8bab5b3929e571ef4d5eba8788597e86561c3c0e05c03f06e699fe5b456eee1d"
+        },
+        {
+          "path": "soter/core/operator-authority.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:3d0e1262023e985626c1da0fa4a0a2e57163385e73fdb9994a5d40cfbff8e34b"
+        },
+        {
+          "path": "soter/core/operator-inspection.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:a8afa695d5a727e5ed1442a550c5d460577142ac80c5d2e21713802513451c6a"
+        },
+        {
+          "path": "soter/core/operator-inspection.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:36bf665195bc222bddfcff565c486d4d1c14d63fcf1435fc980b2baa07a00e02"
+        },
+        {
+          "path": "soter/core/pack-installs.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:d12a4a0dc7d28c44f08dd33510e3a9e2c2d52dda36ceecba3175a89cacc021be"
+        },
+        {
+          "path": "soter/core/pack-installs.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:042c38d52ca713b434e689445aa70062f683135c0d54258c3155a05015f40a5c"
+        },
+        {
+          "path": "soter/core/prepared-work.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:a04eb473f46650c0ba6eb1386e45160869627466266d05b0858dd06105e50dd6"
+        },
+        {
+          "path": "soter/core/prepared-work.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:ffc7da2205c47324ac0f00f663028160270ee526dc11e5a68ef7edc53826fc04"
+        },
+        {
+          "path": "soter/core/private-configurations.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:5c143fb34ffae765b63bb989d3b4c5877a737aba03c3acfd30d6d2ee0431a822"
+        },
+        {
+          "path": "soter/core/proposal-connected-batches.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:c7556818f1116a50017ec2582df7041887cd8c44af3d19dbc715ced734d7e7d5"
+        },
+        {
+          "path": "soter/core/provider-probe-plans.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:bb3523251f3f2771db692dbfb0526a6141e6a9759f994aa1ca0002772b8af522"
+        },
+        {
+          "path": "soter/core/provider-probes.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:4d362fb761b2fc37882ba733227fdc8814a5aca8451a33972c639e2adb5d9a26"
+        },
+        {
+          "path": "soter/core/resolve.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:3926554e070626bf0385f8c7163fbc86ef39ff346bc1a1a9eac2942ed738fb83"
+        },
+        {
+          "path": "soter/core/review-only-candidate-previews.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:087cdcc328ac258e03f61e6ce791f68cfbef8f9002ac501be8f9f8c2c6182fb5"
+        },
+        {
+          "path": "soter/core/review-only-candidate-previews.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:745e38af4a80fb73de37edba38c7637f6bf6e457d226bd7a9d34ad0b39ce5a72"
+        },
+        {
+          "path": "soter/core/review-only-candidate-selections.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:fd4176749d1c85e4cca11f714f4df29284a2e5cbb035a26312bc1d7beaa67147"
+        },
+        {
+          "path": "soter/core/review-only-candidate-selections.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:30e1508ac5feb2d389e5aafcdbacbf381bb318f1c5d9bd3a37e5bd6d9e1e1ba7"
+        },
+        {
+          "path": "soter/core/review-projections.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:9d635d736f1c9f27aae2960e4e4744aabdfa7e12b41c6d3284bf4f55a9c5aad1"
+        },
+        {
+          "path": "soter/core/run.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:a2aef11821d0413665e362dd99124b5e56f90e3c798a1bc5a9b84a19d55e9f80"
+        },
+        {
+          "path": "soter/core/runtime-state.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:31a2ce3e0c3a296ced27a58aa682266db51d8ff0a788591e869521aa5b7b5814"
+        },
+        {
+          "path": "soter/core/selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:06a361ffc7e9e54695a427dea1e59739058e89e52941d677f6a79729954188be"
+        },
+        {
+          "path": "soter/core/service.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:e9297e53837c2dd4aaec6ede2b16b24e3bfa4cd56d5eba67089cd0f5adc914cc"
+        },
+        {
+          "path": "soter/core/verified-connected-transaction-runtime.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:9017c7527c3e47ca68955c45a6d26c53aa547482fc3721fa571fc90a7cf9e2fe"
+        },
+        {
+          "path": "soter/fixtures/operator-inspection/connected-transaction.lifecycle.json",
+          "role": "evaluation",
+          "fingerprint": "sha256:c0e48376907963bed73c798ad9271cd47f5ffccb91ecf515aaeaf1002e2edb3b"
+        },
+        {
+          "path": "soter/fixtures/operator-inspection/input-summary.json",
+          "role": "evaluation",
+          "fingerprint": "sha256:3e833b71c18e829ede45c05833c0881e27d67d293d218c5c7122c8bcf55871cb"
+        }
+      ]
+    },
+    {
+      "id": "context.projects",
+      "version": "0.1.0",
+      "layer": "context",
+      "releaseStage": "experimental",
+      "evidenceMaturity": "declared",
+      "source": "dependency",
+      "reason": "Projects Context owns portable Project fields, page identity, and policy meaning.",
+      "manifestFingerprint": "sha256:e8b68449ec9582d769c56d9b9cdf9ed3a6f220c15593a614ac13e9a656cf0ce5",
+      "artifacts": [
+        {
+          "path": "soter/contexts/projects/project-capture-policy.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:071f4078738f5b06920fd6628435515e143f8e9ba55833f7795ba794d7f9af1b"
+        },
+        {
+          "path": "soter/contexts/projects/project-capture.policy.json",
+          "role": "definition",
+          "fingerprint": "sha256:38f9f3bfcaf8a4520b596989b922b6ab0198aa740c6b5deb7b9b0878a2902605"
+        },
+        {
+          "path": "soter/contexts/projects/project-work-policy.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:26cb8f013cfb3f1673f74740c8715941acb2c566429c718ea97c127de20cf5ae"
+        },
+        {
+          "path": "soter/contexts/projects/project-work.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:7b78374cdafbb76b6e7a9702ae738c392627c701c07fecfa066a4db3533ed926"
+        },
+        {
+          "path": "soter/contexts/projects/project-work.policy.json",
+          "role": "definition",
+          "fingerprint": "sha256:6a2fd15b1eb0c65cdd6cf3e1042de6420eba67934c780037568c61321d8db932"
+        },
+        {
+          "path": "soter/contexts/projects/records.model.json",
+          "role": "definition",
+          "fingerprint": "sha256:08d8b8021b84bd080f5c0441bbdced8cfc77d3b84550f2bd295586878f2db7e3"
+        },
+        {
+          "path": "soter/contexts/projects/vocabulary.json",
+          "role": "definition",
+          "fingerprint": "sha256:2bdf44db54ac187b18a22f18a89a86e473de4c8d706e9435c3c36b9069eef482"
+        }
+      ]
+    },
+    {
+      "id": "automation.project-page-reconciliation",
+      "version": "0.1.0",
+      "layer": "automation",
+      "releaseStage": "experimental",
+      "evidenceMaturity": "declared",
+      "source": "user",
+      "reason": "The user selected one exact bounded Project field and page-text reconciliation workflow.",
+      "manifestFingerprint": "sha256:cb6067ac463a47f176ad50971508747bceadd4d0d5cd60f98a173faac56f8a6b",
+      "artifacts": [
+        {
+          "path": "soter/automations/project-page-reconciliation/connected-context.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:3c9c45a038b9c88079ca5e1495aa6e2e293c6f3a6d42f214acdc1adb91da79ac"
+        },
+        {
+          "path": "soter/automations/project-page-reconciliation/connected.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:d21ec9f979f9bc0386358b3d39a21f153bfad8d16d00b37231688c81b78b1b63"
+        },
+        {
+          "path": "soter/automations/project-page-reconciliation/context.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:0d82f1b188a9c22cf12c84eace0c984db51f2cb6f83340da210bb80c5ab6ddf5"
+        },
+        {
+          "path": "soter/automations/project-page-reconciliation/decision.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:3cebe84e94e2931a833b6fa353c6096b4a127910c02a614ae2893dc372864b99"
+        },
+        {
+          "path": "soter/automations/project-page-reconciliation/decision.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:57c89fa7e5fef4dc53d7b677df798c832ffa94f7534ce1829ac874752c0da3cd"
+        },
+        {
+          "path": "soter/automations/project-page-reconciliation/derived-review.json",
+          "role": "definition",
+          "fingerprint": "sha256:2080fda05bb12a311832cbf931a675041baa4eead35697604fc103823299d053"
+        },
+        {
+          "path": "soter/automations/project-page-reconciliation/operator-input.json",
+          "role": "definition",
+          "fingerprint": "sha256:db6174edb4cfa35ee411bd042460d99aa798336eccf09fae35668cdca1c10b87"
+        },
+        {
+          "path": "soter/automations/project-page-reconciliation/prepare.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:0ce80fd4e8daa69009ba3617443c1bc67422ecd3586558a0db35753ff6d3bfa7"
+        },
+        {
+          "path": "soter/automations/project-page-reconciliation/project-page-reconciliation.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:79a9470fb346d8bfc4cb3fd80ff908f7ad6d01dba073f482d1de15e8f77616ee"
+        },
+        {
+          "path": "soter/automations/project-page-reconciliation/proposal-input.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:b453734d97c5b2663e9b4a857cc5ec28faacf53a35a63e4fc2a23495c6963ba3"
+        },
+        {
+          "path": "soter/automations/project-page-reconciliation/proposal.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:358af46e3bf41c3a65edbeb1b3f345b7c095bed2124ec4344560e06134faa9c3"
+        },
+        {
+          "path": "soter/automations/project-page-reconciliation/proposal.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:3fba1272d71a6847aece22542eafc54046494e508e597c2f942a7e3f33cc7dbd"
+        },
+        {
+          "path": "soter/automations/project-page-reconciliation/scenario.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:ecd2bf92f0b363630731c5f058b0d3970689df683488a18455074e49e6d37800"
+        },
+        {
+          "path": "soter/automations/project-page-reconciliation/schema.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:e2abb83ec970d361857f35464e626b9e5c218fc379291f258fa074d523ebd0a2"
+        },
+        {
+          "path": "soter/scenarios/project-page-reconciliation/preparation.scenario.json",
+          "role": "evaluation",
+          "fingerprint": "sha256:5485c6403ee64483f0877633479ad8d0069b902d69f3c0b35c4703c12f252730"
+        }
+      ]
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.4.0",
+      "layer": "integration",
+      "releaseStage": "experimental",
+      "evidenceMaturity": "declared",
+      "source": "binding",
+      "reason": "The selected Project instance lives in the configured Notion authority behind portable Project and document capabilities.",
+      "manifestFingerprint": "sha256:cff95b234f5cc4339b13202be4fa4101dc767d755afd99ca336a4c17894c2d9d",
+      "artifacts": [
+        {
+          "path": "soter/capabilities/communications.records.create.json",
+          "role": "definition",
+          "fingerprint": "sha256:3ac9d4a7afbe584fe606800af4ee5283606b444c325c971d45f01f683c3a7eee"
+        },
+        {
+          "path": "soter/capabilities/communications.records.read.json",
+          "role": "definition",
+          "fingerprint": "sha256:504996c26fd25da6879b256ae17e786a750e6ad56a87f1e3512cb10e96954c49"
+        },
+        {
+          "path": "soter/capabilities/communications.records.update.json",
+          "role": "definition",
+          "fingerprint": "sha256:3b698439815c6f394deb4f29be14ed91a299f3db14faf0a116ad58b96281e205"
+        },
+        {
+          "path": "soter/capabilities/communications.schema.read.json",
+          "role": "definition",
+          "fingerprint": "sha256:4bccee55aebedf8e2d9bf4e959bd3fcd5649cc1bbfc8dd01d8c5e14238f4da71"
+        },
+        {
+          "path": "soter/capabilities/crm.records.create.json",
+          "role": "definition",
+          "fingerprint": "sha256:79996a610e9ab58dc7db0f124820ad1b6b4a6161aa1c4eb93bc9d65fbc1aa5fe"
+        },
+        {
+          "path": "soter/capabilities/crm.records.read.json",
+          "role": "definition",
+          "fingerprint": "sha256:331ee5d160b0f787e691276809efcfb1f46c20f42bf256151beb3b52203f5284"
+        },
+        {
+          "path": "soter/capabilities/crm.records.update.json",
+          "role": "definition",
+          "fingerprint": "sha256:7282af80ba87a1eb99f86c58bbad105834faf65bb16ffe819cd07c8ab40c5535"
+        },
+        {
+          "path": "soter/capabilities/crm.schema.read.json",
+          "role": "definition",
+          "fingerprint": "sha256:87dc00c1bc20e25028266ba63c0e21537b1afcdf0b33167d4f744016cb656650"
+        },
+        {
+          "path": "soter/capabilities/documents.content.read.json",
+          "role": "definition",
+          "fingerprint": "sha256:e41234343a6fb003e9e4d12c00a683821b4cbcfc1879e876fc26e063f740d044"
+        },
+        {
+          "path": "soter/capabilities/documents.content.update.json",
+          "role": "definition",
+          "fingerprint": "sha256:6adbe534d91bd4a5c479a057fa3cde78ded96706105e2447038b05e22fbb496d"
+        },
+        {
+          "path": "soter/capabilities/meetings.records.create.json",
+          "role": "definition",
+          "fingerprint": "sha256:00676c859caedf008204c2d02f45db80828606fd748a392edc9537d0b9183a02"
+        },
+        {
+          "path": "soter/capabilities/meetings.records.read.json",
+          "role": "definition",
+          "fingerprint": "sha256:564603837465276056cf39add7ffcf3bc52c2253d01d12755a3ed983fca7ccb8"
+        },
+        {
+          "path": "soter/capabilities/meetings.schema.read.json",
+          "role": "definition",
+          "fingerprint": "sha256:1fc5c101a584f25532902a57908e1d792c915a13fc3e926e2761cd9b13433731"
+        },
+        {
+          "path": "soter/capabilities/process.records.create.json",
+          "role": "definition",
+          "fingerprint": "sha256:5b1ceb025639cad60ee4ab628562036b0a629c051b37b0589de2f0074344ad24"
+        },
+        {
+          "path": "soter/capabilities/process.records.read.json",
+          "role": "definition",
+          "fingerprint": "sha256:9045dd98ebf9e22aca6af4d975ca7e57bd310a853d1e47e6495cd4db6da0dc45"
+        },
+        {
+          "path": "soter/capabilities/process.schema.read.json",
+          "role": "definition",
+          "fingerprint": "sha256:31fa5e789ef5ad45cde667291d70eeae3d56e5ca718a0c0189ee554b6259570f"
+        },
+        {
+          "path": "soter/capabilities/product.records.create.json",
+          "role": "definition",
+          "fingerprint": "sha256:9681fd00eef8e7fe39d4cb6d3cae6d0231fdcb608c4d77a6d7dab855317953b6"
+        },
+        {
+          "path": "soter/capabilities/product.records.read.json",
+          "role": "definition",
+          "fingerprint": "sha256:14c186519dad930508027fac3bec0f92a95ed6ee881d63b7c9c2c7112e349778"
+        },
+        {
+          "path": "soter/capabilities/product.schema.read.json",
+          "role": "definition",
+          "fingerprint": "sha256:44304569211b7dc6e3ebdbc348c72db7854da76f062e1023ec06271eaeed000b"
+        },
+        {
+          "path": "soter/capabilities/projects.records.create.json",
+          "role": "definition",
+          "fingerprint": "sha256:6365a079b70b6b2ebbbb6f97eb14fb9b1896be1e3617904d9a4953181edfdefa"
+        },
+        {
+          "path": "soter/capabilities/projects.records.read.json",
+          "role": "definition",
+          "fingerprint": "sha256:a90d1e185ca8a6e3f4cc2915cdefa0cd15c5047d791bc26deb6a576d3e40a2f8"
+        },
+        {
+          "path": "soter/capabilities/projects.records.update.json",
+          "role": "definition",
+          "fingerprint": "sha256:cbe865d6119a7a52d6a8bbbc518ea73a3649eb09adfc1a039a3c5e294f8e3600"
+        },
+        {
+          "path": "soter/capabilities/projects.schema.read.json",
+          "role": "definition",
+          "fingerprint": "sha256:c0bd0406e915725c9a15483f4580652df55faede1f8d939878fe9c1aec2c7278"
+        },
+        {
+          "path": "soter/capabilities/tasks.records.create.json",
+          "role": "definition",
+          "fingerprint": "sha256:bfdc51fe3f5089eb51e63fc96c3bf5b38058a926ea4db9a93d5784ddec57250d"
+        },
+        {
+          "path": "soter/capabilities/tasks.records.read.json",
+          "role": "definition",
+          "fingerprint": "sha256:436bbdb4193ae94904a6fda69544f1708d9afdee425a834f11886a10f87c854a"
+        },
+        {
+          "path": "soter/capabilities/tasks.records.update.json",
+          "role": "definition",
+          "fingerprint": "sha256:88c83a274822f152b2186d7a7c1ceee9f7f96ab23efb5ea94835ece3339aa661"
+        },
+        {
+          "path": "soter/capabilities/tasks.schema.read.json",
+          "role": "definition",
+          "fingerprint": "sha256:4a0f7c31db72591948d257f28a2a29bb7fb8485e25d88ecc2410723ef9786c71"
+        },
+        {
+          "path": "soter/capabilities/workspace.identity.read.json",
+          "role": "definition",
+          "fingerprint": "sha256:d086c2591f51aeda632b8cebf0dc60dfeb3715210cb981da6ab4b120ca5fb0af"
+        },
+        {
+          "path": "soter/fixtures/providers/notion/workspace-records.json",
+          "role": "fixture",
+          "fingerprint": "sha256:0103452ca2b87258651039928309ebdec477cbea65c5c7b4c69365707ae600ea"
+        },
+        {
+          "path": "soter/integrations/notion/communications-records.mapping.json",
+          "role": "definition",
+          "fingerprint": "sha256:c65cd9f4a1df90631a81d0d53484f0e61ce866a4d70cfbc3e693655f929b4b01"
+        },
+        {
+          "path": "soter/integrations/notion/crm-records.mapping.json",
+          "role": "definition",
+          "fingerprint": "sha256:8f34e9a8c905993e24aa2d434af2dc24181ac3835f6025b46d7b5a542ca91bc7"
+        },
+        {
+          "path": "soter/integrations/notion/fixture.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:4a9be8e06d20b158ab253be51c56932c256c2c1e85c2d8aa9de98672ce2f7d10"
+        },
+        {
+          "path": "soter/integrations/notion/mcp.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:faaaebf9fc02a31f56f5157c044569a08adf963775fbd4aeb64d8e066f8904ca"
+        },
+        {
+          "path": "soter/integrations/notion/meetings-records.mapping.json",
+          "role": "definition",
+          "fingerprint": "sha256:6636e90d65f8a68a8df82b8d2720be3deb0a1969bfb0bcd4a1df83e482890e17"
+        },
+        {
+          "path": "soter/integrations/notion/notion.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:9229bd98bc011aa7120bfb6b76c6f4a18675d9a42451423fa7a02a99fe491b8c"
+        },
+        {
+          "path": "soter/integrations/notion/process-records.mapping.json",
+          "role": "definition",
+          "fingerprint": "sha256:41b42684685766ae4bdd5d9d39832724ccfb3884fa8e1b8d2cff41dac39743a0"
+        },
+        {
+          "path": "soter/integrations/notion/product-records.mapping.json",
+          "role": "definition",
+          "fingerprint": "sha256:a9933500c0a8cf174d7e97c7ff673feb0838c9e2e07ef2e8354a7e97920c0c58"
+        },
+        {
+          "path": "soter/integrations/notion/projects-records.mapping.json",
+          "role": "definition",
+          "fingerprint": "sha256:fb53744c8e98520556043823b5acd1fb3dff9193a16db6eedbe84336f13408e8"
+        },
+        {
+          "path": "soter/integrations/notion/settings.json",
+          "role": "definition",
+          "fingerprint": "sha256:6925e401e226cb13da54e26f360c861ce963ec098e5f7a09c71a731ef0c85c99"
+        },
+        {
+          "path": "soter/integrations/notion/tasks-records.mapping.json",
+          "role": "definition",
+          "fingerprint": "sha256:2189609a60e2ce3315d808bae39c83cd1960b694b5b81aa36ed2edd0f8755107"
+        },
+        {
+          "path": "soter/providers/provider.integration.notion.fixture.json",
+          "role": "implementation",
+          "fingerprint": "sha256:4f55457f547fb9e4862ad5439733215e2e50ab9c844ed08fd3a2332f84771d71"
+        },
+        {
+          "path": "soter/providers/provider.integration.notion.mcp.json",
+          "role": "implementation",
+          "fingerprint": "sha256:84f00e755880ee64813b687ad912480028a606b60c6acd1241c17d62bc71659a"
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "from": "automation.project-page-reconciliation",
+      "to": "context.projects",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Portable Project fields, page identity, and policy meaning belong to Projects Context."
+    },
+    {
+      "from": "automation.project-page-reconciliation",
+      "to": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Exact preparation, private review, candidate selection and preview, and transaction authority belong to Core."
+    },
+    {
+      "from": "context.projects",
+      "to": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Project definitions and instances require portable context assembly and authority resolution."
+    },
+    {
+      "from": "core.runtime",
+      "to": "kernel.soter",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Core runtime contracts are governed and verified by the Soter kernel."
+    },
+    {
+      "from": "integration.notion",
+      "to": "context.communications.collaboration",
+      "version": "^0.1.0",
+      "optional": true,
+      "reason": "When selected, Notion maps the portable Communications channel directory and policies without making provider layout or CRM responsible for communication meaning."
+    },
+    {
+      "from": "integration.notion",
+      "to": "context.crm",
+      "version": "^0.1.0",
+      "optional": true,
+      "reason": "When selected, Notion maps provider fields into the canonical portable CRM record model without requiring CRM in unrelated configurations."
+    },
+    {
+      "from": "integration.notion",
+      "to": "context.meetings",
+      "version": "^0.1.0",
+      "optional": true,
+      "reason": "When selected, Notion maps configured meeting and summary databases into portable Meeting records without requiring Meetings in unrelated configurations."
+    },
+    {
+      "from": "integration.notion",
+      "to": "context.process",
+      "version": "^0.1.0",
+      "optional": true,
+      "reason": "When selected, Notion maps explicit process, role, service, run, and policy targets into portable Process records."
+    },
+    {
+      "from": "integration.notion",
+      "to": "context.product",
+      "version": "^0.1.0",
+      "optional": true,
+      "reason": "When selected, Notion maps one exact configured feature board into portable Product records without requiring Product in unrelated configurations."
+    },
+    {
+      "from": "integration.notion",
+      "to": "context.projects",
+      "version": "^0.1.0",
+      "optional": true,
+      "reason": "When selected, Notion maps configured project databases into portable Project records without requiring Projects in unrelated configurations."
+    },
+    {
+      "from": "integration.notion",
+      "to": "context.tasks",
+      "version": "^0.1.0",
+      "optional": true,
+      "reason": "When selected, Notion maps configured task databases into portable Task records without requiring Tasks in unrelated configurations."
+    },
+    {
+      "from": "integration.notion",
+      "to": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Integration binding, effect policy, evidence, and health are supplied by Core."
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "documents.content.update",
+      "version": "1.0.0",
+      "contractFingerprint": "sha256:70173af2edf2f628087d2c205cd237c8acee6783134fa5dd206187fe43ad88f3"
+    },
+    {
+      "id": "projects.records.read",
+      "version": "1.1.0",
+      "contractFingerprint": "sha256:6b4ac75129040d8abc88aeb66e001821f810e31f818203a84f7be3481e6bfc5c"
+    },
+    {
+      "id": "projects.records.update",
+      "version": "1.1.0",
+      "contractFingerprint": "sha256:bba761bcd893603b7b7782ebac247c3330fbc45787bf57789696c6429f9f9e31"
+    },
+    {
+      "id": "projects.schema.read",
+      "version": "1.0.0",
+      "contractFingerprint": "sha256:8ad8e5beb2a75a36a78612647bb1f495c854846f4414f6a176fa3d9a721d902d"
+    }
+  ],
+  "bindings": [
+    {
+      "capability": "documents.content.update",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.4.0",
+      "authorities": [
+        "authority.projects.instance"
+      ],
+      "effects": [
+        "write"
+      ],
+      "reason": "Only exact reviewed one-match text replacements may be compiled for a later governed transaction."
+    },
+    {
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.1.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.4.0",
+      "authorities": [
+        "authority.projects.definition",
+        "authority.projects.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "The configured provider supplies the exact policy selection and selected Project fields plus mapped page body."
+    },
+    {
+      "capability": "projects.records.update",
+      "capabilityVersion": "1.1.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.4.0",
+      "authorities": [
+        "authority.projects.instance"
+      ],
+      "effects": [
+        "write"
+      ],
+      "reason": "Only exact reviewed projectType and status patches may be compiled for a later governed transaction."
+    },
+    {
+      "capability": "projects.schema.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.4.0",
+      "authorities": [
+        "authority.projects.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "The current mapped Project schema must allow every selected property value before review."
+    }
+  ],
+  "sources": [
+    {
+      "id": "source.policy.project-page-reconciliation.capture",
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.1.0",
+      "authority": "authority.projects.definition",
+      "input": {
+        "recordTypes": [
+          "project-capture-policy"
+        ],
+        "ids": [
+          "policy.project-capture"
+        ],
+        "limit": 2
+      },
+      "inputFingerprint": "sha256:b0e20d8e3bb2ea1877f6904862968a4fd65d4881fd66b21d705a071f4222b824",
+      "readiness": {
+        "mode": "probe-read",
+        "reason": "Connected readiness must prove the exact portable Project policy selection can be read and normalized."
+      },
+      "consumers": [
+        {
+          "pack": "automation.project-page-reconciliation",
+          "purpose": "project-capture-policy",
+          "subjects": [
+            "project-page-reconciliation"
+          ],
+          "reason": "The portable Project policy owns allowed Project types and statuses."
+        }
+      ],
+      "reason": "Property values remain governed portable meaning rather than provider-specific workspace conventions."
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "uri": "soter-fixture://configuration-template/notion/account/operator",
+      "reason": "The provider supplies typed effects without becoming Project semantic authority.",
+      "declarationFingerprint": "sha256:dd9994588ca27b815bae6a53f7f57b9ce426b8b1a4367b0c3fd885373957ba23"
+    },
+    {
+      "id": "authority.projects.definition",
+      "role": "definition",
+      "subject": "projects.records",
+      "uri": "soter-fixture://configuration-template/notion/authority/project-policies",
+      "reason": "Portable Project policy definitions govern allowed values.",
+      "declarationFingerprint": "sha256:5fb9ea27bdd0439408cdbc03ccb601baece7341813fbe508580eb2f32050951e"
+    },
+    {
+      "id": "authority.projects.instance",
+      "role": "instance",
+      "subject": "projects.records",
+      "uri": "soter-fixture://configuration-template/notion/authority/projects",
+      "reason": "The exact selected Project record and page are authoritative only for their observed state.",
+      "declarationFingerprint": "sha256:6da0683b7dd5c433e9d17713315ad6bdfc7a4369f290df4a62416781593a43e4"
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "uri": "soter-state://runs",
+      "reason": "Private local runtime state owns the exact selected work, values, and checkpoints.",
+      "declarationFingerprint": "sha256:2a437f2854d617b1dd8ed0d9f09aa372cd39d0adca0fd91704ec5c869aabe0d8"
+    }
+  ],
+  "effectPolicies": {
+    "read": {
+      "mode": "allow",
+      "reason": "Exact policy, schema, Project field, and page-body observations are allowed for private preparation."
+    },
+    "disclosure": {
+      "mode": "allow",
+      "reason": "Selected private values may enter local review state but not general inspection, fixtures, logs, or evidence."
+    },
+    "write": {
+      "mode": "confirm",
+      "reason": "Every selected Project field or body change requires an exact later batch, approval, one-time start, checkpoint, and verification."
+    },
+    "dispatch": {
+      "mode": "prohibit",
+      "reason": "Project page reconciliation sends and publishes nothing."
+    },
+    "destructive": {
+      "mode": "prohibit",
+      "reason": "Delete, archive, append-as-replacement, whole-page replacement, structural recreation, and reorder are prohibited."
+    }
+  },
+  "settings": {
+    "integration.notion": {
+      "targets": {
+        "policies": "soter-fixture://configuration-template/notion/collection/policies",
+        "organizations": "soter-fixture://configuration-template/notion/collection/organizations",
+        "contacts": "soter-fixture://configuration-template/notion/collection/contacts",
+        "projects": "soter-fixture://configuration-template/notion/collection/projects",
+        "updates": "soter-fixture://configuration-template/notion/collection/updates",
+        "tasks": "soter-fixture://configuration-template/notion/collection/tasks",
+        "meetings": "soter-fixture://configuration-template/notion/collection/meetings",
+        "documents": "soter-fixture://configuration-template/notion/collection/documents",
+        "channels": "soter-fixture://configuration-template/notion/collection/channels"
+      }
+    }
+  },
+  "projections": [
+    {
+      "id": "output.codex.tools",
+      "path": ".codex/config.toml",
+      "role": "tools",
+      "mode": "0644",
+      "templatePath": "soter/hosts/codex/templates/config.toml.tmpl",
+      "templateFingerprint": "sha256:4f89d0a47229b2b8f443f7efda9f722a23bf1ef45dee51e5f81b230d6f81c8b6",
+      "contentFingerprint": "sha256:cb764735b1227971408dda2a198da9123a004a282afea7b04aeb344cfe462c20",
+      "fingerprint": "sha256:21416d9612ee55154f13fd872d57f68c73f0b54800d3db49fd6110dedb6946f8"
+    },
+    {
+      "id": "output.codex.instructions",
+      "path": "AGENTS.md",
+      "role": "instructions",
+      "mode": "0644",
+      "templatePath": "soter/hosts/codex/templates/AGENTS.md.tmpl",
+      "templateFingerprint": "sha256:1495b866a4abd19c3df04e76d7511f0cca0edd1d9cc0c84ecd13be223eb3093c",
+      "contentFingerprint": "sha256:f9d0fdc966fd2459f5bd3047323e07d69a5995736ade1916b53890caac03c58b",
+      "fingerprint": "sha256:95749e8bd7bf6312a2084982841962469e67e7a22399f3351de660c4fbd043b1"
+    }
+  ],
+  "graphFingerprint": "sha256:a1e16af7a6e020256922b0af9672b7eea50e214213e2a3c39f73a2aef83bde92"
+}

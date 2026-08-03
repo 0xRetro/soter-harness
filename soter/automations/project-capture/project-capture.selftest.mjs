@@ -5,13 +5,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { inspectWorkspace } from '../../core/inspection.mjs';
-import { fingerprintPath, writeJson } from '../../core/lib/canonical-json.mjs';
+import { fingerprintPath, readJson, writeJson } from '../../core/lib/canonical-json.mjs';
 import {
   inspectPreparedAutomationDerivedReviewMaterial,
   inspectPreparedAutomationReviewMaterial,
   prepareAutomationRun
 } from '../../core/prepared-work.mjs';
-import { createPreparedReviewBatch } from '../../core/prepared-review-batches.mjs';
+import { createReviewOnlyCandidateSelection } from '../../core/review-only-candidate-selections.mjs';
+import { createReviewOnlyCandidatePreview } from '../../core/review-only-candidate-previews.mjs';
 import { resolveConfiguration } from '../../core/resolve.mjs';
 import { runContainedProjectCaptureScenario } from './scenario.mjs';
 
@@ -95,20 +96,20 @@ export async function selftestProjectCapture(root = defaultRoot) {
       createdAt: '2026-07-21T15:01:00.000Z'
     });
     assert.equal(work.state, 'ready-for-review');
-    assert.equal(work.preview.proposedChanges.length, 0);
+    assert.equal(work.preview.proposedChanges.length, 1);
     assert.equal(work.approval.state, 'not-requested');
     assert.equal(work.continuationRequest, null);
     const row = work.preview.collections[0].rows[0];
     const action = row.actions[0];
-    assert.equal(action.state, 'held');
-    assert.equal(action.reasonCode, 'COMPLETE_PROJECT_READBACK_UNAVAILABLE');
-    assert.equal(action.capability, null);
-    assert.equal(action.effect, null);
-    assert(!Object.hasOwn(action, 'changeFingerprint'));
-    assert.deepEqual(row.flags, ['COMPLETE_PROJECT_READBACK_UNAVAILABLE']);
+    assert.equal(action.state, 'proposed');
+    assert.equal(action.reasonCode, 'PROJECT_CREATE_READY_FOR_REVIEW');
+    assert.equal(action.capability, 'projects.records.create');
+    assert.equal(action.effect, 'write');
+    assert.match(action.changeFingerprint, /^sha256:[a-f0-9]{64}$/);
+    assert.deepEqual(row.flags, []);
     assert.equal(
       work.preview.facts.find((fact) => fact.id === 'project-body-readback-state')?.state,
-      'unavailable'
+      'supported'
     );
     for (const id of [
       'name',
@@ -167,23 +168,27 @@ export async function selftestProjectCapture(root = defaultRoot) {
     assert(fields.get('milestoneLines').every((line) => /^- \[ \] \*\*.+ - \*\*\*.+\*$/.test(line)));
     assert(fields.get('workItemLines').every((line) => /^\t- \[ \] @[0-9]{4}-[0-9]{2}-[0-9]{2} - [^,]+ - .+$/.test(line)));
 
-    const authorityStateBeforeSelection = fingerprintPath(
-      path.join(temporaryRoot, '.soter', 'state')
-    );
-    assert.throws(
-      () => createPreparedReviewBatch({
-        root: temporaryRoot,
-        workId: work.id,
-        actionIds: [action.id],
-        createdAt: '2026-07-21T15:01:30.000Z'
-      }),
-      (error) => error?.code === 'PREPARED_REVIEW_BATCH_SELECTION_INVALID'
-    );
-    assert.equal(
-      fingerprintPath(path.join(temporaryRoot, '.soter', 'state')),
-      authorityStateBeforeSelection,
-      'Selecting the held Project candidate must create no batch, approval, start, or checkpoint state.'
-    );
+    const selection = createReviewOnlyCandidateSelection({
+      root: temporaryRoot,
+      workId: work.id,
+      actionIds: [action.id],
+      createdAt: '2026-07-21T15:01:30.000Z'
+    });
+    const preview = await createReviewOnlyCandidatePreview({
+      root: temporaryRoot,
+      selectionId: selection.id,
+      createdAt: '2026-07-21T15:02:00.000Z'
+    });
+    assert.equal(preview.state, 'blocked-review-only');
+    assert.equal(preview.executable, false);
+    assert.equal(preview.privacy.authority, 'none');
+    assert.equal(preview.operations.length, 1);
+    assert.equal(preview.operations[0].capability, 'projects.records.create');
+    assert.equal(preview.operations[0].verification.capability, 'projects.records.read');
+    assert.equal(preview.operations[0].verification.input.content.expectedTitle, input.name);
+    assert.equal(preview.operations[0].input.body, fields.get('body').trim());
+    assert.equal(preview.operations[0].ambiguity.retry, 'prohibited');
+    assert.equal(preview.operations[0].recovery.mode, 'manual-required');
 
     const inspection = inspectWorkspace({ root: temporaryRoot });
     const sanitized = JSON.stringify({ work, inspection });
@@ -319,6 +324,67 @@ export async function selftestProjectCapture(root = defaultRoot) {
       duplicatePortableMilestones.readiness.blockers[0].reasonCode,
       'PREPARATION_INPUT_INVALID'
     );
+
+    const providerFixturePath = path.join(
+      temporaryRoot,
+      'soter',
+      'fixtures',
+      'providers',
+      'notion',
+      'workspace-records.json'
+    );
+    const providerFixtureBytes = fs.readFileSync(providerFixturePath, 'utf8');
+    try {
+      const providerFixture = readJson(providerFixturePath);
+      providerFixture.data.records.push({
+        type: 'project',
+        id: 'soter-fixture://projects/project/exact-name-duplicate',
+        version: '1',
+        fields: {
+          name: input.name,
+          projectType: 'Project',
+          status: 'Not Started',
+          organizationUris: [input.organization],
+          startDate: null,
+          targetEndDate: null,
+          taskUris: []
+        },
+        body: '# Existing exact-name project\n\nThis planted record proves duplicate creation remains held.'
+      });
+      writeJson(providerFixturePath, providerFixture);
+      const duplicateLock = resolveConfiguration({
+        root: temporaryRoot,
+        configPath: 'soter/configurations/project-capture.config.json'
+      });
+      writeJson(path.join(temporaryRoot, lockPath), duplicateLock);
+
+      const duplicateCandidate = await prepareAutomationRun({
+        root: temporaryRoot,
+        automationId: 'automation.project-capture',
+        configurationName: 'project-capture',
+        configurationBasis: 'tracked-contained',
+        input,
+        createdAt: '2026-07-21T15:10:00.000Z'
+      });
+      assert.equal(duplicateCandidate.state, 'ready-for-review');
+      assert.equal(duplicateCandidate.preview.proposedChanges.length, 0);
+      assert.equal(duplicateCandidate.approval.state, 'not-requested');
+      assert.equal(duplicateCandidate.continuationRequest, null);
+      const duplicateRow = duplicateCandidate.preview.collections[0].rows[0];
+      assert(duplicateRow.flags.includes('PROJECT_DUPLICATE_CANDIDATE_OBSERVED'));
+      assert.equal(duplicateRow.actions[0].state, 'held');
+      assert.equal(
+        duplicateRow.actions[0].reasonCode,
+        'PROJECT_DUPLICATE_CANDIDATE_OBSERVED'
+      );
+      assert(duplicateCandidate.preview.contradictions.some((contradiction) => {
+        return contradiction.id === 'duplicate-candidates-observed'
+          && contradiction.state === 'observed';
+      }));
+    } finally {
+      fs.writeFileSync(providerFixturePath, providerFixtureBytes);
+      writeJson(path.join(temporaryRoot, lockPath), lock);
+    }
 
     assert.equal(
       fingerprintPath(path.join(temporaryRoot, 'soter')),

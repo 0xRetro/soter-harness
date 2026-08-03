@@ -858,11 +858,11 @@ function baseReceipt({
       limitations: preparationMode === 'connected-acquisition'
         ? [
           'Connected acquisition is staged but no provider call or context acquisition has occurred.',
-          'The receipt grants no approval, continuation, execution, write, readiness, verification, proof, maturity, or migration authority.'
+          'The receipt grants no approval, continuation, execution, write, readiness, verification, proof, or maturity authority.'
         ]
         : [
           'Preparation is fixture-contained and does not establish connected readiness or provider health.',
-          'The receipt grants no approval, execution, write, verification, proof, maturity, or migration authority.'
+          'The receipt grants no approval, execution, write, verification, proof, or maturity authority.'
         ]
     },
     preview: emptyPreview(),
@@ -1222,7 +1222,7 @@ export function projectPreparedWorkApplicability(root, work) {
       limitations: [
         ...new Set([
           ...valid.readiness.limitations,
-          'The exact preparation lock is stale; this historical receipt cannot support continuation.'
+          'The exact preparation lock is stale; this receipt cannot support continuation.'
         ])
       ]
     },

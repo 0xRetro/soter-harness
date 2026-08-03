@@ -141,19 +141,23 @@ system-level truth, not the selected work item's lifecycle state.
   independently verified pack releases through an expiring exact plan,
   single-use start, durable checkpoint, manifest-last ownership, verification,
   rollback, and recovery. It performs no fetch, package-manager, configuration,
-  migration, host-realization, publication, or trust action.
+  host-realization, publication, or trust action.
 - **Durable Core operations.** Exact host requests are checkpointed before
   dispatch and can be recovered after restart or context compaction.
 - **Bounded context assembly.** Core loads declared sources through typed
   capabilities and records the exact basis used for a run.
 - **Generated operator inputs.** Automation packs declare typed fields that
   Studio renders mechanically instead of receiving workflow-specific UI rules.
-- **Governed development workflows.** Seven retained authoring, evaluation, and
+- **Governed development workflows.** Seven authoring, evaluation, and
   promotion workflows use closed `workflow-definition/v2`, `workflow-guide/v2`,
   evaluation-set, development-request, and development-result contracts. A
-  definition is explicitly `definition-only`, `active-host-guided`, or `retired`;
-  only an evidence-qualified active guide may be realized into a host's private
-  skill directory. A guide never grants provider, approval, or execution authority.
+  definition is either inspectable or active and host-guided; only an
+  evidence-qualified active guide may be realized into a host's private
+  skill directory. Before following one, the host calls
+  `soter_create_development_request` for the workflow, outcome, smallest local-
+  effect subset, and exact targets. Core derives the active realized
+  configuration; `soter_inspect_development_run` reports the sanitized current,
+  stale, or closed boundary. A realized guide alone is not runnable authority.
 - **Private prepared work.** Studio and the CLI can validate inputs, perform
   fixture-contained reads, and produce review material without creating write
   authority.
@@ -162,10 +166,6 @@ system-level truth, not the selected work item's lifecycle state.
   verification, recovery, and bounded compensation.
 - **Honest proof states.** Local fixtures, provider probes, scenario evidence,
   readiness, verification, and health remain distinct claims.
-- **Closed legacy migration record.** The final-v1 source inventory is retained
-  only as 143 exact migrated-or-retired tombstones with evidence-bound target
-  authority or explicit retirement. No checked-in host projection, old checker,
-  compatibility reader, or legacy content tree is an operational fallback.
 - **Read-only workbenches.** Studio can inspect configuration changes, host
   realization, local releases, bundles, diagnostics, and evidence boundaries
   without silently obtaining execution authority.
@@ -179,9 +179,12 @@ turn displayed guidance into authority.
 
 | Automation | Demonstrates | Current stop boundary |
 |---|---|---|
+| **Project Capture** | Exact Projects policy and creation-profile grounding, current-schema validation, organization resolution, bounded duplicate review, one private create proposal, exact approval, single-use start, and content-inclusive read-back | Contained host simulation passes; manager and client-contact relations, arbitrary provider fields, automatic retry, and delete compensation are unavailable, while live Notion permission, behavior, readiness, verification, and health remain unknown |
+| **Project Page Review** | Exact Project, related Tasks, portable policies, current page, and configured template-outline review with private selected-work findings | Read-only: it emits no proposal, approval, continuation, or write authority; live Notion permission, behavior, readiness, verification, and health remain unknown |
+| **Project Page Reconciliation** | Exact Project property and bounded one-match page-text changes, selectable action subset, expiring approval, single-use start, ordered writes, read-back verification, and checkpoint-bound reconciliation | Contained host simulation passes; combined property/body writes are not externally atomic, ambiguous writes are never retried, automatic compensation is unavailable, and live Notion permission, behavior, readiness, verification, and health remain unknown |
 | **Project Pulse** | Exact policy/project/task/document grounding, real milestone/work-item grammar, promoted-task progress, human-owned health review, complete-group approval, single-use start, ordered writes, and exact verification | Contained host simulation passes; health is checked rather than inferred, the two writes are ordered but not externally atomic, and live Notion permission, behavior, readiness, verification, and health remain unknown |
 | **Meeting Intake** | Transcript plus independent Meetings, CRM, Projects, and Tasks grounding; cited judgment; exact task disposition; complete-group private review; approval; single-use start; and verified task-fold/summary sequencing | Contained host simulation passes; live transcript/Notion permission, behavior, judgment quality, readiness, verification, and health remain unknown |
-| **Task Capture** | Exact project and authenticated-self resolution, governed policy, bounded deduplication, private proposal review, exact approval, single-use start, and verified create sequencing | Contained simulation passes. One exact Claude canary completed and verified. One Codex canary write was separately read-back verified under the corrected decoder, while its immutable pre-fix checkpoint remains `needs-attention`; these observations do not establish broad readiness or health |
+| **Task Capture** | Exact project and authenticated-self resolution, governed policy, bounded deduplication, private proposal review, exact approval, single-use start, and verified create sequencing | Contained simulation passes and exact scoped canary observations exist for Codex and Claude; those observations do not establish broad readiness or health |
 | **Organization Capture** | Current-schema classification, sector/tag separation, alias-aware deduplication, private proposal review, exact approval, single-use start, and verified organization creation | Contained host simulation passes; live Notion permission, behavior, readiness, verification, and health remain unknown |
 | **Contact Capture** | Current Role/Status/Disposition/Authority/Tag observation, exact option matching, optional organization resolution, email-or-name deduplication, private proposal review, exact approval, single-use start, and verified person creation | Unmatched optional values are omitted and flagged; contained host simulation passes while live Notion permission, behavior, readiness, verification, and health remain unknown |
 | **Drive Filing** | Exact registered-location policy, artifact metadata without content, current document schema, bounded duplicate reads, private placement/index review, provisional inbox handling, and human-only move instructions | Preparation-only: no connected shortcut or cross-provider index compiler, no approval/continuation, and no provider write; live Drive/Notion behavior remains unknown |
@@ -221,17 +224,24 @@ does not turn host authentication or provider calls into Core-owned authority.
 ## Work-owned connected acquisition
 
 Connected Context acquisition starts from one exact `operator-prepare` work
-item created against `configurationBasis=private-active`. The seven workflow
-prepare commands accept only that prepared-work ID:
+item created against `configurationBasis=private-active`. Every
+acquisition-capable Automation—including Project Capture, Project Page Review,
+and Project Page Reconciliation—uses the same generic commands:
 
-```text
-context-connected-prepare
-email-context-connected-prepare
-task-context-connected-prepare
-organization-context-connected-prepare
-project-capture-context-connected-prepare
-contact-context-connected-prepare
-project-context-connected-prepare
+```bash
+node soter/core/cli.mjs operator-prepare \
+  --configuration CONFIGURATION \
+  --configuration-basis private-active \
+  --automation AUTOMATION_ID \
+  --input /absolute/private/input.json \
+  --preparation-mode connected-acquisition \
+  --json
+
+node soter/core/cli.mjs operator-acquisition-prepare \
+  --automation AUTOMATION_ID --work WORK_ID --json
+
+node soter/core/cli.mjs operator-acquisition-finalize \
+  --automation AUTOMATION_ID --work WORK_ID --checkpoint CHECKPOINT_ID --json
 ```
 
 Use `--work WORK_ID`; do not supply a lock, run, mailbox query, provider
@@ -255,13 +265,9 @@ or health claim.
 Run the target checks before treating a change as proven:
 
 ```bash
-npm run soter:legacy-transition:selftest
-npm run soter:legacy-transition:check
-npm run soter:legacy-inventory:check
 node soter/kernel/verify.mjs --selftest
 node soter/kernel/verify.mjs
 npm run soter:development-governance:selftest
-npm run soter:legacy-foundations:selftest
 node soter/core/cli.mjs selftest
 node soter/core/cli.mjs fixtures --check
 node soter/core/cli.mjs doctor \
@@ -272,9 +278,7 @@ npm run soter:studio:e2e
 
 The offline doctor may correctly report `ready=unknown`, `verified=unknown`, or
 `healthy=unknown`. Unknown is an honest result, not a generic failure or a green
-claim. The two Harness Development Catalog finalization locks are immutable
-historical workflow-evidence bases, so Kernel verifies them but the operational
-doctor and workspace configuration views intentionally exclude them.
+claim.
 
 For detailed CLI, MCP, probe, operation-plan, connected transaction, and Studio
 developer workflows, see [soter/README.md](./soter/README.md).
@@ -292,7 +296,6 @@ soter/
   configurations/        Desired selections, bindings, sources, and effects
   scenarios/             Behavioral expectations and invariants
   fixtures/              Contained examples and local proof
-  migrations/            Explicit legacy-to-target migration state
   studio/                Electron and React operator/developer interface
 ```
 
@@ -300,19 +303,16 @@ Private resumable runtime state lives under `.soter/state`. It is ignored by
 Git and must not be copied into packs, fixtures, commits, or shared
 configurations.
 
-## Migration record
+## Canonical source of truth
 
-`soter/` is the only operational architecture. `legacy-inventory/v2`, the
-checker-transition catalog, and migration evidence preserve the exact v1 source
-fingerprints and the decision that moved or retired each responsibility. They are
-audit records, not executable fallbacks. Codex and Claude instructions, MCP
+`soter/` is the operational architecture. Codex and Claude instructions, MCP
 configuration, and active skills are generated into private consumer roots by
 governed host realization; generated outputs never become canonical definitions.
 
 ## Documentation
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — product intent, responsibility
-  boundaries, operating model, and migration direction
+  boundaries, and operating model
 - [CONTRACTS.md](./CONTRACTS.md) — normative machine and runtime contracts
 - [soter/README.md](./soter/README.md) — implementation status, detailed CLI
   workflows, probes, connected transactions, and Studio development
@@ -334,15 +334,9 @@ The target is intentionally conservative:
 - a changed operation batch invalidates its prior confirmation;
 - distribution inspection grants no install, publication, legal, or trust authority;
 - host realization proves deterministic local files, not host launch or health;
-- live provider writes and migrations require explicit user authority; and
+- live provider writes require explicit user authority; and
 - learning produces scoped candidates that must pass their own evidence and
   promotion gates.
-
-The retired v1 implementation remains recoverable from the external repository
-archive, but it is not consulted at runtime, during configuration resolution, or
-by normal repository verification. The final inventory and migration evidence
-preserve source fingerprints, target bindings, parity or intentional-change
-decisions, and fallback removal without preserving a second executable system.
 
 Private host outputs are deliberately absent from Git. A developer or test
 consumer selects an exact configuration and realizes Codex or Claude files into

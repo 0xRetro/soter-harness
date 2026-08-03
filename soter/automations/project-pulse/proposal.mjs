@@ -29,7 +29,7 @@ const STATUS_ACTION = 'action.project-pulse.status-create';
 const DOCUMENT_ACTION = 'action.project-pulse.document-update';
 const ZERO_FINGERPRINT = 'sha256:' + '0'.repeat(64);
 const LIMITATIONS = [
-  'This private review proposal creates no approval, confirmation, continuation, provider call, write, proof, maturity, or migration authority.',
+  'This private review proposal creates no approval, confirmation, continuation, provider call, write, proof, or maturity authority.',
   'When milestone tags change, document update and status creation are one inseparable review batch; approval request, confirmation, one-time start consumption, checkpoint execution, and verification remain separate.'
 ];
 

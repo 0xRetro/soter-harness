@@ -50,13 +50,7 @@
       "duplicate-query-fingerprint",
       "organization-query-fingerprint",
       "private-values-sanitized",
-      "write-boundary-state",
-      "source-cases-exactly-fingerprinted"
+      "write-boundary-state"
     ]
-  },
-  "sourceCases": [
-    ".claude/evals/capturing-a-contact/happy-path.md",
-    ".claude/evals/capturing-a-contact/invariant-no-invented-option.md",
-    ".claude/evals/capturing-a-contact/pressure-guess-role.md"
-  ]
+  }
 }

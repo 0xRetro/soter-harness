@@ -8,7 +8,6 @@ import {
   resolveRepoPath
 } from '../../core/lib/canonical-json.mjs';
 import { fingerprintLock } from '../../core/resolve.mjs';
-import { fingerprintLegacySource } from '../../kernel/legacy-inventory.mjs';
 import { prepareSlackChannelIngestionRun } from './prepare.mjs';
 
 const AUTOMATION_ID = 'automation.slack-channel-ingestion';
@@ -99,11 +98,6 @@ export async function runContainedSlackChannelIngestionScenario({
     || selectedLoaded.scenario.id !== 'slack-channel-ingestion.selected-enrichment') {
     throw new Error('Slack channel-ingestion fixture execution requires both exact phase scenarios.');
   }
-  const sourceCaseArtifacts = (scenario) => scenario.sourceCases.map((sourcePath) => ({
-    role: 'source-case',
-    path: sourcePath,
-    fingerprint: fingerprintLegacySource(resolvedRoot, sourcePath)
-  }));
   const identity = await prepareSlackChannelIngestionRun({
     root: resolvedRoot,
     lock,
@@ -166,14 +160,6 @@ export async function runContainedSlackChannelIngestionScenario({
       participant.email
     ])).filter(Boolean)
   ];
-  const exactSourcePaths = [...new Set([
-    ...identityLoaded.scenario.sourceCases,
-    ...selectedLoaded.scenario.sourceCases
-  ])];
-  const exactSourceArtifacts = exactSourcePaths.map((sourcePath) => ({
-    path: sourcePath,
-    fingerprint: fingerprintLegacySource(resolvedRoot, sourcePath)
-  }));
   const facts = {
     outcomes: {
       'identity-window.complete': identityRows.length === 5
@@ -237,9 +223,7 @@ export async function runContainedSlackChannelIngestionScenario({
       'schema-observation-fingerprint': /^sha256:[a-f0-9]{64}$/.test(schema.value.schema.fingerprint),
       'private-values-sanitized': privateValues.every((value) => {
         return !identityText.includes(value) && !selectedText.includes(value);
-      }),
-      'source-cases-exactly-fingerprinted': exactSourceArtifacts.length === 3
-        && exactSourceArtifacts.every((artifact) => /^sha256:[a-f0-9]{64}$/.test(artifact.fingerprint))
+      })
     }
   };
   const artifacts = [
@@ -265,7 +249,6 @@ export async function runContainedSlackChannelIngestionScenario({
     envelope: identity.envelope,
     scenario: identityLoaded.scenario,
     scenarioPath: identityLoaded.path,
-    sourceCaseArtifacts: sourceCaseArtifacts(identityLoaded.scenario),
     assessment: identityAssessment,
     evaluatorId: 'automation.slack-channel-ingestion.scenario-evaluator',
     id: identityScenarioEvidenceId,
@@ -276,7 +259,6 @@ export async function runContainedSlackChannelIngestionScenario({
     envelope: selected.envelope,
     scenario: selectedLoaded.scenario,
     scenarioPath: selectedLoaded.path,
-    sourceCaseArtifacts: sourceCaseArtifacts(selectedLoaded.scenario),
     assessment: selectedAssessment,
     evaluatorId: 'automation.slack-channel-ingestion.scenario-evaluator',
     id: selectedScenarioEvidenceId,

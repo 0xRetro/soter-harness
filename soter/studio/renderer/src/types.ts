@@ -1,5 +1,4 @@
 export type ProofState = 'passed' | 'failed' | 'stale' | 'unknown' | 'skipped' | 'not-applicable' | string;
-export type ScenarioMigrationState = 'current' | 'mapped' | 'bridged' | 'migrated' | 'retired' | 'target-native' | 'unknown';
 export type ViewName = 'operate' | 'explore' | 'config' | 'workflow' | 'runs' | 'distribution';
 export type ConfigurationBasis = 'tracked-contained' | 'private-active';
 export type PreparationMode = 'contained' | 'connected-acquisition';
@@ -164,8 +163,6 @@ export interface Workflow {
     outcomes: string[];
     invariants: string[];
     evidence: string[];
-    sourceCases: string[];
-    migrationState: ScenarioMigrationState;
     execution: null | {
       source: 'fixture';
       result: string;
@@ -178,7 +175,6 @@ export interface Workflow {
       limitations: string[];
     };
   }>;
-  migration: { id: string | null; state: string; limitations: string[] };
 }
 
 export interface TimelineItem {
@@ -200,7 +196,7 @@ export interface Activity {
   id: string;
   automationId?: string | null;
   source: 'fixture' | 'runtime';
-  kind: 'run' | 'capability' | 'provider-probe' | 'operation-plan' | 'connected-transaction' | 'prepared-work';
+  kind: 'run' | 'capability' | 'provider-probe' | 'operation-plan' | 'connected-transaction' | 'prepared-work' | 'development-run';
   label: string;
   state: string;
   createdAt: string | null;
@@ -213,6 +209,7 @@ export interface Activity {
   recoveryId: string | null;
   operatorRef?: { requestId: string; approvalId: string | null; checkpointId: string | null };
   preparedWorkRef?: { workId: string };
+  developmentRef?: { requestId: string; resultId: string | null };
   timeline: TimelineItem[];
   evidence: Array<{ id: string; claim: string; result: string; level: string; createdAt: string; limitations: string[] }>;
 }
@@ -310,7 +307,7 @@ export interface OperatorInspection {
     remainingStepIds: string[];
     restoredFingerprint: null;
   };
-  families: Record<'proof' | 'maturity' | 'migration', { state: 'not-evaluated'; reasonCode: string }>;
+  families: Record<'proof' | 'maturity', { state: 'not-evaluated'; reasonCode: string }>;
   privacy: { scope: 'private-derived'; rawProviderResponseIncluded: false; credentialValuesIncluded: false };
   inspectionFingerprint: string;
 }
@@ -920,7 +917,7 @@ export interface ConnectedTransactionPhase {
   error: Record<string, unknown> | null;
 }
 
-export interface PreparedReviewBatchAction {
+export interface ReviewOnlyCandidateAction {
   id: string;
   sequence: number;
   kind: string;
@@ -935,8 +932,8 @@ export interface PreparedReviewBatchAction {
   proposedValueFingerprint: string;
 }
 
-export interface PreparedReviewBatch {
-  $contract: 'soter://contracts/prepared-review-batch/v1';
+export interface ReviewOnlyCandidateSelection {
+  $contract: 'soter://contracts/review-only-candidate-selection/v1';
   contractVersion: '1.0.0';
   id: string;
   fingerprint: string;
@@ -956,10 +953,14 @@ export interface PreparedReviewBatch {
   state: 'review-only';
   effects: Array<'write' | 'dispatch' | 'destructive'>;
   scope: { availableActionCount: number; selectedActionCount: number; partial: boolean; fingerprint: string };
-  actions: PreparedReviewBatchAction[];
-  blockers: Array<'CONNECTED_PLAN_NOT_COMPILED' | 'CONNECTED_VERIFICATION_NOT_PROVEN'>;
+  actions: ReviewOnlyCandidateAction[];
+  blockers: Array<
+    | 'CONNECTED_COMPILER_NOT_DECLARED'
+    | 'REVIEW_ONLY_CANDIDATE_PREVIEW_NOT_CREATED'
+    | 'CONNECTED_VERIFICATION_NOT_PROVEN'
+  >;
   privacy: {
-    scope: 'private-local-review-batch'; authority: 'none'; projection: 'selected-batch-only';
+    scope: 'private-local-review-only-candidate-selection'; authority: 'none'; projection: 'review-only-candidate-selection-only';
     privateValuesIncluded: false; providerArgumentsIncluded: false; rawProviderResponsesIncluded: false;
     credentialValuesIncluded: false; workspaceInspectionIncluded: false; evidenceIncluded: false;
     canonicalArtifactsIncluded: false; approvalAuthorityIncluded: false;
@@ -967,66 +968,66 @@ export interface PreparedReviewBatch {
   };
 }
 
-export interface PreparedReviewBatchMaterial {
-  $contract: 'soter://contracts/prepared-review-batch-material/v1';
+export interface ReviewOnlyCandidateSelectionMaterial {
+  $contract: 'soter://contracts/review-only-candidate-selection-material/v1';
   contractVersion: '1.0.0';
   fingerprint: string;
-  batch: { id: string; fingerprint: string; createdAt: string; state: 'review-only' };
+  selection: { id: string; fingerprint: string; createdAt: string; state: 'review-only' };
   work: {
     id: string; fingerprint: string; checkpointId: string;
     checkpointFingerprint: string; automationId: string;
   };
-  configuration: PreparedReviewBatch['configuration'] & { applicability: 'current' | 'stale' };
-  scope: PreparedReviewBatch['scope'];
-  effects: PreparedReviewBatch['effects'];
+  configuration: ReviewOnlyCandidateSelection['configuration'] & { applicability: 'current' | 'stale' };
+  scope: ReviewOnlyCandidateSelection['scope'];
+  effects: ReviewOnlyCandidateSelection['effects'];
   actions: Array<{
-    selection: PreparedReviewBatchAction;
+    selection: ReviewOnlyCandidateAction;
     context: PreparedWorkDerivedReviewMaterial['items'][number] | null;
     proposed: PreparedWorkDerivedReviewMaterial['items'][number];
   }>;
-  blockers: PreparedReviewBatch['blockers'];
+  blockers: ReviewOnlyCandidateSelection['blockers'];
   privacy: {
-    scope: 'private-local-review-batch-material'; authority: 'none'; projection: 'selected-batch-only';
+    scope: 'private-local-review-only-candidate-selection-material'; authority: 'none'; projection: 'review-only-candidate-selection-only';
     providerArgumentsIncluded: false; rawProviderResponsesIncluded: false; credentialValuesIncluded: false;
     workspaceInspectionIncluded: false; evidenceIncluded: false; canonicalArtifactsIncluded: false;
     approvalAuthorityIncluded: false; continuationAuthorityIncluded: false; executionAuthorityIncluded: false;
   };
 }
 
-export type PreparedReviewBatchCreateResult =
-  | { ok: true; batch: PreparedReviewBatch }
+export type ReviewOnlyCandidateSelectionCreateResult =
+  | { ok: true; selection: ReviewOnlyCandidateSelection }
   | { ok: false; error: PreparedWorkReviewError };
 
-export type PreparedReviewBatchMaterialResult =
-  | { ok: true; material: PreparedReviewBatchMaterial }
+export type ReviewOnlyCandidateSelectionMaterialResult =
+  | { ok: true; material: ReviewOnlyCandidateSelectionMaterial }
   | { ok: false; error: PreparedWorkReviewError };
 
-export interface PreparedConnectedPlanProvider {
+export interface ReviewOnlyCandidatePreviewProvider {
   pack: string;
   connectedImplementation: string | null;
   version?: string | null;
 }
 
-export interface PreparedConnectedPlanOperation {
+export interface ReviewOnlyCandidatePreviewOperation {
   id: string;
   sequence: number;
   sourceActionId: string;
   capability: string;
   authority: string;
-  provider: PreparedConnectedPlanProvider;
+  provider: ReviewOnlyCandidatePreviewProvider;
   effect: 'write' | 'dispatch' | 'destructive';
   input: Record<string, unknown>;
   inputFingerprint: string;
   precondition?:
     | { kind: 'none'; capability: null; input: null; inputFingerprint: null; expectation: null }
     | {
-      kind: 'expectation'; capability: string; provider: PreparedConnectedPlanProvider;
+      kind: 'expectation'; capability: string; provider: ReviewOnlyCandidatePreviewProvider;
       input: Record<string, unknown>; inputFingerprint: string;
       expectation: { kind: string; expectedFingerprint: string };
     };
   verification: {
     capability: string;
-    provider: PreparedConnectedPlanProvider;
+    provider: ReviewOnlyCandidatePreviewProvider;
     input: Record<string, unknown>;
     inputFingerprint: string;
     expectation: { kind: string; expectedFingerprint: string };
@@ -1048,25 +1049,25 @@ export interface PreparedConnectedPlanOperation {
   recovery: { mode: 'manual-required'; reasonCode: string };
 }
 
-export interface PreparedConnectedPlan {
-  $contract: 'soter://contracts/prepared-connected-plan/v1';
+export interface ReviewOnlyCandidatePreview {
+  $contract: 'soter://contracts/review-only-candidate-preview/v1';
   contractVersion: '1.0.0';
   id: string;
   fingerprint: string;
   createdAt: string;
   source: {
-    batchId: string; batchFingerprint: string; workId: string; workFingerprint: string;
+    selectionId: string; selectionFingerprint: string; workId: string; workFingerprint: string;
     checkpointId: string; checkpointFingerprint: string;
     automationId: string; automationVersion: string;
   };
-  configuration: PreparedReviewBatch['configuration'] & { applicability: 'current' | 'stale' };
+  configuration: ReviewOnlyCandidateSelection['configuration'] & { applicability: 'current' | 'stale' };
   compiler: {
     module: string; moduleFingerprint: string; compileExport: string; evaluateExport: string;
   };
   state: 'blocked-review-only';
   executable: false;
   effects: Array<'write' | 'dispatch' | 'destructive'>;
-  operations: PreparedConnectedPlanOperation[];
+  operations: ReviewOnlyCandidatePreviewOperation[];
   blockers: Array<
     | 'CONNECTED_PROVIDER_NOT_DECLARED'
     | 'CONNECTED_TRANSACTION_RUNTIME_NOT_SUPPORTED'
@@ -1074,7 +1075,7 @@ export interface PreparedConnectedPlan {
     | 'SELECTED_ACTIVITY_PRIVATE_APPROVAL_REVIEW_NOT_AVAILABLE'
   >;
   privacy: {
-    scope: 'private-local-prepared-connected-plan'; authority: 'none'; projection: 'selected-plan-only';
+    scope: 'private-local-review-only-candidate-preview'; authority: 'none'; projection: 'review-only-candidate-preview-only';
     privateValuesIncluded: true; providerArgumentsIncluded: true; rawProviderResponsesIncluded: false;
     credentialValuesIncluded: false; workspaceInspectionIncluded: false; evidenceIncluded: false;
     canonicalArtifactsIncluded: false; approvalAuthorityIncluded: false;
@@ -1082,8 +1083,8 @@ export interface PreparedConnectedPlan {
   };
 }
 
-export type PreparedConnectedPlanResult =
-  | { ok: true; plan: PreparedConnectedPlan }
+export type ReviewOnlyCandidatePreviewResult =
+  | { ok: true; preview: ReviewOnlyCandidatePreview }
   | { ok: false; error: PreparedWorkReviewError };
 
 export interface PreparedContextStep {
@@ -1385,7 +1386,7 @@ export interface PackReleaseInspection {
   trust: DistributionTrustBoundary;
   inventory: Array<{
     path: string;
-    role: 'manifest' | 'definition' | 'implementation' | 'projection' | 'evaluation' | 'fixture' | 'migration';
+    role: 'manifest' | 'definition' | 'implementation' | 'projection' | 'evaluation' | 'fixture';
     mode: '0644' | '0755';
     bytes: number;
     contentFingerprint: string;
@@ -1599,8 +1600,7 @@ export interface PackInstallInspection {
       sequence: number;
       action: 'create' | 'replace' | 'remove';
       pack: string;
-      role: 'manifest' | 'definition' | 'implementation' | 'projection' | 'evaluation' | 'fixture' | 'migration';
-      migrationRole: boolean;
+      role: 'manifest' | 'definition' | 'implementation' | 'projection' | 'evaluation' | 'fixture';
       beforeFingerprint: string | null;
       afterFingerprint: string | null;
       reasonCode: 'PACK_INSTALL_FILE_CREATE' | 'PACK_INSTALL_FILE_REPLACE' | 'PACK_INSTALL_FILE_REMOVE';
@@ -1658,7 +1658,6 @@ export interface PackInstallInspection {
     uninstall: false;
     configure: false;
     realizeHost: false;
-    executeMigration: false;
     runPackageManager: false;
     network: false;
     publish: false;
@@ -1724,10 +1723,10 @@ declare global {
       getPreparedWork(request: { workId: string }): Promise<PreparedWork>;
       getPreparedWorkReview(request: { workId: string }): Promise<PreparedWorkReviewResult>;
       getPreparedWorkDerivedReview(request: { workId: string }): Promise<PreparedWorkDerivedReviewResult>;
-      createPreparedReviewBatch(request: { workId: string; actionIds: string[] }): Promise<PreparedReviewBatchCreateResult>;
-      getPreparedReviewBatchMaterial(request: { batchId: string }): Promise<PreparedReviewBatchMaterialResult>;
-      createPreparedConnectedPlan(request: { batchId: string }): Promise<PreparedConnectedPlanResult>;
-      getPreparedConnectedPlan(request: { planId: string }): Promise<PreparedConnectedPlanResult>;
+      createReviewOnlyCandidateSelection(request: { workId: string; actionIds: string[] }): Promise<ReviewOnlyCandidateSelectionCreateResult>;
+      getReviewOnlyCandidateSelectionMaterial(request: { selectionId: string }): Promise<ReviewOnlyCandidateSelectionMaterialResult>;
+      createReviewOnlyCandidatePreview(request: { selectionId: string }): Promise<ReviewOnlyCandidatePreviewResult>;
+      getReviewOnlyCandidatePreview(request: { candidatePreviewId: string }): Promise<ReviewOnlyCandidatePreviewResult>;
       getConnectedApprovalReview(request: { requestId: string }): Promise<ConnectedApprovalReviewResult>;
       getAutomationProposal(request: AutomationProposalRequest): Promise<AutomationProposalResult>;
       getAutomationProposalMaterial(request: AutomationProposalRequest): Promise<AutomationProposalMaterialResult>;

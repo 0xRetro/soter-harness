@@ -17,12 +17,79 @@ function stateFile(root, directory, id) {
   return resolveRepoPath(root, path.join(STATE_ROOT, directory, safeId(id, directory + ' id') + '.json'));
 }
 
+function privateDirectoryLayout(directory) {
+  const resolvedDirectory = path.resolve(directory);
+  const stateDirectory = path.dirname(resolvedDirectory);
+  const soterDirectory = path.dirname(stateDirectory);
+  const root = path.dirname(soterDirectory);
+  if (path.basename(soterDirectory) !== '.soter'
+    || path.basename(stateDirectory) !== 'state'
+    || path.dirname(resolvedDirectory) !== stateDirectory) {
+    throw new Error('Private runtime-state directory is outside the exact .soter/state layout.');
+  }
+  const rootStat = fs.lstatSync(root);
+  if (!rootStat.isDirectory() || rootStat.isSymbolicLink()) {
+    throw new Error('Private runtime-state root must be one ordinary non-symlink directory.');
+  }
+  return {
+    root,
+    rootRealPath: fs.realpathSync(root),
+    directories: [soterDirectory, stateDirectory, resolvedDirectory]
+  };
+}
+
+function assertPrivateDirectory(directory, rootRealPath, label) {
+  const stat = fs.lstatSync(directory);
+  if (!stat.isDirectory() || stat.isSymbolicLink()) {
+    throw new Error(label + ' parent directory is invalid.');
+  }
+  const real = fs.realpathSync(directory);
+  if (real !== rootRealPath && !real.startsWith(rootRealPath + path.sep)) {
+    throw new Error(label + ' parent directory escapes the exact repository root.');
+  }
+  return stat;
+}
+
 function ensurePrivateDirectory(directory) {
-  fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
-  try {
-    fs.chmodSync(directory, 0o700);
-  } catch {
-    // Some filesystems do not expose POSIX permissions; atomic placement still applies.
+  const layout = privateDirectoryLayout(directory);
+  let missingObserved = false;
+  // Complete the whole non-mutating ancestor audit before mkdir, chmod, or file writes.
+  for (const item of layout.directories) {
+    const stat = fs.lstatSync(item, { throwIfNoEntry: false });
+    if (!stat) {
+      missingObserved = true;
+      continue;
+    }
+    if (missingObserved) {
+      throw new Error('Private runtime-state directory ancestry is inconsistent.');
+    }
+    assertPrivateDirectory(item, layout.rootRealPath, 'Private runtime state');
+  }
+  for (const item of layout.directories) {
+    if (!fs.lstatSync(item, { throwIfNoEntry: false })) {
+      fs.mkdirSync(item, { mode: 0o700 });
+    }
+    assertPrivateDirectory(item, layout.rootRealPath, 'Private runtime state');
+  }
+  if (process.platform !== 'win32') {
+    for (const item of layout.directories) {
+      const descriptor = fs.openSync(
+        item,
+        fs.constants.O_RDONLY
+          | (fs.constants.O_DIRECTORY || 0)
+          | (fs.constants.O_NOFOLLOW || 0)
+      );
+      try {
+        const stat = fs.fstatSync(descriptor);
+        if (!stat.isDirectory()) {
+          throw new Error('Private runtime-state parent changed before permission enforcement.');
+        }
+        fs.fchmodSync(descriptor, 0o700);
+      } finally {
+        fs.closeSync(descriptor);
+      }
+      assertPrivateDirectory(item, layout.rootRealPath, 'Private runtime state');
+    }
   }
 }
 
@@ -56,42 +123,49 @@ function atomicWriteJson(file, value) {
 
 function atomicCreateJson(file, value) {
   ensurePrivateDirectory(path.dirname(file));
+  const temporary = file + '.' + process.pid + '.' + Date.now() + '.create';
   let descriptor = null;
   try {
-    descriptor = fs.openSync(file, 'wx', 0o600);
+    descriptor = fs.openSync(temporary, 'wx', 0o600);
     fs.writeFileSync(descriptor, JSON.stringify(value, null, 2) + '\n');
     fs.fsyncSync(descriptor);
     fs.closeSync(descriptor);
     descriptor = null;
     try {
-      fs.chmodSync(file, 0o600);
+      fs.chmodSync(temporary, 0o600);
     } catch {
       // Some filesystems do not expose POSIX permissions.
     }
+    // Linking publishes complete bytes without replacing an existing create-only state.
+    // A concurrent creator receives EEXIST only after one complete document is visible.
+    fs.linkSync(temporary, file);
+    fs.rmSync(temporary);
+    try {
+      const directory = fs.openSync(path.dirname(file), 'r');
+      try {
+        fs.fsyncSync(directory);
+      } finally {
+        fs.closeSync(directory);
+      }
+    } catch {
+      // Some filesystems do not support directory fsync.
+    }
   } finally {
     if (descriptor !== null) fs.closeSync(descriptor);
+    if (fs.existsSync(temporary)) fs.rmSync(temporary, { force: true });
   }
 }
 
 function assertPrivateRuntimeStatePath(file, label, { requireFile = true } = {}) {
   const directory = path.dirname(file);
-  const ancestors = [
-    path.dirname(path.dirname(directory)),
-    path.dirname(directory),
-    directory
-  ];
-  for (const item of ancestors) {
+  const layout = privateDirectoryLayout(directory);
+  for (const item of layout.directories) {
     const stat = fs.lstatSync(item, { throwIfNoEntry: false });
     if (!stat) continue;
-    if (!stat.isDirectory() || stat.isSymbolicLink()) {
-      throw new Error(label + ' parent directory is invalid.');
+    assertPrivateDirectory(item, layout.rootRealPath, label);
+    if (process.platform !== 'win32' && (stat.mode & 0o7777) !== 0o700) {
+      throw new Error(label + ' private directory ancestry must use mode 0700.');
     }
-  }
-  const directoryStat = fs.lstatSync(directory, { throwIfNoEntry: false });
-  if (directoryStat
-    && process.platform !== 'win32'
-    && (directoryStat.mode & 0o7777) !== 0o700) {
-    throw new Error(label + ' parent directory must use mode 0700.');
   }
   const stat = fs.lstatSync(file, { throwIfNoEntry: false });
   if (!stat) {
@@ -166,12 +240,20 @@ export function preparedWorkDerivedReviewMaterialStatePath(root, workId) {
   return stateFile(root, 'prepared-work-derived-review', safeId(workId, 'prepared work derived review id'));
 }
 
-export function preparedReviewBatchStatePath(root, batchId) {
-  return stateFile(root, 'prepared-review-batches', safeId(batchId, 'prepared review batch id'));
+export function reviewOnlyCandidateSelectionStatePath(root, selectionId) {
+  return stateFile(
+    root,
+    'review-only-candidate-selections',
+    safeId(selectionId, 'review-only candidate selection id')
+  );
 }
 
-export function preparedConnectedPlanStatePath(root, planId) {
-  return stateFile(root, 'prepared-connected-plans', safeId(planId, 'prepared connected plan id'));
+export function reviewOnlyCandidatePreviewStatePath(root, candidatePreviewId) {
+  return stateFile(
+    root,
+    'review-only-candidate-previews',
+    safeId(candidatePreviewId, 'review-only candidate preview id')
+  );
 }
 
 export function configurationChangePlanStatePath(root, planId) {
@@ -342,12 +424,12 @@ export function hasPreparedWorkDerivedReviewMaterialState(root, workId) {
   return fs.existsSync(preparedWorkDerivedReviewMaterialStatePath(root, workId));
 }
 
-export function hasPreparedReviewBatchState(root, batchId) {
-  return fs.existsSync(preparedReviewBatchStatePath(root, batchId));
+export function hasReviewOnlyCandidateSelectionState(root, selectionId) {
+  return fs.existsSync(reviewOnlyCandidateSelectionStatePath(root, selectionId));
 }
 
-export function hasPreparedConnectedPlanState(root, planId) {
-  return fs.existsSync(preparedConnectedPlanStatePath(root, planId));
+export function hasReviewOnlyCandidatePreviewState(root, candidatePreviewId) {
+  return fs.existsSync(reviewOnlyCandidatePreviewStatePath(root, candidatePreviewId));
 }
 
 export function hasConfigurationChangePlanState(root, planId) {
@@ -599,31 +681,31 @@ export function createPreparedWorkDerivedReviewMaterialState(root, material) {
   return { file, path: repoRelativePath(root, file) };
 }
 
-export function readPreparedReviewBatchState(root, batchId) {
-  const file = preparedReviewBatchStatePath(root, batchId);
+export function readReviewOnlyCandidateSelectionState(root, selectionId) {
+  const file = reviewOnlyCandidateSelectionStatePath(root, selectionId);
   if (!fs.existsSync(file)) {
-    throw new Error('Durable prepared review batch does not exist: ' + batchId + '.');
+    throw new Error('Durable review-only candidate selection does not exist: ' + selectionId + '.');
   }
-  return { file, batch: readJson(file) };
+  return { file, selection: readJson(file) };
 }
 
-export function createPreparedReviewBatchState(root, batch) {
-  const file = preparedReviewBatchStatePath(root, batch.id);
-  atomicCreateJson(file, batch);
+export function createReviewOnlyCandidateSelectionState(root, selection) {
+  const file = reviewOnlyCandidateSelectionStatePath(root, selection.id);
+  atomicCreateJson(file, selection);
   return { file, path: repoRelativePath(root, file) };
 }
 
-export function readPreparedConnectedPlanState(root, planId) {
-  const file = preparedConnectedPlanStatePath(root, planId);
+export function readReviewOnlyCandidatePreviewState(root, candidatePreviewId) {
+  const file = reviewOnlyCandidatePreviewStatePath(root, candidatePreviewId);
   if (!fs.existsSync(file)) {
-    throw new Error('Durable prepared connected plan does not exist: ' + planId + '.');
+    throw new Error('Durable review-only candidate preview does not exist: ' + candidatePreviewId + '.');
   }
-  return { file, plan: readJson(file) };
+  return { file, preview: readJson(file) };
 }
 
-export function createPreparedConnectedPlanState(root, plan) {
-  const file = preparedConnectedPlanStatePath(root, plan.id);
-  atomicCreateJson(file, plan);
+export function createReviewOnlyCandidatePreviewState(root, preview) {
+  const file = reviewOnlyCandidatePreviewStatePath(root, preview.id);
+  atomicCreateJson(file, preview);
   return { file, path: repoRelativePath(root, file) };
 }
 
@@ -739,7 +821,20 @@ export function removeActiveConfigurationLockState(root, configurationName) {
 
 export function readDevelopmentRequestState(root, requestId) {
   const file = developmentRequestStatePath(root, requestId);
-  return readRequiredState(file, 'Private development request', requestId, 'request');
+  if (!fs.lstatSync(file, { throwIfNoEntry: false })) {
+    const error = new Error('Private development request does not exist.');
+    error.code = 'DEVELOPMENT_REQUEST_NOT_FOUND';
+    throw error;
+  }
+  try {
+    assertPrivateRuntimeStatePath(file, 'Private development request');
+    return { file, request: readJson(file) };
+  } catch (cause) {
+    if (cause?.code === 'DEVELOPMENT_REQUEST_NOT_FOUND') throw cause;
+    const error = new Error('Private development request state is unsafe or unreadable.', { cause });
+    error.code = 'DEVELOPMENT_REQUEST_PRIVATE_STATE_INVALID';
+    throw error;
+  }
 }
 
 export function createDevelopmentRequestState(root, request) {
@@ -750,7 +845,20 @@ export function createDevelopmentRequestState(root, request) {
 
 export function readDevelopmentResultState(root, resultId) {
   const file = developmentResultStatePath(root, resultId);
-  return readRequiredState(file, 'Private development result', resultId, 'result');
+  if (!fs.lstatSync(file, { throwIfNoEntry: false })) {
+    const error = new Error('Private development result does not exist.');
+    error.code = 'DEVELOPMENT_RESULT_NOT_FOUND';
+    throw error;
+  }
+  try {
+    assertPrivateRuntimeStatePath(file, 'Private development result');
+    return { file, result: readJson(file) };
+  } catch (cause) {
+    if (cause?.code === 'DEVELOPMENT_RESULT_NOT_FOUND') throw cause;
+    const error = new Error('Private development result state is unsafe or unreadable.', { cause });
+    error.code = 'DEVELOPMENT_RESULT_PRIVATE_STATE_INVALID';
+    throw error;
+  }
 }
 
 export function createDevelopmentResultState(root, result) {

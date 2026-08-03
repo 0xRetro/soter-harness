@@ -60,7 +60,7 @@
           "responseProfile": "notion.claude.plugin.v1"
         }
       ],
-      "reason": "The legacy plugin maps Notion, but it is not silently adopted by the deterministic host projection."
+      "reason": "Existing unmanaged plugin files are not silently adopted by the deterministic host projection."
     },
     {
       "id": "otter",
@@ -128,6 +128,6 @@
     "scenarios": []
   },
   "limitations": [
-    "The adapter can deterministically project selected active workflow guides as explicit-only skills, while candidate guides and retained legacy skills remain excluded from generated ownership; host launch, discovery, authentication, connected behavior, and health are not proven."
+    "The adapter can deterministically project selected active workflow guides as explicit-only skills, while unselected and unmanaged skills remain excluded from generated ownership; host launch, discovery, authentication, connected behavior, and health are not proven."
   ]
 }

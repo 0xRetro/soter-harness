@@ -7,7 +7,6 @@ import {
   repoRelativePath,
   resolveRepoPath
 } from '../../core/lib/canonical-json.mjs';
-import { fingerprintLegacySource } from '../../kernel/legacy-inventory.mjs';
 import { analyzeProjectPulse } from './analysis.mjs';
 import { assembleProjectPulseContext } from './context.mjs';
 
@@ -301,11 +300,6 @@ export async function runContainedProjectPulseScenario({
     envelope: execution.envelope,
     scenario: loaded.scenario,
     scenarioPath: loaded.path,
-    sourceCaseArtifacts: loaded.scenario.sourceCases.map((sourcePath) => ({
-      role: 'source-case',
-      path: sourcePath,
-      fingerprint: fingerprintLegacySource(resolvedRoot, sourcePath)
-    })),
     assessment,
     evaluatorId: 'automation.project-pulse.scenario-evaluator',
     id: scenarioEvidenceId,

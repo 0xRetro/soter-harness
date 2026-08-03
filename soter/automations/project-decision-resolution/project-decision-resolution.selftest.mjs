@@ -16,7 +16,7 @@ import {
   inspectPreparedAutomationReviewMaterial,
   prepareAutomationRun
 } from '../../core/prepared-work.mjs';
-import { createPreparedReviewBatch } from '../../core/prepared-review-batches.mjs';
+import { createReviewOnlyCandidateSelection } from '../../core/review-only-candidate-selections.mjs';
 import { resolveConfiguration } from '../../core/resolve.mjs';
 import {
   loadProjectWorkPolicyDefinition,
@@ -294,19 +294,19 @@ async function coreBoundarySelftest(sourceRoot) {
       privateInput.decisionWhat + ' - ' + privateInput.decidedBy + ' - '
         + privateInput.decisionWhy
     );
-    const batch = createPreparedReviewBatch({
+    const selection = createReviewOnlyCandidateSelection({
       root: temporaryRoot,
       workId: work.id,
       actionIds: requiredActionIds,
       createdAt: '2026-07-22T12:11:00.000Z'
     });
-    assert.equal(batch.scope.partial, false);
-    assert.equal(batch.actions.length, 3);
-    assert.equal(batch.state, 'review-only');
-    assert.equal(batch.privacy.authority, 'none');
-    assert.equal(batch.privacy.executionAuthorityIncluded, false);
+    assert.equal(selection.scope.partial, false);
+    assert.equal(selection.actions.length, 3);
+    assert.equal(selection.state, 'review-only');
+    assert.equal(selection.privacy.authority, 'none');
+    assert.equal(selection.privacy.executionAuthorityIncluded, false);
     const inspection = inspectWorkspace({ root: temporaryRoot });
-    const sanitized = JSON.stringify({ work, inspection, batch });
+    const sanitized = JSON.stringify({ work, inspection, selection });
     for (const sentinel of [
       privateInput.decisionHeadline,
       privateInput.decisionWhat,

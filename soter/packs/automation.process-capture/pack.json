@@ -15,7 +15,7 @@
     "requires": [
       { "id": "process.records.read", "version": "^1.0.0", "optional": false, "reason": "Preparation loads one exact policy selection, bounded duplicates, exact roles, and an optional service." },
       { "id": "process.schema.read", "version": "^1.0.0", "optional": false, "reason": "Preparation intersects every requested option with the current configured Process schema." },
-      { "id": "process.records.create", "version": "^1.0.0", "optional": false, "reason": "A complete review may name one fingerprint-only process create, but this migration slice declares no connected compiler." }
+      { "id": "process.records.create", "version": "^1.0.0", "optional": false, "reason": "A complete review may name one fingerprint-only process create, but no connected compiler is available." }
     ],
     "provides": []
   },

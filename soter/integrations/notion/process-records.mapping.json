@@ -4,7 +4,7 @@
   "id": "mapping.integration.notion.process-records",
   "pack": "integration.notion",
   "provider": "provider.integration.notion.mcp",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "contextModel": "model.context.process.records",
   "settingsDefinition": "settings.integration.notion",
   "capabilities": ["process.records.read", "process.records.create", "process.schema.read"],
@@ -92,7 +92,7 @@
   ],
   "limitations": [
     "The mapping translates only explicit configured Process targets and never discovers databases, invents relation identities, or treats provider templates as portable authority.",
-    "Process creates require an exact current schema, complete deterministic body, deduplication review, and a separate Core transaction that this migration slice does not declare.",
+    "Process creates require an exact current schema, complete deterministic body, deduplication review, and a separate Core transaction that this workflow does not declare.",
     "Task creation, process-run execution, review findings, readiness, verification, and health remain separate responsibilities."
   ]
 }

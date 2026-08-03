@@ -50,8 +50,5 @@
       "private-review-material",
       "write-boundary-state"
     ]
-  },
-  "sourceCases": [
-    ".claude/systems/project-management.md"
-  ]
+  }
 }

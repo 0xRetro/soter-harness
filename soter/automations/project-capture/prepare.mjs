@@ -223,18 +223,18 @@ export function buildProjectCapturePreview({
   const workItemLines = project.workItemLines;
   const flags = project.issues.map((issue) => issue.code);
   if (duplicateIds.length) flags.push('PROJECT_DUPLICATE_CANDIDATE_OBSERVED');
-  const reviewable = project.issues.length === 0 && duplicateIds.length === 0;
-  const reasonCode = reviewable
-    ? 'COMPLETE_PROJECT_READBACK_UNAVAILABLE'
+  const proposed = project.issues.length === 0 && duplicateIds.length === 0;
+  const reasonCode = proposed
+    ? 'PROJECT_CREATE_READY_FOR_REVIEW'
     : (project.issues[0]?.code || 'PROJECT_DUPLICATE_CANDIDATE_OBSERVED');
-  if (reviewable) flags.push(reasonCode);
   const action = {
     id: 'action.project-capture.create',
     kind: 'project-create',
-    capability: null,
-    effect: null,
-    state: 'held',
-    reasonCode
+    capability: 'projects.records.create',
+    effect: 'write',
+    state: proposed ? 'proposed' : 'held',
+    reasonCode,
+    changeFingerprint: null
   };
   const row = {
     id: 'row.project-capture.project',
@@ -294,6 +294,18 @@ export function buildProjectCapturePreview({
   );
   row.privateDetailFingerprint = projectItem.fingerprint;
   const proposedChanges = [];
+  if (proposed) {
+    const change = {
+      id: action.id,
+      recordId: 'new:project:'
+        + projectFingerprint.slice('sha256:'.length, 'sha256:'.length + 16),
+      effect: 'projects.records.create',
+      beforeFingerprint: null,
+      afterFingerprint: projectItem.fingerprint
+    };
+    action.changeFingerprint = fingerprintJson(change);
+    proposedChanges.push(change);
+  }
   const collection = {
     $contract: COLLECTION_CONTRACT,
     contractVersion: '1.0.0',
@@ -469,8 +481,8 @@ export function buildProjectCapturePreview({
     {
       id: 'project-body-readback-state',
       label: 'Connected Project body read-back',
-      value: 'unavailable',
-      state: 'unavailable',
+      value: 'exact-fields-and-body',
+      state: 'supported',
       basisIds: ['context.project-capture.profile']
     }
   ];
@@ -712,8 +724,7 @@ export async function prepareProjectCaptureRun({
     derivedReviewDefinition,
     creationProfile
   });
-  const reviewable = preview.collections[0]?.rows[0]?.actions[0]?.reasonCode
-    === 'COMPLETE_PROJECT_READBACK_UNAVAILABLE';
+  const proposed = preview.collections[0]?.rows[0]?.actions[0]?.state === 'proposed';
   return {
     envelope,
     snapshot,
@@ -750,11 +761,11 @@ export async function prepareProjectCaptureRun({
       {
         id: 'project-create-preview',
         label: 'Project candidate prepared for review',
-        state: reviewable ? 'supported' : 'blocked',
+        state: proposed ? 'supported' : 'blocked',
         basis: ['context.project-capture.policy', 'context.project-capture.profile', 'context.project-capture.schema', 'context.project-capture.organization', 'context.project-capture.duplicates'],
-        limitation: reviewable
-          ? 'One exact private candidate is reviewable, but the connected create remains held because complete mapped-field and body read-back is unavailable; no batch, approval, start, provider-call, write, verification, or proof authority is created.'
-          : 'The private candidate remains held while the surfaced exact profile, naming, type, date, or duplicate contradiction is unresolved; connected create authority also remains unavailable until complete mapped-field and body read-back exists.'
+        limitation: proposed
+          ? 'One exact private candidate may enter a separately reviewed connected batch. Preparation creates no approval, confirmation, one-time start, checkpoint, provider call, write, verification, or proof authority.'
+          : 'The private candidate remains held while the surfaced exact profile, naming, type, date, or duplicate contradiction is unresolved.'
       }
     ],
     preview,

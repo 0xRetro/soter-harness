@@ -8,7 +8,6 @@ import {
   resolveRepoPath
 } from '../../core/lib/canonical-json.mjs';
 import { fingerprintLock } from '../../core/resolve.mjs';
-import { fingerprintLegacySource } from '../../kernel/legacy-inventory.mjs';
 import { buildDefinedFeatureBody, loadFeatureWorkflowPolicy } from '../../contexts/product/feature-workflow.mjs';
 import { prepareFeatureDefinitionRun } from './prepare.mjs';
 
@@ -98,11 +97,6 @@ export async function runContainedFeatureDefinitionScenario({
 }) {
   const resolvedRoot = path.resolve(root);
   const loaded = loadScenario(resolvedRoot, scenarioPath);
-  const sourceCaseArtifacts = loaded.scenario.sourceCases.map((sourcePath) => ({
-    role: 'source-case',
-    path: sourcePath,
-    fingerprint: fingerprintLegacySource(resolvedRoot, sourcePath)
-  }));
   const input = {
     feature: 'https://www.notion.so/44444444444444444444444444444444',
     whatItIs: 'A write-once self-serve guide that takes a new integrator to a first successful integration.',
@@ -191,9 +185,7 @@ export async function runContainedFeatureDefinitionScenario({
       'policy-fingerprint': /^sha256:[a-f0-9]{64}$/.test(policyEntry?.value?.definitionFingerprint || ''),
       'record-fingerprint': /^sha256:[a-f0-9]{64}$/.test(recordEntry?.valueFingerprint || ''),
       'body-fingerprint': /^sha256:[a-f0-9]{64}$/.test(bodyEntry?.value?.document?.bodyFingerprint || ''),
-      'private-values-sanitized': privateValues.every((value) => !serialized.includes(value)),
-      'source-cases-exactly-fingerprinted': sourceCaseArtifacts.length === 3
-        && sourceCaseArtifacts.every((artifact) => /^sha256:[a-f0-9]{64}$/.test(artifact.fingerprint))
+      'private-values-sanitized': privateValues.every((value) => !serialized.includes(value))
     }
   };
   const assessment = assessmentFor({
@@ -211,7 +203,6 @@ export async function runContainedFeatureDefinitionScenario({
     envelope: happy.envelope,
     scenario: loaded.scenario,
     scenarioPath: loaded.path,
-    sourceCaseArtifacts,
     assessment,
     evaluatorId: 'automation.feature-definition.scenario-evaluator',
     id: scenarioEvidenceId,

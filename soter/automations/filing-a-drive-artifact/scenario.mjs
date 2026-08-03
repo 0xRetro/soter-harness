@@ -8,7 +8,6 @@ import {
   resolveRepoPath
 } from '../../core/lib/canonical-json.mjs';
 import { fingerprintLock } from '../../core/resolve.mjs';
-import { fingerprintLegacySource } from '../../kernel/legacy-inventory.mjs';
 import { prepareDriveFilingRun } from './prepare.mjs';
 
 const AUTOMATION_ID = 'automation.filing-a-drive-artifact';
@@ -51,7 +50,7 @@ function noPreparationAuthority(execution) {
     });
 }
 
-function factsFor({ lock, happy, ambiguous, urgent, inputs, sourceCaseArtifacts }) {
+function factsFor({ lock, happy, ambiguous, urgent, inputs }) {
   const happyPlacement = row(happy, 'row.drive-filing.placement');
   const happyIndex = row(happy, 'row.drive-filing.document-index');
   const ambiguousPlacement = row(ambiguous, 'row.drive-filing.placement');
@@ -117,11 +116,6 @@ function factsFor({ lock, happy, ambiguous, urgent, inputs, sourceCaseArtifacts 
         return candidate.actions.every((action) => action.state !== 'proposed');
       });
   });
-  const sourceCasesFingerprinted = sourceCaseArtifacts.length === 3
-    && sourceCaseArtifacts.every((artifact) => {
-      return artifact.role === 'source-case'
-        && /^sha256:[a-f0-9]{64}$/.test(artifact.fingerprint);
-    });
   const noAuthority = [happy, ambiguous, urgent].every(noPreparationAuthority);
 
   return {
@@ -207,8 +201,7 @@ function factsFor({ lock, happy, ambiguous, urgent, inputs, sourceCaseArtifacts 
       'duplicate-query-fingerprint': /^sha256:[a-f0-9]{64}$/.test(
         happyDuplicates.value.providerOutputFingerprint
       ) && happyDuplicates.value.candidateCount === 0,
-      'private-values-sanitized': privateValuesSanitized,
-      'source-cases-exactly-fingerprinted': sourceCasesFingerprinted
+      'private-values-sanitized': privateValuesSanitized
     }
   };
 }
@@ -275,11 +268,6 @@ export async function runContainedDriveFilingScenario({
 }) {
   const resolvedRoot = path.resolve(root);
   const loaded = loadScenario(resolvedRoot, scenarioPath);
-  const sourceCaseArtifacts = loaded.scenario.sourceCases.map((sourcePath) => ({
-    role: 'source-case',
-    path: sourcePath,
-    fingerprint: fingerprintLegacySource(resolvedRoot, sourcePath)
-  }));
   const inputs = {
     happy: {
       artifactUri: 'soter-fixture://storage/artifact/external-research',
@@ -349,8 +337,7 @@ export async function runContainedDriveFilingScenario({
     happy,
     ambiguous,
     urgent,
-    inputs,
-    sourceCaseArtifacts
+    inputs
   });
   const assessment = assessmentFor({
     scenario: loaded.scenario,
@@ -368,7 +355,6 @@ export async function runContainedDriveFilingScenario({
     envelope: happy.envelope,
     scenario: loaded.scenario,
     scenarioPath: loaded.path,
-    sourceCaseArtifacts,
     assessment,
     evaluatorId: 'automation.filing-a-drive-artifact.scenario-evaluator',
     id: scenarioEvidenceId,

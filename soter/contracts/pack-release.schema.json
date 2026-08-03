@@ -352,7 +352,7 @@
       ],
       "properties": {
         "path": { "$ref": "#/$defs/path" },
-        "role": { "enum": ["manifest", "definition", "implementation", "projection", "evaluation", "fixture", "migration"] },
+        "role": { "enum": ["manifest", "definition", "implementation", "projection", "evaluation", "fixture"] },
         "mode": { "enum": ["0644", "0755"] },
         "bytes": { "type": "integer", "minimum": 1 },
         "contentFingerprint": { "$ref": "#/$defs/fingerprint" },

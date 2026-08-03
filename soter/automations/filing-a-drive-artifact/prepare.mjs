@@ -1005,7 +1005,7 @@ export async function prepareDriveFilingRun({
         ],
         limitation: humanMoveRequired
           ? 'The exact move remains a human handoff, and all provider writes remain held until the resulting state is reviewed again.'
-          : 'Fingerprint-only proposals create no approval or execution authority. Connected shortcut and document-index writes are unavailable in this migration slice.'
+          : 'Fingerprint-only proposals create no approval or execution authority. Connected shortcut and document-index writes are unavailable for this workflow.'
       },
       {
         id: 'external-write-boundary',

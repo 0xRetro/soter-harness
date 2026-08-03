@@ -39,7 +39,7 @@
     "id": { "type": "string", "pattern": "^evidence\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
     "createdAt": { "type": "string", "minLength": 20 },
     "claimFamily": {
-      "enum": ["graph", "preparation", "context", "behavior", "transaction", "readiness", "health", "migration"]
+      "enum": ["graph", "preparation", "context", "behavior", "transaction", "readiness", "health"]
     },
     "claim": { "type": "string", "minLength": 12 },
     "subject": {

@@ -10,8 +10,18 @@
     "body": "deterministic-template-spine"
   },
   "expected": {
-    "capabilityOrder": ["product.records.read", "product.schema.read", "product.records.read"],
-    "effectModes": { "read": "allow", "disclosure": "allow", "write": "confirm", "dispatch": "prohibit", "destructive": "prohibit" },
+    "capabilityOrder": [
+      "product.records.read",
+      "product.schema.read",
+      "product.records.read"
+    ],
+    "effectModes": {
+      "read": "allow",
+      "disclosure": "allow",
+      "write": "confirm",
+      "dispatch": "prohibit",
+      "destructive": "prohibit"
+    },
     "outcomes": [
       "feature-policy.grounded",
       "feature-schema.grounded",
@@ -34,14 +44,7 @@
       "policy-fingerprint",
       "schema-fingerprint",
       "duplicate-query-fingerprint",
-      "private-values-sanitized",
-      "source-cases-exactly-fingerprinted"
+      "private-values-sanitized"
     ]
-  },
-  "sourceCases": [
-    ".claude/evals/capturing-a-feature/happy-path.md",
-    ".claude/evals/capturing-a-feature/invariant-why-in-description.md",
-    ".claude/evals/capturing-a-feature/pressure-batch-skip.md",
-    ".claude/evals/capturing-a-feature/type-swap-bug.md"
-  ]
+  }
 }

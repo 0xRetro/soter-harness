@@ -35,7 +35,7 @@
     "read": { "mode": "allow", "reason": "The selected review definition and bounded exact source set may be read for private preparation." },
     "disclosure": { "mode": "allow", "reason": "Selected observations may enter a private run envelope with explicit minimization." },
     "write": { "mode": "confirm", "reason": "The shared selected Notion pack declares write capabilities, but Process Red Team requires none, emits no proposed change, and declares no compiler or execution path." },
-    "dispatch": { "mode": "prohibit", "reason": "Process Red Team does not dispatch agents, messages, or work in this contained migration slice." },
+    "dispatch": { "mode": "prohibit", "reason": "Process Red Team does not dispatch agents, messages, or work in this contained workflow." },
     "destructive": { "mode": "prohibit", "reason": "Process Red Team never deletes or performs destructive changes." }
   },
   "secretRefs": [{ "id": "secret-ref.notion", "provider": "host", "key": "NOTION_OAUTH" }],

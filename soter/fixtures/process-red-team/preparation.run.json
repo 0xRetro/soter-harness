@@ -13,9 +13,9 @@
   },
   "configurationLock": {
     "path": "soter/fixtures/process-red-team/process-red-team.lock.json",
-    "fingerprint": "sha256:5dec7625a2802300e20ecbd1f24c282ae9e1d13a7bdbd00545ee65227b7f4b66"
+    "fingerprint": "sha256:3d353d0300860101c42d3fa6b46fef0083cb6a1e7a93ac5ecf265d016cf3bbf4"
   },
-  "graphFingerprint": "sha256:c6ced7da48f4a6b8252ffa8d771d8c6a3449603dcf6b3a7fe53743c28deeabd5",
+  "graphFingerprint": "sha256:0752b150ee50b05484c5dad7b294bc3c1a9621af92b8e5e2d27442e83de6bf48",
   "context": [
     {
       "subject": "notion.workspace",
@@ -24,7 +24,7 @@
       "uri": "soter-fixture://configuration-template/notion/account/operator",
       "declarationFingerprint": "sha256:cdee230730b0f3c9c6ca06e6578e38324ed0b7f7da89339d7628c70061e960e1",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:5dec7625a2802300e20ecbd1f24c282ae9e1d13a7bdbd00545ee65227b7f4b66",
+      "provenance": "configuration-lock:sha256:3d353d0300860101c42d3fa6b46fef0083cb6a1e7a93ac5ecf265d016cf3bbf4",
       "freshness": "unknown"
     },
     {
@@ -44,7 +44,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/process",
       "declarationFingerprint": "sha256:a8021b2f01883b9864ea4e04b2f4a28ba05f1c09a41e89431061f096377f79e4",
       "status": "loaded",
-      "provenance": "fixture:sha256:ed3cae06e075ef0e886b57bb2bd3b24eb00ef96e8365ce581364bd6d7f337cea",
+      "provenance": "fixture:sha256:67abac957acf4870da3776aad00abcd9b266c78c5f59d3e46254fe9225a9e14a",
       "freshness": "passed"
     },
     {
@@ -54,7 +54,7 @@
       "uri": "soter-state://runs",
       "declarationFingerprint": "sha256:74c8fdd14e981038f959c469d6709fe66186b5f854f5f337f65bc67a6e7926c0",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:5dec7625a2802300e20ecbd1f24c282ae9e1d13a7bdbd00545ee65227b7f4b66",
+      "provenance": "configuration-lock:sha256:3d353d0300860101c42d3fa6b46fef0083cb6a1e7a93ac5ecf265d016cf3bbf4",
       "freshness": "unknown"
     }
   ],
@@ -63,7 +63,7 @@
       "capability": "process.records.read",
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "authorities": [
         "authority.process.definition",
         "authority.process.instance"
@@ -78,7 +78,7 @@
       "capability": "process.schema.read",
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "authorities": [
         "authority.process.instance"
       ],
@@ -93,12 +93,12 @@
     "id": "codex",
     "adapter": "host.codex",
     "version": "0.3.1",
-    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0",
+    "manifestFingerprint": "sha256:845e7cecf13f9865f967d3078176bb0d4f0565b18506484b10499d5f60a26621",
     "projectionDefinition": {
       "id": "host-projection.codex",
       "version": "0.3.0",
       "path": "soter/hosts/codex/projection.json",
-      "fingerprint": "sha256:76cd84436a3b5e7f00edcc8a0be3cdff64f53e488b13107a8bf56603b9600490"
+      "fingerprint": "sha256:09fe78fb567ec40ac12e71e1bd5304f44246669a23fe8ac84c5eef755cb95727"
     },
     "projectionGenerator": {
       "id": "core.host-projection-generator",
@@ -120,7 +120,7 @@
     },
     "dispatch": {
       "mode": "prohibit",
-      "reason": "Process Red Team does not dispatch agents, messages, or work in this contained migration slice."
+      "reason": "Process Red Team does not dispatch agents, messages, or work in this contained workflow."
     },
     "destructive": {
       "mode": "prohibit",
@@ -154,7 +154,7 @@
     {
       "id": "context.process-red-team.preparation-fixture",
       "type": "context-snapshot",
-      "fingerprint": "sha256:4e923fbfc2ee1f94e81aa1317c8d6aac94f808f3eb36013bc949435623009c7a"
+      "fingerprint": "sha256:6359fb8b01a91c0456640491abc530fc7eecf64fa9b51e37ee7507ad9da76ed9"
     }
   ],
   "effects": [
@@ -164,7 +164,7 @@
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "containment": "fixture",
       "authority": "authority.process.definition",
       "startedAt": "2026-07-21T23:00:00.000Z",
@@ -189,7 +189,7 @@
       ],
       "inputFingerprint": "sha256:82deba1d6003a83966428c7d65ff271810dcb0d5a05d3d08498b9133c584d0c4",
       "state": "passed",
-      "outputFingerprint": "sha256:5e10c5e86bc2a9a35cf41e9f29360d71843d458b0b2819e3c4348ee46136b36d",
+      "outputFingerprint": "sha256:0ab6e4e3bdac645b1353698f7854bee039e216ca463540d9f65aea97d5901b3b",
       "error": null
     },
     {
@@ -198,7 +198,7 @@
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "containment": "fixture",
       "authority": "authority.process.instance",
       "startedAt": "2026-07-21T23:00:00.000Z",
@@ -223,7 +223,7 @@
       ],
       "inputFingerprint": "sha256:f4565f5b911e583d150fd73c4670b6e34a24749c0c63030f382ece4c6f83a3bd",
       "state": "passed",
-      "outputFingerprint": "sha256:b93861b0f277fa57b4f7c34aedd33045d953f5d2371d13eb9e389c0aec927ed0",
+      "outputFingerprint": "sha256:121c4a0fd39730e1c52b1b8eb995e642c0df77deb8363f7699a98178e9363a01",
       "error": null
     },
     {
@@ -232,7 +232,7 @@
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "containment": "fixture",
       "authority": "authority.process.instance",
       "startedAt": "2026-07-21T23:00:00.000Z",
@@ -257,7 +257,7 @@
       ],
       "inputFingerprint": "sha256:bd2e061f2cf6e53496916a27c855bcc9c2b71f264757036daed07010ea29e6ba",
       "state": "passed",
-      "outputFingerprint": "sha256:0e7113b7ce0e7478125fb60df6073137d04a6fa586cef1ef9286e28793801d95",
+      "outputFingerprint": "sha256:852d31e692f8db194db44d06fc1c1791db7bb90b74b5d2ba532cab30b132f582",
       "error": null
     },
     {
@@ -266,7 +266,7 @@
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "containment": "fixture",
       "authority": "authority.process.instance",
       "startedAt": "2026-07-21T23:00:00.000Z",
@@ -291,7 +291,7 @@
       ],
       "inputFingerprint": "sha256:e667639e8b36b288b8d4da9941547d8c906928f4c9ccd7230b95a86cb2fb7ad1",
       "state": "passed",
-      "outputFingerprint": "sha256:fae1d658ff3a1dbad431be0e9f6085531bfc91a8a32986b228378dbda467dca3",
+      "outputFingerprint": "sha256:a41dbee01db511c56e359d6435e19c1487fe5d9c7f3d82bf2910edc6429566c9",
       "error": null
     },
     {
@@ -300,7 +300,7 @@
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "containment": "fixture",
       "authority": "authority.process.instance",
       "startedAt": "2026-07-21T23:00:00.000Z",
@@ -325,7 +325,7 @@
       ],
       "inputFingerprint": "sha256:e928b2b767c6497fb89e7644c0fea6d848847e25d72e77b5be7c75711634a2c7",
       "state": "passed",
-      "outputFingerprint": "sha256:98ed051d562d9c07266040291327f0c505a596e17cf96a396ea357135304c5e6",
+      "outputFingerprint": "sha256:0e565a04b49ab3bec2b1060339556e61b7f900bcf612327dfe38d9437869bc08",
       "error": null
     }
   ],
@@ -333,6 +333,6 @@
   "scenario": {
     "id": "process-red-team.preparation",
     "path": "soter/scenarios/process-red-team/preparation.scenario.json",
-    "fingerprint": "sha256:497605d705149b2ae6a74aa1672d9c2196d62d2f8c0d016184dacc30cc72e6fb"
+    "fingerprint": "sha256:7376f811973e684c4c8167b074510c6250bb086b9d247120e91fb0d5d8859a0d"
   }
 }

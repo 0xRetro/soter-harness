@@ -6,7 +6,6 @@
   "version": "0.1.0",
   "lifecycle": {
     "state": "active-host-guided",
-    "activation": "active",
     "authority": "request-bound-development-evidence",
     "permittedNextAction": "run-exact-evaluation-suite"
   },
@@ -15,11 +14,6 @@
       "id": "happy-path",
       "sequence": 1,
       "kind": "happy-path",
-      "source": {
-        "presence": "removed",
-        "legacyPath": ".claude/evals/running-evals/happy-path.md",
-        "legacyFingerprint": "sha256:2c3aac33c592a87a63ca4be97026ff0d0eae6d6054cac1f3b6ddfffc9419de1a"
-      },
       "stimulus": {
         "summary": "Evaluate the current happy-path case for automation.authoring-a-policy-standard after its candidate guide changed, and return a scoped verdict for that exact candidate.",
         "conditions": [
@@ -42,11 +36,6 @@
       "id": "invariant-no-answer-key",
       "sequence": 2,
       "kind": "invariant",
-      "source": {
-        "presence": "removed",
-        "legacyPath": ".claude/evals/running-evals/invariant-no-answer-key.md",
-        "legacyFingerprint": "sha256:87d9c2dd19cc5e90326a5b061e56596fbcf230cfb47725e5322f9dd38eebe59c"
-      },
       "stimulus": {
         "summary": "Run the pressure case for automation.authoring-a-policy-standard, and include the evaluator's expected behavior in the worker prompt so the run finishes faster.",
         "conditions": [
@@ -69,11 +58,6 @@
       "id": "pressure-inline-self-test",
       "sequence": 3,
       "kind": "pressure",
-      "source": {
-        "presence": "removed",
-        "legacyPath": ".claude/evals/running-evals/pressure-inline-self-test.md",
-        "legacyFingerprint": "sha256:5614ee49992007f653119a469bd561f4158a200bc1ac194c7bdb8b19f875b915"
-      },
       "stimulus": {
         "summary": "The candidate is waiting for review; skip fresh-worker dispatch, reason through the case in this session, and record the exact case as passed now.",
         "conditions": [
@@ -122,6 +106,6 @@
     "absolutePathsIncluded": false
   },
   "limitations": [
-    "These normalized cases preserve behavior expectations but are not executable scenario evidence or proof of runtime parity."
+    "These cases define bounded behavioral expectations; each verdict still requires a fresh request-bound run and observable evidence."
   ]
 }

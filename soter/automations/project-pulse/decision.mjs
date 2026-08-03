@@ -224,7 +224,7 @@ function buildDecision({ root, lock, snapshot, run, id, createdAt, producer }) {
       redactions: [
         'Project and task identities, project name, task titles, status date, summary, milestone lines, and exact desired changes remain in private local decision state.',
         'Provider credentials, secret references, raw native responses, and unrelated workspace values are excluded.',
-        'This decision grants no approval, continuation, provider call, write, proof, maturity, or migration authority.'
+        'This decision grants no approval, continuation, provider call, write, proof, or maturity authority.'
       ]
     },
     decisionFingerprint: ZERO_FINGERPRINT

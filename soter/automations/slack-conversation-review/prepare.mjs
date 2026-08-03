@@ -217,7 +217,7 @@ export function assertSlackConversationSelection(output, input, policy) {
     delete unsigned.fingerprint;
     if (['direct-message', 'group-direct-message'].includes(conversation.kind)) {
       throw inputInvalid(
-        'Direct messages are modeled but unavailable in Slack Conversation Review milestone one.'
+        'Direct messages are modeled but unavailable in Slack Conversation Review.'
       );
     }
     if (ids.has(conversation.providerConversationId)

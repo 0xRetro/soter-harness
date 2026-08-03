@@ -1,0 +1,85 @@
+{
+  "$contract": "soter://contracts/automation-input/v1",
+  "contractVersion": "1.0.0",
+  "id": "input.automation.project-page-reconciliation",
+  "automation": "automation.project-page-reconciliation",
+  "version": "1.0.0",
+  "fields": [
+    {
+      "id": "project",
+      "label": "Project reference",
+      "description": "One exact private Project resource identity whose current fields and page body will be revalidated before any change is proposed.",
+      "type": "reference",
+      "required": true,
+      "exposure": "private",
+      "reference": {
+        "subject": "projects.records.project",
+        "authorityRole": "instance"
+      },
+      "constraints": {
+        "minLength": 3,
+        "maxLength": 500
+      },
+      "examples": [
+        "soter-fixture://projects/project/launch"
+      ]
+    },
+    {
+      "id": "projectType",
+      "label": "Desired project type",
+      "description": "Optional portable Project type. It is proposed only when the exact current value differs and the current policy and schema both allow it.",
+      "type": "enum",
+      "required": false,
+      "exposure": "identifier",
+      "options": [
+        "Project",
+        "Operations",
+        "Deal"
+      ]
+    },
+    {
+      "id": "status",
+      "label": "Desired project status",
+      "description": "Optional portable Project status. It is proposed only when the exact current value differs and the current policy and schema both allow it.",
+      "type": "enum",
+      "required": false,
+      "exposure": "identifier",
+      "options": [
+        "Not Started",
+        "Active",
+        "On Hold",
+        "Complete",
+        "Cancelled"
+      ]
+    },
+    {
+      "id": "oldTexts",
+      "label": "Exact current page text",
+      "description": "Optional ordered private text regions. Every value must occur exactly once in the freshly observed page body and align with one replacement value.",
+      "type": "string-list",
+      "required": false,
+      "exposure": "private",
+      "constraints": {
+        "minItems": 1,
+        "maxItems": 20,
+        "itemMinLength": 1,
+        "itemMaxLength": 20000
+      }
+    },
+    {
+      "id": "newTexts",
+      "label": "Exact replacement page text",
+      "description": "Optional ordered private substitutions aligned one-for-one with exact current text. A substitution may lengthen or shorten its selected text; empty deletion, whole-page replacement, old-text-preserving append or prepend, replace-all, and provider-structural operations are unavailable.",
+      "type": "string-list",
+      "required": false,
+      "exposure": "private",
+      "constraints": {
+        "minItems": 1,
+        "maxItems": 20,
+        "itemMinLength": 1,
+        "itemMaxLength": 20000
+      }
+    }
+  ],
+  "additionalInputs": false
+}

@@ -11,7 +11,6 @@ function packDependencies(lock) {
     fingerprint: pack.manifestFingerprint
   }));
 }
-
 function hostSummary(lock) {
   return {
     id: lock.host.id,
@@ -310,7 +309,7 @@ export function createAutomationPreparationEvidence({
     effects: envelope.effects,
     skipped: [
       'No connected provider, credential, approval, write capability, or host execution was attempted.',
-      'The prepared preview was not promoted to automation maturity, verification, readiness, or migration evidence.'
+      'The prepared preview was not promoted to automation maturity, verification, or readiness evidence.'
     ],
     limitations: [
       'This receipt proves only fixture-contained preparation for one exact lock; it does not authorize or execute changes.'
@@ -518,7 +517,7 @@ export function createContainedConnectedWorkflowEvidence({
     failures: completed ? [] : ['The contained connected-route workflow did not complete.'],
     skipped: [
       'No live provider authentication, permission, reachability, write, or health was evaluated.',
-      'No readiness, connected verification, health, proof maturity, or migration state is promoted by this transaction evidence alone.'
+      'No readiness, connected verification, health, or proof maturity is promoted by this transaction evidence alone.'
     ],
     limitations: [
       'Host responses are deterministic contained fixtures passed through the connected provider translators; this proves local transaction behavior only.',
@@ -669,38 +668,12 @@ export function createScenarioExecutionEvidence({
   envelope,
   scenario,
   scenarioPath,
-  sourceCaseArtifacts,
   assessment,
   evaluatorId,
   id,
   createdAt
 }) {
   const scenarioFingerprint = fingerprintJson(scenario);
-  if (!Array.isArray(sourceCaseArtifacts)
-    || sourceCaseArtifacts.length !== scenario.sourceCases.length) {
-    throw new Error('Scenario evidence requires one exact source-case artifact for every declared source case.');
-  }
-  const sourceArtifactsByPath = new Map();
-  for (const artifact of sourceCaseArtifacts) {
-    if (artifact?.role !== 'source-case'
-      || !scenario.sourceCases.includes(artifact.path)
-      || !/^sha256:[a-f0-9]{64}$/.test(artifact.fingerprint || '')
-      || sourceArtifactsByPath.has(artifact.path)) {
-      throw new Error('Scenario evidence source-case artifacts must uniquely fingerprint the exact declared source cases.');
-    }
-    sourceArtifactsByPath.set(artifact.path, artifact);
-  }
-  const exactSourceCaseArtifacts = scenario.sourceCases.map((sourcePath) => {
-    const artifact = sourceArtifactsByPath.get(sourcePath);
-    if (!artifact) {
-      throw new Error('Scenario evidence source-case artifacts omit a declared source case.');
-    }
-    return {
-      role: 'source-case',
-      path: sourcePath,
-      fingerprint: artifact.fingerprint
-    };
-  });
   if (envelope.automation.id !== scenario.automation
     || envelope.scenario?.id !== scenario.id
     || envelope.scenario?.path !== scenarioPath
@@ -778,7 +751,6 @@ export function createScenarioExecutionEvidence({
         path: scenarioPath,
         fingerprint: scenarioFingerprint
       },
-      ...exactSourceCaseArtifacts,
       {
         role: 'scenario-assessment',
         runId: envelope.id,
@@ -794,185 +766,5 @@ export function createScenarioExecutionEvidence({
     limitations: [
       'This is deterministic fixture evidence. It does not establish connected credentials, provider reachability, host conformance, or live behavior.'
     ]
-  });
-}
-
-export function createMigrationBridgeEvidence({
-  lock,
-  id,
-  createdAt,
-  subject,
-  source,
-  target,
-  supportingArtifacts,
-  checks,
-  limitations
-}) {
-  if (!source
-    || source.role !== 'migration-source'
-    || typeof source.path !== 'string'
-    || !/^sha256:[a-f0-9]{64}$/.test(source.fingerprint || '')) {
-    throw new Error('Migration bridge evidence requires one exact migration-source artifact.');
-  }
-  if (!target
-    || target.role !== 'migration-target'
-    || typeof target.path !== 'string'
-    || !/^sha256:[a-f0-9]{64}$/.test(target.fingerprint || '')) {
-    throw new Error('Migration bridge evidence requires one exact migration-target artifact.');
-  }
-  const exactSubject = subject
-    && typeof subject.id === 'string'
-    && (['pack', 'host'].includes(subject.type)
-      ? typeof subject.version === 'string'
-      : subject.type === 'configuration' && subject.version === null);
-  if (!exactSubject) {
-    throw new Error('Migration bridge evidence requires one exact target pack, host, or configuration subject.');
-  }
-  if (!Array.isArray(supportingArtifacts)
-    || supportingArtifacts.length < 1
-    || !supportingArtifacts.some((artifact) => artifact?.role === 'supporting-evidence')
-    || supportingArtifacts.some((artifact) => {
-      return !['supporting-evidence', 'supporting-artifact'].includes(artifact?.role)
-        || typeof artifact.path !== 'string'
-        || !/^sha256:[a-f0-9]{64}$/.test(artifact.fingerprint || '');
-    })) {
-    throw new Error('Migration bridge evidence requires fingerprinted supporting evidence or governed artifacts.');
-  }
-  if (!Array.isArray(checks)
-    || checks.length < 1
-    || checks.some((check) => {
-      return typeof check?.id !== 'string'
-        || typeof check.description !== 'string'
-        || !['passed', 'failed'].includes(check.state);
-    })
-    || new Set(checks.map((check) => check.id)).size !== checks.length) {
-    throw new Error('Migration bridge evidence requires unique passed-or-failed checks.');
-  }
-  if (!Array.isArray(limitations) || limitations.length < 1) {
-    throw new Error('Migration bridge evidence must state its remaining parity limitations.');
-  }
-  const failures = checks.filter((check) => check.state !== 'passed');
-  return baseEvidence({
-    id,
-    createdAt,
-    claimFamily: 'migration',
-    claim: 'The exact legacy source is bound to this exact target artifact, same-lock contained evidence, and any separately fingerprinted supporting artifacts as a partial migration bridge only.',
-    subject,
-    lock,
-    evaluator: {
-      id: 'kernel.legacy-migration-bridge',
-      version: '1.0.0',
-      level: 'fixture'
-    },
-    environment: { containment: 'fixture', runtime: DEFAULT_RUNTIME },
-    acceptanceCriteria: checks.map((check) => check.description),
-    result: failures.length ? 'failed' : 'passed',
-    outcomes: checks.map((check) => ({ id: check.id, state: check.state })),
-    artifacts: [source, target, ...supportingArtifacts],
-    failures: failures.map((check) => check.id),
-    skipped: [
-      'Interactive host delivery and connected provider behavior were not evaluated.',
-      'Workflow parity, fallback removal, readiness, verification, and health were not promoted.'
-    ],
-    limitations
-  });
-}
-
-export function createMigrationCompletionEvidence({
-  lock,
-  id,
-  createdAt,
-  subject,
-  source,
-  target,
-  supportingArtifacts,
-  disposition,
-  parity,
-  checks,
-  limitations
-}) {
-  if (!source
-    || source.role !== 'migration-source'
-    || typeof source.path !== 'string'
-    || !/^sha256:[a-f0-9]{64}$/.test(source.fingerprint || '')) {
-    throw new Error('Migration completion evidence requires one exact migration-source artifact.');
-  }
-  if (!target
-    || target.role !== 'migration-target'
-    || typeof target.path !== 'string'
-    || !/^sha256:[a-f0-9]{64}$/.test(target.fingerprint || '')) {
-    throw new Error('Migration completion evidence requires one exact migration-target artifact.');
-  }
-  const exactSubject = subject
-    && typeof subject.id === 'string'
-    && (['pack', 'host'].includes(subject.type)
-      ? typeof subject.version === 'string'
-      : subject.type === 'configuration' && subject.version === null);
-  if (!exactSubject) {
-    throw new Error('Migration completion evidence requires one exact target pack, host, or configuration subject.');
-  }
-  if (!['migrated', 'retired'].includes(disposition)
-    || !['proven', 'intentional-change'].includes(parity)) {
-    throw new Error('Migration completion evidence requires an exact disposition and parity decision.');
-  }
-  if (!Array.isArray(supportingArtifacts)
-    || supportingArtifacts.length < 1
-    || supportingArtifacts.some((artifact) => {
-      return !['supporting-evidence', 'supporting-artifact'].includes(artifact?.role)
-        || typeof artifact.path !== 'string'
-        || !/^sha256:[a-f0-9]{64}$/.test(artifact.fingerprint || '');
-    })) {
-    throw new Error('Migration completion evidence requires fingerprinted supporting evidence or governed artifacts.');
-  }
-  const requiredChecks = [
-    'target-selected-in-exact-lock',
-    'supporting-evidence-current',
-    'legacy-dependencies-cleared',
-    'authority-transition-explicit'
-  ];
-  if (!Array.isArray(checks)
-    || checks.some((check) => {
-      return typeof check?.id !== 'string'
-        || typeof check.description !== 'string'
-        || !['passed', 'failed'].includes(check.state);
-    })
-    || new Set(checks.map((check) => check.id)).size !== checks.length
-    || requiredChecks.some((idValue) => !checks.some((check) => check.id === idValue))) {
-    throw new Error('Migration completion evidence ' + id
-      + ' requires unique checks for exact target, current support, cleared dependencies, and authority transition.');
-  }
-  if (!Array.isArray(limitations) || limitations.length < 1) {
-    throw new Error('Migration completion evidence must retain its proof limitations.');
-  }
-  const failures = checks.filter((check) => check.state !== 'passed');
-  return baseEvidence({
-    id,
-    createdAt,
-    claimFamily: 'migration',
-    claim: disposition === 'migrated'
-      ? 'The exact target becomes canonical for this legacy responsibility and its fallback may be removed under the recorded parity decision; a mixed source artifact may remain only for separately unfinished responsibilities.'
-      : 'The exact legacy responsibility has no remaining configured authority and its fallback may be removed under the recorded retirement decision; a mixed source artifact may remain only for separately unfinished responsibilities.',
-    subject,
-    lock,
-    evaluator: {
-      id: 'kernel.legacy-migration-completion',
-      version: '1.0.0',
-      level: 'fixture'
-    },
-    environment: { containment: 'fixture', runtime: DEFAULT_RUNTIME },
-    acceptanceCriteria: checks.map((check) => check.description),
-    result: failures.length ? 'failed' : 'passed',
-    outcomes: [
-      { id: 'migration-disposition', state: disposition },
-      { id: 'migration-parity', state: parity },
-      ...checks.map((check) => ({ id: check.id, state: check.state }))
-    ],
-    artifacts: [source, target, ...supportingArtifacts],
-    failures: failures.map((check) => check.id),
-    skipped: [
-      'Connected provider readiness, live behavior verification, and current health were not evaluated.',
-      'Removing a legacy source fallback does not grant provider effect or host execution authority.'
-    ],
-    limitations
   });
 }

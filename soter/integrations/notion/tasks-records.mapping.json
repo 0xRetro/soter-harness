@@ -4,7 +4,7 @@
   "id": "mapping.integration.notion.tasks-records",
   "pack": "integration.notion",
   "provider": "provider.integration.notion.mcp",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "contextModel": "model.context.tasks.records",
   "settingsDefinition": "settings.integration.notion",
   "capabilities": [

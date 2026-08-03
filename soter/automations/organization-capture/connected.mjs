@@ -97,12 +97,12 @@ function organizationFromMaterial(materialAction) {
 export function compileOrganizationCaptureConnectedOperations({ batch, material }) {
   const automationId = batch.work?.automationId || batch.automationId;
   if (automationId !== 'automation.organization-capture'
-    || material.batch.id !== batch.id
-    || material.batch.fingerprint !== batch.fingerprint
+    || material.selection.id !== batch.id
+    || material.selection.fingerprint !== batch.fingerprint
     || batch.actions.length !== 1
     || material.actions.length !== 1) {
     throw new Error(
-      'Organization Capture connected compiler requires one exact selected review batch.'
+      'Organization Capture connected compiler requires one exact review-only candidate selection.'
     );
   }
   const materialAction = material.actions[0];

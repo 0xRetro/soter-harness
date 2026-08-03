@@ -714,8 +714,8 @@ export async function prepareEmailTriageRun({
     }],
     outcomes: [
       { id: 'email-window-covered', label: 'Exact mailbox window coverage prepared', state: 'supported', basis: ['context.email-triage.window'], limitation: 'Coverage applies only to the exact contained query and synthetic fixture.' },
-      { id: 'email-review-private', label: 'Private thread, draft, handoff, and digest review prepared', state: 'supported', basis: ['context.email-triage.window'], limitation: 'Private review material grants no approval, continuation, execution, write, send, proof, maturity, or migration authority.' },
-      { id: 'email-approval-not-requested', label: 'Email approval has not been requested', state: 'blocked', basis: ['context.email-triage.window'], limitation: 'Preparation creates no approval. A committed grounded decision, private proposal, exact selected review batch, compiled connected plan, private selected-activity review, and separate exact request and confirmation are required.' }
+      { id: 'email-review-private', label: 'Private thread, draft, handoff, and digest review prepared', state: 'supported', basis: ['context.email-triage.window'], limitation: 'Private review material grants no approval, continuation, execution, write, send, proof, or maturity authority.' },
+      { id: 'email-approval-not-requested', label: 'Email approval has not been requested', state: 'blocked', basis: ['context.email-triage.window'], limitation: 'Preparation creates no approval. A committed grounded decision, private proposal, exact review-only candidate selection, compiled review-only candidate preview, private selected-activity review, and separate exact request and confirmation are required.' }
     ],
     preview,
     derivedReview

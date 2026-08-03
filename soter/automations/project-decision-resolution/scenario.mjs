@@ -8,7 +8,6 @@ import {
   resolveRepoPath
 } from '../../core/lib/canonical-json.mjs';
 import { fingerprintLock } from '../../core/resolve.mjs';
-import { fingerprintLegacySource } from '../../kernel/legacy-inventory.mjs';
 import { prepareProjectDecisionResolutionRun } from './prepare.mjs';
 
 const AUTOMATION_ID = 'automation.project-decision-resolution';
@@ -89,11 +88,6 @@ export async function runContainedProjectDecisionResolutionScenario({
 }) {
   const resolvedRoot = path.resolve(root);
   const loaded = loadScenario(resolvedRoot, scenarioPath);
-  const sourceCaseArtifacts = loaded.scenario.sourceCases.map((sourcePath) => ({
-    role: 'source-case',
-    path: sourcePath,
-    fingerprint: fingerprintLegacySource(resolvedRoot, sourcePath)
-  }));
   const input = {
     project: 'https://www.notion.so/33333333333333333333333333333331',
     question: 'soter-fixture://projects/project-feed/question-confirm-scope',
@@ -201,11 +195,7 @@ export async function runContainedProjectDecisionResolutionScenario({
           row.actions[0].changeFingerprint || ''
         )),
       'write-boundary-state': boundaryHeld
-        && execution.envelope.effectPolicies.write.mode === 'confirm',
-      'source-cases-exactly-fingerprinted': sourceCaseArtifacts.length > 0
-        && sourceCaseArtifacts.every((artifact) => /^sha256:[a-f0-9]{64}$/.test(
-          artifact.fingerprint
-        ))
+        && execution.envelope.effectPolicies.write.mode === 'confirm'
     }
   };
   const assessment = assessmentFor({
@@ -222,7 +212,6 @@ export async function runContainedProjectDecisionResolutionScenario({
     envelope: execution.envelope,
     scenario: loaded.scenario,
     scenarioPath: loaded.path,
-    sourceCaseArtifacts,
     assessment,
     evaluatorId: 'automation.project-decision-resolution.scenario-evaluator',
     id: scenarioEvidenceId,

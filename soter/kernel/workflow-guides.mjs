@@ -1,51 +1,5 @@
 import { fingerprintJson } from '../core/lib/canonical-json.mjs';
 
-function compareText(left, right) {
-  return left < right ? -1 : left > right ? 1 : 0;
-}
-
-/**
- * Return the complete legacy source set whose behavior is represented by one
- * host-guided workflow. The skill source and every evaluation source are one
- * atomic migration basis: candidate documents must all be present and final
- * documents must all be removed. A partial tombstone is never a valid basis.
- */
-export function workflowLegacySourceProjection({ definition, guide, evaluations }) {
-  const definitionSource = definition?.source;
-  const guideSource = guide?.source;
-  const cases = evaluations?.cases;
-  if (!definitionSource || !guideSource || !Array.isArray(cases)
-    || definitionSource.legacyPath !== guideSource.legacyPath
-    || definitionSource.legacyFingerprint !== guideSource.legacyFingerprint
-    || definitionSource.presence !== guideSource.presence) {
-    throw new Error('Workflow definition and guide must bind one exact legacy procedural source.');
-  }
-  const sources = [{
-    kind: 'workflow-guide',
-    id: guide.id,
-    path: definitionSource.legacyPath,
-    fingerprint: definitionSource.legacyFingerprint,
-    presence: definitionSource.presence
-  }, ...cases.map((testCase) => ({
-    kind: 'evaluation-case',
-    id: testCase.id,
-    path: testCase.source?.legacyPath,
-    fingerprint: testCase.source?.legacyFingerprint,
-    presence: testCase.source?.presence
-  }))].sort((left, right) => compareText(left.path, right.path));
-  if (sources.some((source) => {
-    return typeof source.path !== 'string'
-      || typeof source.fingerprint !== 'string'
-      || !['present', 'removed'].includes(source.presence);
-  })
-    || new Set(sources.map((source) => source.path)).size !== sources.length
-    || new Set(sources.map((source) => source.kind + ':' + source.id)).size !== sources.length
-    || new Set(sources.map((source) => source.presence)).size !== 1) {
-    throw new Error('Workflow legacy source tombstones must be complete, unique, and in one lifecycle state.');
-  }
-  return sources;
-}
-
 export function workflowGuideContentProjection(guide) {
   if (!guide || typeof guide !== 'object' || Array.isArray(guide)) {
     throw new Error('Workflow guide content fingerprint requires one guide object.');
@@ -234,10 +188,9 @@ export function inspectWorkflowEvaluationRunSet({ definition, evaluations, runs 
 }
 
 // This is the behavior subject evaluated by host workers. It intentionally omits
-// lifecycle state, activation evidence, legacy-source presence, and relational
-// document fingerprints so the subject survives candidate -> active promotion
-// and source tombstoning. Every field that can change the worker instructions,
-// intended behavior, safeguards, stimulus, or judge criteria remains sealed.
+// lifecycle delivery state and relational document fingerprints. Every field
+// that can change worker instructions, intended behavior, safeguards, stimulus,
+// or judge criteria remains sealed.
 export function workflowEvaluatedSubjectProjection({ definition, guide, evaluations }) {
   if (!definition || typeof definition !== 'object' || Array.isArray(definition)
     || !guide || typeof guide !== 'object' || Array.isArray(guide)

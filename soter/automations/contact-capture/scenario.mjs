@@ -8,7 +8,6 @@ import {
   resolveRepoPath
 } from '../../core/lib/canonical-json.mjs';
 import { fingerprintLock } from '../../core/resolve.mjs';
-import { fingerprintLegacySource } from '../../kernel/legacy-inventory.mjs';
 import { prepareContactCaptureRun } from './prepare.mjs';
 
 const AUTOMATION_ID = 'automation.contact-capture';
@@ -42,7 +41,7 @@ function privateFields(derivedReview) {
   return new Map(derivedReview.items[0].fields.map((field) => [field.id, field.reviewValue]));
 }
 
-function factsFor({ lock, input, envelope, snapshot, preview, derivedReview, sourceCaseArtifacts }) {
+function factsFor({ lock, input, envelope, snapshot, preview, derivedReview }) {
   const policyEntry = snapshot.entries.find((entry) => {
     return entry.id === 'context.contact-capture.policy';
   });
@@ -88,11 +87,6 @@ function factsFor({ lock, input, envelope, snapshot, preview, derivedReview, sou
     && envelope.approvals.length === 0
     && envelope.effects.every((effect) => !effect.declaredEffects.includes('write'))
     && preview.proposedChanges.length === 1;
-  const sourceCasesFingerprinted = sourceCaseArtifacts.length === 3
-    && sourceCaseArtifacts.every((artifact) => {
-      return artifact.role === 'source-case'
-        && /^sha256:[a-f0-9]{64}$/.test(artifact.fingerprint);
-    });
   const flags = row?.flags || [];
   const noDuplicates = duplicateEntry.value.candidateCount === 0
     && duplicateEntry.value.candidateIds.length === 0;
@@ -166,8 +160,7 @@ function factsFor({ lock, input, envelope, snapshot, preview, derivedReview, sou
       'private-values-sanitized': privateValuesSanitized,
       'write-boundary-state': boundaryHeld
         && envelope.effectPolicies.write.mode === 'confirm'
-        && envelope.effectPolicies.dispatch.mode === 'prohibit',
-      'source-cases-exactly-fingerprinted': sourceCasesFingerprinted
+        && envelope.effectPolicies.dispatch.mode === 'prohibit'
     }
   };
 }
@@ -232,11 +225,6 @@ export async function runContainedContactCaptureScenario({
 }) {
   const resolvedRoot = path.resolve(root);
   const loaded = loadScenario(resolvedRoot, scenarioPath);
-  const sourceCaseArtifacts = loaded.scenario.sourceCases.map((sourcePath) => ({
-    role: 'source-case',
-    path: sourcePath,
-    fingerprint: fingerprintLegacySource(resolvedRoot, sourcePath)
-  }));
   const input = {
     name: 'Jane Rivera',
     email: 'jane@acmedesign.example',
@@ -263,8 +251,7 @@ export async function runContainedContactCaptureScenario({
     envelope: execution.envelope,
     snapshot: execution.snapshot,
     preview: execution.preview,
-    derivedReview: execution.derivedReview,
-    sourceCaseArtifacts
+    derivedReview: execution.derivedReview
   });
   const assessment = assessmentFor({
     scenario: loaded.scenario,
@@ -280,7 +267,6 @@ export async function runContainedContactCaptureScenario({
     envelope: execution.envelope,
     scenario: loaded.scenario,
     scenarioPath: loaded.path,
-    sourceCaseArtifacts,
     assessment,
     evaluatorId: 'automation.contact-capture.scenario-evaluator',
     id: scenarioEvidenceId,

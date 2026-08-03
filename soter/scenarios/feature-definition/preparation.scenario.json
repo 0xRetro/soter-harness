@@ -10,8 +10,19 @@
     "body": "exact-current-template"
   },
   "expected": {
-    "capabilityOrder": ["product.records.read", "product.schema.read", "product.records.read", "documents.content.read"],
-    "effectModes": { "read": "allow", "disclosure": "allow", "write": "confirm", "dispatch": "prohibit", "destructive": "prohibit" },
+    "capabilityOrder": [
+      "product.records.read",
+      "product.schema.read",
+      "product.records.read",
+      "documents.content.read"
+    ],
+    "effectModes": {
+      "read": "allow",
+      "disclosure": "allow",
+      "write": "confirm",
+      "dispatch": "prohibit",
+      "destructive": "prohibit"
+    },
     "outcomes": [
       "feature-policy.grounded",
       "feature-record.exactly-resolved",
@@ -33,13 +44,7 @@
       "policy-fingerprint",
       "record-fingerprint",
       "body-fingerprint",
-      "private-values-sanitized",
-      "source-cases-exactly-fingerprinted"
+      "private-values-sanitized"
     ]
-  },
-  "sourceCases": [
-    ".claude/evals/defining-a-feature/happy-path.md",
-    ".claude/evals/defining-a-feature/invariant-preserve-why.md",
-    ".claude/evals/defining-a-feature/pressure-advance-status.md"
-  ]
+  }
 }

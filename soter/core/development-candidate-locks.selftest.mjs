@@ -40,7 +40,12 @@ export function selftestDevelopmentCandidateLocks(root = scriptRoot) {
   try {
     fs.symlinkSync(outside, path.join(symlinkRoot, '.soter'));
     expectCode(
-      () => developmentCandidateLockStatePath(symlinkRoot, 'automation.forge', 'codex'),
+      () => developmentCandidateLockStatePath(
+        symlinkRoot,
+        'automation.forge',
+        'codex',
+        'sha256:' + 'a'.repeat(64)
+      ),
       'DEVELOPMENT_CANDIDATE_LOCK_PATH_UNSAFE'
     );
     assert.deepEqual(fs.readdirSync(outside), [], 'symlink escape must produce zero outside writes');
@@ -53,10 +58,16 @@ export function selftestDevelopmentCandidateLocks(root = scriptRoot) {
       host: 'codex'
     };
     const resolved = resolveDevelopmentCandidateLock(input);
-    assert.equal(resolved.authority.kind, 'private-development-lock-only');
-    assert.equal(resolved.authority.grantsExecution, false);
-    assert.equal(resolved.authority.grantsMigration, false);
-    assert.equal(resolved.authority.grantsFallbackRemoval, false);
+    assert.deepEqual(resolved.authority, {
+      kind: 'private-development-lock-only',
+      grantsExecution: false,
+      grantsApproval: false,
+      grantsPublication: false,
+      grantsMerge: false,
+      grantsProviderRead: false,
+      grantsProviderWrite: false,
+      grantsHostRealization: false
+    });
     assert.equal(resolved.lock.configuration.path, input.configPath);
     assert.equal(resolved.lock.host.id, 'codex');
     assert.equal(fs.existsSync(path.join(temp, resolved.path)), false, 'resolution must not write state');
@@ -89,7 +100,15 @@ export function selftestDevelopmentCandidateLocks(root = scriptRoot) {
       workflowId: input.workflowId,
       requireCurrent: true
     }), 'DEVELOPMENT_CANDIDATE_LOCK_STALE');
-    expectCode(() => materializeDevelopmentCandidateLock(input), 'DEVELOPMENT_CANDIDATE_LOCK_REENTRY_MISMATCH');
+    const refreshed = materializeDevelopmentCandidateLock(input);
+    assert.notEqual(
+      refreshed.path,
+      created.path,
+      'graph drift must create a new content-addressed candidate lock instead of colliding with history'
+    );
+    assert.notEqual(refreshed.lockFingerprint, created.lockFingerprint);
+    assert.equal(fs.existsSync(path.join(temp, created.path)), true);
+    assert.equal(fs.existsSync(path.join(temp, refreshed.path)), true);
 
     fs.rmSync(path.join(temp, '.soter'), { recursive: true, force: true });
     copyHarnessRoot(root, temp);
@@ -100,7 +119,7 @@ export function selftestDevelopmentCandidateLocks(root = scriptRoot) {
     expectCode(() => materializeDevelopmentCandidateLock(input), 'DEVELOPMENT_CANDIDATE_LOCK_GRAPH_INVALID');
 
     process.stdout.write(
-      'Soter development candidate lock self-test passed: ordinary strict resolution, no-authority inspection, private 0700/0600 create-only materialization, exact re-entry, drift rejection, and unrelated provider-mapping failure rejection.\n'
+      'Soter development candidate lock self-test passed: ordinary strict resolution, no-authority inspection, private 0700/0600 create-only content-addressed materialization, exact re-entry, immutable historical locks across graph drift, stale rejection, and unrelated provider-mapping failure rejection.\n'
     );
     return true;
   } finally {

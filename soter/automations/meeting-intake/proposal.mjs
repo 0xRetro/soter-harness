@@ -30,9 +30,9 @@ const COMPLETE_READBACK_UNAVAILABLE = 'COMPLETE_MEETING_READBACK_UNAVAILABLE';
 const ZERO_FINGERPRINT = 'sha256:' + '0'.repeat(64);
 const REQUIRED_ACTIONS = [SUMMARY_ACTION, TASK_ACTION];
 const LIMITATIONS = [
-  'This private review proposal creates no approval, confirmation, continuation, provider call, write, proof, maturity, or migration authority.',
+  'This private review proposal creates no approval, confirmation, continuation, provider call, write, proof, or maturity authority.',
   'Only exact normalized transcript segments ground this review. Provider action-item interpretations and calendar-participant pairings are excluded and cannot create commitments, tasks, or identity links.',
-  'The current v2 scope prepares one grounded summary and one exact existing-task fold for private review. Meeting-row updates, new tasks, project-body updates, provider-created summary back-links, and AI Inbox digest writes are deliberately unavailable.',
+  'The current proposal prepares one grounded summary and one exact existing-task fold for private review. Meeting-row updates, new tasks, project-body updates, provider-created summary back-links, and AI Inbox digest writes are deliberately unavailable.',
   'The complete summary-and-task group remains held because Core cannot yet verify every mapped summary field and the complete summary body in one exact read-back criterion. No proposed change can be selected into a connected batch.'
 ];
 
@@ -211,7 +211,7 @@ export function buildMeetingIntakeReview({ decision, snapshot, derivedReviewDefi
   const folded = foldedTaskValue(decision, snapshot, summary);
   const notCreated = [
     'External-participant commitments remain in the summary and never become internally assigned tasks.',
-    'New task creation is unavailable in this v2 slice; only one exact existing overlap is folded.',
+    'New task creation is unavailable in this proposal; only one exact existing overlap is folded.',
     'Meeting-row links, project-body updates, provider-created summary back-links, and AI Inbox digest writes are unavailable.',
     'The task fold binds the source meeting and summary content fingerprint rather than guessing a provider-created summary identity.',
     'The complete summary-and-task group is reviewable but cannot enter approval or execution until one exact verification criterion can prove every mapped summary field and the complete summary body.'
@@ -230,7 +230,7 @@ export function buildMeetingIntakeReview({ decision, snapshot, derivedReviewDefi
     capability: null,
     effect: null,
     state: 'held',
-    reasonCode: 'MEETING_LEGACY_EFFECTS_UNAVAILABLE'
+    reasonCode: 'MEETING_UNSUPPORTED_EFFECTS_UNAVAILABLE'
   };
   const rows = [
     {
@@ -253,7 +253,7 @@ export function buildMeetingIntakeReview({ decision, snapshot, derivedReviewDefi
       id: 'row.meeting-intake.boundary', sequence: 3, representedCount: 1,
       subject: { kind: 'meeting-intake-boundary', fingerprint: fingerprintJson(notCreated) },
       group: 'meeting-intake', attention: 'operator', disposition: 'itemized',
-      reasonCode: boundaryAction.reasonCode, flags: ['MEETING_LEGACY_EFFECTS_UNAVAILABLE'],
+      reasonCode: boundaryAction.reasonCode, flags: ['MEETING_UNSUPPORTED_EFFECTS_UNAVAILABLE'],
       actions: [boundaryAction], privateDetailFingerprint: null, fingerprint: ZERO_FINGERPRINT
     }
   ];

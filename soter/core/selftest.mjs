@@ -18,8 +18,6 @@ import {
 import { runConnectedDoctor, runOfflineDoctor } from './doctor.mjs';
 import { inspectWorkspace } from './inspection.mjs';
 import {
-  createMigrationBridgeEvidence,
-  createMigrationCompletionEvidence,
   createResolutionEvidence,
   createRunPreparationEvidence
 } from './evidence.mjs';
@@ -66,12 +64,6 @@ import {
   writeRunState
 } from './runtime-state.mjs';
 import { selftestFixtureMaterialization } from './fixtures-materialization.selftest.mjs';
-import {
-  selftestDevelopmentHostEvidenceFinalizationPublication
-} from './development-host-evidence-finalization.mjs';
-import {
-  selftestDevelopmentHistoricalEvidenceBatchPublication
-} from './development-historical-evidence-batch.mjs';
 
 const FIXTURE_TIME = '2026-07-15T12:00:00.000Z';
 
@@ -512,16 +504,6 @@ function selftestProviderProbes(lock, providers) {
 export async function selftest(root) {
   const failures = [];
   try {
-    selftestDevelopmentHostEvidenceFinalizationPublication();
-  } catch (error) {
-    failures.push('development host evidence finalization publication failed: ' + error.message);
-  }
-  try {
-    selftestDevelopmentHistoricalEvidenceBatchPublication();
-  } catch (error) {
-    failures.push('development historical evidence batch publication failed: ' + error.message);
-  }
-  try {
     await selftestFixtureMaterialization();
   } catch (error) {
     failures.push('generated fixture exact-set materialization failed: ' + error.message);
@@ -549,13 +531,13 @@ export async function selftest(root) {
     root,
     'soter/providers/provider.integration.otter.mcp.json'
   ));
-  const legacyProbeProvider = structuredClone(planProvider);
-  legacyProbeProvider.runtime.probePrepareExport = 'prepareProbeMcp';
+  const incompleteProbeProvider = structuredClone(planProvider);
+  incompleteProbeProvider.runtime.probePrepareExport = 'prepareProbeMcp';
   const incompletePlanProvider = structuredClone(planProvider);
   delete incompletePlanProvider.runtime.probeFinalizeExport;
-  if (!validateJsonSchema(legacyProbeProvider, providerSchema).length
+  if (!validateJsonSchema(incompleteProbeProvider, providerSchema).length
     || !validateJsonSchema(incompletePlanProvider, providerSchema).length) {
-    failures.push('MCP provider contract accepted legacy or incomplete provider probe runtime fields');
+    failures.push('MCP provider contract accepted incomplete provider probe runtime fields');
   }
   let ambiguousDefaultRejected = false;
   try {
@@ -579,114 +561,6 @@ export async function selftest(root) {
   const claudeView = buildConfigurationView({ root, lock: claude });
   const lockedView = buildConfigurationView({ root, lock: first, basis: 'lock' });
   const formattedView = formatConfigurationView(defaultView);
-  const migrationEvidenceInput = {
-    lock: first,
-    createdAt: FIXTURE_TIME,
-    subject: { type: 'configuration', id: 'configuration.meeting-intake', version: null },
-    source: {
-      role: 'migration-source',
-      path: '.claude/skills/example.md',
-      fingerprint: fingerprintJson({ source: 'configuration-migration-selftest' })
-    },
-    target: {
-      role: 'migration-target',
-      path: meetingIntakeConfigPath,
-      fingerprint: first.configuration.fingerprint
-    },
-    supportingArtifacts: [{
-      role: 'supporting-evidence',
-      path: 'soter/fixtures/example.evidence.json',
-      fingerprint: fingerprintJson({ support: 'configuration-migration-selftest' })
-    }, {
-      role: 'supporting-artifact',
-      path: 'soter/fixtures/example.connected.evidence.json',
-      fingerprint: fingerprintJson({ support: 'separate-private-configuration-selftest' })
-    }],
-    limitations: ['This synthetic record proves only configuration-subject validation.']
-  };
-  const configurationBridgeEvidence = createMigrationBridgeEvidence({
-    ...migrationEvidenceInput,
-    id: 'evidence.configuration-migration-bridge.selftest',
-    checks: [{
-      id: 'configuration-subject-supported',
-      description: 'The exact configuration subject is accepted without pretending it is a versioned pack.',
-      state: 'passed'
-    }]
-  });
-  const configurationCompletionEvidence = createMigrationCompletionEvidence({
-    ...migrationEvidenceInput,
-    id: 'evidence.configuration-migration-completion.selftest',
-    disposition: 'migrated',
-    parity: 'intentional-change',
-    checks: [
-      {
-        id: 'target-selected-in-exact-lock',
-        description: 'The exact configuration target is selected by the lock.',
-        state: 'passed'
-      },
-      {
-        id: 'supporting-evidence-current',
-        description: 'The supporting fixture evidence is current.',
-        state: 'passed'
-      },
-      {
-        id: 'legacy-dependencies-cleared',
-        description: 'The legacy dependency is cleared for this synthetic responsibility.',
-        state: 'passed'
-      },
-      {
-        id: 'authority-transition-explicit',
-        description: 'The configuration authority transition is explicit.',
-        state: 'passed'
-      }
-    ]
-  });
-  const evidenceSchema = readJson(path.join(root, 'soter/contracts/evidence-v2.schema.json'));
-  if (validateJsonSchema(configurationBridgeEvidence, evidenceSchema).length
-    || validateJsonSchema(configurationCompletionEvidence, evidenceSchema).length
-    || configurationCompletionEvidence.subject.version !== null) {
-    failures.push('migration evidence could not represent an exact configuration subject');
-  }
-  let versionedConfigurationSubjectRejected = false;
-  try {
-    createMigrationBridgeEvidence({
-      ...migrationEvidenceInput,
-      id: 'evidence.configuration-migration-invalid.selftest',
-      subject: { type: 'configuration', id: 'configuration.meeting-intake', version: '1.0.0' },
-      checks: [{
-        id: 'configuration-subject-invalid',
-        description: 'A configuration subject cannot invent a package version.',
-        state: 'passed'
-      }]
-    });
-  } catch (error) {
-    versionedConfigurationSubjectRejected = error.message.includes('configuration subject');
-  }
-  if (!versionedConfigurationSubjectRejected) {
-    failures.push('migration evidence accepted a versioned configuration subject');
-  }
-  let invalidBridgeSupportingRoleRejected = false;
-  try {
-    createMigrationBridgeEvidence({
-      ...migrationEvidenceInput,
-      id: 'evidence.configuration-migration-invalid-support.selftest',
-      supportingArtifacts: [{
-        role: 'connected-evidence',
-        path: 'soter/fixtures/example.connected.evidence.json',
-        fingerprint: fingerprintJson({ support: 'invalid-role-selftest' })
-      }],
-      checks: [{
-        id: 'configuration-support-invalid',
-        description: 'A migration bridge accepts only closed supporting record roles.',
-        state: 'passed'
-      }]
-    });
-  } catch (error) {
-    invalidBridgeSupportingRoleRejected = error.message.includes('supporting evidence or governed artifacts');
-  }
-  if (!invalidBridgeSupportingRoleRejected) {
-    failures.push('migration bridge evidence accepted an undeclared supporting artifact role');
-  }
   if (fingerprintLock(first) !== fingerprintLock(second)) {
     failures.push('unchanged inputs did not produce a deterministic lock');
   }

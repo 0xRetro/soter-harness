@@ -310,8 +310,9 @@ function buildDecision({ root, lock, snapshot, run, id, createdAt, producer }) {
       },
       project,
       limitations: [
-        'This private decision binds exact prepared input and connected read observations but grants no approval, continuation, provider call, write, proof, or migration authority.',
-        'Provider-native templates, linked views, manager and client-contact relations, existing Task/Document/channel links, multiple-owner milestone work items, and connected body read-back are intentionally unavailable in this narrow portable profile.'
+        'This private decision binds exact prepared input and connected read observations but grants no approval, continuation, provider call, write, or proof authority.',
+        'Provider-native templates, linked views, manager and client-contact relations, existing Task/Document/channel links, and multiple-owner milestone work items are intentionally unavailable in this narrow portable profile.',
+        'A separately approved connected create must read back the exact mapped Project fields and markdown body before the transaction can complete.'
       ]
     },
     issues,

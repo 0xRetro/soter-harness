@@ -8,31 +8,12 @@
   "ownership": {
     "layer": "automation",
     "domain": "harness-development",
-    "legacyLayer": "skill",
     "responsibility": "outcome-definition"
   },
   "lifecycle": {
     "state": "active-host-guided",
-    "activation": {
-      "state": "active",
-      "reasonCode": "WORKFLOW_HOST_GUIDANCE_ACTIVE",
-      "proceduralAuthority": "target",
-      "delivery": "host-skill",
-      "behaviorParity": "passed",
-      "evidence": [
-        {
-          "path": "soter/evidence/development/development-agent-migration-evidence.claude.forge.json",
-          "fingerprint": "sha256:2b28dd9ff0d0b87e14e25bac1e9a7ce535d0982871e3fffa36aec106060f33c1",
-          "host": "claude"
-        },
-        {
-          "path": "soter/evidence/development/development-agent-migration-evidence.codex.forge.json",
-          "fingerprint": "sha256:6b1ca49b3e1ed60cc54f6d974e89e43461f34bf042f93886e96979f9fe6826a9",
-          "host": "codex"
-        }
-      ],
-      "permittedNextAction": "invoke-through-selected-host"
-    },
+    "reasonCode": "WORKFLOW_HOST_GUIDANCE_ACTIVE",
+    "delivery": "host-skill",
     "development": {
       "requestContract": {
         "id": "soter://contracts/development-request/v1",
@@ -113,7 +94,7 @@
     {
       "id": "draft-governed-artifacts",
       "sequence": 4,
-      "outcome": "Prepare the exact definition, ownership, contracts, evaluations, limitations, and migration impact.",
+      "outcome": "Prepare the exact definition, ownership, contracts, evaluations, limitations, and compatibility and upgrade impact.",
       "requirements": [
         "Bind every input and observation to one exact governed source or explicit operator decision."
       ],
@@ -162,19 +143,13 @@
     "disclosure",
     "write"
   ],
-  "source": {
-    "presence": "removed",
-    "legacyPath": ".claude/skills/forge/SKILL.md",
-    "legacyFingerprint": "sha256:f5708137623689d2a44f0864a379c389ec805a845795b05cf94d6c4ea3d22c69"
-  },
   "privacy": {
-    "rawSourceIncluded": false,
     "workspaceSpecificValuesIncluded": false,
     "credentialsIncluded": false,
     "privateInputsIncluded": false
   },
   "limitations": [
-    "This normalized definition preserves inspectable intent only; it has no operator runtime, provider binding, effect authority, or behavior parity.",
-    "The fingerprinted legacy source remains canonical until a separate implemented and evidenced runtime migration removes that fallback."
+    "This definition declares workflow outcomes and boundaries; it does not itself grant execution, provider, publication, merge, or host-realization authority.",
+    "Behavior evidence and effects remain scoped to exact governed development requests and current workflow fingerprints."
   ]
 }

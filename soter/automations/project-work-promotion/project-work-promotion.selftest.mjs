@@ -16,7 +16,7 @@ import {
   inspectPreparedAutomationReviewMaterial,
   prepareAutomationRun
 } from '../../core/prepared-work.mjs';
-import { createPreparedReviewBatch } from '../../core/prepared-review-batches.mjs';
+import { createReviewOnlyCandidateSelection } from '../../core/review-only-candidate-selections.mjs';
 import { resolveConfiguration } from '../../core/resolve.mjs';
 import {
   loadProjectWorkPolicyDefinition,
@@ -300,16 +300,16 @@ async function coreBoundarySelftest(sourceRoot) {
     assert.deepEqual(trackedFields.get('assigneeIds'), ['provider-person.maya']);
     assert.deepEqual(trackedFields.get('nextActionOn'), ['2026-07-24']);
     const trackedAction = trackedWork.preview.collections[0].rows[0].actions[0];
-    const batch = createPreparedReviewBatch({
+    const selection = createReviewOnlyCandidateSelection({
       root: temporaryRoot,
       workId: trackedWork.id,
       actionIds: [trackedAction.id],
       createdAt: '2026-07-22T12:21:00.000Z'
     });
-    assert.equal(batch.scope.partial, false);
-    assert.equal(batch.state, 'review-only');
-    assert.equal(batch.privacy.authority, 'none');
-    assert.equal(batch.privacy.executionAuthorityIncluded, false);
+    assert.equal(selection.scope.partial, false);
+    assert.equal(selection.state, 'review-only');
+    assert.equal(selection.privacy.authority, 'none');
+    assert.equal(selection.privacy.executionAuthorityIncluded, false);
 
     const coordinationWork = await prepareAutomationRun({
       root: temporaryRoot,
@@ -361,7 +361,7 @@ async function coreBoundarySelftest(sourceRoot) {
       coordinationWork,
       duplicateWork,
       inspection,
-      batch
+      selection
     });
     assert.equal(sanitized.includes(privateAction), false);
     assert.equal(fingerprintPath(path.join(temporaryRoot, 'soter')), canonicalBefore);

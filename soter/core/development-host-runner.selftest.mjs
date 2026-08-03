@@ -17,7 +17,9 @@ import {
   runDevelopmentHostJudgment
 } from './development-host-runner.mjs';
 import { prepareDevelopmentRequest } from './development-runs.mjs';
+import { materializeExactDevelopmentHost } from './development-runs.selftest.mjs';
 import { fingerprintJson, readJson } from './lib/canonical-json.mjs';
+import { privateConfigurationStatePath } from './private-configurations.mjs';
 
 const scriptRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const CREDENTIAL_SENTINEL = 'sk-' + 'test-credential-value';
@@ -106,6 +108,9 @@ if (argv.length === 1 && argv[0] === '--version') {
   if (VARIANT === 'retarget-on-version') {
     fs.unlinkSync(ALIAS_PATH);
     fs.symlinkSync(path.basename(REPLACEMENT_PATH), ALIAS_PATH);
+  }
+  if (VARIANT === 'unlink-hardlink-on-version') {
+    fs.unlinkSync(REPLACEMENT_PATH);
   }
   const version = VARIANT === 'wrong-version'
     ? 'forged-host 1.2.3'
@@ -198,9 +203,10 @@ function executableCalls(executableState) {
 
 function prepareRequest({ temp, host, suffix }) {
   const workflowId = 'automation.running-evals';
-  const configPath = host === 'codex'
-    ? 'soter/configurations/harness-development-catalog.config.json'
-    : 'soter/configurations/harness-development-catalog-claude.config.json';
+  const configurationName = host === 'codex'
+    ? 'harness-development-catalog'
+    : 'harness-development-catalog-claude';
+  const configPath = privateConfigurationStatePath(temp, configurationName);
   const lock = materializeDevelopmentCandidateLock({
     root: temp,
     configPath,
@@ -219,6 +225,12 @@ function prepareRequest({ temp, host, suffix }) {
       profile: 'exact',
       freshWorkerPerRun: true,
       expectationsWithheld: true,
+      requestedLocalEffects: [
+        'local-workspace-read',
+        'local-workspace-write',
+        'local-command',
+        'subagent-dispatch'
+      ],
       plannedRuns: plannedRuns(evaluations, 'runner-' + host + '-' + suffix)
     },
     createdAt: '2026-07-22T00:00:00.000Z'
@@ -327,8 +339,7 @@ function assertPositiveHost(temp, host) {
   }), true);
   const withheld = evaluations.cases.flatMap((item) => [
     ...item.expectedObservations,
-    ...item.prohibitedOutcomes,
-    item.source?.legacyPath || ''
+    ...item.prohibitedOutcomes
   ]).filter(Boolean);
   assert.equal(workerCalls.every((item) => withheld.every((privateItem) => !item.input.includes(privateItem))), true);
   const request = readJson(path.join(
@@ -489,9 +500,14 @@ function assertBaselineFindingsDoNotGate(temp) {
 }
 
 export async function selftestDevelopmentHostRunner(root = scriptRoot) {
-  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'soter-development-host-runner-'));
+  const temp = fs.mkdtempSync(path.join(
+    fs.realpathSync(os.tmpdir()),
+    'soter-development-host-runner-'
+  ));
   try {
     copyHarnessRoot(root, temp);
+    materializeExactDevelopmentHost(temp, 'harness-development-catalog', 'codex');
+    materializeExactDevelopmentHost(temp, 'harness-development-catalog-claude', 'claude');
     const codexProfile = inspectDevelopmentHostRunnerProfile('codex');
     const claudeProfile = inspectDevelopmentHostRunnerProfile('claude');
     assert.equal(codexProfile.argvTemplate.includes('--ignore-user-config'), true);
@@ -584,18 +600,37 @@ export async function selftestDevelopmentHostRunner(root = scriptRoot) {
     fs.rmSync(injectedExecutable.directory, { recursive: true, force: true });
 
     const hardlink = prepareRequest({ temp, host: 'codex', suffix: 'hardlink' });
-    const hardlinkDir = fs.mkdtempSync(path.join(os.tmpdir(), 'soter-runner-hardlink-'));
-    fs.chmodSync(hardlinkDir, 0o700);
-    const hardlinkTarget = path.join(hardlinkDir, 'target');
-    const hardlinkExecutable = path.join(hardlinkDir, 'codex');
-    fs.writeFileSync(hardlinkTarget, '#!/bin/sh\nexit 1\n', { mode: 0o700 });
-    fs.linkSync(hardlinkTarget, hardlinkExecutable);
-    expectCode(() => runDevelopmentHostEvaluation({
+    const hardlinkExecutable = createExecutable(temp, 'codex', '-hardlink');
+    fs.unlinkSync(hardlinkExecutable.replacement);
+    fs.linkSync(hardlinkExecutable.target, hardlinkExecutable.replacement);
+    const hardlinkEvaluation = runDevelopmentHostEvaluation({
       root: temp,
       requestId: hardlink.requestId,
-      executablePath: hardlinkExecutable
-    }), 'DEVELOPMENT_HOST_EXECUTABLE_INVALID');
-    fs.rmSync(hardlinkDir, { recursive: true, force: true });
+      executablePath: hardlinkExecutable.executable
+    });
+    assert.equal(hardlinkEvaluation.summary.runCount, hardlink.evaluations.cases.length + 1);
+    assert.equal(fs.statSync(hardlinkExecutable.target).nlink, 2);
+    fs.rmSync(hardlinkExecutable.directory, { recursive: true, force: true });
+
+    const hardlinkDrift = prepareRequest({ temp, host: 'claude', suffix: 'hardlink-drift' });
+    const hardlinkDriftExecutable = createExecutable(
+      temp,
+      'claude',
+      '-hardlink-drift',
+      'unlink-hardlink-on-version'
+    );
+    fs.unlinkSync(hardlinkDriftExecutable.replacement);
+    fs.linkSync(hardlinkDriftExecutable.target, hardlinkDriftExecutable.replacement);
+    expectCode(() => runDevelopmentHostEvaluation({
+      root: temp,
+      requestId: hardlinkDrift.requestId,
+      executablePath: hardlinkDriftExecutable.executable
+    }), 'DEVELOPMENT_HOST_EXECUTABLE_STALE');
+    assert.equal(
+      fs.existsSync(developmentHostExecutionStateFiles(temp, hardlinkDrift.requestId).execution),
+      false
+    );
+    fs.rmSync(hardlinkDriftExecutable.directory, { recursive: true, force: true });
 
     const drift = prepareRequest({ temp, host: 'codex', suffix: 'executable-drift' });
     const driftExecutable = createExecutable(temp, 'codex', '-drift', 'retarget-on-version');

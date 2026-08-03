@@ -19,7 +19,13 @@
       "process.schema.read",
       "process.records.read"
     ],
-    "effectModes": { "read": "allow", "disclosure": "allow", "write": "confirm", "dispatch": "prohibit", "destructive": "prohibit" },
+    "effectModes": {
+      "read": "allow",
+      "disclosure": "allow",
+      "write": "confirm",
+      "dispatch": "prohibit",
+      "destructive": "prohibit"
+    },
     "outcomes": [
       "review-policy.grounded",
       "complete-source-set.grounded",
@@ -41,13 +47,7 @@
       "process-source-fingerprint",
       "related-source-fingerprints",
       "schema-observation-fingerprint",
-      "private-values-sanitized",
-      "source-cases-exactly-fingerprinted"
+      "private-values-sanitized"
     ]
-  },
-  "sourceCases": [
-    ".claude/evals/red-teaming-a-process/happy-path.md",
-    ".claude/evals/red-teaming-a-process/invariant-read-only.md",
-    ".claude/evals/red-teaming-a-process/pressure-autofix.md"
-  ]
+  }
 }

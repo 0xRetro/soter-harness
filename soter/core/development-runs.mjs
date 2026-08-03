@@ -19,6 +19,10 @@ import {
   renderWorkflowGuidePreviewCandidates
 } from './host-projections.mjs';
 import {
+  inspectHistoricalManagedHostProjectionBasis,
+  inspectManagedHostProjectionOwnership
+} from './host-realizations.mjs';
+import {
   fingerprintFile,
   fingerprintJson,
   readJson,
@@ -32,8 +36,11 @@ import {
   developmentResultStatePath,
   hasDevelopmentRequestState,
   hasDevelopmentResultState,
+  listHostManagedManifestDocuments,
+  readActiveConfigurationLockState,
   readDevelopmentRequestState,
-  readDevelopmentResultState
+  readDevelopmentResultState,
+  readHostManagedManifestState
 } from './runtime-state.mjs';
 
 const REQUEST_CONTRACT = 'soter://contracts/development-request/v1';
@@ -59,6 +66,24 @@ const DEVELOPMENT_EFFECT_POLICY = Object.freeze({
   dispatch: 'allow',
   destructive: 'prohibit'
 });
+const LOCAL_EFFECT_FIELDS = Object.freeze({
+  'local-workspace-read': 'localWorkspaceRead',
+  'local-workspace-write': 'localWorkspaceWrite',
+  'local-command': 'localCommand',
+  'subagent-dispatch': 'subagentDispatch'
+});
+const LOCAL_EFFECTS = Object.freeze(Object.keys(LOCAL_EFFECT_FIELDS));
+const PROTECTED_TOP_LEVEL = new Set([
+  '.agents',
+  '.claude',
+  '.claude-plugin',
+  '.codex',
+  '.git',
+  '.soter',
+  'node_modules'
+]);
+const PROTECTED_ROOT_FILES = new Set(['AGENTS.md', 'CLAUDE.md', '.mcp.json']);
+const HOST_ADAPTER_PATH = /^soter\/hosts\/[a-z0-9]+(?:-[a-z0-9]+)*\/adapter[.]json$/;
 const ABSOLUTE_PATH_RE = /(?:^|[\s"'(=])(?:file:\/\/|[A-Za-z]:[\\/]|\/\/[^\s/]+[\\/]|\/(?=$|[),;.!?"'])|\/(?![\/\s])[^\/\s]+)/iu;
 const RAW_DIFF_RE = /(?:^|\n)(?:diff --git\s|@@\s+-[0-9])/;
 
@@ -137,6 +162,132 @@ function assertRelativePath(value, label, code) {
   }
 }
 
+function managedHostOutputPaths(root, { requireCurrent = true } = {}) {
+  let documents;
+  try {
+    documents = listHostManagedManifestDocuments(root);
+  } catch (error) {
+    throw codedError(
+      'DEVELOPMENT_REQUEST_TARGET_INVALID',
+      'Managed host output ownership is unavailable or malformed.',
+      error
+    );
+  }
+  const paths = new Set();
+  for (const { manifest } of documents) {
+    try {
+      validate(
+        root,
+        manifest,
+        'soter/contracts/host-managed-manifest.schema.json',
+        'Managed host manifest',
+        'DEVELOPMENT_REQUEST_TARGET_INVALID'
+      );
+      const unsigned = structuredClone(manifest);
+      delete unsigned.manifestFingerprint;
+      if (fingerprintJson(unsigned) !== manifest.manifestFingerprint) {
+        throw new Error('Managed host manifest fingerprint is invalid.');
+      }
+      if (requireCurrent) {
+        const ownership = inspectManagedHostProjectionOwnership({ root, host: manifest.host });
+        if (ownership.state !== 'realized'
+          || ownership.manifestFingerprint !== manifest.manifestFingerprint) {
+          throw new Error('Managed host ownership is not current.');
+        }
+      }
+      for (const output of manifest.outputs) paths.add(output.path);
+    } catch (error) {
+      if (error?.code === 'DEVELOPMENT_REQUEST_TARGET_INVALID') throw error;
+      throw codedError(
+        'DEVELOPMENT_REQUEST_TARGET_INVALID',
+        'Managed host output ownership is unavailable or stale.',
+        error
+      );
+    }
+  }
+  return paths;
+}
+
+export function assertDevelopmentTargetAllowed(
+  root,
+  targetPath,
+  { requireCurrentManagedOwnership = true } = {}
+) {
+  assertRelativePath(
+    targetPath,
+    'Development target',
+    'DEVELOPMENT_REQUEST_TARGET_INVALID'
+  );
+  const first = targetPath.split('/')[0];
+  if (PROTECTED_TOP_LEVEL.has(first)
+    || PROTECTED_ROOT_FILES.has(targetPath)
+    || targetPath === POLICY_PATH
+    || HOST_ADAPTER_PATH.test(targetPath)
+    || managedHostOutputPaths(path.resolve(root), {
+      requireCurrent: requireCurrentManagedOwnership
+    }).has(targetPath)) {
+    throw codedError(
+      'DEVELOPMENT_REQUEST_TARGET_INVALID',
+      'Development target is protected or owned by governed host realization.'
+    );
+  }
+  return targetPath;
+}
+
+export function inspectDevelopmentTarget(root, target, options = {}) {
+  const resolvedRoot = path.resolve(root);
+  assertDevelopmentTargetAllowed(resolvedRoot, target.path, options);
+  const absolute = resolveRepoPath(resolvedRoot, target.path);
+  const relative = path.relative(resolvedRoot, absolute).split(path.sep).join('/');
+  if (relative !== target.path) {
+    throw codedError(
+      'DEVELOPMENT_REQUEST_TARGET_INVALID',
+      'Development target path is not normalized.'
+    );
+  }
+  const parts = target.path.split('/');
+  let current = resolvedRoot;
+  let missing = false;
+  for (const [index, part] of parts.entries()) {
+    current = path.join(current, part);
+    const stat = fs.lstatSync(current, { throwIfNoEntry: false });
+    if (!stat) {
+      if (index !== parts.length - 1) {
+        throw codedError(
+          'DEVELOPMENT_REQUEST_TARGET_INVALID',
+          'Development target parent directories must already exist and be ordinary.'
+        );
+      }
+      missing = true;
+      continue;
+    }
+    if (missing || stat.isSymbolicLink()) {
+      throw codedError(
+        'DEVELOPMENT_REQUEST_TARGET_INVALID',
+        'Development target ancestry is unavailable or unsafe.'
+      );
+    }
+    const leaf = index === parts.length - 1;
+    if ((!leaf && !stat.isDirectory())
+      || (leaf && (!stat.isFile()
+        || stat.nlink !== 1
+        || (stat.mode & 0o7000) !== 0))) {
+      throw codedError(
+        'DEVELOPMENT_REQUEST_TARGET_INVALID',
+        'Development target must be one exact ordinary non-linked file or a safe missing path.'
+      );
+    }
+  }
+  return {
+    id: target.id,
+    path: target.path,
+    beforeFingerprint: missing ? null : fingerprintFile(absolute),
+    beforeMode: missing
+      ? null
+      : (fs.lstatSync(absolute).mode & 0o7777).toString(8).padStart(4, '0')
+  };
+}
+
 function assertUnique(items, select, label, code) {
   const values = items.map(select);
   if (new Set(values).size !== values.length) {
@@ -174,8 +325,9 @@ function repositoryFiles(root) {
   }
 }
 
-export function inspectDevelopmentWorkspaceBasis(root) {
+export function inspectDevelopmentWorkspaceBasis(root, { excludedPaths = [] } = {}) {
   const resolvedRoot = path.resolve(root);
+  const excluded = new Set(excludedPaths);
   const files = repositoryFiles(resolvedRoot).map((relative) => {
     assertRelativePath(relative, 'Governed workspace input', 'DEVELOPMENT_WORKSPACE_INVALID');
     const absolute = resolveRepoPath(resolvedRoot, relative);
@@ -214,6 +366,7 @@ export function inspectDevelopmentWorkspaceBasis(root) {
     rootIdentityFingerprint: fingerprintJson({ root: fs.realpathSync(resolvedRoot) }),
     revisionFingerprint,
     treeFingerprint: fingerprintJson(files),
+    untargetedTreeFingerprint: fingerprintJson(files.filter((item) => !excluded.has(item.path))),
     exactInputState
   };
 }
@@ -268,18 +421,26 @@ function exactWorkflowBasis(root, lock, workflowId) {
   validate(root, definition, 'soter/contracts/workflow-definition.schema.json', 'Workflow definition', 'DEVELOPMENT_REQUEST_BINDING_INVALID');
   validate(root, guide, 'soter/contracts/workflow-guide.schema.json', 'Workflow guide', 'DEVELOPMENT_REQUEST_BINDING_INVALID');
   validate(root, evaluations, 'soter/contracts/workflow-evaluation-set.schema.json', 'Workflow evaluation set', 'DEVELOPMENT_REQUEST_BINDING_INVALID');
-  const activation = definition.lifecycle?.activation?.state;
   if (definition.$contract !== 'soter://contracts/workflow-definition/v2'
+    || definition.id !== workflowId
     || definition.lifecycle.state !== 'active-host-guided'
-    || !['candidate', 'active'].includes(activation)
+    || definition.lifecycle.development.requestContract.id !== 'soter://contracts/development-request/v1'
+    || definition.lifecycle.development.requestContract.path !== 'soter/contracts/development-request.schema.json'
+    || definition.lifecycle.development.resultContract.id !== 'soter://contracts/development-result/v1'
+    || definition.lifecycle.development.resultContract.path !== 'soter/contracts/development-result.schema.json'
     || guide.$contract !== 'soter://contracts/workflow-guide/v2'
-    || guide.status.state !== activation
+    || guide.status.state !== 'active'
     || evaluations.$contract !== 'soter://contracts/workflow-evaluation-set/v2'
     || evaluations.lifecycle.state !== 'active-host-guided'
-    || evaluations.lifecycle.activation !== activation
     || guide.workflow.id !== workflowId
+    || guide.workflow.version !== definition.version
+    || guide.workflow.definitionPath !== files.definitionPath
+    || guide.workflow.evaluationSetPath !== files.evaluationSetPath
     || evaluations.workflow !== workflowId
+    || evaluations.version !== definition.version
+    || definition.guide.id !== guide.id
     || definition.guide.path !== files.guidePath
+    || definition.evaluationSet.id !== evaluations.id
     || definition.evaluationSet.path !== files.evaluationSetPath
     || guide.workflow.definitionFingerprint !== fingerprintJson(definition)
     || guide.workflow.evaluationSetFingerprint !== fingerprintJson(evaluations)
@@ -308,7 +469,7 @@ function exactWorkflowBasis(root, lock, workflowId) {
     effectPolicies: lock.effectPolicies
   });
   if (preview.workflowGuides.length !== 1 || preview.workflowGuides[0].id !== guide.id) {
-    throw codedError('DEVELOPMENT_REQUEST_BINDING_INVALID', 'Development workflow has no exact candidate host projection.');
+    throw codedError('DEVELOPMENT_REQUEST_BINDING_INVALID', 'Development workflow has no exact current host projection.');
   }
   const evaluatedInstructions = renderWorkflowGuideEvaluatedInstructions({
     root,
@@ -352,69 +513,282 @@ function exactWorkflowBasis(root, lock, workflowId) {
       lockFingerprint: fingerprintLock(lock),
       graphFingerprint: lock.graphFingerprint
     },
+    projectedGuideOutputs: preview.outputs.map((output) => ({
+      id: output.id,
+      path: output.path,
+      role: output.role,
+      mode: output.mode,
+      contentFingerprint: output.contentFingerprint,
+      fingerprint: output.fingerprint
+    })).sort((left, right) => compareText(left.path, right.path)),
     definition,
     guide,
     evaluations
   };
 }
 
-function assertPersistedRequestBasis(root, request, lockPath = null) {
-  const files = workflowFiles(root, request.workflow.id);
-  validate(root, files.definition, 'soter/contracts/workflow-definition.schema.json', 'Workflow definition', 'DEVELOPMENT_REQUEST_BINDING_INVALID');
-  validate(root, files.guide, 'soter/contracts/workflow-guide.schema.json', 'Workflow guide', 'DEVELOPMENT_REQUEST_BINDING_INVALID');
-  validate(root, files.evaluations, 'soter/contracts/workflow-evaluation-set.schema.json', 'Workflow evaluation set', 'DEVELOPMENT_REQUEST_BINDING_INVALID');
-  if (fingerprintJson(files.definition) !== request.workflow.definitionFingerprint
-    || fingerprintJson(files.guide) !== request.workflow.guideFingerprint
-    || fingerprintWorkflowGuideContent(files.guide) !== request.workflow.guideContentFingerprint
-    || fingerprintWorkflowEvaluatedSubject({
-      definition: files.definition,
-      guide: files.guide,
-      evaluations: files.evaluations
-    }) !== request.workflow.evaluatedSubjectFingerprint
-    || fingerprintJson(files.evaluations) !== request.workflow.evaluationSetFingerprint
-    || files.definition.guide.path !== request.workflow.guidePath
-    || files.definition.evaluationSet.path !== request.workflow.evaluationSetPath
-    || files.guide.workflow.id !== request.workflow.id
-    || files.evaluations.workflow !== request.workflow.id) {
-    throw codedError('DEVELOPMENT_REQUEST_BINDING_STALE', 'Development request workflow source bindings have drifted from the exact private request.');
-  }
-  const policy = readJson(path.join(root, request.workspace.policyPath));
-  if (fingerprintJson(policy) !== request.workspace.policyFingerprint
-    || fingerprintJson({ root: fs.realpathSync(root) }) !== request.workspace.rootIdentityFingerprint) {
-    throw codedError('DEVELOPMENT_REQUEST_BINDING_STALE', 'Development request workspace identity or policy binding has drifted.');
-  }
-  const exactLockPath = lockPath || request.configuration.lockPath;
-  if (lockPath && lockPath !== request.configuration.lockPath) {
-    throw codedError('DEVELOPMENT_REQUEST_BINDING_STALE', 'Development request lock path does not match the exact private request.');
-  }
-  if (exactLockPath) {
-    const { lock } = exactLock(root, exactLockPath, request.workflow.id);
-    const exact = exactWorkflowBasis(root, lock, request.workflow.id);
-    exact.configuration.lockPath = exactLockPath;
-    if (fingerprintLock(lock) !== request.configuration.lockFingerprint
-      || lock.graphFingerprint !== request.configuration.graphFingerprint
-      || lock.configuration.name !== request.configuration.name
-      || fingerprintJson(lock.settings?.['kernel.soter']) !== request.workspace.settingsFingerprint
-      || fingerprintJson(exact.workflow) !== fingerprintJson(request.workflow)
-      || fingerprintJson(exact.host) !== fingerprintJson(request.host)
-      || fingerprintJson(exact.configuration) !== fingerprintJson(request.configuration)) {
-      throw codedError('DEVELOPMENT_REQUEST_BINDING_STALE', 'Development request no longer binds the supplied immutable configuration lock.');
+function exactManagedHostBasis(root, lock, exact) {
+  let ownership;
+  let manifest;
+  let activeLock;
+  try {
+    ownership = inspectManagedHostProjectionOwnership({ root, host: lock.host.id });
+    if (ownership.state !== 'realized') {
+      throw new Error('The selected host has no exact current managed projection.');
     }
+    manifest = readHostManagedManifestState(root, lock.host.id).manifest;
+    validate(
+      root,
+      manifest,
+      'soter/contracts/host-managed-manifest.schema.json',
+      'Managed host manifest',
+      'DEVELOPMENT_REQUEST_HOST_REALIZATION_STALE'
+    );
+    activeLock = readActiveConfigurationLockState(root, manifest.configuration.name).lock;
+  } catch (error) {
+    if (error?.code === 'DEVELOPMENT_REQUEST_HOST_REALIZATION_STALE') throw error;
+    throw codedError(
+      'DEVELOPMENT_REQUEST_HOST_REALIZATION_STALE',
+      'Development request requires one current exact realized host projection.',
+      error
+    );
   }
-  if (request.invocation.kind === 'evaluation-suite') {
-    exactEvaluationInvocation(request.invocation, files.evaluations);
+  if (ownership.manifestFingerprint !== manifest.manifestFingerprint
+    || manifest.host !== lock.host.id
+    || manifest.configuration.name !== lock.configuration.name
+    || manifest.configuration.lockFingerprint !== fingerprintLock(lock)
+    || manifest.configuration.graphFingerprint !== lock.graphFingerprint
+    || fingerprintLock(activeLock) !== fingerprintLock(lock)
+    || activeLock.graphFingerprint !== lock.graphFingerprint
+    || activeLock.configuration.name !== lock.configuration.name) {
+    throw codedError(
+      'DEVELOPMENT_REQUEST_HOST_REALIZATION_STALE',
+      'Development request candidate lock does not match the exact active realized host projection.'
+    );
   }
-  return files;
+  const prefix = `output.${lock.host.id}.workflow-guide.${exact.guide.skill.name}.`;
+  const realizedGuideOutputs = manifest.outputs
+    .filter((output) => output.id.startsWith(prefix))
+    .map((output) => ({
+      id: output.id,
+      path: output.path,
+      role: output.role,
+      mode: output.mode,
+      contentFingerprint: output.contentFingerprint,
+      fingerprint: output.fingerprint
+    }))
+    .sort((left, right) => compareText(left.path, right.path));
+  if (fingerprintJson(realizedGuideOutputs) !== fingerprintJson(exact.projectedGuideOutputs)) {
+    throw codedError(
+      'DEVELOPMENT_REQUEST_HOST_REALIZATION_STALE',
+      'The active workflow guide is not exactly realized by the managed host projection.'
+    );
+  }
+  return manifest.manifestFingerprint;
 }
 
-function exactWorkspaceBasis(root, lock) {
+function requestTargetPaths(request) {
+  return request.invocation.kind === 'develop'
+    ? request.invocation.targets.map((target) => target.path)
+    : [];
+}
+
+function requestAllowsWorkspaceWrite(request) {
+  return request.invocation.requestedLocalEffects.includes('local-workspace-write');
+}
+
+function requestUsesTargetWriteClosure(request) {
+  return request.invocation.kind === 'develop' && requestAllowsWorkspaceWrite(request);
+}
+
+function exactCurrentRequestBasis(root, request, lockPath = null) {
+  const exactLockPath = lockPath || request.configuration.lockPath;
+  if (lockPath && lockPath !== request.configuration.lockPath) {
+    throw codedError(
+      'DEVELOPMENT_REQUEST_BINDING_STALE',
+      'Development request lock path does not match its immutable binding.'
+    );
+  }
+  const targetPaths = requestTargetPaths(request);
+  if (request.invocation.kind === 'develop') {
+    for (const target of request.invocation.targets) {
+      let current;
+      try {
+        current = inspectDevelopmentTarget(root, target);
+      } catch (error) {
+        throw codedError(
+          'DEVELOPMENT_REQUEST_TARGET_STALE',
+          'A development target is now unavailable, unsafe, protected, or managed.',
+          error
+        );
+      }
+      if (current.beforeFingerprint !== target.beforeFingerprint
+        || current.beforeMode !== target.beforeMode) {
+        throw codedError(
+          'DEVELOPMENT_REQUEST_TARGET_STALE',
+          'A development target has drifted from its exact pre-effect request bytes or mode.'
+        );
+      }
+    }
+  }
+  const { lock } = exactLock(root, exactLockPath, request.workflow.id);
+  const exact = exactWorkflowBasis(root, lock, request.workflow.id);
+  exact.configuration.lockPath = exactLockPath;
+  exact.host.managedManifestFingerprint = exactManagedHostBasis(root, lock, exact);
+  if (fingerprintLock(lock) !== request.configuration.lockFingerprint
+    || lock.graphFingerprint !== request.configuration.graphFingerprint
+    || lock.configuration.name !== request.configuration.name
+    || fingerprintJson(exact.workflow) !== fingerprintJson(request.workflow)
+    || fingerprintJson(exact.host) !== fingerprintJson(request.host)
+    || fingerprintJson(exact.configuration) !== fingerprintJson(request.configuration)) {
+    throw codedError(
+      'DEVELOPMENT_REQUEST_BINDING_STALE',
+      'Development request workflow, lock, configuration, or host binding has drifted.'
+    );
+  }
+  if (request.invocation.kind === 'evaluation-suite') {
+    exactEvaluationInvocation(request.invocation, exact.evaluations);
+  }
+
+  const workspace = exactWorkspaceBasis(root, lock, targetPaths);
+  const commonWorkspaceCurrent = workspace.rootIdentityFingerprint === request.workspace.rootIdentityFingerprint
+    && workspace.policyId === request.workspace.policyId
+    && workspace.policyPath === request.workspace.policyPath
+    && workspace.policyFingerprint === request.workspace.policyFingerprint
+    && workspace.settingsFingerprint === request.workspace.settingsFingerprint;
+  const treeCurrent = requestAllowsWorkspaceWrite(request)
+    ? workspace.untargetedTreeFingerprint === request.workspace.untargetedTreeFingerprint
+    : workspace.treeFingerprint === request.workspace.treeFingerprint
+      && workspace.untargetedTreeFingerprint === request.workspace.untargetedTreeFingerprint
+      && workspace.revisionFingerprint === request.workspace.revisionFingerprint
+      && workspace.exactInputState === request.workspace.exactInputState;
+  if (!commonWorkspaceCurrent || !treeCurrent) {
+    throw codedError(
+      'DEVELOPMENT_REQUEST_WORKSPACE_STALE',
+      'Development request workspace or policy basis has drifted outside its authorized targets.'
+    );
+  }
+  return { lock, exact, workspace };
+}
+
+function exactWriteClosureBasis(root, request, lockPath = null) {
+  if (!requestAllowsWorkspaceWrite(request)) {
+    throw codedError(
+      'DEVELOPMENT_REQUEST_BINDING_STALE',
+      'Write closure requires one exact request that declared local workspace write.'
+    );
+  }
+  const exactLockPath = lockPath || request.configuration.lockPath;
+  if (exactLockPath !== request.configuration.lockPath) {
+    throw codedError(
+      'DEVELOPMENT_REQUEST_BINDING_STALE',
+      'Write closure lock path does not match its immutable request.'
+    );
+  }
+  let lock;
+  try {
+    lock = readDevelopmentCandidateLock({
+      root,
+      lockPath: exactLockPath,
+      workflowId: request.workflow.id,
+      requireCurrent: false,
+      expectedLockFingerprint: request.configuration.lockFingerprint
+    }).lock;
+  } catch (error) {
+    throw codedError(
+      'DEVELOPMENT_REQUEST_BINDING_STALE',
+      'Write closure requires the immutable content-addressed request lock.',
+      error
+    );
+  }
+  if (fingerprintLock(lock) !== request.configuration.lockFingerprint
+    || lock.graphFingerprint !== request.configuration.graphFingerprint
+    || lock.configuration.name !== request.configuration.name
+    || lock.host.id !== request.host.id
+    || lock.host.manifestFingerprint !== request.host.adapterFingerprint
+    || lock.host.projectionDefinition.fingerprint !== request.host.projectionDefinitionFingerprint
+    || fingerprintJson(lock.settings?.['kernel.soter']) !== request.workspace.settingsFingerprint) {
+    throw codedError(
+      'DEVELOPMENT_REQUEST_BINDING_STALE',
+      'Immutable write-closure lock does not match the exact request bindings.'
+    );
+  }
+  let activeLock;
+  try {
+    activeLock = readActiveConfigurationLockState(root, request.configuration.name).lock;
+    inspectHistoricalManagedHostProjectionBasis({
+      root,
+      host: request.host.id,
+      manifestFingerprint: request.host.managedManifestFingerprint,
+      configurationFingerprint: lock.configuration.fingerprint
+    });
+  } catch (error) {
+    throw codedError(
+      'DEVELOPMENT_REQUEST_HOST_REALIZATION_STALE',
+      'Write closure requires the exact original active lock, private configuration, and managed host projection.',
+      error
+    );
+  }
+  if (fingerprintLock(activeLock) !== request.configuration.lockFingerprint
+    || activeLock.graphFingerprint !== request.configuration.graphFingerprint
+    || activeLock.configuration.name !== request.configuration.name
+    || activeLock.configuration.fingerprint !== lock.configuration.fingerprint) {
+    throw codedError(
+      'DEVELOPMENT_REQUEST_HOST_REALIZATION_STALE',
+      'Original active lock or private configuration drifted from the write request.'
+    );
+  }
+  for (const target of request.invocation.targets) {
+    try {
+      inspectDevelopmentTarget(root, target, { requireCurrentManagedOwnership: false });
+    } catch (error) {
+      throw codedError(
+        'DEVELOPMENT_REQUEST_TARGET_STALE',
+        'Write closure target is unavailable, unsafe, protected, or managed.',
+        error
+      );
+    }
+  }
+  const workspace = exactWorkspaceBasis(root, lock, requestTargetPaths(request));
+  if (workspace.rootIdentityFingerprint !== request.workspace.rootIdentityFingerprint
+    || workspace.policyId !== request.workspace.policyId
+    || workspace.policyPath !== request.workspace.policyPath
+    || workspace.policyFingerprint !== request.workspace.policyFingerprint
+    || workspace.settingsFingerprint !== request.workspace.settingsFingerprint
+    || workspace.untargetedTreeFingerprint !== request.workspace.untargetedTreeFingerprint) {
+    throw codedError(
+      'DEVELOPMENT_REQUEST_WORKSPACE_STALE',
+      'Workspace drift outside the exact authorized targets blocks write closure.'
+    );
+  }
+  return { lock, workspace };
+}
+
+function developmentRequestApplicability(root, request) {
+  try {
+    exactCurrentRequestBasis(root, request);
+    return { state: 'current', reasonCode: 'DEVELOPMENT_REQUEST_CURRENT' };
+  } catch (error) {
+    const reasonCode = [
+      'DEVELOPMENT_REQUEST_BINDING_STALE',
+      'DEVELOPMENT_REQUEST_HOST_REALIZATION_STALE',
+      'DEVELOPMENT_REQUEST_TARGET_STALE',
+      'DEVELOPMENT_REQUEST_WORKSPACE_STALE'
+    ].includes(error?.code)
+      ? error.code
+      : 'DEVELOPMENT_REQUEST_BINDING_STALE';
+    return { state: 'stale', reasonCode };
+  }
+}
+
+function exactWorkspaceBasis(root, lock, targetPaths = []) {
   const policy = readJson(path.join(root, POLICY_PATH));
   const configured = lock.settings?.['kernel.soter'];
   if (!configured) {
     throw codedError('DEVELOPMENT_REQUEST_BINDING_INVALID', 'Development request requires selected workspace policy settings.');
   }
   return {
-    ...inspectDevelopmentWorkspaceBasis(root),
+    ...inspectDevelopmentWorkspaceBasis(root, { excludedPaths: targetPaths }),
     policyId: policy.id,
     policyPath: POLICY_PATH,
     policyFingerprint: fingerprintJson(policy),
@@ -422,12 +796,39 @@ function exactWorkspaceBasis(root, lock) {
   };
 }
 
-function fixedEffectBoundary() {
+function canonicalRequestedLocalEffects(value, code = 'DEVELOPMENT_REQUEST_BINDING_INVALID') {
+  const requested = Array.isArray(value) ? value : [];
+  const canonical = LOCAL_EFFECTS.filter((effect) => requested.includes(effect));
+  if (requested.length === 0
+    || requested.length !== canonical.length
+    || fingerprintJson(requested) !== fingerprintJson(canonical)) {
+    throw codedError(code, 'Requested local effects must be one non-empty canonical unique subset.');
+  }
+  return canonical;
+}
+
+function fixedEffectBoundary(requestedEffects) {
+  const requested = new Set(canonicalRequestedLocalEffects(requestedEffects));
   return {
-    localWorkspaceRead: 'request-scoped',
-    localWorkspaceWrite: 'request-scoped',
-    localCommand: 'request-scoped',
-    subagentDispatch: 'request-scoped',
+    localWorkspaceRead: requested.has('local-workspace-read') ? 'request-scoped' : 'not-requested',
+    localWorkspaceWrite: requested.has('local-workspace-write') ? 'request-scoped' : 'not-requested',
+    localCommand: requested.has('local-command') ? 'request-scoped' : 'not-requested',
+    subagentDispatch: requested.has('subagent-dispatch') ? 'request-scoped' : 'not-requested',
+    providerRead: 'separate-authority',
+    providerWrite: 'separate-authority',
+    publication: 'separate-authority',
+    merge: 'separate-authority',
+    protectedRootMutation: 'separate-authority',
+    hostRealization: 'separate-authority'
+  };
+}
+
+function closedEffectBoundary() {
+  return {
+    localWorkspaceRead: 'closed',
+    localWorkspaceWrite: 'closed',
+    localCommand: 'closed',
+    subagentDispatch: 'closed',
     providerRead: 'separate-authority',
     providerWrite: 'separate-authority',
     publication: 'separate-authority',
@@ -528,6 +929,7 @@ export function buildDevelopmentEvaluationInvocation({ root, workflowId, ...unkn
     profile: 'exact',
     freshWorkerPerRun: true,
     expectationsWithheld: true,
+    requestedLocalEffects: [...LOCAL_EFFECTS],
     plannedRuns: [
       row(baselineCase, 1, 'baseline'),
       ...files.evaluations.cases.map((testCase, index) => {
@@ -548,26 +950,27 @@ function assertRequestSemantics(root, request, lockPath, requireCurrent) {
   const targets = request.invocation.kind === 'develop' ? request.invocation.targets : [];
   assertUnique(targets, (item) => item.id, 'Development target', 'DEVELOPMENT_REQUEST_BINDING_INVALID');
   assertUnique(targets, (item) => item.path, 'Development target path', 'DEVELOPMENT_REQUEST_BINDING_INVALID');
-  for (const target of targets) assertRelativePath(target.path, 'Development target', 'DEVELOPMENT_REQUEST_BINDING_INVALID');
+  for (const target of targets) {
+    assertRelativePath(target.path, 'Development target', 'DEVELOPMENT_REQUEST_BINDING_INVALID');
+    if ((target.beforeFingerprint === null) !== (target.beforeMode === null)) {
+      throw codedError(
+        'DEVELOPMENT_REQUEST_BINDING_INVALID',
+        'Development target bytes and mode must describe the same exact presence state.'
+      );
+    }
+  }
+  const requestedLocalEffects = canonicalRequestedLocalEffects(request.invocation.requestedLocalEffects);
+  if (fingerprintJson(request.effectBoundary) !== fingerprintJson(fixedEffectBoundary(requestedLocalEffects))
+    || fingerprintJson(request.authority) !== fingerprintJson(fixedRequestAuthority())) {
+    throw codedError(
+      'DEVELOPMENT_REQUEST_BINDING_INVALID',
+      'Development request effect and authority boundaries do not match the exact requested subset.'
+    );
+  }
   if (!requireCurrent) {
-    assertPersistedRequestBasis(root, request, lockPath);
     return request;
   }
-  const { lock } = exactLock(root, lockPath, request.workflow.id);
-  const exact = exactWorkflowBasis(root, lock, request.workflow.id);
-  exact.configuration.lockPath = lockPath;
-  const workspace = exactWorkspaceBasis(root, lock);
-  if (fingerprintJson(request.workflow) !== fingerprintJson(exact.workflow)
-    || fingerprintJson(request.host) !== fingerprintJson(exact.host)
-    || fingerprintJson(request.configuration) !== fingerprintJson(exact.configuration)
-    || fingerprintJson(request.workspace) !== fingerprintJson(workspace)
-    || fingerprintJson(request.effectBoundary) !== fingerprintJson(fixedEffectBoundary())
-    || fingerprintJson(request.authority) !== fingerprintJson(fixedRequestAuthority())) {
-    throw codedError('DEVELOPMENT_REQUEST_BINDING_STALE', 'Development request does not bind the exact current workflow, host projection, lock, workspace, and policy.');
-  }
-  if (request.invocation.kind === 'evaluation-suite') {
-    exactEvaluationInvocation(request.invocation, exact.evaluations);
-  }
+  exactCurrentRequestBasis(root, request, lockPath);
   return request;
 }
 
@@ -596,17 +999,25 @@ export function prepareDevelopmentRequest({
   requestId,
   invocation,
   createdAt = null,
-  limitations = ['This private request grants no provider, publication, merge, fallback-removal, or host-realization authority.']
+  limitations = ['This private request grants no provider, publication, merge, promotion, or host-realization authority.']
 }) {
   const resolvedRoot = path.resolve(root);
+  const requestedLocalEffects = canonicalRequestedLocalEffects(invocation?.requestedLocalEffects);
+  const exactInvocation = structuredClone(invocation);
+  exactInvocation.requestedLocalEffects = requestedLocalEffects;
+  if (exactInvocation.kind === 'develop') {
+    exactInvocation.targets = exactInvocation.targets.map((target) => {
+      return inspectDevelopmentTarget(resolvedRoot, target);
+    });
+  }
   if (hasDevelopmentRequestState(resolvedRoot, requestId)) {
     const existing = readDevelopmentRequestState(resolvedRoot, requestId).request;
-    assertDevelopmentRequest(resolvedRoot, existing, { lockPath });
+    assertDevelopmentRequest(resolvedRoot, existing, { lockPath, requireCurrent: true });
     const suppliedLock = exactLock(resolvedRoot, lockPath, workflowId).lock;
     const sameInputs = existing.workflow.id === workflowId
       && existing.configuration.lockPath === lockPath
       && existing.configuration.lockFingerprint === fingerprintLock(suppliedLock)
-      && fingerprintJson(existing.invocation) === fingerprintJson(invocation)
+      && fingerprintJson(existing.invocation) === fingerprintJson(exactInvocation)
       && fingerprintJson(existing.limitations) === fingerprintJson(limitations)
       && (createdAt === null || existing.createdAt === createdAt);
     if (!sameInputs) {
@@ -618,7 +1029,11 @@ export function prepareDevelopmentRequest({
   const { lock } = exactLock(resolvedRoot, lockPath, workflowId);
   const exact = exactWorkflowBasis(resolvedRoot, lock, workflowId);
   exact.configuration.lockPath = lockPath;
-  const workspace = exactWorkspaceBasis(resolvedRoot, lock);
+  exact.host.managedManifestFingerprint = exactManagedHostBasis(resolvedRoot, lock, exact);
+  const targetPaths = exactInvocation.kind === 'develop'
+    ? exactInvocation.targets.map((target) => target.path)
+    : [];
+  const workspace = exactWorkspaceBasis(resolvedRoot, lock, targetPaths);
   const request = {
     $contract: REQUEST_CONTRACT,
     contractVersion: VERSION,
@@ -629,8 +1044,8 @@ export function prepareDevelopmentRequest({
     host: exact.host,
     configuration: exact.configuration,
     workspace,
-    invocation: structuredClone(invocation),
-    effectBoundary: fixedEffectBoundary(),
+    invocation: exactInvocation,
+    effectBoundary: fixedEffectBoundary(requestedLocalEffects),
     authority: fixedRequestAuthority(),
     privacy: fixedPrivatePrivacy(),
     limitations: [...limitations]
@@ -658,6 +1073,7 @@ function resultWorkspaceBinding(workspace) {
     rootIdentityFingerprint: workspace.rootIdentityFingerprint,
     revisionFingerprint: workspace.revisionFingerprint,
     treeFingerprint: workspace.treeFingerprint,
+    untargetedTreeFingerprint: workspace.untargetedTreeFingerprint,
     exactInputState: workspace.exactInputState,
     policyFingerprint: workspace.policyFingerprint,
     settingsFingerprint: workspace.settingsFingerprint
@@ -679,7 +1095,8 @@ function resultBindings(request) {
       adapterFingerprint: request.host.adapterFingerprint,
       projectionDefinitionFingerprint: request.host.projectionDefinitionFingerprint,
       evaluatedInstructionFingerprint: request.host.evaluatedInstructionFingerprint,
-      candidateProjectionFingerprint: request.host.candidateProjectionFingerprint
+      candidateProjectionFingerprint: request.host.candidateProjectionFingerprint,
+      managedManifestFingerprint: request.host.managedManifestFingerprint
     },
     configuration: {
       name: request.configuration.name,
@@ -746,6 +1163,56 @@ function assertResultSemantics(root, result, request, lockPath, requireCurrent) 
   assertUnique(result.decisionEvidence, (item) => item.id, 'Decision evidence', 'DEVELOPMENT_RESULT_BINDING_INVALID');
   assertUnique(result.decisionEvidence, (item) => item.reference, 'Decision evidence reference', 'DEVELOPMENT_RESULT_BINDING_INVALID');
   for (const change of result.changes) assertRelativePath(change.path, 'Development change', 'DEVELOPMENT_RESULT_BINDING_INVALID');
+  if (request.invocation.kind === 'develop') {
+    const targets = new Map(request.invocation.targets.map((target) => [target.path, target]));
+    if (result.changes.length !== targets.size) {
+      throw codedError(
+        'DEVELOPMENT_RESULT_BINDING_INVALID',
+        'Development result must account for every exact request target once.'
+      );
+    }
+    for (const change of result.changes) {
+      const target = targets.get(change.path);
+      let current;
+      try {
+        current = target ? inspectDevelopmentTarget(root, target, {
+          requireCurrentManagedOwnership: !requestUsesTargetWriteClosure(request)
+        }) : null;
+      } catch (error) {
+        throw codedError(
+          'DEVELOPMENT_RESULT_BINDING_INVALID',
+          'Development result target is unavailable, unsafe, protected, or managed.',
+          error
+        );
+      }
+      const coherent = target
+        && change.beforeFingerprint === target.beforeFingerprint
+        && change.afterFingerprint === current.beforeFingerprint
+        && (change.kind === 'create'
+          ? change.beforeFingerprint === null
+            && change.afterFingerprint !== null
+            && target.beforeMode === null
+            && current.beforeMode === '0644'
+          : change.kind === 'remove'
+            ? change.beforeFingerprint !== null
+              && change.afterFingerprint === null
+              && target.beforeMode !== null
+              && current.beforeMode === null
+            : change.kind === 'modify'
+              ? change.beforeFingerprint !== null
+                && change.afterFingerprint !== null
+                && change.beforeFingerprint !== change.afterFingerprint
+                && current.beforeMode === target.beforeMode
+              : change.beforeFingerprint === change.afterFingerprint
+                && current.beforeMode === target.beforeMode);
+      if (!coherent) {
+        throw codedError(
+          'DEVELOPMENT_RESULT_BINDING_INVALID',
+          'Development result change does not bind the exact target before and observed after bytes.'
+        );
+      }
+    }
+  }
   for (const evidence of result.decisionEvidence) assertRelativePath(evidence.reference, 'Decision evidence reference', 'DEVELOPMENT_RESULT_BINDING_INVALID');
   if (result.workerRuns.some((run) => run.answerKeyAccess !== 'not-observed')) {
     throw codedError('DEVELOPMENT_RESULT_ANSWER_KEY_EXPOSED', 'Development result cannot qualify when answer-key access was observed or unknown.');
@@ -769,10 +1236,59 @@ function assertResultSemantics(root, result, request, lockPath, requireCurrent) 
   }
   for (const effect of result.effects) {
     const expectedScope = EXTERNAL_EFFECTS.has(effect.category) ? 'separate-authority' : 'request-scoped';
-    if (effect.scope !== expectedScope
+    const observationCoherent = effect.state === 'observed'
+      ? effect.count >= 1 && effect.observedFingerprint !== null
+      : effect.count === 0 && effect.observedFingerprint === null;
+    if (effect.scope !== expectedScope || !observationCoherent
       || (EXTERNAL_EFFECTS.has(effect.category) && effect.state === 'observed')) {
       throw codedError('DEVELOPMENT_RESULT_EFFECT_BOUNDARY_VIOLATED', 'Development result cannot claim an external effect through request-only authority.');
     }
+    if (!EXTERNAL_EFFECTS.has(effect.category)
+      && !request.invocation.requestedLocalEffects.includes(effect.category)
+      && (effect.state !== 'not-observed'
+        || effect.count !== 0
+        || effect.observedFingerprint !== null)) {
+      throw codedError(
+        'DEVELOPMENT_RESULT_EFFECT_BOUNDARY_VIOLATED',
+        'Development result cannot claim an unrequested local effect.'
+      );
+    }
+  }
+  const localEffects = result.effects.filter((effect) => LOCAL_EFFECT_FIELDS[effect.category]);
+  if (localEffects.length !== LOCAL_EFFECTS.length
+    || LOCAL_EFFECTS.some((category) => {
+      return !localEffects.some((effect) => effect.category === category);
+    })) {
+    throw codedError(
+      'DEVELOPMENT_RESULT_EFFECT_BOUNDARY_VIOLATED',
+      'Development result closure requires one exact observation row for every local effect category.'
+    );
+  }
+  const externalEffects = result.effects.filter((effect) => EXTERNAL_EFFECTS.has(effect.category));
+  if (externalEffects.length !== EXTERNAL_EFFECTS.size
+    || [...EXTERNAL_EFFECTS].some((category) => {
+      const effect = externalEffects.find((item) => item.category === category);
+      return !effect
+        || effect.scope !== 'separate-authority'
+        || effect.state !== 'not-observed'
+        || effect.count !== 0
+        || effect.observedFingerprint !== null;
+    })) {
+    throw codedError(
+      'DEVELOPMENT_RESULT_EFFECT_BOUNDARY_VIOLATED',
+      'Development result closure requires exact zero-effect observation for every external category.'
+    );
+  }
+  const changedWorkspace = result.changes.some((change) => change.kind !== 'unchanged');
+  const writeEffect = localEffects.find((effect) => effect.category === 'local-workspace-write');
+  if (changedWorkspace && (!requestAllowsWorkspaceWrite(request)
+    || writeEffect?.state !== 'observed'
+    || writeEffect.count < 1
+    || writeEffect.observedFingerprint === null)) {
+    throw codedError(
+      'DEVELOPMENT_RESULT_EFFECT_BOUNDARY_VIOLATED',
+      'A workspace change requires requested and exactly observed local workspace write authority.'
+    );
   }
   if (request.invocation.kind === 'evaluation-suite') {
     if (result.state === 'passed') {
@@ -841,9 +1357,10 @@ function assertResultSemantics(root, result, request, lockPath, requireCurrent) 
     }
   }
   if (requireCurrent) {
-    assertDevelopmentRequest(root, request, { lockPath, requireCurrent: true });
-    const { lock } = exactLock(root, lockPath, request.workflow.id);
-    const currentWorkspace = exactWorkspaceBasis(root, lock);
+    const currentBasis = requestUsesTargetWriteClosure(request)
+      ? exactWriteClosureBasis(root, request, lockPath)
+      : exactCurrentRequestBasis(root, request, lockPath);
+    const currentWorkspace = currentBasis.workspace;
     if (fingerprintJson(result.postWorkspace) !== fingerprintJson(resultWorkspaceBinding(currentWorkspace))) {
       throw codedError('DEVELOPMENT_RESULT_BINDING_STALE', 'Development result post-run workspace or lock basis is stale.');
     }
@@ -869,8 +1386,7 @@ function fixedResultAuthority() {
     grantsApproval: false,
     grantsPublication: false,
     grantsMerge: false,
-    grantsProviderWrite: false,
-    grantsFallbackRemoval: false
+    grantsProviderWrite: false
   };
 }
 
@@ -883,15 +1399,17 @@ export function recordDevelopmentResult({
 }) {
   const resolvedRoot = path.resolve(root);
   const request = readDevelopmentRequestState(resolvedRoot, requestId).request;
-  assertDevelopmentRequest(resolvedRoot, request, { lockPath, requireCurrent: true });
+  assertDevelopmentRequest(resolvedRoot, request);
+  const currentBasis = requestUsesTargetWriteClosure(request)
+    ? exactWriteClosureBasis(resolvedRoot, request, lockPath)
+    : exactCurrentRequestBasis(resolvedRoot, request, lockPath);
   const resultId = resultIdForRequest(requestId);
   const existingResult = hasDevelopmentResultState(resolvedRoot, resultId)
     ? readDevelopmentResultState(resolvedRoot, resultId).result
     : null;
   const exactCompletedAt = completedAt || existingResult?.completedAt || new Date().toISOString();
   const bindings = resultBindings(request);
-  const { lock } = exactLock(resolvedRoot, lockPath, request.workflow.id);
-  const observedPostWorkspace = exactWorkspaceBasis(resolvedRoot, lock);
+  const observedPostWorkspace = currentBasis.workspace;
   const postWorkspace = resultWorkspaceBinding(observedPostWorkspace);
   const result = {
     $contract: RESULT_CONTRACT,
@@ -913,7 +1431,7 @@ export function recordDevelopmentResult({
     decisionEvidence: structuredClone(outcome.decisionEvidence || []),
     authority: fixedResultAuthority(),
     privacy: fixedPrivatePrivacy(),
-    limitations: [...(outcome.limitations || ['This result is scoped development evidence and grants no operational or migration authority.'])]
+    limitations: [...(outcome.limitations || ['This result is scoped development evidence and grants no operational authority.'])]
   };
   result.resultFingerprint = unsignedFingerprint(result, 'resultFingerprint');
   assertDevelopmentResult(resolvedRoot, result, request, { lockPath, requireCurrent: true });
@@ -951,6 +1469,30 @@ export function inspectDevelopmentRun({ root, requestId }) {
     result = readDevelopmentResultState(resolvedRoot, resultId).result;
     assertDevelopmentResult(resolvedRoot, result, request);
   }
+  const applicability = developmentRequestApplicability(resolvedRoot, request);
+  const requestBoundary = result
+    ? {
+        state: 'closed',
+        reasonCode: 'DEVELOPMENT_RESULT_RECORDED',
+        permittedNextAction: 'none',
+        declared: structuredClone(request.effectBoundary),
+        effective: closedEffectBoundary()
+      }
+    : applicability.state === 'current'
+      ? {
+          state: 'current',
+          reasonCode: applicability.reasonCode,
+          permittedNextAction: 'perform-request-scoped-development',
+          declared: structuredClone(request.effectBoundary),
+          effective: structuredClone(request.effectBoundary)
+        }
+      : {
+          state: 'stale',
+          reasonCode: applicability.reasonCode,
+          permittedNextAction: 'create-new-development-request',
+          declared: structuredClone(request.effectBoundary),
+          effective: closedEffectBoundary()
+        };
   const targetIds = request.invocation.kind === 'develop'
     ? request.invocation.targets.map((item) => item.id)
     : [];
@@ -980,7 +1522,8 @@ export function inspectDevelopmentRun({ root, requestId }) {
       id: request.host.id,
       adapterFingerprint: request.host.adapterFingerprint,
       evaluatedInstructionFingerprint: request.host.evaluatedInstructionFingerprint,
-      candidateProjectionFingerprint: request.host.candidateProjectionFingerprint
+      candidateProjectionFingerprint: request.host.candidateProjectionFingerprint,
+      managedManifestFingerprint: request.host.managedManifestFingerprint
     },
     configuration: {
       name: request.configuration.name,
@@ -991,11 +1534,20 @@ export function inspectDevelopmentRun({ root, requestId }) {
       rootIdentityFingerprint: request.workspace.rootIdentityFingerprint,
       revisionFingerprint: request.workspace.revisionFingerprint,
       treeFingerprint: request.workspace.treeFingerprint,
+      untargetedTreeFingerprint: request.workspace.untargetedTreeFingerprint,
       exactInputState: request.workspace.exactInputState,
       policyFingerprint: request.workspace.policyFingerprint,
       settingsFingerprint: request.workspace.settingsFingerprint
     },
-    invocation: { kind: request.invocation.kind, profile: request.invocation.profile, targetIds, plannedRuns },
+    invocation: {
+      kind: request.invocation.kind,
+      profile: request.invocation.profile,
+      requestedLocalEffects: [...request.invocation.requestedLocalEffects],
+      targetIds,
+      plannedRuns
+    },
+    applicability,
+    requestBoundary,
     progress: {
       state: result?.state || 'requested',
       completedRuns: result?.workerRuns.length || 0,
@@ -1012,10 +1564,12 @@ export function inspectDevelopmentRun({ root, requestId }) {
       kind: 'inspection-only',
       grantsExecution: false,
       grantsApproval: false,
+      grantsProviderRead: false,
       grantsPublication: false,
       grantsMerge: false,
       grantsProviderWrite: false,
-      grantsFallbackRemoval: false
+      grantsProtectedRootMutation: false,
+      grantsHostRealization: false
     },
     privacy: {
       absolutePathsIncluded: false,
@@ -1028,7 +1582,7 @@ export function inspectDevelopmentRun({ root, requestId }) {
     },
     limitations: [
       'Private requested outcomes, target paths, worker transcripts, raw diffs, and result prose are excluded from this inspection.',
-      'Inspection does not grant execution, approval, publication, merge, provider-write, host-realization, promotion, or fallback-removal authority.'
+      'Inspection does not grant execution, approval, publication, merge, provider-write, host-realization, or promotion authority.'
     ].sort(compareText),
     inspectionFingerprint: 'sha256:' + '0'.repeat(64)
   };

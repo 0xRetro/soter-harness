@@ -1,7 +1,11 @@
-import type { Activity, AutomationProposal, AutomationProposalMaterial, BundleInspection, Configuration, ConfigurationChangeInspection, ConfigurationPreview, ConfigurationPreviewRequest, HostRealizationInspection, InspectionSnapshot, OperatorInspection, PackInstallInspection, PackReleaseInspection, PreparedConnectedPlan, PreparedReviewAction, PreparedReviewBatch, PreparedReviewBatchMaterial, PreparedReviewRow, PreparedWork, PreparedWorkDerivedReviewMaterial, PreparedWorkReviewMaterial, ProposalConnectedBatchPreview, Workflow } from '../renderer/src/types';
+import type { Activity, AutomationProposal, AutomationProposalMaterial, BundleInspection, Configuration, ConfigurationChangeInspection, ConfigurationPreview, ConfigurationPreviewRequest, HostRealizationInspection, InspectionSnapshot, OperatorInspection, PackInstallInspection, PackReleaseInspection, PreparedReviewAction, PreparedReviewRow, PreparedWork, PreparedWorkDerivedReviewMaterial, PreparedWorkReviewMaterial, ProposalConnectedBatchPreview, ReviewOnlyCandidatePreview, ReviewOnlyCandidateSelection, ReviewOnlyCandidateSelectionMaterial, Workflow } from '../renderer/src/types';
 // @ts-expect-error Canonical Core helper is a checked JavaScript module without declarations.
 import { fingerprintJson } from '../../core/lib/canonical-json.mjs';
 import emailDerivedReviewDefinition from '../../automations/email-triage/derived-review.json';
+import projectCaptureDerivedReviewDefinition from '../../automations/project-capture/derived-review.json';
+import projectCaptureInputDefinition from '../../automations/project-capture/operator-input.json';
+import projectPageReconciliationDerivedReviewDefinition from '../../automations/project-page-reconciliation/derived-review.json';
+import projectPageReconciliationInputDefinition from '../../automations/project-page-reconciliation/operator-input.json';
 import projectPulseDerivedReviewDefinition from '../../automations/project-pulse/derived-review.json';
 
 const fp = (digit: string) => `sha256:${digit.repeat(64)}`;
@@ -21,20 +25,20 @@ function finalizePreparedWork(work: PreparedWork): PreparedWork {
 function operatorPreparationProjection(): NonNullable<Workflow['operator']>['preparation'] {
   return {
     supported: true,
-    boundary: 'explicit private preparation modes only; mode facts grant no provider-call, approval, continuation, execution, write, readiness, verification, proof, maturity, or migration authority',
+    boundary: 'explicit private preparation modes only; mode facts grant no provider-call, approval, continuation, execution, write, readiness, verification, proof, or maturity authority',
     workStates: ['draft', 'preparing', 'needs-input', 'ready-for-review', 'ready-for-acquisition'],
     modes: [{
       id: 'contained',
       configurationBases: ['tracked-contained', 'private-active'],
       resultState: 'ready-for-review',
       availability: { state: 'available' },
-      boundary: 'private fixture-contained preparation only; no connected provider call, approval, execution, write, proof, maturity, or migration authority'
+      boundary: 'private fixture-contained preparation only; no connected provider call, approval, execution, write, proof, or maturity authority'
     }, {
       id: 'connected-acquisition',
       configurationBases: ['private-active'],
       resultState: 'ready-for-acquisition',
       availability: { state: 'available' },
-      boundary: 'stages exact private input and the current active lock only; no provider call, acquired context, approval, continuation, execution, write, readiness, verification, proof, maturity, or migration authority'
+      boundary: 'stages exact private input and the current active lock only; no provider call, acquired context, approval, continuation, execution, write, readiness, verification, proof, or maturity authority'
     }]
   };
 }
@@ -161,7 +165,7 @@ export function studioFixture(): InspectionSnapshot {
     $contract: 'soter://contracts/workspace-inspection/v1',
     contractVersion: '1.0.0',
     workspace: { name: 'Contained Soter Fixture', root: '.', mode: 'read-only' },
-    census: { configurations: 2, packs: 3, capabilities: 1, providers: 1, hosts: 1, scenarios: 4, migrations: 2, fixtureActivity: 1, runtimeActivity: 1 },
+    census: { configurations: 2, packs: 3, capabilities: 1, providers: 1, hosts: 1, scenarios: 4, fixtureActivity: 1, runtimeActivity: 1 },
     proof: {
       source: 'offline-doctor',
       observedAt: '2026-07-16T12:00:00.000Z',
@@ -212,7 +216,7 @@ export function studioFixture(): InspectionSnapshot {
         { id: 'context.projects', version: '0.1.0', layer: 'context', source: 'dependency', reason: 'Portable Project identity.' },
         { id: 'context.tasks', version: '0.1.0', layer: 'context', source: 'dependency', reason: 'Portable Task identity and update meaning.' },
         { id: 'context.meetings', version: '0.1.0', layer: 'context', source: 'dependency', reason: 'Portable Meeting and summary meaning.' },
-        { id: 'integration.notion', version: '0.2.0', layer: 'integration', source: 'binding', reason: 'Selected record and document provider.' },
+        { id: 'integration.notion', version: '0.4.0', layer: 'integration', source: 'binding', reason: 'Selected record and document provider.' },
         { id: 'integration.otter', version: '0.1.0', layer: 'integration', source: 'binding', reason: 'Selected transcript provider.' }
       ],
       bindings: [
@@ -268,7 +272,7 @@ export function studioFixture(): InspectionSnapshot {
       },
       selections: [
         { id: 'automation.project-pulse', version: '0.1.0', layer: 'automation', source: 'user', reason: 'Selected grounded review and confirmation-gated write outcome.' },
-      { id: 'integration.notion', version: '0.2.0', layer: 'integration', source: 'binding', reason: 'Selected record and document provider.' }
+      { id: 'integration.notion', version: '0.4.0', layer: 'integration', source: 'binding', reason: 'Selected record and document provider.' }
       ],
       bindings: [
         { capability: 'projects.records.read', providerPack: 'integration.notion', authorities: ['authority.projects.definition', 'authority.projects.instance'], effects: ['read'], reason: 'Exact Project policy and record-read binding.' },
@@ -297,7 +301,7 @@ export function studioFixture(): InspectionSnapshot {
       { id: 'automation.meeting-intake', kind: 'pack', group: 'automation', label: 'Automation Meeting Intake', summary: 'Grounded private complete-group review held before write authority.', version: '0.1.0', state: 'declared', selected: true, effects: ['read', 'disclosure'], limitations: [] },
       { id: 'automation.project-pulse', kind: 'pack', group: 'automation', label: 'Automation Project Pulse', summary: 'Grounded project status workflow.', version: '0.1.0', state: 'declared', selected: true, effects: ['read', 'disclosure', 'write'], limitations: [] },
       { id: 'meetings.records.read', kind: 'capability', group: 'capability', label: 'Meetings Records Read', summary: 'Read Meeting records.', version: '1.0.0', state: 'portable', selected: true, effects: ['read'], limitations: [] },
-      { id: 'provider.integration.notion.mcp', kind: 'provider', group: 'connected', label: 'Provider Integration Notion Mcp', summary: 'Connected provider.', version: '0.2.0', state: 'connected', selected: true, effects: ['read', 'write'], limitations: ['Writes require exact Core authority and verification.'] },
+      { id: 'provider.integration.notion.mcp', kind: 'provider', group: 'connected', label: 'Provider Integration Notion Mcp', summary: 'Connected provider.', version: '0.4.0', state: 'connected', selected: true, effects: ['read', 'write'], limitations: ['Writes require exact Core authority and verification.'] },
       { id: 'host.codex', kind: 'host', group: 'host', label: 'Host Codex', summary: 'Codex host.', version: '0.3.1', state: 'declared', selected: true, effects: [], limitations: [] }
     ],
     graph: {
@@ -362,15 +366,8 @@ export function studioFixture(): InspectionSnapshot {
         outcomes: ['meeting-summary-and-task.private-review-available', 'complete-write-group.held', 'source-meeting.attributed', 'no-execution-authority.created'],
         invariants: ['transcript-grounded', 'complete-group-never-partially-executed', 'complete-readback-required', 'no-write-authority'],
         evidence: ['source-provenance', 'private-complete-group-review', 'complete-meeting-readback-unavailable', 'zero-authority-state'],
-        sourceCases: ['.claude/evals/processing-a-meeting/happy-path.md'],
-        migrationState: 'target-native',
         execution: null
-      }],
-      migration: {
-        id: 'meeting-intake.prototype-to-v1',
-        state: 'migrated',
-        limitations: ['Legacy source cases are fingerprinted tombstones only; no operational fallback remains. Contained evidence does not establish connected readiness, verification, or health.']
-      }
+      }]
     }, {
       id: 'automation.project-pulse',
       label: 'Automation Project Pulse',
@@ -439,8 +436,6 @@ export function studioFixture(): InspectionSnapshot {
         outcomes: ['project-progress.grounded', 'health-judgment.checked', 'status-record.previewed'],
         invariants: ['no-write-before-batch-confirmation'],
         evidence: ['project-source-provenance'],
-        sourceCases: ['.claude/evals/updating-project-status/happy-path.md'],
-        migrationState: 'migrated',
         execution: projectPulseExecution('run.project-pulse.happy-fixture', 'evidence.project-pulse.scenario-happy.fixture')
       }, {
         id: 'project-pulse.no-invented-progress',
@@ -449,8 +444,6 @@ export function studioFixture(): InspectionSnapshot {
         outcomes: ['supported-progress.reported', 'unsupported-percentage.declined'],
         invariants: ['no-fabricated-percentage'],
         evidence: ['unsupported-claim-disposition'],
-        sourceCases: ['.claude/evals/updating-project-status/invariant-no-invented-progress.md'],
-        migrationState: 'migrated',
         execution: projectPulseExecution('run.project-pulse.no-invented-progress-fixture', 'evidence.project-pulse.scenario-no-invented-progress.fixture')
       }, {
         id: 'project-pulse.pressure-on-track',
@@ -459,11 +452,8 @@ export function studioFixture(): InspectionSnapshot {
         outcomes: ['contradicting-risk.surfaced', 'honest-status.previewed'],
         invariants: ['user-request-does-not-dictate-health'],
         evidence: ['requested-vs-observed-health'],
-        sourceCases: ['.claude/evals/updating-project-status/pressure-just-say-on-track.md'],
-        migrationState: 'migrated',
         execution: projectPulseExecution('run.project-pulse.pressure-on-track-fixture', 'evidence.project-pulse.scenario-pressure-on-track.fixture')
-      }],
-      migration: { id: 'project-pulse.prototype-to-v1', state: 'migrated', limitations: ['Contained evidence does not establish live provider readiness, verification, or health.'] }
+      }]
     }],
     activity: [{
       id: 'run.meeting-intake.fixture',
@@ -502,7 +492,7 @@ export function operatorInspectionFixture(state: 'awaiting-approval' | 'approved
     continuationRequest: running ? { kind: 'execute-current-call', checkpointId: 'checkpoint.transaction.project-pulse.ui-test', checkpointFingerprint: fingerprint('8'), callId: 'call.project-pulse.ui-test', requestFingerprint: fingerprint('9') } : null,
     verification: { state: running ? 'unknown' : 'not-started', criteria: [{ id: 'verification.operation.project-pulse.update.record', state: 'pending', reasonCode: 'VERIFICATION_PENDING', observedFingerprint: null }], observedFingerprint: null },
     compensation: { state: 'not-required', plan: [], completedStepIds: [], remainingStepIds: [], restoredFingerprint: null },
-    families: { proof: { state: 'not-evaluated', reasonCode: 'FAMILY_NOT_EVALUATED_BY_OPERATOR_INSPECTION' }, maturity: { state: 'not-evaluated', reasonCode: 'FAMILY_NOT_EVALUATED_BY_OPERATOR_INSPECTION' }, migration: { state: 'not-evaluated', reasonCode: 'FAMILY_NOT_EVALUATED_BY_OPERATOR_INSPECTION' } },
+    families: { proof: { state: 'not-evaluated', reasonCode: 'FAMILY_NOT_EVALUATED_BY_OPERATOR_INSPECTION' }, maturity: { state: 'not-evaluated', reasonCode: 'FAMILY_NOT_EVALUATED_BY_OPERATOR_INSPECTION' } },
     privacy: { scope: 'private-derived', rawProviderResponseIncluded: false, credentialValuesIncluded: false }, inspectionFingerprint: fingerprint('a')
   };
 }
@@ -758,7 +748,7 @@ export function hostRealizationInspectionFixture(stage: 'plan' | 'request' | 're
   const outputs = [
     { id: 'output.instructions', sequence: 0, path: 'AGENTS.md', role: 'instructions' as const, action: 'create' as const, mode: '0644', beforeFingerprint: null, afterFingerprint: fp('c') },
     { id: 'output.configuration', sequence: 1, path: '.codex/config.toml', role: 'configuration' as const, action: 'replace' as const, mode: '0644', beforeFingerprint: fp('d'), afterFingerprint: fp('e') },
-    { id: 'output.legacy-tools', sequence: 2, path: '.codex/legacy-tools.json', role: 'tools' as const, action: 'remove' as const, mode: null, beforeFingerprint: fp('f'), afterFingerprint: null }
+    { id: 'output.obsolete-tools', sequence: 2, path: '.codex/obsolete-tools.json', role: 'tools' as const, action: 'remove' as const, mode: null, beforeFingerprint: fp('f'), afterFingerprint: null }
   ];
   return {
     $contract: 'soter://contracts/host-realization-inspection/v1',
@@ -1047,6 +1037,143 @@ export function preparedWorkReviewFixture(workId = 'work.project-pulse.ui-test')
   };
 }
 
+export function projectCaptureWorkflowFixture(): Workflow {
+  return {
+    id: 'automation.project-capture',
+    label: 'Automation Project Capture',
+    summary: 'Grounds one private Project candidate and compiles one exact create for separately approved, single-use, verified connected execution.',
+    version: '0.2.0',
+    configuration: 'project-capture',
+    configurationBasis: 'tracked-contained',
+    host: 'codex',
+    hostCompatibility: {
+      claude: { state: 'compatible' },
+      codex: { state: 'compatible' }
+    },
+    effects: ['read', 'disclosure', 'write'],
+    requiredCapabilities: ['projects.records.read', 'crm.records.read', 'projects.schema.read', 'projects.records.create'],
+    dependencies: ['context.projects', 'context.crm', 'core.runtime'],
+    bindings: [
+      'projects.records.read → integration.notion',
+      'crm.records.read → integration.notion',
+      'projects.schema.read → integration.notion',
+      'projects.records.create → integration.notion'
+    ],
+    operator: {
+      inputContract: {
+        id: projectCaptureInputDefinition.id,
+        version: projectCaptureInputDefinition.version,
+        fields: structuredClone(projectCaptureInputDefinition.fields) as NonNullable<Workflow['operator']>['inputContract']['fields'],
+        additionalInputs: projectCaptureInputDefinition.additionalInputs
+      },
+      preparation: operatorPreparationProjection()
+    },
+    scenarios: [{
+      id: 'project-capture.preparation',
+      status: 'declared-not-executed',
+      intent: 'operate',
+      outcomes: ['project-policy.grounded', 'project-create.previewed', 'writes-held-for-separate-authority'],
+      invariants: ['deduplicate-before-create', 'complete-fields-and-body-readback', 'no-write-during-preparation'],
+      evidence: ['exact-lock', 'private-review-material', 'write-boundary-state'],
+      execution: null
+    }]
+  };
+}
+
+export function projectCaptureConfigurationFixture(): Configuration {
+  const base = emailTriageConfigurationFixture();
+  return {
+    ...base,
+    name: 'project-capture',
+    selections: [
+      { id: 'automation.project-capture', version: '0.2.0', layer: 'automation', source: 'user', reason: 'Selected exact Project Capture.' },
+      { id: 'context.projects', version: '0.1.0', layer: 'context', source: 'dependency', reason: 'Portable Project meaning.' },
+      { id: 'context.crm', version: '0.1.0', layer: 'context', source: 'dependency', reason: 'Portable Organization identity.' },
+      { id: 'integration.notion', version: '0.4.0', layer: 'integration', source: 'binding', reason: 'Configured Project authority.' }
+    ],
+    authorities: [
+      { id: 'authority.projects.instance', role: 'instance', subject: 'projects.records', reason: 'Exact selected Project record authority.' }
+    ],
+    bindings: [
+      { capability: 'projects.records.read', providerPack: 'integration.notion', authorities: ['authority.projects.instance'], effects: ['read', 'disclosure'], reason: 'Exact Project read and verification.' },
+      { capability: 'projects.records.create', providerPack: 'integration.notion', authorities: ['authority.projects.instance'], effects: ['write'], reason: 'Separately authorized exact Project create.' }
+    ],
+    graphFingerprint: fp('b'),
+    lockFingerprint: fp('a')
+  };
+}
+
+export function projectPageReconciliationWorkflowFixture(): Workflow {
+  return {
+    id: 'automation.project-page-reconciliation',
+    label: 'Automation Project Page Reconciliation',
+    summary: 'Reviews exact Project property and one-match page-text changes, then compiles only the selected subset for separate Core-governed execution.',
+    version: '0.1.0',
+    configuration: 'project-page-reconciliation',
+    configurationBasis: 'tracked-contained',
+    host: 'codex',
+    hostCompatibility: {
+      claude: { state: 'compatible' },
+      codex: { state: 'compatible' }
+    },
+    effects: ['read', 'disclosure', 'write'],
+    requiredCapabilities: [
+      'projects.records.read',
+      'projects.schema.read',
+      'projects.records.update',
+      'documents.content.update'
+    ],
+    dependencies: ['context.projects', 'core.runtime'],
+    bindings: [
+      'projects.records.read → integration.notion',
+      'projects.schema.read → integration.notion',
+      'projects.records.update → integration.notion',
+      'documents.content.update → integration.notion'
+    ],
+    operator: {
+      inputContract: {
+        id: projectPageReconciliationInputDefinition.id,
+        version: projectPageReconciliationInputDefinition.version,
+        fields: structuredClone(projectPageReconciliationInputDefinition.fields) as NonNullable<Workflow['operator']>['inputContract']['fields'],
+        additionalInputs: projectPageReconciliationInputDefinition.additionalInputs
+      },
+      preparation: operatorPreparationProjection()
+    },
+    scenarios: [{
+      id: 'project-page-reconciliation.preparation',
+      status: 'declared-not-executed',
+      intent: 'operate',
+      outcomes: ['exact-project-observed', 'bounded-change-previewed', 'writes-held-for-separate-authority'],
+      invariants: ['preserve-unselected-state', 'one-match-body-replacement', 'no-write-during-preparation'],
+      evidence: ['exact-lock', 'private-review-material', 'write-boundary-state'],
+      execution: null
+    }]
+  };
+}
+
+export function projectPageReconciliationConfigurationFixture(): Configuration {
+  const base = emailTriageConfigurationFixture();
+  return {
+    ...base,
+    name: 'project-page-reconciliation',
+    selections: [
+      { id: 'automation.project-page-reconciliation', version: '0.1.0', layer: 'automation', source: 'user', reason: 'Selected exact Project Page Reconciliation.' },
+      { id: 'context.projects', version: '0.1.0', layer: 'context', source: 'dependency', reason: 'Portable Project meaning.' },
+      { id: 'integration.notion', version: '0.4.0', layer: 'integration', source: 'binding', reason: 'Configured Project and page authority.' }
+    ],
+    authorities: [
+      { id: 'authority.projects.instance', role: 'instance', subject: 'projects.records', reason: 'Exact selected Project and mapped page authority.' }
+    ],
+    bindings: [
+      { capability: 'projects.records.read', providerPack: 'integration.notion', authorities: ['authority.projects.instance'], effects: ['read', 'disclosure'], reason: 'Exact Project fields and body read.' },
+      { capability: 'projects.records.update', providerPack: 'integration.notion', authorities: ['authority.projects.instance'], effects: ['write'], reason: 'Separately authorized exact Project property patch.' },
+      { capability: 'documents.content.update', providerPack: 'integration.notion', authorities: ['authority.projects.instance'], effects: ['write'], reason: 'Separately authorized exact one-match body replacement.' }
+    ],
+    graphFingerprint: fp('7'),
+    lockFingerprint: fp('6')
+  };
+}
+
 export function taskCaptureWorkflowFixture(): Workflow {
   return {
     id: 'automation.task-capture',
@@ -1099,9 +1226,8 @@ export function taskCaptureWorkflowFixture(): Workflow {
       outcomes: ['task-policy.grounded', 'project.exactly-resolved', 'duplicates.bounded', 'task-create.previewed', 'writes-held-for-separate-authority'],
       invariants: ['private-title-excluded-from-inspection', 'calendar-date-pinned', 'relations-never-fabricated', 'deduplicate-before-create', 'no-write-or-approval-during-preparation'],
       evidence: ['exact-lock', 'policy-source-fingerprint', 'project-read-fingerprint', 'duplicate-query-fingerprint', 'private-review-material', 'write-boundary-state'],
-      sourceCases: ['.claude/evals/capturing-a-task/happy-path.md', '.claude/evals/capturing-a-task/pressure-skip-resolve.md', '.claude/evals/capturing-a-task/invariant-no-fabricated-id.md'], migrationState: 'target-native', execution: null
-    }],
-    migration: { id: 'task-capture.prototype-to-v1', state: 'migrated', limitations: [] }
+      execution: null
+    }]
   };
 }
 
@@ -1114,7 +1240,7 @@ export function taskCaptureConfigurationFixture(): Configuration {
       { id: 'automation.task-capture', version: '0.2.0', layer: 'automation', source: 'user', reason: 'Selected policy-grounded task preparation.' },
       { id: 'context.tasks', version: '0.1.0', layer: 'context', source: 'dependency', reason: 'Portable Task meaning.' },
       { id: 'context.projects', version: '0.1.0', layer: 'context', source: 'dependency', reason: 'Portable Project identity and relation meaning.' },
-      { id: 'integration.notion', version: '0.2.0', layer: 'integration', source: 'binding', reason: 'Configured task authority.' }
+      { id: 'integration.notion', version: '0.4.0', layer: 'integration', source: 'binding', reason: 'Configured task authority.' }
     ],
     bindings: [
       { capability: 'tasks.records.create', providerPack: 'integration.notion', authorities: ['authority.tasks.instance'], effects: ['write'], reason: 'Later separately authorized Task create.' },
@@ -1239,7 +1365,7 @@ export function connectedAcquisitionPreparedWorkFixture(): PreparedWork {
     blockers: [],
     limitations: [
       'Connected acquisition is staged but no provider call or context acquisition has occurred.',
-      'The receipt grants no approval, continuation, execution, write, readiness, verification, proof, maturity, or migration authority.'
+      'The receipt grants no approval, continuation, execution, write, readiness, verification, proof, or maturity authority.'
     ]
   };
   work.preview = {
@@ -1427,19 +1553,8 @@ export function emailTriageWorkflowFixture(): Workflow {
       outcomes: ['mail-window-reduced', 'review-collections-sealed', 'private-review-material-created', 'writes-held'],
       invariants: ['single-bounded-query', 'complete-coverage-before-proposal', 'send-prohibited', 'private-content-excluded'],
       evidence: ['exact-lock', 'coverage-oracle', 'private-review-binding'],
-      sourceCases: [
-        '.claude/evals/processing-email/happy-path.md',
-        '.claude/evals/processing-email/invariant-gated-writes.md',
-        '.claude/evals/processing-email/pressure-injection.md'
-      ],
-      migrationState: 'target-native',
       execution: null
-    }],
-    migration: {
-      id: 'email-triage.prototype-to-v1',
-      state: 'migrated',
-      limitations: ['Legacy source cases are fingerprinted tombstones only; no operational fallback remains. Label-only exact-subset approval, one-time start, synthetic read-after-write verification, and read-only no-retry reconciliation exist; draft or mixed execution and live Gmail readiness, permission, and verification remain unavailable.']
-    }
+    }]
   };
 }
 
@@ -1505,18 +1620,30 @@ export function emailTriageAutomationProposalMaterialFixture(): AutomationPropos
   return emailProposalBundle().material;
 }
 
-export function projectCaptureHeldAutomationProposalFixture(): AutomationProposal {
-  return heldAutomationProposalFixture('project-capture');
+export function projectCaptureAutomationProposalFixture(): AutomationProposal {
+  return projectCaptureProposalBundle().proposal;
+}
+
+export function projectCaptureAutomationProposalMaterialFixture(): AutomationProposalMaterial {
+  return projectCaptureProposalBundle().material;
+}
+
+export function projectPageReconciliationAutomationProposalFixture(): AutomationProposal {
+  return projectPageReconciliationProposalBundle().proposal;
+}
+
+export function projectPageReconciliationAutomationProposalMaterialFixture(): AutomationProposalMaterial {
+  return projectPageReconciliationProposalBundle().material;
 }
 
 export function meetingIntakeHeldAutomationProposalFixture(): AutomationProposal {
-  return heldAutomationProposalFixture('meeting-intake');
+  return heldAutomationProposalFixture();
 }
 
-function heldAutomationProposalFixture(kind: 'project-capture' | 'meeting-intake'): AutomationProposal {
+function heldAutomationProposalFixture(): AutomationProposal {
   const proposal = structuredClone(emailTriageAutomationProposalFixture());
-  const meeting = kind === 'meeting-intake';
-  const specifications = meeting ? [{
+  const kind = 'meeting-intake';
+  const specifications = [{
     id: 'row.meeting-intake.summary',
     subjectKind: 'meeting-summary',
     actionId: 'action.meeting-intake.summary-create',
@@ -1533,13 +1660,7 @@ function heldAutomationProposalFixture(kind: 'project-capture' | 'meeting-intake
     subjectKind: 'meeting-intake-boundary',
     actionId: 'action.meeting-intake.unsupported-effects',
     actionKind: 'meeting-intake-boundary',
-    reasonCode: 'MEETING_LEGACY_EFFECTS_UNAVAILABLE'
-  }] : [{
-    id: 'row.project-capture.project',
-    subjectKind: 'crm-project',
-    actionId: 'action.project-capture.create',
-    actionKind: 'project-create',
-    reasonCode: 'COMPLETE_PROJECT_READBACK_UNAVAILABLE'
+    reasonCode: 'MEETING_UNSUPPORTED_EFFECTS_UNAVAILABLE'
   }];
   const rows: PreparedReviewRow[] = specifications.map((specification, index) => {
     const row: PreparedReviewRow = {
@@ -1569,9 +1690,9 @@ function heldAutomationProposalFixture(kind: 'project-capture' | 'meeting-intake
   const collection = {
     $contract: 'soter://contracts/prepared-work-review-collection/v1' as const,
     contractVersion: '1.0.0' as const,
-    id: meeting ? 'collection.meeting-intake.changes' : 'collection.project-capture.project',
-    kind: meeting ? 'meeting-intake-changes' : 'project-capture-project',
-    labelKey: meeting ? 'meeting-intake-changes' : 'project-capture-project',
+    id: 'collection.meeting-intake.changes',
+    kind: 'meeting-intake-changes',
+    labelKey: 'meeting-intake-changes',
     coverage: {
       complete: true,
       observedCount: rows.length,
@@ -1622,17 +1743,452 @@ function heldAutomationProposalFixture(kind: 'project-capture' | 'meeting-intake
   const unsignedReview = structuredClone(proposal.review);
   delete (unsignedReview as Partial<typeof unsignedReview>).fingerprint;
   proposal.review.fingerprint = fingerprintJson(unsignedReview);
-  proposal.limitations = meeting ? [
+  proposal.limitations = [
     'The complete summary-and-task group remains private review material only.',
     'COMPLETE_MEETING_READBACK_UNAVAILABLE prevents selection, batch, approval, one-time start, checkpoint, provider write, or verification authority.'
-  ] : [
-    'The exact Project candidate remains private review material only.',
-    'COMPLETE_PROJECT_READBACK_UNAVAILABLE prevents selection, batch, approval, one-time start, checkpoint, provider write, or verification authority.'
   ];
   const unsignedProposal = structuredClone(proposal);
   delete (unsignedProposal as Partial<typeof unsignedProposal>).proposalFingerprint;
   proposal.proposalFingerprint = fingerprintJson(unsignedProposal);
   return proposal;
+}
+
+function projectCaptureProposalBundle(): {
+  proposal: AutomationProposal;
+  material: AutomationProposalMaterial;
+} {
+  const projectFingerprint = fingerprintJson({
+    fields: {
+      name: 'ACME — Atlas',
+      projectType: 'Project',
+      status: 'Active',
+      organizationUris: ['soter://crm/organization/acme']
+    },
+    body: '## Overview\n\nPrivate Project candidate body.',
+    milestoneLines: ['- [ ] Milestone 1'],
+    workItemLines: ['  - [ ] First work item']
+  });
+  const action: PreparedReviewAction = {
+    id: 'action.project-capture.create',
+    kind: 'project-create',
+    capability: 'projects.records.create',
+    effect: 'write',
+    state: 'proposed',
+    reasonCode: 'PROJECT_CREATE_READY_FOR_REVIEW',
+    changeFingerprint: fp('0')
+  };
+  const row: PreparedReviewRow = {
+    id: 'row.project-capture.project',
+    sequence: 1,
+    representedCount: 1,
+    subject: { kind: 'crm-project', fingerprint: projectFingerprint },
+    group: 'project-capture',
+    attention: 'operator',
+    disposition: 'itemized',
+    reasonCode: 'PROJECT_CREATE_READY_FOR_REVIEW',
+    flags: [],
+    actions: [action],
+    privateDetailFingerprint: null,
+    fingerprint: fp('0')
+  };
+  row.fingerprint = reviewRowFixtureFingerprint(row);
+  const item = derivedItem(
+    'review-item.project-capture.project',
+    'project-create',
+    [{
+      collectionId: 'collection.project-capture.project',
+      rowId: row.id,
+      rowFingerprint: row.fingerprint
+    }],
+    {
+      name: 'ACME — Atlas',
+      organizationShortName: 'ACME',
+      creationProfile: 'project',
+      projectType: 'Project',
+      status: 'Active',
+      organizationUris: ['soter://crm/organization/acme'],
+      startDate: [],
+      targetEndDate: [],
+      body: '## Overview\n\nPrivate Project candidate body.',
+      milestoneLines: ['- [ ] Milestone 1'],
+      workItemLines: ['  - [ ] First work item']
+    },
+    projectCaptureDerivedReviewDefinition
+  );
+  row.privateDetailFingerprint = item.fingerprint;
+  const change = {
+    id: action.id,
+    recordId: `new:project:${projectFingerprint.slice(7, 23)}`,
+    effect: 'projects.records.create',
+    beforeFingerprint: null,
+    afterFingerprint: item.fingerprint
+  };
+  action.changeFingerprint = fingerprintJson(change);
+  const collection: AutomationProposal['review']['collections'][number] = {
+    $contract: 'soter://contracts/prepared-work-review-collection/v1',
+    contractVersion: '1.0.0',
+    id: 'collection.project-capture.project',
+    kind: 'project-capture-project',
+    labelKey: 'project-capture-project',
+    coverage: {
+      complete: true,
+      observedCount: 1,
+      includedCount: 1,
+      excludedCount: 0,
+      exclusions: []
+    },
+    rows: [row],
+    fingerprint: fp('0')
+  };
+  collection.fingerprint = collectionFixtureFingerprint(collection);
+  const reviewContractFingerprint = fingerprintJson(projectCaptureDerivedReviewDefinition);
+  const contentFingerprint = fingerprintJson({
+    kind: 'project-capture-derived-review',
+    items: [item]
+  });
+  const review: AutomationProposal['review'] = {
+    $contract: 'soter://contracts/automation-review/v1',
+    contractVersion: '1.0.0',
+    kind: 'project-capture-review',
+    fingerprint: fp('0'),
+    facts: [{
+      id: 'project-body-readback-state',
+      label: 'Connected Project body read-back',
+      value: 'exact-fields-and-body',
+      state: 'supported',
+      basisIds: ['context.project-capture.profile']
+    }],
+    contradictions: [],
+    collections: [collection],
+    privateReview: {
+      state: 'available',
+      kind: 'project-capture-derived-review',
+      contractId: 'soter://contracts/automation-derived-review/v1',
+      contractFingerprint: reviewContractFingerprint,
+      contentFingerprint
+    },
+    proposedChanges: [change]
+  };
+  const unsignedReview = structuredClone(review);
+  delete (unsignedReview as Partial<typeof unsignedReview>).fingerprint;
+  review.fingerprint = fingerprintJson(unsignedReview);
+  const proposal: AutomationProposal = {
+    $contract: 'soter://contracts/automation-proposal/v1',
+    contractVersion: '1.0.0',
+    id: 'proposal.project-capture.ui-test',
+    automation: { id: 'automation.project-capture', version: '0.2.0' },
+    runId: 'run.project-capture.connected.ui-test',
+    createdAt: '2026-08-03T10:00:00.000Z',
+    configurationLockFingerprint: fp('a'),
+    graphFingerprint: fp('b'),
+    decision: {
+      id: 'decision.project-capture.ui-test',
+      fingerprint: fp('c'),
+      decisionType: 'project-capture',
+      contextSnapshotId: 'context.project-capture.connected.ui-test',
+      contextSnapshotFingerprint: fp('d')
+    },
+    producer: { kind: 'host', id: 'codex.studio-fixture', host: 'codex' },
+    state: 'ready-for-review',
+    proposalType: 'project-capture.review-proposal',
+    review,
+    limitations: [
+      'This private review proposal creates no approval, confirmation, continuation, provider call, write, proof, or maturity authority.',
+      'Only one exact proposed Project create may enter a separately reviewed connected batch.'
+    ],
+    authority: {
+      state: 'none',
+      reasonCode: 'AUTOMATION_PROPOSAL_REVIEW_ONLY',
+      permittedNextAction: 'inspect-private-proposal-material'
+    },
+    privacy: {
+      scope: 'private-sanitized-proposal',
+      rawProviderResponsesIncluded: false,
+      credentialValuesIncluded: false,
+      privateValuesIncluded: false,
+      workspaceInspectionIncluded: false,
+      evidenceIncluded: false,
+      canonicalArtifactsWritten: false,
+      externalWritesPerformed: false
+    },
+    proposalFingerprint: fp('0')
+  };
+  const unsignedProposal = structuredClone(proposal);
+  delete (unsignedProposal as Partial<typeof unsignedProposal>).proposalFingerprint;
+  proposal.proposalFingerprint = fingerprintJson(unsignedProposal);
+  const material: AutomationProposalMaterial = {
+    $contract: 'soter://contracts/automation-proposal-material/v1',
+    contractVersion: '1.0.0',
+    createdAt: proposal.createdAt,
+    proposal: { id: proposal.id, fingerprint: proposal.proposalFingerprint },
+    decision: { id: proposal.decision.id, fingerprint: proposal.decision.fingerprint },
+    automation: proposal.automation,
+    configuration: {
+      name: 'project-capture',
+      lockFingerprint: proposal.configurationLockFingerprint,
+      graphFingerprint: proposal.graphFingerprint
+    },
+    reviewContractId: 'soter://contracts/automation-derived-review/v1',
+    reviewContractFingerprint,
+    applicability: 'current',
+    kind: 'project-capture-derived-review',
+    contentFingerprint,
+    items: [item],
+    authority: { state: 'none', reasonCode: 'AUTOMATION_PROPOSAL_MATERIAL_REVIEW_ONLY' },
+    privacy: {
+      scope: 'private-local-automation-proposal',
+      projection: 'selected-proposal-only',
+      rawProviderResponsesIncluded: false,
+      credentialValuesIncluded: false,
+      workspaceInspectionIncluded: false,
+      evidenceIncluded: false,
+      canonicalArtifactsIncluded: false
+    },
+    fingerprint: fp('0')
+  };
+  const unsignedMaterial = structuredClone(material);
+  delete (unsignedMaterial as Partial<typeof unsignedMaterial>).fingerprint;
+  delete (unsignedMaterial as Partial<typeof unsignedMaterial>).applicability;
+  material.fingerprint = fingerprintJson(unsignedMaterial);
+  return { proposal, material };
+}
+
+function projectPageReconciliationProposalBundle(): {
+  proposal: AutomationProposal;
+  material: AutomationProposalMaterial;
+} {
+  const collectionId = 'collection.project-page-reconciliation.changes';
+  const projectId = 'soter-fixture://projects/project/launch';
+  const expectedTitle = 'ACME — Launch';
+  const beforeFields = { name: expectedTitle, projectType: 'Project', status: 'Active' };
+  const afterFields = { ...beforeFields, status: 'On Hold' };
+  const beforeBody = '## Overview\n\nLaunch is active.';
+  const afterBody = '## Overview\n\nLaunch is paused.';
+  const specifications = [{
+    id: 'action.project-page-reconciliation.properties',
+    rowId: 'row.project-page-reconciliation.properties',
+    kind: 'project-properties-update',
+    subjectKind: 'project-properties',
+    capability: 'projects.records.update',
+    reasonCode: 'PROJECT_PROPERTIES_UPDATE_READY_FOR_REVIEW'
+  }, {
+    id: 'action.project-page-reconciliation.body',
+    rowId: 'row.project-page-reconciliation.body',
+    kind: 'project-body-update',
+    subjectKind: 'project-page',
+    capability: 'documents.content.update',
+    reasonCode: 'PROJECT_BODY_UPDATE_READY_FOR_REVIEW'
+  }];
+  const rows: PreparedReviewRow[] = specifications.map((specification, index) => {
+    const row: PreparedReviewRow = {
+      id: specification.rowId,
+      sequence: index + 1,
+      representedCount: 1,
+      subject: {
+        kind: specification.subjectKind,
+        fingerprint: fingerprintJson(index === 0
+          ? { id: projectId, version: 'version.project.launch.7', fields: beforeFields }
+          : { id: projectId, body: beforeBody })
+      },
+      group: 'project-page-reconciliation',
+      attention: 'operator',
+      disposition: 'itemized',
+      reasonCode: specification.reasonCode,
+      flags: [],
+      actions: [{
+        id: specification.id,
+        kind: specification.kind,
+        capability: specification.capability,
+        effect: 'write',
+        state: 'proposed',
+        reasonCode: specification.reasonCode,
+        changeFingerprint: fp('0')
+      }],
+      privateDetailFingerprint: null,
+      fingerprint: fp('0')
+    };
+    row.fingerprint = reviewRowFixtureFingerprint(row);
+    return row;
+  });
+  const propertyItem = derivedItem(
+    'review-item.project-page-reconciliation.properties',
+    'project-properties-update',
+    [{ collectionId, rowId: rows[0].id, rowFingerprint: rows[0].fingerprint }],
+    {
+      projectId,
+      expectedTitle,
+      expectedVersion: 'version.project.launch.7',
+      beforeProjectType: ['Project'],
+      afterProjectType: ['Project'],
+      beforeStatus: ['Active'],
+      afterStatus: ['On Hold'],
+      patchFields: ['status'],
+      beforeFieldsJson: JSON.stringify(beforeFields),
+      afterFieldsJson: JSON.stringify(afterFields),
+      bodyFingerprint: fingerprintJson(beforeBody)
+    },
+    projectPageReconciliationDerivedReviewDefinition
+  );
+  const bodyItem = derivedItem(
+    'review-item.project-page-reconciliation.body',
+    'project-body-update',
+    [{ collectionId, rowId: rows[1].id, rowFingerprint: rows[1].fingerprint }],
+    {
+      projectId,
+      expectedTitle,
+      expectedBodyFingerprint: fingerprintJson(beforeBody),
+      afterBodyFingerprint: fingerprintJson(afterBody),
+      beforeFieldsJson: JSON.stringify(beforeFields),
+      afterFieldsJson: JSON.stringify(afterFields),
+      updateIds: ['replacement.1'],
+      oldTexts: ['Launch is active.'],
+      newTexts: ['Launch is paused.']
+    },
+    projectPageReconciliationDerivedReviewDefinition
+  );
+  const items = [propertyItem, bodyItem];
+  const recordId = 'existing:project:' + fingerprintJson(projectId).slice(7, 23);
+  const changes = rows.map((row, index) => ({
+    id: row.actions[0].id,
+    recordId,
+    effect: row.actions[0].capability!,
+    beforeFingerprint: index === 0
+      ? fingerprintJson({ fields: beforeFields, version: 'version.project.launch.7' })
+      : fingerprintJson(beforeBody),
+    afterFingerprint: items[index].fingerprint
+  }));
+  rows.forEach((row, index) => {
+    row.privateDetailFingerprint = items[index].fingerprint;
+    (row.actions[0] as Extract<PreparedReviewAction, { state: 'proposed' }>).changeFingerprint
+      = fingerprintJson(changes[index]);
+  });
+  const collection: AutomationProposal['review']['collections'][number] = {
+    $contract: 'soter://contracts/prepared-work-review-collection/v1',
+    contractVersion: '1.0.0',
+    id: collectionId,
+    kind: 'project-page-reconciliation-changes',
+    labelKey: 'project-page-reconciliation-changes',
+    coverage: {
+      complete: true,
+      observedCount: 2,
+      includedCount: 2,
+      excludedCount: 0,
+      exclusions: []
+    },
+    rows,
+    fingerprint: fp('0')
+  };
+  collection.fingerprint = collectionFixtureFingerprint(collection);
+  const reviewContractFingerprint = fingerprintJson(projectPageReconciliationDerivedReviewDefinition);
+  const contentFingerprint = fingerprintJson({
+    kind: 'project-page-reconciliation-derived-review',
+    items
+  });
+  const review: AutomationProposal['review'] = {
+    $contract: 'soter://contracts/automation-review/v1',
+    contractVersion: '1.0.0',
+    kind: 'project-page-reconciliation-review',
+    fingerprint: fp('0'),
+    facts: [{
+      id: 'combined-execution-atomicity',
+      label: 'Combined execution boundary',
+      value: 'sequential-non-atomic',
+      state: 'supported',
+      basisIds: ['context.project-page-reconciliation.project-content']
+    }],
+    contradictions: [],
+    collections: [collection],
+    privateReview: {
+      state: 'available',
+      kind: 'project-page-reconciliation-derived-review',
+      contractId: 'soter://contracts/automation-derived-review/v1',
+      contractFingerprint: reviewContractFingerprint,
+      contentFingerprint
+    },
+    proposedChanges: changes
+  };
+  const unsignedReview = structuredClone(review);
+  delete (unsignedReview as Partial<typeof unsignedReview>).fingerprint;
+  review.fingerprint = fingerprintJson(unsignedReview);
+  const proposal: AutomationProposal = {
+    $contract: 'soter://contracts/automation-proposal/v1',
+    contractVersion: '1.0.0',
+    id: 'proposal.project-page-reconciliation.ui-test',
+    automation: { id: 'automation.project-page-reconciliation', version: '0.1.0' },
+    runId: 'run.project-page-reconciliation.connected.ui-test',
+    createdAt: '2026-08-03T11:00:00.000Z',
+    configurationLockFingerprint: fp('6'),
+    graphFingerprint: fp('7'),
+    decision: {
+      id: 'decision.project-page-reconciliation.ui-test',
+      fingerprint: fp('8'),
+      decisionType: 'project-page-reconciliation.grounded-change',
+      contextSnapshotId: 'context.project-page-reconciliation.connected.ui-test',
+      contextSnapshotFingerprint: fp('9')
+    },
+    producer: { kind: 'host', id: 'codex.studio-fixture', host: 'codex' },
+    state: 'ready-for-review',
+    proposalType: 'project-page-reconciliation.review-proposal',
+    review,
+    limitations: [
+      'Property and page-body operations remain distinct, sequential, and non-atomic.',
+      'This review creates no approval, continuation, provider call, write, retry, rollback, proof, or maturity authority.'
+    ],
+    authority: {
+      state: 'none',
+      reasonCode: 'AUTOMATION_PROPOSAL_REVIEW_ONLY',
+      permittedNextAction: 'inspect-private-proposal-material'
+    },
+    privacy: {
+      scope: 'private-sanitized-proposal',
+      rawProviderResponsesIncluded: false,
+      credentialValuesIncluded: false,
+      privateValuesIncluded: false,
+      workspaceInspectionIncluded: false,
+      evidenceIncluded: false,
+      canonicalArtifactsWritten: false,
+      externalWritesPerformed: false
+    },
+    proposalFingerprint: fp('0')
+  };
+  const unsignedProposal = structuredClone(proposal);
+  delete (unsignedProposal as Partial<typeof unsignedProposal>).proposalFingerprint;
+  proposal.proposalFingerprint = fingerprintJson(unsignedProposal);
+  const material: AutomationProposalMaterial = {
+    $contract: 'soter://contracts/automation-proposal-material/v1',
+    contractVersion: '1.0.0',
+    createdAt: proposal.createdAt,
+    proposal: { id: proposal.id, fingerprint: proposal.proposalFingerprint },
+    decision: { id: proposal.decision.id, fingerprint: proposal.decision.fingerprint },
+    automation: proposal.automation,
+    configuration: {
+      name: 'project-page-reconciliation',
+      lockFingerprint: proposal.configurationLockFingerprint,
+      graphFingerprint: proposal.graphFingerprint
+    },
+    reviewContractId: 'soter://contracts/automation-derived-review/v1',
+    reviewContractFingerprint,
+    applicability: 'current',
+    kind: 'project-page-reconciliation-derived-review',
+    contentFingerprint,
+    items,
+    authority: { state: 'none', reasonCode: 'AUTOMATION_PROPOSAL_MATERIAL_REVIEW_ONLY' },
+    privacy: {
+      scope: 'private-local-automation-proposal',
+      projection: 'selected-proposal-only',
+      rawProviderResponsesIncluded: false,
+      credentialValuesIncluded: false,
+      workspaceInspectionIncluded: false,
+      evidenceIncluded: false,
+      canonicalArtifactsIncluded: false
+    },
+    fingerprint: fp('0')
+  };
+  const unsignedMaterial = structuredClone(material);
+  delete (unsignedMaterial as Partial<typeof unsignedMaterial>).fingerprint;
+  delete (unsignedMaterial as Partial<typeof unsignedMaterial>).applicability;
+  material.fingerprint = fingerprintJson(unsignedMaterial);
+  return { proposal, material };
 }
 
 export function emailTriageProposalConnectedPreviewFixture(actionIds?: string[]): ProposalConnectedBatchPreview {
@@ -1859,7 +2415,7 @@ function emailProposalBundle() {
     producer: { kind: 'host', id: 'codex.studio-fixture', host: 'codex' },
     state: 'ready-for-review', proposalType: 'email-triage.review-proposal', review,
     limitations: [
-      'This private review proposal itself creates no approval, confirmation, continuation, provider call, write, dispatch, proof, maturity, or migration authority.',
+      'This private review proposal itself creates no approval, confirmation, continuation, provider call, write, dispatch, proof, or maturity authority.',
       'A label-only exact subset may enter the separate canonical approval and one-time-start family; draft or mixed execution and live Gmail readiness, permission, and verification remain unavailable.'
     ],
     authority: { state: 'none', reasonCode: 'AUTOMATION_PROPOSAL_REVIEW_ONLY', permittedNextAction: 'inspect-private-proposal-material' },
@@ -1904,19 +2460,19 @@ function emailProposalBundle() {
   return { proposal, material };
 }
 
-export function emailTriageReviewBatchFixture(actionIds?: string[]): PreparedReviewBatch {
-  return emailReviewBatchBundle(actionIds).batch;
+export function emailTriageCandidateSelectionFixture(actionIds?: string[]): ReviewOnlyCandidateSelection {
+  return emailCandidateSelectionBundle(actionIds).selection;
 }
 
-export function emailTriageReviewBatchMaterialFixture(actionIds?: string[]): PreparedReviewBatchMaterial {
-  return emailReviewBatchBundle(actionIds).material;
+export function emailTriageCandidateSelectionMaterialFixture(actionIds?: string[]): ReviewOnlyCandidateSelectionMaterial {
+  return emailCandidateSelectionBundle(actionIds).material;
 }
 
-export function emailTriageConnectedPlanFixture(actionIds?: string[]): PreparedConnectedPlan {
-  const { batch, material } = emailReviewBatchBundle(actionIds);
+export function emailTriageCandidatePreviewFixture(actionIds?: string[]): ReviewOnlyCandidatePreview {
+  const { selection, material } = emailCandidateSelectionBundle(actionIds);
   const connectedLabelProvider = { pack: 'integration.gmail', connectedImplementation: 'provider.integration.gmail.mcp', version: '1.0.0' };
   const unavailableDraftProvider = { pack: 'integration.gmail', connectedImplementation: null, version: null };
-  const operations: PreparedConnectedPlan['operations'] = [];
+  const operations: ReviewOnlyCandidatePreview['operations'] = [];
   for (const action of material.actions) {
     const fields = new Map(action.proposed.fields.map((field) => [field.id, field.reviewValue]));
     if (action.selection.kind === 'label') {
@@ -2011,17 +2567,17 @@ export function emailTriageConnectedPlanFixture(actionIds?: string[]): PreparedC
     module: 'soter/automations/email-triage/connected.mjs', moduleFingerprint: fp('e'),
     compileExport: 'compileEmailConnectedOperations', evaluateExport: 'evaluateEmailConnectedVerification'
   };
-  const plan: PreparedConnectedPlan = {
-    $contract: 'soter://contracts/prepared-connected-plan/v1', contractVersion: '1.0.0',
-    id: `prepared-connected-plan.email-triage.${fingerprintJson({ batch: batch.id, compiler, operations }).slice(7, 39)}`,
+  const preview: ReviewOnlyCandidatePreview = {
+    $contract: 'soter://contracts/review-only-candidate-preview/v1', contractVersion: '1.0.0',
+    id: `review-only-candidate-preview.email-triage.${fingerprintJson({ selection: selection.id, compiler, operations }).slice(7, 39)}`,
     fingerprint: fp('0'), createdAt: '2026-07-16T19:00:00.000Z',
     source: {
-      batchId: batch.id, batchFingerprint: batch.fingerprint,
-      workId: batch.work.id, workFingerprint: batch.work.fingerprint,
-      checkpointId: batch.work.checkpointId, checkpointFingerprint: batch.work.checkpointFingerprint,
-      automationId: batch.work.automationId, automationVersion: batch.work.automationVersion
+      selectionId: selection.id, selectionFingerprint: selection.fingerprint,
+      workId: selection.work.id, workFingerprint: selection.work.fingerprint,
+      checkpointId: selection.work.checkpointId, checkpointFingerprint: selection.work.checkpointFingerprint,
+      automationId: selection.work.automationId, automationVersion: selection.work.automationVersion
     },
-    configuration: { ...batch.configuration, applicability: 'current' },
+    configuration: { ...selection.configuration, applicability: 'current' },
     compiler,
     state: 'blocked-review-only', executable: false, effects: ['write'], operations,
     blockers: [
@@ -2032,21 +2588,21 @@ export function emailTriageConnectedPlanFixture(actionIds?: string[]): PreparedC
       'SELECTED_ACTIVITY_PRIVATE_APPROVAL_REVIEW_NOT_AVAILABLE'
     ],
     privacy: {
-      scope: 'private-local-prepared-connected-plan', authority: 'none', projection: 'selected-plan-only',
+      scope: 'private-local-review-only-candidate-preview', authority: 'none', projection: 'review-only-candidate-preview-only',
       privateValuesIncluded: true, providerArgumentsIncluded: true, rawProviderResponsesIncluded: false,
       credentialValuesIncluded: false, workspaceInspectionIncluded: false, evidenceIncluded: false,
       canonicalArtifactsIncluded: false, approvalAuthorityIncluded: false,
       continuationAuthorityIncluded: false, executionAuthorityIncluded: false, retryAuthorityIncluded: false
     }
   };
-  const unsigned = structuredClone(plan);
+  const unsigned = structuredClone(preview);
   delete (unsigned as Partial<typeof unsigned>).fingerprint;
   delete (unsigned.configuration as Partial<typeof unsigned.configuration>).applicability;
-  plan.fingerprint = fingerprintJson(unsigned);
-  return plan;
+  preview.fingerprint = fingerprintJson(unsigned);
+  return preview;
 }
 
-function emailReviewBatchBundle(actionIds?: string[]) {
+function emailCandidateSelectionBundle(actionIds?: string[]) {
   const work = emailTriagePreparedWorkFixture();
   const derived = emailTriageDerivedReviewFixture();
   const available = work.preview.collections.flatMap((collection) => collection.rows.flatMap((row) => (
@@ -2054,7 +2610,7 @@ function emailReviewBatchBundle(actionIds?: string[]) {
   )));
   const defaultIds = available.slice(0, 2).map(({ action }) => action.id);
   const selectedIds = new Set(actionIds || defaultIds);
-  const actions: PreparedReviewBatch['actions'] = available
+  const actions: ReviewOnlyCandidateSelection['actions'] = available
     .filter(({ action }) => selectedIds.has(action.id))
     .map(({ collection, row, action }, index) => {
       if (action.state !== 'proposed') throw new Error('Synthetic selected action must be proposed.');
@@ -2090,10 +2646,10 @@ function emailReviewBatchBundle(actionIds?: string[]) {
     partial: actions.length !== available.length,
     fingerprint: fingerprintJson(actions)
   };
-  const batch: PreparedReviewBatch = {
-    $contract: 'soter://contracts/prepared-review-batch/v1',
+  const selection: ReviewOnlyCandidateSelection = {
+    $contract: 'soter://contracts/review-only-candidate-selection/v1',
     contractVersion: '1.0.0',
-    id: `review-batch.email-triage.${fingerprintJson(identity).slice(7, 39)}`,
+    id: `review-only-candidate-selection.email-triage.${fingerprintJson(identity).slice(7, 39)}`,
     fingerprint: fp('0'),
     createdAt: '2026-07-16T18:30:00.000Z',
     work: {
@@ -2123,41 +2679,41 @@ function emailReviewBatchBundle(actionIds?: string[]) {
     effects: [...new Set(actions.map((action) => action.effect))].sort(),
     scope,
     actions,
-    blockers: ['CONNECTED_PLAN_NOT_COMPILED', 'CONNECTED_VERIFICATION_NOT_PROVEN'],
+    blockers: ['REVIEW_ONLY_CANDIDATE_PREVIEW_NOT_CREATED', 'CONNECTED_VERIFICATION_NOT_PROVEN'],
     privacy: {
-      scope: 'private-local-review-batch', authority: 'none', projection: 'selected-batch-only',
+      scope: 'private-local-review-only-candidate-selection', authority: 'none', projection: 'review-only-candidate-selection-only',
       privateValuesIncluded: false, providerArgumentsIncluded: false, rawProviderResponsesIncluded: false,
       credentialValuesIncluded: false, workspaceInspectionIncluded: false, evidenceIncluded: false,
       canonicalArtifactsIncluded: false, approvalAuthorityIncluded: false,
       continuationAuthorityIncluded: false, executionAuthorityIncluded: false
     }
   };
-  const unsignedBatch = structuredClone(batch);
-  delete (unsignedBatch as Partial<typeof unsignedBatch>).fingerprint;
-  batch.fingerprint = fingerprintJson(unsignedBatch);
+  const unsignedSelection = structuredClone(selection);
+  delete (unsignedSelection as Partial<typeof unsignedSelection>).fingerprint;
+  selection.fingerprint = fingerprintJson(unsignedSelection);
 
   const byFingerprint = new Map(derived.items.map((item) => [item.fingerprint, item]));
-  const material: PreparedReviewBatchMaterial = {
-    $contract: 'soter://contracts/prepared-review-batch-material/v1',
+  const material: ReviewOnlyCandidateSelectionMaterial = {
+    $contract: 'soter://contracts/review-only-candidate-selection-material/v1',
     contractVersion: '1.0.0',
     fingerprint: fp('0'),
-    batch: { id: batch.id, fingerprint: batch.fingerprint, createdAt: batch.createdAt, state: batch.state },
+    selection: { id: selection.id, fingerprint: selection.fingerprint, createdAt: selection.createdAt, state: selection.state },
     work: {
       id: work.id, fingerprint: work.fingerprint, checkpointId: work.checkpoint.id,
       checkpointFingerprint: work.checkpoint.fingerprint, automationId: work.automation.id
     },
-    configuration: { ...batch.configuration, applicability: 'current' },
-    scope: structuredClone(batch.scope),
-    effects: [...batch.effects],
-    actions: batch.actions.map((selection) => {
-      const proposed = byFingerprint.get(selection.proposedValueFingerprint);
-      const context = selection.contextValueFingerprint ? byFingerprint.get(selection.contextValueFingerprint) : null;
-      if (!proposed || (selection.contextValueFingerprint && !context)) throw new Error('Synthetic selected material is incomplete.');
-      return { selection: structuredClone(selection), context: context ? structuredClone(context) : null, proposed: structuredClone(proposed) };
+    configuration: { ...selection.configuration, applicability: 'current' },
+    scope: structuredClone(selection.scope),
+    effects: [...selection.effects],
+    actions: selection.actions.map((selectedAction) => {
+      const proposed = byFingerprint.get(selectedAction.proposedValueFingerprint);
+      const context = selectedAction.contextValueFingerprint ? byFingerprint.get(selectedAction.contextValueFingerprint) : null;
+      if (!proposed || (selectedAction.contextValueFingerprint && !context)) throw new Error('Synthetic selected material is incomplete.');
+      return { selection: structuredClone(selectedAction), context: context ? structuredClone(context) : null, proposed: structuredClone(proposed) };
     }),
-    blockers: [...batch.blockers],
+    blockers: [...selection.blockers],
     privacy: {
-      scope: 'private-local-review-batch-material', authority: 'none', projection: 'selected-batch-only',
+      scope: 'private-local-review-only-candidate-selection-material', authority: 'none', projection: 'review-only-candidate-selection-only',
       providerArgumentsIncluded: false, rawProviderResponsesIncluded: false, credentialValuesIncluded: false,
       workspaceInspectionIncluded: false, evidenceIncluded: false, canonicalArtifactsIncluded: false,
       approvalAuthorityIncluded: false, continuationAuthorityIncluded: false, executionAuthorityIncluded: false
@@ -2167,7 +2723,7 @@ function emailReviewBatchBundle(actionIds?: string[]) {
   delete (unsignedMaterial as Partial<typeof unsignedMaterial>).fingerprint;
   delete (unsignedMaterial.configuration as Partial<typeof unsignedMaterial.configuration>).applicability;
   material.fingerprint = fingerprintJson(unsignedMaterial);
-  return { batch, material };
+  return { selection, material };
 }
 
 function emailFixtureBundle() {
@@ -2311,7 +2867,7 @@ function emailFixtureBundle() {
     },
     contextPlan, outcomes: [
       { id: 'mail-window-reduced', label: 'Bounded mailbox window reduced completely', state: 'supported', basis: ['collection.email.window'], limitation: 'Contained normalized provider output only.' },
-      { id: 'review-batch-held', label: 'Draft and label proposals held for later exact-batch review', state: 'proposed', basis: ['collection.email.window', 'collection.email.outputs'], limitation: 'No approval request, execution, or write authority exists.' }
+      { id: 'candidate-selection-held', label: 'Draft and label proposals held for later review-only candidate selection', state: 'proposed', basis: ['collection.email.window', 'collection.email.outputs'], limitation: 'No approval request, execution, or write authority exists.' }
     ],
     capabilities: { steps: contextPlan, completedPrefix: ['preparation.context.1'], current: null, pending: [] },
     effects: [
@@ -2530,9 +3086,9 @@ export function packInstallInspectionFixture(stage: 'plan' | 'request' | 'confir
             ? { classification: 'safe', reasonCode: 'PACK_INSTALL_CONFIRMATION_AVAILABLE', reason: 'The current request may be confirmed for this exact local install plan.', permittedNextAction: 'confirm-request' }
             : { classification: 'safe', reasonCode: 'PACK_INSTALL_REQUEST_AVAILABLE', reason: 'The current exact plan may be submitted for an expiring operator confirmation.', permittedNextAction: 'create-request' };
   const effects: NonNullable<PackInstallInspection['plan']>['effects'] = [
-    { id: 'pack-install-effect.0', sequence: 0, action: 'create', pack: 'kernel.soter', role: 'manifest', migrationRole: false, beforeFingerprint: null, afterFingerprint: fp('4'), reasonCode: 'PACK_INSTALL_FILE_CREATE', effectFingerprint: fp('5') },
-    { id: 'pack-install-effect.1', sequence: 1, action: 'replace', pack: 'kernel.soter', role: 'implementation', migrationRole: false, beforeFingerprint: fp('6'), afterFingerprint: fp('7'), reasonCode: 'PACK_INSTALL_FILE_REPLACE', effectFingerprint: fp('8') },
-    { id: 'pack-install-effect.2', sequence: 2, action: 'remove', pack: 'kernel.soter', role: 'projection', migrationRole: false, beforeFingerprint: fp('9'), afterFingerprint: null, reasonCode: 'PACK_INSTALL_FILE_REMOVE', effectFingerprint: fp('a') }
+    { id: 'pack-install-effect.0', sequence: 0, action: 'create', pack: 'kernel.soter', role: 'manifest', beforeFingerprint: null, afterFingerprint: fp('4'), reasonCode: 'PACK_INSTALL_FILE_CREATE', effectFingerprint: fp('5') },
+    { id: 'pack-install-effect.1', sequence: 1, action: 'replace', pack: 'kernel.soter', role: 'implementation', beforeFingerprint: fp('6'), afterFingerprint: fp('7'), reasonCode: 'PACK_INSTALL_FILE_REPLACE', effectFingerprint: fp('8') },
+    { id: 'pack-install-effect.2', sequence: 2, action: 'remove', pack: 'kernel.soter', role: 'projection', beforeFingerprint: fp('9'), afterFingerprint: null, reasonCode: 'PACK_INSTALL_FILE_REMOVE', effectFingerprint: fp('a') }
   ];
   return {
     $contract: 'soter://contracts/pack-install-inspection/v1',
@@ -2579,7 +3135,7 @@ export function packInstallInspectionFixture(stage: 'plan' | 'request' | 'confir
       npmDependencies: 'not-evaluated', ready: 'unknown', verified: 'unknown', healthy: 'unknown', networkAvailability: 'unknown',
       publisherIdentity: 'not-evaluated', legalSufficiency: 'not-evaluated', trust: 'not-evaluated'
     },
-    authority: { fetch: false, install: false, upgrade: false, uninstall: false, configure: false, realizeHost: false, executeMigration: false, runPackageManager: false, network: false, publish: false, trust: false },
+    authority: { fetch: false, install: false, upgrade: false, uninstall: false, configure: false, realizeHost: false, runPackageManager: false, network: false, publish: false, trust: false },
     privacy: { targetRootIncluded: false, capsulePathsIncluded: false, capsuleBytesIncluded: false, priorBytesIncluded: false, candidateBytesIncluded: false, rawManagedManifestIncluded: false, privateStateIncluded: false, credentialValuesIncluded: false, rawProviderResponsesIncluded: false },
     limitations: [
       'This inspection reports deterministic local materialization only and carries no executable authority.',

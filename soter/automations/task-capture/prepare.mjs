@@ -586,7 +586,7 @@ export async function prepareTaskCaptureRun({
         state: proposed ? 'proposed' : 'blocked',
         basis: ['context.task-capture.policy', 'context.task-capture.project', 'context.task-capture.duplicates'],
         limitation: proposed
-          ? 'This is a fingerprint-only preview. A selected private review can compile an authority-free connected plan, but approval, execution, and connected verification remain separate.'
+          ? 'This is a fingerprint-only preview. A selected private review can compile an authority-free review-only candidate preview, but approval, execution, and connected verification remain separate.'
           : 'A context conflict or duplicate candidate prevents a task-create proposal.'
       }
     ],

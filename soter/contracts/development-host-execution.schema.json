@@ -165,8 +165,7 @@
         "grantsProviderRead",
         "grantsProviderWrite",
         "grantsHostRealization",
-        "grantsPromotion",
-        "grantsFallbackRemoval"
+        "grantsPromotion"
       ],
       "properties": {
         "kind": { "const": "private-host-evaluation-execution-only" },
@@ -177,8 +176,7 @@
         "grantsProviderRead": { "const": false },
         "grantsProviderWrite": { "const": false },
         "grantsHostRealization": { "const": false },
-        "grantsPromotion": { "const": false },
-        "grantsFallbackRemoval": { "const": false }
+        "grantsPromotion": { "const": false }
       }
     },
     "privacy": {

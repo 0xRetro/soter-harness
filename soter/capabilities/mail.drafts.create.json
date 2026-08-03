@@ -53,7 +53,7 @@
     "containedVerification": "Declare exact reply-draft create and list verification semantics without sending or writing during preparation."
   },
   "providerLimitations": [
-    "This capability creates drafts only. Soter declares no mail send or dispatch capability in this milestone.",
+    "This capability creates drafts only. Soter declares no mail send or dispatch capability.",
     "The Codex Gmail connector is not declared for this capability because it cannot reconcile an ambiguous create through an exact idempotency-key lookup."
   ]
 }

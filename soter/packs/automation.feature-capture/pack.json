@@ -25,7 +25,7 @@
     "requires": [
       { "id": "product.records.read", "version": "^1.0.0", "optional": false, "reason": "Preparation loads the exact selected policy and bounded duplicate candidates." },
       { "id": "product.schema.read", "version": "^1.0.0", "optional": false, "reason": "Preparation intersects requested status, type, area, and priority with the current configured board schema." },
-      { "id": "product.records.create", "version": "^1.0.0", "optional": false, "reason": "A complete review may name one fingerprint-only feature create, but this migration slice declares no connected compiler." }
+      { "id": "product.records.create", "version": "^1.0.0", "optional": false, "reason": "A complete review may name one fingerprint-only feature create, but no connected compiler is available." }
     ],
     "provides": []
   },

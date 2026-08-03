@@ -125,10 +125,10 @@ function commonOperation({
 export function compileEmailConnectedOperations({ batch, material }) {
   const automationId = batch.work?.automationId || batch.automationId;
   if (automationId !== 'automation.email-triage'
-    || material.batch.id !== batch.id
-    || material.batch.fingerprint !== batch.fingerprint
+    || material.selection.id !== batch.id
+    || material.selection.fingerprint !== batch.fingerprint
     || material.actions.length !== batch.actions.length) {
-    throw new Error('Email connected compiler requires one exact selected Email review batch.');
+    throw new Error('Email connected compiler requires one exact review-only candidate selection.');
   }
   const operations = [];
   for (const action of material.actions) {

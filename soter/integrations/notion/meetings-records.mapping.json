@@ -4,7 +4,7 @@
   "id": "mapping.integration.notion.meetings-records",
   "pack": "integration.notion",
   "provider": "provider.integration.notion.mcp",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "contextModel": "model.context.meetings.records",
   "settingsDefinition": "settings.integration.notion",
   "capabilities": [
@@ -99,7 +99,7 @@
   "limitations": [
     "This mapping translates Meeting and meeting-summary records only; related CRM organizations, Projects, and Tasks are resolved through their independent mappings and capabilities.",
     "Provider People values are not portable participant resource identities, so participantUris are deliberately unavailable until an explicit participant normalization mapping exists.",
-    "Portable commitment records are derived Meeting meaning and are not independently mapped in this revision.",
+    "Portable commitment records are derived Meeting meaning and are not independently mapped.",
     "Meeting-summary creates require a separately governed exact transaction; this mapping creates no approval, execution, verification, readiness, or health authority.",
     "Schema compatibility is not established by this declaration; an exact-lock private probe must observe current target schemas."
   ]

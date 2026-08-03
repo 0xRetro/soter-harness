@@ -6,7 +6,7 @@
   "layer": "automation",
   "releaseStage": "experimental",
   "evidenceMaturity": "declared",
-  "summary": "Prepares one bounded Email triage review and compiles selected label or draft actions into a private, non-executable connected candidate plan.",
+  "summary": "Prepares one bounded Email triage review and compiles selected label or draft actions into a private, non-executable review-only candidate preview.",
   "dependencies": [
     {
       "pack": "core.runtime",

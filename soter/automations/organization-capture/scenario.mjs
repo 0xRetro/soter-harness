@@ -8,7 +8,6 @@ import {
   resolveRepoPath
 } from '../../core/lib/canonical-json.mjs';
 import { fingerprintLock } from '../../core/resolve.mjs';
-import { fingerprintLegacySource } from '../../kernel/legacy-inventory.mjs';
 import { prepareOrganizationCaptureRun } from './prepare.mjs';
 
 const AUTOMATION_ID = 'automation.organization-capture';
@@ -42,7 +41,7 @@ function privateFields(derivedReview) {
   return new Map(derivedReview.items[0].fields.map((field) => [field.id, field.reviewValue]));
 }
 
-function factsFor({ lock, input, envelope, snapshot, preview, derivedReview, sourceCaseArtifacts }) {
+function factsFor({ lock, input, envelope, snapshot, preview, derivedReview }) {
   const policyEntry = snapshot.entries.find((entry) => {
     return entry.id === 'context.organization-capture.policy';
   });
@@ -84,11 +83,6 @@ function factsFor({ lock, input, envelope, snapshot, preview, derivedReview, sou
     && envelope.approvals.length === 0
     && envelope.effects.every((effect) => !effect.declaredEffects.includes('write'))
     && preview.proposedChanges.length === 1;
-  const sourceCasesFingerprinted = sourceCaseArtifacts.length === 3
-    && sourceCaseArtifacts.every((artifact) => {
-      return artifact.role === 'source-case'
-        && /^sha256:[a-f0-9]{64}$/.test(artifact.fingerprint);
-    });
   const noDuplicates = duplicateEntries.every((entry) => {
     return entry.value.candidateCount === 0 && entry.value.candidateIds.length === 0;
   });
@@ -155,8 +149,7 @@ function factsFor({ lock, input, envelope, snapshot, preview, derivedReview, sou
       'private-values-sanitized': privateValuesSanitized,
       'write-boundary-state': boundaryHeld
         && envelope.effectPolicies.write.mode === 'confirm'
-        && envelope.effectPolicies.dispatch.mode === 'prohibit',
-      'source-cases-exactly-fingerprinted': sourceCasesFingerprinted
+        && envelope.effectPolicies.dispatch.mode === 'prohibit'
     }
   };
 }
@@ -221,11 +214,6 @@ export async function runContainedOrganizationCaptureScenario({
 }) {
   const resolvedRoot = path.resolve(root);
   const loaded = loadScenario(resolvedRoot, scenarioPath);
-  const sourceCaseArtifacts = loaded.scenario.sourceCases.map((sourcePath) => ({
-    role: 'source-case',
-    path: sourcePath,
-    fingerprint: fingerprintLegacySource(resolvedRoot, sourcePath)
-  }));
   const input = {
     name: 'Nebula Labs',
     description: 'A DeFi foundation building coordination infrastructure.',
@@ -249,8 +237,7 @@ export async function runContainedOrganizationCaptureScenario({
     envelope: execution.envelope,
     snapshot: execution.snapshot,
     preview: execution.preview,
-    derivedReview: execution.derivedReview,
-    sourceCaseArtifacts
+    derivedReview: execution.derivedReview
   });
   const assessment = assessmentFor({
     scenario: loaded.scenario,
@@ -266,7 +253,6 @@ export async function runContainedOrganizationCaptureScenario({
     envelope: execution.envelope,
     scenario: loaded.scenario,
     scenarioPath: loaded.path,
-    sourceCaseArtifacts,
     assessment,
     evaluatorId: 'automation.organization-capture.scenario-evaluator',
     id: scenarioEvidenceId,

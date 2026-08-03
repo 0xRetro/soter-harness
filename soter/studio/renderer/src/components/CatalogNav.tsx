@@ -4,12 +4,12 @@ import { StateMark } from './StateMark';
 
 const kindOrder = ['configuration', 'pack', 'capability', 'provider', 'host'];
 const queueSections = [
-  { id: 'attention', label: 'Needs attention', states: ['needs-input', 'approval-expired', 'blocked', 'verification-failed', 'rolling-back', 'failed'] },
+  { id: 'attention', label: 'Needs attention', states: ['needs-input', 'approval-expired', 'blocked', 'verification-failed', 'failed'] },
   { id: 'review', label: 'Ready for review', states: ['ready-for-review'] },
   { id: 'acquisition', label: 'Staged for acquisition', states: ['ready-for-acquisition'] },
   { id: 'approval', label: 'Approval desk', states: ['awaiting-approval', 'approved-not-started'] },
   { id: 'active', label: 'In progress', states: ['draft', 'preparing', 'running'] },
-  { id: 'recent', label: 'Recent', states: ['completed', 'rolled-back'] }
+  { id: 'recent', label: 'Recent', states: ['completed'] }
 ] as const;
 
 export function CatalogNav({
@@ -37,10 +37,11 @@ export function CatalogNav({
   }, [query, scope, snapshot.catalog]);
   const operatorWorkflows = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    return snapshot.workflows.filter((workflow) => !normalized
-      || workflow.id.toLowerCase().includes(normalized)
-      || workflow.label.toLowerCase().includes(normalized)
-      || workflow.summary.toLowerCase().includes(normalized));
+    return snapshot.workflows.filter((workflow) => workflow.operator?.preparation.supported)
+      .filter((workflow) => !normalized
+        || workflow.id.toLowerCase().includes(normalized)
+        || workflow.label.toLowerCase().includes(normalized)
+        || workflow.summary.toLowerCase().includes(normalized));
   }, [query, snapshot.workflows]);
   const operatorQueue = useMemo(() => {
     const normalized = query.trim().toLowerCase();

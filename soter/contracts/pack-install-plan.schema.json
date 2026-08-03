@@ -220,7 +220,7 @@
       "properties": {
         "pack": { "$ref": "#/$defs/packId" },
         "path": { "$ref": "#/$defs/relativePath" },
-        "role": { "enum": ["manifest", "definition", "implementation", "projection", "evaluation", "fixture", "migration"] },
+        "role": { "enum": ["manifest", "definition", "implementation", "projection", "evaluation", "fixture"] },
         "mode": { "enum": ["0644", "0755"] },
         "contentFingerprint": { "$ref": "#/$defs/fingerprint" },
         "fingerprint": { "$ref": "#/$defs/fingerprint" }
@@ -303,7 +303,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "id", "sequence", "action", "pack", "path", "role", "migrationRole",
+        "id", "sequence", "action", "pack", "path", "role",
         "prior", "candidate", "reasonCode", "effectFingerprint"
       ],
       "properties": {
@@ -312,8 +312,7 @@
         "action": { "enum": ["create", "replace", "remove"] },
         "pack": { "$ref": "#/$defs/packId" },
         "path": { "$ref": "#/$defs/relativePath" },
-        "role": { "enum": ["manifest", "definition", "implementation", "projection", "evaluation", "fixture", "migration"] },
-        "migrationRole": { "type": "boolean" },
+        "role": { "enum": ["manifest", "definition", "implementation", "projection", "evaluation", "fixture"] },
         "prior": { "$ref": "#/$defs/snapshot" },
         "candidate": { "$ref": "#/$defs/snapshot" },
         "reasonCode": { "enum": ["PACK_INSTALL_FILE_CREATE", "PACK_INSTALL_FILE_REPLACE", "PACK_INSTALL_FILE_REMOVE"] },

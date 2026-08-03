@@ -4,7 +4,7 @@
   "title": "Soter sanitized development run inspection",
   "type": "object",
   "additionalProperties": false,
-  "required": ["$contract", "contractVersion", "request", "result", "workflow", "host", "configuration", "workspace", "invocation", "progress", "changes", "checks", "effects", "promotion", "authority", "privacy", "limitations", "inspectionFingerprint"],
+  "required": ["$contract", "contractVersion", "request", "result", "workflow", "host", "configuration", "workspace", "invocation", "applicability", "requestBoundary", "progress", "changes", "checks", "effects", "promotion", "authority", "privacy", "limitations", "inspectionFingerprint"],
   "properties": {
     "$contract": { "const": "soter://contracts/development-run-inspection/v1" },
     "contractVersion": { "const": "1.0.0" },
@@ -50,12 +50,13 @@
     "host": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "adapterFingerprint", "evaluatedInstructionFingerprint", "candidateProjectionFingerprint"],
+      "required": ["id", "adapterFingerprint", "evaluatedInstructionFingerprint", "candidateProjectionFingerprint", "managedManifestFingerprint"],
       "properties": {
         "id": { "enum": ["codex", "claude"] },
         "adapterFingerprint": { "$ref": "#/$defs/fingerprint" },
         "evaluatedInstructionFingerprint": { "$ref": "#/$defs/fingerprint" },
-        "candidateProjectionFingerprint": { "$ref": "#/$defs/fingerprint" }
+        "candidateProjectionFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "managedManifestFingerprint": { "$ref": "#/$defs/fingerprint" }
       }
     },
     "configuration": {
@@ -71,11 +72,12 @@
     "workspace": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["rootIdentityFingerprint", "revisionFingerprint", "treeFingerprint", "exactInputState", "policyFingerprint", "settingsFingerprint"],
+      "required": ["rootIdentityFingerprint", "revisionFingerprint", "treeFingerprint", "untargetedTreeFingerprint", "exactInputState", "policyFingerprint", "settingsFingerprint"],
       "properties": {
         "rootIdentityFingerprint": { "$ref": "#/$defs/fingerprint" },
         "revisionFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
         "treeFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "untargetedTreeFingerprint": { "$ref": "#/$defs/fingerprint" },
         "exactInputState": { "enum": ["clean", "dirty", "unknown"] },
         "policyFingerprint": { "$ref": "#/$defs/fingerprint" },
         "settingsFingerprint": { "$ref": "#/$defs/fingerprint" }
@@ -84,10 +86,17 @@
     "invocation": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind", "profile", "targetIds", "plannedRuns"],
+      "required": ["kind", "profile", "requestedLocalEffects", "targetIds", "plannedRuns"],
       "properties": {
         "kind": { "enum": ["develop", "evaluation-suite"] },
         "profile": { "enum": ["exact", "bounded", "open"] },
+        "requestedLocalEffects": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": { "enum": ["local-workspace-read", "local-workspace-write", "local-command", "subagent-dispatch"] }
+        },
         "targetIds": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
         "plannedRuns": {
           "type": "array",
@@ -105,6 +114,82 @@
           }
         }
       }
+    },
+    "applicability": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "reasonCode"],
+          "properties": {
+            "state": { "const": "current" },
+            "reasonCode": { "const": "DEVELOPMENT_REQUEST_CURRENT" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "reasonCode"],
+          "properties": {
+            "state": { "const": "stale" },
+            "reasonCode": {
+              "enum": [
+                "DEVELOPMENT_REQUEST_BINDING_STALE",
+                "DEVELOPMENT_REQUEST_HOST_REALIZATION_STALE",
+                "DEVELOPMENT_REQUEST_TARGET_STALE",
+                "DEVELOPMENT_REQUEST_WORKSPACE_STALE"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "requestBoundary": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "reasonCode", "permittedNextAction", "declared", "effective"],
+          "properties": {
+            "state": { "const": "current" },
+            "reasonCode": { "const": "DEVELOPMENT_REQUEST_CURRENT" },
+            "permittedNextAction": { "const": "perform-request-scoped-development" },
+            "declared": { "$ref": "#/$defs/effectBoundary" },
+            "effective": { "$ref": "#/$defs/effectBoundary" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "reasonCode", "permittedNextAction", "declared", "effective"],
+          "properties": {
+            "state": { "const": "stale" },
+            "reasonCode": {
+              "enum": [
+                "DEVELOPMENT_REQUEST_BINDING_STALE",
+                "DEVELOPMENT_REQUEST_HOST_REALIZATION_STALE",
+                "DEVELOPMENT_REQUEST_TARGET_STALE",
+                "DEVELOPMENT_REQUEST_WORKSPACE_STALE"
+              ]
+            },
+            "permittedNextAction": { "const": "create-new-development-request" },
+            "declared": { "$ref": "#/$defs/effectBoundary" },
+            "effective": { "$ref": "#/$defs/closedEffectBoundary" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "reasonCode", "permittedNextAction", "declared", "effective"],
+          "properties": {
+            "state": { "const": "closed" },
+            "reasonCode": { "const": "DEVELOPMENT_RESULT_RECORDED" },
+            "permittedNextAction": { "const": "none" },
+            "declared": { "$ref": "#/$defs/effectBoundary" },
+            "effective": { "$ref": "#/$defs/closedEffectBoundary" }
+          }
+        }
+      ]
     },
     "progress": {
       "type": "object",
@@ -173,15 +258,17 @@
     "authority": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind", "grantsExecution", "grantsApproval", "grantsPublication", "grantsMerge", "grantsProviderWrite", "grantsFallbackRemoval"],
+      "required": ["kind", "grantsExecution", "grantsApproval", "grantsProviderRead", "grantsProviderWrite", "grantsPublication", "grantsMerge", "grantsProtectedRootMutation", "grantsHostRealization"],
       "properties": {
         "kind": { "const": "inspection-only" },
         "grantsExecution": { "const": false },
         "grantsApproval": { "const": false },
+        "grantsProviderRead": { "const": false },
         "grantsPublication": { "const": false },
         "grantsMerge": { "const": false },
         "grantsProviderWrite": { "const": false },
-        "grantsFallbackRemoval": { "const": false }
+        "grantsProtectedRootMutation": { "const": false },
+        "grantsHostRealization": { "const": false }
       }
     },
     "privacy": {
@@ -203,6 +290,40 @@
   },
   "$defs": {
     "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
-    "nullableFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" }
+    "nullableFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+    "effectBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["localWorkspaceRead", "localWorkspaceWrite", "localCommand", "subagentDispatch", "providerRead", "providerWrite", "publication", "merge", "protectedRootMutation", "hostRealization"],
+      "properties": {
+        "localWorkspaceRead": { "enum": ["request-scoped", "not-requested"] },
+        "localWorkspaceWrite": { "enum": ["request-scoped", "not-requested"] },
+        "localCommand": { "enum": ["request-scoped", "not-requested"] },
+        "subagentDispatch": { "enum": ["request-scoped", "not-requested"] },
+        "providerRead": { "const": "separate-authority" },
+        "providerWrite": { "const": "separate-authority" },
+        "publication": { "const": "separate-authority" },
+        "merge": { "const": "separate-authority" },
+        "protectedRootMutation": { "const": "separate-authority" },
+        "hostRealization": { "const": "separate-authority" }
+      }
+    },
+    "closedEffectBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["localWorkspaceRead", "localWorkspaceWrite", "localCommand", "subagentDispatch", "providerRead", "providerWrite", "publication", "merge", "protectedRootMutation", "hostRealization"],
+      "properties": {
+        "localWorkspaceRead": { "const": "closed" },
+        "localWorkspaceWrite": { "const": "closed" },
+        "localCommand": { "const": "closed" },
+        "subagentDispatch": { "const": "closed" },
+        "providerRead": { "const": "separate-authority" },
+        "providerWrite": { "const": "separate-authority" },
+        "publication": { "const": "separate-authority" },
+        "merge": { "const": "separate-authority" },
+        "protectedRootMutation": { "const": "separate-authority" },
+        "hostRealization": { "const": "separate-authority" }
+      }
+    }
   }
 }

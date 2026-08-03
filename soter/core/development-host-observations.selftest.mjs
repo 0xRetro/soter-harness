@@ -1,49 +1,23 @@
 #!/usr/bin/env node
 
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  assertDevelopmentAgentMigrationEvidence,
+  assertDevelopmentCandidateLock,
   assertDevelopmentHostObservation,
-  assertHistoricalDevelopmentCandidateLock,
-  buildDevelopmentHostFinalEvidenceForBatch,
-  buildDevelopmentHostHistoricalEvidenceForBatch,
-  convertDevelopmentHostObservationToMigrationEvidence,
-  fingerprintDevelopmentHostObservation,
-  persistDevelopmentHostFinalEvidence,
-  persistDevelopmentHostHistoricalEvidence
+  fingerprintDevelopmentHostObservation
 } from './development-host-observations.mjs';
-import {
-  fingerprintWorkflowGuideContent,
-  workflowLegacySourceProjection
-} from '../kernel/workflow-guides.mjs';
-import { validateJsonSchema, verifySoter } from '../kernel/verify.mjs';
+import { validateJsonSchema } from '../kernel/verify.mjs';
 import {
   fingerprintJson,
-  fingerprintPath,
   readJson,
   resolveRepoPath
 } from './lib/canonical-json.mjs';
-import {
-  fingerprintLock,
-  resolveDevelopmentEvidenceFinalizationConfiguration
-} from './resolve.mjs';
-import { materializeDevelopmentCandidateLock } from './development-candidate-locks.mjs';
-import {
-  buildDevelopmentEvaluationInvocation,
-  prepareDevelopmentRequest
-} from './development-runs.mjs';
-import {
-  developmentHostExecutionStateFiles,
-  finalizeDevelopmentHostEvaluation,
-  runDevelopmentHostEvaluation,
-  runDevelopmentHostJudgment
-} from './development-host-runner.mjs';
+import { fingerprintLock } from './resolve.mjs';
 
 const scriptRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const FP = (value) => fingerprintJson(value);
@@ -150,7 +124,8 @@ function requestFixture() {
       projectionDefinitionId: 'host-projection.codex',
       projectionDefinitionFingerprint: FP({ projection: 'codex' }),
       evaluatedInstructionFingerprint: FP({ instructions: 'codex-forge' }),
-      candidateProjectionFingerprint: FP({ candidate: 'forge-codex' })
+      candidateProjectionFingerprint: FP({ candidate: 'forge-codex' }),
+      managedManifestFingerprint: FP({ managedManifest: 'codex' })
     },
     configuration: {
       name: 'harness-development-catalog',
@@ -162,6 +137,7 @@ function requestFixture() {
       rootIdentityFingerprint: FP({ root: 'contained-worktree' }),
       revisionFingerprint: FP({ revision: 'before' }),
       treeFingerprint: FP({ tree: 'before' }),
+      untargetedTreeFingerprint: FP({ tree: 'untargeted-before' }),
       exactInputState: 'clean',
       policyId: 'settings.kernel.soter.development-workspace',
       policyPath: 'soter/kernel/development-workspace.settings.json',
@@ -173,6 +149,12 @@ function requestFixture() {
       profile: 'exact',
       freshWorkerPerRun: true,
       expectationsWithheld: true,
+      requestedLocalEffects: [
+        'local-workspace-read',
+        'local-workspace-write',
+        'local-command',
+        'subagent-dispatch'
+      ],
       plannedRuns: runs
     },
     effectBoundary: fixedEffectBoundary(),
@@ -238,7 +220,8 @@ function resultFixture(request) {
       adapterFingerprint: request.host.adapterFingerprint,
       projectionDefinitionFingerprint: request.host.projectionDefinitionFingerprint,
       evaluatedInstructionFingerprint: request.host.evaluatedInstructionFingerprint,
-      candidateProjectionFingerprint: request.host.candidateProjectionFingerprint
+      candidateProjectionFingerprint: request.host.candidateProjectionFingerprint,
+      managedManifestFingerprint: request.host.managedManifestFingerprint
     },
     configuration: {
       name: request.configuration.name,
@@ -249,6 +232,7 @@ function resultFixture(request) {
       rootIdentityFingerprint: request.workspace.rootIdentityFingerprint,
       revisionFingerprint: request.workspace.revisionFingerprint,
       treeFingerprint: request.workspace.treeFingerprint,
+      untargetedTreeFingerprint: request.workspace.untargetedTreeFingerprint,
       exactInputState: request.workspace.exactInputState,
       policyFingerprint: request.workspace.policyFingerprint,
       settingsFingerprint: request.workspace.settingsFingerprint
@@ -257,6 +241,7 @@ function resultFixture(request) {
       rootIdentityFingerprint: request.workspace.rootIdentityFingerprint,
       revisionFingerprint: request.workspace.revisionFingerprint,
       treeFingerprint: request.workspace.treeFingerprint,
+      untargetedTreeFingerprint: request.workspace.untargetedTreeFingerprint,
       exactInputState: request.workspace.exactInputState,
       policyFingerprint: request.workspace.policyFingerprint,
       settingsFingerprint: request.workspace.settingsFingerprint
@@ -293,7 +278,7 @@ function resultFixture(request) {
     promotion: {
       state: 'held',
       artifactFingerprint: null,
-      reasonCode: 'MIGRATION_AUTHORITY_NOT_GRANTED'
+      reasonCode: 'PROMOTION_AUTHORITY_NOT_GRANTED'
     },
     decisionEvidence: [],
     authority: {
@@ -302,11 +287,10 @@ function resultFixture(request) {
       grantsApproval: false,
       grantsPublication: false,
       grantsMerge: false,
-      grantsProviderWrite: false,
-      grantsFallbackRemoval: false
+      grantsProviderWrite: false
     },
     privacy: fixedPrivatePrivacy(),
-    limitations: ['This private result is scoped evidence and cannot activate or migrate a workflow.']
+    limitations: ['This private result is scoped evidence and grants no execution, publication, merge, or promotion authority.']
   };
   result.resultFingerprint = FP(Object.fromEntries(
     Object.entries(result).filter(([key]) => key !== 'resultFingerprint')
@@ -319,6 +303,7 @@ function postWorkspaceFixture(request) {
     rootIdentityFingerprint: request.workspace.rootIdentityFingerprint,
     revisionFingerprint: request.workspace.revisionFingerprint,
     treeFingerprint: request.workspace.treeFingerprint,
+    untargetedTreeFingerprint: request.workspace.untargetedTreeFingerprint,
     exactInputState: request.workspace.exactInputState,
     policyFingerprint: request.workspace.policyFingerprint,
     settingsFingerprint: request.workspace.settingsFingerprint
@@ -373,6 +358,7 @@ function observationFixture(request, result, postWorkspace) {
         rootIdentityFingerprint: request.workspace.rootIdentityFingerprint,
         revisionFingerprint: request.workspace.revisionFingerprint,
         treeFingerprint: request.workspace.treeFingerprint,
+        untargetedTreeFingerprint: request.workspace.untargetedTreeFingerprint,
         exactInputState: request.workspace.exactInputState,
         policyFingerprint: request.workspace.policyFingerprint,
         settingsFingerprint: request.workspace.settingsFingerprint
@@ -388,6 +374,7 @@ function observationFixture(request, result, postWorkspace) {
       projectionDefinitionFingerprint: request.host.projectionDefinitionFingerprint,
       evaluatedInstructionFingerprint: request.host.evaluatedInstructionFingerprint,
       candidateProjectionFingerprint: request.host.candidateProjectionFingerprint,
+      managedManifestFingerprint: request.host.managedManifestFingerprint,
       observer: {
         id: 'development-host-observer.' + request.host.id,
         version: '1.0.0',
@@ -439,8 +426,7 @@ function observationFixture(request, result, postWorkspace) {
       grantsProviderRead: false,
       grantsProviderWrite: false,
       grantsHostRealization: false,
-      grantsPromotion: false,
-      grantsFallbackRemoval: false
+      grantsPromotion: false
     },
     privacy: {
       absolutePathsIncluded: false,
@@ -474,13 +460,6 @@ function resignObservation(observation) {
   return observation;
 }
 
-function resignMigrationEvidence(evidence) {
-  evidence.evidenceFingerprint = FP(Object.fromEntries(
-    Object.entries(evidence).filter(([key]) => key !== 'evidenceFingerprint')
-  ));
-  return evidence;
-}
-
 function bindResult(observation, result) {
   observation.result = {
     id: result.id,
@@ -492,8 +471,8 @@ function bindResult(observation, result) {
   return observation;
 }
 
-function selftestHistoricalCandidateLockBinding() {
-  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'soter-historical-candidate-lock-'));
+function selftestCandidateLockBinding() {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'soter-candidate-lock-'));
   try {
     const directory = path.join(temp, '.soter', 'state', 'development-candidate-locks');
     fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
@@ -533,18 +512,23 @@ function selftestHistoricalCandidateLockBinding() {
         }]
       }]
     };
-    const relative = '.soter/state/development-candidate-locks/development-candidate-lock.codex.forge.json';
+    const lockFingerprint = fingerprintLock(lock);
+    const relative = [
+      '.soter/state/development-candidate-locks/development-candidate-lock.codex.forge.',
+      lockFingerprint.slice('sha256:'.length),
+      '.json'
+    ].join('');
     const file = path.join(temp, relative);
     fs.writeFileSync(file, JSON.stringify(lock, null, 2) + '\n', { mode: 0o600 });
     fs.chmodSync(file, 0o600);
     request.configuration.lockPath = relative;
-    request.configuration.lockFingerprint = fingerprintLock(lock);
+    request.configuration.lockFingerprint = lockFingerprint;
     assert.equal(
-      assertHistoricalDevelopmentCandidateLock({ root: temp, request }).lockFingerprint,
+      assertDevelopmentCandidateLock({ root: temp, request }).lockFingerprint,
       request.configuration.lockFingerprint
     );
     expectCode(
-      () => assertHistoricalDevelopmentCandidateLock({
+      () => assertDevelopmentCandidateLock({
         root: temp,
         request,
         requireCurrent: true
@@ -554,14 +538,14 @@ function selftestHistoricalCandidateLockBinding() {
 
     fs.appendFileSync(file, '\n');
     expectCode(
-      () => assertHistoricalDevelopmentCandidateLock({ root: temp, request }),
+      () => assertDevelopmentCandidateLock({ root: temp, request }),
       'DEVELOPMENT_HOST_OBSERVATION_CANDIDATE_LOCK_INVALID'
     );
     fs.writeFileSync(file, JSON.stringify(lock, null, 2) + '\n');
     lock.packs[0].artifacts[0].fingerprint = FP({ definition: 'substituted' });
     fs.writeFileSync(file, JSON.stringify(lock, null, 2) + '\n');
     expectCode(
-      () => assertHistoricalDevelopmentCandidateLock({ root: temp, request }),
+      () => assertDevelopmentCandidateLock({ root: temp, request }),
       'DEVELOPMENT_HOST_OBSERVATION_CANDIDATE_LOCK_INVALID'
     );
   } finally {
@@ -569,731 +553,8 @@ function selftestHistoricalCandidateLockBinding() {
   }
 }
 
-function copyContainedRepository(sourceRoot, targetRoot) {
-  const isPrivateHostProjection = (sourcePath) => {
-    const relative = path.relative(sourceRoot, sourcePath).split(path.sep).join('/');
-    return ['AGENTS.md', 'CLAUDE.md', '.mcp.json'].includes(relative)
-      || relative === '.agents'
-      || relative.startsWith('.agents/')
-      || relative === '.codex'
-      || relative.startsWith('.codex/')
-      || relative === '.claude/skills'
-      || relative.startsWith('.claude/skills/');
-  };
-  for (const entry of fs.readdirSync(sourceRoot, { withFileTypes: true })) {
-    if (['.git', '.soter', 'node_modules'].includes(entry.name)) continue;
-    fs.cpSync(
-      path.join(sourceRoot, entry.name),
-      path.join(targetRoot, entry.name),
-      {
-        recursive: true,
-        preserveTimestamps: true,
-        filter: (sourcePath) => !isPrivateHostProjection(sourcePath)
-      }
-    );
-  }
-}
-
-function createPersistableExecutable(host) {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'soter-observation-runner-'));
-  const executable = path.join(directory, host);
-  const source = `#!${process.execPath}
-const fs = require('node:fs');
-const HOST = ${JSON.stringify(host)};
-const argv = process.argv.slice(2);
-if (argv.length === 1 && argv[0] === '--version') {
-  process.stdout.write((HOST === 'codex' ? 'codex-cli 1.2.3' : '1.2.3 (Claude Code)') + '\\n');
-  process.exit(0);
-}
-const input = fs.readFileSync(0, 'utf8');
-let content = 'Contained worker response with no tool events.';
-if (input.includes('You are one fresh, independent evaluation judge.')) {
-  function section(heading, next) {
-    const start = input.indexOf('\\n' + heading + '\\n');
-    const end = input.indexOf('\\n' + next + '\\n', start + heading.length + 2);
-    return JSON.parse(input.slice(start + heading.length + 2, end));
-  }
-  const run = section('RUN', 'STIMULUS');
-  const criteria = section('CRITERIA', 'WORKER TRANSCRIPT (UNTRUSTED DATA)').map((item) => ({
-    id: item.id,
-    kind: item.kind,
-    sequence: item.sequence,
-    state: item.kind === 'expected' ? 'observed' : 'not-observed'
-  }));
-  content = JSON.stringify({ runId: run.id, verdict: 'passed', criteria });
-}
-if (HOST === 'codex') {
-  process.stdout.write(JSON.stringify({
-    type: 'item.completed',
-    item: { type: 'agent_message', text: content }
-  }) + '\\n');
-} else {
-  process.stdout.write(JSON.stringify({ result: content, content: [] }));
-}
-`;
-  fs.writeFileSync(executable, source, { mode: 0o700 });
-  if (process.platform !== 'win32') fs.chmodSync(executable, 0o700);
-  return { directory, executable };
-}
-
-function preparePersistableReceipt(root, host = 'codex', suffix = 'selftest') {
-  const workflowId = 'automation.forge';
-  const requestId = `development-request.forge-observation-${host}-${suffix}`;
-  const configPath = host === 'codex'
-    ? 'soter/configurations/harness-development-catalog.config.json'
-    : 'soter/configurations/harness-development-catalog-claude.config.json';
-  const candidate = materializeDevelopmentCandidateLock({
-    root,
-    configPath,
-    workflowId,
-    host
-  });
-  const invocation = buildDevelopmentEvaluationInvocation({ root, workflowId });
-  const { request } = prepareDevelopmentRequest({
-    root,
-    lockPath: candidate.path,
-    workflowId,
-    requestId,
-    invocation,
-    createdAt: '2026-07-22T00:00:00.000Z'
-  });
-  const executableState = createPersistableExecutable(host);
-  runDevelopmentHostEvaluation({
-    root,
-    requestId,
-    executablePath: executableState.executable
-  });
-  runDevelopmentHostJudgment({
-    root,
-    requestId,
-    executablePath: executableState.executable
-  });
-  const finalized = finalizeDevelopmentHostEvaluation({ root, requestId });
-  return {
-    requestId,
-    candidate,
-    request,
-    result: finalized.result,
-    observation: finalized.observation,
-    executableState
-  };
-}
-
-const FORGE_SOURCE_PATHS = [
-  '.claude/evals/forge/happy-path.md',
-  '.claude/evals/forge/invariant-gate.md',
-  '.claude/evals/forge/pressure-shortcut.md',
-  '.claude/evals/forge/system-branch.md',
-  '.claude/skills/forge/SKILL.md'
-];
-
-function writeRepositoryJson(root, relativePath, value, mode = null) {
-  const file = resolveRepoPath(root, relativePath);
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, JSON.stringify(value, null, 2) + '\n');
-  if (mode !== null && process.platform !== 'win32') fs.chmodSync(file, mode);
-  return file;
-}
-
-function finalForgeEvidencePath(host) {
-  return `soter/evidence/development/evidence.development-activation.${host}.forge.json`;
-}
-
-function finalEvidenceApplicability(lock) {
-  return {
-    configurationLockFingerprint: fingerprintLock(lock),
-    graphFingerprint: lock.graphFingerprint,
-    dependencies: lock.packs.map((pack) => ({
-      id: pack.id,
-      version: pack.version,
-      fingerprint: pack.manifestFingerprint
-    })),
-    host: {
-      id: lock.host.id,
-      adapter: lock.host.adapter,
-      version: lock.host.version,
-      manifestFingerprint: lock.host.manifestFingerprint
-    },
-    integrations: lock.packs.filter((pack) => pack.layer === 'integration').map((pack) => ({
-      id: pack.id,
-      version: pack.version,
-      manifestFingerprint: pack.manifestFingerprint,
-      evidenceMaturity: pack.evidenceMaturity
-    })),
-    authorities: lock.authorities.map((authority) => ({
-      id: authority.id,
-      role: authority.role,
-      subject: authority.subject,
-      declarationFingerprint: authority.declarationFingerprint
-    }))
-  };
-}
-
-function activatePersistableForgeGraph(root, historicalByHost) {
-  const definitionPath = 'soter/automations/forge/definition.json';
-  const guidePath = 'soter/automations/forge/guide.json';
-  const evaluationPath = 'soter/automations/forge/evaluations.json';
-  const finalEvidencePaths = ['codex', 'claude'].map(finalForgeEvidencePath);
-  const definition = readJson(resolveRepoPath(root, definitionPath));
-  const guide = readJson(resolveRepoPath(root, guidePath));
-  const evaluations = readJson(resolveRepoPath(root, evaluationPath));
-  const references = ['codex', 'claude'].map((host) => {
-    const receipt = historicalByHost.get(host);
-    assert(receipt, 'finalized Forge graph requires one historical receipt for ' + host);
-    return {
-      path: receipt.path,
-      fingerprint: fingerprintJson(receipt.evidence),
-      host
-    };
-  });
-  const retiredEvaluationSources = FORGE_SOURCE_PATHS.filter((sourcePath) => {
-    return sourcePath.startsWith('.claude/evals/');
-  });
-  const sourceFilesRemoved = definition.source.presence === 'removed'
-    && guide.source.presence === 'removed'
-    && evaluations.cases.every((testCase) => testCase.source.presence === 'removed')
-    && retiredEvaluationSources.every((sourcePath) => {
-      return !fs.existsSync(resolveRepoPath(root, sourcePath));
-    });
-  if (sourceFilesRemoved) {
-    assert.equal(definition.lifecycle.activation.state, 'active');
-    assert.equal(definition.source.presence, 'removed');
-    assert.equal(guide.status.state, 'active');
-    assert.equal(guide.source.presence, 'removed');
-    assert.equal(evaluations.lifecycle.activation, 'active');
-    assert(evaluations.cases.every((testCase) => testCase.source.presence === 'removed'));
-
-    const inventory = readJson(resolveRepoPath(root, 'soter/migrations/legacy-inventory.json'));
-    const forgeItems = inventory.items.filter((item) => FORGE_SOURCE_PATHS.includes(item.sourcePath));
-    assert.equal(forgeItems.length, FORGE_SOURCE_PATHS.length);
-    assert(forgeItems.every((item) => {
-      return item.sourcePresence === 'removed'
-        && item.state === 'migrated'
-        && item.targets.length === 1
-        && item.targets[0].state === 'migrated'
-        && item.targets[0].canonicalAuthority === 'target'
-        && item.targets[0].fallback === 'removed'
-        && item.targets[0].parity === 'proven';
-    }));
-
-    const migration = readJson(
-      resolveRepoPath(root, 'soter/migrations/forge.definition.migration.json')
-    );
-    assert.equal(migration.items.length, FORGE_SOURCE_PATHS.length);
-    assert(migration.items.every((item) => {
-      return FORGE_SOURCE_PATHS.includes(item.sourcePath) && item.state === 'migrated';
-    }));
-
-    definition.lifecycle.activation.evidence = structuredClone(references);
-    guide.status.evidence = structuredClone(references);
-    guide.workflow.definitionFingerprint = fingerprintJson(definition);
-    guide.workflow.evaluationSetFingerprint = fingerprintJson(evaluations);
-    guide.contentFingerprint = fingerprintWorkflowGuideContent(guide);
-    writeRepositoryJson(root, definitionPath, definition);
-    writeRepositoryJson(root, guidePath, guide);
-    return { definitionPath, guidePath, evaluationPath, finalEvidencePaths };
-  }
-
-  definition.lifecycle.activation = {
-    state: 'active',
-    reasonCode: 'WORKFLOW_HOST_GUIDANCE_ACTIVE',
-    proceduralAuthority: 'target',
-    delivery: 'host-skill',
-    behaviorParity: 'passed',
-    evidence: structuredClone(references),
-    permittedNextAction: 'invoke-through-selected-host'
-  };
-  definition.source.presence = 'removed';
-  guide.status = {
-    state: 'active',
-    reasonCode: 'WORKFLOW_GUIDE_ACTIVE',
-    proceduralAuthority: 'target',
-    behaviorParity: 'passed',
-    delivery: 'host-skill',
-    evidence: structuredClone(references),
-    permittedNextAction: 'invoke-through-selected-host'
-  };
-  guide.source.presence = 'removed';
-  evaluations.lifecycle.activation = 'active';
-  for (const testCase of evaluations.cases) testCase.source.presence = 'removed';
-
-  guide.workflow.definitionFingerprint = fingerprintJson(definition);
-  guide.workflow.evaluationSetFingerprint = fingerprintJson(evaluations);
-  guide.contentFingerprint = fingerprintWorkflowGuideContent(guide);
-  writeRepositoryJson(root, definitionPath, definition);
-  writeRepositoryJson(root, evaluationPath, evaluations);
-  writeRepositoryJson(root, guidePath, guide);
-
-  const inventoryPath = 'soter/migrations/legacy-inventory.json';
-  const inventory = readJson(resolveRepoPath(root, inventoryPath));
-  const forgeItems = inventory.items.filter((item) => FORGE_SOURCE_PATHS.includes(item.sourcePath));
-  assert.equal(forgeItems.length, FORGE_SOURCE_PATHS.length);
-  for (const item of forgeItems) {
-    item.sourcePresence = 'removed';
-    item.state = 'migrated';
-    assert.equal(item.targets.length, 1);
-    Object.assign(item.targets[0], {
-      state: 'migrated',
-      canonicalAuthority: 'target',
-      fallback: 'removed',
-      parity: 'proven',
-      evidence: [...finalEvidencePaths]
-    });
-  }
-  inventory.stateCounts = { mapped: 0, bridged: 0, migrated: 0, retired: 0 };
-  inventory.bindingStateCounts = { mapped: 0, bridged: 0, migrated: 0, retired: 0 };
-  for (const item of inventory.items) {
-    inventory.stateCounts[item.state] += 1;
-    for (const target of item.targets) inventory.bindingStateCounts[target.state] += 1;
-  }
-  inventory.inventoryFingerprint = null;
-  inventory.inventoryFingerprint = fingerprintJson(inventory);
-  writeRepositoryJson(root, inventoryPath, inventory);
-
-  const migrationPath = 'soter/migrations/forge.definition.migration.json';
-  const migration = readJson(resolveRepoPath(root, migrationPath));
-  assert.equal(migration.items.length, FORGE_SOURCE_PATHS.length);
-  for (const item of migration.items) {
-    assert(FORGE_SOURCE_PATHS.includes(item.sourcePath));
-    item.state = 'migrated';
-    item.evidence = [...finalEvidencePaths];
-  }
-  writeRepositoryJson(root, migrationPath, migration);
-
-  for (const sourcePath of FORGE_SOURCE_PATHS) fs.rmSync(resolveRepoPath(root, sourcePath));
-  const staticVerification = verifySoter(root, { includeRuntimeArtifacts: false });
-  assert.equal(
-    staticVerification.health.valid,
-    'passed',
-    'finalized Forge static graph must be valid: '
-      + staticVerification.violations.map((item) => item.code).join(', ')
-  );
-  return { definitionPath, guidePath, evaluationPath, finalEvidencePaths };
-}
-
-function selftestCreateOnlyEvidencePersistence(sourceRoot) {
-  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'soter-development-evidence-persistence-'));
-  let executableDirectory = null;
-  try {
-    copyContainedRepository(sourceRoot, temp);
-    const receipt = preparePersistableReceipt(temp);
-    executableDirectory = receipt.executableState.directory;
-    const first = persistDevelopmentHostHistoricalEvidence({
-      root: temp,
-      requestId: receipt.requestId
-    });
-    assert.equal(first.idempotent, false);
-    assert.equal(first.evidence.$contract, 'soter://contracts/development-agent-migration-evidence/v1');
-    assert.equal(first.path, `soter/evidence/development/${first.evidence.id}.json`);
-    assert.equal(first.evidence.authority.grantsActivation, false);
-    assert.equal(first.evidence.authority.grantsFallbackRemoval, false);
-    const evidenceFile = resolveRepoPath(temp, first.path);
-    const exactBytes = fs.readFileSync(evidenceFile);
-    assert.equal(fs.lstatSync(evidenceFile).nlink, 1);
-    if (process.platform !== 'win32') {
-      assert.equal(fs.lstatSync(evidenceFile).mode & 0o7777, 0o644);
-      assert.equal(
-        fs.lstatSync(path.dirname(evidenceFile)).mode & 0o7777,
-        0o755,
-        'governed evidence directory must be 0755'
-      );
-    }
-    const serialized = exactBytes.toString('utf8');
-    assert(!serialized.includes('/Users/'));
-    assert(!serialized.includes('PRIVATE_TRANSCRIPT_SENTINEL'));
-    assert(!serialized.includes('rawProviderResponse'));
-
-    const repeated = persistDevelopmentHostHistoricalEvidence({
-      root: temp,
-      requestId: receipt.requestId
-    });
-    assert.equal(repeated.idempotent, true);
-    assert.equal(repeated.fingerprint, first.fingerprint);
-
-    const runnerState = developmentHostExecutionStateFiles(temp, receipt.requestId);
-    if (process.platform !== 'win32') {
-      assert.equal(fs.lstatSync(runnerState.finalization).mode & 0o7777, 0o600);
-    }
-    expectCode(() => persistDevelopmentHostHistoricalEvidence({
-      root: temp,
-      requestId: receipt.requestId,
-      unexpected: true
-    }), 'DEVELOPMENT_EVIDENCE_ARGUMENTS_INVALID');
-
-    const governedDirectory = path.dirname(evidenceFile);
-    if (process.platform !== 'win32') {
-      fs.chmodSync(governedDirectory, 0o777);
-      expectCode(
-        () => persistDevelopmentHostHistoricalEvidence({ root: temp, requestId: receipt.requestId }),
-        'DEVELOPMENT_EVIDENCE_OUTPUT_PATH_INVALID'
-      );
-      fs.chmodSync(governedDirectory, 0o755);
-    }
-
-    const interruptedPending = path.join(
-      governedDirectory,
-      '.' + path.basename(evidenceFile) + '.pending-interrupted-publication'
-    );
-    fs.rmSync(evidenceFile);
-    fs.writeFileSync(interruptedPending, exactBytes, { mode: 0o644 });
-    if (process.platform !== 'win32') fs.chmodSync(interruptedPending, 0o644);
-    fs.linkSync(interruptedPending, evidenceFile);
-    assert.equal(fs.lstatSync(evidenceFile).nlink, 2);
-    const recovered = persistDevelopmentHostHistoricalEvidence({
-      root: temp,
-      requestId: receipt.requestId
-    });
-    assert.equal(recovered.idempotent, true);
-    assert.equal(fs.existsSync(interruptedPending), false);
-    assert.equal(fs.lstatSync(evidenceFile).nlink, 1);
-    assert(fs.readFileSync(evidenceFile).equals(exactBytes));
-
-    const abandonedPending = path.join(
-      governedDirectory,
-      '.' + path.basename(evidenceFile) + '.pending-abandoned-partial'
-    );
-    fs.rmSync(evidenceFile);
-    fs.writeFileSync(abandonedPending, '{', { mode: 0o644 });
-    if (process.platform !== 'win32') fs.chmodSync(abandonedPending, 0o644);
-    const recreated = persistDevelopmentHostHistoricalEvidence({
-      root: temp,
-      requestId: receipt.requestId
-    });
-    assert.equal(recreated.idempotent, false);
-    assert(fs.readFileSync(evidenceFile).equals(exactBytes));
-    assert(fs.readFileSync(abandonedPending).equals(Buffer.from('{')));
-    fs.rmSync(abandonedPending);
-
-    const resultFile = resolveRepoPath(
-      temp,
-      `.soter/state/development-results/${receipt.result.id}.json`
-    );
-    const observationFile = resolveRepoPath(
-      temp,
-      `.soter/state/development-host-observations/${receipt.observation.id}.json`
-    );
-    const exactResultBytes = fs.readFileSync(resultFile);
-    const exactObservationBytes = fs.readFileSync(observationFile);
-    const forgedResult = structuredClone(receipt.result);
-    const forgedObservation = structuredClone(receipt.observation);
-    forgedResult.judgments[1].criteria[0].evidenceFingerprint = FP({ forged: 'criterion' });
-    forgedObservation.runs[1].judgment.criteria[0].evidenceFingerprint =
-      forgedResult.judgments[1].criteria[0].evidenceFingerprint;
-    resignResult(forgedResult);
-    bindResult(forgedObservation, forgedResult);
-    resignObservation(forgedObservation);
-    fs.writeFileSync(resultFile, JSON.stringify(forgedResult, null, 2) + '\n');
-    fs.writeFileSync(observationFile, JSON.stringify(forgedObservation, null, 2) + '\n');
-    if (process.platform !== 'win32') {
-      fs.chmodSync(resultFile, 0o600);
-      fs.chmodSync(observationFile, 0o600);
-    }
-    expectCode(
-      () => persistDevelopmentHostHistoricalEvidence({ root: temp, requestId: receipt.requestId }),
-      'DEVELOPMENT_HOST_FINALIZATION_RECEIPT_INVALID'
-    );
-    fs.writeFileSync(resultFile, exactResultBytes);
-    fs.writeFileSync(observationFile, exactObservationBytes);
-    if (process.platform !== 'win32') {
-      fs.chmodSync(resultFile, 0o600);
-      fs.chmodSync(observationFile, 0o600);
-    }
-
-    const cli = spawnSync(process.execPath, [
-      resolveRepoPath(temp, 'soter/core/cli.mjs'),
-      'development-host-evidence-historical',
-      '--root', temp,
-      '--request-id', receipt.requestId,
-      '--unexpected', 'rejected'
-    ], { cwd: temp, encoding: 'utf8' });
-    assert.equal(cli.status, 1);
-    assert.match(cli.stderr, /Unexpected argument for development-host-evidence-historical/u);
-
-    const tamperedEvidence = structuredClone(first.evidence);
-    tamperedEvidence.createdAt = '2026-07-22T10:06:02.000Z';
-    fs.writeFileSync(evidenceFile, JSON.stringify(tamperedEvidence, null, 2) + '\n');
-    if (process.platform !== 'win32') fs.chmodSync(evidenceFile, 0o644);
-    expectCode(
-      () => persistDevelopmentHostHistoricalEvidence({ root: temp, requestId: receipt.requestId }),
-      'DEVELOPMENT_MIGRATION_EVIDENCE_REENTRY_MISMATCH'
-    );
-    fs.writeFileSync(evidenceFile, exactBytes);
-    if (process.platform !== 'win32') fs.chmodSync(evidenceFile, 0o644);
-
-    const tamperedObservation = structuredClone(receipt.observation);
-    tamperedObservation.observedAt = '2026-07-22T10:06:02.000Z';
-    fs.writeFileSync(observationFile, JSON.stringify(tamperedObservation, null, 2) + '\n');
-    if (process.platform !== 'win32') fs.chmodSync(observationFile, 0o600);
-    expectCode(
-      () => persistDevelopmentHostHistoricalEvidence({ root: temp, requestId: receipt.requestId }),
-      'DEVELOPMENT_HOST_FINALIZATION_RECEIPT_INVALID'
-    );
-    fs.writeFileSync(observationFile, exactObservationBytes);
-    if (process.platform !== 'win32') fs.chmodSync(observationFile, 0o600);
-
-    fs.rmSync(observationFile);
-    expectCode(
-      () => persistDevelopmentHostHistoricalEvidence({ root: temp, requestId: receipt.requestId }),
-      'DEVELOPMENT_MIGRATION_EVIDENCE_SOURCE_UNAVAILABLE'
-    );
-    fs.writeFileSync(observationFile, exactObservationBytes, { mode: 0o600 });
-    if (process.platform !== 'win32') fs.chmodSync(observationFile, 0o600);
-
-    const privateSymlinkTarget = path.join(temp, 'private-observation-target.json');
-    fs.writeFileSync(privateSymlinkTarget, exactObservationBytes, { mode: 0o600 });
-    fs.rmSync(observationFile);
-    fs.symlinkSync(privateSymlinkTarget, observationFile);
-    expectCode(
-      () => persistDevelopmentHostHistoricalEvidence({ root: temp, requestId: receipt.requestId }),
-      'DEVELOPMENT_MIGRATION_EVIDENCE_SOURCE_UNAVAILABLE'
-    );
-    fs.rmSync(observationFile);
-    fs.writeFileSync(observationFile, exactObservationBytes, { mode: 0o600 });
-    if (process.platform !== 'win32') fs.chmodSync(observationFile, 0o600);
-
-    const outputSymlinkTarget = path.join(temp, 'outside-evidence.json');
-    fs.writeFileSync(outputSymlinkTarget, 'OUTSIDE_EVIDENCE_SENTINEL\n', { mode: 0o600 });
-    const outsideBefore = fs.readFileSync(outputSymlinkTarget);
-    fs.rmSync(evidenceFile);
-    fs.symlinkSync(outputSymlinkTarget, evidenceFile);
-    expectCode(
-      () => persistDevelopmentHostHistoricalEvidence({ root: temp, requestId: receipt.requestId }),
-      'DEVELOPMENT_MIGRATION_EVIDENCE_REENTRY_MISMATCH'
-    );
-    assert(fs.readFileSync(outputSymlinkTarget).equals(outsideBefore));
-    fs.rmSync(evidenceFile);
-
-    const outputHardlinkTarget = path.join(temp, 'outside-hardlink-evidence.json');
-    fs.writeFileSync(outputHardlinkTarget, exactBytes, { mode: 0o644 });
-    if (process.platform !== 'win32') fs.chmodSync(outputHardlinkTarget, 0o644);
-    const hardlinkMode = fs.lstatSync(outputHardlinkTarget).mode & 0o7777;
-    fs.linkSync(outputHardlinkTarget, evidenceFile);
-    expectCode(
-      () => persistDevelopmentHostHistoricalEvidence({ root: temp, requestId: receipt.requestId }),
-      'DEVELOPMENT_MIGRATION_EVIDENCE_REENTRY_MISMATCH'
-    );
-    assert.equal(fs.lstatSync(outputHardlinkTarget).mode & 0o7777, hardlinkMode);
-    assert(fs.readFileSync(outputHardlinkTarget).equals(exactBytes));
-    fs.rmSync(evidenceFile);
-    fs.writeFileSync(evidenceFile, exactBytes, { mode: 0o644 });
-    if (process.platform !== 'win32') fs.chmodSync(evidenceFile, 0o644);
-
-    const finalLockPath = 'soter/fixtures/harness-development-catalog/harness-development-catalog.lock.json';
-    fs.writeFileSync(
-      resolveRepoPath(temp, finalLockPath),
-      JSON.stringify(receipt.candidate.lock, null, 2) + '\n'
-    );
-    expectCode(() => persistDevelopmentHostFinalEvidence({
-      root: temp,
-      requestId: receipt.requestId,
-      finalLockPath,
-      createdAt: '2026-07-22T10:07:00.000Z'
-    }), 'DEVELOPMENT_ACTIVATION_EVIDENCE_BATCH_REQUIRED');
-    assert(!fs.existsSync(resolveRepoPath(
-      temp,
-      'soter/evidence/development/evidence.development-activation.codex.forge.json'
-    )));
-
-    expectCode(
-      () => persistDevelopmentHostHistoricalEvidence({
-        root: temp,
-        requestId: 'development-request.forge/../../outside'
-      }),
-      'DEVELOPMENT_MIGRATION_EVIDENCE_SOURCE_INVALID'
-    );
-
-    const heldDirectory = governedDirectory + '.held';
-    const escapedDirectory = path.join(temp, 'escaped-evidence-directory');
-    fs.mkdirSync(escapedDirectory, { mode: 0o755 });
-    fs.renameSync(governedDirectory, heldDirectory);
-    fs.symlinkSync(escapedDirectory, governedDirectory);
-    expectCode(
-      () => persistDevelopmentHostHistoricalEvidence({ root: temp, requestId: receipt.requestId }),
-      'DEVELOPMENT_EVIDENCE_OUTPUT_PATH_INVALID'
-    );
-    assert.equal(fs.readdirSync(escapedDirectory).length, 0);
-  } finally {
-    if (executableDirectory) fs.rmSync(executableDirectory, { recursive: true, force: true });
-    fs.rmSync(temp, { recursive: true, force: true });
-  }
-}
-
-function selftestFinalEvidenceBatchConstruction(sourceRoot) {
-  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'soter-development-final-batch-construction-'));
-  const executableDirectories = [];
-  try {
-    copyContainedRepository(sourceRoot, temp);
-    const historicalByHost = new Map();
-    const privateReceipts = new Map();
-    for (const host of ['codex', 'claude']) {
-      const receipt = preparePersistableReceipt(temp, host, 'final-batch');
-      executableDirectories.push(receipt.executableState.directory);
-      privateReceipts.set(host, receipt);
-      historicalByHost.set(host, buildDevelopmentHostHistoricalEvidenceForBatch({
-        root: temp,
-        requestId: receipt.requestId,
-        requireCurrentCandidateLock: true
-      }));
-    }
-    for (const host of ['codex', 'claude']) {
-      const built = historicalByHost.get(host);
-      const relativePath = `soter/evidence/development/${built.evidence.id}.json`;
-      writeRepositoryJson(temp, relativePath, built.evidence, 0o644);
-      historicalByHost.set(host, {
-        evidence: built.evidence,
-        path: relativePath,
-        fingerprint: fingerprintJson(built.evidence),
-        idempotent: false
-      });
-    }
-    const graph = activatePersistableForgeGraph(temp, historicalByHost);
-    const bindings = [{
-      host: 'codex',
-      configPath: 'soter/configurations/harness-development-catalog.config.json',
-      lockPath: 'soter/fixtures/harness-development-catalog-final/codex.lock.json'
-    }, {
-      host: 'claude',
-      configPath: 'soter/configurations/harness-development-catalog-claude.config.json',
-      lockPath: 'soter/fixtures/harness-development-catalog-final/claude.lock.json'
-    }];
-    const workflowIds = readJson(resolveRepoPath(temp, bindings[0].configPath)).packs
-      .map(({ id }) => id)
-      .filter((packId) => {
-        const manifest = readJson(resolveRepoPath(temp, `soter/packs/${packId}/pack.json`));
-        const guideArtifact = manifest.artifacts.find((artifact) => {
-          return artifact.role === 'definition' && artifact.path.endsWith('/guide.json');
-        });
-        return guideArtifact
-          && readJson(resolveRepoPath(temp, guideArtifact.path)).status.state === 'active';
-      });
-    assert(workflowIds.includes('automation.forge'));
-    const locks = new Map();
-    const evidence = new Map();
-    for (const binding of bindings) {
-      const lock = resolveDevelopmentEvidenceFinalizationConfiguration({
-        root: temp,
-        configPath: binding.configPath,
-        host: binding.host,
-        workflowIds
-      });
-      locks.set(binding.host, lock);
-      const value = buildDevelopmentHostFinalEvidenceForBatch({
-        root: temp,
-        requestId: privateReceipts.get(binding.host).requestId,
-        finalLock: lock,
-        finalLockPath: binding.lockPath,
-        createdAt: '2099-01-01T00:00:00.000Z'
-      });
-      evidence.set(binding.host, value);
-      const migrationTargets = value.artifacts.filter((artifact) => artifact.role === 'migration-target');
-      assert.deepEqual(
-        migrationTargets.map((artifact) => artifact.path).sort(),
-        [graph.guidePath, graph.evaluationPath].sort()
-      );
-      assert.equal(new Set(migrationTargets.map((artifact) => artifact.path)).size, 2);
-    }
-
-    for (const binding of bindings) {
-      writeRepositoryJson(temp, binding.lockPath, locks.get(binding.host), 0o644);
-      writeRepositoryJson(
-        temp,
-        finalForgeEvidencePath(binding.host),
-        evidence.get(binding.host),
-        0o644
-      );
-    }
-    for (const binding of bindings) {
-      const expected = finalEvidenceApplicability(locks.get(binding.host));
-      const observed = Object.fromEntries(
-        Object.keys(expected).map((key) => [key, evidence.get(binding.host)[key]])
-      );
-      assert.deepEqual(
-        observed,
-        expected,
-        'batch-built final evidence must reproduce its exact unpublished lock'
-      );
-    }
-
-    expectCode(() => persistDevelopmentHostFinalEvidence({
-      root: temp,
-      requestId: privateReceipts.get('codex').requestId,
-      finalLockPath: bindings[0].lockPath,
-      createdAt: '2099-01-01T00:00:00.000Z'
-    }), 'DEVELOPMENT_ACTIVATION_EVIDENCE_BATCH_REQUIRED');
-    expectCode(() => buildDevelopmentHostFinalEvidenceForBatch({
-      root: temp,
-      requestId: privateReceipts.get('codex').requestId,
-      finalLock: locks.get('codex'),
-      finalLockPath: bindings[0].lockPath,
-      createdAt: '2000-01-01T00:00:00.000Z'
-    }), 'DEVELOPMENT_ACTIVATION_EVIDENCE_CHRONOLOGY_INVALID');
-
-    const retiredCli = spawnSync(process.execPath, [
-      resolveRepoPath(temp, 'soter/core/cli.mjs'),
-      'development-host-evidence-final',
-      '--root', temp,
-      '--request-id', privateReceipts.get('codex').requestId,
-      '--lock', bindings[0].lockPath,
-      '--at', '2099-01-01T00:00:00.000Z'
-    ], { cwd: temp, encoding: 'utf8' });
-    assert.equal(retiredCli.status, 1);
-    assert.match(retiredCli.stderr, /DEVELOPMENT_ACTIVATION_EVIDENCE_BATCH_REQUIRED/u);
-  } finally {
-    for (const directory of executableDirectories) {
-      fs.rmSync(directory, { recursive: true, force: true });
-    }
-    fs.rmSync(temp, { recursive: true, force: true });
-  }
-}
-
-function selftestSingleHistoricalEvidencePublicationRetired(sourceRoot) {
-  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'soter-development-evidence-retired-'));
-  let executableDirectory = null;
-  try {
-    copyContainedRepository(sourceRoot, temp);
-    const evidenceDirectory = resolveRepoPath(temp, 'soter/evidence/development');
-    const evidenceBefore = fs.existsSync(evidenceDirectory)
-      ? fingerprintPath(evidenceDirectory)
-      : null;
-    const receipt = preparePersistableReceipt(temp);
-    executableDirectory = receipt.executableState.directory;
-    expectCode(() => persistDevelopmentHostHistoricalEvidence({
-      root: temp,
-      requestId: receipt.requestId
-    }), 'DEVELOPMENT_MIGRATION_EVIDENCE_BATCH_REQUIRED');
-    const retiredCli = spawnSync(process.execPath, [
-      resolveRepoPath(temp, 'soter/core/cli.mjs'),
-      'development-host-evidence-historical',
-      '--root', temp,
-      '--request-id', receipt.requestId
-    ], { cwd: temp, encoding: 'utf8' });
-    assert.equal(retiredCli.status, 1);
-    assert.match(retiredCli.stderr, /DEVELOPMENT_MIGRATION_EVIDENCE_BATCH_REQUIRED/u);
-    assert.equal(
-      fs.existsSync(evidenceDirectory) ? fingerprintPath(evidenceDirectory) : null,
-      evidenceBefore
-    );
-    const built = buildDevelopmentHostHistoricalEvidenceForBatch({
-      root: temp,
-      requestId: receipt.requestId,
-      requireCurrentCandidateLock: true
-    });
-    assert.equal(built.evidence.authority.grantsActivation, false);
-    assert.equal(built.binding.requestId, receipt.requestId);
-    assert.equal(
-      fs.existsSync(evidenceDirectory) ? fingerprintPath(evidenceDirectory) : null,
-      evidenceBefore
-    );
-  } finally {
-    if (executableDirectory) fs.rmSync(executableDirectory, { recursive: true, force: true });
-    fs.rmSync(temp, { recursive: true, force: true });
-  }
-}
-
 export function selftestDevelopmentHostObservations(root = scriptRoot) {
-  selftestHistoricalCandidateLockBinding();
-  selftestSingleHistoricalEvidencePublicationRetired(root);
-  selftestFinalEvidenceBatchConstruction(root);
+  selftestCandidateLockBinding();
   const request = requestFixture();
   const result = resultFixture(request);
   const postWorkspace = postWorkspaceFixture(request);
@@ -1358,132 +619,6 @@ export function selftestDevelopmentHostObservations(root = scriptRoot) {
     0,
     'the observation schema must reject a passed guided run with an observed prohibited criterion'
   );
-  const workflowSources = workflowLegacySourceProjection({
-    definition: readJson(resolveRepoPath(root, 'soter/automations/forge/definition.json')),
-    guide: readJson(resolveRepoPath(root, 'soter/automations/forge/guide.json')),
-    evaluations: readJson(resolveRepoPath(root, 'soter/automations/forge/evaluations.json'))
-  }).map(({ path: sourcePath, fingerprint }) => ({ path: sourcePath, fingerprint }));
-  const migration = {
-    sources: workflowSources,
-    target: {
-      path: 'soter/automations/forge/guide.json',
-      fingerprint: observation.evaluatedSubject.fingerprint
-    }
-  };
-  const evidence = convertDevelopmentHostObservationToMigrationEvidence({ ...args, migration });
-  const repeated = convertDevelopmentHostObservationToMigrationEvidence({ ...args, migration });
-  const baselineFindingEvidence = convertDevelopmentHostObservationToMigrationEvidence({
-    ...args,
-    observation: baselineFinding,
-    result: baselineFindingResult,
-    migration
-  });
-  assert.equal(FP(evidence), FP(repeated), 'conversion must be deterministic');
-  assert.equal(assertDevelopmentAgentMigrationEvidence({ evidence, ...args, migration }), evidence);
-  assert.equal(
-    baselineFindingEvidence.conclusion.prohibitedOutcomesObserved,
-    true,
-    'migration evidence must truthfully retain an observed non-gating baseline prohibited finding'
-  );
-  assert.equal(
-    assertDevelopmentAgentMigrationEvidence({
-      evidence: baselineFindingEvidence,
-      ...args,
-      observation: baselineFinding,
-      result: baselineFindingResult,
-      migration
-    }),
-    baselineFindingEvidence
-  );
-  assert.equal(evidence.$contract, 'soter://contracts/development-agent-migration-evidence/v1');
-  assert.equal(
-    evidence.id,
-    'development-agent-migration-evidence.codex.forge',
-    'governed evidence identity must be stable across private request generations'
-  );
-  assert.equal(
-    evidence.request.id,
-    observation.request.id,
-    'stable governed evidence must retain the exact private request identity as a binding'
-  );
-  assert.equal(evidence.sourceObservation.id, observation.id);
-  const unsignedEvidence = structuredClone(evidence);
-  delete unsignedEvidence.evidenceFingerprint;
-  assert.equal(
-    evidence.evidenceFingerprint,
-    FP(unsignedEvidence),
-    'stable governed evidence identity and exact private bindings must remain fingerprinted'
-  );
-  const migrationEvidenceSchema = readJson(resolveRepoPath(
-    root,
-    'soter/contracts/development-agent-migration-evidence.schema.json'
-  ));
-  const generationBearingEvidenceId = structuredClone(evidence);
-  generationBearingEvidenceId.id += '.r12';
-  assert.notEqual(
-    validateJsonSchema(generationBearingEvidenceId, migrationEvidenceSchema).length,
-    0,
-    'public governed evidence identity must reject private request-generation suffixes'
-  );
-  assert.equal(evidence.conclusion.state, 'passed');
-  assert.equal(evidence.conclusion.baselineRole, 'observed-non-gating');
-  assert.equal(evidence.applicability.kind, 'historical-candidate-only');
-  assert.equal(evidence.applicability.finalGraph, 'not-claimed');
-  assert.equal(evidence.applicability.finalProjection, 'not-claimed');
-  assert.equal(evidence.applicability.currentRuntime, 'not-claimed');
-  assert.equal(evidence.applicability.activation, 'not-granted');
-  assert.equal(evidence.applicability.fallbackRemoval, 'not-granted');
-  assert.equal(evidence.host.id, 'codex');
-  assert.equal(evidence.authority.grantsActivation, false);
-  assert.equal(evidence.authority.grantsMigration, false);
-  assert.equal(evidence.authority.grantsFallbackRemoval, false);
-  assert(evidence.limitations.includes(
-    'DEVELOPMENT_AGENT_MIGRATION_EVIDENCE_LOCAL_BINARY_IDENTITY_ONLY'
-  ));
-  assert(observation.limitations.includes(
-    'DEVELOPMENT_HOST_OBSERVATION_LOCAL_BINARY_IDENTITY_ONLY'
-  ));
-  assert(!('claimFamily' in evidence));
-  assert(!('configurationLockFingerprint' in evidence));
-  assert.equal(evidence.artifacts.find((item) => item.role === 'migration-target').fingerprint,
-    observation.evaluatedSubject.fingerprint);
-  assert.equal(evidence.artifacts.find((item) => item.role === 'migration-target').subjectId,
-    observation.evaluatedSubject.id);
-  assert.equal(evidence.artifacts.find((item) => item.role === 'development-request').subjectId,
-    observation.request.id);
-  assert.equal(evidence.artifacts.find((item) => item.role === 'evaluation-set').fingerprint,
-    observation.evaluationSet.fingerprint);
-  assert.equal(evidence.artifacts.find((item) => item.role === 'candidate-projection').fingerprint,
-    observation.evaluatedSubject.candidateProjectionFingerprint);
-  assert.equal(evidence.runs[0].caseFingerprint, observation.runs[0].caseFingerprint);
-  assert.equal(evidence.runs[0].stimulusFingerprint, observation.runs[0].stimulusFingerprint);
-  assert.equal(evidence.runs[0].worker.id, observation.runs[0].worker.id);
-  assert.equal(evidence.runs[0].worker.expectationsIncluded, false);
-  assert.equal(evidence.runs[0].worker.answerKeyAccess, 'not-observed');
-  assert.deepEqual(evidence.runs[0].judgment.criteria, observation.runs[0].judgment.criteria);
-  const serialized = JSON.stringify(evidence);
-  assert(!serialized.includes('soter/private-targets'));
-  assert(!serialized.includes('PRIVATE_TRANSCRIPT_SENTINEL'));
-  assert(!serialized.includes('/Users/'));
-  assert(!serialized.includes('rawProviderResponse'));
-
-  const tamperedEvidence = structuredClone(evidence);
-  tamperedEvidence.evidenceFingerprint = FP({ tampered: true });
-  expectCode(() => assertDevelopmentAgentMigrationEvidence({
-    evidence: tamperedEvidence,
-    ...args,
-    migration
-  }), 'DEVELOPMENT_MIGRATION_EVIDENCE_TAMPERED');
-
-  const reboundEvidence = structuredClone(evidence);
-  reboundEvidence.applicability.candidate.graphFingerprint = FP({ graph: 'substituted' });
-  resignMigrationEvidence(reboundEvidence);
-  expectCode(() => assertDevelopmentAgentMigrationEvidence({
-    evidence: reboundEvidence,
-    ...args,
-    migration
-  }), 'DEVELOPMENT_MIGRATION_EVIDENCE_BINDING_INVALID');
-
   const tampered = structuredClone(observation);
   tampered.observationFingerprint = FP({ tampered: true });
   expectCode(() => assertDevelopmentHostObservation({ ...args, observation: tampered }),
@@ -1710,25 +845,8 @@ export function selftestDevelopmentHostObservations(root = scriptRoot) {
   expectCode(() => assertDevelopmentHostObservation({ ...args, observation: rawContent }),
     'DEVELOPMENT_HOST_OBSERVATION_MALFORMED');
 
-  const wrongTarget = structuredClone(migration);
-  wrongTarget.target.fingerprint = FP({ guide: 'substituted' });
-  expectCode(() => convertDevelopmentHostObservationToMigrationEvidence({ ...args, migration: wrongTarget }),
-    'DEVELOPMENT_MIGRATION_EVIDENCE_ARTIFACT_INVALID');
-  const missingSource = structuredClone(migration);
-  missingSource.sources.pop();
-  expectCode(() => convertDevelopmentHostObservationToMigrationEvidence({ ...args, migration: missingSource }),
-    'DEVELOPMENT_MIGRATION_EVIDENCE_ARTIFACT_INVALID');
-  const absoluteSource = structuredClone(migration);
-  absoluteSource.sources[0].path = '/Users/private/legacy/source.md';
-  expectCode(() => convertDevelopmentHostObservationToMigrationEvidence({ ...args, migration: absoluteSource }),
-    'DEVELOPMENT_MIGRATION_EVIDENCE_ARTIFACT_INVALID');
-  const substitutedSource = structuredClone(migration);
-  substitutedSource.sources[0].fingerprint = FP({ source: 'substituted' });
-  expectCode(() => convertDevelopmentHostObservationToMigrationEvidence({ ...args, migration: substitutedSource }),
-    'DEVELOPMENT_MIGRATION_EVIDENCE_ARTIFACT_INVALID');
-
   process.stdout.write(
-    'Soter development host observation self-test passed: exact bindings, trusted adapter and post-workspace input, chronology, fresh workers, dispatches, transcripts, criteria, no external effects, privacy non-representability, deterministic no-authority migration evidence, and create-only governed persistence.\n'
+    'Soter development host observation self-test passed: exact bindings, trusted adapter and post-workspace input, chronology, fresh workers, dispatches, transcripts, criteria, no external effects, and privacy non-representability.\n'
   );
   return true;
 }

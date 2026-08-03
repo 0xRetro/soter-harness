@@ -481,7 +481,7 @@ export async function runContainedMeetingIntakeConnectedWorkflow(
       issues: [],
       limitations: [
         'Participant identity resolution is outside this bounded connected workflow.',
-        'Unsupported legacy effects remain explicitly held and create no authority.'
+        'Unsupported effects remain explicitly held and create no authority.'
       ]
     };
     const committedDecision = commitMeetingIntakeDecision({

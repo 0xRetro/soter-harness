@@ -80,15 +80,14 @@
     "authority": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind", "grantsExecution", "grantsApproval", "grantsPublication", "grantsMerge", "grantsProviderWrite", "grantsFallbackRemoval"],
+      "required": ["kind", "grantsExecution", "grantsApproval", "grantsPublication", "grantsMerge", "grantsProviderWrite"],
       "properties": {
         "kind": { "const": "development-evidence-only" },
         "grantsExecution": { "const": false },
         "grantsApproval": { "const": false },
         "grantsPublication": { "const": false },
         "grantsMerge": { "const": false },
-        "grantsProviderWrite": { "const": false },
-        "grantsFallbackRemoval": { "const": false }
+        "grantsProviderWrite": { "const": false }
       }
     },
     "privacy": { "$ref": "#/$defs/privacy" },
@@ -115,13 +114,14 @@
     "hostBinding": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "adapterFingerprint", "projectionDefinitionFingerprint", "evaluatedInstructionFingerprint", "candidateProjectionFingerprint"],
+      "required": ["id", "adapterFingerprint", "projectionDefinitionFingerprint", "evaluatedInstructionFingerprint", "candidateProjectionFingerprint", "managedManifestFingerprint"],
       "properties": {
         "id": { "enum": ["codex", "claude"] },
         "adapterFingerprint": { "$ref": "#/$defs/fingerprint" },
         "projectionDefinitionFingerprint": { "$ref": "#/$defs/fingerprint" },
         "evaluatedInstructionFingerprint": { "$ref": "#/$defs/fingerprint" },
-        "candidateProjectionFingerprint": { "$ref": "#/$defs/fingerprint" }
+        "candidateProjectionFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "managedManifestFingerprint": { "$ref": "#/$defs/fingerprint" }
       }
     },
     "configurationBinding": {
@@ -137,11 +137,12 @@
     "workspaceBinding": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["rootIdentityFingerprint", "revisionFingerprint", "treeFingerprint", "exactInputState", "policyFingerprint", "settingsFingerprint"],
+      "required": ["rootIdentityFingerprint", "revisionFingerprint", "treeFingerprint", "untargetedTreeFingerprint", "exactInputState", "policyFingerprint", "settingsFingerprint"],
       "properties": {
         "rootIdentityFingerprint": { "$ref": "#/$defs/fingerprint" },
         "revisionFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
         "treeFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "untargetedTreeFingerprint": { "$ref": "#/$defs/fingerprint" },
         "exactInputState": { "enum": ["clean", "dirty", "unknown"] },
         "policyFingerprint": { "$ref": "#/$defs/fingerprint" },
         "settingsFingerprint": { "$ref": "#/$defs/fingerprint" }
@@ -254,7 +255,7 @@
       "required": ["id", "kind", "reference", "fingerprint"],
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
-        "kind": { "enum": ["development-result", "evidence", "historical-decision"] },
+        "kind": { "enum": ["development-result", "evidence"] },
         "reference": { "$ref": "#/$defs/relativePath" },
         "fingerprint": { "$ref": "#/$defs/fingerprint" }
       }

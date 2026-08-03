@@ -46,13 +46,7 @@
       "project-read-fingerprint",
       "duplicate-query-fingerprint",
       "private-title-sanitized",
-      "write-boundary-state",
-      "source-cases-exactly-fingerprinted"
+      "write-boundary-state"
     ]
-  },
-  "sourceCases": [
-    ".claude/evals/capturing-a-task/happy-path.md",
-    ".claude/evals/capturing-a-task/pressure-skip-resolve.md",
-    ".claude/evals/capturing-a-task/invariant-no-fabricated-id.md"
-  ]
+  }
 }

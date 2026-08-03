@@ -8,31 +8,12 @@
   "ownership": {
     "layer": "automation",
     "domain": "harness-evaluation",
-    "legacyLayer": "skill",
     "responsibility": "outcome-definition"
   },
   "lifecycle": {
     "state": "active-host-guided",
-    "activation": {
-      "state": "active",
-      "reasonCode": "WORKFLOW_HOST_GUIDANCE_ACTIVE",
-      "proceduralAuthority": "target",
-      "delivery": "host-skill",
-      "behaviorParity": "passed",
-      "evidence": [
-        {
-          "path": "soter/evidence/development/development-agent-migration-evidence.claude.running-evals.json",
-          "fingerprint": "sha256:f76fc0cac43c29168be484153db7c5e8bd810f2bf637c2b11a8dee59381c049d",
-          "host": "claude"
-        },
-        {
-          "path": "soter/evidence/development/development-agent-migration-evidence.codex.running-evals.json",
-          "fingerprint": "sha256:c5086ff5556241faf970f71769bc8b9f5624e78a9ee37178e7d5ed962fb61bdd",
-          "host": "codex"
-        }
-      ],
-      "permittedNextAction": "invoke-through-selected-host"
-    },
+    "reasonCode": "WORKFLOW_HOST_GUIDANCE_ACTIVE",
+    "delivery": "host-skill",
     "development": {
       "requestContract": {
         "id": "soter://contracts/development-request/v1",
@@ -161,19 +142,13 @@
     "disclosure",
     "write"
   ],
-  "source": {
-    "presence": "removed",
-    "legacyPath": ".claude/skills/running-evals/SKILL.md",
-    "legacyFingerprint": "sha256:82ed2174bdfb2ec24cece2db915468aa06b58c6e033e81a13b5b6b14c1dd04a9"
-  },
   "privacy": {
-    "rawSourceIncluded": false,
     "workspaceSpecificValuesIncluded": false,
     "credentialsIncluded": false,
     "privateInputsIncluded": false
   },
   "limitations": [
-    "This normalized definition preserves inspectable intent only; it has no operator runtime, provider binding, effect authority, or behavior parity.",
-    "The fingerprinted legacy source remains canonical until a separate implemented and evidenced runtime migration removes that fallback."
+    "This definition declares workflow outcomes and boundaries; it does not itself grant execution, provider, publication, merge, or host-realization authority.",
+    "Behavior evidence and effects remain scoped to exact governed development requests and current workflow fingerprints."
   ]
 }

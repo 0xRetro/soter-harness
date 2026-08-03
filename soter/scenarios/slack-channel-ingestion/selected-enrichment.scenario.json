@@ -46,12 +46,7 @@
       "policy-source-fingerprint",
       "selected-participant-coverage-fingerprint",
       "schema-observation-fingerprint",
-      "private-values-sanitized",
-      "source-cases-exactly-fingerprinted"
+      "private-values-sanitized"
     ]
-  },
-  "sourceCases": [
-    ".claude/evals/ingesting-slack-channels/happy-path.md",
-    ".claude/evals/ingesting-slack-channels/invariant-no-fabricated-members.md"
-  ]
+  }
 }

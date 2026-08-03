@@ -1,15 +1,15 @@
 {
   "contractVersion": "2.0.0",
   "id": "workflow-guide.authoring-a-policy-standard",
-  "contentFingerprint": "sha256:35a7fc813492833aa8fa9d0c59c87807a501be07eff96e60a4b176b9e3990995",
+  "contentFingerprint": "sha256:393a4b9304ad32306ea854a242c67829b226ace418f29a21ebcdb008819b6819",
   "$contract": "soter://contracts/workflow-guide/v2",
   "workflow": {
     "id": "automation.authoring-a-policy-standard",
     "version": "0.1.0",
     "definitionPath": "soter/automations/authoring-a-policy-standard/definition.json",
-    "definitionFingerprint": "sha256:474983ecfed277794ec651d5332803d9cbf7238427ab732915cf5c8cdbd2673a",
+    "definitionFingerprint": "sha256:d1d356e7026dc4d57322f5a2854544c1f9be6f50c2b083fdd9d66596694f11ed",
     "evaluationSetPath": "soter/automations/authoring-a-policy-standard/evaluations.json",
-    "evaluationSetFingerprint": "sha256:1b8663d70282663c178744296c0b2319cd9f40173585aa1b8af8cfdfe75d2de7"
+    "evaluationSetFingerprint": "sha256:4169d838b3077bae85586bcaedd193a2d8c897b6ab1ae783883489a3854cb6cc"
   },
   "skill": {
     "name": "authoring-a-policy-standard",
@@ -22,21 +22,7 @@
   "status": {
     "state": "active",
     "reasonCode": "WORKFLOW_GUIDE_ACTIVE",
-    "proceduralAuthority": "target",
-    "behaviorParity": "passed",
     "delivery": "host-skill",
-    "evidence": [
-      {
-        "path": "soter/evidence/development/development-agent-migration-evidence.claude.authoring-a-policy-standard.json",
-        "fingerprint": "sha256:aa467d90a671b441bb8f807f04cd90a0b0ddab049745347802dbcd9122e22d30",
-        "host": "claude"
-      },
-      {
-        "path": "soter/evidence/development/development-agent-migration-evidence.codex.authoring-a-policy-standard.json",
-        "fingerprint": "sha256:e461f746a8a49eeb0349977ece4f3ce4e02c3fed08e430f68164d3121b8b8396",
-        "host": "codex"
-      }
-    ],
     "permittedNextAction": "invoke-through-selected-host"
   },
   "authority": {
@@ -182,27 +168,20 @@
       "target": "automation.auditing-a-schema-doc"
     },
     {
-      "id": "update-workflow",
-      "kind": "workflow",
-      "label": "Bounded existing-record update workflow",
-      "target": "automation.updating-a-notion-page"
+      "id": "document-update-capability",
+      "kind": "capability",
+      "label": "Provider-neutral document content update capability",
+      "target": "documents.content.update"
     }
   ],
-  "source": {
-    "presence": "removed",
-    "legacyPath": ".claude/skills/authoring-a-policy-standard/SKILL.md",
-    "legacyFingerprint": "sha256:9937be551ab6a21f0decd95a09bd6a1b9d3c1bc56bec15cf861cde0732c76d2f",
-    "normalization": "behavior-preserving-with-explicit-authority-boundary"
-  },
   "privacy": {
-    "rawSourceIncluded": false,
     "workspaceSpecificValuesIncluded": false,
     "credentialsIncluded": false,
     "privateInputsIncluded": false,
     "providerResponsesIncluded": false
   },
   "limitations": [
-    "This procedural guide does not create policy, provider-write, approval, or execution authority.",
-    "Adoption requires independent exact host-skill behavior evidence and a separate governed fallback-removal decision."
+    "This guide provides procedural guidance only and grants no worker dispatch, file-write, publication, provider, merge, or host-realization authority.",
+    "Behavior evidence requires an exact private request and an independently observed fresh-worker run through a trusted host boundary."
   ]
 }

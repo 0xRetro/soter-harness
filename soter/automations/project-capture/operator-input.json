@@ -26,7 +26,7 @@
     {
       "id": "organization",
       "label": "Organization reference",
-      "description": "Exact authoritative portable CRM Organization resource for this candidate. This v2 Project Capture workflow requires one Organization and its private exact short name; it does not accept a provider-native relation identifier.",
+      "description": "Exact authoritative portable CRM Organization resource for this candidate. Project Capture requires one Organization and its private exact short name; it does not accept a provider-native relation identifier.",
       "type": "reference",
       "required": true,
       "exposure": "identifier",
@@ -81,7 +81,7 @@
     {
       "id": "milestoneOwners",
       "label": "Milestone work owners",
-      "description": "Private ordered single owner tokens paired positionally with milestone actions. Multiple-owner legacy semantics are intentionally unavailable in this portable profile.",
+      "description": "Private ordered single-owner tokens paired positionally with milestone actions. Multiple owners per action are intentionally unavailable in this portable profile.",
       "type": "string-list",
       "required": true,
       "exposure": "private",

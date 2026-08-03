@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://automations/project-page-reconciliation/decision/v1",
+  "title": "Project page reconciliation grounded decision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract", "contractVersion", "id", "automation", "runId", "createdAt",
+    "configurationLockFingerprint", "graphFingerprint", "context", "producer", "state",
+    "decisionType", "payload", "issues", "privacy", "decisionFingerprint"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/automation-decision/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "id": {
+      "type": "string",
+      "pattern": "^decision\\.project-page-reconciliation\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+    },
+    "automation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "const": "automation.project-page-reconciliation" },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" }
+      }
+    },
+    "runId": { "type": "string", "pattern": "^run\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "createdAt": { "type": "string", "minLength": 20 },
+    "configurationLockFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["snapshotId", "snapshotFingerprint"],
+      "properties": {
+        "snapshotId": {
+          "type": "string",
+          "pattern": "^context\\.project-page-reconciliation\\.connected-acquisition\\.[a-f0-9]{24}$"
+        },
+        "snapshotFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "host"],
+      "properties": {
+        "kind": { "enum": ["host", "user", "fixture"] },
+        "id": { "type": "string", "minLength": 1 },
+        "host": { "type": ["string", "null"], "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+      },
+      "allOf": [{
+        "if": { "properties": { "kind": { "const": "host" } } },
+        "then": { "properties": { "host": { "type": "string" } } },
+        "else": { "properties": { "host": { "type": "null" } } }
+      }]
+    },
+    "state": { "const": "ready" },
+    "decisionType": { "const": "project-page-reconciliation.grounded-change" },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["preparedWork", "policy", "schema", "project", "review", "limitations"],
+      "properties": {
+        "preparedWork": { "$ref": "#/$defs/preparedWork" },
+        "policy": { "$ref": "#/$defs/policy" },
+        "schema": { "$ref": "#/$defs/schemaBinding" },
+        "project": { "$ref": "#/$defs/projectBinding" },
+        "review": { "$ref": "#/$defs/reviewBinding" },
+        "limitations": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": { "type": "string", "minLength": 12 }
+        }
+      }
+    },
+    "issues": { "type": "array", "maxItems": 0 },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "redactions"],
+      "properties": {
+        "scope": { "const": "private" },
+        "redactions": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": { "type": "string", "minLength": 12 }
+        }
+      }
+    },
+    "decisionFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "preparedWork": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "fingerprint", "reviewMaterialFingerprint", "inputContractFingerprint"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^work\\.project-page-reconciliation\\.[a-f0-9]{24}$" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "reviewMaterialFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "inputContractFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "policy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["definitionId", "definitionFingerprint", "entryId", "entryFingerprint", "externalRecordId", "externalRecordFingerprint"],
+      "properties": {
+        "definitionId": { "type": "string", "pattern": "^policy\\.context\\.projects\\.project-capture(?:[.-][a-z0-9]+)*$" },
+        "definitionFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "entryId": { "const": "context.project-page-reconciliation.policy" },
+        "entryFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "externalRecordId": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "externalRecordFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "schemaBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["entryId", "entryFingerprint", "schemaFingerprint"],
+      "properties": {
+        "entryId": { "const": "context.project-page-reconciliation.schema" },
+        "entryFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "schemaFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "projectBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["metadataEntryId", "metadataEntryFingerprint", "contentEntryId", "contentEntryFingerprint", "recordId", "recordFingerprint", "versionFingerprint", "fieldsFingerprint", "bodyFingerprint"],
+      "properties": {
+        "metadataEntryId": { "const": "context.project-page-reconciliation.project" },
+        "metadataEntryFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "contentEntryId": { "const": "context.project-page-reconciliation.project-content" },
+        "contentEntryFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "recordId": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "recordFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "versionFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "fieldsFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "bodyFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "reviewBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["previewFingerprint", "derivedReviewContentFingerprint", "actionIds", "changeFingerprints"],
+      "properties": {
+        "previewFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "derivedReviewContentFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "actionIds": {
+          "type": "array", "minItems": 1, "maxItems": 2, "uniqueItems": true,
+          "items": { "enum": ["action.project-page-reconciliation.properties", "action.project-page-reconciliation.body"] }
+        },
+        "changeFingerprints": {
+          "type": "array", "minItems": 1, "maxItems": 2, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/fingerprint" }
+        }
+      }
+    }
+  }
+}

@@ -2,7 +2,7 @@
   "$contract": "soter://contracts/pack/v1",
   "contractVersion": "1.0.0",
   "id": "integration.notion",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "layer": "integration",
   "releaseStage": "experimental",
   "evidenceMaturity": "declared",
@@ -130,7 +130,7 @@
       },
       {
         "id": "projects.records.read",
-        "version": "1.0.0"
+        "version": "1.1.0"
       },
       {
         "id": "projects.records.create",
@@ -138,7 +138,7 @@
       },
       {
         "id": "projects.records.update",
-        "version": "1.0.0"
+        "version": "1.1.0"
       },
       {
         "id": "projects.schema.read",

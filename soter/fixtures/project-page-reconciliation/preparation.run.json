@@ -1,0 +1,330 @@
+{
+  "$contract": "soter://contracts/run-envelope/v1",
+  "contractVersion": "1.0.0",
+  "id": "run.project-page-reconciliation.preparation-fixture",
+  "createdAt": "2026-08-03T10:00:00.000Z",
+  "requestedOutcome": "Prepare one exact bounded Project property and page-text reconciliation for private review, then stop before approval, start authorization, or provider writes.",
+  "initiation": "user-requested",
+  "intent": "operate",
+  "lifecycleState": "paused",
+  "automation": {
+    "id": "automation.project-page-reconciliation",
+    "version": "0.1.0"
+  },
+  "configurationLock": {
+    "path": "soter/fixtures/project-page-reconciliation/project-page-reconciliation.lock.json",
+    "fingerprint": "sha256:805e353eb98e49949bff0c1c24a3851852702eed49a875b0dcb5630c6ef5f583"
+  },
+  "graphFingerprint": "sha256:a1e16af7a6e020256922b0af9672b7eea50e214213e2a3c39f73a2aef83bde92",
+  "context": [
+    {
+      "subject": "notion.workspace",
+      "authority": "authority.notion.provider",
+      "role": "provider",
+      "uri": "soter-fixture://configuration-template/notion/account/operator",
+      "declarationFingerprint": "sha256:dd9994588ca27b815bae6a53f7f57b9ce426b8b1a4367b0c3fd885373957ba23",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:805e353eb98e49949bff0c1c24a3851852702eed49a875b0dcb5630c6ef5f583",
+      "freshness": "unknown"
+    },
+    {
+      "subject": "projects.records",
+      "authority": "authority.projects.definition",
+      "role": "definition",
+      "uri": "soter-fixture://configuration-template/notion/authority/project-policies",
+      "declarationFingerprint": "sha256:5fb9ea27bdd0439408cdbc03ccb601baece7341813fbe508580eb2f32050951e",
+      "status": "loaded",
+      "provenance": "fixture:sha256:7a07991a3b534a43d0cbf0aa81f3e8306cb55f2fe3c2f26032a4e95c56b32d83",
+      "freshness": "passed"
+    },
+    {
+      "subject": "projects.records",
+      "authority": "authority.projects.instance",
+      "role": "instance",
+      "uri": "soter-fixture://configuration-template/notion/authority/projects",
+      "declarationFingerprint": "sha256:6da0683b7dd5c433e9d17713315ad6bdfc7a4369f290df4a62416781593a43e4",
+      "status": "loaded",
+      "provenance": "fixture:sha256:64dfd46bb34a4f608cf34f8e1a50b05c1c36e7bcca8bdb479678f03970d723bc",
+      "freshness": "passed"
+    },
+    {
+      "subject": "runtime.runs",
+      "authority": "authority.run.evidence",
+      "role": "evidence",
+      "uri": "soter-state://runs",
+      "declarationFingerprint": "sha256:2a437f2854d617b1dd8ed0d9f09aa372cd39d0adca0fd91704ec5c869aabe0d8",
+      "status": "declared",
+      "provenance": "configuration-lock:sha256:805e353eb98e49949bff0c1c24a3851852702eed49a875b0dcb5630c6ef5f583",
+      "freshness": "unknown"
+    }
+  ],
+  "bindings": [
+    {
+      "capability": "documents.content.update",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.4.0",
+      "authorities": [
+        "authority.projects.instance"
+      ],
+      "effects": [
+        "write"
+      ],
+      "reason": "Only exact reviewed one-match text replacements may be compiled for a later governed transaction."
+    },
+    {
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.1.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.4.0",
+      "authorities": [
+        "authority.projects.definition",
+        "authority.projects.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "The configured provider supplies the exact policy selection and selected Project fields plus mapped page body."
+    },
+    {
+      "capability": "projects.records.update",
+      "capabilityVersion": "1.1.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.4.0",
+      "authorities": [
+        "authority.projects.instance"
+      ],
+      "effects": [
+        "write"
+      ],
+      "reason": "Only exact reviewed projectType and status patches may be compiled for a later governed transaction."
+    },
+    {
+      "capability": "projects.schema.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerVersion": "0.4.0",
+      "authorities": [
+        "authority.projects.instance"
+      ],
+      "effects": [
+        "disclosure",
+        "read"
+      ],
+      "reason": "The current mapped Project schema must allow every selected property value before review."
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:845e7cecf13f9865f967d3078176bb0d4f0565b18506484b10499d5f60a26621",
+    "projectionDefinition": {
+      "id": "host-projection.codex",
+      "version": "0.3.0",
+      "path": "soter/hosts/codex/projection.json",
+      "fingerprint": "sha256:09fe78fb567ec40ac12e71e1bd5304f44246669a23fe8ac84c5eef755cb95727"
+    },
+    "projectionGenerator": {
+      "id": "core.host-projection-generator",
+      "version": "2.1.0"
+    }
+  },
+  "effectPolicies": {
+    "read": {
+      "mode": "allow",
+      "reason": "Exact policy, schema, Project field, and page-body observations are allowed for private preparation."
+    },
+    "disclosure": {
+      "mode": "allow",
+      "reason": "Selected private values may enter local review state but not general inspection, fixtures, logs, or evidence."
+    },
+    "write": {
+      "mode": "confirm",
+      "reason": "Every selected Project field or body change requires an exact later batch, approval, one-time start, checkpoint, and verification."
+    },
+    "dispatch": {
+      "mode": "prohibit",
+      "reason": "Project page reconciliation sends and publishes nothing."
+    },
+    "destructive": {
+      "mode": "prohibit",
+      "reason": "Delete, archive, append-as-replacement, whole-page replacement, structural recreation, and reorder are prohibited."
+    }
+  },
+  "approvals": [],
+  "checkpoints": [
+    {
+      "id": "effects-established",
+      "state": "passed",
+      "details": "Read and disclosure policy was evaluated before every exact contained source."
+    },
+    {
+      "id": "project-current-state-revalidated",
+      "state": "passed",
+      "details": "Policy, writable schema, exact Project metadata, and one content-inclusive Project read were fingerprinted."
+    },
+    {
+      "id": "private-review-boundary-held",
+      "state": "passed",
+      "details": "Exact fields, page body, and replacement text remain selected-work private material."
+    },
+    {
+      "id": "write-boundary-held",
+      "state": "passed",
+      "details": "Preparation emitted review facts only; approval, start, checkpoint execution, retry, and provider writes remain separate."
+    }
+  ],
+  "outputs": [
+    {
+      "id": "context.project-page-reconciliation.preparation-fixture",
+      "type": "context-snapshot",
+      "fingerprint": "sha256:a462ef7d4f415b22056aa4a60d96dea8f29f304e4389f02671f6050e255d4400"
+    }
+  ],
+  "effects": [
+    {
+      "id": "effect.project-page-reconciliation.policy.fixture",
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.1.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.4.0",
+      "containment": "fixture",
+      "authority": "authority.projects.definition",
+      "startedAt": "2026-08-03T10:00:00.000Z",
+      "completedAt": "2026-08-03T10:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact policy, schema, Project field, and page-body observations are allowed for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected private values may enter local review state but not general inspection, fixtures, logs, or evidence."
+        }
+      ],
+      "inputFingerprint": "sha256:b0e20d8e3bb2ea1877f6904862968a4fd65d4881fd66b21d705a071f4222b824",
+      "state": "passed",
+      "outputFingerprint": "sha256:2e2e51db9a1d00adc8f4b256199c0b655747fe53bc2fd34ac8cb1a9358bcf8b8",
+      "error": null
+    },
+    {
+      "id": "effect.project-page-reconciliation.schema.fixture",
+      "capability": "projects.schema.read",
+      "capabilityVersion": "1.0.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.4.0",
+      "containment": "fixture",
+      "authority": "authority.projects.instance",
+      "startedAt": "2026-08-03T10:00:00.000Z",
+      "completedAt": "2026-08-03T10:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact policy, schema, Project field, and page-body observations are allowed for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected private values may enter local review state but not general inspection, fixtures, logs, or evidence."
+        }
+      ],
+      "inputFingerprint": "sha256:8d79985b7663f302c80e79fdb082d575b9f9299469782ac4baa1aecc5839e2eb",
+      "state": "passed",
+      "outputFingerprint": "sha256:1b406d254cb51ba3c192c0befe504797b54c7fefaaf7238d01d7bf6595fdc580",
+      "error": null
+    },
+    {
+      "id": "effect.project-page-reconciliation.project.fixture",
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.1.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.4.0",
+      "containment": "fixture",
+      "authority": "authority.projects.instance",
+      "startedAt": "2026-08-03T10:00:00.000Z",
+      "completedAt": "2026-08-03T10:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact policy, schema, Project field, and page-body observations are allowed for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected private values may enter local review state but not general inspection, fixtures, logs, or evidence."
+        }
+      ],
+      "inputFingerprint": "sha256:fb32081472eb9e606ea34bfdc2eb121185c3b45ab78084902f4ef2d765af2e9d",
+      "state": "passed",
+      "outputFingerprint": "sha256:1f5b59756ebc68cec746abbfca88289c733d04bea53b227bd800ee5e13516a2c",
+      "error": null
+    },
+    {
+      "id": "effect.project-page-reconciliation.project-content.fixture",
+      "capability": "projects.records.read",
+      "capabilityVersion": "1.1.0",
+      "providerPack": "integration.notion",
+      "providerImplementation": "provider.integration.notion.fixture",
+      "providerVersion": "0.4.0",
+      "containment": "fixture",
+      "authority": "authority.projects.instance",
+      "startedAt": "2026-08-03T10:00:00.000Z",
+      "completedAt": "2026-08-03T10:00:00.000Z",
+      "declaredEffects": [
+        "read",
+        "disclosure"
+      ],
+      "policyDecisions": [
+        {
+          "effect": "read",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Exact policy, schema, Project field, and page-body observations are allowed for private preparation."
+        },
+        {
+          "effect": "disclosure",
+          "mode": "allow",
+          "decision": "allowed",
+          "reason": "Selected private values may enter local review state but not general inspection, fixtures, logs, or evidence."
+        }
+      ],
+      "inputFingerprint": "sha256:02d2cb040a7cd0de4e8798c2ea295b5122049fce3e3b83e4fe2b94b5de02da47",
+      "state": "passed",
+      "outputFingerprint": "sha256:3f7f1686c84affff0801c2ebc564c6bda52451db4cc3d25e01683b5f01bc3e58",
+      "error": null
+    }
+  ],
+  "evidenceIds": [],
+  "scenario": {
+    "id": "project-page-reconciliation.preparation",
+    "path": "soter/scenarios/project-page-reconciliation/preparation.scenario.json",
+    "fingerprint": "sha256:c8637c61560c6a30ebf8a5206b8eec666d2555d7a1505df0ba1e21d5056a1b6e"
+  }
+}

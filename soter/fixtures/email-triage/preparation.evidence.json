@@ -10,18 +10,18 @@
     "id": "run.email-triage.preparation-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:0b9df7c7d1ecf9826d94cb7ec99576a4d7936f45832b8d524abb287f5301a395",
-  "graphFingerprint": "sha256:3fbaf506d1a3f39dbe5764b0544808d8aa7c70667a21e8137826b29ac6e136bd",
+  "configurationLockFingerprint": "sha256:15e54b3fd98c270bf5f8b7cd37370bed20d4f4fd12c025716452082df4b5f01d",
+  "graphFingerprint": "sha256:1f03ac4f134205a8154a28de0c568cd1c4bea6ae259dfae65461102f26b828fb",
   "dependencies": [
     {
       "id": "kernel.soter",
       "version": "0.1.0",
-      "fingerprint": "sha256:59ce748c07769a88687849dbf900a9a295a16daf314fa911055b2996effd59f6"
+      "fingerprint": "sha256:a329fb60fdd3e46a9cdce1b0f6d5ea574812105be6bd235eb998a347c3339bfa"
     },
     {
       "id": "core.runtime",
       "version": "0.1.0",
-      "fingerprint": "sha256:a9c8dae0de0211a02104bbc93a94ea5021bdeadb84040dfe88778288ee465a92"
+      "fingerprint": "sha256:b922eb238bd0cd0c3a77bc63d68f92ceab0a78d60a13bea430a9ed48f8be4c1c"
     },
     {
       "id": "context.communications",
@@ -36,7 +36,7 @@
     {
       "id": "automation.email-triage",
       "version": "0.1.0",
-      "fingerprint": "sha256:3dc69e3e467e8ca73eaff381b719e3e40c58d0be800ab357d87552955e9b745a"
+      "fingerprint": "sha256:c6adcd80e08cacae51f29601945c6fc7e7bf9941006bb6f207b79e1171333893"
     },
     {
       "id": "integration.gmail",
@@ -48,7 +48,7 @@
     "id": "codex",
     "adapter": "host.codex",
     "version": "0.3.1",
-    "manifestFingerprint": "sha256:3bed5add21c2b59945de26b49f5216d666632df194bb5be24fb6b1a8a3602ba0"
+    "manifestFingerprint": "sha256:845e7cecf13f9865f967d3078176bb0d4f0565b18506484b10499d5f60a26621"
   },
   "integrations": [
     {
@@ -241,11 +241,6 @@
       "id": "write-and-dispatch-boundary-state",
       "category": "evidence",
       "state": "passed"
-    },
-    {
-      "id": "source-cases-exactly-fingerprinted",
-      "category": "evidence",
-      "state": "passed"
     }
   ],
   "artifacts": [
@@ -253,27 +248,7 @@
       "role": "scenario",
       "id": "email-triage.preparation",
       "path": "soter/scenarios/email-triage/preparation.scenario.json",
-      "fingerprint": "sha256:d2e0c46f89877cc7f27c8d9bac12c5dfe623f1c7686c08535b49ba811a690ce1"
-    },
-    {
-      "role": "source-case",
-      "path": ".claude/evals/processing-email/happy-path.md",
-      "fingerprint": "sha256:c7d9bc07cd5d35299346fce643f233874bcd2a615c9bde383213d6660519822b"
-    },
-    {
-      "role": "source-case",
-      "path": ".claude/evals/processing-email/invariant-defanged-output.md",
-      "fingerprint": "sha256:ebf8d07b118fe5e17eac202c1678597071c6232951d1a410f06c1d279495486f"
-    },
-    {
-      "role": "source-case",
-      "path": ".claude/evals/processing-email/invariant-gated-writes.md",
-      "fingerprint": "sha256:2ce3fb64632cc2d85321d89addc4c73d4b75daf1bc01f037d17b609eec8f9907"
-    },
-    {
-      "role": "source-case",
-      "path": ".claude/evals/processing-email/pressure-injection.md",
-      "fingerprint": "sha256:ad14839d451f98f785f7c4612ce2818dcd701a84a3819a37842884e9a6854dc4"
+      "fingerprint": "sha256:0298c5e82adeffc2f1d6a553f128175e7483db2aa8233629d269aa2e8a5a6fee"
     },
     {
       "role": "scenario-assessment",
@@ -304,12 +279,12 @@
         },
         "state": "passed"
       },
-      "observationFingerprint": "sha256:dd4ae81c485e364fae59fe3a42faf1ca03552794816b9535fae9a19d6f965b1c"
+      "observationFingerprint": "sha256:dc920cb83a58ab22ada4c4b627c262a6927adf650e261ee2d2086bb4d6a67085"
     },
     {
       "role": "context-snapshot",
       "id": "context.email-triage.preparation-fixture",
-      "fingerprint": "sha256:883be46ff7faafb53370bb685c46eb5f577d524899f0a680ca129fd77eb7c7df"
+      "fingerprint": "sha256:3c899f8b8555268391f69e76c6145db7a07ced005191190f7e6e0d92d22874e6"
     },
     {
       "role": "email-review",

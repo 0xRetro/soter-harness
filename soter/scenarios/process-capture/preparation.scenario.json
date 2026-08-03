@@ -13,8 +13,20 @@
     }
   },
   "expected": {
-    "capabilityOrder": ["process.records.read", "process.schema.read", "process.records.read", "process.records.read", "process.records.read"],
-    "effectModes": { "read": "allow", "disclosure": "allow", "write": "confirm", "dispatch": "prohibit", "destructive": "prohibit" },
+    "capabilityOrder": [
+      "process.records.read",
+      "process.schema.read",
+      "process.records.read",
+      "process.records.read",
+      "process.records.read"
+    ],
+    "effectModes": {
+      "read": "allow",
+      "disclosure": "allow",
+      "write": "confirm",
+      "dispatch": "prohibit",
+      "destructive": "prohibit"
+    },
     "outcomes": [
       "process-policy.grounded",
       "process-schema.grounded",
@@ -37,13 +49,7 @@
       "schema-observation-fingerprint",
       "duplicate-query-fingerprint",
       "relation-query-fingerprints",
-      "private-values-sanitized",
-      "source-cases-exactly-fingerprinted"
+      "private-values-sanitized"
     ]
-  },
-  "sourceCases": [
-    ".claude/evals/capturing-a-process/happy-path.md",
-    ".claude/evals/capturing-a-process/invariant-no-task-spawn.md",
-    ".claude/evals/capturing-a-process/pressure-invent-option.md"
-  ]
+  }
 }

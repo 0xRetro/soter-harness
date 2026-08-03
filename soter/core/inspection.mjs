@@ -3,7 +3,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { validateJsonSchema, verifySoter } from '../kernel/verify.mjs';
-import { workflowEvidenceBasisForPath } from '../kernel/workflow-evidence-bases.mjs';
 import { runOfflineDoctor } from './doctor.mjs';
 import { fingerprintJson, readJson, repoRelativePath, resolveRepoPath } from './lib/canonical-json.mjs';
 import { fingerprintLock, lockMatchesResolution } from './resolve.mjs';
@@ -245,20 +244,17 @@ function selectedInspectionLock(root, configurationName, fixtureLocks) {
   }
 }
 
-function operationalFixtureLocks(root, fixtureDocs) {
+function operationalFixtureLocks(fixtureDocs) {
   return fixtureDocs
-    .filter((entry) => entry.value.$contract === 'soter://contracts/lock/v1')
-    .filter((entry) => {
-      return !workflowEvidenceBasisForPath(repoRelativePath(root, entry.file));
-    });
+    .filter((entry) => entry.value.$contract === 'soter://contracts/lock/v1');
 }
 
 function proofSnapshot(root, verification, configurations, fixtureDocs, diagnostics) {
-  const locks = operationalFixtureLocks(root, fixtureDocs);
-  const historicalDoctors = fixtureDocs
+  const locks = operationalFixtureLocks(fixtureDocs);
+  const offlineDoctors = fixtureDocs
     .filter((entry) => entry.value.$contract === 'soter://contracts/doctor-result/v1' && entry.value.level === 'offline')
     .sort((left, right) => compareText(left.value.createdAt, right.value.createdAt));
-  const createdAt = historicalDoctors.at(-1)?.value.createdAt || '1970-01-01T00:00:00.000Z';
+  const createdAt = offlineDoctors.at(-1)?.value.createdAt || '1970-01-01T00:00:00.000Z';
   const dimensions = ['valid', 'ready', 'verified', 'healthy'];
   const observations = Object.fromEntries(dimensions.map((dimension) => [dimension, [verification.health[dimension]]]));
   const checks = [{
@@ -344,7 +340,7 @@ function proofSnapshot(root, verification, configurations, fixtureDocs, diagnost
 }
 
 function configurationSnapshots(root, verification, fixtureDocs, maturityEvidence) {
-  const locks = operationalFixtureLocks(root, fixtureDocs)
+  const locks = operationalFixtureLocks(fixtureDocs)
     .map((entry) => entry.value);
   return verification.resolvedConfigurations.map((configuration) => {
     const selection = selectedInspectionLock(root, configuration.name, locks);
@@ -552,28 +548,6 @@ function buildGraph({ catalog, packs, providers, configurations }) {
   return { nodes: sortById(nodes), edges: sortById(edges) };
 }
 
-function migrationForAutomation(automation, migrations) {
-  const matching = migrations.find(({ value }) => value.slice === automation.id)?.value;
-  if (!matching) return { id: null, state: 'unknown', limitations: ['No migration record covers this automation.'] };
-  const states = [...new Set(matching.items.map((item) => item.state))];
-  return {
-    id: matching.id,
-    state: states.length === 1 ? states[0] : 'mixed',
-    limitations: matching.items.filter((item) => item.state !== 'migrated').map((item) => item.bridge)
-  };
-}
-
-function migrationStateForScenario(root, scenario, migrationDoc) {
-  const targetPath = repoRelativePath(root, scenario.file);
-  const exactItem = migrationDoc?.items.find((item) => item.targetPath === targetPath);
-  if (exactItem) return exactItem.state;
-  if (migrationDoc?.items.length > 0
-    && migrationDoc.items.every((item) => item.state === 'migrated' || item.state === 'retired')) {
-    return 'target-native';
-  }
-  return 'unknown';
-}
-
 function isEvidence(value) {
   return value.$contract === 'soter://contracts/evidence/v2';
 }
@@ -634,7 +608,6 @@ function buildWorkflows({
   packs,
   hosts,
   scenarios,
-  migrations,
   configurations,
   configurationMemberships,
   fixtureDocs
@@ -645,8 +618,6 @@ function buildWorkflows({
       return membership?.selections.some((selection) => selection.id === automation.id);
     });
     const automationScenarios = scenarios.filter((entry) => entry.value.automation === automation.id);
-    const migration = migrationForAutomation(automation, migrations);
-    const migrationDoc = migrations.find((entry) => entry.value.id === migration.id)?.value;
     let operator = null;
     if (automation.operator) {
       const inputEntry = loadArtifact(root, resolveRepoPath(root, automation.operator.input), schemas, diagnostics);
@@ -668,7 +639,7 @@ function buildWorkflows({
               automation.operator.preparation || automation.operator.acquisition
             ),
             boundary: automation.operator.preparation || automation.operator.acquisition
-              ? 'explicit private preparation modes only; mode facts grant no provider-call, approval, continuation, execution, write, readiness, verification, proof, maturity, or migration authority'
+              ? 'explicit private preparation modes only; mode facts grant no provider-call, approval, continuation, execution, write, readiness, verification, proof, or maturity authority'
               : 'input-definition-only; no canonical prepared-work receipt or transition authority',
             workStates: [
               ...(automation.operator.preparation
@@ -685,7 +656,7 @@ function buildWorkflows({
                   configurationBases: ['tracked-contained', 'private-active'],
                   resultState: 'ready-for-review',
                   availability: { state: 'available' },
-                  boundary: 'private fixture-contained preparation only; no connected provider call, approval, execution, write, proof, maturity, or migration authority'
+                  boundary: 'private fixture-contained preparation only; no connected provider call, approval, execution, write, proof, or maturity authority'
                 }]
                 : []),
               ...(automation.operator.acquisition
@@ -696,7 +667,7 @@ function buildWorkflows({
                   availability: structuredClone(
                     automation.operator.acquisition.availability || { state: 'available' }
                   ),
-                  boundary: 'stages exact private input and the current active lock only; no provider call, acquired context, approval, continuation, execution, write, readiness, verification, proof, maturity, or migration authority'
+                  boundary: 'stages exact private input and the current active lock only; no provider call, acquired context, approval, continuation, execution, write, readiness, verification, proof, or maturity authority'
                 }]
                 : [])
             ]
@@ -747,12 +718,9 @@ function buildWorkflows({
           outcomes: [...entry.value.expected.outcomes],
           invariants: [...entry.value.expected.invariants],
           evidence: [...entry.value.expected.evidence],
-          sourceCases: [...entry.value.sourceCases],
-          migrationState: migrationStateForScenario(root, entry, migrationDoc),
           execution
         };
-      }).sort((left, right) => compareText(left.id, right.id)),
-      migration
+      }).sort((left, right) => compareText(left.id, right.id))
     };
   }).sort((left, right) => compareText(left.id, right.id));
 }
@@ -1255,8 +1223,6 @@ export function inspectWorkspace({ root = DEFAULT_ROOT } = {}) {
     .filter((entry) => entry.value.$contract === 'soter://contracts/host-adapter/v2');
   const scenarios = loadDirectory(resolvedRoot, 'soter/scenarios', schemas, diagnostics)
     .filter((entry) => entry.value.$contract === 'soter://contracts/scenario/v1');
-  const migrations = loadDirectory(resolvedRoot, 'soter/migrations', schemas, diagnostics)
-    .filter((entry) => entry.value.$contract === 'soter://contracts/migration/v1');
   const fixtureDocs = loadDirectory(resolvedRoot, 'soter/fixtures', schemas, diagnostics);
   const maturityEvidence = loadMaturityEvidence(resolvedRoot);
   diagnostics.push(...maturityEvidence.diagnostics.map((item) => scopedDiagnostic({
@@ -1283,7 +1249,6 @@ export function inspectWorkspace({ root = DEFAULT_ROOT } = {}) {
     packs,
     hosts,
     scenarios,
-    migrations,
     configurations,
     configurationMemberships: maturityVerification.resolvedConfigurations,
     fixtureDocs
@@ -1308,7 +1273,6 @@ export function inspectWorkspace({ root = DEFAULT_ROOT } = {}) {
       providers: providers.length,
       hosts: hosts.length,
       scenarios: scenarios.length,
-      migrations: migrations.length,
       fixtureActivity: activity.filter((item) => item.source === 'fixture').length,
       runtimeActivity: activity.filter((item) => item.source === 'runtime').length
     },

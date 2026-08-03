@@ -16,7 +16,7 @@
     {
       "id": "scope",
       "label": "Review scope",
-      "description": "Portable review altitude; this milestone supports product-capability candidates only.",
+      "description": "Portable review altitude; Repository Review supports product-capability candidates only.",
       "type": "enum",
       "required": true,
       "exposure": "identifier",

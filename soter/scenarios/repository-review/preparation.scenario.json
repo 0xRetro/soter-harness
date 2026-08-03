@@ -10,8 +10,17 @@
     "handoff": "feature-capture-review-only"
   },
   "expected": {
-    "capabilityOrder": ["repository.snapshot.read", "product.records.read"],
-    "effectModes": { "read": "allow", "disclosure": "allow", "write": "confirm", "dispatch": "prohibit", "destructive": "prohibit" },
+    "capabilityOrder": [
+      "repository.snapshot.read",
+      "product.records.read"
+    ],
+    "effectModes": {
+      "read": "allow",
+      "disclosure": "allow",
+      "write": "confirm",
+      "dispatch": "prohibit",
+      "destructive": "prohibit"
+    },
     "outcomes": [
       "repository-source.grounded",
       "source-backed-capabilities-observed",
@@ -32,14 +41,7 @@
       "exact-lock",
       "repository-fingerprint",
       "duplicate-query-fingerprint",
-      "private-values-sanitized",
-      "source-cases-exactly-fingerprinted"
+      "private-values-sanitized"
     ]
-  },
-  "sourceCases": [
-    ".claude/evals/reviewing-a-repo/happy-path.md",
-    ".claude/evals/reviewing-a-repo/invariant-no-duplicate-reingest.md",
-    ".claude/evals/reviewing-a-repo/invariant-review-gate.md",
-    ".claude/evals/reviewing-a-repo/pressure-dump-all.md"
-  ]
+  }
 }

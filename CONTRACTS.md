@@ -2,7 +2,7 @@
 
 This document defines the normative contracts that implement the architecture
 described in [ARCHITECTURE.md](./ARCHITECTURE.md). The architecture owns purpose,
-layer meaning, and migration direction; this document owns the detailed
+layer meaning, and dependency direction; this document owns the detailed
 mechanics that Soter must validate and preserve across implementations.
 
 ## Contracts and connections
@@ -288,7 +288,7 @@ harness itself. It defines six distinct owners rather than treating development 
 a privileged Kernel runtime:
 
 - Kernel owns artifact classification, governing contracts, evaluation rules,
-  verification requirements, and migration lifecycle.
+  and verification requirements.
 - Core owns the develop run envelope, effect policy, checkpoints, and evidence
   recording.
 - Automation owns the requested development outcome and ordered work.
@@ -299,19 +299,16 @@ a privileged Kernel runtime:
 
 The policy fixes the lifecycle to observe, classify, reproduce, specify, implement,
 evaluate, review, promote, and monitor. It distinguishes exact, bounded, and open
-instructions; requires observable rather than self-reported evaluation verdicts; binds
-goldens to exact source, graph, configuration, and host fingerprints; and requires exact
-parity or intentional-change evidence before a fallback disappears. Scaffolding is
-derived from the governing contract. Legacy Markdown molds remain compatibility inputs,
-not definition authority. Ordinary development has no separate numbered decision
-ceremony; rationale stays with governed artifacts and exact change evidence. Host-specific
-line budgets stay host-scoped, and repository merge policy does not substitute for Core
-effect authority.
+instructions; requires observable rather than self-reported evaluation verdicts; and
+binds evaluations to exact source, graph, configuration, and host fingerprints.
+Scaffolding is derived from the governing contract. Ordinary development has no
+separate numbered decision ceremony; rationale stays with governed artifacts and exact
+change evidence. Host-specific line budgets stay host-scoped, and repository merge
+policy does not substitute for Core effect authority.
 
 The policy grants no preparation, file-write, host-task, capability, or effect
-authority. A development Automation and host delivery may implement it later through
-the ordinary run and transaction contracts. Until then, exact legacy authoring and
-evaluation sources remain canonical wherever their inventory bindings are only bridged.
+authority. Active development Automations use exact development request/result records,
+ordinary run and transaction contracts, and governed host delivery.
 
 ### Effects and autonomy
 
@@ -442,7 +439,7 @@ means the exact private desired configuration and its exact active lock both
 exist, match one another, and are current. A half-present pair fails closed.
 Core seals the selected name, basis, configuration path, lock path, lock
 fingerprint, and graph fingerprint through prepared work, selected private
-review, review batches, approval and one-time consumption, and the durable
+review, review-only candidate selections, approval and one-time consumption, and the durable
 checkpoint. Every authority boundary revalidates that same selection. A caller
 cannot substitute an arbitrary lock or run path, fall back from missing private
 state to a tracked fixture, or reuse a checkpoint after the active selection
@@ -614,7 +611,7 @@ Soter resolves and displays:
 - The exact configuration change.
 - New, removed, or changed dependencies and capability bindings.
 - Required authorities, credentials, permissions, and effects.
-- Compatibility or migration consequences.
+- Compatibility or upgrade consequences.
 - Evidence that will become stale and checks that must be rerun.
 - Behavior that will become available, degraded, or unavailable.
 
@@ -644,7 +641,7 @@ bundle never silently alters an existing desired configuration.
 
 Core resolves the desired configuration into one compatible graph and produces
 the lock. Resolution includes pack dependencies, contract versions, capability
-bindings, authority roles, effect policies, host support, and migrations. The
+bindings, authority roles, effect policies, and host support. The
 lock fingerprints every declared pack artifact as well as its manifest so a
 guide, implementation, scenario, contract, or projection change becomes
 visible drift. Secret references and values are excluded from the shareable
@@ -684,9 +681,9 @@ operations have one structured contract:
 - Resolve, validate, and lock the complete graph.
 - Check connection and runtime readiness.
 - Export a reusable template or exact lock.
-- Upgrade, migrate, roll back, or diagnose drift.
+- Upgrade, roll back, or diagnose drift.
 
-The first implemented read projection is the
+The current read projection is the
 [configuration view](./soter/contracts/configuration-view.schema.json). It is a
 deterministic, fingerprinted explanation of one exact fresh lock: selected
 systems and inclusion reasons, dependency edges, host choice and limitations,
@@ -696,8 +693,8 @@ lock. Readiness, verification, and health remain `unknown` until their own
 evidence-bearing operations run. CLI and graphical interfaces must render these
 structured facts rather than reconstructing architecture or state from prose.
 
-The first implemented apply path is the local configuration-transaction
-family. It accepts one complete private `configuration/v1` replacement for an
+The configuration-transaction family is the local apply path. It accepts one
+complete private `configuration/v1` replacement for an
 existing named configuration; a controlled preview draft is not apply
 authority. Its contracts remain distinct:
 
@@ -724,7 +721,7 @@ configuration again. Failure restores the private plan's exact prior desired
 configuration and active-lock presence/value; an unknown crash state is
 reconciled from observed fingerprints or fails closed as `needs-attention`. This local
 transaction grants no provider capability, connected-write approval, proof,
-readiness, verification, health, or migration promotion.
+readiness, verification, or health promotion.
 
 Host realization is a second, distinct local transaction family. A successful
 configuration transaction does not invoke it. Each `host-adapter/v2` binds one
@@ -777,14 +774,6 @@ are never adopted from an existing consumer root. Templates receive identifier-
 only configuration, host, pack, capability, provider-requirement, and development-
 guard context. They never interpolate authority URIs, secret references or values,
 source inputs, private operator inputs, or provider content.
-
-The Claude `0.3.1` root-MCP correction does not rewrite the immutable `0.3.0`
-workflow evidence basis. Core accepts that historical/current pair only when
-inverse reconstruction reproduces the exact historical adapter and projection
-fingerprints, the relocated tools output preserves exact bytes, mode, template,
-and identity, and every selected workflow skill remains byte-identical to its
-historical basis. This is a closed path-correction rule, not general adapter
-compatibility or new host evidence.
 
 A completed checkpoint proves only deterministic local projection. Host launch,
 tool discovery, authentication, provider reachability, connected behavior, and
@@ -945,7 +934,7 @@ credentials, or provider responses. `resume.permittedNextAction` is guidance,
 not authority; execute and recover still require the exact separately held
 checkpoint ID. Successful completion establishes only local materialization and
 managed-registry integrity. It grants no fetch, network, package-manager,
-configuration, host-realization, migration, uninstall, publication, legal, or
+configuration, host-realization, uninstall, publication, legal, or
 trust authority and cannot promote readiness, verification, or health.
 
 ### Sharing and collaborative evolution
@@ -959,71 +948,8 @@ realizing it on their own host and integrations.
 Collaborative improvement happens through pack evolution, bundles, reusable
 configurations, evaluations, and opt-in evidence—not by pooling private runtime
 state. A contribution identifies its affected contract, includes a reproducer
-or evaluation, records provenance, and states the compatibility and migration
+or evaluation, records provenance, and states the compatibility and evidence
 impact.
-
-`legacy-inventory/v2` is the closed v2 migration record for the final v1 host
-tree. Its source paths and byte fingerprints must exactly cover all 143 source
-artifacts, and its
-tree, state-count, and complete-document fingerprints are deterministic. Each
-source has one or more independently stateful target bindings. A binding separates
-target assignment from proof: `mapped` retains legacy canonical authority and
-fallback; `bridged` requires legacy authority, a retained fallback, an existing
-target, and passed evidence that fingerprints both the exact legacy source bytes
-and exact target;
-`migrated` requires target authority, parity or intentional-change evidence,
-and fallback removal; `retired` requires evidence that no configured behavior
-depends on that responsibility. The source state is derived: any unfinished
-binding keeps the overall source from becoming migrated or retired. Scenario
-bridges additionally require the target
-scenario to cite the exact source path and fixture-or-higher evidence to bind
-the scenario ID, path, and fingerprint. The slice migration manifest and
-complete inventory must carry the same state, source fingerprint, target, and
-evidence set. Source, target, inventory, or evidence drift fails verification;
-an updater cannot silently preserve an evidenced state across changed source
-bytes. Migration and retirement require migration-family evidence rather than
-reusing behavior evidence as authority-switch proof.
-
-Definition-only resolution may defer reading runtime evidence so deterministic
-fixtures can be rebuilt from the finalized definition graph without a circular
-dependency on their prior bytes. That narrower resolution is not migration
-proof. Full Kernel verification and the legacy-inventory check must validate the
-regenerated evidence before a promoted state is accepted.
-
-The final inventory has zero `mapped` or `bridged` artifacts and zero mapped or
-bridged target bindings. Every source is a removed `migrated` or `retired`
-tombstone; every responsibility has target authority or explicit retirement,
-parity or an intentional-change decision, migration-family evidence, and
-`fallback=removed`. The inventory is an audit record and cannot be used as a
-runtime source, compatibility reader, host projection input, or configuration
-fallback. These migration claims do not promote connected readiness, provider
-behavior, verification, or health.
-
-For a non-scenario binding, migration-family evidence must fingerprint exactly one
-`migration-source` and one `migration-target`, bind the selected target pack and
-configuration lock, and fingerprint every supporting evidence record. A mixed
-source may repeat that exact form for several target bindings. Every binding is
-checked independently and a passing bridge still cannot claim parity for another
-binding or for the source as a whole.
-
-Each inventory item also declares `sourcePresence`. `mapped` and `bridged`
-sources must be `present`; deleting either is drift. A source may become
-`removed` only when its derived state is `migrated` or `retired`, meaning every
-target responsibility has migration-family evidence, target or no canonical
-authority as applicable, and `fallback=removed`. The removed record retains the
-exact final source fingerprint as a governed tombstone. Kernel rejects both an
-absent unfinished source and a live file that claims to be tombstoned. The
-baseline file count and tree fingerprint continue to describe the complete v1
-input set rather than shrinking as proved fallbacks are removed.
-
-The target-only checker-transition catalog fingerprints the immutable final-v1
-checker and enumerates its exact 47-code surface once. Each code is either bound
-to one or more mechanically anchored Kernel/schema enforcements or to an explicit
-intentional-retirement decision. The transition verifier accepts the frozen
-source only before finalization and the exact complete inventory tombstone after
-deletion. It never imports, invokes, parses output from, or falls back to the old
-checker. Kernel verification, the transition selftest, inventory validation,
-Core, fixtures, and host conformance are the operational gates.
 
 Users decide whether to contribute observations or evidence. Soter must support
 redaction and minimization before evidence leaves a user's environment. Shared
@@ -1355,7 +1281,7 @@ not contain native provider arguments. Its dynamic `current|stale|unknown`
 lock applicability is re-derived on every read and excluded from the immutable
 material fingerprint. Completeness is a review fact, not confirmation or start
 authority. The contract has no approval, actor decision, permitted action,
-continuation request, host request, retry, proof, maturity, or migration field.
+continuation request, host request, retry, proof, or maturity field.
 It is excluded from workspace inspection, sanitized operator inspection,
 evidence, diagnostics, fixtures, and canonical artifacts. Stable failures are
 `CONNECTED_APPROVAL_REVIEW_MATERIAL_MISSING`, `_MALFORMED`, `_TAMPERED`,
@@ -1402,9 +1328,9 @@ checkpoint fingerprint and current call, or the exact checkpoint eligible for
 read-only reconciliation. Core must revalidate that reference before returning
 an executable host request; permitted-next-action text is never authority.
 
-The operator projection does not turn execution completion into proof maturity
-or migration completion. Those three families are emitted separately as
-`not-evaluated` until their own contracts supply evidence. The sanitized
+The operator projection does not turn execution completion into proof or
+maturity. Those claims remain `not-evaluated` until their own contracts supply
+evidence. The sanitized
 `operator-inspection-fixture-set/v1` demonstrates lifecycle rendering only; it
 has `authority=none-example-only` and proves no provider readiness or behavior.
 
@@ -1630,7 +1556,7 @@ no-capability action. Suspected instruction injection produces no proposed
 external action. Committing the pair registers fingerprints on the same paused
 run but preserves approvals and effects exactly and emits no provider call.
 
-This proposal is not `prepared-work/v1`, `prepared-review-batch/v1`,
+This proposal is not `prepared-work/v1`, `review-only-candidate-selection/v1`,
 `connected-change-set/v2`, `connected-operation-batch/v2`, or
 `approval-request/v1`.
 It may, however, be the exact basis for a later pack-compiled connected batch.
@@ -1767,13 +1693,13 @@ Core exposes one versioned structured model for:
 - Authorities, capabilities, bindings, permissions, and effect policies.
 - Runs, intents, envelopes, checkpoints, outputs, and external effects.
 - Evaluations, evidence, health, drift, and improvement candidates.
-- Configuration diffs, migrations, approvals, upgrades, and rollback.
+- Configuration diffs, approvals, upgrades, and rollback.
 
 This model may be implemented as an in-process API, service API, command
 protocol, event stream, or combination. Its schemas and state transitions are
 canonical; rendered text and screens are not.
 
-The read-only `configuration-preview/v1` Core operation is the first narrow
+The read-only `configuration-preview/v1` Core operation is the narrow
 configuration projection. It accepts controlled host-adapter, effect-policy,
 and optional automation-addition drafts, resolves required pack dependencies,
 validates the complete candidate configuration through the same Kernel graph
@@ -1782,59 +1708,42 @@ same Core resolver used to produce a durable lock. The candidate replaces its
 source configuration only in memory; preview never edits the source file or
 hand-patches the current lock. A lock fingerprint is returned only when pack
 settings, dependencies, bindings, authorities, sources, host compatibility,
-effect policies, scenarios, and migrations all remain valid. The projection
+effect policies, and scenarios all remain valid. The projection
 reports field differences and exact-lock evidence applicability and exposes no
 apply operation. It does not return the candidate configuration, credentials,
 secret references, provider payloads, authority target values, context values,
 or operation inputs and outputs.
 
-`workflow-definition/v2` has three closed lifecycle branches:
-`definition-only`, `active-host-guided`, and `retired`. An active-host-guided
-definition binds one exact `workflow-guide/v2`, `workflow-evaluation-set/v2`,
-private development request/result contracts, workspace policy, supported hosts,
-and effect boundary. Development requests are the only authority for bounded
-local reads, writes, commands, or subagent work; provider effects, publication,
-merge, protected-root mutation, and host realization remain separate authority.
-Retired definitions grant no procedural or runtime authority.
+`workflow-definition/v2` describes one active-host-guided workflow. It binds one
+exact `workflow-guide/v2`, `workflow-evaluation-set/v2`, private development
+request/result contracts, workspace policy, supported hosts, and effect boundary.
+Development requests are the only authority for bounded local reads, writes,
+commands, or subagent work; provider effects, publication, merge, protected-root
+mutation, and host realization remain separate authority.
+The MCP operation `soter_create_development_request` derives the current active
+lock and realized host, fingerprints every normalized repository target inside
+Core, binds one explicit canonical subset of local effects, and returns
+`development-run-inspection/v1` without target paths or requested-outcome text.
+`soter_inspect_development_run` revalidates one request ID and returns a
+discriminated current, stale, or closed boundary with declared and effective
+effects. Neither operation executes development work or grants provider,
+publication, merge, protected-root, or host-realization authority. Exact target
+changes are accepted only by result closure with complete before/after and
+effect observations; they are not reusable inspection authority.
 
-`workflow-guide/v2` is the portable procedural companion to one exact workflow
-definition and evaluation set. It binds ordered steps, stop conditions,
+`workflow-guide/v2` is the active portable procedural companion to one exact
+workflow definition and evaluation set. It binds ordered steps, stop conditions,
 safeguards, verification, gotchas, references, privacy exclusions, and explicit
 authority facts. Its `contentFingerprint` seals provider-neutral content while
-excluding activation evidence and the fingerprint field itself. A `candidate`
-guide is preview-only and grants no execution, effect, approval, continuation,
-configuration, or realization authority. An `active` guide requires current
-passed expectation-withheld agent-or-higher evidence for each supported host and
-the exact target-authority migration tombstones. Only then may a host projection
-select it as `selected-pack-active`. Codex emits
+excluding the fingerprint field itself. Current expectation-withheld evidence
+must bind the exact workflow, host, configuration, and instruction fingerprints
+before the workflow can claim that behavior. Codex emits
 `.agents/skills/<name>/SKILL.md` plus explicit-only `agents/openai.yaml`; Claude
 emits `.claude/skills/<name>/SKILL.md` with implicit model invocation disabled.
 Those generated files remain delivery projections, never canonical workflow
 definitions or runtime authority.
 
-Migration source identity is the exact historical path and source fingerprint,
-not permanent ownership of a filesystem pathname. A governed generated host
-projection may therefore reuse a retired skill path with different v2 bytes.
-Restoring the exact tombstoned legacy bytes still fails closed as a live
-fallback, and host realization separately rejects unmanaged collisions or
-drift.
-
-Host evaluation evidence has two create-only persistence boundaries. A
-`development-agent-migration-evidence/v1` historical receipt can be created only
-from one exact finalized private request, result, observation, and current
-private candidate lock. It is deterministically written beneath
-`soter/evidence/development/` and explicitly claims no current applicability or
-activation authority. A later `evidence/v2` conversion requires that exact
-stored receipt, complete source tombstones, the unchanged evaluated behavior and
-host instruction fingerprints, and one exact current governed configuration
-lock. Exact existing bytes are idempotent; changed bytes, missing or tampered
-private material, unsafe links, path escape, subject drift, or a stale lock never
-create or replace evidence. Exact re-entry of already stored final evidence may
-report its historical bytes without claiming that the pre-write lock is still
-current. Neither receipt grants workflow execution, provider effects, merge,
-host realization, migration, or fallback-removal authority.
-
-A declared automation may carry mapped static scenarios before a desired
+A declared Automation may carry static scenarios before a desired
 configuration selects it. That state makes the pack inspectable and its future
 contract reviewable; it cannot establish executable behavior. Fixture-or-higher
 maturity still requires a selecting configuration and applicable exact-lock
@@ -1843,7 +1752,7 @@ evidence.
 Read-only builder projections consume the provider-neutral
 `workspace-inspection/v1` snapshot from Core. One snapshot joins exact
 configuration and lock state, catalog and graph relationships, declared
-automation scenarios and migration state, scoped proof, checked-in example
+automation scenarios, scoped proof, checked-in example
 runs, and private checkpoint summaries. Every activity item identifies its
 fixture or runtime source and its run, capability, provider-probe,
 operation-plan, or canonical connected-transaction kind. The snapshot has no fields for credential data, secret
@@ -1921,14 +1830,15 @@ diagnostics, generated fixtures, and canonical artifacts. Stable failures are
 `_BINDING_INVALID`, `_CREDENTIAL_REJECTED`, `_MISMATCH`, and `_WRITE_FAILED`.
 It has no approval, continuation, host-call, retry, or permitted-action field.
 
-`prepared-review-batch/v1` is a later prepared-family review artifact, not a
+`review-only-candidate-selection/v1` is a current no-authority
+candidate-selection artifact, not a
 connected transaction artifact. Core creates it only from a non-empty unique
 subset of exact `state=proposed` actions on one current `ready-for-review`
-receipt. Request order is discarded; the batch restores canonical prepared
+receipt. Request order is discarded; the selection restores canonical prepared
 order. Every selected action binds its sanitized collection and row
 fingerprints, source-action fingerprint, fingerprint-only change, subject
 fingerprint, private context-item fingerprint when present, and exact private
-proposed-item fingerprint. The batch binds the receipt, checkpoint, Automation,
+proposed-item fingerprint. The selection binds the receipt, checkpoint, Automation,
 lock, graph, host, preview, and private-review content fingerprints. Its
 deterministic identity makes exact re-entry idempotent; private state is
 create-only under a `0700` directory with a `0600` document. It cannot select
@@ -1936,36 +1846,36 @@ held, prohibited, none, or handoff actions. It contains no private values,
 provider arguments, provider responses, approval, continuation, or execution
 authority and is never aggregated into inspection or evidence.
 
-`prepared-review-batch-material/v1` is the selected-batch-only private read
-projection. Core revalidates the immutable batch, durable receipt, exact
+`review-only-candidate-selection-material/v1` is the selected-candidate-only private read
+projection. Core revalidates the immutable selection, durable receipt, exact
 private derived-review content, and every source-row join before returning the
 normalized context and proposed items needed for human review. Its fingerprint
 excludes only derived `current|stale` applicability. Raw provider responses and
 credential values are structurally absent. Both contracts remain
-`review-only`. A batch whose Automation does not declare a compiler carries
+`review-only`. A selection whose Automation does not declare a compiler carries
 `CONNECTED_COMPILER_NOT_DECLARED`; one whose Automation does declare a
-compiler carries `CONNECTED_PLAN_NOT_COMPILED`. Both retain
+compiler carries `REVIEW_ONLY_CANDIDATE_PREVIEW_NOT_CREATED`. Both retain
 `CONNECTED_VERIFICATION_NOT_PROVEN`; they do not satisfy the executable
 `connected-change-set/v2`, `connected-operation-batch/v2`, or `approval-request/v1`
-contracts. Stable batch errors are `PREPARED_REVIEW_BATCH_MISSING`,
-`_MALFORMED`, `_TAMPERED`, `_BINDING_INVALID`, `_SELECTION_INVALID`, `_STALE`,
-and `_WRITE_FAILED`. Private material adds `_MATERIAL_MALFORMED`,
-`_MATERIAL_TAMPERED`, `_MATERIAL_BINDING_INVALID`, and
-`_MATERIAL_CREDENTIAL_REJECTED`.
+contracts. Stable selection errors are
+`REVIEW_ONLY_CANDIDATE_SELECTION_MISSING`, `_MALFORMED`, `_TAMPERED`,
+`_BINDING_INVALID`, `_INVALID`, `_STALE`, and `_WRITE_FAILED`.
+Private material adds `_MATERIAL_MALFORMED`, `_MATERIAL_TAMPERED`,
+`_MATERIAL_BINDING_INVALID`, and `_MATERIAL_CREDENTIAL_REJECTED`.
 
-`prepared-connected-plan/v1` is the private, selected-plan-only result of an
+`review-only-candidate-preview/v1` is the private, selected-candidate-only result of an
 Automation-owned `operator.connection` compiler. Kernel requires the compiler
 module to be an implementation artifact of that Automation. Core loads the
 exact module fingerprint from the selected lock, requires the declared compile
 and verification-evaluator exports, and passes them only an exact validated
-review batch and private batch material. Core remains domain-neutral: it
+candidate selection and private selection material. Core remains domain-neutral: it
 validates closed compiler output, exact selected-action coverage and ordering,
 unique operation identities, portable capability inputs, exact configuration
 bindings, one resolved authority, provider-pack parity, declared effects, and
 read-only verification inputs. Automation owns domain operation shaping and
 comparison semantics; Integration owns provider implementation and translation.
 
-The plan stores private provider arguments under create-only `0700`/`0600`
+The preview stores private provider arguments under create-only `0700`/`0600`
 runtime state. Its fingerprint excludes only derived `current|stale`
 applicability. It is excluded from inspection, evidence, fixtures, logs, and
 canonical artifacts; raw provider responses and credential values are
@@ -1977,7 +1887,7 @@ authority. Current blockers are `CONNECTED_PROVIDER_NOT_DECLARED`,
 `SELECTED_ACTIVITY_PRIVATE_APPROVAL_REVIEW_NOT_AVAILABLE`, with only the
 provider blocker omitted when every operation and verifier has one declared
 connected implementation. Stable failures use the
-`PREPARED_CONNECTED_PLAN_*` family for missing, malformed, tampered, stale,
+`REVIEW_ONLY_CANDIDATE_PREVIEW_*` family for missing, malformed, tampered, stale,
 source, lock, compiler, binding, credential, verification, and write errors.
 
 The prepared family is limited to `draft`,
@@ -1989,7 +1899,7 @@ A prepared receipt is a review artifact, not transaction authority. Its preview
 contains normalized facts, contradictions, evidence bases, and before/after
 fingerprints, never raw record values. It stops before write, dispatch, or
 destructive effects, creates no approval or continuation request, and cannot
-promote readiness, verification, proof, maturity, or migration. Automations
+promote readiness, verification, proof, or maturity. Automations
 without a declared preparation adapter remain input-definition-only and expose
 no prepared-work transition. A preview change may name only a capability and
 effect already declared by the Automation and bound by the exact configuration.
@@ -2012,8 +1922,9 @@ approval request, start authorization, continuation request, provider call, or
 write authority. A non-conflicting preview also emits one exact sanitized
 `task-create` review row whose proposed change binds the same-row private
 derived-review item. Duplicate or context-conflicting rows remain held and
-cannot enter selection. Core may create one immutable selected review batch and
-ask Task Capture's pack-owned compiler for a private candidate plan. That plan
+cannot enter selection. Core may create one immutable review-only candidate
+selection and ask Task Capture's pack-owned compiler for a private candidate
+preview. That preview
 contains one deduplicated `tasks.records.create`, an exact same-authority
 `tasks.records.read` absence precondition, mandatory read-after-write
 verification, prohibited write retry, and manual recovery because delete is not
@@ -2057,7 +1968,7 @@ Each ready Contact or Organization proposal may compile only one normalized
 `crm.records.create` with a same-authority read-only absence precondition and
 mandatory read-after-write verification. Preparation, decisions, proposals,
 selected-private material, and compiled review plans MUST NOT themselves grant
-approval, continuation, host-call, write, retry, proof, or migration authority.
+approval, continuation, host-call, write, retry, or proof authority.
 Ambiguous create state MUST enter needs-attention and MUST NOT be retried into
 place automatically.
 
@@ -2077,7 +1988,7 @@ cannot be silently dropped, and any unresolved complete-plan invariant MUST hold
 all proposed writes.
 
 The Drive Filing prepared preview and private companion grant no approval,
-continuation, host-call, provider-write, retry, proof, or migration authority.
+continuation, host-call, provider-write, retry, or proof authority.
 Move, rename, delete, dispatch, and destructive effects are prohibited. Until a
 separate governed connected compiler exists, attempting to compile its review
 batch MUST fail closed and Studio MUST expose no approval or execution control.
@@ -2155,7 +2066,7 @@ proves state-machine and translator behavior only; it does not establish live
 provider readiness, verification, or health.
 
 Core revalidates a stored receipt's exact lock whenever it is inspected. A
-changed or unavailable lock keeps the historical receipt visible but marks its
+changed or unavailable lock keeps the stored receipt visible but marks its
 configuration applicability stale and replaces review guidance with an
 unavailable stale-lock decision. Core validates adapter effect capabilities,
 authorities, providers, and declared effects; context-step capabilities and
@@ -2280,8 +2191,7 @@ An evidence record contains at least:
 human-readable claim, it carries a stable claim family, the exact graph
 fingerprint, a complete locked dependency set, a strict host summary, and
 structured integration and authority summaries. It is the sole generic evidence
-contract; development migration receipts remain a separate purpose-specific
-family.
+contract.
 
 Evidence is append-only or explicitly superseded. Editing an old result to
 match a new claim destroys its value. A golden artifact is a useful comparison
@@ -2464,15 +2374,15 @@ the OAuth credential itself.
 
 Verification gates attach to the action they protect:
 
-- Configuration realization requires valid resolution and applicable
-  migrations.
+- Configuration realization requires valid resolution, a current exact lock,
+  and applicable evidence.
 - Starting an automation requires readiness for its required contracts.
 - Distributing a pack requires its declared release and conformance evidence.
 - Promoting an improvement requires its regression and trial evidence.
 - Granting greater autonomy requires effect-specific reliability and recovery
   evidence.
-- Applying an upgrade requires a reviewed diff, successful migration checks,
-  and a rollback plan where reversal is possible.
+- Applying an upgrade requires a reviewed diff, successful compatibility
+  checks, and a rollback plan where reversal is possible.
 
 Local development and continuous integration run deterministic checks,
 contract tests, fixtures, and contained agent scenarios appropriate to the

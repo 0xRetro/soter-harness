@@ -48,13 +48,7 @@
       "configured-policy-source-fingerprints",
       "transcript-output-fingerprint",
       "relationship-read-fingerprints",
-      "sanitized-preview-fingerprint",
-      "source-cases-exactly-fingerprinted"
+      "sanitized-preview-fingerprint"
     ]
-  },
-  "sourceCases": [
-    ".claude/evals/processing-a-meeting/happy-path.md",
-    ".claude/evals/processing-a-meeting/invariant-grounded-and-gated.md",
-    ".claude/evals/processing-a-meeting/pressure-stale-meeting.md"
-  ]
+  }
 }

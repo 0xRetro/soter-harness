@@ -14,8 +14,24 @@ import {
   prepareDevelopmentRequest,
   recordDevelopmentResult
 } from './development-runs.mjs';
-import { fingerprintJson, readJson, writeJson } from './lib/canonical-json.mjs';
+import {
+  fingerprintJson,
+  fingerprintPath,
+  readJson,
+  resolveRepoPath,
+  writeJson
+} from './lib/canonical-json.mjs';
 import { materializeDevelopmentCandidateLock } from './development-candidate-locks.mjs';
+import { renderHostProjectionCandidates } from './host-projections.mjs';
+import { privateConfigurationStatePath, writePrivateConfigurationState } from './private-configurations.mjs';
+import { fingerprintLock, resolveConfiguration } from './resolve.mjs';
+import {
+  createDevelopmentRequestState,
+  readDevelopmentRequestState,
+  readDevelopmentResultState,
+  writeActiveConfigurationLockState,
+  writeHostManagedManifestState
+} from './runtime-state.mjs';
 
 const scriptRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const FP = (value) => fingerprintJson(value);
@@ -34,11 +50,256 @@ function mode(file) {
   return fs.statSync(file).mode & 0o7777;
 }
 
+function assertPrivateStateSymlinkAncestorsRejected() {
+  for (const depth of ['soter', 'state', 'leaf']) {
+    const root = fs.mkdtempSync(path.join(
+      fs.realpathSync(os.tmpdir()),
+      'soter-development-state-symlink-'
+    ));
+    const outside = fs.mkdtempSync(path.join(
+      fs.realpathSync(os.tmpdir()),
+      'soter-development-state-outside-'
+    ));
+    const marker = path.join(outside, 'marker.txt');
+    fs.writeFileSync(marker, 'outside-private-state-sentinel\n', { mode: 0o644 });
+    if (process.platform !== 'win32') fs.chmodSync(outside, 0o755);
+    try {
+      if (depth === 'soter') {
+        fs.symlinkSync(outside, path.join(root, '.soter'));
+      } else {
+        fs.mkdirSync(path.join(root, '.soter'), { mode: 0o755 });
+        if (depth === 'state') {
+          fs.symlinkSync(outside, path.join(root, '.soter/state'));
+        } else {
+          fs.mkdirSync(path.join(root, '.soter/state'), { mode: 0o755 });
+          fs.symlinkSync(outside, path.join(root, '.soter/state/development-requests'));
+        }
+      }
+      assert.throws(() => createDevelopmentRequestState(root, {
+        id: 'development-request.symlink-' + depth
+      }));
+      assert.equal(fs.readFileSync(marker, 'utf8'), 'outside-private-state-sentinel\n');
+      assert.deepEqual(fs.readdirSync(outside), ['marker.txt']);
+      if (process.platform !== 'win32') {
+        assert.equal(mode(outside), 0o755, 'rejected symlink must not chmod its external target');
+        assert.equal(mode(marker), 0o644, 'rejected symlink must not mutate external file mode');
+      }
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+      fs.rmSync(outside, { recursive: true, force: true });
+    }
+  }
+}
+
+function assertPrivateStateFileReadGuards({ file, read, code }) {
+  const outside = fs.mkdtempSync(path.join(
+    fs.realpathSync(os.tmpdir()),
+    'soter-development-read-outside-'
+  ));
+  const external = path.join(outside, 'external-state.json');
+  const held = file + '.held';
+  const originalBytes = fs.readFileSync(file);
+  try {
+    fs.copyFileSync(file, external);
+    if (process.platform !== 'win32') fs.chmodSync(external, 0o600);
+    fs.renameSync(file, held);
+    fs.symlinkSync(external, file);
+    expectCode(read, code);
+    fs.unlinkSync(file);
+    fs.renameSync(held, file);
+
+    fs.renameSync(file, held);
+    fs.linkSync(external, file);
+    expectCode(read, code);
+    fs.unlinkSync(file);
+    fs.renameSync(held, file);
+
+    if (process.platform !== 'win32') {
+      fs.chmodSync(file, 0o644);
+      expectCode(read, code);
+      fs.chmodSync(file, 0o600);
+      assert.equal(mode(external), 0o600);
+    }
+    assert.deepEqual(fs.readFileSync(external), originalBytes);
+    assert.deepEqual(fs.readFileSync(file), originalBytes);
+  } finally {
+    if (fs.lstatSync(file, { throwIfNoEntry: false })?.isSymbolicLink()) fs.unlinkSync(file);
+    if (!fs.existsSync(file) && fs.existsSync(held)) fs.renameSync(held, file);
+    fs.rmSync(outside, { recursive: true, force: true });
+  }
+}
+
+function assertPrivateStateParentModeReadGuards({ file, read, code }) {
+  if (process.platform === 'win32') return;
+  const leaf = path.dirname(file);
+  const state = path.dirname(leaf);
+  const soter = path.dirname(state);
+  for (const directory of [soter, state, leaf]) {
+    assert.equal(mode(directory), 0o700);
+    fs.chmodSync(directory, 0o755);
+    try {
+      expectCode(read, code);
+      assert.equal(mode(directory), 0o755, 'private state reads must not repair unsafe parent modes');
+    } finally {
+      fs.chmodSync(directory, 0o700);
+    }
+  }
+}
+
 function copyHarnessRoot(source, target) {
   for (const entry of fs.readdirSync(source, { withFileTypes: true })) {
     if (entry.name === '.git' || entry.name === '.soter' || entry.name === 'node_modules') continue;
     fs.cpSync(path.join(source, entry.name), path.join(target, entry.name), { recursive: true });
   }
+}
+
+function consumerTargetFingerprint(root) {
+  const requestedPath = path.resolve(root);
+  const realPath = fs.realpathSync(requestedPath);
+  const stat = fs.statSync(realPath);
+  return fingerprintJson({
+    requestedPath,
+    realPath,
+    device: Number(stat.dev),
+    inode: Number(stat.ino)
+  });
+}
+
+export function materializeExactDevelopmentHost(
+  root,
+  configurationName = 'harness-development-catalog',
+  host = 'codex'
+) {
+  const tracked = readJson(path.join(
+    root,
+    'soter/configurations',
+    configurationName + '.config.json'
+  ));
+  writePrivateConfigurationState(root, configurationName, tracked);
+  const lock = resolveConfiguration({
+    root,
+    configPath: privateConfigurationStatePath(root, configurationName),
+    host
+  });
+  writeActiveConfigurationLockState(root, configurationName, lock);
+  const adapter = readJson(path.join(root, `soter/hosts/${host}/adapter.json`));
+  const rendered = renderHostProjectionCandidates({
+    root,
+    adapter,
+    configurationId: configurationName,
+    packIds: lock.packs.map((pack) => pack.id),
+    capabilityIds: lock.capabilities.map((capability) => capability.id),
+    effectPolicies: lock.effectPolicies,
+    currentLock: lock
+  });
+  assert.equal(
+    fingerprintJson(rendered.outputs.map((output) => ({
+      id: output.id,
+      path: output.path,
+      role: output.role,
+      mode: output.mode,
+      templatePath: output.templatePath,
+      templateFingerprint: output.templateFingerprint,
+      contentFingerprint: output.contentFingerprint,
+      fingerprint: output.fingerprint
+    }))),
+    fingerprintJson(lock.projections)
+  );
+  for (const output of rendered.outputs) {
+    const target = resolveRepoPath(root, output.path);
+    fs.mkdirSync(path.dirname(target), { recursive: true, mode: 0o755 });
+    fs.writeFileSync(target, output.content, { encoding: 'utf8', mode: 0o644 });
+    if (process.platform !== 'win32') fs.chmodSync(target, 0o644);
+    assert.equal(fingerprintPath(target), output.contentFingerprint);
+  }
+  const manifest = {
+    $contract: 'soter://contracts/host-managed-manifest/v1',
+    contractVersion: '1.0.0',
+    id: `host-managed-manifest.${host}`,
+    host,
+    targetFingerprint: consumerTargetFingerprint(root),
+    configuration: {
+      name: configurationName,
+      lockFingerprint: fingerprintLock(lock),
+      graphFingerprint: lock.graphFingerprint
+    },
+    definition: {
+      id: rendered.definition.id,
+      version: rendered.definition.version,
+      fingerprint: rendered.definition.fingerprint
+    },
+    generator: {
+      id: rendered.generator.id,
+      version: rendered.generator.version,
+      fingerprint: fingerprintJson(rendered.generator)
+    },
+    outputs: rendered.outputs.map((output) => ({
+      id: output.id,
+      path: output.path,
+      role: output.role,
+      mode: output.mode,
+      contentFingerprint: output.contentFingerprint,
+      fingerprint: output.fingerprint
+    })).sort((left, right) => left.path.localeCompare(right.path, 'en')),
+    checkpoint: {
+      id: `checkpoint.host-realization.development-selftest-${host}`,
+      fingerprint: FP({ kind: 'development-selftest-host-realization', host })
+    },
+    manifestFingerprint: null
+  };
+  const unsigned = { ...manifest };
+  delete unsigned.manifestFingerprint;
+  manifest.manifestFingerprint = fingerprintJson(unsigned);
+  writeHostManagedManifestState(root, manifest);
+  const currentLock = resolveConfiguration({
+    root,
+    configPath: privateConfigurationStatePath(root, configurationName),
+    host
+  });
+  const currentRendered = renderHostProjectionCandidates({
+    root,
+    adapter,
+    configurationId: configurationName,
+    packIds: currentLock.packs.map((pack) => pack.id),
+    capabilityIds: currentLock.capabilities.map((capability) => capability.id),
+    effectPolicies: currentLock.effectPolicies,
+    currentLock
+  });
+  assert.deepEqual({
+    host: currentLock.host.id,
+    targetFingerprint: consumerTargetFingerprint(root),
+    configuration: {
+      name: currentLock.configuration.name,
+      lockFingerprint: fingerprintLock(currentLock),
+      graphFingerprint: currentLock.graphFingerprint
+    },
+    definition: {
+      id: currentRendered.definition.id,
+      version: currentRendered.definition.version,
+      fingerprint: currentRendered.definition.fingerprint
+    },
+    generator: {
+      id: currentRendered.generator.id,
+      version: currentRendered.generator.version,
+      fingerprint: fingerprintJson(currentRendered.generator)
+    },
+    outputs: currentRendered.outputs.map((output) => ({
+      id: output.id,
+      path: output.path,
+      role: output.role,
+      mode: output.mode,
+      contentFingerprint: output.contentFingerprint,
+      fingerprint: output.fingerprint
+    })).sort((left, right) => left.path.localeCompare(right.path, 'en'))
+  }, {
+    host: manifest.host,
+    targetFingerprint: manifest.targetFingerprint,
+    configuration: manifest.configuration,
+    definition: manifest.definition,
+    generator: manifest.generator,
+    outputs: manifest.outputs
+  });
+  return lock;
 }
 
 function criterionRows(testCase) {
@@ -98,33 +359,57 @@ function passingOutcome(invocation, evaluations) {
       state: 'passed',
       observedFingerprint: FP({ check: 'passed' })
     }],
-    effects: [{
-      category: 'local-workspace-write',
-      scope: 'request-scoped',
-      state: 'observed',
-      count: 1,
-      observedFingerprint: FP({ changed: 1 })
-    }, ...[
-      'provider-write',
-      'provider-read',
-      'publication',
-      'merge',
-      'protected-root-mutation',
-      'host-realization'
-    ].map((category) => ({
-      category,
-      scope: 'separate-authority',
-      state: 'not-observed',
-      count: 0,
-      observedFingerprint: null
-    }))],
+    effects: [
+      {
+        category: 'local-workspace-read',
+        scope: 'request-scoped',
+        state: 'observed',
+        count: 1,
+        observedFingerprint: FP({ read: 1 })
+      },
+      {
+        category: 'local-workspace-write',
+        scope: 'request-scoped',
+        state: 'observed',
+        count: 1,
+        observedFingerprint: FP({ changed: 1 })
+      },
+      {
+        category: 'local-command',
+        scope: 'request-scoped',
+        state: 'observed',
+        count: 1,
+        observedFingerprint: FP({ command: 1 })
+      },
+      {
+        category: 'subagent-dispatch',
+        scope: 'request-scoped',
+        state: 'observed',
+        count: workerRuns.length,
+        observedFingerprint: FP({ dispatched: workerRuns.length })
+      },
+      ...[
+        'provider-write',
+        'provider-read',
+        'publication',
+        'merge',
+        'protected-root-mutation',
+        'host-realization'
+      ].map((category) => ({
+        category,
+        scope: 'separate-authority',
+        state: 'not-observed',
+        count: 0,
+        observedFingerprint: null
+      }))
+    ],
     promotion: {
       state: 'held',
       artifactFingerprint: null,
-      reasonCode: 'MIGRATION_AUTHORITY_NOT_GRANTED'
+      reasonCode: 'PROMOTION_AUTHORITY_NOT_GRANTED'
     },
     decisionEvidence: [],
-    limitations: ['This contained result is scoped evidence and cannot remove a legacy fallback.']
+    limitations: ['This contained result is scoped evidence and grants no operational authority.']
   };
   const baselineRun = outcome.workerRuns.find((run) => run.arm === 'baseline');
   const baselineJudgment = outcome.judgments.find((item) => item.workerRunId === baselineRun.id);
@@ -134,11 +419,80 @@ function passingOutcome(invocation, evaluations) {
   return outcome;
 }
 
+function passingDevelopOutcome({ target, beforeFingerprint, afterFingerprint }) {
+  return {
+    state: 'passed',
+    workerRuns: [],
+    judgments: [],
+    changes: [{
+      id: 'change.governed-target',
+      path: target,
+      kind: 'modify',
+      beforeFingerprint,
+      afterFingerprint
+    }],
+    checks: [{
+      id: 'check.governed-target',
+      state: 'passed',
+      observedFingerprint: FP({ target, afterFingerprint })
+    }],
+    effects: [
+      {
+        category: 'local-workspace-read',
+        scope: 'request-scoped',
+        state: 'observed',
+        count: 1,
+        observedFingerprint: FP({ target, effect: 'read' })
+      },
+      {
+        category: 'local-workspace-write',
+        scope: 'request-scoped',
+        state: 'observed',
+        count: 1,
+        observedFingerprint: FP({ target, effect: 'write' })
+      },
+      ...['local-command', 'subagent-dispatch'].map((category) => ({
+        category,
+        scope: 'request-scoped',
+        state: 'not-observed',
+        count: 0,
+        observedFingerprint: null
+      })),
+      ...[
+        'provider-read',
+        'provider-write',
+        'publication',
+        'merge',
+        'protected-root-mutation',
+        'host-realization'
+      ].map((category) => ({
+        category,
+        scope: 'separate-authority',
+        state: 'not-observed',
+        count: 0,
+        observedFingerprint: null
+      }))
+    ],
+    promotion: {
+      state: 'held',
+      artifactFingerprint: null,
+      reasonCode: 'PROMOTION_AUTHORITY_NOT_GRANTED'
+    },
+    decisionEvidence: [],
+    limitations: ['This exact target-bound development result grants no operational authority.']
+  };
+}
+
 export async function selftestDevelopmentRuns(root = scriptRoot) {
-  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'soter-development-runs-'));
+  assertPrivateStateSymlinkAncestorsRejected();
+  const temp = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'soter-development-runs-'));
   try {
     copyHarnessRoot(root, temp);
-    const configPath = 'soter/configurations/harness-development-catalog.config.json';
+    const activeLock = materializeExactDevelopmentHost(temp);
+    const configPath = path.relative(
+      temp,
+      privateConfigurationStatePath(temp, activeLock.configuration.name)
+    ).split(path.sep).join('/');
     const candidateLock = materializeDevelopmentCandidateLock({
       root: temp,
       configPath,
@@ -146,7 +500,140 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       host: 'codex'
     });
     const lockPath = candidateLock.path;
+    const auditLockPath = materializeDevelopmentCandidateLock({
+      root: temp,
+      configPath,
+      workflowId: 'automation.auditing-a-schema-doc',
+      host: 'codex'
+    }).path;
     const evaluations = readJson(path.join(temp, 'soter/automations/forge/evaluations.json'));
+
+    const readOnlyPath = 'soter/contracts/host-runtime-inspection.schema.json';
+    const readOnlyFile = path.join(temp, readOnlyPath);
+    const readOnlyBytes = fs.readFileSync(readOnlyFile);
+    const readOnlyRequest = prepareDevelopmentRequest({
+      root: temp,
+      lockPath: auditLockPath,
+      workflowId: 'automation.auditing-a-schema-doc',
+      requestId: 'development-request.read-only-staleness',
+      invocation: {
+        kind: 'develop',
+        profile: 'exact',
+        requestedOutcome: 'Review the exact schema without changing workspace bytes.',
+        requestedLocalEffects: ['local-workspace-read'],
+        targets: [{ id: 'target.host-runtime-schema', path: readOnlyPath }]
+      },
+      createdAt: '2026-07-22T09:00:00.000Z'
+    });
+    assert.equal(readOnlyRequest.inspection.applicability.state, 'current');
+    assert.equal(readOnlyRequest.inspection.requestBoundary.declared.localWorkspaceWrite, 'not-requested');
+    if (process.platform !== 'win32') {
+      assert.equal(readOnlyRequest.request.invocation.targets[0].beforeMode, '0644');
+      fs.chmodSync(readOnlyFile, 0o600);
+      const modeStale = inspectDevelopmentRun({
+        root: temp,
+        requestId: 'development-request.read-only-staleness'
+      });
+      assert.equal(modeStale.applicability.reasonCode, 'DEVELOPMENT_REQUEST_TARGET_STALE');
+      assert.equal(modeStale.requestBoundary.state, 'stale');
+      fs.chmodSync(readOnlyFile, 0o644);
+      assert.equal(inspectDevelopmentRun({
+        root: temp,
+        requestId: 'development-request.read-only-staleness'
+      }).applicability.state, 'current');
+    }
+    fs.appendFileSync(readOnlyFile, '\n');
+    let staleInspection = inspectDevelopmentRun({
+      root: temp,
+      requestId: 'development-request.read-only-staleness'
+    });
+    assert.equal(staleInspection.applicability.reasonCode, 'DEVELOPMENT_REQUEST_TARGET_STALE');
+    assert.equal(staleInspection.requestBoundary.state, 'stale');
+    assert.equal(staleInspection.requestBoundary.effective.localWorkspaceRead, 'closed');
+    fs.writeFileSync(readOnlyFile, readOnlyBytes);
+    const heldReadOnly = readOnlyFile + '.held';
+    fs.renameSync(readOnlyFile, heldReadOnly);
+    fs.symlinkSync(heldReadOnly, readOnlyFile);
+    staleInspection = inspectDevelopmentRun({
+      root: temp,
+      requestId: 'development-request.read-only-staleness'
+    });
+    assert.equal(staleInspection.applicability.reasonCode, 'DEVELOPMENT_REQUEST_TARGET_STALE');
+    fs.unlinkSync(readOnlyFile);
+    fs.renameSync(heldReadOnly, readOnlyFile);
+    const unrelatedFile = path.join(temp, 'unrelated-development-drift.txt');
+    fs.writeFileSync(unrelatedFile, 'unrelated drift\n');
+    staleInspection = inspectDevelopmentRun({
+      root: temp,
+      requestId: 'development-request.read-only-staleness'
+    });
+    assert.equal(staleInspection.applicability.reasonCode, 'DEVELOPMENT_REQUEST_WORKSPACE_STALE');
+    fs.rmSync(unrelatedFile);
+    assert.equal(inspectDevelopmentRun({
+      root: temp,
+      requestId: 'development-request.read-only-staleness'
+    }).applicability.state, 'current');
+
+    const writablePath = 'development-request-write-target.txt';
+    const writableFile = path.join(temp, writablePath);
+    fs.writeFileSync(writableFile, 'before\n');
+    const writableRequest = prepareDevelopmentRequest({
+      root: temp,
+      lockPath,
+      workflowId: 'automation.forge',
+      requestId: 'development-request.write-target',
+      invocation: {
+        kind: 'develop',
+        profile: 'bounded',
+        requestedOutcome: 'Modify only the exact declared contained development target.',
+        requestedLocalEffects: ['local-workspace-read', 'local-workspace-write'],
+        targets: [{ id: 'target.write', path: writablePath }]
+      },
+      createdAt: '2026-07-22T09:10:00.000Z'
+    });
+    fs.writeFileSync(writableFile, 'after\n');
+    const writableStale = inspectDevelopmentRun({
+      root: temp,
+      requestId: writableRequest.request.id
+    });
+    assert.equal(writableStale.applicability.state, 'stale');
+    assert.equal(writableStale.applicability.reasonCode, 'DEVELOPMENT_REQUEST_TARGET_STALE');
+    assert.equal(writableStale.requestBoundary.state, 'stale');
+    assert.equal(writableStale.requestBoundary.effective.localWorkspaceWrite, 'closed');
+    fs.rmSync(writableFile);
+
+    for (const protectedPath of [
+      '.git/config',
+      '.soter/state/private.json',
+      'node_modules/private.js',
+      '.agents/skills/private/SKILL.md',
+      '.codex/config.toml',
+      '.claude/private.md',
+      '.claude-plugin/plugin.json',
+      'AGENTS.md',
+      'CLAUDE.md',
+      '.mcp.json',
+      'soter/kernel/development-workspace.settings.json',
+      'soter/hosts/codex/adapter.json',
+      'soter/hosts/claude/adapter.json',
+      'missing-parent/target.txt'
+    ]) {
+      expectCode(() => prepareDevelopmentRequest({
+        root: temp,
+        lockPath,
+        workflowId: 'automation.forge',
+        requestId: 'development-request.protected-' + fingerprintJson(protectedPath).slice(7, 19),
+        invocation: {
+          kind: 'develop',
+          profile: 'exact',
+          requestedOutcome: 'Attempt one exact target that Core must reject before durable state.',
+          requestedLocalEffects: ['local-workspace-read', 'local-workspace-write'],
+          targets: [{ id: 'target.protected', path: protectedPath }]
+        },
+        createdAt: '2026-07-22T09:20:00.000Z'
+      }), 'DEVELOPMENT_REQUEST_TARGET_INVALID');
+    }
+
     const privateOutcomeSentinel = 'Develop the bounded forge target without exposing this private desired result.';
     const targetPathSentinel = 'soter/private-targets/forge-secret.mjs';
     const transcriptSentinel = 'PRIVATE_WORKER_TRANSCRIPT_SENTINEL';
@@ -177,6 +664,16 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       assert.equal(mode(path.dirname(privateFiles.request)), 0o700);
       assert.equal(mode(privateFiles.request), 0o600);
     }
+    assertPrivateStateFileReadGuards({
+      file: privateFiles.request,
+      read: () => readDevelopmentRequestState(temp, requestId),
+      code: 'DEVELOPMENT_REQUEST_PRIVATE_STATE_INVALID'
+    });
+    assertPrivateStateParentModeReadGuards({
+      file: privateFiles.request,
+      read: () => readDevelopmentRequestState(temp, requestId),
+      code: 'DEVELOPMENT_REQUEST_PRIVATE_STATE_INVALID'
+    });
 
     const exactReentry = prepareDevelopmentRequest({
       root: temp,
@@ -222,11 +719,53 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       completedAt: '2026-07-22T10:10:00.000Z'
     });
     assert.equal(recorded.inspection.progress.state, 'passed');
-    assert.equal(recorded.inspection.authority.grantsFallbackRemoval, false);
+    assert.deepEqual(recorded.inspection.authority, {
+      kind: 'inspection-only',
+      grantsExecution: false,
+      grantsApproval: false,
+      grantsProviderRead: false,
+      grantsPublication: false,
+      grantsMerge: false,
+      grantsProviderWrite: false,
+      grantsProtectedRootMutation: false,
+      grantsHostRealization: false
+    });
+    assert.equal(recorded.inspection.requestBoundary.state, 'closed');
+    assert.equal(recorded.inspection.requestBoundary.reasonCode, 'DEVELOPMENT_RESULT_RECORDED');
+    assert.equal(recorded.inspection.requestBoundary.permittedNextAction, 'none');
+    assert.deepEqual(recorded.inspection.requestBoundary.declared, prepared.request.effectBoundary);
+    assert.deepEqual(recorded.inspection.requestBoundary.effective, {
+      localWorkspaceRead: 'closed',
+      localWorkspaceWrite: 'closed',
+      localCommand: 'closed',
+      subagentDispatch: 'closed',
+      providerRead: 'separate-authority',
+      providerWrite: 'separate-authority',
+      publication: 'separate-authority',
+      merge: 'separate-authority',
+      protectedRootMutation: 'separate-authority',
+      hostRealization: 'separate-authority'
+    });
     if (process.platform !== 'win32') {
       assert.equal(mode(path.dirname(privateFiles.result)), 0o700);
       assert.equal(mode(privateFiles.result), 0o600);
     }
+    assertPrivateStateFileReadGuards({
+      file: privateFiles.result,
+      read: () => readDevelopmentResultState(
+        temp,
+        'development-result.forge-selftest'
+      ),
+      code: 'DEVELOPMENT_RESULT_PRIVATE_STATE_INVALID'
+    });
+    assertPrivateStateParentModeReadGuards({
+      file: privateFiles.result,
+      read: () => readDevelopmentResultState(
+        temp,
+        'development-result.forge-selftest'
+      ),
+      code: 'DEVELOPMENT_RESULT_PRIVATE_STATE_INVALID'
+    });
     const resultReentry = recordDevelopmentResult({ root: temp, lockPath, requestId, outcome });
     assert.equal(resultReentry.result.resultFingerprint, recorded.result.resultFingerprint);
 
@@ -234,9 +773,13 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
     changedOutcome.promotion.reasonCode = 'DIFFERENT_PRIVATE_OUTCOME';
     expectCode(() => recordDevelopmentResult({ root: temp, lockPath, requestId, outcome: changedOutcome }), 'DEVELOPMENT_RESULT_REENTRY_MISMATCH');
 
-    const hostileRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'soter-development-hostile-'));
+    const hostileRoot = fs.mkdtempSync(path.join(
+      fs.realpathSync(os.tmpdir()),
+      'soter-development-hostile-'
+    ));
     try {
       copyHarnessRoot(root, hostileRoot);
+      materializeExactDevelopmentHost(hostileRoot);
       const hostileCandidate = materializeDevelopmentCandidateLock({
         root: hostileRoot,
         configPath,
@@ -306,6 +849,34 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       expectCode(
         () => recordHostile(duplicateExternalEffect),
         'DEVELOPMENT_RESULT_BINDING_INVALID'
+      );
+      const omittedLocalEffect = passingOutcome(invocation, evaluations);
+      omittedLocalEffect.effects = omittedLocalEffect.effects.filter((item) => {
+        return item.category !== 'local-command';
+      });
+      expectCode(
+        () => recordHostile(omittedLocalEffect),
+        'DEVELOPMENT_RESULT_EFFECT_BOUNDARY_VIOLATED'
+      );
+      const incoherentObservedLocalEffect = passingOutcome(invocation, evaluations);
+      const observedRead = incoherentObservedLocalEffect.effects.find((item) => {
+        return item.category === 'local-workspace-read';
+      });
+      observedRead.count = 0;
+      observedRead.observedFingerprint = null;
+      expectCode(
+        () => recordHostile(incoherentObservedLocalEffect),
+        'DEVELOPMENT_RESULT_EFFECT_BOUNDARY_VIOLATED'
+      );
+      const incoherentUnobservedLocalEffect = passingOutcome(invocation, evaluations);
+      const unobservedCommand = incoherentUnobservedLocalEffect.effects.find((item) => {
+        return item.category === 'local-command';
+      });
+      unobservedCommand.state = 'not-observed';
+      unobservedCommand.count = 1;
+      expectCode(
+        () => recordHostile(incoherentUnobservedLocalEffect),
+        'DEVELOPMENT_RESULT_EFFECT_BOUNDARY_VIOLATED'
       );
       const answerKey = passingOutcome(invocation, evaluations);
       answerKey.workerRuns.find((item) => item.arm === 'guided').answerKeyAccess = 'observed';
@@ -402,6 +973,100 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
     writeJson(requestFile, tampered);
     expectCode(() => assertDevelopmentRequest(temp, readJson(requestFile)), 'DEVELOPMENT_REQUEST_TAMPERED');
     writeJson(requestFile, originalRequest);
+
+    const governedTargetPath = 'soter/automations/forge/guide.json';
+    const governedTargetFile = path.join(temp, governedTargetPath);
+    const governedBefore = fingerprintPath(governedTargetFile);
+    const governedRequest = prepareDevelopmentRequest({
+      root: temp,
+      lockPath,
+      workflowId: 'automation.forge',
+      requestId: 'development-request.governed-write-closure',
+      invocation: {
+        kind: 'develop',
+        profile: 'bounded',
+        requestedOutcome: 'Modify only the exact governed guide target and record exact closure.',
+        requestedLocalEffects: ['local-workspace-read', 'local-workspace-write'],
+        targets: [{ id: 'target.forge-guide', path: governedTargetPath }]
+      },
+      createdAt: '2026-07-22T11:00:00.000Z'
+    });
+    const governedGuide = readJson(governedTargetFile);
+    governedGuide.limitations = [
+      ...governedGuide.limitations,
+      'Contained exact-target mutation proves write closure without granting host realization.'
+    ];
+    writeJson(governedTargetFile, governedGuide);
+    const governedAfter = fingerprintPath(governedTargetFile);
+    const preClosure = inspectDevelopmentRun({
+      root: temp,
+      requestId: governedRequest.request.id
+    });
+    assert.equal(preClosure.applicability.state, 'stale');
+    assert.equal(preClosure.applicability.reasonCode, 'DEVELOPMENT_REQUEST_TARGET_STALE');
+    assert.equal(preClosure.requestBoundary.state, 'stale');
+    assert.equal(preClosure.requestBoundary.effective.localWorkspaceWrite, 'closed');
+    const governedOutcome = passingDevelopOutcome({
+      target: governedTargetPath,
+      beforeFingerprint: governedBefore,
+      afterFingerprint: governedAfter
+    });
+    if (process.platform !== 'win32') {
+      fs.chmodSync(governedTargetFile, 0o755);
+      expectCode(() => recordDevelopmentResult({
+        root: temp,
+        lockPath,
+        requestId: governedRequest.request.id,
+        outcome: governedOutcome,
+        completedAt: '2026-07-22T11:08:30.000Z'
+      }), 'DEVELOPMENT_RESULT_BINDING_INVALID');
+      fs.chmodSync(governedTargetFile, 0o644);
+    }
+    const unobservedGovernedWrite = structuredClone(governedOutcome);
+    const governedWriteEffect = unobservedGovernedWrite.effects.find((item) => {
+      return item.category === 'local-workspace-write';
+    });
+    governedWriteEffect.state = 'not-observed';
+    governedWriteEffect.count = 0;
+    governedWriteEffect.observedFingerprint = null;
+    expectCode(() => recordDevelopmentResult({
+      root: temp,
+      lockPath,
+      requestId: governedRequest.request.id,
+      outcome: unobservedGovernedWrite,
+      completedAt: '2026-07-22T11:09:00.000Z'
+    }), 'DEVELOPMENT_RESULT_EFFECT_BOUNDARY_VIOLATED');
+    const privateConfigFile = privateConfigurationStatePath(
+      temp,
+      activeLock.configuration.name
+    );
+    const privateConfigurationBytes = fs.readFileSync(privateConfigFile);
+    const driftedPrivateConfiguration = readJson(privateConfigFile);
+    driftedPrivateConfiguration.host.reason += ' Drift sentinel.';
+    fs.writeFileSync(
+      privateConfigFile,
+      JSON.stringify(driftedPrivateConfiguration, null, 2) + '\n'
+    );
+    if (process.platform !== 'win32') fs.chmodSync(privateConfigFile, 0o600);
+    expectCode(() => recordDevelopmentResult({
+      root: temp,
+      lockPath,
+      requestId: governedRequest.request.id,
+      outcome: governedOutcome,
+      completedAt: '2026-07-22T11:09:30.000Z'
+    }), 'DEVELOPMENT_REQUEST_HOST_REALIZATION_STALE');
+    fs.writeFileSync(privateConfigFile, privateConfigurationBytes);
+    if (process.platform !== 'win32') fs.chmodSync(privateConfigFile, 0o600);
+    const governedResult = recordDevelopmentResult({
+      root: temp,
+      lockPath,
+      requestId: governedRequest.request.id,
+      outcome: governedOutcome,
+      completedAt: '2026-07-22T11:10:00.000Z'
+    });
+    assert.equal(governedResult.inspection.requestBoundary.state, 'closed');
+    assert.equal(governedResult.inspection.requestBoundary.reasonCode, 'DEVELOPMENT_RESULT_RECORDED');
+    assert.equal(governedResult.inspection.result.state, 'passed');
 
     process.stdout.write('Soter private development request/result self-test passed.\n');
     return true;

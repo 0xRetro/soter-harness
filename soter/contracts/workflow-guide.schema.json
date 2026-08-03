@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "soter://contracts/workflow-guide/v2",
-  "title": "Soter provider-neutral governed workflow guide",
+  "title": "Soter active provider-neutral workflow guide",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -17,7 +17,6 @@
     "verification",
     "gotchas",
     "references",
-    "source",
     "privacy",
     "limitations"
   ],
@@ -28,14 +27,7 @@
     "contentFingerprint": { "$ref": "#/$defs/fingerprint" },
     "workflow": { "$ref": "#/$defs/workflowBinding" },
     "skill": { "$ref": "#/$defs/skill" },
-    "status": {
-      "oneOf": [
-        { "$ref": "#/$defs/candidateStatus" },
-        { "$ref": "#/$defs/activeStatus" },
-        { "$ref": "#/$defs/retirementCandidateStatus" },
-        { "$ref": "#/$defs/retiredStatus" }
-      ]
-    },
+    "status": { "$ref": "#/$defs/activeStatus" },
     "authority": {
       "type": "object",
       "additionalProperties": false,
@@ -70,13 +62,11 @@
       "uniqueItems": true,
       "items": { "$ref": "#/$defs/reference" }
     },
-    "source": { "$ref": "#/$defs/sourceProvenance" },
     "privacy": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["rawSourceIncluded", "workspaceSpecificValuesIncluded", "credentialsIncluded", "privateInputsIncluded", "providerResponsesIncluded"],
+      "required": ["workspaceSpecificValuesIncluded", "credentialsIncluded", "privateInputsIncluded", "providerResponsesIncluded"],
       "properties": {
-        "rawSourceIncluded": { "const": false },
         "workspaceSpecificValuesIncluded": { "const": false },
         "credentialsIncluded": { "const": false },
         "privateInputsIncluded": { "const": false },
@@ -88,24 +78,6 @@
   "$defs": {
     "version": { "type": "string", "pattern": "^(?:0|[1-9][0-9]*)[.](?:0|[1-9][0-9]*)[.](?:0|[1-9][0-9]*)$" },
     "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
-    "evidenceReference": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["path", "fingerprint", "host"],
-      "properties": {
-        "path": { "type": "string", "pattern": "^soter/evidence/development/[A-Za-z0-9._/-]+[.]json$" },
-        "fingerprint": { "$ref": "#/$defs/fingerprint" },
-        "host": { "enum": ["codex", "claude"] }
-      }
-    },
-    "retirementEvidenceReference": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["path"],
-      "properties": {
-        "path": { "type": "string", "pattern": "^soter/fixtures/[A-Za-z0-9._+/-]+[.]json$" }
-      }
-    },
     "workflowBinding": {
       "type": "object",
       "additionalProperties": false,
@@ -132,72 +104,15 @@
         "defaultPrompt": { "type": "string", "minLength": 12, "maxLength": 300 }
       }
     },
-    "candidateStatus": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["state", "reasonCode", "proceduralAuthority", "behaviorParity", "delivery", "evidence", "permittedNextAction"],
-      "properties": {
-        "state": { "const": "candidate" },
-        "reasonCode": { "const": "WORKFLOW_GUIDE_PARITY_NOT_EVALUATED" },
-        "proceduralAuthority": { "const": "legacy" },
-        "behaviorParity": { "const": "not-evaluated" },
-        "delivery": { "const": "preview-only" },
-        "evidence": { "type": "array", "maxItems": 0 },
-        "permittedNextAction": { "const": "evaluate-host-projections" }
-      }
-    },
     "activeStatus": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["state", "reasonCode", "proceduralAuthority", "behaviorParity", "delivery", "evidence", "permittedNextAction"],
+      "required": ["state", "reasonCode", "delivery", "permittedNextAction"],
       "properties": {
         "state": { "const": "active" },
         "reasonCode": { "const": "WORKFLOW_GUIDE_ACTIVE" },
-        "proceduralAuthority": { "const": "target" },
-        "behaviorParity": { "enum": ["passed", "intentional-change"] },
         "delivery": { "const": "host-skill" },
-        "evidence": {
-          "type": "array",
-          "minItems": 2,
-          "maxItems": 2,
-          "uniqueItems": true,
-          "items": { "$ref": "#/$defs/evidenceReference" }
-        },
         "permittedNextAction": { "const": "invoke-through-selected-host" }
-      }
-    },
-    "retirementCandidateStatus": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["state", "reasonCode", "proceduralAuthority", "behaviorParity", "delivery", "evidence", "permittedNextAction"],
-      "properties": {
-        "state": { "const": "retirement-candidate" },
-        "reasonCode": { "const": "WORKFLOW_GUIDE_RETIREMENT_AWAITING_MIGRATION" },
-        "proceduralAuthority": { "const": "legacy" },
-        "behaviorParity": { "const": "not-evaluated" },
-        "delivery": { "const": "unavailable" },
-        "evidence": { "type": "array", "maxItems": 0 },
-        "permittedNextAction": { "const": "prove-retirement" }
-      }
-    },
-    "retiredStatus": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["state", "reasonCode", "proceduralAuthority", "behaviorParity", "delivery", "evidence", "permittedNextAction"],
-      "properties": {
-        "state": { "const": "retired" },
-        "reasonCode": { "const": "WORKFLOW_GUIDE_RETIRED" },
-        "proceduralAuthority": { "const": "none" },
-        "behaviorParity": { "const": "intentional-change" },
-        "delivery": { "const": "unavailable" },
-        "evidence": {
-          "type": "array",
-          "minItems": 1,
-          "uniqueItems": true,
-          "items": { "$ref": "#/$defs/retirementEvidenceReference" },
-          "maxItems": 1
-        },
-        "permittedNextAction": { "const": "inspect-replacement" }
       }
     },
     "stepDetail": {
@@ -242,36 +157,10 @@
       "required": ["id", "kind", "label", "target"],
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
-        "kind": { "enum": ["architecture", "contract", "configuration", "pack", "workflow", "command"] },
+        "kind": { "enum": ["architecture", "contract", "configuration", "pack", "workflow", "command", "capability"] },
         "label": { "type": "string", "minLength": 3, "maxLength": 120 },
         "target": { "type": "string", "minLength": 3, "maxLength": 240 }
       }
-    },
-    "sourceProvenance": {
-      "oneOf": [
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["presence", "legacyPath", "legacyFingerprint", "normalization"],
-          "properties": {
-            "presence": { "const": "present" },
-            "legacyPath": { "type": "string", "pattern": "^[.]claude/skills/[a-z0-9]+(?:-[a-z0-9]+)*/SKILL[.]md$" },
-            "legacyFingerprint": { "$ref": "#/$defs/fingerprint" },
-            "normalization": { "enum": ["behavior-preserving-with-explicit-authority-boundary", "intentional-change-with-explicit-authority-boundary"] }
-          }
-        },
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["presence", "legacyPath", "legacyFingerprint", "normalization"],
-          "properties": {
-            "presence": { "const": "removed" },
-            "legacyPath": { "type": "string", "pattern": "^[.]claude/skills/[a-z0-9]+(?:-[a-z0-9]+)*/SKILL[.]md$" },
-            "legacyFingerprint": { "$ref": "#/$defs/fingerprint" },
-            "normalization": { "enum": ["behavior-preserving-with-explicit-authority-boundary", "intentional-change-with-explicit-authority-boundary"] }
-          }
-        }
-      ]
     },
     "limitations": {
       "type": "array",

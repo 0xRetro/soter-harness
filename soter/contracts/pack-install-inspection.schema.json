@@ -79,14 +79,13 @@
     "effect": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "sequence", "action", "pack", "role", "migrationRole", "beforeFingerprint", "afterFingerprint", "reasonCode", "effectFingerprint"],
+      "required": ["id", "sequence", "action", "pack", "role", "beforeFingerprint", "afterFingerprint", "reasonCode", "effectFingerprint"],
       "properties": {
         "id": { "type": "string" },
         "sequence": { "type": "integer", "minimum": 0 },
         "action": { "enum": ["create", "replace", "remove"] },
         "pack": { "type": "string" },
-        "role": { "enum": ["manifest", "definition", "implementation", "projection", "evaluation", "fixture", "migration"] },
-        "migrationRole": { "type": "boolean" },
+        "role": { "enum": ["manifest", "definition", "implementation", "projection", "evaluation", "fixture"] },
         "beforeFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
         "afterFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
         "reasonCode": { "enum": ["PACK_INSTALL_FILE_CREATE", "PACK_INSTALL_FILE_REPLACE", "PACK_INSTALL_FILE_REMOVE"] },
@@ -123,7 +122,7 @@
     "nullableCheckpoint": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/checkpoint" }] },
     "resume": { "type": "object", "additionalProperties": false, "required": ["classification", "reasonCode", "reason", "permittedNextAction"], "properties": { "classification": { "enum": ["safe", "requires-review", "unavailable"] }, "reasonCode": { "type": "string", "pattern": "^PACK_INSTALL_[A-Z0-9_]+$" }, "reason": { "type": "string", "minLength": 12 }, "permittedNextAction": { "enum": ["create-request", "renew-request", "confirm-request", "start-install", "execute-checkpoint", "recover-checkpoint", "inspect-install", "none"] } } },
     "claims": { "type": "object", "additionalProperties": false, "required": ["localReleaseBytes", "dependencyConstraints", "localMaterialization", "installedRegistry", "configured", "hostRealization", "npmDependencies", "ready", "verified", "healthy", "networkAvailability", "publisherIdentity", "legalSufficiency", "trust"], "properties": { "localReleaseBytes": { "const": "passed" }, "dependencyConstraints": { "const": "passed" }, "localMaterialization": { "enum": ["unknown", "passed", "failed"] }, "installedRegistry": { "enum": ["unknown", "passed", "failed"] }, "configured": { "const": "unknown" }, "hostRealization": { "const": "unknown" }, "npmDependencies": { "const": "not-evaluated" }, "ready": { "const": "unknown" }, "verified": { "const": "unknown" }, "healthy": { "const": "unknown" }, "networkAvailability": { "const": "unknown" }, "publisherIdentity": { "const": "not-evaluated" }, "legalSufficiency": { "const": "not-evaluated" }, "trust": { "const": "not-evaluated" } } },
-    "authority": { "type": "object", "additionalProperties": false, "required": ["fetch", "install", "upgrade", "uninstall", "configure", "realizeHost", "executeMigration", "runPackageManager", "network", "publish", "trust"], "properties": { "fetch": { "const": false }, "install": { "const": false }, "upgrade": { "const": false }, "uninstall": { "const": false }, "configure": { "const": false }, "realizeHost": { "const": false }, "executeMigration": { "const": false }, "runPackageManager": { "const": false }, "network": { "const": false }, "publish": { "const": false }, "trust": { "const": false } } },
+    "authority": { "type": "object", "additionalProperties": false, "required": ["fetch", "install", "upgrade", "uninstall", "configure", "realizeHost", "runPackageManager", "network", "publish", "trust"], "properties": { "fetch": { "const": false }, "install": { "const": false }, "upgrade": { "const": false }, "uninstall": { "const": false }, "configure": { "const": false }, "realizeHost": { "const": false }, "runPackageManager": { "const": false }, "network": { "const": false }, "publish": { "const": false }, "trust": { "const": false } } },
     "privacy": { "type": "object", "additionalProperties": false, "required": ["targetRootIncluded", "capsulePathsIncluded", "capsuleBytesIncluded", "priorBytesIncluded", "candidateBytesIncluded", "rawManagedManifestIncluded", "privateStateIncluded", "credentialValuesIncluded", "rawProviderResponsesIncluded"], "properties": { "targetRootIncluded": { "const": false }, "capsulePathsIncluded": { "const": false }, "capsuleBytesIncluded": { "const": false }, "priorBytesIncluded": { "const": false }, "candidateBytesIncluded": { "const": false }, "rawManagedManifestIncluded": { "const": false }, "privateStateIncluded": { "const": false }, "credentialValuesIncluded": { "const": false }, "rawProviderResponsesIncluded": { "const": false } } }
   }
 }

@@ -1,0 +1,170 @@
+{
+  "$contract": "soter://contracts/configuration/v1",
+  "contractVersion": "1.0.0",
+  "name": "project-page-reconciliation",
+  "base": {
+    "kernel": "kernel.soter",
+    "core": "core.runtime"
+  },
+  "packs": [
+    {
+      "id": "context.projects",
+      "source": "dependency",
+      "reason": "Projects Context owns portable Project fields, page identity, and policy meaning."
+    },
+    {
+      "id": "automation.project-page-reconciliation",
+      "source": "user",
+      "reason": "The user selected one exact bounded Project field and page-text reconciliation workflow."
+    },
+    {
+      "id": "integration.notion",
+      "source": "binding",
+      "reason": "The selected Project instance lives in the configured Notion authority behind portable Project and document capabilities."
+    }
+  ],
+  "bindings": [
+    {
+      "capability": "projects.records.read",
+      "providerPack": "integration.notion",
+      "authorities": [
+        "authority.projects.definition",
+        "authority.projects.instance"
+      ],
+      "secretRef": "secret-ref.notion",
+      "reason": "The configured provider supplies the exact policy selection and selected Project fields plus mapped page body."
+    },
+    {
+      "capability": "projects.schema.read",
+      "providerPack": "integration.notion",
+      "authorities": [
+        "authority.projects.instance"
+      ],
+      "secretRef": "secret-ref.notion",
+      "reason": "The current mapped Project schema must allow every selected property value before review."
+    },
+    {
+      "capability": "projects.records.update",
+      "providerPack": "integration.notion",
+      "authorities": [
+        "authority.projects.instance"
+      ],
+      "secretRef": "secret-ref.notion",
+      "reason": "Only exact reviewed projectType and status patches may be compiled for a later governed transaction."
+    },
+    {
+      "capability": "documents.content.update",
+      "providerPack": "integration.notion",
+      "authorities": [
+        "authority.projects.instance"
+      ],
+      "secretRef": "secret-ref.notion",
+      "reason": "Only exact reviewed one-match text replacements may be compiled for a later governed transaction."
+    }
+  ],
+  "sources": [
+    {
+      "id": "source.policy.project-page-reconciliation.capture",
+      "capability": "projects.records.read",
+      "authority": "authority.projects.definition",
+      "input": {
+        "recordTypes": ["project-capture-policy"],
+        "ids": ["policy.project-capture"],
+        "limit": 2
+      },
+      "readiness": {
+        "mode": "probe-read",
+        "reason": "Connected readiness must prove the exact portable Project policy selection can be read and normalized."
+      },
+      "consumers": [
+        {
+          "pack": "automation.project-page-reconciliation",
+          "purpose": "project-capture-policy",
+          "subjects": ["project-page-reconciliation"],
+          "reason": "The portable Project policy owns allowed Project types and statuses."
+        }
+      ],
+      "reason": "Property values remain governed portable meaning rather than provider-specific workspace conventions."
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.projects.definition",
+      "role": "definition",
+      "subject": "projects.records",
+      "uri": "soter-fixture://configuration-template/notion/authority/project-policies",
+      "reason": "Portable Project policy definitions govern allowed values."
+    },
+    {
+      "id": "authority.projects.instance",
+      "role": "instance",
+      "subject": "projects.records",
+      "uri": "soter-fixture://configuration-template/notion/authority/projects",
+      "reason": "The exact selected Project record and page are authoritative only for their observed state."
+    },
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "uri": "soter-fixture://configuration-template/notion/account/operator",
+      "reason": "The provider supplies typed effects without becoming Project semantic authority."
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "uri": "soter-state://runs",
+      "reason": "Private local runtime state owns the exact selected work, values, and checkpoints."
+    }
+  ],
+  "effectPolicies": {
+    "read": {
+      "mode": "allow",
+      "reason": "Exact policy, schema, Project field, and page-body observations are allowed for private preparation."
+    },
+    "disclosure": {
+      "mode": "allow",
+      "reason": "Selected private values may enter local review state but not general inspection, fixtures, logs, or evidence."
+    },
+    "write": {
+      "mode": "confirm",
+      "reason": "Every selected Project field or body change requires an exact later batch, approval, one-time start, checkpoint, and verification."
+    },
+    "dispatch": {
+      "mode": "prohibit",
+      "reason": "Project page reconciliation sends and publishes nothing."
+    },
+    "destructive": {
+      "mode": "prohibit",
+      "reason": "Delete, archive, append-as-replacement, whole-page replacement, structural recreation, and reorder are prohibited."
+    }
+  },
+  "secretRefs": [
+    {
+      "id": "secret-ref.notion",
+      "provider": "host",
+      "key": "NOTION_OAUTH"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "reason": "This tracked configuration exercises Codex while the Automation remains compatible with Codex and Claude."
+  },
+  "settings": {
+    "integration.notion": {
+      "targets": {
+        "policies": "soter-fixture://configuration-template/notion/collection/policies",
+        "organizations": "soter-fixture://configuration-template/notion/collection/organizations",
+        "contacts": "soter-fixture://configuration-template/notion/collection/contacts",
+        "projects": "soter-fixture://configuration-template/notion/collection/projects",
+        "updates": "soter-fixture://configuration-template/notion/collection/updates",
+        "tasks": "soter-fixture://configuration-template/notion/collection/tasks",
+        "meetings": "soter-fixture://configuration-template/notion/collection/meetings",
+        "documents": "soter-fixture://configuration-template/notion/collection/documents",
+        "channels": "soter-fixture://configuration-template/notion/collection/channels"
+      }
+    }
+  }
+}

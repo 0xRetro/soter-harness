@@ -2,31 +2,49 @@
   "$contract": "soter://contracts/capability/v1",
   "contractVersion": "1.0.0",
   "id": "projects.records.update",
-  "version": "1.0.0",
-  "purpose": "Updates named fields on one typed Project record through an expected-version precondition and explicit effect evidence.",
+  "version": "1.1.0",
+  "purpose": "Updates one exact non-empty portable Project patch through an expected-version precondition and explicit effect evidence.",
   "portability": "portable",
   "inputSchema": {
     "type": "object",
-    "required": [
-      "recordType",
-      "id",
-      "expectedVersion",
-      "patch"
-    ],
+    "additionalProperties": false,
+    "required": ["recordType", "id", "expectedVersion", "patch"],
     "properties": {
-      "recordType": {
-        "type": "string"
+      "recordType": { "enum": ["project", "project-feed-entry"] },
+      "id": { "type": "string", "minLength": 1 },
+      "expectedVersion": { "type": "string", "minLength": 1 },
+      "patch": {}
+    },
+    "oneOf": [
+      {
+        "properties": {
+          "recordType": { "const": "project" },
+          "patch": {
+            "type": "object",
+            "additionalProperties": false,
+            "minProperties": 1,
+            "maxProperties": 2,
+            "properties": {
+              "projectType": { "type": ["string", "null"], "minLength": 1 },
+              "status": { "type": ["string", "null"], "minLength": 1 }
+            }
+          }
+        }
       },
-      "id": {
-        "type": "string"
-      },
-      "expectedVersion": {
-        "type": "string"
-      },
-      "patch": {
-        "type": "object"
+      {
+        "properties": {
+          "recordType": { "const": "project-feed-entry" },
+          "patch": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["processed"],
+            "properties": {
+              "processed": { "type": "boolean" }
+            }
+          }
+        }
       }
-    }
+    ]
   },
   "outputSchema": {
     "type": "object",
@@ -71,8 +89,11 @@
       },
       "changedFields": {
         "type": "array",
+        "minItems": 1,
+        "uniqueItems": true,
         "items": {
-          "type": "string"
+          "type": "string",
+          "minLength": 1
         }
       },
       "provenance": {
@@ -107,9 +128,9 @@
     "key": "recordType + id + expectedVersion + patch"
   },
   "retry": {
-    "safe": true,
-    "maxAttempts": 2,
-    "checkpoint": "Re-fetch the record and re-evaluate the patch after a version conflict."
+    "safe": false,
+    "maxAttempts": 0,
+    "checkpoint": "Ambiguous Project updates require exact read-only checkpoint reconciliation; never retry the write automatically."
   },
   "errors": [
     "authentication",
@@ -128,9 +149,12 @@
     "maxAgeSeconds": null
   },
   "health": {
-    "check": "Validate a contained expected-version update against a fixture store.",
-    "fixture": "soter/scenarios/project-pulse/happy-path.scenario.json",
-    "containedVerification": "Prove named-field preservation, version conflicts, retries, and returned effect evidence."
+    "check": "Validate contained expected-version Project and project-feed-entry updates against a fixture store.",
+    "fixture": "soter/fixtures/providers/notion/workspace-records.json",
+    "containedVerification": "Prove exact non-empty patch scope, untouched-field preservation, version conflicts, no automatic retry, and returned effect evidence."
   },
-  "providerLimitations": []
+  "providerLimitations": [
+    "Project updates are limited to projectType and status; name, relations, dates, page content, and structural edits require separate governed workflows.",
+    "Project feed-entry updates remain limited to the processed flag."
+  ]
 }

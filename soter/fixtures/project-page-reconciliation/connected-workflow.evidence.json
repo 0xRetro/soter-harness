@@ -1,0 +1,226 @@
+{
+  "$contract": "soter://contracts/evidence/v2",
+  "contractVersion": "2.0.0",
+  "id": "evidence.project-page-reconciliation.connected-workflow.fixture",
+  "createdAt": "2026-08-03T12:00:00.000Z",
+  "claimFamily": "transaction",
+  "claim": "One fixture-contained connected-route workflow preserved exact private review, approval, single-use start, write, and read-after-write verification boundaries without a live provider effect.",
+  "subject": {
+    "type": "run",
+    "id": "run.project-page-reconciliation.connected-acquisition.c46135ea506f046275090ac8",
+    "version": null
+  },
+  "configurationLockFingerprint": "sha256:fa2ca701784abcf96f6b72d1fd724cedf2aab85bae63d696bf4c2a2915c7ec55",
+  "graphFingerprint": "sha256:e3e3c4ad28874a714d6c2e6b4e2b23f5057ce55a69529dc4074f5bcc2eecd3fd",
+  "dependencies": [
+    {
+      "id": "kernel.soter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:a329fb60fdd3e46a9cdce1b0f6d5ea574812105be6bd235eb998a347c3339bfa"
+    },
+    {
+      "id": "core.runtime",
+      "version": "0.1.0",
+      "fingerprint": "sha256:b922eb238bd0cd0c3a77bc63d68f92ceab0a78d60a13bea430a9ed48f8be4c1c"
+    },
+    {
+      "id": "context.projects",
+      "version": "0.1.0",
+      "fingerprint": "sha256:e8b68449ec9582d769c56d9b9cdf9ed3a6f220c15593a614ac13e9a656cf0ce5"
+    },
+    {
+      "id": "automation.project-page-reconciliation",
+      "version": "0.1.0",
+      "fingerprint": "sha256:cb6067ac463a47f176ad50971508747bceadd4d0d5cd60f98a173faac56f8a6b"
+    },
+    {
+      "id": "integration.notion",
+      "version": "0.4.0",
+      "fingerprint": "sha256:cff95b234f5cc4339b13202be4fa4101dc767d755afd99ca336a4c17894c2d9d"
+    }
+  ],
+  "host": {
+    "id": "codex",
+    "adapter": "host.codex",
+    "version": "0.3.1",
+    "manifestFingerprint": "sha256:845e7cecf13f9865f967d3078176bb0d4f0565b18506484b10499d5f60a26621"
+  },
+  "integrations": [
+    {
+      "id": "integration.notion",
+      "version": "0.4.0",
+      "manifestFingerprint": "sha256:cff95b234f5cc4339b13202be4fa4101dc767d755afd99ca336a4c17894c2d9d",
+      "evidenceMaturity": "declared"
+    }
+  ],
+  "authorities": [
+    {
+      "id": "authority.notion.provider",
+      "role": "provider",
+      "subject": "notion.workspace",
+      "declarationFingerprint": "sha256:dd9994588ca27b815bae6a53f7f57b9ce426b8b1a4367b0c3fd885373957ba23"
+    },
+    {
+      "id": "authority.projects.definition",
+      "role": "definition",
+      "subject": "projects.records",
+      "declarationFingerprint": "sha256:5fb9ea27bdd0439408cdbc03ccb601baece7341813fbe508580eb2f32050951e"
+    },
+    {
+      "id": "authority.projects.instance",
+      "role": "instance",
+      "subject": "projects.records",
+      "declarationFingerprint": "sha256:6da0683b7dd5c433e9d17713315ad6bdfc7a4369f290df4a62416781593a43e4"
+    },
+    {
+      "id": "authority.run.evidence",
+      "role": "evidence",
+      "subject": "runtime.runs",
+      "declarationFingerprint": "sha256:2a437f2854d617b1dd8ed0d9f09aa372cd39d0adca0fd91704ec5c869aabe0d8"
+    }
+  ],
+  "evaluator": {
+    "id": "automation.project-page-reconciliation.contained-connected-workflow",
+    "version": "0.5.0",
+    "level": "fixture"
+  },
+  "environment": {
+    "containment": "fixture",
+    "runtime": "node"
+  },
+  "acceptanceCriteria": [
+    "One current prepared-work basis produces a deterministic grounded decision and private review proposal.",
+    "No write request exists before an expiring exact-scope request is confirmed.",
+    "The exact approval is consumed once into one durable checkpoint rather than retained as reusable authority.",
+    "The checkpoint observes its declared precondition, one approved write result, and exact read-after-write verification in order.",
+    "The private execution lock derives only from the exact portable tracked template through a closed contained provider substitution.",
+    "Only normalized provider outputs and fingerprints enter durable state or this evidence record."
+  ],
+  "result": "passed",
+  "outcomes": [
+    {
+      "id": "connected-workflow.prepared",
+      "state": "passed"
+    },
+    {
+      "id": "connected-workflow.decision-grounded",
+      "state": "passed"
+    },
+    {
+      "id": "connected-workflow.proposal-reviewed",
+      "state": "passed"
+    },
+    {
+      "id": "connected-workflow.approval-consumed-once",
+      "state": "passed"
+    },
+    {
+      "id": "connected-workflow.verified",
+      "state": "passed"
+    },
+    {
+      "id": "connected-workflow.private-contained-basis",
+      "state": "passed"
+    },
+    {
+      "id": "connected-workflow.live-provider-effect",
+      "state": "not-applicable"
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "prepared-work",
+      "id": "work.project-page-reconciliation.c46135ea506f046275090ac8",
+      "fingerprint": "sha256:457fe82637db8a4c2cf3333b074db0f1300f03362174356e202798d444fc63a5"
+    },
+    {
+      "role": "automation-decision",
+      "id": "decision.project-page-reconciliation.connected-selftest",
+      "fingerprint": "sha256:295398003439965e34b6f4ac15ab9edce0999f41bd000cb7b87589c76e1d5c7f"
+    },
+    {
+      "role": "automation-proposal",
+      "id": "proposal.project-page-reconciliation.connected-selftest",
+      "fingerprint": "sha256:ffeae844ac57a25ed6fada0e4631d5a96448bec0c1d72d23be5047702c175922"
+    },
+    {
+      "role": "connected-change-set",
+      "id": "changeset.project-page-reconciliation.connected-selftest",
+      "fingerprint": "sha256:ac2e6eaa82abeeabd38ed93cb81e364ad74fd133d54f3014f3852caef7815509"
+    },
+    {
+      "role": "connected-operation-batch",
+      "id": "batch.project-page-reconciliation.connected-selftest",
+      "fingerprint": "sha256:00093f9d595750ddec20ead275ee4da697a328ed6542270c3164fc45d63e2ae8"
+    },
+    {
+      "role": "approval",
+      "id": "approval.project-page-reconciliation.connected-selftest",
+      "fingerprint": "sha256:95952166d7b7738ea245a5de3a7588c840da4f46be51a402a89df2d8ac1a7448"
+    },
+    {
+      "role": "approval-consumption",
+      "id": "approval-consumption.project-page-reconciliation.connected-selftest",
+      "fingerprint": "sha256:6b0704e56984acff742e3450f3f14d171c19ab1eeb1c00e74b4889b2b0cf0cb7"
+    },
+    {
+      "role": "connected-transaction-checkpoint",
+      "id": "checkpoint.transaction.project-page-reconciliation.connected-selftest",
+      "fingerprint": "sha256:7002527e52d4691b0e6b5cbf34bb74550af208142e7f8ff1b7e9d1b88cf3121a"
+    }
+  ],
+  "effects": [],
+  "failures": [],
+  "warnings": [],
+  "skipped": [
+    "No live provider authentication, permission, reachability, write, or health was evaluated.",
+    "No readiness, connected verification, health, or proof maturity is promoted by this transaction evidence alone."
+  ],
+  "limitations": [
+    "Host responses are deterministic contained fixtures passed through the connected provider translators; this proves local transaction behavior only.",
+    "The exact private execution lock remains private; this record exposes only its fingerprints and mechanically checked portable applicability projection."
+  ],
+  "freshness": {
+    "policy": "Valid only while every configuration-lock fingerprint remains unchanged.",
+    "validUntil": null
+  },
+  "supersedes": null,
+  "privacy": {
+    "scope": "private",
+    "redactions": [
+      "Credential references and credential values are excluded."
+    ]
+  },
+  "privateContainedBasis": {
+    "kind": "private-active-contained",
+    "version": "1.2.0",
+    "configurationName": "project-page-reconciliation",
+    "privateConfigurationFingerprint": "sha256:ffbc1a810c460c857e0897ee150f997c41a661c850a0713f6d5a7d51c62ce434",
+    "privateLockFingerprint": "sha256:fa2ca701784abcf96f6b72d1fd724cedf2aab85bae63d696bf4c2a2915c7ec55",
+    "privateGraphFingerprint": "sha256:e3e3c4ad28874a714d6c2e6b4e2b23f5057ce55a69529dc4074f5bcc2eecd3fd",
+    "trackedTemplateLockFingerprint": "sha256:805e353eb98e49949bff0c1c24a3851852702eed49a875b0dcb5630c6ef5f583",
+    "trackedTemplateGraphFingerprint": "sha256:a1e16af7a6e020256922b0af9672b7eea50e214213e2a3c39f73a2aef83bde92",
+    "applicabilityProjectionFingerprint": "sha256:ae87c42e82eeb8bcce174d01f695738506cf4a1453f9d7c41a5cf73b201444ea",
+    "substitutions": {
+      "notionTargetCount": 9,
+      "notionDocumentSourceCount": 0,
+      "providerFixtureDocumentCount": 0,
+      "notionOptionMappingScopeCount": 2,
+      "notionOptionMappingEntryCount": 8,
+      "notionOptionMappingScopeFingerprint": "sha256:a1d0c79e6105adb228fcd428b220f764afc4f3fb4feb6b30b166946b457bf7f8",
+      "notionFieldBindingScopeCount": 24,
+      "notionFieldBindingScopeFingerprint": "sha256:6c276857a56cc6aa1ef80e80efdd7e0472582996efbbe15d9b25076b3b194b7e"
+    },
+    "privacy": {
+      "fullPrivateLockIncluded": false,
+      "privateConfigurationPathIncluded": false,
+      "providerTargetValuesIncluded": false,
+      "providerSourceValuesIncluded": false,
+      "providerOptionValuesIncluded": false,
+      "providerFieldNamesIncluded": false,
+      "rawProviderResponsesIncluded": false,
+      "privateInputsIncluded": false
+    },
+    "basisFingerprint": "sha256:68e3c4396ee020f3c613312895502fd5c3ebc61d208eb64699fe7756867b1ad5"
+  }
+}

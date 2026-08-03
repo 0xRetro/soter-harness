@@ -17,7 +17,6 @@
     "qualityRequirements",
     "evaluationPolicy",
     "governance",
-    "intentionalChanges",
     "privacy",
     "limitations"
   ],
@@ -47,7 +46,6 @@
         "canonicalAuthority",
         "roles",
         "scaffolding",
-        "legacyMarkdownTemplates",
         "providerSpecificBehavior",
         "privateMaterial",
         "governingContracts"
@@ -56,15 +54,14 @@
         "canonicalAuthority": { "const": "one-exact-contract-or-definition" },
         "roles": {
           "type": "array",
-          "minItems": 6,
-          "maxItems": 6,
+          "minItems": 5,
+          "maxItems": 5,
           "uniqueItems": true,
           "items": {
-            "enum": ["definition", "implementation", "projection", "evaluation", "fixture", "migration"]
+            "enum": ["definition", "implementation", "projection", "evaluation", "fixture"]
           }
         },
         "scaffolding": { "const": "derived-from-governing-contract" },
-        "legacyMarkdownTemplates": { "const": "compatibility-only" },
         "providerSpecificBehavior": { "const": "integration-or-host-owned" },
         "privateMaterial": { "const": "references-and-fingerprints-only" },
         "governingContracts": {
@@ -192,38 +189,13 @@
         "authorityExpansion",
         "definitionChange",
         "promotion",
-        "decisionRecords",
-        "fallbackRemoval"
+        "decisionRecords"
       ],
       "properties": {
         "authorityExpansion": { "const": "explicit-grant-or-confirmation" },
         "definitionChange": { "const": "separate-develop-run" },
         "promotion": { "const": "evidence-and-policy-gated" },
-        "decisionRecords": { "const": "optional-for-ordinary-development" },
-        "fallbackRemoval": { "const": "exact-parity-or-intentional-change-evidence" }
-      }
-    },
-    "intentionalChanges": {
-      "type": "array",
-      "minItems": 6,
-      "uniqueItems": true,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["id", "decision"],
-        "properties": {
-          "id": {
-            "enum": [
-              "markdown-classification-retired",
-              "copy-template-authority-retired",
-              "mandatory-adr-ceremony-retired",
-              "host-line-budgets-host-scoped",
-              "human-only-merge-not-runtime-authority",
-              "definition-only-not-executable"
-            ]
-          },
-          "decision": { "$ref": "#/$defs/text" }
-        }
+        "decisionRecords": { "const": "optional-for-ordinary-development" }
       }
     },
     "privacy": {

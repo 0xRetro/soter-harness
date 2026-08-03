@@ -204,10 +204,10 @@ function readInput(conversationIdentityFingerprint) {
 export function compileSlackChannelConnectedOperations({ batch, material }) {
   const automationId = batch.work?.automationId || batch.automationId;
   if (automationId !== 'automation.slack-channel-ingestion'
-    || material.batch.id !== batch.id
-    || material.batch.fingerprint !== batch.fingerprint
+    || material.selection.id !== batch.id
+    || material.selection.fingerprint !== batch.fingerprint
     || material.actions.length !== batch.actions.length) {
-    throw new Error('Slack channel connected compiler requires one exact selected review batch.');
+    throw new Error('Slack channel connected compiler requires one exact review-only candidate selection.');
   }
   const operations = [];
   for (const action of material.actions) {

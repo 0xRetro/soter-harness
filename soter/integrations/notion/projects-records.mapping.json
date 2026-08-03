@@ -4,7 +4,7 @@
   "id": "mapping.integration.notion.projects-records",
   "pack": "integration.notion",
   "provider": "provider.integration.notion.mcp",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "contextModel": "model.context.projects.records",
   "settingsDefinition": "settings.integration.notion",
   "capabilities": [
@@ -107,6 +107,7 @@
       "capabilities": [
         "projects.records.read",
         "projects.records.create",
+        "projects.records.update",
         "projects.schema.read"
       ],
       "fields": [
@@ -126,7 +127,8 @@
           "valueMapping": "configured-bijection",
           "decode": "scalar",
           "writeOperations": [
-            "create"
+            "create",
+            "update"
           ]
         },
         {
@@ -136,7 +138,8 @@
           "valueMapping": "configured-bijection",
           "decode": "scalar",
           "writeOperations": [
-            "create"
+            "create",
+            "update"
           ]
         },
         {
@@ -269,8 +272,9 @@
   ],
   "limitations": [
     "This mapping translates Project definitions and records only; CRM, Tasks, and Meetings retain independent Context ownership even when the configured Notion databases contain relations among them.",
-    "Portable milestones remain embedded project work meaning in this revision and are not independently mapped to a Notion target.",
+    "Portable milestones remain embedded project work meaning and are not independently mapped to a Notion target.",
     "Project milestone checklist tags live in project page content rather than mapped database properties; this mapping does not expose them as projects.records.update fields.",
+    "Project property updates expose only projectType and status through exact configured choice translation; name, relations, dates, page content, and structural changes are not update-scoped.",
     "Schema compatibility is not established by this declaration; an exact-lock private probe must observe current target schemas."
   ]
 }

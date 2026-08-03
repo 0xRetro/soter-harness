@@ -4,8 +4,8 @@
   "id": "context.task-capture.preparation-fixture",
   "runId": "run.task-capture.preparation-fixture",
   "createdAt": "2026-07-16T15:00:00.000Z",
-  "configurationLockFingerprint": "sha256:f1029c025a6331b6763564d4cb2d856e01bf3fd1ec28ae9f2f38ef8674a296a9",
-  "graphFingerprint": "sha256:a8d00ad86cf50f2e87bbd3a941732a06164a223a342e65af4435db9adbb3985d",
+  "configurationLockFingerprint": "sha256:24152d28d8b513c0944566244586ed6033ec2e82c1322bddffeb77f6f99554af",
+  "graphFingerprint": "sha256:1fd75ed10624e48d66e208376dfe11f2b6dfa3fe75995e9445778dcd2d864624",
   "containment": "fixture",
   "entries": [
     {
@@ -16,18 +16,18 @@
       "capability": "tasks.records.read",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "observedAt": "2026-07-16T15:00:00.000Z",
       "freshness": "passed",
       "provenance": {
         "provider": "notion-fixture",
         "authority": "authority.tasks.definition",
         "mapping": "mapping.integration.notion.tasks-records",
-        "mappingVersion": "0.2.0",
+        "mappingVersion": "0.4.0",
         "sourceKind": "fixture",
-        "sourceReferenceFingerprint": "sha256:936c53c3ece808f5fa6f91fc1f79a8dae3151b9197826fba1bc0221917dad79f"
+        "sourceReferenceFingerprint": "sha256:f480b878a118346cabe6f66afc853da8477fcaed7fa81d79cdbd0998d4f6f29a"
       },
-      "valueFingerprint": "sha256:9976415986c2fc7c6d278df061d18efe01dab87c0776ea1b88e652a090260278",
+      "valueFingerprint": "sha256:4a8ce4bc8e4fe41997e13c9adaa3dc15264b00327d0d6f10a2364f50baaed32f",
       "value": {
         "records": [
           {
@@ -61,9 +61,9 @@
           "provider": "notion-fixture",
           "authority": "authority.tasks.definition",
           "mapping": "mapping.integration.notion.tasks-records",
-          "mappingVersion": "0.2.0",
+          "mappingVersion": "0.4.0",
           "sourceKind": "fixture",
-          "sourceReferenceFingerprint": "sha256:936c53c3ece808f5fa6f91fc1f79a8dae3151b9197826fba1bc0221917dad79f"
+          "sourceReferenceFingerprint": "sha256:f480b878a118346cabe6f66afc853da8477fcaed7fa81d79cdbd0998d4f6f29a"
         },
         "observedAt": "2026-07-16T15:00:00.000Z"
       }
@@ -76,18 +76,18 @@
       "capability": "projects.records.read",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "observedAt": "2026-07-16T15:00:00.000Z",
       "freshness": "passed",
       "provenance": {
         "provider": "notion-fixture",
         "authority": "authority.projects.instance",
         "mapping": "mapping.integration.notion.projects-records",
-        "mappingVersion": "0.2.0",
+        "mappingVersion": "0.4.0",
         "sourceKind": "fixture",
-        "sourceReferenceFingerprint": "sha256:c70c03079333c68d3f53d04b599349d4a824ad6ea9021fdc1bb3fe529e5d80be"
+        "sourceReferenceFingerprint": "sha256:06611ce2387850fc65b5a25c52e32699f06a2ed9c4843e40c96942d8ab3ab090"
       },
-      "valueFingerprint": "sha256:b3e00786691fb400c3ab643538b947c81a48d73d472503ac986f5caaadf3334d",
+      "valueFingerprint": "sha256:2e8605d9784ce62763fad8c46143fddd6490bffb4eeb5dd0fc0500e7d2bbabf0",
       "value": {
         "records": [
           {
@@ -114,9 +114,9 @@
           "provider": "notion-fixture",
           "authority": "authority.projects.instance",
           "mapping": "mapping.integration.notion.projects-records",
-          "mappingVersion": "0.2.0",
+          "mappingVersion": "0.4.0",
           "sourceKind": "fixture",
-          "sourceReferenceFingerprint": "sha256:c70c03079333c68d3f53d04b599349d4a824ad6ea9021fdc1bb3fe529e5d80be"
+          "sourceReferenceFingerprint": "sha256:06611ce2387850fc65b5a25c52e32699f06a2ed9c4843e40c96942d8ab3ab090"
         },
         "observedAt": "2026-07-16T15:00:00.000Z"
       }
@@ -129,7 +129,7 @@
       "capability": "workspace.identity.read",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "observedAt": "2026-07-16T15:00:00.000Z",
       "freshness": "passed",
       "provenance": {
@@ -162,22 +162,22 @@
       "capability": "tasks.records.read",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "observedAt": "2026-07-16T15:00:00.000Z",
       "freshness": "passed",
       "provenance": {
         "provider": "notion-fixture",
         "authority": "authority.tasks.instance",
         "mapping": "mapping.integration.notion.tasks-records",
-        "mappingVersion": "0.2.0",
+        "mappingVersion": "0.4.0",
         "sourceKind": "fixture",
-        "sourceReferenceFingerprint": "sha256:936c53c3ece808f5fa6f91fc1f79a8dae3151b9197826fba1bc0221917dad79f"
+        "sourceReferenceFingerprint": "sha256:f480b878a118346cabe6f66afc853da8477fcaed7fa81d79cdbd0998d4f6f29a"
       },
-      "valueFingerprint": "sha256:a4ace05c91058e27ddaa6cbf4d6ac7c21c26b9b30184524741f2cd6d933202fe",
+      "valueFingerprint": "sha256:9c330252455f8bfe637754602e33ec9ec5202a396a39f116d896553712c26166",
       "value": {
         "candidateCount": 0,
         "candidateIds": [],
-        "providerOutputFingerprint": "sha256:dc416bdb7afff80f9afac6292189bbc5b387174d6074f3a1b0eb297848d54542"
+        "providerOutputFingerprint": "sha256:97b78072b952635a1acf54851280f95f01c2ac3fbba5b89b51895653905e84d6"
       }
     }
   ],

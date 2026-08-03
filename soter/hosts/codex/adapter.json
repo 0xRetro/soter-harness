@@ -161,6 +161,6 @@
     "scenarios": []
   },
   "limitations": [
-    "The adapter can deterministically project selected active workflow guides as explicit-only repository skills, but candidate guides remain excluded; clean Codex startup, skill discovery, connector authentication, real provider dispatch through Soter, lifecycle judgment, and end-to-end behavior conformance are not proven."
+    "The adapter can deterministically project selected active workflow guides as explicit-only repository skills, but unselected guides remain excluded; clean Codex startup, skill discovery, connector authentication, real provider dispatch through Soter, lifecycle judgment, and end-to-end behavior conformance are not proven."
   ]
 }

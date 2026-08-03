@@ -39,7 +39,7 @@ const PROPOSAL_TYPE = 'contact-capture.review-proposal';
 const REVIEW_KIND = 'contact-capture-review';
 const ZERO_FINGERPRINT = 'sha256:' + '0'.repeat(64);
 const LIMITATIONS = [
-  'This private review proposal creates no approval, confirmation, continuation, provider call, write, proof, maturity, or migration authority.',
+  'This private review proposal creates no approval, confirmation, continuation, provider call, write, proof, or maturity authority.',
   'Only one exact proposed Contact create may enter a separately reviewed connected batch; approval request, confirmation, one-time start consumption, checkpoint execution, and verification remain separate.'
 ];
 

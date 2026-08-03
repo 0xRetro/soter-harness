@@ -10,7 +10,7 @@
       "authoring-rules",
       "contract-shapes",
       "evaluation-rules",
-      "migration-lifecycle",
+      "version-and-upgrade-rules",
       "verification-requirements"
     ],
     "core": [
@@ -41,11 +41,9 @@
       "implementation",
       "projection",
       "evaluation",
-      "fixture",
-      "migration"
+      "fixture"
     ],
     "scaffolding": "derived-from-governing-contract",
-    "legacyMarkdownTemplates": "compatibility-only",
     "providerSpecificBehavior": "integration-or-host-owned",
     "privateMaterial": "references-and-fingerprints-only",
     "governingContracts": [
@@ -55,7 +53,6 @@
       "soter://contracts/run-envelope/v1",
       "soter://contracts/scenario/v1",
       "soter://contracts/evidence/v2",
-      "soter://contracts/migration/v1",
       "soter://contracts/workflow-definition/v2",
       "soter://contracts/workflow-evaluation-set/v2",
       "soter://contracts/development-request/v1",
@@ -109,7 +106,7 @@
     {
       "id": "promote",
       "sequence": 8,
-      "outcome": "Change canonical authority only under the applicable policy and exact migration evidence.",
+      "outcome": "Change canonical authority only under the applicable policy and exact current evidence.",
       "requiredEvidence": ["authority-transition"]
     },
     {
@@ -145,7 +142,7 @@
     {
       "id": "one-authority",
       "enforcement": "kernel-static",
-      "requirement": "Every canonical definition has one exact authority; projections and bridges cannot redefine it."
+      "requirement": "Every canonical definition has one exact authority; projections cannot redefine it."
     },
     {
       "id": "contract-valid",
@@ -191,11 +188,6 @@
       "id": "limitations-visible",
       "enforcement": "kernel-static",
       "requirement": "Unknown, stale, unavailable, skipped, and not-applicable proof states remain distinct and visible."
-    },
-    {
-      "id": "fallback-governed",
-      "enforcement": "kernel-static",
-      "requirement": "A retained legacy fallback has an exact fingerprint, owner, evidence state, and retirement criteria."
     }
   ],
   "evaluationPolicy": {
@@ -230,35 +222,8 @@
     "authorityExpansion": "explicit-grant-or-confirmation",
     "definitionChange": "separate-develop-run",
     "promotion": "evidence-and-policy-gated",
-    "decisionRecords": "optional-for-ordinary-development",
-    "fallbackRemoval": "exact-parity-or-intentional-change-evidence"
+    "decisionRecords": "optional-for-ordinary-development"
   },
-  "intentionalChanges": [
-    {
-      "id": "markdown-classification-retired",
-      "decision": "Layer and artifact ownership live in governed pack manifests and contracts rather than Markdown frontmatter."
-    },
-    {
-      "id": "copy-template-authority-retired",
-      "decision": "Scaffolds are derived from governing contracts; copying a Markdown mold never creates canonical authority."
-    },
-    {
-      "id": "mandatory-adr-ceremony-retired",
-      "decision": "V2 has no ADR workflow or separate numbered decision archive; rationale stays with governed artifacts, exact development evidence, and change history."
-    },
-    {
-      "id": "host-line-budgets-host-scoped",
-      "decision": "Host instruction and discovery budgets belong to host conformance instead of universal Kernel artifact limits."
-    },
-    {
-      "id": "human-only-merge-not-runtime-authority",
-      "decision": "Repository merge policy is user configuration; Core still requires explicit authority for effects and transitions."
-    },
-    {
-      "id": "definition-only-not-executable",
-      "decision": "A normalized workflow definition preserves inspectable intent but grants no preparation, execution, or effect authority."
-    }
-  ],
   "privacy": {
     "credentialsIncluded": false,
     "privateInputsIncluded": false,
@@ -267,7 +232,7 @@
   },
   "limitations": [
     "This policy governs develop-intent artifacts but does not implement a development Automation or host task runner.",
-    "Legacy authoring and evaluation files remain canonical until exact migration or retirement evidence removes each fallback.",
+    "Development requests grant only their exact declared local effects; provider, publication, merge, and host-realization authority remain separate.",
     "Local structural validity does not establish connected host conformance, provider readiness, behavior verification, or health."
   ]
 }

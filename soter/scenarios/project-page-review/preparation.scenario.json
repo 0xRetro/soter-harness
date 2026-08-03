@@ -45,11 +45,7 @@
       "policy-source-fingerprints",
       "template-and-page-fingerprints",
       "complete-task-coverage-fingerprint",
-      "automation-owned-derived-review-contract-fingerprint",
-      "source-case-exactly-fingerprinted"
+      "automation-owned-derived-review-contract-fingerprint"
     ]
-  },
-  "sourceCases": [
-    "soter/fixtures/providers/notion/workspace-records.json"
-  ]
+  }
 }

@@ -22,7 +22,6 @@ export function WorkflowView({ workflow, configuration }: { workflow: Workflow; 
         <div className="workflow-stamp">
           <code>{workflow.id}</code>
           <span className="mono">v{workflow.version}</span>
-          <StateMark state={workflow.migration.state} />
         </div>
       </header>
 
@@ -120,14 +119,13 @@ export function WorkflowView({ workflow, configuration }: { workflow: Workflow; 
           <p>{executedCount} of {workflow.scenarios.length} scenarios have exact-lock fixture evidence. This does not establish connected readiness or workspace verification.</p>
         </div>
         <div className="scenario-register">
-          <div className="scenario-register-header" aria-hidden="true"><span>Scenario</span><span>Intent</span><span>Contract surface</span><span>Migration</span><span>Execution</span></div>
+          <div className="scenario-register-header" aria-hidden="true"><span>Scenario</span><span>Intent</span><span>Contract surface</span><span>Execution</span></div>
           {workflow.scenarios.map((scenario, index) => (
             <details className="scenario-row" key={scenario.id}>
               <summary>
                 <div className="scenario-name"><span>S{String(index + 1).padStart(2, '0')}</span><div><strong>{readableId(scenario.id)}</strong><code>{scenario.id}</code></div></div>
                 <code>{scenario.intent}</code>
                 <span className="scenario-counts">{scenario.outcomes.length} outcomes · {scenario.invariants.length} invariants · {scenario.evidence.length} evidence</span>
-                <StateMark state={scenario.migrationState} compact />
                 <StateMark state={scenario.execution?.result || scenario.status} compact />
               </summary>
               {scenario.execution
@@ -137,17 +135,10 @@ export function WorkflowView({ workflow, configuration }: { workflow: Workflow; 
                 <ScenarioList label="Expected outcomes" values={scenario.outcomes} />
                 <ScenarioList label="Invariants" values={scenario.invariants} />
                 <ScenarioList label="Required evidence" values={scenario.evidence} />
-                <ScenarioList label="Legacy source tombstones" values={scenario.sourceCases} mono />
               </div>
             </details>
           ))}
         </div>
-      </section>
-
-      <section className="migration-note">
-        <div><span className="eyebrow">Migration boundary</span><h2>{workflow.migration.id || 'No migration record'}</h2></div>
-        <StateMark state={workflow.migration.state} />
-        <ul>{workflow.migration.limitations.map((limitation) => <li key={limitation}>{limitation}</li>)}</ul>
       </section>
     </div>
   );

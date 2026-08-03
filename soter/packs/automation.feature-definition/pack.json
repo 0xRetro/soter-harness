@@ -26,7 +26,7 @@
       { "id": "product.records.read", "version": "^1.0.0", "optional": false, "reason": "Preparation resolves the exact existing feature and selected workflow policy." },
       { "id": "product.schema.read", "version": "^1.0.0", "optional": false, "reason": "Preparation proves the configured feature lifecycle still contains the governed Planned state." },
       { "id": "documents.content.read", "version": "^1.0.0", "optional": false, "reason": "Preparation reads the exact current feature body under expected title and body fingerprint." },
-      { "id": "documents.content.update", "version": "^1.0.0", "optional": false, "reason": "A compatible review may name one exact whole-body replacement, but this migration slice declares no connected compiler." }
+      { "id": "documents.content.update", "version": "^1.0.0", "optional": false, "reason": "A compatible review may name one exact whole-body replacement, but no connected compiler is available." }
     ],
     "provides": []
   },

@@ -1529,5 +1529,5 @@ assert.equal(fingerprintLock(lock), fingerprintLock(resolveConfiguration({
 })));
 
 process.stdout.write(
-  'Project-page review connected plan, selected-work inspection, exact Task coverage, empty-task, privacy, and no-authority selftest passed.\n'
+  'Project-page review review-only candidate preview, selected-work inspection, exact Task coverage, empty-task, privacy, and no-authority selftest passed.\n'
 );

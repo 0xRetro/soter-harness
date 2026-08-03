@@ -1,12 +1,10 @@
-# Soter v2 implementation
+# Soter implementation
 
 This directory is the provider-neutral implementation of the architecture in
 [ARCHITECTURE.md](../ARCHITECTURE.md) and [CONTRACTS.md](../CONTRACTS.md).
 
-`soter/` is the only operational implementation. The final v1 source inventory
-survives as exact migrated-or-retired tombstones and evidence, not as a checked-in
-host tree or compatibility runtime. Codex and Claude delivery files are governed
-private realizations from the same canonical graph.
+`soter/` is the operational implementation. Codex and Claude delivery files are
+governed private realizations from the same canonical graph.
 
 ## Layout
 
@@ -24,9 +22,7 @@ private realizations from the same canonical graph.
   capability sources, readiness modes, and selected pack consumers.
 - hosts contains explicit adapter declarations and projection ownership.
 - scenarios contains behavior-level fixtures and expected evidence.
-- migrations preserves exact v1 source fingerprints, target ownership, parity or
-  intentional-change decisions, evidence, and fallback removal as audit records.
-- kernel contains the target verifier shared by every future host projection.
+- kernel contains the verifier shared by every host projection.
   It rejects contract or capability-schema keywords it cannot enforce and
   self-tests composition, conditional branches, bounds, deep uniqueness, and
   closed privacy shapes so unsupported schema prose cannot masquerade as a
@@ -40,20 +36,21 @@ private realizations from the same canonical graph.
   record requirements in `operator.acquisition`; Kernel resolves those
   requirements through the selected Integration mappings and private target
   settings. Definition-only Automations preserve normalized intent and behavior
-  expectations with `authority=none`; they are not runnable fallbacks.
+  expectations with `authority=none`; they are not runnable workflows.
 - core contains provider-neutral resolution, preflight, evidence, offline and
   connected doctor operations, a shared execution service, and separate
   resumable capability-call, versioned sequential operation-plan, explicit
   sequential provider-probe-plan, and
-  approval-bound connected-transaction bridges. The
+  approval-bound connected-transaction paths. The
   CLI and local Soter MCP server are thin interfaces
-  over that service; future graphical interfaces must consume the same boundary.
+  over that service; graphical interfaces consume the same boundary.
 - studio contains the Electron builder inspector and contained operator surface.
   Its renderer reads one privacy-minimized Core workspace-inspection snapshot
   through a sandboxed preload boundary and never accesses workspace files
-  directly. Project Pulse, Meeting Intake, Task Capture, Organization Capture,
-  Contact Capture, Drive Filing, Feature Capture, Feature Definition, Repository
-  Review, Slack Channel Ingestion, Process Capture, Process Red Team, and Email
+  directly. Project Pulse, Meeting Intake, Task Capture, Project Capture, Project
+  Page Reconciliation, Organization Capture, Contact Capture, Drive Filing,
+  Feature Capture, Feature Definition, Repository Review, Slack Channel Ingestion,
+  Process Capture, Process Red Team, and Email
   triage can request Core's
   same fixture-contained prepared-work operation; no receipt grants approval or
   execution authority.
@@ -63,10 +60,9 @@ private realizations from the same canonical graph.
   artifacts; generated locks and runtime-state examples are not implicitly
   distributable.
 
-## First vertical slice
+## Meeting Intake
 
-Meeting intake is the first declared slice because it crosses all important
-runtime seams:
+Meeting Intake crosses the important runtime seams:
 
 1. Meetings Context supplies Meeting, participant, commitment, summary, and
    transcript-relationship meaning; CRM, Projects, and Tasks supply only the
@@ -79,7 +75,7 @@ runtime seams:
    declares no write capability and holds its complete group before selection.
 5. Scenarios preserve grounding, staleness, deduplication, and gate invariants.
 
-This increment declares the slice and implements deterministic resolution, an
+The implementation provides deterministic resolution, an
 artifact-fingerprinted lock, effect-free preflight, typed local Notion/Otter
 fixture providers, authority-aware context assembly, private cited decision and
 complete-group review, scoped evidence, and an offline doctor report. Core also
@@ -121,17 +117,17 @@ failure category while excluding provider arguments, raw responses, credential
 values, and error messages. This makes an unavailable or unauthenticated route
 different from an unattempted probe without turning an old failure into current
 health evidence. The connected
-Otter provider now
+Otter provider
 translates a canonical meeting URL into exact `fetch({id})` arguments and
 produces an identity-only `get_user_info({})` probe. That probe can pass
 authentication and reachability while leaving transcript compatibility
 unknown. Unobserved transcript response shapes fail closed. The connected
-Notion provider now implements bounded namespaced Context record reads using a
+Notion provider implements bounded namespaced Context record reads using a
 pack-owned settings schema, separate CRM, Projects, Tasks, and Meetings mappings,
 and exact native tool mappings for each host adapter. A connected read is limited
 to one record type and data source per host call, avoiding a hidden dependency on
 plan-gated cross-data-source SQL. Provider database layout never determines
-Context ownership. Core can now orchestrate several such reads through one
+Context ownership. Core orchestrates several such reads through one
 private sequential operation-plan checkpoint, emitting one exact call at a
 time and resuming by checkpoint plus call ID. The sole plan contract is v2;
 fixed-input steps use an empty binding list, while dependent steps bind exact
@@ -195,7 +191,7 @@ or health. An Automation that proposes a choice value must separately acquire
 and bind its current normalized schema before it may become approval-capable.
 Otter's
 identity-only probe still leaves transcript compatibility unknown. Notion
-create and update translators now accept only explicitly mapped fields, but
+create and update translators accept only explicitly mapped fields, but
 internal Core capability and operation-plan preparation still blocks
 confirmation-gated effects and has no public arbitrary-plan entrypoint. Core can
 compile an exact Automation-owned `connected-operation-batch/v2` preview with
@@ -217,15 +213,15 @@ decision privately, binds it to the same paused run and context snapshot, and
 rejects tampering or a competing decision. The contained and MCP selftests prove
 that mechanism, including multiple-candidate disposition and a Codex-produced
 decision, but not live judgment quality.
-Contained evidence now covers exact connected acquisition, decision binding,
+Contained evidence covers exact connected acquisition, decision binding,
 private summary-and-task review, and the mechanical held boundary. Meeting
 Intake declares no create/update capability, binding, or connected compiler
 while `COMPLETE_MEETING_READBACK_UNAVAILABLE` applies. The checked-in connected doctor
 still reports `ready=unknown`: contained transport does not fetch a user's live
 meeting, prove provider transcript or Notion conformance, prove host-level
 judgment quality, establish live write readiness, or verify an external
-summary. The legacy processing guide is removed as an evidenced tombstone
-rather than retained as a fallback.
+summary. The current Context, Automation, Integration, and Core contracts are
+the only authority for this behavior.
 
 ## Distribution foundation
 
@@ -286,7 +282,7 @@ special modes, expiry, and confirmation reuse fail closed.
 release, dependency, fingerprint, effect, lifecycle, blocker, and resume facts,
 but no target path, capsule path or bytes, file bytes, or raw private state.
 Completion proves only exact local materialization and managed-manifest
-integrity. Configuration, host realization, migration execution, uninstall,
+integrity. Configuration, host realization, uninstall,
 network acquisition, package-manager effects, publication, trust, readiness,
 verification, and health remain separate and unevaluated or unknown.
 
@@ -305,16 +301,6 @@ CLI and graphical views should consume:
 Prove the verifier catches planted failures:
 
     node soter/kernel/verify.mjs --selftest
-
-Validate the closed final-v1 inventory and its target-only checker transition.
-The inventory contains 143 exact removed tombstones; the transition catalog
-maps the frozen checker's complete 47-code surface to Kernel rules or explicit
-intentional retirement without invoking the old implementation:
-
-    npm run soter:legacy-inventory:check
-    npm run soter:legacy-inventory:selftest
-    npm run soter:legacy-transition:check
-    npm run soter:legacy-transition:selftest
 
 Prove Core output contracts, stale-lock detection, and honest offline states:
 
@@ -410,7 +396,7 @@ consumption or persists a connected checkpoint. A failure returns
 `CONNECTED_TRANSACTION_PREFLIGHT_FAILED` with a sanitized nested reason code;
 it creates no new consumption, checkpoint, current host request, provider call,
 or write. The confirmed approval remains unconsumed. Successful preparation
-writes private state under `.soter/state` and returns the exact current v2
+writes private state under `.soter/state` and returns the exact current
 precondition or write call. Advance only that native call with
 `connected-transaction-complete --checkpoint ID --call CALL_ID --response
 ABSOLUTE_PRIVATE_PATH`. Each completion returns at most the next write or
@@ -418,7 +404,7 @@ verification call. The MCP equivalent,
 `soter_advance_connected_transaction`, accepts only an already-authorized
 checkpoint, exact call ID, and native response—never an approval document.
 One-time start must be consumed while the approval is current. Restart loads
-the same exact v2 current call from the durable checkpoint; repeating start
+the same exact current call from the durable checkpoint; repeating start
 for the same approval returns the same checkpoint. Ambiguous writes and
 verification failures pause without automatic retry or compensation.
 
@@ -494,8 +480,9 @@ Every declared connected acquisition uses
 `soter_finalize_automation_acquisition`; the matching generic CLI commands are
 `operator-acquisition-prepare` and `operator-acquisition-finalize`. Both require
 the exact Automation and prepared-work IDs, while finalization additionally
-requires the exact completed checkpoint ID. Automation-named acquisition
-aliases are not retained because they bypassed this shared exact binding.
+requires the exact completed checkpoint ID. Only the generic acquisition
+commands exist, preventing an Automation-specific alias from bypassing this
+shared exact binding.
 Core validates the pack finalizer against the exact durable private
 checkpoint, snapshot, run, and paths, but the callable MCP/CLI finalization
 result is a closed sanitized receipt: IDs and fingerprints only, explicit
@@ -529,7 +516,7 @@ remains the pending current call. After it completes or the plan advances,
 replay fails closed instead of returning a later unrelated call.
 Authentication, authorization, validation, conflict, unavailable, not-found,
 unknown, non-read, approval-bearing, exhausted, and prose-checkpoint cases
-remain failed. Paginated attempts are intentionally unsupported in this first
+remain failed. Paginated attempts are intentionally unsupported by this
 recovery boundary rather than resuming an excluded cursor or merging pages
 across attempts. Connected transaction writes retain their separate
 reconciliation model and are never retried through acquisition recovery.
@@ -693,6 +680,25 @@ atomic restricted files, and is ignored by Git. `soter_list_host_calls` and
 This state may contain portable inputs and normalized outputs; it must not be
 distributed as pack content, fixtures, configuration, or evidence.
 
+## Governed development workflows
+
+Seven active host-guided development workflows are selected by the development
+catalog. A realized skill is guidance, not authority. Before using it, call
+`soter_create_development_request` with the workflow, request ID, invocation
+profile, requested outcome, smallest canonical local-effect subset, and exact
+repository-relative targets. Core derives the current active configuration,
+lock, and realized host, fingerprints the normalized targets, creates the
+private request, and returns only a sanitized
+`development-run-inspection/v1`.
+
+Only explicitly requested local reads, writes, commands, and subagent dispatch
+are request-scoped. Provider reads or writes, publication, merge, protected-root
+mutation, and host realization remain separate authority. Use
+`soter_inspect_development_run` with the request ID to recover its sanitized
+current, stale, or closed state after compaction or restart; it executes no work
+and grants no new authority. Target drift closes the recoverable boundary;
+exact result closure alone may account for the declared target changes.
+
 ## Soter Studio
 
 Soter Studio is a developer-launched, unbundled desktop projection for
@@ -718,8 +724,8 @@ claims; labels and maximum test levels never promote Verified by themselves.
 
 Studio presentation, Electron, TypeScript, and test files are not behavior
 artifacts of `core.runtime`, so renderer-only changes do not directly enter the
-Core pack artifact list. This milestone still shares the root npm manifest and
-lock with Core; that install/dependency coupling is unresolved, and dependency
+Core pack artifact list. Studio currently shares the root npm manifest and
+lock with Core; that install/dependency coupling remains, and dependency
 changes can still affect exact Core lock fingerprints. Core retains its Node
 `>=20` support declaration; the Studio toolchain requires Node `>=20.19` when
 running its developer commands.
@@ -769,8 +775,9 @@ status or context option holds the workflow with no proposal or authority. A
 ready decision deterministically produces one sanitized `task-create` proposal
 plus selected-proposal private material.
 
-The older `prepared-review-batch/v1` and `prepared-connected-plan/v1` views
-remain authority-free review aids. The durable Task proposal instead enters the
+The current `review-only-candidate-selection/v1` and
+`review-only-candidate-preview/v1` views are authority-free candidate previews.
+The durable Task proposal instead enters the
 generic `connected-change-set/v2` and `connected-operation-batch/v2` boundary.
 An expiring exact-scope request, exact confirmation, and single-use
 `approval-consumption/v1` are required before Core creates a private
@@ -796,13 +803,31 @@ one exact CRM Organization, and bounded exact-name candidates. Manager and
 client-contact relations are explicitly unavailable; it never reads or persists a
 provider workspace-person identity. Its private
 review contains the complete candidate while sanitized inspection exposes only facts,
-reason codes, counts, and fingerprints. A clean candidate remains held with
-`COMPLETE_PROJECT_READBACK_UNAVAILABLE`: Core currently supports only one
-verification observation per operation and cannot prove both the mapped fields
-and body. The active graph contains no Project-create capability, binding, or
-connected compiler. Project Capture emits zero proposed changes and creates no batch, approval,
-single-use start, checkpoint, provider write, reconciliation, or verified
-outcome. Unsupported provider-shaped fields remain explicitly unavailable.
+reason codes, counts, and fingerprints. A clean candidate exposes one exact
+`projects.records.create` proposal while preparation itself grants no write
+authority. A separately reviewed transaction requires an expiring request,
+exact confirmation, single-use start, duplicate-absence precondition, create,
+and one content-inclusive read-back bound to the created ID, mapped fields, and
+normalized body. Retry and automatic delete remain unavailable. Unsupported
+provider-shaped fields remain explicitly unavailable, and contained evidence
+does not establish live provider behavior, readiness, verification, or health.
+
+Project Page Reconciliation updates one exact existing Project through the same
+provider-neutral boundary. It may change only portable `projectType` and `status`
+fields and nonempty page-text regions that each match exactly once in the observed
+body. The operator can select the property action, the body action, or both; every
+selected action remains bound to the exact private Project identity, title, fields,
+body, policy, schema, configuration lock, and connected snapshot. A later expiring
+request, exact confirmation, single-use start, per-operation precondition, write,
+and content-inclusive readback are required. Combined property and body writes are
+ordered and non-atomic, ambiguous outcomes are never retried, and recovery is
+checkpoint-bound read-only reconciliation. Exact substitutions may lengthen or
+shorten selected text; empty deletion, whole-page replacement, old-text-preserving
+append or prepend, replace-all, provider-structural editing, generic non-Project
+updates, and automatic compensation are intentionally unavailable. Likewise, capture workflows create one reviewed domain
+record at a time; bulk or arbitrary free-form Notion creation is not
+supported. Contained evidence proves only the normalized local lifecycle, not live
+Notion behavior, readiness, verification, or health.
 
 Drive Filing resolves one configuration-owned Storage registry, reads exact
 artifact metadata without content, observes the current document-index schema,
@@ -824,7 +849,7 @@ schema, then performs a bounded exact-name duplicate read. Required private why 
 in Description; the complete deterministic card body stays in selected-work private
 derived review. Requested Type, Area, and Priority values must exist in the current
 schema. A provisional why, duplicate, or unavailable option holds the create. The
-sanitized preview exposes only reason codes, counts, and fingerprints. This slice has
+sanitized preview exposes only reason codes, counts, and fingerprints. The Automation has
 no proposal adapter or connected compiler, so it creates no request, confirmation,
 continuation, provider call, or executable recovery action.
 
@@ -833,7 +858,7 @@ body, and supports only the governed Product body spine. It replaces Summary,
 type-specific scope/acceptance content, and Decisions while preserving Description,
 Planned status, Current State, Relationships, and all record fields. Status-change
 pressure is surfaced and excluded rather than folded into the definition. Exact
-current/proposed bodies exist only in selected-work private review. This slice also
+current/proposed bodies exist only in selected-work private review. The Automation
 declares no connected compiler or write authority.
 
 Repository Review selects one exact private repository reference and reads a bounded
@@ -844,7 +869,7 @@ the configured Product instance. The sanitized review contains only stable row i
 reason codes, counts, and fingerprints. Candidate names, why, summaries, current-state
 notes, evidence paths, and duplicate record identities live only in selected-work
 private derived review. New candidates become no-authority handoffs to
-`automation.feature-capture`; duplicates remain held. This slice deliberately creates
+`automation.feature-capture`; duplicates remain held. Repository Review creates
 no tooling page, Feature Capture work item, Product change, approval, continuation, or
 provider write. The local repository fixture proves only deterministic translation and
 privacy; connected filesystem/Git access, provider conformance, readiness,
@@ -870,8 +895,8 @@ inside selected-work private review. `fixRequested` records pressure but never c
 the report-only boundary. The pack declares only read and disclosure effects and has no
 proposal, write, dispatch, approval, continuation, or recovery authority.
 
-Email triage uses one private mailbox query and no exact-thread list in this
-milestone. The contained oracle reads 15 synthetic provider-returned threads,
+Email triage uses one private mailbox query and does not accept an exact-thread
+list. The contained oracle reads 15 synthetic provider-returned threads,
 deterministically reduces them to 11 included items, four explicit exclusions,
 and 10 review rows, and proves inactive-return accounting, RFC822 alias
 deduplication, self-sent exclusion, triage freshness, archived/trash sibling
@@ -903,8 +928,9 @@ Draft-only and mixed subsets fail before an approval request because no exact
 connected draft provider is declared. Send, automatic label removal,
 compensation, and write retry remain unavailable.
 
-The `prepared-review-batch/v1` and `prepared-connected-plan/v1` paths remain
-review-only views over fixture-contained prepared work; they are not approval
+The `review-only-candidate-selection/v1` and
+`review-only-candidate-preview/v1` paths are current no-authority views over
+fixture-contained prepared work; they are not approval
 inputs and do not become authority. Email label inputs use exact active
 message IDs, existing AI/ label names, and prohibit missing-label creation;
 draft inputs use an exact reply message ID. The Email Context model owns those
@@ -915,7 +941,7 @@ and message read-back. Their static translators and synthetic transaction
 tests do not establish authentication, permission, live writes, readiness,
 verification, or health.
 
-Task Capture's prepared candidate plan likewise grants no approval, provider
+Task Capture's review-only candidate preview likewise grants no approval, provider
 call, execution, retry, or recovery authority. Its separate durable proposal
 path binds title, status, context, exact Project identity, optional authenticated-self
 identity, and optional pinned date to one `tasks.records.create`, plus exact
@@ -959,25 +985,27 @@ that separate companion with:
 
     node soter/core/cli.mjs operator-prepared-derived-review --work-id WORK_ID --json
 
-Create an immutable review-only subset from exact proposed action IDs, then
-inspect only that selected batch's private values:
+Create an immutable review-only candidate selection from exact proposed action
+IDs, then inspect only that selection's private values:
 
-    node soter/core/cli.mjs operator-review-batch-create \
+    node soter/core/cli.mjs operator-review-only-candidate-selection-create \
       --work-id WORK_ID \
       --action-id ACTION_ID \
       --action-id ANOTHER_ACTION_ID \
       --json
 
-    node soter/core/cli.mjs operator-review-batch --batch-id REVIEW_BATCH_ID --json
+    node soter/core/cli.mjs operator-review-only-candidate-selection \
+      --selection-id CANDIDATE_SELECTION_ID --json
 
-Compile the exact selected batch into a private, review-only connected
-candidate plan, then inspect that same private plan later:
+Compile the exact selection into a private no-authority candidate preview, then
+inspect that same private preview later:
 
-    node soter/core/cli.mjs operator-connected-plan-create \
-      --batch-id REVIEW_BATCH_ID \
+    node soter/core/cli.mjs operator-review-only-candidate-preview-create \
+      --selection-id CANDIDATE_SELECTION_ID \
       --json
 
-    node soter/core/cli.mjs operator-connected-plan --plan-id PREPARED_PLAN_ID --json
+    node soter/core/cli.mjs operator-review-only-candidate-preview \
+      --candidate-preview-id CANDIDATE_PREVIEW_ID --json
 
 These two commands execute no provider call and grant no approval,
 continuation, execution, or retry authority.
@@ -1027,7 +1055,7 @@ Core validates that draft as an in-memory replacement through the same Kernel
 graph checks used for checked-in configurations and resolves it through the
 same lock constructor. It does not hand-edit the current lock or write the
 candidate configuration. An unresolved setting, binding, authority, source,
-scenario, migration, or host constraint produces a stable diagnostic and no
+scenario, or host constraint produces a stable diagnostic and no
 candidate fingerprint.
 Applying a complete private candidate uses a separate configuration transaction:
 private exact plan, expiring request, exact local confirmation, one-time start
@@ -1035,7 +1063,7 @@ consumption, durable checkpoint, atomic desired-configuration and private
 active-lock file replacement with a checkpoint between them, exact
 re-resolution, and verified completion or rollback.
 It never edits checked-in fixture locks, makes provider calls, or promotes
-readiness, verification, health, proof, or migration state.
+readiness, verification, health, or proof state.
 
 Host realization remains a separate explicit ceremony. Core prepares a private
 exact-root plan with its own `validUntil`, an expiring request, exact local
@@ -1049,273 +1077,34 @@ closed. Codex owns generated `AGENTS.md`, `.codex/config.toml`, and selected
 active `.agents/skills/*`; Claude owns generated `CLAUDE.md`, root `.mcp.json`,
 and selected active `.claude/skills/*`. Existing settings, hooks, plugins, and
 other consumer files are collisions or unmanaged private files, never generation
-inputs or adopted authority. When a generated skill deliberately reuses a
-retired legacy path, migration identity remains the exact historical path plus
-fingerprint: generated v2 bytes are delivery output, while the original legacy
-bytes would still fail as a restored fallback.
+inputs or adopted authority.
 
-`host-realization-inspection/v1` is the only general UI/CLI projection. It
-contains relative paths, fingerprints, lifecycle facts, stable reason codes,
-and derived next-action guidance, never the private consumer-root path or file
-contents. `localProjection=passed` proves only deterministic local bytes and
-modes. Host launch, discovery, authentication, provider reachability,
-connected behavior, and health stay `unknown`.
-Project Pulse removes the legacy project-status guide and its three evaluation
-files as exact inventory tombstones. The target intentionally replaces
-conversational project/date/visibility/goal selection with typed exact project,
-date, visibility, human health judgment, optional affected-milestone titles, and
-operator-note inputs. The exact project-work parser uses the real milestone and
-dated owner-action grammar; progress comes only from exact promoted-task matches,
-and health is checked but never inferred.
-Its evidence binds deterministic scenario behavior, prepared review, exact
-connected acquisition, private decision and proposal, complete-group approval,
-single-use start, contained ordered writes, and read-after-write verification.
-Projects and Tasks independently own portable meaning; Project Capture, Project
-Pulse, Task Capture, Decision Resolution, and Project Work Promotion own their
-explicit workflow boundaries. No mixed project card remains an operational
-fallback. This does not prove global Notion readiness, provider behavior,
-verification, or health, and it does not claim two writes are externally atomic.
+Generated skills are managed host outputs. They are never inputs to generation
+and never become canonical definitions.
 
-Email Triage has completed the first workflow-source migration. Its contained
-scenario executes one exact `mail.window.read`, applies the portable reduction
-rules, produces sanitized collections plus separately fingerprinted private
-review material, and stops with zero approval or write effects. The four removed
-evals remain exact source-case tombstones and have separate completion evidence
-over that scenario. The removed guide is replaced by the typed decision,
-proposal, selected-batch, approval, single-use start, connected-operation,
-verification, and reconciliation path. The old provider-shaped fixture is
-replaced by the normalized synthetic Gmail oracle.
+`host-realization-inspection/v1` is the general UI/CLI projection. It contains
+relative paths, fingerprints, lifecycle facts, stable reason codes, and derived
+next-action guidance, never the private consumer-root path or file contents.
+`localProjection=passed` proves only deterministic local bytes and modes. Host
+launch, discovery, authentication, provider reachability, connected behavior,
+and health stay `unknown`.
 
-The mechanism-free Email card is also an exact removed tombstone. Its completion
-records switch portable meaning, orchestration, and Gmail capability ownership
-to the current Context, Automation, and Integration packs. Existing `AI/*` label
-application and draft creation are explicit intentional changes; digest and
-cross-Automation handoffs remain review-only, and send/archive/trash/destructive
-effects remain prohibited. The removed mixed Ingestion card is retained only as
-an exact multi-target tombstone, so its frozen references cannot restore legacy
-Email authority. None
-of these records proves live Gmail permission, execution, verification,
-readiness, or health.
-
-Task Capture removes the legacy task guide and three evaluations as exact
-tombstones. The target intentionally replaces conversational name search with a
-required exact project reference and replaces arbitrary assignee lookup with
-authenticated `self` or unassigned. Current evidence binds fixture preparation,
-connected acquisition, duplicate blocking, private decision and proposal,
-exact approval, single-use start, contained create translation, and read-after-
-write verification. Projects and Tasks independently own portable meaning. No
-live Notion readiness, verification, or health is promoted.
-
-Organization Capture removes its legacy guide and three evaluations as exact
-tombstones. It loads one selected Context policy, observes the current
-provider-neutral Organization schema, derives only governed classifications
-that are still present in that schema, keeps sector meaning in Tags, normalizes
-bounded public references, and checks exact aliases before creating a private
-proposal. Its contained connected evidence covers exact approval, single-use
-start, one normalized create result, and read-after-write verification without
-performing a live provider write.
-
-Contact Capture likewise removes its guide and three evaluations. It observes
-the current writable person schema before retaining Role, Status, Disposition,
-Authority, or Tag values. Matching is exact and case-insensitive; unmatched
-optional values are omitted and surfaced, and vague `supportive` language is
-never promoted to `Champion`. An optional organization relation must resolve to
-one exact existing resource or remain empty and flagged. Exact email-or-name
-duplicates hold the create. The private proposal, approval, single-use start,
-create, verification, and recovery families remain distinct, and no fixture
-claim promotes live Notion readiness, provider conformance, verification, or
-health. CRM Context owns portable meaning and the Notion CRM mapping owns
-provider translation; neither is inferred from these Automation workflows.
-
-Meeting Intake removes its legacy guide and three evaluations as exact
-tombstones. Their target workflow now binds exact prepared input to configured
-policy bodies, transcript, meeting, organization, project, and task records;
-requires cited private judgment; and commits one private held complete-group
-review. `COMPLETE_MEETING_READBACK_UNAVAILABLE` records the intentional change:
-the current one-observation verifier cannot prove all required summary fields
-and body, so neither the summary nor its grouped Task fold can become a proposed
-change or enter batch, approval, start, checkpoint, provider-write, or
-verification authority. Typed `needs-input` replaces conversational recovery
-when policy, relationship, participant, staleness, or task disposition is
-unresolved. Unsupported digest delivery, external-assignee writes, and auxiliary
-legacy effects are intentional unavailable states, not fallbacks. The removed
-mixed Ingestion card owns no Meeting Intake, Repository Review, Slack, Email, or
-provider responsibility; those bindings are exact target-owned tombstones.
-
-Drive Filing removes its legacy guide and three evaluations as exact tombstones.
-The target replaces the prior definition-only bridge with typed input, separate
-Storage and Docs Contexts, Google Drive and Notion Docs Integration packs, exact
-fixture-contained reads, private complete-plan review, and executable scenario
-evidence. The migration records an intentional change: connected shortcut and
-cross-provider index execution remain unavailable rather than falling back to
-the prompt guide. Move, rename, delete, dispatch, and copy-as-move stay
-prohibited. No mixed Publishing card remains an operational fallback.
-
-Feature Capture removes its legacy guide and four evaluations as exact tombstones.
-Feature Definition removes its guide and three evaluations. Their intentional changes
-replace conversational board discovery and arbitrary live-template inference with one
-explicit configured Product target and one governed deterministic body spine.
-Unevidenced generic product build/review/ship prose is intentionally retired. No
-connected Product write, approval, readiness, verification, or health claim is
-promoted.
-
-Repository Review removes its legacy guide and four evaluations as exact tombstones.
-Its intentional change replaces direct tooling-page and feature-card writes with one
-bounded source-backed review and private handoffs to Feature Capture. Exact duplicate
-visibility and the human review gate remain; the old generic Notion write path is not a
-fallback. The removed mixed Ingestion card is an exact governed tombstone and
-cannot restore Repository Review or any other workflow authority.
-
-Slack Channel Ingestion removes its legacy guide, three evaluations, and the final
-executable responsibility from the former Ingestion card. Its identity-review
-scenario proves complete public/private pagination with no member read or proposed
-write. Its selected-enrichment scenario reads only exact privately selected channel
-rosters, excludes bots, grounds real CRM contact and organization resource identities,
-and prepares one exact create or update plus visible unmatched residue. Channel
-Ingestion consumes no message content or Slack mutation capability. The separate
-Slack Conversation Review Automation keeps its fixture-contained policy-bounded
-review and exposes fixture bodies only through private selected-work review. Its
-`connected-acquisition` mode is mechanically unavailable before private input,
-plan, provider-call, or checkpoint state for both Codex and Claude: the only
-observed live message/thread routes return human-formatted prose, not a closed
-normalizable response. Soter does not parse that prose, try an alternate tool, or
-create retry authority. The retained connected plan and response contracts are
-inert definitions and no fixture claim proves live Slack or Notion readiness,
-behavior, verification, or health. If a closed response route is declared and
-separately verified later, its operation plan first reads the exact configured
-`conversation-review-policy` through `communications.records.read`; workspace,
-conversation, message, and explicitly selected thread reads begin only after
-that policy record is returned and validated. The tracked configuration holds
-only a deterministic policy-page placeholder. A usable private configuration
-must replace it with one exact `https://www.notion.so/...` page URL, and the
-canonical returned policy record must bind to that exact configured raw
-identity while its name still matches the canonical Context definition. The
-policy target is resolved from
-the private Communications mapping by
-`operator.acquisition.recordRequirements`, never supplied by Studio or Slack.
-`integration.slack` also owns one required private `workspaceId` setting. The
-operator input keeps the same field so selected work remains explicit, but Core
-requires byte-exact equality with the setting before constructing any connected
-plan or provider call. Missing or malformed settings, a placeholder connected
-policy source, and workspace mismatches fail closed.
-Exact selected-conversation validation separates the selected result count from
-a policy-bounded provider observation allowance, so a selected channel may be
-resolved on a later page without treating an incomplete first page as complete.
-An explicitly selected thread would remain bound by its exact conversation/root
-identity, complete cursor exhaustion, and message-count limit; it may fall outside
-the separate top-level message window. This bounded correction does not promote or
-disable Slack Channel Ingestion: its separate conversation-identity and participant
-routes remain declared and unverified.
-
-Process migration removes the dedicated capture and red-team guides, their six
-evaluations, the Process system card, and the old body-shaping standard as ten exact
-tombstones. Context, Capture Automation, Red Team Automation, and Notion Process
-mapping each have an independently evidenced target binding. The intentional change is
-explicit: contained deterministic preparation replaces conversational execution, and
-connected create/auto-fix behavior is unavailable rather than silently retained.
-
-The final migration evidence binds every source responsibility independently so
-Context meaning, Integration mapping, Core transaction authority, Automation
-outcomes, user configuration, and host delivery cannot collapse into one
-misleading target. `legacy-inventory/v2` preserves 143 exact removed
-migrated-or-retired tombstones, zero mapped or bridged sources, and no retained
-operational fallback. Kernel rejects a live file that claims to be tombstoned.
-These records do not promote unrelated parity, readiness, verification, or health.
-
-The Harness Development Catalog selects seven governed v2 workflows: Running
+The Harness Development Catalog selects seven governed workflows: Running
 Evals, Forge, Reviewing Forge Output, Promoting Pieces, Auditing a Schema,
-Authoring a Policy Standard, and Validating Resources. Each
-`workflow-definition/v2` is closed as `definition-only`,
-`active-host-guided`, or `retired`, and binds an exact `workflow-guide/v2`,
-evaluation set, development request/result contracts, workspace policy, supported
-hosts, and effect boundary. Generic Notion create/update remains a domain
-Automation plus typed Integration mapping, not a provider-shaped user workflow.
-Change rationale may be attached to exact development evidence; v2 has no separate
-numbered decision archive or execution ceremony.
+Authoring a Policy Standard, and Validating Resources. Active guides bind exact
+definitions, evaluation sets, workspace policy, supported hosts, and effect
+boundaries. Development request/result records keep bounded local changes,
+evaluations, limitations, and promotion decisions inspectable without exposing
+raw private paths or diffs. They grant no provider, publication, merge,
+protected-root, or host-realization authority.
 
-Candidate guides are preview-only and excluded from host realization. Activation
-requires expectation-withheld agent evidence for Codex and Claude, exact target
-authority, and the closed migration tombstone. Development request/result records
-make bounded local changes, evaluations, limitations, and promotion decisions
-inspectable without exposing raw private paths or diffs. They do not grant
-provider, publication, merge, protected-root, or host-realization authority.
-The dual-host historical batch binds one common clean source/workspace, policy,
-and settings basis plus an exact closed `hostGraphFingerprints` pair for Claude
-and Codex. Those immutable locks describe the original observation basis. Their
-graph fingerprints remain host-specific because each exact historical lock
-includes its selected adapter and projection; they are not current operational
-locks or a claim of host parity, readiness, connected verification, or health.
-
-Current applicability is derived separately and read-only. Kernel requires the
-original evidence to remain exact against its historical basis, then compares
-the current workflow subject, complete source tombstones, workflow pack and
-version, byte-identical workflow-skill delivery, and effect-policy boundary.
-Unrelated Kernel or Core graph growth does not manufacture a new host
-evaluation or invalidate unchanged evaluated behavior. The Claude `0.3.1`
-correction from nested `.claude/.mcp.json` to root `.mcp.json` is accepted only
-by inverse-reconstructing the exact historical `0.3.0` adapter and projection
-fingerprints and proving unchanged tool bytes, modes, templates, and workflow
-skills. The Codex `0.3.1` adapter correction maps only the current Notion
-`query_data_sources` connector name while retaining the exact historical
-`0.3.0` projection definition and generated bytes; applicability inverse-
-reconstructs the one prior mapping and adapter version before accepting it.
-Neither correction proves connector discovery, authentication, readiness,
-connected verification, or health. Any other adapter, guide, evaluation,
-workflow pack, host template, or effect-boundary drift fails closed. The two
-historical basis locks remain byte-exact and are deliberately excluded from
-operational configuration inspection and offline doctor runs.
-
-The host-evidence boundary is explicitly two-stage and create-only. After all
-fourteen finalized private request/result/observation chains still bind their
-current private candidate locks, `development-historical-evidence-batch-request`
-seals the exact dual-host candidate and its expiring private request;
-`development-historical-evidence-batch-execute` publishes the complete fourteen-file
-sanitized set under `soter/evidence/development/`. Standalone historical publication
-is unavailable. Those receipts are historical-candidate evidence only. Final evidence cannot be
-published one workflow at a time because active host projection requires the
-complete dual-host set. `development-host-evidence-finalize-batch --request ABS
---legacy-finalization ABS --at TIME` therefore validates one private 0600 request binding
-all seven workflows and fourteen finalized host receipts, prebuilds fourteen
-evidence records plus the exact Codex and Claude final locks, and publishes the
-closed sixteen-file create-only batch. It returns
-`pending-fixture-finalization` with no runtime authority. After the separate
-exact fixture-finalization pass, `development-host-evidence-finalization-verify
---request ABS --legacy-finalization ABS --at TIME` verifies the sealed
-observation-time batch and its original lock reproduction. Later graph changes
-do not rewrite that batch; ordinary resolution instead performs the separate
-current-applicability check described above.
-Explicit completed-batch rollback tolerates only a filesystem device-number
-change across remount when the sealed real root path and root inode, plus every
-checkpoint-owned directory and output inode, byte sequence, mode, and link
-count, remain exact; all other drift fails closed.
-Missing or substituted receipts, partial workflow coverage, altered output,
-unsafe links, stale basis, or drifted subjects fail closed. The former
-`development-host-evidence-final` command remains only as a stable
-`DEVELOPMENT_ACTIVATION_EVIDENCE_BATCH_REQUIRED` failure boundary.
-
-Kernel development governance is separately declared in
-`soter/kernel/development-governance.json`. It defines the provider-neutral `develop`
-lifecycle, six ownership boundaries, contract-derived scaffolding, quality rules,
-fresh isolated evaluation requirements, exact golden freshness, promotion, and
-effect separation. It is the operational source; the final-v1 authoring,
-evaluation, template, isolation, and checker bytes survive only as evidence-bound
-tombstones.
-Run its focused mechanical check with:
+Kernel development governance is declared in
+`soter/kernel/development-governance.json`. It defines the provider-neutral
+`develop` lifecycle, ownership boundaries, contract-derived scaffolding,
+quality rules, fresh isolated evaluation requirements, exact golden freshness,
+promotion, and effect separation. Run its focused mechanical check with:
 
     npm run soter:development-governance:selftest
-
-The foundations check proves portable Calendar, Docs, Onchain, Policy, Resources,
-Sky, and Communications ownership; typed Integration mappings; host projection
-ownership; and target-only checker coverage. Run it with:
-
-    npm run soter:legacy-foundations:selftest
-
-The target-only transition selftest accounts for all 47 frozen checker rules and
-proves its Kernel replacement anchors without importing or spawning the removed
-checker. Inventory validation proves all 143 sources are migrated-or-retired
-tombstones and no mapped, bridged, or retained fallback remains. Studio must not
-render transition or migration evidence as prepared work, approval, provider
-readiness, verification, or health.
 
 Adding Project Pulse to another configuration is invalid until that configuration declares the required
 policy source. Studio does not synthesize a source, write a draft, or expose an
@@ -1353,11 +1142,8 @@ endpoints, install connectors, or store OAuth credentials in the repository.
 Restart the task after connector or authentication changes so the host reloads
 its available tools.
 
-The exact interactive sequence and its four trusted pause boundaries are
-documented in [`soter/acceptance/CONNECTED.md`](acceptance/CONNECTED.md).
-`connected-acceptance-inspect` composes only existing sanitized Slack
-availability and transaction observations; it executes no call, grants no
-authority, and keeps aggregate acceptance not evaluated.
+The exact interactive sequence and its trusted pause boundaries are documented
+in [`soter/acceptance/CONNECTED.md`](acceptance/CONNECTED.md).
 
 After a governed pack, contract, Core implementation, or host projection
 changes, inspect `soter_inspect_host_runtime` before connected work. A stale
@@ -1377,7 +1163,7 @@ Changing the selected host changes the lock and host projection fingerprints.
 Unknown or pack-incompatible hosts fail resolution.
 
 Inspect the proposed configuration as concise text, or consume the same
-schema-checked facts as JSON from a future UI:
+schema-checked facts as JSON from another interface:
 
     node soter/core/cli.mjs config-inspect
     node soter/core/cli.mjs config-inspect --host claude --json
@@ -1404,17 +1190,16 @@ confirmation is not start authority, a displayed next action is not execution
 authority, and a consumed confirmation cannot start a second checkpoint.
 When the governed graph changes but an existing private desired configuration
 is byte-identical, the same lifecycle presents one explicit `lock` change from
-the exact historical active-lock fingerprint to the freshly resolved candidate
+the exact prior active-lock fingerprint to the freshly resolved candidate
 fingerprint plus identifier-and-fingerprint-only `resolution` rows for changed
 packs, capabilities, bindings, sources, authorities, effects, settings, host,
-resolver, dependencies, and projections. Core accepts the historical lock only
+resolver, dependencies, and projections. Core accepts the prior lock only
 when its contract, self-fingerprint, configuration name/path, and
 desired-document fingerprint remain exact. This is a confirmed local lock
 refresh, not silent adoption, issuance provenance, provider authority,
 readiness, verification, or health evidence.
 
-Meeting Intake no longer exposes the legacy direct `context` or `transaction`
-commands. Start from one exact `operator-prepare` receipt, bind its work ID to
+Meeting Intake starts from one exact `operator-prepare` receipt, binding its work ID to
 `operator-acquisition-prepare` with the exact Automation and work IDs, complete
 each emitted read through the host boundary, then call
 `operator-acquisition-finalize` with those IDs and the exact checkpoint. Decision and private held proposal
@@ -1427,8 +1212,3 @@ verification contract.
 
 `fixtures --update` is an explicit regeneration operation. Review its diff;
 never update fixtures merely to silence a stale-lock failure.
-
-Migration is closed. The checker-transition and inventory gates validate the
-historical tombstones; Kernel validates the canonical contracts and resolved
-graph. No compatibility entrypoint or checked-in host tree participates in
-normal verification or runtime behavior.

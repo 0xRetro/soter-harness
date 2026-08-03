@@ -8,7 +8,6 @@ import {
   resolveRepoPath
 } from '../../core/lib/canonical-json.mjs';
 import { fingerprintLock } from '../../core/resolve.mjs';
-import { fingerprintLegacySource } from '../../kernel/legacy-inventory.mjs';
 import { prepareProjectWorkPromotionRun } from './prepare.mjs';
 
 const AUTOMATION_ID = 'automation.project-work-promotion';
@@ -103,11 +102,6 @@ export async function runContainedProjectWorkPromotionScenario({
 }) {
   const resolvedRoot = path.resolve(root);
   const loaded = loadScenario(resolvedRoot, scenarioPath);
-  const sourceCaseArtifacts = loaded.scenario.sourceCases.map((sourcePath) => ({
-    role: 'source-case',
-    path: sourcePath,
-    fingerprint: fingerprintLegacySource(resolvedRoot, sourcePath)
-  }));
   const input = inputFor(loaded.scenario.id);
   const execution = await prepareProjectWorkPromotionRun({
     root: resolvedRoot,
@@ -215,11 +209,7 @@ export async function runContainedProjectWorkPromotionScenario({
         && /^sha256:[a-f0-9]{64}$/.test(duplicateEntry?.valueFingerprint || ''),
       'private-review-material': item.fingerprint === row?.privateDetailFingerprint,
       'write-boundary-state': boundaryHeld
-        && execution.envelope.effectPolicies.write.mode === 'confirm',
-      'source-cases-exactly-fingerprinted': sourceCaseArtifacts.length > 0
-        && sourceCaseArtifacts.every((artifact) => /^sha256:[a-f0-9]{64}$/.test(
-          artifact.fingerprint
-        ))
+        && execution.envelope.effectPolicies.write.mode === 'confirm'
     }
   };
   const assessment = assessmentFor({
@@ -236,7 +226,6 @@ export async function runContainedProjectWorkPromotionScenario({
     envelope: execution.envelope,
     scenario: loaded.scenario,
     scenarioPath: loaded.path,
-    sourceCaseArtifacts,
     assessment,
     evaluatorId: 'automation.project-work-promotion.scenario-evaluator',
     id: scenarioEvidenceId,

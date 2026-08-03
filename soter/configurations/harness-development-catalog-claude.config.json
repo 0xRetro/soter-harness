@@ -83,11 +83,6 @@
       "reason": "Select the normalized development workflow definition without enabling runtime behavior."
     },
     {
-      "id": "automation.pushing-to-notion",
-      "source": "user",
-      "reason": "Select the normalized development workflow definition without enabling runtime behavior."
-    },
-    {
       "id": "automation.reviewing-forge-output",
       "source": "user",
       "reason": "Select the normalized development workflow definition without enabling runtime behavior."
@@ -98,17 +93,7 @@
       "reason": "Select the normalized development workflow definition without enabling runtime behavior."
     },
     {
-      "id": "automation.updating-a-notion-page",
-      "source": "user",
-      "reason": "Select the normalized development workflow definition without enabling runtime behavior."
-    },
-    {
       "id": "automation.validating-resources",
-      "source": "user",
-      "reason": "Select the normalized development workflow definition without enabling runtime behavior."
-    },
-    {
-      "id": "automation.writing-adrs",
       "source": "user",
       "reason": "Select the normalized development workflow definition without enabling runtime behavior."
     }
@@ -268,7 +253,7 @@
       "role": "evidence",
       "subject": "runtime.runs",
       "uri": "soter-state://runs",
-      "reason": "Core retains its required evidence authority without granting any definition-only workflow runtime authority."
+      "reason": "Core retains its required evidence authority without granting workflow authority outside an exact development request."
     }
   ],
   "effectPolicies": {
@@ -278,7 +263,7 @@
     },
     "disclosure": {
       "mode": "prohibit",
-      "reason": "The definition-only development catalog prohibits disclosure effects."
+      "reason": "The development catalog prohibits disclosure effects."
     },
     "write": {
       "mode": "allow",
@@ -290,7 +275,7 @@
     },
     "destructive": {
       "mode": "prohibit",
-      "reason": "The definition-only development catalog prohibits destructive effects."
+      "reason": "The development catalog prohibits destructive effects."
     }
   },
   "secretRefs": [],

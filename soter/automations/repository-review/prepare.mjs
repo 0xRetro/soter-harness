@@ -440,7 +440,7 @@ export async function prepareRepositoryReviewRun({
       { id: 'repository-snapshot-grounded', label: 'Exact bounded repository snapshot grounded', state: 'supported', basis: ['context.repository-review.snapshot'], limitation: 'The normalized contained snapshot does not establish connected repository access or current provider state.' },
       { id: 'repository-review-prepared', label: 'Itemized Product capability review prepared', state: 'proposed', basis: entries.map((entry) => entry.id), limitation: 'Review candidates are observations, not Product authority or a recommendation to create every item.' },
       { id: 'feature-handoffs-prepared', label: 'Exact private Feature Capture handoffs prepared', state: result.handoffCount ? 'proposed' : 'blocked', basis: entries.map((entry) => entry.id), limitation: 'Handoffs create no Feature Capture prepared work, approval, continuation, or Product write authority.' },
-      { id: 'external-write-boundary', label: 'All external and repository writes prohibited', state: 'supported', basis: entries.map((entry) => entry.id), limitation: 'Tooling-page creation and all connected writes are intentionally unavailable in this migration slice.' }
+      { id: 'external-write-boundary', label: 'All external and repository writes prohibited', state: 'supported', basis: entries.map((entry) => entry.id), limitation: 'Tooling-page creation and all connected writes are intentionally unavailable for this workflow.' }
     ],
     preview: result.preview,
     derivedReview: result.derivedReview

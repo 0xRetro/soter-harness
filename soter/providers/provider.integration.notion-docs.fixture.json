@@ -21,6 +21,6 @@
   "fixtures": ["soter/fixtures/providers/notion/documents.json"],
   "limitations": [
     "Uses deterministic local document-index records only; it does not authenticate to, mutate, or represent the current state of a Notion workspace.",
-    "Connected Notion document-index translation is intentionally unavailable in this migration slice, so no live create or verification authority exists."
+    "Connected Notion document-index translation is intentionally unavailable for this workflow, so no live create or verification authority exists."
   ]
 }

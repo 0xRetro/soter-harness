@@ -4,8 +4,8 @@
   "id": "context.repository-review.preparation-fixture",
   "runId": "run.repository-review.preparation-fixture",
   "createdAt": "2026-07-21T20:00:00.000Z",
-  "configurationLockFingerprint": "sha256:750749ebcf7414c462111e5637f36b9e782d99b7925f8240a1aadcad90170110",
-  "graphFingerprint": "sha256:555f2bde7056fb0c8dbdeb67b7162963543eaa6a03ebd51bf5cf5802a5b0a286",
+  "configurationLockFingerprint": "sha256:46d59e5f2062782aa38e01614c63d82238967d34bf8f280e4a3ed1682a5f836d",
+  "graphFingerprint": "sha256:97830a4fcac6b2280f6d70a75759ed40d4a483d5148a9247a1291eca3938a81d",
   "containment": "fixture",
   "entries": [
     {
@@ -108,24 +108,24 @@
       "capability": "product.records.read",
       "providerPack": "integration.notion",
       "providerImplementation": "provider.integration.notion.fixture",
-      "providerVersion": "0.2.0",
+      "providerVersion": "0.4.0",
       "observedAt": "2026-07-21T20:00:00.000Z",
       "freshness": "passed",
       "provenance": {
         "provider": "notion-fixture",
         "authority": "authority.product.instance",
         "mapping": "mapping.integration.notion.product-records",
-        "mappingVersion": "0.2.0",
+        "mappingVersion": "0.4.0",
         "sourceKind": "fixture",
-        "sourceReferenceFingerprint": "sha256:8ec1ff8c47753ec838a34c5b53f2f7cde7d90c6cb2ecdbd14779e6a448203484"
+        "sourceReferenceFingerprint": "sha256:772f5bc724483a0f2a4aca7b6f5170406ff2890b673a6c7e76f90d95db1c27ae"
       },
-      "valueFingerprint": "sha256:0f61983e97f193e080293ffac7c52da887db3c2e2c62b5d96f331201fc7419f6",
+      "valueFingerprint": "sha256:575773a8698f8941accfa40ea206e308ac11bbe9e5c933bb36d9b693c3d2e1bb",
       "value": {
         "candidateCount": 1,
         "candidateIds": [
           "https://www.notion.so/44444444444444444444444444444444"
         ],
-        "providerOutputFingerprint": "sha256:a0e84caab7d6f376a537bdce9024917cd09caffc6e738ae1d59c120e75f8bbd1"
+        "providerOutputFingerprint": "sha256:4718bb09c621dd42fda80034188548cc5cd6acebd04aa8e6fcb2ee3032275d24"
       }
     }
   ],

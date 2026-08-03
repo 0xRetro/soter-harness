@@ -244,7 +244,7 @@
       "required": ["path", "role", "mode", "bytes", "contentFingerprint"],
       "properties": {
         "path": { "type": "string", "pattern": "^[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$" },
-        "role": { "enum": ["manifest", "definition", "implementation", "projection", "evaluation", "fixture", "migration"] },
+        "role": { "enum": ["manifest", "definition", "implementation", "projection", "evaluation", "fixture"] },
         "mode": { "enum": ["0644", "0755"] },
         "bytes": { "type": "integer", "minimum": 1 },
         "contentFingerprint": { "$ref": "#/$defs/fingerprint" }

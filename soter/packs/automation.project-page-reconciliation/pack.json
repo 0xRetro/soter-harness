@@ -1,0 +1,142 @@
+{
+  "$contract": "soter://contracts/pack/v1",
+  "contractVersion": "1.0.0",
+  "id": "automation.project-page-reconciliation",
+  "version": "0.1.0",
+  "layer": "automation",
+  "releaseStage": "experimental",
+  "evidenceMaturity": "declared",
+  "summary": "Prepares one exact Project field and page-text reconciliation, exposes private selected-work review, and compiles only the exact selected subset for Core-governed approval, one-time start, checkpoint, and verification.",
+  "dependencies": [
+    {
+      "pack": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Exact preparation, private review, candidate selection and preview, and transaction authority belong to Core."
+    },
+    {
+      "pack": "context.projects",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Portable Project fields, page identity, and policy meaning belong to Projects Context."
+    }
+  ],
+  "capabilities": {
+    "requires": [
+      {
+        "id": "projects.records.read",
+        "version": "^1.1.0",
+        "optional": false,
+        "reason": "Preparation and verification require exact selected Project fields plus a mapped page body."
+      },
+      {
+        "id": "projects.schema.read",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "Property changes require one current normalized writable schema observation."
+      },
+      {
+        "id": "projects.records.update",
+        "version": "^1.1.0",
+        "optional": false,
+        "reason": "A selected batch may patch only projectType and status under one expected-version precondition."
+      },
+      {
+        "id": "documents.content.update",
+        "version": "^1.0.0",
+        "optional": false,
+        "reason": "A selected batch may apply only bounded exact one-match replacements."
+      }
+    ],
+    "provides": []
+  },
+  "sourceRequirements": [
+    {
+      "purpose": "project-capture-policy",
+      "capability": "projects.records.read",
+      "authorityRole": "definition",
+      "authoritySubject": "projects.records",
+      "minimum": 1,
+      "maximum": 1,
+      "reason": "The portable Project policy supplies the exact allowed Project type and status vocabularies."
+    }
+  ],
+  "authorities": [
+    { "role": "definition", "subject": "projects.records", "required": true },
+    { "role": "instance", "subject": "projects.records", "required": true },
+    { "role": "evidence", "subject": "runtime.runs", "required": true }
+  ],
+  "effects": ["read", "disclosure", "write"],
+  "operator": {
+    "input": "soter/automations/project-page-reconciliation/operator-input.json",
+    "preparation": {
+      "module": "soter/automations/project-page-reconciliation/prepare.mjs",
+      "export": "prepareProjectPageReconciliationRun",
+      "containment": "fixture",
+      "derivedReviewContract": "soter/automations/project-page-reconciliation/derived-review.json"
+    },
+    "acquisition": {
+      "module": "soter/automations/project-page-reconciliation/context.mjs",
+      "prepareExport": "prepareProjectPageReconciliationConnectedAcquisition",
+      "finalizeExport": "finalizeProjectPageReconciliationConnectedAcquisition",
+      "containment": "connected",
+      "recordRequirements": [
+        {
+          "capability": "projects.records.read",
+          "recordTypes": ["project-capture-policy", "project"]
+        },
+        {
+          "capability": "projects.schema.read",
+          "recordTypes": ["project"]
+        }
+      ]
+    },
+    "connection": {
+      "module": "soter/automations/project-page-reconciliation/connected.mjs",
+      "compileExport": "compileProjectPageReconciliationConnectedOperations",
+      "evaluateExport": "evaluateProjectPageReconciliationConnectedVerification",
+      "recordRequirements": [
+        {
+          "capability": "projects.records.read",
+          "recordTypes": ["project"]
+        },
+        {
+          "capability": "projects.records.update",
+          "recordTypes": ["project"]
+        }
+      ]
+    },
+    "proposal": {
+      "module": "soter/automations/project-page-reconciliation/proposal.mjs",
+      "export": "createProjectPageReconciliationProposal",
+      "schema": "soter/automations/project-page-reconciliation/proposal.schema.json",
+      "inputSchema": "soter/automations/project-page-reconciliation/proposal-input.schema.json",
+      "derivedReviewContract": "soter/automations/project-page-reconciliation/derived-review.json"
+    }
+  },
+  "artifacts": [
+    { "path": "soter/automations/project-page-reconciliation/operator-input.json", "role": "definition" },
+    { "path": "soter/automations/project-page-reconciliation/derived-review.json", "role": "definition" },
+    { "path": "soter/automations/project-page-reconciliation/decision.schema.json", "role": "definition" },
+    { "path": "soter/automations/project-page-reconciliation/proposal-input.schema.json", "role": "definition" },
+    { "path": "soter/automations/project-page-reconciliation/proposal.schema.json", "role": "definition" },
+    { "path": "soter/automations/project-page-reconciliation/schema.mjs", "role": "implementation" },
+    { "path": "soter/automations/project-page-reconciliation/prepare.mjs", "role": "implementation" },
+    { "path": "soter/automations/project-page-reconciliation/context.mjs", "role": "implementation" },
+    { "path": "soter/automations/project-page-reconciliation/decision.mjs", "role": "implementation" },
+    { "path": "soter/automations/project-page-reconciliation/proposal.mjs", "role": "implementation" },
+    { "path": "soter/automations/project-page-reconciliation/connected.mjs", "role": "implementation" },
+    { "path": "soter/automations/project-page-reconciliation/scenario.mjs", "role": "evaluation" },
+    { "path": "soter/automations/project-page-reconciliation/project-page-reconciliation.selftest.mjs", "role": "evaluation" },
+    { "path": "soter/automations/project-page-reconciliation/connected-context.selftest.mjs", "role": "evaluation" },
+    { "path": "soter/scenarios/project-page-reconciliation/preparation.scenario.json", "role": "evaluation" }
+  ],
+  "compatibility": {
+    "baseContract": "^1.0.0",
+    "hosts": ["codex", "claude"]
+  },
+  "verification": {
+    "maxLevel": "fixture",
+    "scenarios": ["soter/scenarios/project-page-reconciliation/preparation.scenario.json"]
+  }
+}

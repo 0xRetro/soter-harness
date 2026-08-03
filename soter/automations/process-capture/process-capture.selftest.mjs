@@ -11,8 +11,8 @@ import {
   inspectPreparedAutomationReviewMaterial,
   prepareAutomationRun
 } from '../../core/prepared-work.mjs';
-import { createPreparedConnectedPlan } from '../../core/prepared-connected-plans.mjs';
-import { createPreparedReviewBatch } from '../../core/prepared-review-batches.mjs';
+import { createReviewOnlyCandidatePreview } from '../../core/review-only-candidate-previews.mjs';
+import { createReviewOnlyCandidateSelection } from '../../core/review-only-candidate-selections.mjs';
 import { resolveConfiguration } from '../../core/resolve.mjs';
 import { buildCapturedProcessBody, loadProcessCapturePolicy } from '../../contexts/process/process-capture.mjs';
 import { runContainedProcessCaptureScenario } from './scenario.mjs';
@@ -150,19 +150,19 @@ export async function selftestProcessCapture(root = defaultRoot) {
     assert(fields.get('body').includes('## Initialization'));
     assert(fields.get('body').includes(exactInput.workItems[0]));
 
-    const batch = createPreparedReviewBatch({
+    const selection = createReviewOnlyCandidateSelection({
       root: temporaryRoot,
       workId: work.id,
       actionIds: ['action.process-capture.create'],
       createdAt: '2026-07-21T20:01:30.000Z'
     });
     await assert.rejects(
-      createPreparedConnectedPlan({
+      createReviewOnlyCandidatePreview({
         root: temporaryRoot,
-        batchId: batch.id,
+        selectionId: selection.id,
         createdAt: '2026-07-21T20:02:00.000Z'
       }),
-      (error) => error?.code === 'PREPARED_CONNECTED_PLAN_COMPILER_INVALID'
+      (error) => error?.code === 'REVIEW_ONLY_CANDIDATE_PREVIEW_COMPILER_INVALID'
     );
 
     const duplicate = await prepareAutomationRun({

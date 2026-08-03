@@ -11,8 +11,8 @@ import {
   inspectPreparedAutomationReviewMaterial,
   prepareAutomationRun
 } from '../../core/prepared-work.mjs';
-import { createPreparedConnectedPlan } from '../../core/prepared-connected-plans.mjs';
-import { createPreparedReviewBatch } from '../../core/prepared-review-batches.mjs';
+import { createReviewOnlyCandidatePreview } from '../../core/review-only-candidate-previews.mjs';
+import { createReviewOnlyCandidateSelection } from '../../core/review-only-candidate-selections.mjs';
 import { resolveConfiguration } from '../../core/resolve.mjs';
 import {
   buildCapturedFeatureBody,
@@ -142,19 +142,19 @@ export async function selftestFeatureDefinition(root = defaultRoot) {
     assert(fields.get('proposedBody').includes('- [ ] ' + exactInput.doneWhen[0]));
     assert(!fields.get('proposedBody').includes(fields.get('description')));
 
-    const batch = createPreparedReviewBatch({
+    const selection = createReviewOnlyCandidateSelection({
       root: temporaryRoot,
       workId: work.id,
       actionIds: ['action.feature-definition.body-update'],
       createdAt: '2026-07-21T19:01:30.000Z'
     });
     await assert.rejects(
-      createPreparedConnectedPlan({
+      createReviewOnlyCandidatePreview({
         root: temporaryRoot,
-        batchId: batch.id,
+        selectionId: selection.id,
         createdAt: '2026-07-21T19:02:00.000Z'
       }),
-      (error) => error?.code === 'PREPARED_CONNECTED_PLAN_COMPILER_INVALID'
+      (error) => error?.code === 'REVIEW_ONLY_CANDIDATE_PREVIEW_COMPILER_INVALID'
     );
 
     const pressure = await prepareAutomationRun({

@@ -45,11 +45,7 @@
       "policy-selection-fingerprint",
       "selected-conversation-fingerprint",
       "message-and-thread-coverage-fingerprints",
-      "automation-owned-derived-review-contract-fingerprint",
-      "source-case-exactly-fingerprinted"
+      "automation-owned-derived-review-contract-fingerprint"
     ]
-  },
-  "sourceCases": [
-    "soter/fixtures/providers/slack/workspace.json"
-  ]
+  }
 }

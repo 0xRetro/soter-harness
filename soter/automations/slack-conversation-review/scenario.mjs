@@ -3,7 +3,6 @@ import path from 'node:path';
 import { createScenarioExecutionEvidence } from '../../core/evidence.mjs';
 import {
   fingerprintJson,
-  fingerprintPath,
   readJson,
   repoRelativePath,
   resolveRepoPath
@@ -92,11 +91,6 @@ export async function runContainedSlackConversationReviewScenario({
 }) {
   const resolvedRoot = path.resolve(root);
   const loaded = loadScenario(resolvedRoot, scenarioPath);
-  const sourceCaseArtifacts = loaded.scenario.sourceCases.map((sourcePath) => ({
-    role: 'source-case',
-    path: sourcePath,
-    fingerprint: fingerprintPath(resolveRepoPath(resolvedRoot, sourcePath))
-  }));
   const execution = await prepareSlackConversationReviewRun({
     root: resolvedRoot,
     lock,
@@ -187,9 +181,7 @@ export async function runContainedSlackConversationReviewScenario({
         .every((candidate) => /^sha256:[a-f0-9]{64}$/.test(candidate.valueFingerprint)),
       'automation-owned-derived-review-contract-fingerprint': /^sha256:[a-f0-9]{64}$/.test(
         execution.preview.privateReview.contractFingerprint
-      ),
-      'source-case-exactly-fingerprinted': sourceCaseArtifacts.length === 1
-        && /^sha256:[a-f0-9]{64}$/.test(sourceCaseArtifacts[0].fingerprint)
+      )
     }
   };
   const assessment = assessmentFor({
@@ -206,7 +198,6 @@ export async function runContainedSlackConversationReviewScenario({
     envelope: execution.envelope,
     scenario: loaded.scenario,
     scenarioPath: loaded.path,
-    sourceCaseArtifacts,
     assessment,
     evaluatorId: 'automation.slack-conversation-review.scenario-evaluator',
     id: scenarioEvidenceId,

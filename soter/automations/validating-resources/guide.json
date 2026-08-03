@@ -1,15 +1,15 @@
 {
   "contractVersion": "2.0.0",
   "id": "workflow-guide.validating-resources",
-  "contentFingerprint": "sha256:984acb8e80caeaa995ab4e90adb97801b394e74c030bc01dd524f4969857f1ea",
+  "contentFingerprint": "sha256:63df2d45412c48e0cd2bb9499300d32c0aba47a839b9da5105c2d52478634807",
   "$contract": "soter://contracts/workflow-guide/v2",
   "workflow": {
     "id": "automation.validating-resources",
     "version": "0.1.0",
     "definitionPath": "soter/automations/validating-resources/definition.json",
-    "definitionFingerprint": "sha256:088f6ffeb98ed7b673e6ab6f7ccd7ab3bb5ca4f8f33b2fd1837434c451c141f5",
+    "definitionFingerprint": "sha256:2f8adff573b4bc02877ef50626578561a55fc6a2f6b275c9a6bcbbd6db28f3ad",
     "evaluationSetPath": "soter/automations/validating-resources/evaluations.json",
-    "evaluationSetFingerprint": "sha256:0cb3c4004bea2333bacf809891cd58dba7a8c37216f5f7e7231079e020dcadcc"
+    "evaluationSetFingerprint": "sha256:3fc396cb41d2a752a1fe97e714a8f52f374fe825a48f9c4c0bafeb9d84041259"
   },
   "skill": {
     "name": "validating-resources",
@@ -22,21 +22,7 @@
   "status": {
     "state": "active",
     "reasonCode": "WORKFLOW_GUIDE_ACTIVE",
-    "proceduralAuthority": "target",
-    "behaviorParity": "intentional-change",
     "delivery": "host-skill",
-    "evidence": [
-      {
-        "path": "soter/evidence/development/development-agent-migration-evidence.claude.validating-resources.json",
-        "fingerprint": "sha256:627350e3995bb370c1b52546a30bceae72e5c3397cdfd0f3a92b54a77a58e638",
-        "host": "claude"
-      },
-      {
-        "path": "soter/evidence/development/development-agent-migration-evidence.codex.validating-resources.json",
-        "fingerprint": "sha256:177a657b5891df68215061b81c93f69bad7ba19b467de3cc78b02e9cd8fd2b95",
-        "host": "codex"
-      }
-    ],
     "permittedNextAction": "invoke-through-selected-host"
   },
   "authority": {
@@ -54,7 +40,7 @@
       "instructions": [
         "Resolve the exact resource policy, portable record model, selected provider mapping, current provider schema, configured resource scope, and active lock before reviewing records.",
         "Compare the policy field declarations, portable Context meaning, and observed mapped schema without silently adapting one to another.",
-        "Treat every mismatch as a visible finding and keep legacy workspace identifiers out of the provider-neutral guide."
+        "Treat every mismatch as a visible finding and keep provider-specific workspace identifiers out of the provider-neutral guide."
       ],
       "flexibility": [],
       "stopConditions": [
@@ -182,27 +168,20 @@
       "target": "soter://contracts/context-record-model/v1"
     },
     {
-      "id": "single-record-update",
-      "kind": "workflow",
-      "label": "Bounded existing-record update workflow",
-      "target": "automation.updating-a-notion-page"
+      "id": "document-update-capability",
+      "kind": "capability",
+      "label": "Provider-neutral document content update capability",
+      "target": "documents.content.update"
     }
   ],
-  "source": {
-    "presence": "removed",
-    "legacyPath": ".claude/skills/validating-resources/SKILL.md",
-    "legacyFingerprint": "sha256:38aecb4f889d9ccab50edf578d0a571a0b2ef5639f2db589ecd30567b3ee651c",
-    "normalization": "intentional-change-with-explicit-authority-boundary"
-  },
   "privacy": {
-    "rawSourceIncluded": false,
     "workspaceSpecificValuesIncluded": false,
     "credentialsIncluded": false,
     "privateInputsIncluded": false,
     "providerResponsesIncluded": false
   },
   "limitations": [
-    "The guide replaces workspace-qualified resource names with portable policy, Context, mapping, and authority bindings.",
-    "It grants no provider call, liveness probe, write, approval, readiness, verification, or health authority."
+    "This guide provides procedural guidance only and grants no worker dispatch, file-write, publication, provider, merge, or host-realization authority.",
+    "Behavior evidence requires an exact private request and an independently observed fresh-worker run through a trusted host boundary."
   ]
 }

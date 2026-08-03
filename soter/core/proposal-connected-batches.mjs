@@ -133,7 +133,7 @@ function selectionMaterial(batch, exact, actions) {
     );
   }
   return {
-    batch: { id: batch.id, fingerprint: batch.fingerprint },
+    selection: { id: batch.id, fingerprint: batch.fingerprint },
     actions: materialActions
   };
 }

@@ -397,6 +397,337 @@ export async function selftestNotionRecordMappings(root) {
       );
     }
   }
+  const projectReadSchema = readJson(path.join(
+    root,
+    'soter',
+    'capabilities',
+    'projects.records.read.json'
+  ));
+  const projectUpdateDefinition = readJson(path.join(
+    root,
+    'soter',
+    'capabilities',
+    'projects.records.update.json'
+  ));
+  const exactProjectUpdateInput = {
+    recordType: 'project',
+    id: 'https://www.notion.so/11111111111111111111111111111111',
+    expectedVersion: '1',
+    patch: { projectType: 'Deal', status: 'paused' }
+  };
+  const exactFeedEntryUpdateInput = {
+    recordType: 'project-feed-entry',
+    id: 'soter-fixture://projects/project-feed/question-confirm-scope',
+    expectedVersion: '1',
+    patch: { processed: true }
+  };
+  if (validateJsonSchema(
+    exactProjectUpdateInput,
+    projectUpdateDefinition.inputSchema
+  ).length
+    || validateJsonSchema(
+      exactFeedEntryUpdateInput,
+      projectUpdateDefinition.inputSchema
+    ).length
+    || projectUpdateDefinition.retry.safe !== false
+    || projectUpdateDefinition.retry.maxAttempts !== 0) {
+    throw new Error(
+      'Project update contract did not preserve its two exact no-automatic-retry branches.'
+    );
+  }
+  for (const [label, input] of [
+    ['empty Project update patch', {
+      ...exactProjectUpdateInput,
+      patch: {}
+    }],
+    ['unmapped Project update field', {
+      ...exactProjectUpdateInput,
+      patch: { name: 'Blind rename' }
+    }],
+    ['open Project update input', {
+      ...exactProjectUpdateInput,
+      retry: true
+    }],
+    ['open Project update patch', {
+      ...exactProjectUpdateInput,
+      patch: { status: 'paused', rawProviderResponse: 'HOSTILE_PROJECT_PATCH_SENTINEL' }
+    }],
+    ['non-processed feed-entry update', {
+      ...exactFeedEntryUpdateInput,
+      patch: { summary: 'Blind feed rewrite' }
+    }]
+  ]) {
+    if (validateJsonSchema(input, projectUpdateDefinition.inputSchema).length === 0) {
+      throw new Error(label + ' passed the closed projects.records.update input contract.');
+    }
+  }
+  const fixtureProjectContentInput = {
+    recordTypes: ['project'],
+    ids: ['https://www.notion.so/11111111111111111111111111111111'],
+    limit: 1,
+    content: { expectedTitle: 'Healthy launch' }
+  };
+  if (validateJsonSchema(fixtureProjectContentInput, projectReadSchema.inputSchema).length) {
+    throw new Error('Project content read contract rejected one exact canonical request.');
+  }
+  for (const [label, input] of [
+    ['multiple Project content ids', {
+      ...fixtureProjectContentInput,
+      ids: [
+        fixtureProjectContentInput.ids[0],
+        'https://www.notion.so/22222222222222222222222222222221'
+      ]
+    }],
+    ['open Project content request', {
+      ...fixtureProjectContentInput,
+      content: {
+        ...fixtureProjectContentInput.content,
+        rawProviderResponse: 'HOSTILE_PROJECT_CONTENT_INPUT_SENTINEL'
+      }
+    }],
+    ['Project content request without exact ids', {
+      recordTypes: ['project'],
+      limit: 1,
+      content: fixtureProjectContentInput.content
+    }],
+    ['Project content request without exact limit', {
+      recordTypes: ['project'],
+      ids: fixtureProjectContentInput.ids,
+      content: fixtureProjectContentInput.content
+    }]
+  ]) {
+    if (validateJsonSchema(input, projectReadSchema.inputSchema).length === 0) {
+      throw new Error(label + ' passed the closed projects.records.read input contract.');
+    }
+  }
+  const fixtureProjectContent = await invokeFixture({
+    capability: 'projects.records.read',
+    input: fixtureProjectContentInput,
+    authority: 'authority.projects.instance',
+    fixtures: [],
+    mappings: [projectsMapping],
+    state: structuredClone(crmFixture),
+    at: AT
+  });
+  if (fixtureProjectContent.records.length !== 1
+    || fixtureProjectContent.records[0].fields.name !== 'Healthy launch'
+    || !fixtureProjectContent.records[0].body?.startsWith('# Healthy launch')
+    || fixtureProjectContent.records[0].version !== fingerprintJson({
+      type: fixtureProjectContent.records[0].type,
+      id: fixtureProjectContent.records[0].id,
+      fields: fixtureProjectContent.records[0].fields,
+      body: fixtureProjectContent.records[0].body
+    })
+    || validateJsonSchema(fixtureProjectContent, projectReadSchema.outputSchema).length) {
+    throw new Error(
+      'One exact fixture Project read did not seal normalized fields and markdown body together.'
+    );
+  }
+  const fixtureProjectWithoutContent = await invokeFixture({
+    capability: 'projects.records.read',
+    input: {
+      recordTypes: ['project'],
+      ids: fixtureProjectContentInput.ids,
+      limit: 1
+    },
+    authority: 'authority.projects.instance',
+    fixtures: [],
+    mappings: [projectsMapping],
+    state: structuredClone(crmFixture),
+    at: AT
+  });
+  if (Object.hasOwn(fixtureProjectWithoutContent.records[0], 'body')) {
+    throw new Error('A fixture Project read exposed body content without an exact content request.');
+  }
+  for (const [label, mutate, pattern] of [
+    [
+      'mismatched fixture Project record title',
+      (value) => {
+        value.data.records.find((record) => {
+          return record.id === fixtureProjectContentInput.ids[0];
+        }).fields.name = 'Substituted Project';
+      },
+      /record title does not match/
+    ],
+    [
+      'mismatched fixture Project document title',
+      (value) => {
+        value.data.documents.find((document) => {
+          return document.uri === fixtureProjectContentInput.ids[0];
+        }).title = 'Substituted Project';
+      },
+      /document title does not match/
+    ],
+    [
+      'empty fixture Project document body',
+      (value) => {
+        value.data.documents.find((document) => {
+          return document.uri === fixtureProjectContentInput.ids[0];
+        }).body = '';
+      },
+      /body is empty/
+    ]
+  ]) {
+    const state = structuredClone(crmFixture);
+    mutate(state);
+    await expectFailure(
+      label,
+      () => invokeFixture({
+        capability: 'projects.records.read',
+        input: fixtureProjectContentInput,
+        authority: 'authority.projects.instance',
+        fixtures: [],
+        mappings: [projectsMapping],
+        state,
+        at: AT
+      }),
+      pattern
+    );
+  }
+  await expectFailure(
+    'fixture Project content without a mapped content route',
+    () => invokeFixture({
+      capability: 'projects.records.read',
+      input: {
+        recordTypes: ['project-feed-entry'],
+        ids: ['soter-fixture://projects/project-feed/question-confirm-scope'],
+        limit: 1,
+        content: { expectedTitle: 'Confirm delivery scope' }
+      },
+      authority: 'authority.projects.instance',
+      fixtures: [],
+      mappings: [projectsMapping],
+      state: structuredClone(crmFixture),
+      at: AT
+    }),
+    /mapped markdown page-content route/
+  );
+  const projectCreateFixture = structuredClone(crmFixture);
+  const createdProjectName = 'Contained Project create/read-back';
+  const createdProjectBody = '# Contained Project create/read-back\n\nExact private body.\n';
+  const createdProject = await invokeFixture({
+    capability: 'projects.records.create',
+    input: {
+      recordType: 'project',
+      deduplicationKey: createdProjectName,
+      deduplicationFilter: { field: 'name', value: createdProjectName },
+      fields: {
+        name: createdProjectName,
+        projectType: 'Project',
+        status: 'Not Started',
+        organizationUris: ['soter-fixture://crm/organization/acme']
+      },
+      body: createdProjectBody
+    },
+    authority: 'authority.projects.instance',
+    fixtures: [],
+    mappings: [projectsMapping],
+    state: projectCreateFixture,
+    at: AT
+  });
+  const createdProjectRead = await invokeFixture({
+    capability: 'projects.records.read',
+    input: {
+      recordTypes: ['project'],
+      ids: [createdProject.record.id],
+      content: { expectedTitle: createdProjectName },
+      limit: 1
+    },
+    authority: 'authority.projects.instance',
+    fixtures: [],
+    mappings: [projectsMapping],
+    state: projectCreateFixture,
+    at: AT
+  });
+  const expectedCreatedProjectFields = {
+    name: createdProjectName,
+    projectType: 'Project',
+    status: 'Not Started',
+    startDate: null,
+    targetEndDate: null,
+    organizationUris: ['soter-fixture://crm/organization/acme'],
+    taskUris: []
+  };
+  if (createdProjectRead.records.length !== 1
+    || fingerprintJson(createdProjectRead.records[0].fields)
+      !== fingerprintJson(expectedCreatedProjectFields)
+    || createdProjectRead.records[0].body !== createdProjectBody) {
+    throw new Error(
+      'Fixture Project create did not round-trip one complete mapped field set and exact body.'
+    );
+  }
+  const projectUpdateFixture = structuredClone(crmFixture);
+  const fixtureProjectBefore = structuredClone(projectUpdateFixture.data.records.find((record) => {
+    return record.type === 'project' && record.id === exactProjectUpdateInput.id;
+  }));
+  const fixtureProjectUpdate = await invokeFixture({
+    capability: 'projects.records.update',
+    input: exactProjectUpdateInput,
+    authority: 'authority.projects.instance',
+    fixtures: [],
+    mappings: [projectsMapping],
+    state: projectUpdateFixture,
+    at: AT
+  });
+  if (fixtureProjectUpdate.record.fields.name !== fixtureProjectBefore.fields.name
+    || fingerprintJson(fixtureProjectUpdate.record.fields.taskUris)
+      !== fingerprintJson(fixtureProjectBefore.fields.taskUris)
+    || fixtureProjectUpdate.record.fields.projectType !== 'Deal'
+    || fixtureProjectUpdate.record.fields.status !== 'paused'
+    || fixtureProjectUpdate.record.version !== '2'
+    || fingerprintJson(fixtureProjectUpdate.changedFields)
+      !== fingerprintJson(['projectType', 'status'])
+    || validateJsonSchema(
+      fixtureProjectUpdate,
+      projectUpdateDefinition.outputSchema
+    ).length) {
+    throw new Error(
+      'Fixture Project update did not change only the exact patch while preserving untouched fields.'
+    );
+  }
+  const feedEntryUpdateFixture = structuredClone(crmFixture);
+  const fixtureFeedEntryUpdate = await invokeFixture({
+    capability: 'projects.records.update',
+    input: exactFeedEntryUpdateInput,
+    authority: 'authority.projects.instance',
+    fixtures: [],
+    mappings: [projectsMapping],
+    state: feedEntryUpdateFixture,
+    at: AT
+  });
+  if (fixtureFeedEntryUpdate.record.fields.processed !== true
+    || fingerprintJson(fixtureFeedEntryUpdate.changedFields)
+      !== fingerprintJson(['processed'])) {
+    throw new Error('Processed-only Project feed-entry updates no longer round-trip.');
+  }
+  for (const [label, input, pattern] of [
+    ['empty fixture Project update patch', {
+      ...exactProjectUpdateInput,
+      patch: {}
+    }, /non-empty patch/],
+    ['open fixture Project update input', {
+      ...exactProjectUpdateInput,
+      retry: true
+    }, /closed exact record identity/],
+    ['unmapped fixture Project update field', {
+      ...exactProjectUpdateInput,
+      patch: { name: 'Blind rename' }
+    }, /write-scoped field project\.name/]
+  ]) {
+    await expectFailure(
+      label,
+      () => invokeFixture({
+        capability: 'projects.records.update',
+        input,
+        authority: 'authority.projects.instance',
+        fixtures: [],
+        mappings: [projectsMapping],
+        state: structuredClone(crmFixture),
+        at: AT
+      }),
+      pattern
+    );
+  }
   const channelFixtureBase = {
     authority: 'authority.communications.instance',
     fixtures: [],
@@ -494,7 +825,7 @@ export async function selftestNotionRecordMappings(root) {
     /cannot use unmapped or write-scoped field channel\.providerConversationId/
   );
   await expectFailure(
-    'legacy provider mapping contract',
+    'unsupported provider mapping contract',
     () => invokeFixture({
       capability: 'crm.records.read',
       input: { recordTypes: ['organization'], filters: {}, limit: 2 },
@@ -546,6 +877,9 @@ export async function selftestNotionRecordMappings(root) {
   });
   if (processRead.records.length !== 1
     || processRead.records[0].type !== 'process'
+    || !processRead.records[0].body?.includes(
+      'do not independently re-read the full address'
+    )
     || processSchema.schema.recordType !== 'process'
     || processCreate.created !== true
     || processCreate.record.fields.status !== 'Draft') {
@@ -689,6 +1023,273 @@ export async function selftestNotionRecordMappings(root) {
       ]
     }
   }, [tasksMapping]);
+  const projectSettings = withMappedFieldBindings({
+    'integration.notion': {
+      targets: { projects: 'collection://eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' },
+      optionMappings: [
+        {
+          mapping: projectsMapping.id,
+          recordType: 'project',
+          field: 'projectType',
+          mode: 'exact-bijection',
+          entries: [
+            { portable: 'Deal', provider: 'Connected Deal' },
+            { portable: 'Project', provider: 'Connected Project' }
+          ]
+        },
+        {
+          mapping: projectsMapping.id,
+          recordType: 'project',
+          field: 'status',
+          mode: 'exact-bijection',
+          entries: [
+            { portable: 'Active', provider: 'In flight' },
+            { portable: 'On Hold', provider: 'Provider Paused' }
+          ]
+        }
+      ]
+    }
+  }, [projectsMapping]);
+  const connectedProjectId
+    = 'https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+  const connectedProjectInput = {
+    recordTypes: ['project'],
+    ids: [connectedProjectId],
+    limit: 1,
+    content: { expectedTitle: 'Connected Project page' }
+  };
+  const connectedProjectRequest = prepareMcp({
+    capability: 'projects.records.read',
+    input: connectedProjectInput,
+    settings: projectSettings,
+    mappings: [projectsMapping]
+  });
+  assert.deepEqual(
+    connectedProjectRequest,
+    {
+      tool: 'fetch',
+      arguments: { id: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' }
+    },
+    'One exact Project content read must use one page fetch rather than a second document observation.'
+  );
+  const connectedProjectProperties = {
+    Name: 'Connected Project page',
+    Type: 'Connected Project',
+    Status: 'In flight',
+    'Start Date': '2026-07-01',
+    'Target End Date': null,
+    Organization: ['https://app.notion.com/p/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],
+    Tasks: ['https://www.notion.so/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'],
+    rawProviderResponse: 'HOSTILE_PROJECT_PAGE_PROPERTY_SENTINEL'
+  };
+  const connectedProjectBody
+    = '# Connected Project page\n\n## Overview\n\nExact connected body.';
+  const connectedProjectProviderResult = {
+    metadata: { type: 'page' },
+    title: '🏗️ Connected Project page',
+    url: 'https://app.notion.com/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
+    text: '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee">'
+      + '<properties>' + JSON.stringify(connectedProjectProperties) + '</properties>\n'
+      + connectedProjectBody + '\n</page>'
+  };
+  const connectedProjectRead = completeMcp({
+    capability: 'projects.records.read',
+    authority: 'authority.projects.instance',
+    input: connectedProjectInput,
+    responseProfile: 'notion.codex.connector.v1',
+    response: { structuredContent: { result: connectedProjectProviderResult } },
+    at: AT,
+    mappings: [projectsMapping],
+    settings: projectSettings
+  });
+  const directClaudeProjectRead = completeMcp({
+    capability: 'projects.records.read',
+    authority: 'authority.projects.instance',
+    input: connectedProjectInput,
+    responseProfile: 'notion.claude.plugin.v1',
+    response: connectedProjectProviderResult,
+    at: AT,
+    mappings: [projectsMapping],
+    settings: projectSettings
+  });
+  assert.deepEqual(
+    directClaudeProjectRead,
+    connectedProjectRead,
+    'Codex and Claude Project page fetches must normalize to one exact record observation.'
+  );
+  if (connectedProjectRead.records.length !== 1
+    || connectedProjectRead.records[0].body !== connectedProjectBody
+    || connectedProjectRead.records[0].fields.name !== 'Connected Project page'
+    || connectedProjectRead.records[0].fields.projectType !== 'Project'
+    || connectedProjectRead.records[0].fields.status !== 'Active'
+    || connectedProjectRead.records[0].fields.organizationUris[0]
+      !== 'https://www.notion.so/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    || connectedProjectRead.records[0].fields.taskUris[0]
+      !== 'https://www.notion.so/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+    || JSON.stringify(connectedProjectRead).includes('HOSTILE_PROJECT_PAGE_PROPERTY_SENTINEL')
+    || validateJsonSchema(connectedProjectRead, projectReadSchema.outputSchema).length) {
+    throw new Error(
+      'Connected Project content read did not normalize exact mapped fields and body privately.'
+    );
+  }
+  for (const [label, mutate, pattern] of [
+    [
+      'connected Project substituted mapped title',
+      (value) => { value.Name = 'Substituted Project page'; },
+      /title.*does not match|do not identify one exact requested title/
+    ],
+    [
+      'connected Project missing mapped property',
+      (value) => { delete value.Status; },
+      /omitted mapped property status/
+    ],
+    [
+      'connected Project malformed relation property',
+      (value) => { value.Tasks = { private: 'HOSTILE_PROJECT_RELATION_SENTINEL' }; },
+      /exact mapped array shape/
+    ]
+  ]) {
+    const properties = structuredClone(connectedProjectProperties);
+    mutate(properties);
+    await expectFailure(
+      label,
+      () => completeMcp({
+        capability: 'projects.records.read',
+        authority: 'authority.projects.instance',
+        input: connectedProjectInput,
+        responseProfile: 'notion.codex.connector.v1',
+        response: {
+          structuredContent: {
+            result: {
+              ...connectedProjectProviderResult,
+              text: '<page url="https://app.notion.com/p/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee">'
+                + '<properties>' + JSON.stringify(properties) + '</properties>\n'
+                + connectedProjectBody + '\n</page>'
+            }
+          }
+        },
+        at: AT,
+        mappings: [projectsMapping],
+        settings: projectSettings
+      }),
+      pattern
+    );
+  }
+  const projectsWithoutContent = structuredClone(projectsMapping);
+  delete projectsWithoutContent.recordTypes.find((record) => record.id === 'project').content;
+  await expectFailure(
+    'connected Project read without mapped content',
+    () => prepareMcp({
+      capability: 'projects.records.read',
+      input: connectedProjectInput,
+      settings: projectSettings,
+      mappings: [projectsWithoutContent]
+    }),
+    /mapped markdown page-content route/
+  );
+  const connectedProjectUpdateInput = {
+    recordType: 'project',
+    id: connectedProjectId,
+    expectedVersion: connectedProjectRead.records[0].version,
+    patch: { projectType: 'Deal', status: 'On Hold' }
+  };
+  const connectedProjectUpdateRequest = prepareMcp({
+    capability: 'projects.records.update',
+    input: connectedProjectUpdateInput,
+    settings: projectSettings,
+    mappings: [projectsMapping]
+  });
+  assert.deepEqual(
+    connectedProjectUpdateRequest,
+    {
+      tool: 'update_page',
+      arguments: {
+        page_id: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+        command: 'update_properties',
+        properties: {
+          Type: 'Connected Deal',
+          Status: 'Provider Paused'
+        }
+      }
+    },
+    'Connected Project updates must translate only the exact selected portable choice fields.'
+  );
+  const connectedProjectUpdateProviderResult = {
+    id: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+    url: 'https://app.notion.com/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
+    rawProviderResponse: 'HOSTILE_PROJECT_UPDATE_RESPONSE_SENTINEL'
+  };
+  const connectedProjectUpdate = completeMcp({
+    capability: 'projects.records.update',
+    authority: 'authority.projects.instance',
+    input: connectedProjectUpdateInput,
+    responseProfile: 'notion.codex.connector.v1',
+    response: { structuredContent: { result: connectedProjectUpdateProviderResult } },
+    at: AT,
+    mappings: [projectsMapping],
+    settings: projectSettings
+  });
+  const directClaudeProjectUpdate = completeMcp({
+    capability: 'projects.records.update',
+    authority: 'authority.projects.instance',
+    input: connectedProjectUpdateInput,
+    responseProfile: 'notion.claude.plugin.v1',
+    response: { page_id: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' },
+    at: AT,
+    mappings: [projectsMapping],
+    settings: projectSettings
+  });
+  if (fingerprintJson(connectedProjectUpdate)
+      !== fingerprintJson(directClaudeProjectUpdate)
+    || fingerprintJson(connectedProjectUpdate.changedFields)
+      !== fingerprintJson(['projectType', 'status'])
+    || fingerprintJson(connectedProjectUpdate.record.fields)
+      !== fingerprintJson(connectedProjectUpdateInput.patch)
+    || JSON.stringify(connectedProjectUpdate).includes('Connected Deal')
+    || JSON.stringify(connectedProjectUpdate).includes('Provider Paused')
+    || JSON.stringify(connectedProjectUpdate)
+      .includes('HOSTILE_PROJECT_UPDATE_RESPONSE_SENTINEL')
+    || validateJsonSchema(
+      connectedProjectUpdate,
+      projectUpdateDefinition.outputSchema
+    ).length) {
+    throw new Error(
+      'Connected Project update did not return one sanitized exact-patch observation.'
+    );
+  }
+  for (const [label, input, pattern] of [
+    ['empty connected Project update patch', {
+      ...connectedProjectUpdateInput,
+      patch: {}
+    }, /at least one exact field/],
+    ['connected Project rename outside write scope', {
+      ...connectedProjectUpdateInput,
+      patch: { name: 'Blind rename' }
+    }, /outside its declared write scope: project\.name/],
+    ['unmapped connected Project choice', {
+      ...connectedProjectUpdateInput,
+      patch: { status: 'Provider Paused' }
+    }, /does not map one exact choice value/],
+    ['open connected Project update input', {
+      ...connectedProjectUpdateInput,
+      retry: true
+    }, /closed exact record identity/],
+    ['non-exact connected Project expected version', {
+      ...connectedProjectUpdateInput,
+      expectedVersion: ' ' + connectedProjectUpdateInput.expectedVersion + ' '
+    }, /must be exact trimmed values/]
+  ]) {
+    await expectFailure(
+      label,
+      () => prepareMcp({
+        capability: 'projects.records.update',
+        input,
+        settings: projectSettings,
+        mappings: [projectsMapping]
+      }),
+      pattern
+    );
+  }
   const liveTaskSettings = structuredClone(taskSettings);
   liveTaskSettings['integration.notion'].fieldBindings
     = liveTaskSettings['integration.notion'].fieldBindings.map((binding) => {
@@ -925,15 +1526,15 @@ export async function selftestNotionRecordMappings(root) {
     taskCreateInput.fields.title,
     'Connected writes must use the exact private provider property binding.'
   );
-  const legacySourceMeetingTaskCreateInput = structuredClone(taskCreateInput);
-  legacySourceMeetingTaskCreateInput.fields.sourceMeetingUris = [
+  const unsupportedSourceMeetingTaskCreateInput = structuredClone(taskCreateInput);
+  unsupportedSourceMeetingTaskCreateInput.fields.sourceMeetingUris = [
     'https://app.notion.com/p/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
   ];
   await expectFailure(
-    'legacy source-meeting connected task write',
+    'unsupported source-meeting connected task write',
     () => prepareMcp({
       capability: 'tasks.records.create',
-      input: legacySourceMeetingTaskCreateInput,
+      input: unsupportedSourceMeetingTaskCreateInput,
       settings: liveTaskSettings,
       mappings: [tasksMapping]
     }),

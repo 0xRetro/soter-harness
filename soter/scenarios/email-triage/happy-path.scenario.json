@@ -77,10 +77,5 @@
       "private-connected-acquisition-snapshot",
       "contained-read-after-write-comparison"
     ]
-  },
-  "sourceCases": [
-    ".claude/evals/processing-email/happy-path.md",
-    ".claude/evals/processing-email/invariant-gated-writes.md",
-    ".claude/evals/processing-email/pressure-injection.md"
-  ]
+  }
 }

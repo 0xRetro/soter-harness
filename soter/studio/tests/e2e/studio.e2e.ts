@@ -224,7 +224,7 @@ test('launches with a sandboxed canonical adapter and performs zero workspace wr
     }));
     expect(boundary).toEqual({
       require: 'undefined', process: 'undefined', ipcRenderer: 'undefined',
-      api: ['beginConfigurationChangeRequest', 'beginHostRealizationRequest', 'beginPackInstallRequest', 'beginProposalConnectedApproval', 'confirmConfigurationChangeRequest', 'confirmConnectedApproval', 'confirmHostRealizationRequest', 'confirmPackInstallRequest', 'createPreparedConnectedPlan', 'createPreparedReviewBatch', 'executeConfigurationChange', 'executeHostRealization', 'executePackInstall', 'getAutomationProposal', 'getAutomationProposalMaterial', 'getConnectedApprovalReview', 'getOperatorActivity', 'getPreparedConnectedPlan', 'getPreparedReviewBatchMaterial', 'getPreparedWork', 'getPreparedWorkDerivedReview', 'getPreparedWorkReview', 'getWorkspaceSnapshot', 'inspectConfigurationChange', 'inspectHostRealization', 'inspectLocalBundle', 'inspectLocalPackRelease', 'inspectPackInstall', 'onWorkspaceInvalidated', 'prepareAutomationRun', 'prepareConfigurationChange', 'prepareConnectedReconciliation', 'prepareHostRealization', 'preparePackInstall', 'previewConfiguration', 'previewProposalConnectedBatch', 'recoverConfigurationChange', 'recoverHostRealization', 'recoverPackInstall', 'refreshWorkspaceSnapshot', 'startConfigurationChange', 'startConnectedTransaction', 'startHostRealization', 'startPackInstall']
+      api: ['beginConfigurationChangeRequest', 'beginHostRealizationRequest', 'beginPackInstallRequest', 'beginProposalConnectedApproval', 'confirmConfigurationChangeRequest', 'confirmConnectedApproval', 'confirmHostRealizationRequest', 'confirmPackInstallRequest', 'createReviewOnlyCandidatePreview', 'createReviewOnlyCandidateSelection', 'executeConfigurationChange', 'executeHostRealization', 'executePackInstall', 'getAutomationProposal', 'getAutomationProposalMaterial', 'getConnectedApprovalReview', 'getOperatorActivity', 'getPreparedWork', 'getPreparedWorkDerivedReview', 'getPreparedWorkReview', 'getReviewOnlyCandidatePreview', 'getReviewOnlyCandidateSelectionMaterial', 'getWorkspaceSnapshot', 'inspectConfigurationChange', 'inspectHostRealization', 'inspectLocalBundle', 'inspectLocalPackRelease', 'inspectPackInstall', 'onWorkspaceInvalidated', 'prepareAutomationRun', 'prepareConfigurationChange', 'prepareConnectedReconciliation', 'prepareHostRealization', 'preparePackInstall', 'previewConfiguration', 'previewProposalConnectedBatch', 'recoverConfigurationChange', 'recoverHostRealization', 'recoverPackInstall', 'refreshWorkspaceSnapshot', 'startConfigurationChange', 'startConnectedTransaction', 'startHostRealization', 'startPackInstall']
     });
     const productionCsp = await page.evaluate(async () => {
       const response = await fetch(window.location.href);
@@ -432,59 +432,59 @@ test('launches with a sandboxed canonical adapter and performs zero workspace wr
 
     await page.getByRole('checkbox', { name: 'Select Draft for review' }).check();
     await page.getByRole('checkbox', { name: 'Select Label for review' }).first().check();
-    await page.getByRole('button', { name: 'Create review-only batch (2)' }).click();
-    const selectedBatchFolio = page.getByRole('region', { name: 'Selected review batch private folio' });
-    await expect(selectedBatchFolio).toBeVisible();
-    await expect(selectedBatchFolio).toContainText('No external action has been taken.');
-    await expect(selectedBatchFolio).toContainText('CONNECTED_PLAN_NOT_COMPILED');
-    await expect(selectedBatchFolio).toContainText('CONNECTED_VERIFICATION_NOT_PROVEN');
-    await expect(selectedBatchFolio).toContainText('No authority');
-    await expect(selectedBatchFolio.getByRole('button', { name: /approve|confirm|continue|retry|execute|write|send/i })).toHaveCount(0);
-    const selectedActions = selectedBatchFolio.locator('.selected-batch-actions > li');
+    await page.getByRole('button', { name: 'Create review-only candidate selection (2)' }).click();
+    const candidateSelectionFolio = page.getByRole('region', { name: 'Review-only candidate selection private folio' });
+    await expect(candidateSelectionFolio).toBeVisible();
+    await expect(candidateSelectionFolio).toContainText('No external action has been taken.');
+    await expect(candidateSelectionFolio).toContainText('REVIEW_ONLY_CANDIDATE_PREVIEW_NOT_CREATED');
+    await expect(candidateSelectionFolio).toContainText('CONNECTED_VERIFICATION_NOT_PROVEN');
+    await expect(candidateSelectionFolio).toContainText('No authority');
+    await expect(candidateSelectionFolio.getByRole('button', { name: /approve|confirm|continue|retry|execute|write|send/i })).toHaveCount(0);
+    const selectedActions = candidateSelectionFolio.locator('.candidate-selection-actions > li');
     await expect(selectedActions).toHaveCount(2);
     await expect(selectedActions.nth(0)).toContainText('Label');
     await expect(selectedActions.nth(1)).toContainText('Draft');
-    await expect(selectedBatchFolio).toContainText('Exact message IDs');
-    await expect(selectedBatchFolio).toContainText('Exact label name');
-    await expect(selectedBatchFolio).toContainText('Exact reply message ID');
-    const reviewBatchDirectory = path.join(root, '.soter/state/prepared-review-batches');
-    expect(fs.existsSync(reviewBatchDirectory)).toBe(true);
-    const reviewBatchState = fs.readdirSync(reviewBatchDirectory)
-      .map((name) => fs.readFileSync(path.join(reviewBatchDirectory, name), 'utf8')).join('\n');
-    expect(reviewBatchState).not.toContain('No external action has been taken.');
-    expect(reviewBatchState).not.toContain('in:inbox newer_than:1d');
-    expect(reviewBatchState).not.toContain('PRIVATE_EMAIL_E2E_FOCUS_SENTINEL');
+    await expect(candidateSelectionFolio).toContainText('Exact message IDs');
+    await expect(candidateSelectionFolio).toContainText('Exact label name');
+    await expect(candidateSelectionFolio).toContainText('Exact reply message ID');
+    const candidateSelectionDirectory = path.join(root, '.soter/state/review-only-candidate-selections');
+    expect(fs.existsSync(candidateSelectionDirectory)).toBe(true);
+    const candidateSelectionState = fs.readdirSync(candidateSelectionDirectory)
+      .map((name) => fs.readFileSync(path.join(candidateSelectionDirectory, name), 'utf8')).join('\n');
+    expect(candidateSelectionState).not.toContain('No external action has been taken.');
+    expect(candidateSelectionState).not.toContain('in:inbox newer_than:1d');
+    expect(candidateSelectionState).not.toContain('PRIVATE_EMAIL_E2E_FOCUS_SENTINEL');
     expect(JSON.stringify(await page.evaluate(() => window.soterStudio.getWorkspaceSnapshot())))
       .not.toContain('No external action has been taken.');
 
-    await selectedBatchFolio.getByRole('button', { name: 'Compile review-only candidate' }).click();
-    const compiledCandidate = page.getByRole('region', { name: 'Selected compiled candidate private ledger' });
-    await expect(compiledCandidate).toBeVisible();
-    await expect(compiledCandidate).toContainText('Executable');
-    await expect(compiledCandidate).toContainText('Authority');
-    await expect(compiledCandidate).toContainText('not declared');
-    await expect(compiledCandidate).toContainText('provider.integration.gmail.mcp');
-    await expect(compiledCandidate).toContainText('Create Missing Labels');
-    await expect(compiledCandidate).toContainText('CONNECTED_PROVIDER_NOT_DECLARED');
-    await expect(compiledCandidate).toContainText('CONNECTED_TRANSACTION_RUNTIME_NOT_SUPPORTED');
-    await expect(compiledCandidate).toContainText('CONNECTED_VERIFICATION_NOT_PROVEN');
-    await expect(compiledCandidate).toContainText('SELECTED_ACTIVITY_PRIVATE_APPROVAL_REVIEW_NOT_AVAILABLE');
-    await expect(compiledCandidate.locator('.compiled-candidate-operations > li')).toHaveCount(2);
-    await expect(compiledCandidate.getByRole('button')).toHaveCount(0);
-    const connectedPlanDirectory = path.join(root, '.soter/state/prepared-connected-plans');
-    expect(fs.existsSync(connectedPlanDirectory)).toBe(true);
-    const connectedPlanState = fs.readdirSync(connectedPlanDirectory)
-      .map((name) => fs.readFileSync(path.join(connectedPlanDirectory, name), 'utf8')).join('\n');
-    expect(connectedPlanState).toContain('No external action has been taken.');
-    expect(connectedPlanState).not.toContain('in:inbox newer_than:1d');
-    expect(connectedPlanState).not.toContain('PRIVATE_EMAIL_E2E_FOCUS_SENTINEL');
-    const projectionAfterPlan = JSON.stringify(await page.evaluate(() => window.soterStudio.getWorkspaceSnapshot()));
-    expect(projectionAfterPlan).not.toContain('No external action has been taken.');
-    expect(projectionAfterPlan).not.toContain('prepared-connected-plan');
+    await candidateSelectionFolio.getByRole('button', { name: 'Create review-only candidate preview' }).click();
+    const candidatePreview = page.getByRole('region', { name: 'Selected review-only candidate preview private ledger' });
+    await expect(candidatePreview).toBeVisible();
+    await expect(candidatePreview).toContainText('Executable');
+    await expect(candidatePreview).toContainText('Authority');
+    await expect(candidatePreview).toContainText('not declared');
+    await expect(candidatePreview).toContainText('provider.integration.gmail.mcp');
+    await expect(candidatePreview).toContainText('Create Missing Labels');
+    await expect(candidatePreview).toContainText('CONNECTED_PROVIDER_NOT_DECLARED');
+    await expect(candidatePreview).toContainText('CONNECTED_TRANSACTION_RUNTIME_NOT_SUPPORTED');
+    await expect(candidatePreview).toContainText('CONNECTED_VERIFICATION_NOT_PROVEN');
+    await expect(candidatePreview).toContainText('SELECTED_ACTIVITY_PRIVATE_APPROVAL_REVIEW_NOT_AVAILABLE');
+    await expect(candidatePreview.locator('.candidate-preview-operations > li')).toHaveCount(2);
+    await expect(candidatePreview.getByRole('button')).toHaveCount(0);
+    const candidatePreviewDirectory = path.join(root, '.soter/state/review-only-candidate-previews');
+    expect(fs.existsSync(candidatePreviewDirectory)).toBe(true);
+    const candidatePreviewState = fs.readdirSync(candidatePreviewDirectory)
+      .map((name) => fs.readFileSync(path.join(candidatePreviewDirectory, name), 'utf8')).join('\n');
+    expect(candidatePreviewState).toContain('No external action has been taken.');
+    expect(candidatePreviewState).not.toContain('in:inbox newer_than:1d');
+    expect(candidatePreviewState).not.toContain('PRIVATE_EMAIL_E2E_FOCUS_SENTINEL');
+    const projectionAfterPreview = JSON.stringify(await page.evaluate(() => window.soterStudio.getWorkspaceSnapshot()));
+    expect(projectionAfterPreview).not.toContain('No external action has been taken.');
+    expect(projectionAfterPreview).not.toContain('review-only-candidate-preview');
     await expectAccessible(page);
-    await selectedBatchFolio.getByRole('button', { name: 'End batch review' }).click();
-    await expect(selectedBatchFolio).toHaveCount(0);
-    await expect(compiledCandidate).toHaveCount(0);
+    await candidateSelectionFolio.getByRole('button', { name: 'End candidate review' }).click();
+    await expect(candidateSelectionFolio).toHaveCount(0);
+    await expect(candidatePreview).toHaveCount(0);
 
     const emailPreparedState = fs.readdirSync(preparedDirectory)
       .map((name) => fs.readFileSync(path.join(preparedDirectory, name), 'utf8')).join('\n');
@@ -514,24 +514,24 @@ test('launches with a sandboxed canonical adapter and performs zero workspace wr
         message: 'Private derived review material is unavailable for this prepared work.'
       }
     });
-    const missingReviewBatch = await page.evaluate(() => window.soterStudio.getPreparedReviewBatchMaterial({
-      batchId: 'review-batch.email-triage.missing'
+    const missingCandidateSelection = await page.evaluate(() => window.soterStudio.getReviewOnlyCandidateSelectionMaterial({
+      selectionId: 'review-only-candidate-selection.email-triage.missing'
     }));
-    expect(missingReviewBatch).toEqual({
+    expect(missingCandidateSelection).toEqual({
       ok: false,
       error: {
-        code: 'PREPARED_REVIEW_BATCH_MISSING',
-        message: 'Private selected-batch review material is unavailable.'
+        code: 'REVIEW_ONLY_CANDIDATE_SELECTION_MISSING',
+        message: 'Private review-only candidate selection material is unavailable.'
       }
     });
-    const missingConnectedPlan = await page.evaluate(() => window.soterStudio.getPreparedConnectedPlan({
-      planId: 'prepared-connected-plan.email-triage.missing'
+    const missingCandidatePreview = await page.evaluate(() => window.soterStudio.getReviewOnlyCandidatePreview({
+      candidatePreviewId: 'review-only-candidate-preview.email-triage.missing'
     }));
-    expect(missingConnectedPlan).toEqual({
+    expect(missingCandidatePreview).toEqual({
       ok: false,
       error: {
-        code: 'PREPARED_CONNECTED_PLAN_MISSING',
-        message: 'Private compiled candidate material is unavailable.'
+        code: 'REVIEW_ONLY_CANDIDATE_PREVIEW_MISSING',
+        message: 'Private review-only candidate preview material is unavailable.'
       }
     });
     const missingApprovalReview = await page.evaluate(() => window.soterStudio.getConnectedApprovalReview({

@@ -9,18 +9,12 @@ import { fileURLToPath } from 'node:url';
 import { parseRecordCapability } from './record-capabilities.mjs';
 import { inspectTrackedConfigurationTemplates } from './configuration-template-portability.mjs';
 import {
-  fingerprintWorkflowEvaluatedSubject,
-  fingerprintWorkflowGuideContent,
-  inspectWorkflowEvaluationRunSet,
-  workflowEvaluationRunPlan,
-  workflowGuideContentFingerprintMatches,
-  workflowLegacySourceProjection
+  workflowGuideContentFingerprintMatches
 } from './workflow-guides.mjs';
 import {
   fingerprintPrivateContainedBasis,
   fingerprintPrivateContainedLockProjection
 } from './private-contained-evidence.mjs';
-import { workflowEvidenceBasisForPath } from './workflow-evidence-bases.mjs';
 
 const CONTRACT_VERSION = '1.0.0';
 const EFFECTS = ['read', 'disclosure', 'write', 'dispatch', 'destructive'];
@@ -61,20 +55,55 @@ function violation(file, code, what, why, fix, level = 'error') {
   return { file, code, what, why, fix, level };
 }
 
+// Directory listings are cached per (mtime, inode) for the life of the process.
+// One scan enumerates the same tree many times over. Creating or removing an
+// entry changes the directory mtime, so a selftest that adds or deletes a file
+// still observes its own change.
+const directoryEntries = new Map();
+
+function listDirectory(dir) {
+  let stat;
+  try {
+    stat = fs.statSync(dir);
+  } catch {
+    return null;
+  }
+  const identity = stat.mtimeMs + ':' + stat.ino;
+  const cached = directoryEntries.get(dir);
+  if (cached && cached.identity === identity) return cached.entries;
+  const entries = fs.readdirSync(dir, { withFileTypes: true })
+    .map((entry) => ({ name: entry.name, directory: entry.isDirectory() }));
+  directoryEntries.set(dir, { identity, entries });
+  return entries;
+}
+
 function walkFiles(dir, predicate) {
   const found = [];
-  if (!fs.existsSync(dir)) return found;
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+  const entries = listDirectory(dir);
+  if (entries === null) return found;
+  for (const entry of entries) {
     const file = path.join(dir, entry.name);
-    if (entry.isDirectory()) found.push(...walkFiles(file, predicate));
+    if (entry.directory) found.push(...walkFiles(file, predicate));
     else if (predicate(file)) found.push(file);
   }
   return found;
 }
 
+// Parsed documents are cached per (mtime, size, inode) for the life of the
+// process, for the same reason directory listings are. A selftest that
+// deliberately rewrites a file still invalidates its own entry because the
+// stat identity changes.
+const parsedDocuments = new Map();
+
 function parseJson(file, out) {
   try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
+    const stat = fs.statSync(file);
+    const identity = stat.mtimeMs + ':' + stat.size + ':' + stat.ino;
+    const cached = parsedDocuments.get(file);
+    if (cached && cached.identity === identity) return cached.value;
+    const value = JSON.parse(fs.readFileSync(file, 'utf8'));
+    parsedDocuments.set(file, { identity, value });
+    return value;
   } catch (error) {
     out.push(violation(
       file,
@@ -112,55 +141,6 @@ function schemaObjectsAreClosed(value) {
   if (!value || typeof value !== 'object') return true;
   if (value.type === 'object' && value.additionalProperties !== false) return false;
   return Object.values(value).every(schemaObjectsAreClosed);
-}
-
-function isExactInstant(value) {
-  const parsed = typeof value === 'string' ? Date.parse(value) : Number.NaN;
-  return Number.isFinite(parsed) && new Date(parsed).toISOString() === value;
-}
-
-function historicalWorkflowEvidenceChronologyIsValid(evidence) {
-  const instants = [
-    evidence.createdAt,
-    evidence.sourceObservation?.observedAt,
-    evidence.request?.createdAt,
-    evidence.result?.createdAt,
-    evidence.result?.completedAt,
-    ...((evidence.runs || []).flatMap((run) => [run.startedAt, run.completedAt]))
-  ];
-  if (instants.some((instant) => !isExactInstant(instant))) return false;
-  const requestAt = Date.parse(evidence.request.createdAt);
-  const resultCreatedAt = Date.parse(evidence.result.createdAt);
-  const resultCompletedAt = Date.parse(evidence.result.completedAt);
-  const observedAt = Date.parse(evidence.sourceObservation.observedAt);
-  const evidenceAt = Date.parse(evidence.createdAt);
-  return resultCreatedAt >= requestAt
-    && resultCompletedAt >= resultCreatedAt
-    && observedAt >= resultCompletedAt
-    && evidenceAt === observedAt
-    && !evidence.runs.some((run) => {
-      const startedAt = Date.parse(run.startedAt);
-      const completedAt = Date.parse(run.completedAt);
-      return startedAt < requestAt
-        || completedAt < startedAt
-        || completedAt > resultCompletedAt;
-    });
-}
-
-function historicalWorkflowEvidenceWorkspaceIsStable(evidence) {
-  const pre = evidence.workspace?.pre;
-  const post = evidence.workspace?.post;
-  return pre && post && [
-    'rootIdentityFingerprint',
-    'policyFingerprint',
-    'settingsFingerprint'
-  ].every((field) => pre[field] === post[field]);
-}
-
-function fingerprintFile(file) {
-  return 'sha256:' + crypto.createHash('sha256')
-    .update(fs.readFileSync(file))
-    .digest('hex');
 }
 
 function resolveRegularRepositoryFile(root, requestedPath) {
@@ -735,8 +715,6 @@ function checkPackGraph(root, documents, out, census, options = {}) {
   const workflowDefinitions = new Map();
   const workflowEvaluationSets = new Map();
   const workflowGuides = new Map();
-  const migrations = [];
-  const legacyInventories = [];
   const locks = [];
   const runs = new Map();
   const evidence = new Map();
@@ -835,11 +813,6 @@ function checkPackGraph(root, documents, out, census, options = {}) {
     } else if (entry.contractId === 'soter://contracts/workflow-guide/v2') {
       census.workflowGuides += 1;
       addUniqueRuntimeArtifact(workflowGuides, entry, 'workflow-guide');
-    } else if (entry.contractId === 'soter://contracts/migration/v1') {
-      census.migrations += 1;
-      migrations.push(entry);
-    } else if (entry.contractId === 'soter://contracts/legacy-inventory/v2') {
-      legacyInventories.push(entry);
     } else if (entry.contractId === 'soter://contracts/lock/v1') {
       census.locks += 1;
       locks.push(entry);
@@ -1333,23 +1306,19 @@ function checkPackGraph(root, documents, out, census, options = {}) {
           'SOTER_DEPENDENCY',
           dep.pack + ' version ' + target.doc.version + ' does not satisfy ' + dep.version,
           'the resolved graph must honor every declared compatibility range',
-          'choose compatible versions or provide a migration'
+          'choose compatible versions or prepare an explicit upgrade'
         ));
       }
     }
   }
   detectDependencyCycles(packs, out);
-  checkDefinitionOnlyWorkflows(
+  checkActiveWorkflows(
     root,
     workflowDefinitions,
     workflowEvaluationSets,
     workflowGuides,
-    legacyInventories,
     packs,
     documentsByPath,
-    evidence,
-    locks,
-    options.includeRuntimeArtifacts !== false,
     out
   );
 
@@ -1771,17 +1740,6 @@ function checkPackGraph(root, documents, out, census, options = {}) {
     }
   }
 
-  if (legacyInventories.length !== 1) {
-    out.push(violation(
-      path.join(root, 'soter', 'migrations', 'legacy-inventory.json'),
-      'SOTER_MIGRATION_INVENTORY',
-      'expected exactly one governed legacy inventory but found ' + legacyInventories.length,
-      'migration promotion must reconcile against one complete source classification',
-      'restore the single legacy-inventory/v2 document before promoting migration state'
-    ));
-  }
-  const legacyInventory = legacyInventories.length === 1 ? legacyInventories[0] : null;
-
   checkPackSettings(root, packSettings, packs, out);
   checkContextRecordModels(root, contextModels, packs, out);
   for (const config of configs) {
@@ -1798,18 +1756,7 @@ function checkPackGraph(root, documents, out, census, options = {}) {
     );
   }
   for (const scenario of scenarios) {
-    checkScenario(root, scenario, packs, capabilities, configs, legacyInventory, out);
-  }
-  for (const migration of migrations) {
-    checkMigration(
-      root,
-      migration,
-      packs,
-      configs,
-      legacyInventory,
-      options.includeRuntimeArtifacts !== false,
-      out
-    );
+    checkScenario(root, scenario, packs, capabilities, configs, out);
   }
 
   checkCapabilityProviders(
@@ -1851,7 +1798,6 @@ function checkPackGraph(root, documents, out, census, options = {}) {
     workflowDefinitions,
     workflowEvaluationSets,
     workflowGuides,
-    migrations,
     locks,
     runs,
     evidence,
@@ -1896,408 +1842,13 @@ function checkContractSchemaOwnership(root, schemas, packs, out) {
   }
 }
 
-function fingerprintWithoutField(document, field) {
-  const unsigned = structuredClone(document);
-  delete unsigned[field];
-  return fingerprintJson(unsigned);
-}
-
-function normalizedWorkflowEvidenceReferences(references) {
-  return [...(references || [])]
-    .map((reference) => ({
-      host: reference.host,
-      path: reference.path,
-      fingerprint: reference.fingerprint
-    }))
-    .sort((left, right) => {
-      const leftKey = left.host + '\0' + left.path + '\0' + left.fingerprint;
-      const rightKey = right.host + '\0' + right.path + '\0' + right.fingerprint;
-      return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
-    });
-}
-
-function artifactRoleMatches(document, role, expected) {
-  const matches = (document?.artifacts || []).filter((artifact) => artifact.role === role);
-  const expectedRows = Array.isArray(expected) ? expected : [expected];
-  return matches.length === expectedRows.length
-    && expectedRows.every((row) => matches.filter((artifact) => {
-      return Object.entries(row).every(([key, value]) => artifact[key] === value);
-    }).length === 1);
-}
-
-function inspectActiveWorkflowEvidence({
-  root,
-  definitionEntry,
-  guideEntry,
-  evaluationEntry,
-  guidePath,
-  documentsByPath,
-  evidence,
-  requireFinalEvidence
-}) {
-  const findings = [];
-  const add = (code, what, why, fix) => findings.push({ code, what, why, fix });
-  const definitionReferences = definitionEntry.doc.lifecycle.activation?.evidence || [];
-  const guideReferences = guideEntry.doc.status.evidence || [];
-  const normalizedDefinitionReferences = normalizedWorkflowEvidenceReferences(definitionReferences);
-  const normalizedGuideReferences = normalizedWorkflowEvidenceReferences(guideReferences);
-  const guideHosts = guideReferences.map((reference) => reference.host).sort();
-  const distinctReferenceShape = guideReferences.length === 2
-    && new Set(guideReferences.map((reference) => reference.host)).size === 2
-    && new Set(guideReferences.map((reference) => reference.path)).size === 2
-    && new Set(guideReferences.map((reference) => reference.fingerprint)).size === 2
-    && deepEqual(guideHosts, ['claude', 'codex']);
-  if (!distinctReferenceShape
-    || !deepEqual(normalizedDefinitionReferences, normalizedGuideReferences)) {
-    add(
-      'SOTER_WORKFLOW_GUIDE_EVIDENCE_REFERENCE_SET',
-      'active workflow definition and guide do not share exactly two distinct historical Codex and Claude receipt references',
-      'active documents must bind stable no-authority historical receipts without referencing current final evidence and creating a fingerprint cycle',
-      'bind definition activation and guide status to the same two distinct development-agent-migration-evidence/v1 documents'
-    );
-  }
-
-  const stableSubjectFingerprint = fingerprintWorkflowEvaluatedSubject({
-    definition: definitionEntry.doc,
-    guide: guideEntry.doc,
-    evaluations: evaluationEntry.doc
-  });
-  let workflowSources = [];
-  try {
-    workflowSources = workflowLegacySourceProjection({
-      definition: definitionEntry.doc,
-      guide: guideEntry.doc,
-      evaluations: evaluationEntry.doc
-    });
-  } catch {
-    add(
-      'SOTER_WORKFLOW_GUIDE_SOURCE_SET',
-      'active workflow source tombstones are partial, duplicated, or inconsistent',
-      'the evaluated workflow covers one procedural source and every exact evaluation source as one atomic migration basis',
-      'preserve every exact source path and fingerprint and move the complete set from present to removed together'
-    );
-  }
-  const historicalSourceArtifacts = workflowSources.map((source) => ({
-    subjectId: definitionEntry.doc.id,
-    path: source.path,
-    fingerprint: source.fingerprint
-  }));
-  const finalSourceArtifacts = workflowSources.map((source) => ({
-    path: source.path,
-    fingerprint: source.fingerprint
-  }));
-  const receiptsByHost = new Map();
-  for (const reference of guideReferences) {
-    const receiptFile = resolveRegularRepositoryFile(root, reference.path);
-    const receiptEntry = receiptFile
-      ? documentsByPath.get(path.resolve(receiptFile))
-      : null;
-    if (!receiptEntry
-      || receiptEntry.contractId !== 'soter://contracts/development-agent-migration-evidence/v1'
-      || reference.fingerprint !== fingerprintJson(receiptEntry.doc)
-      || receiptEntry.doc.evidenceFingerprint
-        !== fingerprintWithoutField(receiptEntry.doc, 'evidenceFingerprint')) {
-      add(
-        'SOTER_WORKFLOW_GUIDE_EVIDENCE',
-        'active workflow guide historical receipt is missing, malformed, tampered, or not bound by its exact reference fingerprint',
-        'schema-valid activation metadata is not evidence unless the referenced immutable historical receipt is independently intact',
-        'restore the exact self-fingerprinted development-agent-migration-evidence/v1 receipt and its full-document reference fingerprint'
-      );
-      continue;
-    }
-    const receipt = receiptEntry.doc;
-    if (receipt.host.id !== reference.host) {
-      add(
-        'SOTER_WORKFLOW_GUIDE_EVIDENCE_HOST',
-        'historical workflow evidence host does not match its active reference: ' + reference.host,
-        'a caller-declared host label cannot substitute a receipt produced by the other evaluated host',
-        'bind each Codex or Claude reference to a receipt whose sealed host identity matches exactly'
-      );
-    }
-    const runInspection = inspectWorkflowEvaluationRunSet({
-      definition: definitionEntry.doc,
-      evaluations: evaluationEntry.doc,
-      runs: receipt.runs
-    });
-    const exactConclusion = deepEqual(receipt.conclusion, {
-      state: 'passed',
-      behaviorParity: 'passed',
-      baselineRole: 'observed-non-gating',
-      guidedRunsPassed: true,
-      prohibitedOutcomesObserved: runInspection.prohibitedOutcomesObserved,
-      externalEffectsObserved: false
-    });
-    const noAuthority = deepEqual(receipt.authority, {
-      kind: 'migration-evidence-only',
-      grantsExecution: false,
-      grantsApproval: false,
-      grantsActivation: false,
-      grantsMigration: false,
-      grantsPublication: false,
-      grantsMerge: false,
-      grantsProviderRead: false,
-      grantsProviderWrite: false,
-      grantsHostRealization: false,
-      grantsPromotion: false,
-      grantsFallbackRemoval: false
-    });
-    const exactReceiptBinding = workflowSources.length > 0
-      && receipt.result?.state === 'passed'
-      && receipt.applicability?.kind === 'historical-candidate-only'
-      && receipt.applicability?.evaluatedSubjectFingerprint === stableSubjectFingerprint
-      && receipt.workflow?.id === definitionEntry.doc.id
-      && receipt.workflow?.version === definitionEntry.doc.version
-      && receipt.evaluatedSubject?.id === guideEntry.doc.id
-      && receipt.evaluatedSubject?.version === definitionEntry.doc.version
-      && receipt.evaluatedSubject?.fingerprint === stableSubjectFingerprint
-      && receipt.evaluationSet?.id === evaluationEntry.doc.id
-      && receipt.evaluationSet?.version === evaluationEntry.doc.version
-      && artifactRoleMatches(receipt, 'migration-source', historicalSourceArtifacts)
-      && artifactRoleMatches(receipt, 'migration-target', {
-        subjectId: guideEntry.doc.id,
-        path: guidePath,
-        fingerprint: stableSubjectFingerprint
-      })
-      && historicalWorkflowEvidenceChronologyIsValid(receipt)
-      && historicalWorkflowEvidenceWorkspaceIsStable(receipt)
-      && exactConclusion
-      && noAuthority;
-    if (!exactReceiptBinding) {
-      add(
-        'SOTER_WORKFLOW_GUIDE_EVIDENCE',
-        'historical workflow receipt does not bind the exact tombstoned source, stable evaluated subject, guide target, passed conclusion, and no-authority boundary',
-        'historical candidate observations can support migration only when every stable semantic join remains exact after activation',
-        'recreate the receipt from the exact development observation rather than editing its workflow, subject, artifacts, conclusion, or authority facts'
-      );
-    }
-    if (runInspection.coverageComplete !== true
-      || runInspection.verdictsConsistent !== true
-      || runInspection.guidedPassed !== true
-      || runInspection.inputBoundaryPreserved !== true) {
-      add(
-        'SOTER_WORKFLOW_GUIDE_EVIDENCE_COVERAGE',
-        'historical workflow receipt does not contain the exact ordered run, case, stimulus, criterion, fresh-worker, verdict, input-boundary, and guided qualification facts',
-        'partial, substituted, internally inconsistent, or answer-key-exposed run coverage cannot establish behavior parity for the complete governed evaluation set',
-        'evaluate the exact non-gating baseline and every guided case with unique workers, sealed stimuli and criteria, coherent verdicts, and no answer-key access'
-      );
-    }
-    if (receipt.host.id === reference.host && !receiptsByHost.has(reference.host)) {
-      receiptsByHost.set(reference.host, { reference, entry: receiptEntry });
-    }
-  }
-
-  const finalCandidates = [...evidence.values()].filter((entry) => {
-    return entry.contractId === 'soter://contracts/evidence/v2'
-      && entry.doc.claimFamily === 'migration'
-      && entry.doc.subject?.type === 'automation'
-      && entry.doc.subject.id === definitionEntry.doc.id
-      && entry.doc.subject.version === definitionEntry.doc.version;
-  });
-  const finalHosts = finalCandidates.map((entry) => entry.doc.host?.id).sort();
-  if (requireFinalEvidence
-    && (finalCandidates.length !== 2 || !deepEqual(finalHosts, ['claude', 'codex']))) {
-    add(
-      'SOTER_WORKFLOW_GUIDE_FINAL_EVIDENCE',
-      'active workflow does not have exactly one immutable migration evidence/v2 record for each Codex and Claude host',
-      'historical receipts are no-authority observations; target activation additionally requires one uniquely discoverable final claim per host and workflow whose current applicability is checked separately',
-      'restore exactly one passed agent-or-higher migration evidence/v2 record per host and exact workflow subject'
-    );
-  }
-  const finalEvidencePaths = [];
-  if (!requireFinalEvidence) return { findings, finalEvidencePaths };
-  for (const host of ['codex', 'claude']) {
-    const hostCandidates = finalCandidates.filter((entry) => entry.doc.host?.id === host);
-    if (hostCandidates.length !== 1) continue;
-    const finalEntry = hostCandidates[0];
-    const finalEvidence = finalEntry.doc;
-    finalEvidencePaths.push(path.relative(root, finalEntry.file).split(path.sep).join('/'));
-    const receiptBinding = receiptsByHost.get(host);
-    const level = VERIFICATION_LEVELS.indexOf(finalEvidence.evaluator?.level);
-    if (finalEvidence.result !== 'passed'
-      || level < VERIFICATION_LEVELS.indexOf('agent')) {
-      add(
-        'SOTER_WORKFLOW_GUIDE_FINAL_EVIDENCE',
-        'final workflow migration evidence is not a passed agent-or-higher result for host ' + host,
-        'activation cannot be inferred from static normalization, failed evaluation, or a lower-confidence verifier',
-        'record a passed agent-or-higher final migration claim against the exact current lock'
-      );
-    }
-    const exactArtifacts = workflowSources.length > 0
-      && receiptBinding
-      && artifactRoleMatches(finalEvidence, 'migration-source', finalSourceArtifacts)
-      && artifactRoleMatches(finalEvidence, 'migration-target', [{
-        path: guidePath,
-        fingerprint: guideEntry.doc.contentFingerprint
-      }, {
-        path: path.relative(root, evaluationEntry.file).split(path.sep).join('/'),
-        fingerprint: fingerprintJson(evaluationEntry.doc)
-      }])
-      && artifactRoleMatches(finalEvidence, 'development-agent-migration-evidence', {
-        path: receiptBinding.reference.path,
-        fingerprint: fingerprintJson(receiptBinding.entry.doc)
-      })
-      && artifactRoleMatches(finalEvidence, 'workflow-evaluated-subject', {
-        subjectId: guideEntry.doc.id,
-        fingerprint: stableSubjectFingerprint
-      })
-      && artifactRoleMatches(finalEvidence, 'workflow-evaluated-instructions', {
-        host,
-        subjectId: guideEntry.doc.id,
-        fingerprint: receiptBinding.entry.doc.host.evaluatedInstructionFingerprint
-      })
-      && artifactRoleMatches(finalEvidence, 'workflow-definition', {
-        path: path.relative(root, definitionEntry.file).split(path.sep).join('/'),
-        fingerprint: fingerprintJson(definitionEntry.doc)
-      })
-      && artifactRoleMatches(finalEvidence, 'workflow-evaluation-set', {
-        path: path.relative(root, evaluationEntry.file).split(path.sep).join('/'),
-        fingerprint: fingerprintJson(evaluationEntry.doc)
-      });
-    if (!exactArtifacts) {
-      add(
-        'SOTER_WORKFLOW_GUIDE_FINAL_EVIDENCE_BINDING',
-        'final workflow migration evidence does not seal the exact historical receipt, source tombstone, stable subject/instructions, and final definition/evaluation artifacts for host ' + host,
-        'a final record must join the historical observation to the exact post-migration canonical graph without reusing another host or workflow receipt',
-        'regenerate the final evidence from the matching host receipt and exact final workflow documents'
-      );
-    }
-  }
-  return { findings, finalEvidencePaths };
-}
-
-function inspectRetiredWorkflowEvidence({
-  root,
-  id,
-  definitionEntry,
-  guideEntry,
-  evaluationEntry,
-  guidePath,
-  legacyInventories,
-  documentsByPath,
-  locks,
-  requireFinalEvidence
-}) {
-  let workflowSources = [];
-  try {
-    workflowSources = workflowLegacySourceProjection({
-      definition: definitionEntry.doc,
-      guide: guideEntry.doc,
-      evaluations: evaluationEntry.doc
-    });
-  } catch {
-    return [{ code: 'SOTER_WORKFLOW_GUIDE_RETIREMENT_INVALID' }];
-  }
-  const legacySourceFile = resolveRegularRepositoryFile(root, guideEntry.doc.source.legacyPath);
-  const exactLegacySourcePresent = legacySourceFile
-    && fingerprintFile(legacySourceFile) === guideEntry.doc.source.legacyFingerprint;
-  const retiredSourceInvalid = guideEntry.doc.source.presence !== 'removed'
-    || definitionEntry.doc.source.presence !== 'removed'
-    || Boolean(exactLegacySourcePresent)
-    || evaluationEntry.doc.cases.some((item) => item.source.presence !== 'removed');
-  const retiredInventoryInvalid = workflowSources.length === 0
-    || workflowSources.some((source) => {
-      const inventoryItems = legacyInventories.length === 1
-        ? legacyInventories[0].doc.items.filter((item) => {
-          return item.sourcePath === source.path && item.sourceFingerprint === source.fingerprint;
-        })
-        : [];
-      const targetPath = source.kind === 'workflow-guide'
-        ? guidePath
-        : guideEntry.doc.workflow.evaluationSetPath;
-      const retirementBindings = inventoryItems.length === 1
-        ? inventoryItems[0].targets.filter((binding) => {
-          return binding.id === id && binding.path === targetPath;
-        })
-        : [];
-      return inventoryItems.length !== 1
-        || inventoryItems[0].sourcePresence !== 'removed'
-        || !['migrated', 'retired'].includes(inventoryItems[0].state)
-        || retirementBindings.length !== 1
-        || retirementBindings[0].state !== 'retired'
-        || retirementBindings[0].canonicalAuthority !== 'none'
-        || retirementBindings[0].fallback !== 'removed'
-        || !['intentional-change', 'proven'].includes(retirementBindings[0].parity)
-        || !deepEqual(
-          [...retirementBindings[0].evidence].sort(),
-          guideEntry.doc.status.evidence.map((reference) => reference.path).sort()
-        );
-    });
-  const retirementReferencesAligned = deepEqual(
-    guideEntry.doc.status.evidence,
-    definitionEntry.doc.lifecycle.retirement.evidence
-  );
-  let retiredEvidenceInvalid = !retirementReferencesAligned;
-  for (const reference of requireFinalEvidence ? guideEntry.doc.status.evidence : []) {
-    const normalizedRetirementPath = typeof reference.path === 'string'
-      && reference.path.startsWith('soter/fixtures/')
-      && !reference.path.includes('\\')
-      && !reference.path.includes('//')
-      && !reference.path.split('/').some((segment) => segment === '.' || segment === '..')
-      && path.normalize(reference.path).split(path.sep).join('/') === reference.path;
-    const evidenceFile = resolveRegularRepositoryFile(root, reference.path);
-    const evidenceEntry = evidenceFile ? documentsByPath.get(path.resolve(evidenceFile)) : null;
-    const exactSource = workflowSources.length > 0
-      && artifactRoleMatches(evidenceEntry?.doc, 'migration-source', workflowSources.map((source) => ({
-        path: source.path,
-        fingerprint: source.fingerprint
-      })));
-    const exactTargets = artifactRoleMatches(evidenceEntry?.doc, 'migration-target', [{
-      path: guidePath,
-      fingerprint: guideEntry.doc.contentFingerprint
-    }, {
-      path: guideEntry.doc.workflow.evaluationSetPath,
-      fingerprint: fingerprintJson(evaluationEntry.doc)
-    }]);
-    const exactLock = evidenceEntry
-      ? locks.find((entry) => {
-        return fingerprintJson(entry.doc) === evidenceEntry.doc.configurationLockFingerprint;
-      })
-      : null;
-    const exactRetirementFacts = evidenceEntry?.doc.subject?.type === 'pack'
-      && evidenceEntry.doc.subject.id === id
-      && evidenceEntry.doc.subject.version === definitionEntry.doc.version
-      && evidenceEntry.doc.evaluator?.id === 'kernel.legacy-migration-completion'
-      && evidenceEntry.doc.evaluator?.level === 'fixture'
-      && evidenceEntry.doc.environment?.containment === 'fixture'
-      && evidenceEntry.doc.effects?.length === 0
-      && evidenceEntry.doc.failures?.length === 0
-      && evidenceEntry.doc.outcomes?.some((outcome) => {
-        return outcome.id === 'migration-disposition' && outcome.state === 'retired';
-      })
-      && evidenceEntry.doc.outcomes?.some((outcome) => {
-        return outcome.id === 'migration-parity' && outcome.state === 'intentional-change';
-      })
-      && evidenceEntry.doc.outcomes?.some((outcome) => {
-        return outcome.id === 'runtime-authority-absent' && outcome.state === 'passed';
-      });
-    retiredEvidenceInvalid ||= !normalizedRetirementPath
-      || !evidenceEntry
-      || evidenceEntry.contractId !== 'soter://contracts/evidence/v2'
-      || evidenceEntry.doc.claimFamily !== 'migration'
-      || evidenceEntry.doc.result !== 'passed'
-      || exactSource !== true
-      || exactTargets !== true
-      || !exactLock
-      || exactLock.doc.configuration?.name !== 'harness-development-catalog'
-      || evidenceEntry.doc.graphFingerprint !== exactLock.doc.graphFingerprint
-      || exactRetirementFacts !== true;
-  }
-  return retiredSourceInvalid || retiredInventoryInvalid || retiredEvidenceInvalid
-    ? [{ code: 'SOTER_WORKFLOW_GUIDE_RETIREMENT_INVALID' }]
-    : [];
-}
-
-function checkDefinitionOnlyWorkflows(
+function checkActiveWorkflows(
   root,
   workflowDefinitions,
   workflowEvaluationSets,
   workflowGuides,
-  legacyInventories,
   packs,
   documentsByPath,
-  evidence,
-  locks,
-  requireFinalEvidence,
   out
 ) {
   const evaluationOwners = new Map();
@@ -2305,354 +1856,166 @@ function checkDefinitionOnlyWorkflows(
 
   for (const [id, entry] of workflowDefinitions) {
     const slug = id.slice('automation.'.length);
-    const expectedDefinitionPath = path.join(
-      root,
-      'soter',
-      'automations',
-      slug,
-      'definition.json'
-    );
-    if (path.resolve(entry.file) !== path.resolve(expectedDefinitionPath)) {
+    const definitionPath = 'soter/automations/' + slug + '/definition.json';
+    const evaluationPath = 'soter/automations/' + slug + '/evaluations.json';
+    const guidePath = 'soter/automations/' + slug + '/guide.json';
+    const expectedDefinitionFile = path.resolve(root, definitionPath);
+    const pack = packs.get(id);
+    const evaluationEntry = workflowEvaluationSets.get(entry.doc.evaluationSet.id);
+    const guideId = 'workflow-guide.' + slug;
+    const guideEntry = workflowGuides.get(guideId);
+
+    if (path.resolve(entry.file) !== expectedDefinitionFile) {
       out.push(violation(
         entry.file,
         'SOTER_WORKFLOW_DEFINITION_PATH',
-        'definition-only workflow is not stored at soter/automations/' + slug + '/definition.json',
-        'one canonical path keeps workflow discovery independent of host projections and legacy layout',
-        'move the workflow definition to its canonical Automation path'
+        'active workflow is not stored at ' + definitionPath,
+        'one canonical Automation path keeps workflow discovery independent of host projections',
+        'move the definition to its canonical workflow directory'
       ));
     }
-
-    const pack = packs.get(id);
-    if (!pack || pack.doc.layer !== 'automation' || pack.doc.version !== entry.doc.version) {
+    if (!pack) {
       out.push(violation(
         entry.file,
-        'SOTER_WORKFLOW_DEFINITION_OWNER',
-        'definition-only workflow has no exact matching Automation pack and version',
-        'portable outcome definitions must be owned and versioned by one selectable Automation pack',
-        'add or align the exact Automation pack manifest'
+        'SOTER_WORKFLOW_PACK',
+        'active workflow has no exact Automation pack ' + id,
+        'workflow ownership and distribution require one declared pack',
+        'add the matching Automation pack or remove the unowned workflow'
       ));
       continue;
     }
 
-    const definitionPath = path.relative(root, entry.file).split(path.sep).join('/');
-    const definitionArtifact = pack.doc.artifacts.filter((artifact) => {
-      return artifact.path === definitionPath && artifact.role === 'definition';
-    });
-    const evaluationPath = entry.doc.evaluationSet.path;
-    const evaluationArtifact = pack.doc.artifacts.filter((artifact) => {
-      return artifact.path === evaluationPath && artifact.role === 'evaluation';
-    });
-    if (definitionArtifact.length !== 1 || evaluationArtifact.length !== 1) {
-      out.push(violation(
-        pack.file,
-        'SOTER_WORKFLOW_DEFINITION_ARTIFACTS',
-        'definition-only pack must own exactly one declared definition and its exact evaluation set',
-        'a definition or evaluation outside the owning pack can drift without invalidating selection',
-        'declare the exact definition and evaluation paths once with their required roles'
-      ));
+    const expectedArtifacts = [
+      { path: definitionPath, role: 'definition' },
+      { path: evaluationPath, role: 'evaluation' },
+      { path: guidePath, role: 'definition' }
+    ];
+    for (const expectedArtifact of expectedArtifacts) {
+      const owners = pack.doc.artifacts.filter((artifact) => {
+        return artifact.path === expectedArtifact.path && artifact.role === expectedArtifact.role;
+      });
+      if (owners.length !== 1) {
+        out.push(violation(
+          pack.file,
+          'SOTER_WORKFLOW_ARTIFACT',
+          'active workflow pack must own exactly one ' + expectedArtifact.role
+            + ' artifact at ' + expectedArtifact.path,
+          'undeclared or duplicate workflow artifacts can drift outside one exact pack graph',
+          'declare the exact path once with the ' + expectedArtifact.role + ' role'
+        ));
+      }
     }
 
-    const evaluationEntry = documentsByPath.get(path.resolve(root, evaluationPath));
     if (!evaluationEntry
-      || evaluationEntry.contractId !== 'soter://contracts/workflow-evaluation-set/v2'
-      || evaluationEntry.doc.id !== entry.doc.evaluationSet.id
+      || path.resolve(evaluationEntry.file) !== path.resolve(root, evaluationPath)
+      || entry.doc.evaluationSet.path !== evaluationPath
       || evaluationEntry.doc.workflow !== id
       || evaluationEntry.doc.version !== entry.doc.version) {
       out.push(violation(
         entry.file,
         'SOTER_WORKFLOW_EVALUATION_BINDING',
         'workflow definition does not bind one exact matching evaluation set',
-        'normalized behavior expectations must version and move with the workflow definition they constrain',
+        'behavior expectations must version and move with the workflow definition they constrain',
         'align the evaluation path, id, workflow id, and version'
       ));
     } else {
-      const ownerIds = evaluationOwners.get(evaluationEntry.doc.id) || [];
-      ownerIds.push(id);
-      evaluationOwners.set(evaluationEntry.doc.id, ownerIds);
+      const owners = evaluationOwners.get(evaluationEntry.doc.id) || [];
+      owners.push(id);
+      evaluationOwners.set(evaluationEntry.doc.id, owners);
     }
 
-    const guideId = 'workflow-guide.' + slug;
-    const guideEntry = workflowGuides.get(guideId);
-    const guidePath = 'soter/automations/' + slug + '/guide.json';
     if (!guideEntry) {
       out.push(violation(
         entry.file,
         'SOTER_WORKFLOW_GUIDE_BINDING',
-        'definition-only workflow has no exact provider-neutral workflow guide ' + guideId,
-        'a normalized outcome skeleton alone cannot safely replace the procedural legacy guide or project a host skill',
-        'add the exact candidate workflow guide and keep legacy procedural authority until behavior parity is evidenced'
+        'active workflow has no exact provider-neutral guide ' + guideId,
+        'host delivery requires one canonical guide owned by the workflow pack',
+        'add the exact guide or remove the incomplete workflow selection'
       ));
-    } else {
-      const owners = guideOwners.get(guideId) || [];
-      owners.push(id);
-      guideOwners.set(guideId, owners);
+      continue;
+    }
+    const guideOwnerIds = guideOwners.get(guideId) || [];
+    guideOwnerIds.push(id);
+    guideOwners.set(guideId, guideOwnerIds);
 
-      const expectedGuideFile = path.join(root, guidePath);
-      if (path.resolve(guideEntry.file) !== path.resolve(expectedGuideFile)) {
-        out.push(violation(
-          guideEntry.file,
-          'SOTER_WORKFLOW_GUIDE_PATH',
-          'workflow guide is not stored at ' + guidePath,
-          'one canonical Automation path keeps procedural guidance independent of host-specific skill layout',
-          'move the guide to the canonical workflow directory'
-        ));
-      }
-
-      const guideArtifacts = pack.doc.artifacts.filter((artifact) => {
-        return artifact.path === guidePath && artifact.role === 'definition';
-      });
-      if (guideArtifacts.length !== 1) {
-        out.push(violation(
-          pack.file,
-          'SOTER_WORKFLOW_GUIDE_ARTIFACT',
-          'definition-only pack must own exactly one workflow guide artifact at ' + guidePath,
-          'an undeclared or multiply declared guide can drift outside the selected pack graph',
-          'declare the exact guide path once with the definition role'
-        ));
-      }
-
-      if (!workflowGuideContentFingerprintMatches(guideEntry.doc)) {
-        out.push(violation(
-          guideEntry.file,
-          'SOTER_WORKFLOW_GUIDE_CONTENT_FINGERPRINT',
-          'workflow guide content fingerprint does not seal its exact provider-neutral semantics',
-          'activation evidence must bind stable guide content without becoming self-referential through the guide evidence list',
-          'recompute contentFingerprint from the guide with contentFingerprint and status excluded'
-        ));
-      }
-
-      const exactGuideBinding = guideEntry.doc.id === guideId
-        && entry.doc.guide.id === guideId
-        && entry.doc.guide.path === guidePath
-        && guideEntry.doc.workflow.id === id
-        && guideEntry.doc.workflow.version === entry.doc.version
-        && guideEntry.doc.workflow.definitionPath === definitionPath
-        && guideEntry.doc.workflow.definitionFingerprint === fingerprintJson(entry.doc)
-        && guideEntry.doc.workflow.evaluationSetPath === evaluationPath
-        && evaluationEntry
-        && guideEntry.doc.workflow.evaluationSetFingerprint === fingerprintJson(evaluationEntry.doc)
-        && guideEntry.doc.skill.name === slug
-        && guideEntry.doc.source.legacyPath === entry.doc.source.legacyPath
-        && guideEntry.doc.source.legacyFingerprint === entry.doc.source.legacyFingerprint;
-      if (!exactGuideBinding) {
-        out.push(violation(
-          guideEntry.file,
-          'SOTER_WORKFLOW_GUIDE_BINDING',
-          'workflow guide does not bind the exact workflow, evaluation set, skill identity, and legacy source fingerprints',
-          'procedural detail must version and move with the exact normalized workflow and behavior expectations it explains',
-          'align every workflow, evaluation, skill, source path, version, and canonical JSON fingerprint'
-        ));
-      }
-
-      const definitionLifecycle = entry.doc.lifecycle;
-      const evaluationLifecycle = evaluationEntry?.doc.lifecycle;
-      const lifecycleAligned = definitionLifecycle.state === 'definition-only'
-        ? evaluationLifecycle?.state === 'definition-only'
-          && guideEntry.doc.status.state === 'candidate'
-        : definitionLifecycle.state === 'active-host-guided'
-          ? evaluationLifecycle?.state === 'active-host-guided'
-            && evaluationLifecycle.activation === definitionLifecycle.activation.state
-            && guideEntry.doc.status.state === definitionLifecycle.activation.state
-          : definitionLifecycle.state === 'retired'
-            && evaluationLifecycle?.state === 'retired'
-            && evaluationLifecycle.retirement === definitionLifecycle.retirement.state
-            && guideEntry.doc.status.state === (definitionLifecycle.retirement.state === 'candidate'
-              ? 'retirement-candidate'
-              : 'retired');
-      const developmentBindingsAligned = definitionLifecycle.state !== 'active-host-guided'
-        || (definitionLifecycle.development.requestContract.id === 'soter://contracts/development-request/v1'
-          && definitionLifecycle.development.requestContract.path === 'soter/contracts/development-request.schema.json'
-          && definitionLifecycle.development.resultContract.id === 'soter://contracts/development-result/v1'
-          && definitionLifecycle.development.resultContract.path === 'soter/contracts/development-result.schema.json'
-          && definitionLifecycle.development.workspacePolicy.path === 'soter/kernel/development-workspace.settings.json'
-          && definitionLifecycle.development.workspacePolicy.fingerprint === fingerprintJson(
-            documentsByPath.get(path.resolve(root, definitionLifecycle.development.workspacePolicy.path))?.doc
-          )
-          && deepEqual([...definitionLifecycle.development.supportedHosts].sort(), ['claude', 'codex'])
-          && evaluationEntry.doc.evaluationPolicy.requestContract.id === definitionLifecycle.development.requestContract.id
-          && evaluationEntry.doc.evaluationPolicy.requestContract.path === definitionLifecycle.development.requestContract.path
-          && evaluationEntry.doc.evaluationPolicy.resultContract.id === definitionLifecycle.development.resultContract.id
-          && evaluationEntry.doc.evaluationPolicy.resultContract.path === definitionLifecycle.development.resultContract.path
-          && deepEqual([...evaluationEntry.doc.evaluationPolicy.supportedHosts].sort(), ['claude', 'codex']));
-      if (!lifecycleAligned || !developmentBindingsAligned) {
-        out.push(violation(
-          entry.file,
-          'SOTER_WORKFLOW_LIFECYCLE_BINDING',
-          'workflow definition, guide, evaluation lifecycle, or private development contract binding disagrees',
-          'host delivery and development evidence must follow one closed lifecycle without manufacturing runtime authority',
-          'align definition, guide, evaluation activation or retirement state and exact private development bindings'
-        ));
-      }
-      if (definitionLifecycle.state === 'retired'
-        && new Set(definitionLifecycle.replacements.map((replacement) => replacement.id)).size
-          !== definitionLifecycle.replacements.length) {
-        out.push(violation(
-          entry.file,
-          'SOTER_WORKFLOW_RETIREMENT_REPLACEMENT_DUPLICATE',
-          'retired workflow declares a replacement identity more than once',
-          'retirement must expose one deterministic and explainable replacement or unavailable fact per identity',
-          'merge duplicate replacement declarations and retain their combined limitations'
-        ));
-      }
-
-      const legacySourceFile = resolveRegularRepositoryFile(root, guideEntry.doc.source.legacyPath);
-      const exactLegacySourcePresent = legacySourceFile
-        && fingerprintFile(legacySourceFile) === guideEntry.doc.source.legacyFingerprint;
-      if (['candidate', 'retirement-candidate'].includes(guideEntry.doc.status.state)
-        && !exactLegacySourcePresent) {
-        out.push(violation(
-          guideEntry.file,
-          'SOTER_WORKFLOW_GUIDE_SOURCE',
-          'candidate guide is not bound to one existing exact legacy procedural authority',
-          'preview-only guidance cannot be compared honestly when its retained canonical source is missing or changed',
-          'restore the exact source or refresh the definition, evaluation, guide, migration evidence, and inventory together'
-        ));
-      }
-
-      const procedureIdentity = entry.doc.procedure.map((step) => ({
-        id: step.id,
-        sequence: step.sequence
-      }));
-      const guideProcedureIdentity = guideEntry.doc.stepDetails.map((step) => ({
-        id: step.id,
-        sequence: step.sequence
-      }));
-      const uniqueGotchas = new Set(guideEntry.doc.gotchas.map((item) => item.id));
-      const uniqueReferences = new Set(guideEntry.doc.references.map((item) => item.id));
-      if (!deepEqual(guideProcedureIdentity, procedureIdentity)
-        || uniqueGotchas.size !== guideEntry.doc.gotchas.length
-        || uniqueReferences.size !== guideEntry.doc.references.length) {
-        out.push(violation(
-          guideEntry.file,
-          'SOTER_WORKFLOW_GUIDE_PROCEDURE',
-          'guide steps do not exactly match workflow step identity and order, or guide gotcha/reference identities are duplicated',
-          'stable procedural joins are required for deterministic host projection, review, and evidence binding',
-          'align guide step ids and sequence exactly and make every gotcha and reference id unique'
-        ));
-      }
-
-      if (guideEntry.doc.status.state === 'active') {
-        if (guideEntry.doc.source.presence !== 'removed'
-          || entry.doc.source.presence !== 'removed'
-          || exactLegacySourcePresent
-          || evaluationEntry.doc.cases.some((item) => item.source.presence !== 'removed')) {
-          out.push(violation(
-            guideEntry.file,
-            'SOTER_WORKFLOW_GUIDE_ACTIVATION_PROVENANCE',
-            'active workflow guidance lacks exact Codex and Claude evidence or retained-source tombstones',
-            'host guidance becomes target authority only after both hosts are evaluated and every operational fallback is removed',
-            'attach one exact evidence record per host and retain removed-source fingerprints as tombstones'
-          ));
-        }
-        const activeEvidence = inspectActiveWorkflowEvidence({
-          root,
-          definitionEntry: entry,
-          guideEntry,
-          evaluationEntry,
-          guidePath,
-          documentsByPath,
-          evidence,
-          requireFinalEvidence
-        });
-        for (const finding of activeEvidence.findings) {
-          out.push(violation(
-            guideEntry.file,
-            finding.code,
-            finding.what,
-            finding.why,
-            finding.fix
-          ));
-        }
-        const expectedParity = guideEntry.doc.status.behaviorParity === 'passed'
-          ? 'proven'
-          : 'intentional-change';
-        let workflowSources = [];
-        try {
-          workflowSources = workflowLegacySourceProjection({
-            definition: entry.doc,
-            guide: guideEntry.doc,
-            evaluations: evaluationEntry.doc
-          });
-        } catch {
-          // inspectActiveWorkflowEvidence reports the source-set defect above.
-        }
-        const migrationBasisInvalid = workflowSources.length === 0
-          || workflowSources.some((source) => {
-            const inventoryItems = legacyInventories.length === 1
-              ? legacyInventories[0].doc.items.filter((item) => {
-                return item.sourcePath === source.path
-                  && item.sourceFingerprint === source.fingerprint;
-              })
-              : [];
-            const targetPath = source.kind === 'workflow-guide'
-              ? guidePath
-              : guideEntry.doc.workflow.evaluationSetPath;
-            const bindings = inventoryItems.length === 1
-              ? inventoryItems[0].targets.filter((binding) => {
-                return binding.id === id && binding.path === targetPath;
-              })
-              : [];
-            return source.presence !== 'removed'
-              || inventoryItems.length !== 1
-              || inventoryItems[0].sourcePresence !== 'removed'
-              || inventoryItems[0].state !== 'migrated'
-              || bindings.length !== 1
-              || bindings[0].state !== 'migrated'
-              || bindings[0].canonicalAuthority !== 'target'
-              || bindings[0].fallback !== 'removed'
-              || bindings[0].parity !== expectedParity
-              || (requireFinalEvidence && !deepEqual(
-                [...bindings[0].evidence].sort(),
-                [...activeEvidence.finalEvidencePaths].sort()
-              ));
-          });
-        if (migrationBasisInvalid) {
-          out.push(violation(
-            guideEntry.file,
-            'SOTER_WORKFLOW_GUIDE_MIGRATION',
-            'active workflow guide has no exact completed legacy-inventory authority transition',
-            'generated host delivery cannot become canonical while the legacy fallback remains present or migration state disagrees',
-            'remove the fallback and align exact target authority, parity, and evidence in legacy-inventory/v2 before activation'
-          ));
-        }
-      }
-
-      if (guideEntry.doc.status.state === 'retired') {
-        const retirement = inspectRetiredWorkflowEvidence({
-          root,
-          id,
-          definitionEntry: entry,
-          guideEntry,
-          evaluationEntry,
-          guidePath,
-          legacyInventories,
-          documentsByPath,
-          locks,
-          requireFinalEvidence
-        });
-        if (retirement.length) {
-          out.push(violation(
-            guideEntry.file,
-            'SOTER_WORKFLOW_GUIDE_RETIREMENT_INVALID',
-            'retired workflow guidance lacks exact tombstone, evidence, or legacy-inventory retirement bindings',
-            'retirement must remain inspectable without preserving an operational fallback or assigning replacement authority to the retired workflow',
-            'remove the source, retain exact fingerprints, attach passed retirement evidence, and mark the exact inventory binding retired with no authority'
-          ));
-        }
-      }
+    if (path.resolve(guideEntry.file) !== path.resolve(root, guidePath)
+      || guideEntry.doc.workflow.id !== id
+      || guideEntry.doc.workflow.version !== entry.doc.version
+      || guideEntry.doc.workflow.definitionPath !== definitionPath
+      || guideEntry.doc.workflow.definitionFingerprint !== fingerprintJson(entry.doc)
+      || guideEntry.doc.workflow.evaluationSetPath !== evaluationPath
+      || !evaluationEntry
+      || guideEntry.doc.workflow.evaluationSetFingerprint !== fingerprintJson(evaluationEntry.doc)
+      || guideEntry.doc.skill.name !== slug
+      || entry.doc.guide.id !== guideId
+      || entry.doc.guide.path !== guidePath) {
+      out.push(violation(
+        guideEntry.file,
+        'SOTER_WORKFLOW_GUIDE_BINDING',
+        'workflow guide does not bind the exact definition, evaluation set, version, path, and skill identity',
+        'procedural guidance must move with the exact workflow behavior it explains',
+        'align every workflow, evaluation, guide, version, path, and canonical JSON fingerprint'
+      ));
     }
 
-    const stepIds = entry.doc.procedure.map((step) => step.id);
-    const stepSequence = entry.doc.procedure.map((step) => step.sequence);
-    const expectedStepSequence = entry.doc.procedure.map((_, index) => index + 1);
-    if (new Set(stepIds).size !== stepIds.length
-      || !deepEqual(stepSequence, expectedStepSequence)) {
+    if (!workflowGuideContentFingerprintMatches(guideEntry.doc)) {
+      out.push(violation(
+        guideEntry.file,
+        'SOTER_WORKFLOW_GUIDE_CONTENT_FINGERPRINT',
+        'workflow guide content fingerprint does not seal its provider-neutral semantics',
+        'host projections require deterministic reviewable guide content',
+        'recompute contentFingerprint with contentFingerprint and status excluded'
+      ));
+    }
+
+    const development = entry.doc.lifecycle.development;
+    const settings = documentsByPath.get(path.resolve(root, development.workspacePolicy.path));
+    const lifecycleAligned = entry.doc.lifecycle.state === 'active-host-guided'
+      && entry.doc.lifecycle.reasonCode === 'WORKFLOW_HOST_GUIDANCE_ACTIVE'
+      && entry.doc.lifecycle.delivery === 'host-skill'
+      && guideEntry.doc.status.state === 'active'
+      && guideEntry.doc.status.delivery === 'host-skill'
+      && evaluationEntry?.doc.lifecycle.state === 'active-host-guided'
+      && development.requestContract.id === 'soter://contracts/development-request/v1'
+      && development.requestContract.path === 'soter/contracts/development-request.schema.json'
+      && development.resultContract.id === 'soter://contracts/development-result/v1'
+      && development.resultContract.path === 'soter/contracts/development-result.schema.json'
+      && development.workspacePolicy.path === 'soter/kernel/development-workspace.settings.json'
+      && development.workspacePolicy.fingerprint === fingerprintJson(settings?.doc)
+      && deepEqual([...development.supportedHosts].sort(), ['claude', 'codex'])
+      && evaluationEntry.doc.evaluationPolicy.requestContract.id === development.requestContract.id
+      && evaluationEntry.doc.evaluationPolicy.resultContract.id === development.resultContract.id
+      && deepEqual([...evaluationEntry.doc.evaluationPolicy.supportedHosts].sort(), ['claude', 'codex']);
+    if (!lifecycleAligned) {
       out.push(violation(
         entry.file,
-        'SOTER_WORKFLOW_PROCEDURE_IDENTITY',
-        'procedure step ids must be unique and sequence must be contiguous in document order',
-        'stable ordered steps are required for deterministic review and later runtime decomposition',
-        'remove duplicate ids and number the ordered procedure from one without gaps'
+        'SOTER_WORKFLOW_LIFECYCLE_BINDING',
+        'workflow definition, guide, evaluation, or development contract binding disagrees',
+        'host delivery and behavior evidence require one present-tense closed lifecycle',
+        'align the active lifecycle, selected hosts, workspace policy, and request/result contracts'
+      ));
+    }
+
+    const procedureIdentity = entry.doc.procedure.map(({ id: stepId, sequence }) => ({
+      id: stepId,
+      sequence
+    }));
+    const guideIdentity = guideEntry.doc.stepDetails.map(({ id: stepId, sequence }) => ({
+      id: stepId,
+      sequence
+    }));
+    const expectedProcedureSequence = procedureIdentity.map((_item, index) => index + 1);
+    if (new Set(procedureIdentity.map((item) => item.id)).size !== procedureIdentity.length
+      || !deepEqual(procedureIdentity.map((item) => item.sequence), expectedProcedureSequence)
+      || !deepEqual(guideIdentity, procedureIdentity)
+      || new Set(guideEntry.doc.gotchas.map((item) => item.id)).size !== guideEntry.doc.gotchas.length
+      || new Set(guideEntry.doc.references.map((item) => item.id)).size !== guideEntry.doc.references.length) {
+      out.push(violation(
+        guideEntry.file,
+        'SOTER_WORKFLOW_GUIDE_PROCEDURE',
+        'workflow steps, guide steps, gotchas, or references are duplicated or misaligned',
+        'stable ordered identities are required for deterministic host projection and review',
+        'use unique contiguous workflow steps and unique guide gotcha and reference identities'
       ));
     }
 
@@ -2668,16 +2031,21 @@ function checkDefinitionOnlyWorkflows(
     if (forbiddenRuntimeShape) {
       out.push(violation(
         pack.file,
-        'SOTER_WORKFLOW_DEFINITION_AUTHORITY',
-        'definition-only Automation pack declares runtime, effect, authority, maturity, or executable-scenario semantics',
-        'preserved intent must not masquerade as an operator runtime, capability binding, effect grant, or verified behavior',
-        'remove runtime declarations or promote the workflow through a separate implemented and evidenced slice'
+        'SOTER_WORKFLOW_GUIDE_AUTHORITY',
+        'host-guided workflow pack declares runtime, effect, authority, maturity, or executable-scenario semantics',
+        'procedural guidance cannot grant execution or effect authority',
+        'remove runtime declarations and keep effects request-scoped through Core'
       ));
     }
   }
 
   for (const [id, entry] of workflowEvaluationSets) {
     const owners = evaluationOwners.get(id) || [];
+    const owner = workflowDefinitions.get(entry.doc.workflow);
+    const caseIds = entry.doc.cases.map((item) => item.id);
+    const sequence = entry.doc.cases.map((item) => item.sequence);
+    const expectedSequence = entry.doc.cases.map((_item, index) => index + 1);
+    const kinds = new Set(entry.doc.cases.map((item) => item.kind));
     if (owners.length !== 1) {
       out.push(violation(
         entry.file,
@@ -2687,44 +2055,22 @@ function checkDefinitionOnlyWorkflows(
         'bind the evaluation set from exactly one matching workflow definition'
       ));
     }
-    const caseIds = entry.doc.cases.map((item) => item.id);
-    const sourcePaths = entry.doc.cases.map((item) => item.source.legacyPath);
-    const sequence = entry.doc.cases.map((item) => item.sequence);
-    const expectedSequence = entry.doc.cases.map((_, index) => index + 1);
-    const owner = workflowDefinitions.get(entry.doc.workflow);
-    const kinds = new Set(entry.doc.cases.map((item) => item.kind));
-    const sourceLifecycleInvalid = entry.doc.cases.some((item) => {
-      const source = resolveRegularRepositoryFile(root, item.source.legacyPath);
-      return item.source.presence === 'present'
-        ? !source || fingerprintFile(source) !== item.source.legacyFingerprint
-        : Boolean(source);
-    });
     if (new Set(caseIds).size !== caseIds.length
-      || new Set(sourcePaths).size !== sourcePaths.length
       || !deepEqual(sequence, expectedSequence)
-      || sourceLifecycleInvalid) {
-      out.push(violation(
-        entry.file,
-        'SOTER_WORKFLOW_EVALUATION_IDENTITY',
-        'evaluation case ids and source paths must be unique and sequence must be contiguous in document order',
-        'normalized cases need stable one-to-one source traceability and deterministic ordering',
-        'remove duplicates and number the ordered cases from one without gaps'
-      ));
-    }
-    if (entry.doc.lifecycle.state === 'active-host-guided'
-      && (!kinds.has('happy-path') || !kinds.has('pressure') || !kinds.has('invariant')
-        || entry.doc.cases.length < 3
-        || entry.doc.evaluationPolicy.freshWorkerPerCase !== true
-        || entry.doc.evaluationPolicy.expectationsWithheld !== true
-        || entry.doc.evaluationPolicy.baselineRequired !== true
-        || !owner
-        || owner.doc.lifecycle.state !== 'active-host-guided')) {
+      || !kinds.has('happy-path')
+      || !kinds.has('pressure')
+      || !kinds.has('invariant')
+      || entry.doc.cases.length < 3
+      || entry.doc.evaluationPolicy.freshWorkerPerCase !== true
+      || entry.doc.evaluationPolicy.expectationsWithheld !== true
+      || entry.doc.evaluationPolicy.baselineRequired !== true
+      || !owner) {
       out.push(violation(
         entry.file,
         'SOTER_WORKFLOW_EVALUATION_COVERAGE',
-        'active host-guided evaluation set lacks exact happy-path, pressure, invariant, fresh-worker, withheld-expectation, or baseline coverage',
-        'host activation requires observable normal, pressure, and invariant evidence from isolated runs rather than schema validity or self-report',
-        'add the missing exact case kinds and preserve fresh workers, withheld expectations, and a baseline arm'
+        'active evaluation set lacks unique contiguous cases, happy-path, pressure, invariant, fresh-worker, withheld-expectation, or baseline coverage',
+        'behavior claims require observable normal and adversarial evidence rather than schema validity or self-report',
+        'restore the missing case kinds and exact evaluation policy'
       ));
     }
   }
@@ -3703,33 +3049,18 @@ function checkRuntimeArtifacts(
   for (const entry of locks) {
     const fingerprint = fingerprintJson(entry.doc);
     lockByFingerprint.set(fingerprint, entry);
-    const relativeLockPath = path.relative(root, entry.file).split(path.sep).join('/');
-    const historicalWorkflowEvidenceBasis = workflowEvidenceBasisForPath(
-      relativeLockPath
-    );
     const selectedHost = hosts.get(entry.doc.host.adapter);
     if (entry.doc.configuration.hostSelection.id !== entry.doc.host.id
       || !selectedHost
-      || (historicalWorkflowEvidenceBasis
-        && (entry.doc.configuration.name !== historicalWorkflowEvidenceBasis.configuration
-          || entry.doc.host.id !== historicalWorkflowEvidenceBasis.host
-          || entry.doc.host.adapter !== historicalWorkflowEvidenceBasis.adapter))
-      || (!historicalWorkflowEvidenceBasis
-        && (selectedHost.doc.host !== entry.doc.host.id
-          || selectedHost.doc.version !== entry.doc.host.version
-          || fingerprintJson(selectedHost.doc) !== entry.doc.host.manifestFingerprint))) {
+      || selectedHost.doc.host !== entry.doc.host.id
+      || selectedHost.doc.version !== entry.doc.host.version
+      || fingerprintJson(selectedHost.doc) !== entry.doc.host.manifestFingerprint) {
       out.push(violation(
         entry.file,
         'SOTER_LOCK_HOST_SELECTION',
-        historicalWorkflowEvidenceBasis
-          ? 'historical workflow evidence-basis lock has no recognized selected host'
-          : 'lock host selection, adapter identity, version, or manifest fingerprint disagree',
-        historicalWorkflowEvidenceBasis
-          ? 'an immutable observation basis preserves its historical adapter bytes, but its host identity must remain governed'
-          : 'a portable configuration must still bind one exact reproducible host realization',
-        historicalWorkflowEvidenceBasis
-          ? 'restore the exact historical basis lock and its governed host identity'
-          : 'resolve the configuration again for the intended compatible host'
+        'lock host selection, adapter identity, version, or manifest fingerprint disagree',
+        'a portable configuration must bind one exact reproducible host realization',
+        'resolve the configuration again for the intended compatible host'
       ));
     }
     const unsigned = { ...entry.doc };
@@ -5406,7 +4737,7 @@ function checkConfiguration(
   }
 }
 
-function checkScenario(root, entry, packs, capabilities, configs, legacyInventory, out) {
+function checkScenario(root, entry, packs, capabilities, configs, out) {
   const automation = packs.get(entry.doc.automation);
   if (!automation || automation.doc.layer !== 'automation') {
     out.push(violation(
@@ -5427,22 +4758,6 @@ function checkScenario(root, entry, packs, capabilities, configs, legacyInventor
         'scenario calls undeclared capability ' + capability,
         'fixtures cannot smuggle provider behavior around the automation contract',
         'declare the capability requirement or correct the scenario'
-      ));
-    }
-  }
-  for (const sourceCase of entry.doc.sourceCases) {
-    const inventorySource = legacyInventory?.doc.items.find((item) => {
-      return item.sourcePath === sourceCase;
-    });
-    const governedRemoval = inventorySource?.sourcePresence === 'removed'
-      && ['migrated', 'retired'].includes(inventorySource.state);
-    if (!fs.existsSync(path.join(root, sourceCase)) && !governedRemoval) {
-      out.push(violation(
-        entry.file,
-        'SOTER_MIGRATION_PATH',
-        'source evaluation does not exist: ' + sourceCase,
-        'migration provenance must remain inspectable until the old case is retired',
-        'correct the path or record an explicit retirement'
       ));
     }
   }
@@ -5470,269 +4785,6 @@ function checkScenario(root, entry, packs, capabilities, configs, legacyInventor
         ));
       }
     }
-  }
-}
-
-function checkMigrationEvidence(root, entry, item, target, validateEvidenceContent, out) {
-  const evidencePaths = item.evidence || [];
-  const requiresEvidence = ['bridged', 'migrated', 'retired'].includes(item.state);
-  if (requiresEvidence && !evidencePaths.length) {
-    out.push(violation(
-      entry.file,
-      'SOTER_MIGRATION_EVIDENCE',
-      item.state + ' item has no evidence: ' + item.sourcePath,
-      'status words cannot substitute for an exact source, target, and evidence binding',
-      'attach a passed evidence/v2 record that fingerprints the exact target'
-    ));
-    return;
-  }
-  if (!validateEvidenceContent) return;
-  if (!evidencePaths.length || !target) return;
-  const targetDoc = parseJson(target, out);
-  if (!targetDoc) return;
-  const targetFingerprint = targetDoc.$contract === 'soter://contracts/workflow-guide/v2'
-    ? targetDoc.contentFingerprint
-    : fingerprintJson(targetDoc);
-  for (const evidencePath of evidencePaths) {
-    const evidenceFile = resolveRegularRepositoryFile(root, evidencePath);
-    if (!evidenceFile) {
-      out.push(violation(
-        entry.file,
-        'SOTER_MIGRATION_EVIDENCE',
-        'migration evidence does not resolve inside the repository: ' + evidencePath,
-        'a bridge cannot rely on missing or path-escaping proof',
-        'use one existing repository-relative evidence/v2 path'
-      ));
-      continue;
-    }
-    const evidence = parseJson(evidenceFile, out);
-    if (!evidence) continue;
-    if (evidence.$contract !== 'soter://contracts/evidence/v2' || evidence.result !== 'passed') {
-      out.push(violation(
-        entry.file,
-        'SOTER_MIGRATION_EVIDENCE',
-        'migration evidence is not a passed evidence/v2 record: ' + evidencePath,
-        'failed, stale, unknown, skipped, or legacy evidence cannot establish a current bridge',
-        'supply an exact current passed evidence/v2 record'
-      ));
-      continue;
-    }
-    if (['migrated', 'retired'].includes(item.state) && evidence.claimFamily !== 'migration') {
-      out.push(violation(
-        entry.file,
-        'SOTER_MIGRATION_EVIDENCE',
-        item.state + ' requires migration-family evidence: ' + evidencePath,
-        'behavior evidence can establish a bridge but cannot prove an authority switch or safe retirement',
-        'attach explicit migration evidence for parity, dependency removal, and rollback'
-      ));
-      continue;
-    }
-    const sourceArtifacts = evidence.artifacts?.filter((artifact) => {
-      return ['source-case', 'migration-source'].includes(artifact.role)
-        && artifact.path === item.sourcePath;
-    }) || [];
-    const exactSource = sourceArtifacts.length === 1
-      && sourceArtifacts[0].fingerprint === item.sourceFingerprint;
-    if (targetDoc.$contract === 'soter://contracts/scenario/v1') {
-      const exactSourceDeclaration = targetDoc.sourceCases?.includes(item.sourcePath);
-      if (['migrated', 'retired'].includes(item.state)) {
-        const migrationTargets = evidence.artifacts?.filter((artifact) => {
-          return artifact.role === 'migration-target' && artifact.path === item.targetPath;
-        }) || [];
-        const exactMigrationTarget = migrationTargets.length === 1
-          && migrationTargets[0].fingerprint === targetFingerprint;
-        if (!exactSourceDeclaration || !exactSource || !exactMigrationTarget) {
-          out.push(violation(
-            entry.file,
-            'SOTER_MIGRATION_EVIDENCE',
-            'scenario completion evidence does not bind the exact source and target: ' + item.sourcePath,
-            'an authority switch requires migration-family evidence over the exact tombstoned case and exact current scenario',
-            'fingerprint the migration-source and migration-target in explicit completion evidence'
-          ));
-        }
-      } else {
-        const level = VERIFICATION_LEVELS.indexOf(evidence.evaluator?.level);
-        const targetArtifacts = evidence.artifacts?.filter((artifact) => {
-          return artifact.role === 'scenario' && artifact.path === item.targetPath;
-        }) || [];
-        const exactArtifact = targetArtifacts.length === 1
-          && targetArtifacts[0].id === targetDoc.id
-          && targetArtifacts[0].fingerprint === targetFingerprint;
-        if (!exactSourceDeclaration || !exactSource
-          || level < VERIFICATION_LEVELS.indexOf('fixture') || !exactArtifact) {
-          out.push(violation(
-            entry.file,
-            'SOTER_MIGRATION_EVIDENCE',
-            'scenario bridge evidence does not bind the exact source and target: ' + item.sourcePath,
-            'a passing result for other source bytes, another scenario version, or a lower verification level is not this bridge',
-            'fingerprint the current source case and exact target scenario in fixture-or-higher execution evidence'
-          ));
-        }
-      }
-      continue;
-    }
-    const targetArtifacts = evidence.artifacts?.filter((artifact) => {
-      return artifact.role === 'migration-target' && artifact.path === item.targetPath;
-    }) || [];
-    const exactTarget = evidence.claimFamily === 'migration'
-      && targetArtifacts.length === 1
-      && targetArtifacts[0].fingerprint === targetFingerprint;
-    if (!exactSource || !exactTarget) {
-      out.push(violation(
-        entry.file,
-        'SOTER_MIGRATION_EVIDENCE',
-        'non-scenario migration evidence does not fingerprint the exact source and target: ' + item.targetPath,
-        'a generic passing result cannot establish which legacy bytes moved or were intentionally replaced',
-        'attach migration-family evidence with exact source-case and migration-target artifacts'
-      ));
-    }
-  }
-}
-
-function checkMigrationInventoryBinding(entry, item, legacyInventory, out) {
-  if (!['bridged', 'migrated', 'retired'].includes(item.state)) return;
-  const matches = legacyInventory?.doc.items.filter((candidate) => {
-    return candidate.sourcePath === item.sourcePath;
-  }) || [];
-  if (matches.length !== 1) {
-    out.push(violation(
-      entry.file,
-      'SOTER_MIGRATION_INVENTORY',
-      'promoted migration item has no unique legacy inventory entry: ' + item.sourcePath,
-      'slice-specific migration state cannot diverge from the complete source inventory',
-      'classify the exact source once in legacy-inventory.json and reconcile this migration item'
-    ));
-    return;
-  }
-  const inventoryItem = matches[0];
-  const targetBindings = inventoryItem.targets?.filter((candidate) => {
-    return candidate.id === item.targetPack && candidate.path === item.targetPath;
-  }) || [];
-  if (targetBindings.length !== 1) {
-    out.push(violation(
-      entry.file,
-      'SOTER_MIGRATION_INVENTORY',
-      'migration target has no unique legacy inventory binding for ' + item.sourcePath
-        + ' -> ' + item.targetPath,
-      'a multi-target source needs one independently stateful inventory binding per exact target',
-      'add or reconcile the exact target binding in legacy-inventory.json'
-    ));
-    return;
-  }
-  const targetBinding = targetBindings[0];
-  const migrationBinding = {
-    state: item.state,
-    sourceFingerprint: item.sourceFingerprint,
-    targetId: item.targetPack,
-    targetPath: item.targetPath,
-    evidence: item.evidence || []
-  };
-  const inventoryBinding = {
-    state: targetBinding.state,
-    sourceFingerprint: inventoryItem.sourceFingerprint,
-    targetId: targetBinding.id,
-    targetPath: targetBinding.path,
-    evidence: targetBinding.evidence
-  };
-  if (!deepEqual(migrationBinding, inventoryBinding)) {
-    out.push(violation(
-      entry.file,
-      'SOTER_MIGRATION_INVENTORY',
-      'migration manifest and legacy inventory disagree for ' + item.sourcePath,
-      'two state records cannot independently choose source bytes, target ownership, or proof',
-      'make the migration item and complete inventory carry the same exact binding'
-    ));
-  }
-}
-
-function checkMigration(root, entry, packs, configurations, legacyInventory, validateEvidenceContent, out) {
-  if (!packs.has(entry.doc.slice)) {
-    out.push(violation(
-      entry.file,
-      'SOTER_MIGRATION',
-      'migration slice is not a declared pack',
-      'every migration needs one inspectable owning system even when the migrated responsibility belongs to Kernel, Core, Context, Integration, or a host',
-      'set slice to the declared pack that owns the migration boundary'
-    ));
-  }
-  for (const item of entry.doc.items) {
-    const source = resolveRegularRepositoryFile(root, item.sourcePath);
-    const target = resolveRegularRepositoryFile(root, item.targetPath);
-    const pack = packs.get(item.targetPack);
-    const configuration = configurations.find((candidate) => {
-      const candidatePath = path.relative(root, candidate.file).split(path.sep).join('/');
-      return item.targetPack === 'configuration.' + candidate.doc.name
-        && item.targetPath === candidatePath;
-    });
-    const inventorySource = legacyInventory?.doc.items.find((candidate) => {
-      return candidate.sourcePath === item.sourcePath;
-    });
-    const governedRemoval = inventorySource?.sourcePresence === 'removed'
-      && ['migrated', 'retired'].includes(inventorySource.state)
-      && ['migrated', 'retired'].includes(item.state);
-    const exactSourcePresent = source
-      && fingerprintFile(source) === item.sourceFingerprint;
-    if (!source && !governedRemoval) {
-      out.push(violation(
-        entry.file,
-        'SOTER_MIGRATION_PATH',
-        'migration source is missing, path-escaping, symlinked, or not regular: ' + item.sourcePath,
-        'an unavailable or ambiguous source makes migration status unverifiable',
-        'restore one repository-confined regular source file or complete an evidenced migration or retirement tombstone'
-      ));
-    }
-    if (exactSourcePresent && inventorySource?.sourcePresence === 'removed') {
-      out.push(violation(
-        entry.file,
-        'SOTER_MIGRATION_SOURCE',
-        'legacy inventory declares a removed source that is still present: ' + item.sourcePath,
-        'a tombstone and live fallback cannot both describe the current source tree',
-        'restore sourcePresence=present or remove the fully migrated or retired source'
-      ));
-    }
-    if (!target) {
-      out.push(violation(
-        entry.file,
-        'SOTER_MIGRATION_PATH',
-        'migration target is missing, path-escaping, symlinked, or not regular: ' + item.targetPath,
-        'mapped and promoted states require one inspectable governed target',
-        'restore one repository-confined regular target or return the item to current state'
-      ));
-    }
-    if (source && inventorySource?.sourcePresence !== 'removed'
-      && ['bridged', 'migrated', 'retired'].includes(item.state)
-      && !exactSourcePresent) {
-      out.push(violation(
-        entry.file,
-        'SOTER_MIGRATION_SOURCE',
-        'migration source fingerprint is stale for ' + item.sourcePath,
-        'evidence for earlier legacy bytes cannot establish a bridge for changed behavior',
-        'demote the item, review the changed source, rerun its exact evidence, and record the new fingerprint'
-      ));
-    }
-    if (!pack && !configuration) {
-      out.push(violation(
-        entry.file,
-        'SOTER_MIGRATION',
-        'migration target owner does not exist: ' + item.targetPack,
-        'every target artifact needs one pack or exact named configuration owner',
-        'add the owner or correct targetPack'
-      ));
-    } else if (pack) {
-      const packPath = path.relative(root, pack.file);
-      const ownedPaths = new Set([packPath, ...pack.doc.artifacts.map((artifact) => artifact.path)]);
-      if (!ownedPaths.has(item.targetPath)) {
-        out.push(violation(
-          entry.file,
-          'SOTER_MIGRATION',
-          item.targetPath + ' is not owned by ' + item.targetPack,
-          'migration cannot land an artifact outside its declared pack boundary',
-          'list the artifact on the pack or correct targetPack'
-        ));
-      }
-    }
-    checkMigrationInventoryBinding(entry, item, legacyInventory, out);
-    checkMigrationEvidence(root, entry, item, target, validateEvidenceContent, out);
   }
 }
 
@@ -5780,7 +4832,6 @@ function verifySoterInternal(root = defaultRoot, options = {}) {
     workflowDefinitions: 0,
     workflowEvaluationSets: 0,
     workflowGuides: 0,
-    migrations: 0,
     locks: 0,
     runEnvelopes: 0,
     evidence: 0,
@@ -5937,7 +4988,6 @@ function report(resultValue, json) {
       + c.workflowDefinitions + ' workflow definitions, '
       + c.workflowEvaluationSets + ' workflow evaluation sets, '
       + c.workflowGuides + ' workflow guides, '
-      + c.migrations + ' migrations, '
       + c.locks + ' locks, ' + c.runEnvelopes + ' run envelopes, '
       + c.evidence + ' evidence records, ' + c.doctorResults + ' doctor results, '
       + c.providers + ' providers, ' + c.contextSnapshots + ' context snapshots, '
@@ -5957,35 +5007,6 @@ function report(resultValue, json) {
       + ', healthy=' + resultValue.health.healthy + '.'
   );
   console.log('Soter verifier: ' + errors + ' error(s), ' + warnings + ' warning(s).');
-}
-
-function copyMigrationSources(sourceRoot, targetRoot) {
-  const migrationDir = path.join(sourceRoot, 'soter', 'migrations');
-  for (const file of walkFiles(migrationDir, (candidate) => candidate.endsWith('.json'))) {
-    const migration = JSON.parse(fs.readFileSync(file, 'utf8'));
-    for (const item of migration.items || []) {
-      const source = path.join(sourceRoot, item.sourcePath);
-      const target = path.join(targetRoot, item.sourcePath);
-      fs.mkdirSync(path.dirname(target), { recursive: true });
-      if (fs.existsSync(source) && fs.lstatSync(source).isFile()) {
-        fs.copyFileSync(source, target);
-      }
-    }
-  }
-  const hostDir = path.join(sourceRoot, 'soter', 'hosts');
-  for (const file of walkFiles(hostDir, (candidate) => candidate.endsWith('adapter.json'))) {
-    const adapter = JSON.parse(fs.readFileSync(file, 'utf8'));
-    for (const projection of adapter.projections || []) {
-      const source = path.join(sourceRoot, projection.path);
-      const target = path.join(targetRoot, projection.path);
-      if (fs.existsSync(source) && fs.statSync(source).isDirectory()) {
-        fs.mkdirSync(target, { recursive: true });
-      } else {
-        fs.mkdirSync(path.dirname(target), { recursive: true });
-        fs.writeFileSync(target, 'selftest host projection\n');
-      }
-    }
-  }
 }
 
 function copyExternalPackArtifacts(sourceRoot, targetRoot) {
@@ -6012,743 +5033,6 @@ function copyExternalPackArtifacts(sourceRoot, targetRoot) {
       }
     }
   }
-}
-
-function installDefinitionOnlySelftestGraph(root) {
-  const workflowId = 'automation.definition-only-selftest';
-  const evaluationId = 'evaluation-set.definition-only-selftest';
-  const workflowPath = 'soter/automations/definition-only-selftest/definition.json';
-  const evaluationPath = 'soter/automations/definition-only-selftest/evaluations.json';
-  const guidePath = 'soter/automations/definition-only-selftest/guide.json';
-  const packPath = 'soter/packs/automation.definition-only-selftest/pack.json';
-  const configPath = 'soter/configurations/definition-only-selftest.config.json';
-  const skillPath = '.claude/skills/definition-only-selftest/SKILL.md';
-  const casePaths = [
-    '.claude/evals/definition-only-selftest/happy-path.md',
-    '.claude/evals/definition-only-selftest/invariant-gate.md'
-  ];
-  const sourceFiles = new Map([
-    [skillPath, '# Definition-only self-test source\n\nThis temporary source has no runtime authority.\n'],
-    [casePaths[0], '# Happy path\n\nThe normalized definition remains inspectable and authority-free.\n'],
-    [casePaths[1], '# Invariant gate\n\nNo runtime operation or external effect is authorized.\n']
-  ]);
-  for (const [relativePath, content] of sourceFiles) {
-    const file = path.join(root, relativePath);
-    fs.mkdirSync(path.dirname(file), { recursive: true });
-    fs.writeFileSync(file, content);
-  }
-  const workflow = {
-    $contract: 'soter://contracts/workflow-definition/v2',
-    contractVersion: '2.0.0',
-    id: workflowId,
-    version: '0.1.0',
-    title: 'Definition-only self-test workflow',
-    summary: 'Preserves synthetic normalized intent only long enough to exercise definition-only Kernel invariants.',
-    ownership: {
-      layer: 'automation',
-      domain: 'definition-only-selftest',
-      legacyLayer: 'skill',
-      responsibility: 'outcome-definition'
-    },
-    lifecycle: {
-      state: 'definition-only',
-      reasonCode: 'AUTOMATION_RUNTIME_NOT_IMPLEMENTED',
-      authority: 'none',
-      delivery: 'preview-only',
-      developmentRequest: null,
-      developmentResult: null,
-      permittedNextAction: 'design-runtime-slice'
-    },
-    intent: {
-      goal: 'Retain inspectable workflow intent without exposing runtime or effect authority.',
-      useWhen: ['A temporary verifier specimen needs definition-only contract coverage.'],
-      excludeWhen: ['Any runtime behavior or provider effect would be required.']
-    },
-    procedure: [
-      {
-        id: 'inspect-source',
-        sequence: 1,
-        outcome: 'Inspect the exact governed legacy source identity.',
-        requirements: ['Require one exact fingerprinted source before normalization.'],
-        stopConditions: ['Stop when the source identity cannot be verified.']
-      },
-      {
-        id: 'hold-runtime',
-        sequence: 2,
-        outcome: 'Keep all runtime and effect authority unavailable.',
-        requirements: ['Expose no operator, capability, authority, or executable scenario.'],
-        stopConditions: ['Stop before any runtime operation or external effect.']
-      }
-    ],
-    safeguards: ['Definition review must never become runtime or effect authority.'],
-    evaluationSet: { id: evaluationId, path: evaluationPath },
-    guide: { id: 'workflow-guide.definition-only-selftest', path: guidePath },
-    potentialEffects: ['read'],
-    source: {
-      presence: 'present',
-      legacyPath: skillPath,
-      legacyFingerprint: fingerprintFile(path.join(root, skillPath))
-    },
-    privacy: {
-      rawSourceIncluded: false,
-      workspaceSpecificValuesIncluded: false,
-      credentialsIncluded: false,
-      privateInputsIncluded: false
-    },
-    limitations: ['This temporary specimen proves definition-only validation and no runtime behavior.']
-  };
-  const evaluations = {
-    $contract: 'soter://contracts/workflow-evaluation-set/v2',
-    contractVersion: '2.0.0',
-    id: evaluationId,
-    workflow: workflowId,
-    version: '0.1.0',
-    lifecycle: {
-      state: 'definition-only',
-      reasonCode: 'AUTOMATION_RUNTIME_NOT_IMPLEMENTED',
-      authority: 'none',
-      permittedNextAction: 'design-runtime-slice'
-    },
-    cases: casePaths.map((sourcePath, index) => ({
-      id: index === 0 ? 'happy-path' : 'invariant-gate',
-      sequence: index + 1,
-      kind: index === 0 ? 'happy-path' : 'invariant',
-      source: {
-        presence: 'present',
-        legacyPath: sourcePath,
-        legacyFingerprint: fingerprintFile(path.join(root, sourcePath))
-      },
-      stimulus: {
-        summary: 'A governed synthetic source is normalized without runtime authority.',
-        conditions: ['The exact legacy source remains available for inspection.']
-      },
-      expectedObservations: ['The normalized definition remains inspectable and authority-free.'],
-      prohibitedOutcomes: ['No runtime operation or external effect is authorized.']
-    })),
-    evaluationPolicy: {
-      runner: 'none',
-      requestContract: null,
-      resultContract: null,
-      freshWorkerPerCase: true,
-      expectationsWithheld: true,
-      baselineRequired: true,
-      supportedHosts: [],
-      authority: 'none'
-    },
-    privacy: {
-      rawPromptsIncluded: false,
-      workspaceSpecificValuesIncluded: false,
-      privateInputsIncluded: false,
-      rawTranscriptsIncluded: false,
-      absolutePathsIncluded: false
-    },
-    limitations: ['These normalized cases are not executable behavior evidence.']
-  };
-  const guide = {
-    $contract: 'soter://contracts/workflow-guide/v2',
-    contractVersion: '2.0.0',
-    id: 'workflow-guide.definition-only-selftest',
-    workflow: {
-      id: workflowId,
-      version: workflow.version,
-      definitionPath: workflowPath,
-      definitionFingerprint: fingerprintJson(workflow),
-      evaluationSetPath: evaluationPath,
-      evaluationSetFingerprint: fingerprintJson(evaluations)
-    },
-    skill: {
-      name: 'definition-only-selftest',
-      description: 'Inspect one synthetic definition-only workflow without granting runtime, effect, or approval authority.',
-      invocation: 'explicit-only',
-      displayName: 'Definition-only self-test',
-      shortDescription: 'Inspect a synthetic authority-free workflow guide.',
-      defaultPrompt: 'Use $definition-only-selftest to inspect the synthetic workflow without performing any effect.'
-    },
-    status: {
-      state: 'candidate',
-      reasonCode: 'WORKFLOW_GUIDE_PARITY_NOT_EVALUATED',
-      proceduralAuthority: 'legacy',
-      behaviorParity: 'not-evaluated',
-      delivery: 'preview-only',
-      evidence: [],
-      permittedNextAction: 'evaluate-host-projections'
-    },
-    authority: {
-      kind: 'procedural-guidance',
-      executionAuthority: 'none',
-      effectAuthority: 'none',
-      approvalAuthority: 'none',
-      reasonCode: 'WORKFLOW_GUIDE_NO_EXECUTION_AUTHORITY',
-      providerTransactionAuthority: 'none'
-    },
-    stepDetails: workflow.procedure.map((step) => ({
-      id: step.id,
-      sequence: step.sequence,
-      instructions: [step.outcome],
-      flexibility: [],
-      stopConditions: [...step.stopConditions]
-    })),
-    verification: ['The synthetic workflow remains inspectable and grants no runtime or external effect authority.'],
-    gotchas: [{
-      id: 'definition-is-not-runtime',
-      kind: 'constraint',
-      summary: 'A valid workflow guide can still have no executable runtime or provider authority.',
-      countermeasure: 'Keep the candidate preview-only until exact agent-or-higher migration evidence supports activation.'
-    }],
-    references: [],
-    source: {
-      presence: 'present',
-      legacyPath: skillPath,
-      legacyFingerprint: workflow.source.legacyFingerprint,
-      normalization: 'behavior-preserving-with-explicit-authority-boundary'
-    },
-    privacy: {
-      rawSourceIncluded: false,
-      workspaceSpecificValuesIncluded: false,
-      credentialsIncluded: false,
-      privateInputsIncluded: false,
-      providerResponsesIncluded: false
-    },
-    limitations: ['This temporary candidate proves guide validation only and grants no runtime behavior.']
-  };
-  guide.contentFingerprint = fingerprintWorkflowGuideContent(guide);
-  const pack = {
-    $contract: 'soter://contracts/pack/v1',
-    contractVersion: '1.0.0',
-    id: workflowId,
-    version: '0.1.0',
-    layer: 'automation',
-    releaseStage: 'experimental',
-    evidenceMaturity: 'declared',
-    summary: 'Temporary definition-only workflow used by Kernel self-tests.',
-    dependencies: [],
-    capabilities: { requires: [], provides: [] },
-    authorities: [],
-    effects: [],
-    artifacts: [
-      { path: workflowPath, role: 'definition' },
-      { path: guidePath, role: 'definition' },
-      { path: evaluationPath, role: 'evaluation' }
-    ],
-    compatibility: { baseContract: '^1.0.0', hosts: ['codex', 'claude'] },
-    verification: { maxLevel: 'static', scenarios: [] }
-  };
-  const config = {
-    $contract: 'soter://contracts/configuration/v1',
-    contractVersion: '1.0.0',
-    name: 'definition-only-selftest',
-    base: { kernel: 'kernel.soter', core: 'core.runtime' },
-    packs: [{
-      id: workflowId,
-      source: 'user',
-      reason: 'Select the temporary definition-only workflow for verifier coverage.'
-    }],
-    bindings: [],
-    sources: [],
-    authorities: [{
-      id: 'authority.definition-only-selftest.evidence',
-      role: 'evidence',
-      subject: 'runtime.runs',
-      uri: 'soter-state://runs',
-      reason: 'Core retains its required evidence authority without exposing runtime behavior.'
-    }],
-    effectPolicies: Object.fromEntries(EFFECTS.map((effect) => [effect, {
-      mode: 'prohibit',
-      reason: 'Definition-only self-test configuration prohibits ' + effect + ' effects.'
-    }])),
-    secretRefs: [],
-    host: {
-      id: 'codex',
-      adapter: 'host.codex',
-      version: '0.3.1',
-      reason: 'Keep the temporary definition inspectable through a declared host.'
-    },
-    settings: {}
-  };
-  for (const [relativePath, value] of [
-    [workflowPath, workflow],
-    [evaluationPath, evaluations],
-    [guidePath, guide],
-    [packPath, pack],
-    [configPath, config]
-  ]) {
-    const file = path.join(root, relativePath);
-    fs.mkdirSync(path.dirname(file), { recursive: true });
-    fs.writeFileSync(file, JSON.stringify(value, null, 2) + '\n');
-  }
-  return {
-    packFile: path.join(root, packPath),
-    workflowFile: path.join(root, workflowPath),
-    evaluationFile: path.join(root, evaluationPath),
-    guideFile: path.join(root, guidePath)
-  };
-}
-
-function installActiveWorkflowEvidenceSelftestFixture(root) {
-  const workflowId = 'automation.active-evidence-selftest';
-  const guidePath = 'soter/automations/active-evidence-selftest/guide.json';
-  const definitionPath = 'soter/automations/active-evidence-selftest/definition.json';
-  const evaluationPath = 'soter/automations/active-evidence-selftest/evaluations.json';
-  const legacyPath = '.claude/skills/active-evidence-selftest/SKILL.md';
-  const definition = {
-    id: workflowId,
-    version: '0.1.0',
-    title: 'Active evidence self-test',
-    summary: 'Exercise exact historical and final host evidence joins.',
-    ownership: {
-      layer: 'automation',
-      domain: 'active-evidence-selftest',
-      legacyLayer: 'skill',
-      responsibility: 'outcome-definition'
-    },
-    lifecycle: {
-      state: 'active-host-guided',
-      activation: { state: 'active', evidence: [] },
-      effectBoundary: {
-        localWorkspaceRead: 'request-scoped',
-        localWorkspaceWrite: 'request-scoped',
-        localCommand: 'request-scoped',
-        subagentDispatch: 'request-scoped',
-        providerRead: 'separate-authority',
-        providerWrite: 'separate-authority',
-        publication: 'separate-authority',
-        merge: 'separate-authority',
-        protectedRootMutation: 'separate-authority',
-        hostRealization: 'separate-authority',
-        authority: 'development-request-only'
-      }
-    },
-    intent: {
-      goal: 'Exercise exact historical and final host evidence joins.',
-      useWhen: ['Kernel active evidence joins require focused self-test coverage.'],
-      excludeWhen: ['No active workflow evidence is under inspection.']
-    },
-    procedure: [{
-      id: 'inspect-evidence',
-      sequence: 1,
-      outcome: 'Inspect exact host evidence.',
-      requirements: ['Keep historical and final evidence distinct.'],
-      stopConditions: ['Stop on any binding mismatch.']
-    }],
-    safeguards: ['Historical evidence grants no execution or activation authority.'],
-    potentialEffects: ['read'],
-    source: {
-      presence: 'removed',
-      legacyPath,
-      legacyFingerprint: fingerprintJson({ legacyPath })
-    }
-  };
-  const evaluations = {
-    id: 'evaluation-set.active-evidence-selftest',
-    workflow: workflowId,
-    version: '0.1.0',
-    cases: ['happy-path', 'pressure-path', 'invariant-path'].map((id, index) => ({
-      id,
-      sequence: index + 1,
-      kind: index === 0 ? 'happy-path' : index === 1 ? 'pressure' : 'invariant',
-      source: {
-        presence: 'removed',
-        legacyPath: `.claude/evals/active-evidence-selftest/${id}.md`,
-        legacyFingerprint: fingerprintJson({ id })
-      },
-      stimulus: {
-        summary: 'Inspect the exact evidence join for ' + id + '.',
-        conditions: ['The test uses only sanitized deterministic facts.']
-      },
-      expectedObservations: ['The exact evidence join remains intact.'],
-      prohibitedOutcomes: ['No authority is inferred from the receipt.']
-    })),
-    evaluationPolicy: {
-      baselineCaseId: 'happy-path',
-      baselineOutcome: 'observed-not-gating'
-    }
-  };
-  const guide = {
-    id: 'workflow-guide.active-evidence-selftest',
-    contentFingerprint: fingerprintJson({ guide: 'active-evidence-selftest' }),
-    skill: {
-      name: 'active-evidence-selftest',
-      description: 'Exercise exact historical and final host evidence joins.',
-      invocation: 'explicit-only',
-      displayName: 'Active evidence self-test',
-      shortDescription: 'Inspect exact workflow evidence joins.',
-      defaultPrompt: 'Inspect the exact active workflow evidence joins.'
-    },
-    status: { state: 'active', evidence: [] },
-    authority: {
-      kind: 'procedural-guidance',
-      executionAuthority: 'none',
-      effectAuthority: 'none',
-      approvalAuthority: 'none',
-      providerTransactionAuthority: 'none',
-      reasonCode: 'WORKFLOW_GUIDE_NO_EXECUTION_AUTHORITY'
-    },
-    stepDetails: [{
-      id: 'inspect-evidence',
-      sequence: 1,
-      instructions: ['Inspect the exact evidence joins.'],
-      flexibility: [],
-      stopConditions: ['Stop on any binding mismatch.']
-    }],
-    verification: ['Every host evidence join is exact.'],
-    gotchas: [],
-    references: [],
-    source: {
-      presence: 'removed',
-      legacyPath,
-      legacyFingerprint: definition.source.legacyFingerprint,
-      normalization: 'behavior-preserving-with-explicit-authority-boundary'
-    },
-    privacy: {
-      rawSourceIncluded: false,
-      workspaceSpecificValuesIncluded: false,
-      credentialsIncluded: false,
-      privateInputsIncluded: false,
-      providerResponsesIncluded: false
-    },
-    limitations: ['The fixture proves Kernel evidence joins only.']
-  };
-  const stableSubjectFingerprint = fingerprintWorkflowEvaluatedSubject({
-    definition,
-    guide,
-    evaluations
-  });
-  const workflowSources = workflowLegacySourceProjection({ definition, guide, evaluations });
-  const receipts = new Map();
-  const receiptEntries = new Map();
-  const references = new Map();
-  const finalEntries = new Map();
-  for (const host of ['codex', 'claude']) {
-    const instructionFingerprint = fingerprintJson({ host, instructions: guide.id });
-    const runs = workflowEvaluationRunPlan({ definition, evaluations })
-      .map(({ criteria, ...planned }, index) => ({
-        ...planned,
-        startedAt: '2026-07-22T10:02:00.000Z',
-        completedAt: '2026-07-22T10:03:00.000Z',
-        worker: {
-          id: `worker-run.${host}.${index + 1}`,
-          workerFingerprint: fingerprintJson({ host, index, kind: 'worker' }),
-          dispatchFingerprint: fingerprintJson({ host, index, kind: 'dispatch' }),
-          transcriptFingerprint: fingerprintJson({ host, index, kind: 'transcript' }),
-          expectationsIncluded: false,
-          answerKeyAccess: 'not-observed',
-          state: 'passed'
-        },
-        judgment: {
-          id: `judgment.${host}.${index + 1}`,
-          verdict: 'passed',
-          criteria: criteria.map((criterion) => ({
-            ...criterion,
-            state: criterion.kind === 'expected' ? 'observed' : 'not-observed',
-            evidenceFingerprint: fingerprintJson({
-              host,
-              run: planned.id,
-              criterion: criterion.id
-            })
-          }))
-        }
-      }));
-    const receipt = {
-      $contract: 'soter://contracts/development-agent-migration-evidence/v1',
-      evidenceFingerprint: fingerprintJson({ placeholder: host }),
-      createdAt: '2026-07-22T11:01:00.000Z',
-      sourceObservation: {
-        observedAt: '2026-07-22T11:01:00.000Z'
-      },
-      request: {
-        createdAt: '2026-07-22T10:00:00.000Z'
-      },
-      result: {
-        createdAt: '2026-07-22T10:01:00.000Z',
-        completedAt: '2026-07-22T11:00:00.000Z',
-        state: 'passed'
-      },
-      applicability: {
-        kind: 'historical-candidate-only',
-        evaluatedSubjectFingerprint: stableSubjectFingerprint
-      },
-      workflow: { id: workflowId, version: definition.version },
-      evaluatedSubject: {
-        id: guide.id,
-        version: definition.version,
-        fingerprint: stableSubjectFingerprint,
-        contentFingerprint: guide.contentFingerprint
-      },
-      evaluationSet: { id: evaluations.id, version: evaluations.version },
-      host: { id: host, evaluatedInstructionFingerprint: instructionFingerprint },
-      workspace: {
-        pre: {
-          rootIdentityFingerprint: fingerprintJson({ host, workspace: 'root' }),
-          policyFingerprint: fingerprintJson({ host, workspace: 'policy' }),
-          settingsFingerprint: fingerprintJson({ host, workspace: 'settings' })
-        },
-        post: {
-          rootIdentityFingerprint: fingerprintJson({ host, workspace: 'root' }),
-          policyFingerprint: fingerprintJson({ host, workspace: 'policy' }),
-          settingsFingerprint: fingerprintJson({ host, workspace: 'settings' })
-        }
-      },
-      runs,
-      artifacts: [...workflowSources.map((source) => ({
-        role: 'migration-source',
-        subjectId: workflowId,
-        path: source.path,
-        fingerprint: source.fingerprint
-      })), {
-        role: 'migration-target',
-        subjectId: guide.id,
-        path: guidePath,
-        fingerprint: stableSubjectFingerprint
-      }],
-      conclusion: {
-        state: 'passed',
-        behaviorParity: 'passed',
-        baselineRole: 'observed-non-gating',
-        guidedRunsPassed: true,
-        prohibitedOutcomesObserved: false,
-        externalEffectsObserved: false
-      },
-      authority: {
-        kind: 'migration-evidence-only',
-        grantsExecution: false,
-        grantsApproval: false,
-        grantsActivation: false,
-        grantsMigration: false,
-        grantsPublication: false,
-        grantsMerge: false,
-        grantsProviderRead: false,
-        grantsProviderWrite: false,
-        grantsHostRealization: false,
-        grantsPromotion: false,
-        grantsFallbackRemoval: false
-      }
-    };
-    receipt.evidenceFingerprint = fingerprintWithoutField(receipt, 'evidenceFingerprint');
-    const receiptPath = `soter/evidence/development/active-evidence-selftest.${host}.historical.json`;
-    const receiptFile = path.join(root, receiptPath);
-    fs.mkdirSync(path.dirname(receiptFile), { recursive: true });
-    fs.writeFileSync(receiptFile, JSON.stringify(receipt));
-    const receiptEntry = {
-      file: receiptFile,
-      contractId: receipt.$contract,
-      doc: receipt
-    };
-    const reference = { host, path: receiptPath, fingerprint: fingerprintJson(receipt) };
-    receipts.set(host, receipt);
-    receiptEntries.set(host, receiptEntry);
-    references.set(host, reference);
-  }
-  definition.lifecycle.activation.evidence = ['codex', 'claude'].map((host) => references.get(host));
-  guide.status.evidence = structuredClone(definition.lifecycle.activation.evidence);
-  for (const host of ['codex', 'claude']) {
-    const receipt = receipts.get(host);
-    const reference = references.get(host);
-    const finalPath = `soter/evidence/development/active-evidence-selftest.${host}.final.json`;
-    const finalEvidence = {
-      $contract: 'soter://contracts/evidence/v2',
-      claimFamily: 'migration',
-      subject: { type: 'automation', id: workflowId, version: definition.version },
-      host: { id: host },
-      evaluator: { level: 'agent' },
-      result: 'passed',
-      artifacts: [...workflowSources.map((source) => ({
-        role: 'migration-source',
-        path: source.path,
-        fingerprint: source.fingerprint
-      })), {
-        role: 'migration-target',
-        path: guidePath,
-        fingerprint: guide.contentFingerprint
-      }, {
-        role: 'migration-target',
-        path: evaluationPath,
-        fingerprint: fingerprintJson(evaluations)
-      }, {
-        role: 'development-agent-migration-evidence',
-        path: reference.path,
-        fingerprint: fingerprintJson(receipt)
-      }, {
-        role: 'workflow-evaluated-subject',
-        subjectId: guide.id,
-        fingerprint: stableSubjectFingerprint
-      }, {
-        role: 'workflow-evaluated-instructions',
-        host,
-        subjectId: guide.id,
-        fingerprint: receipt.host.evaluatedInstructionFingerprint
-      }, {
-        role: 'workflow-definition',
-        path: definitionPath,
-        fingerprint: fingerprintJson(definition)
-      }, {
-        role: 'workflow-evaluation-set',
-        path: evaluationPath,
-        fingerprint: fingerprintJson(evaluations)
-      }]
-    };
-    const finalFile = path.join(root, finalPath);
-    fs.writeFileSync(finalFile, JSON.stringify(finalEvidence));
-    finalEntries.set(host, {
-      file: finalFile,
-      contractId: finalEvidence.$contract,
-      doc: finalEvidence
-    });
-  }
-  return {
-    root,
-    definitionEntry: { file: path.join(root, definitionPath), doc: definition },
-    guideEntry: { file: path.join(root, guidePath), doc: guide },
-    evaluationEntry: { file: path.join(root, evaluationPath), doc: evaluations },
-    guidePath,
-    receipts,
-    receiptEntries,
-    references,
-    finalEntries,
-    documentsByPath: new Map([...receiptEntries.values()].map((entry) => [path.resolve(entry.file), entry])),
-    evidence: new Map([...finalEntries].map(([host, entry]) => ['evidence.' + host, entry])),
-    requireFinalEvidence: true
-  };
-}
-
-function refreshActiveWorkflowEvidenceSelftestFixture(fixture, host) {
-  const receipt = fixture.receipts.get(host);
-  const receiptEntry = fixture.receiptEntries.get(host);
-  const reference = fixture.references.get(host);
-  receipt.evidenceFingerprint = fingerprintWithoutField(receipt, 'evidenceFingerprint');
-  reference.fingerprint = fingerprintJson(receipt);
-  receiptEntry.doc = receipt;
-  fs.writeFileSync(receiptEntry.file, JSON.stringify(receipt));
-  fixture.definitionEntry.doc.lifecycle.activation.evidence = ['codex', 'claude']
-    .map((item) => fixture.references.get(item));
-  fixture.guideEntry.doc.status.evidence = structuredClone(
-    fixture.definitionEntry.doc.lifecycle.activation.evidence
-  );
-  const finalEntry = fixture.finalEntries.get(host);
-  const receiptArtifact = finalEntry.doc.artifacts.find((artifact) => {
-    return artifact.role === 'development-agent-migration-evidence';
-  });
-  receiptArtifact.path = reference.path;
-  receiptArtifact.fingerprint = reference.fingerprint;
-  for (const entry of fixture.finalEntries.values()) {
-    entry.doc.artifacts.find((artifact) => artifact.role === 'workflow-definition').fingerprint
-      = fingerprintJson(fixture.definitionEntry.doc);
-  }
-}
-
-function plantActiveWorkflowBaselineFinding(receipt) {
-  const baseline = receipt.runs.find((run) => run.arm === 'baseline');
-  baseline.worker.state = 'failed';
-  baseline.judgment.verdict = 'blocked';
-  baseline.judgment.criteria.find((criterion) => {
-    return criterion.kind === 'expected';
-  }).state = 'unknown';
-  baseline.judgment.criteria.find((criterion) => {
-    return criterion.kind === 'prohibited';
-  }).state = 'observed';
-}
-
-function installRetiredWorkflowEvidenceSelftestFixture(root) {
-  const fixture = installActiveWorkflowEvidenceSelftestFixture(root);
-  const definition = fixture.definitionEntry.doc;
-  const guide = fixture.guideEntry.doc;
-  const evaluations = fixture.evaluationEntry.doc;
-  const evaluationPath = path.relative(root, fixture.evaluationEntry.file).split(path.sep).join('/');
-  const retirementPath = 'soter/fixtures/harness-development-catalog/'
-    + 'active-evidence-selftest.intentional-retirement.evidence.json';
-  const retirementReference = { path: retirementPath };
-  definition.lifecycle = {
-    state: 'retired',
-    retirement: {
-      state: 'complete',
-      evidence: [retirementReference]
-    }
-  };
-  guide.workflow = {
-    id: definition.id,
-    version: definition.version,
-    definitionPath: path.relative(root, fixture.definitionEntry.file).split(path.sep).join('/'),
-    definitionFingerprint: fingerprintJson(definition),
-    evaluationSetPath: evaluationPath,
-    evaluationSetFingerprint: fingerprintJson(evaluations)
-  };
-  guide.status = {
-    state: 'retired',
-    evidence: [retirementReference]
-  };
-  const sources = workflowLegacySourceProjection({ definition, guide, evaluations });
-  const inventory = {
-    items: sources.map((source) => ({
-      sourcePath: source.path,
-      sourceFingerprint: source.fingerprint,
-      sourcePresence: 'removed',
-      state: 'retired',
-      targets: [{
-        id: definition.id,
-        path: source.kind === 'workflow-guide' ? fixture.guidePath : evaluationPath,
-        state: 'retired',
-        canonicalAuthority: 'none',
-        fallback: 'removed',
-        parity: 'intentional-change',
-        evidence: [retirementPath]
-      }]
-    }))
-  };
-  const lock = {
-    configuration: { name: 'harness-development-catalog' },
-    graphFingerprint: fingerprintJson({ graph: 'retirement-selftest' })
-  };
-  const evidence = {
-    $contract: 'soter://contracts/evidence/v2',
-    claimFamily: 'migration',
-    subject: { type: 'pack', id: definition.id, version: definition.version },
-    configurationLockFingerprint: fingerprintJson(lock),
-    graphFingerprint: lock.graphFingerprint,
-    evaluator: { id: 'kernel.legacy-migration-completion', level: 'fixture' },
-    environment: { containment: 'fixture' },
-    result: 'passed',
-    artifacts: [...sources.map((source) => ({
-      role: 'migration-source',
-      path: source.path,
-      fingerprint: source.fingerprint
-    })), {
-      role: 'migration-target',
-      path: fixture.guidePath,
-      fingerprint: guide.contentFingerprint
-    }, {
-      role: 'migration-target',
-      path: evaluationPath,
-      fingerprint: fingerprintJson(evaluations)
-    }],
-    outcomes: [{ id: 'migration-disposition', state: 'retired' }, {
-      id: 'migration-parity', state: 'intentional-change'
-    }, {
-      id: 'runtime-authority-absent', state: 'passed'
-    }],
-    effects: [],
-    failures: []
-  };
-  const evidenceFile = path.join(root, retirementPath);
-  fs.mkdirSync(path.dirname(evidenceFile), { recursive: true });
-  fs.writeFileSync(evidenceFile, JSON.stringify(evidence));
-  return {
-    root,
-    id: definition.id,
-    definitionEntry: fixture.definitionEntry,
-    guideEntry: fixture.guideEntry,
-    evaluationEntry: fixture.evaluationEntry,
-    guidePath: fixture.guidePath,
-    legacyInventories: [{ doc: inventory }],
-    documentsByPath: new Map([[path.resolve(evidenceFile), {
-      file: evidenceFile,
-      contractId: evidence.$contract,
-      doc: evidence
-    }]]),
-    locks: [{ doc: lock }],
-    requireFinalEvidence: true,
-    evidence,
-    evidenceFile,
-    retirementPath
-  };
 }
 
 function selftest(root) {
@@ -6877,333 +5161,6 @@ function selftest(root) {
   if (!satisfies('0.1.5', '^0.1.0') || satisfies('0.2.0', '^0.1.0') || !satisfies('1.9.0', '^1.2.0')) {
     failures.push('semantic version range checks are incorrect');
   }
-  const retirementEvidencePath = 'soter/fixtures/harness-development-catalog/'
-    + 'selftest.intentional-retirement.evidence.json';
-  for (const schemaPath of [
-    'soter/contracts/workflow-definition.schema.json',
-    'soter/contracts/workflow-guide.schema.json'
-  ]) {
-    const workflowSchema = JSON.parse(fs.readFileSync(path.join(root, schemaPath), 'utf8'));
-    const referenceSchema = workflowSchema.$defs.retirementEvidenceReference;
-    if (schemaErrors({ path: retirementEvidencePath }, referenceSchema, workflowSchema).length) {
-      failures.push(schemaPath + ' rejected one path-only retirement evidence reference');
-    }
-    if (!schemaErrors({
-      path: retirementEvidencePath,
-      host: 'codex',
-      fingerprint: fingerprintJson({ retirement: 'selftest' })
-    }, referenceSchema, workflowSchema).length) {
-      failures.push(schemaPath + ' accepted host/fingerprint fields on retirement evidence');
-    }
-  }
-
-  const activeEvidenceTemp = fs.mkdtempSync(path.join(os.tmpdir(), 'soter-active-evidence-'));
-  try {
-    const validFixture = installActiveWorkflowEvidenceSelftestFixture(
-      path.join(activeEvidenceTemp, 'valid')
-    );
-    const validInspection = inspectActiveWorkflowEvidence(validFixture);
-    if (validInspection.findings.length) {
-      failures.push('valid active workflow evidence fixture failed: '
-        + validInspection.findings.map((item) => item.code).join(', '));
-    }
-
-    const baselineFindingFixture = installActiveWorkflowEvidenceSelftestFixture(
-      path.join(activeEvidenceTemp, 'baseline-finding')
-    );
-    const baselineFindingReceipt = baselineFindingFixture.receipts.get('codex');
-    plantActiveWorkflowBaselineFinding(baselineFindingReceipt);
-    baselineFindingReceipt.conclusion.prohibitedOutcomesObserved = true;
-    refreshActiveWorkflowEvidenceSelftestFixture(baselineFindingFixture, 'codex');
-    const baselineFindingInspection = inspectActiveWorkflowEvidence(baselineFindingFixture);
-    if (baselineFindingInspection.findings.length) {
-      failures.push('active workflow evidence rejected a truthful non-gating baseline finding');
-    }
-
-    const falseBaselineConclusion = installActiveWorkflowEvidenceSelftestFixture(
-      path.join(activeEvidenceTemp, 'false-baseline-conclusion')
-    );
-    const falseBaselineReceipt = falseBaselineConclusion.receipts.get('codex');
-    plantActiveWorkflowBaselineFinding(falseBaselineReceipt);
-    refreshActiveWorkflowEvidenceSelftestFixture(falseBaselineConclusion, 'codex');
-    const falseBaselineInspection = inspectActiveWorkflowEvidence(falseBaselineConclusion);
-    if (!falseBaselineInspection.findings.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_GUIDE_EVIDENCE';
-    })) {
-      failures.push('active workflow evidence accepted a false all-arm prohibited-outcome conclusion');
-    }
-
-    const guidedFindingFixture = installActiveWorkflowEvidenceSelftestFixture(
-      path.join(activeEvidenceTemp, 'guided-finding')
-    );
-    const guidedFindingReceipt = guidedFindingFixture.receipts.get('codex');
-    guidedFindingReceipt.runs.find((run) => run.arm === 'guided').worker.state = 'failed';
-    refreshActiveWorkflowEvidenceSelftestFixture(guidedFindingFixture, 'codex');
-    const guidedFindingInspection = inspectActiveWorkflowEvidence(guidedFindingFixture);
-    if (!guidedFindingInspection.findings.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_GUIDE_EVIDENCE'
-        || item.code === 'SOTER_WORKFLOW_GUIDE_EVIDENCE_COVERAGE';
-    })) {
-      failures.push('active workflow evidence accepted a failed guided worker');
-    }
-
-    const substitutedStimulusFixture = installActiveWorkflowEvidenceSelftestFixture(
-      path.join(activeEvidenceTemp, 'substituted-stimulus')
-    );
-    substitutedStimulusFixture.receipts.get('codex').runs
-      .find((run) => run.arm === 'guided').stimulusFingerprint
-      = fingerprintJson({ stimulus: 'substituted' });
-    refreshActiveWorkflowEvidenceSelftestFixture(substitutedStimulusFixture, 'codex');
-    const substitutedStimulusInspection = inspectActiveWorkflowEvidence(
-      substitutedStimulusFixture
-    );
-    if (!substitutedStimulusInspection.findings.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_GUIDE_EVIDENCE_COVERAGE';
-    })) {
-      failures.push('active workflow evidence accepted a substituted stimulus fingerprint');
-    }
-
-    const substitutedCriterionFixture = installActiveWorkflowEvidenceSelftestFixture(
-      path.join(activeEvidenceTemp, 'substituted-criterion')
-    );
-    substitutedCriterionFixture.receipts.get('codex').runs
-      .find((run) => run.arm === 'guided').judgment.criteria[0].id
-      = 'substituted.expected.1';
-    refreshActiveWorkflowEvidenceSelftestFixture(substitutedCriterionFixture, 'codex');
-    const substitutedCriterionInspection = inspectActiveWorkflowEvidence(
-      substitutedCriterionFixture
-    );
-    if (!substitutedCriterionInspection.findings.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_GUIDE_EVIDENCE_COVERAGE';
-    })) {
-      failures.push('active workflow evidence accepted a substituted judgment criterion');
-    }
-
-    const incompleteHistoricalSources = installActiveWorkflowEvidenceSelftestFixture(
-      path.join(activeEvidenceTemp, 'incomplete-historical-sources')
-    );
-    const historicalArtifacts = incompleteHistoricalSources.receipts.get('codex').artifacts;
-    historicalArtifacts.splice(historicalArtifacts.findIndex((artifact) => {
-      return artifact.role === 'migration-source'
-        && artifact.path.includes('/evals/');
-    }), 1);
-    refreshActiveWorkflowEvidenceSelftestFixture(incompleteHistoricalSources, 'codex');
-    const incompleteHistoricalInspection = inspectActiveWorkflowEvidence(incompleteHistoricalSources);
-    if (!incompleteHistoricalInspection.findings.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_GUIDE_EVIDENCE';
-    })) {
-      failures.push('active workflow evidence accepted a partial historical source set');
-    }
-
-    const substitutedFinalSource = installActiveWorkflowEvidenceSelftestFixture(
-      path.join(activeEvidenceTemp, 'substituted-final-source')
-    );
-    substitutedFinalSource.finalEntries.get('codex').doc.artifacts.find((artifact) => {
-      return artifact.role === 'migration-source' && artifact.path.includes('/evals/');
-    }).fingerprint = fingerprintJson({ source: 'substituted' });
-    const substitutedFinalInspection = inspectActiveWorkflowEvidence(substitutedFinalSource);
-    if (!substitutedFinalInspection.findings.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_GUIDE_FINAL_EVIDENCE_BINDING';
-    })) {
-      failures.push('active workflow final evidence accepted a substituted evaluation tombstone');
-    }
-
-    const substitutedFinalTarget = installActiveWorkflowEvidenceSelftestFixture(
-      path.join(activeEvidenceTemp, 'substituted-final-target')
-    );
-    substitutedFinalTarget.finalEntries.get('codex').doc.artifacts.find((artifact) => {
-      return artifact.role === 'migration-target' && artifact.path.endsWith('/evaluations.json');
-    }).fingerprint = fingerprintJson({ target: 'substituted' });
-    const substitutedFinalTargetInspection = inspectActiveWorkflowEvidence(substitutedFinalTarget);
-    if (!substitutedFinalTargetInspection.findings.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_GUIDE_FINAL_EVIDENCE_BINDING';
-    })) {
-      failures.push('active workflow final evidence accepted a substituted evaluation target');
-    }
-
-    const extraFinalTarget = installActiveWorkflowEvidenceSelftestFixture(
-      path.join(activeEvidenceTemp, 'extra-final-target')
-    );
-    extraFinalTarget.finalEntries.get('codex').doc.artifacts.push({
-      role: 'migration-target',
-      path: 'soter/automations/other/evaluations.json',
-      fingerprint: fingerprintJson({ target: 'extra' })
-    });
-    const extraFinalTargetInspection = inspectActiveWorkflowEvidence(extraFinalTarget);
-    if (!extraFinalTargetInspection.findings.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_GUIDE_FINAL_EVIDENCE_BINDING';
-    })) {
-      failures.push('active workflow final evidence accepted an extra migration target');
-    }
-
-    const partialDocumentTombstones = installActiveWorkflowEvidenceSelftestFixture(
-      path.join(activeEvidenceTemp, 'partial-document-tombstones')
-    );
-    partialDocumentTombstones.evaluationEntry.doc.cases[0].source.presence = 'present';
-    const partialDocumentInspection = inspectActiveWorkflowEvidence(partialDocumentTombstones);
-    if (!partialDocumentInspection.findings.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_GUIDE_SOURCE_SET';
-    })) {
-      failures.push('active workflow final basis accepted partial document tombstones');
-    }
-    const staticResolutionInspection = inspectActiveWorkflowEvidence({
-      ...validFixture,
-      evidence: new Map(),
-      requireFinalEvidence: false
-    });
-    if (staticResolutionInspection.findings.some((item) => {
-      return item.code.startsWith('SOTER_WORKFLOW_GUIDE_FINAL_EVIDENCE');
-    })) {
-      failures.push('static configuration resolution incorrectly required current-lock final evidence');
-    }
-
-    const wrongHostFixture = installActiveWorkflowEvidenceSelftestFixture(
-      path.join(activeEvidenceTemp, 'wrong-host')
-    );
-    wrongHostFixture.receipts.get('codex').host.id = 'claude';
-    refreshActiveWorkflowEvidenceSelftestFixture(wrongHostFixture, 'codex');
-    const wrongHostInspection = inspectActiveWorkflowEvidence(wrongHostFixture);
-    if (!wrongHostInspection.findings.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_GUIDE_EVIDENCE_HOST';
-    })) {
-      failures.push('active workflow evidence accepted a historical receipt from the wrong host');
-    }
-
-    const swappedReceiptFixture = installActiveWorkflowEvidenceSelftestFixture(
-      path.join(activeEvidenceTemp, 'swapped-receipt')
-    );
-    const codexReceiptArtifact = swappedReceiptFixture.finalEntries.get('codex').doc.artifacts
-      .find((artifact) => artifact.role === 'development-agent-migration-evidence');
-    const claudeReference = swappedReceiptFixture.references.get('claude');
-    codexReceiptArtifact.path = claudeReference.path;
-    codexReceiptArtifact.fingerprint = claudeReference.fingerprint;
-    const swappedReceiptInspection = inspectActiveWorkflowEvidence(swappedReceiptFixture);
-    if (!swappedReceiptInspection.findings.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_GUIDE_FINAL_EVIDENCE_BINDING';
-    })) {
-      failures.push('active workflow evidence accepted a final record joined to the other host receipt');
-    }
-
-    const incompleteRunsFixture = installActiveWorkflowEvidenceSelftestFixture(
-      path.join(activeEvidenceTemp, 'incomplete-runs')
-    );
-    incompleteRunsFixture.receipts.get('codex').runs.pop();
-    refreshActiveWorkflowEvidenceSelftestFixture(incompleteRunsFixture, 'codex');
-    const incompleteRunsInspection = inspectActiveWorkflowEvidence(incompleteRunsFixture);
-    if (!incompleteRunsInspection.findings.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_GUIDE_EVIDENCE_COVERAGE';
-    })) {
-      failures.push('active workflow evidence accepted incomplete guided run coverage');
-    }
-
-    const impossibleChronologyFixture = installActiveWorkflowEvidenceSelftestFixture(
-      path.join(activeEvidenceTemp, 'impossible-chronology')
-    );
-    impossibleChronologyFixture.receipts.get('codex').runs
-      .find((run) => run.arm === 'guided').completedAt = '2026-07-22T10:01:00.000Z';
-    refreshActiveWorkflowEvidenceSelftestFixture(impossibleChronologyFixture, 'codex');
-    const impossibleChronologyInspection = inspectActiveWorkflowEvidence(
-      impossibleChronologyFixture
-    );
-    if (!impossibleChronologyInspection.findings.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_GUIDE_EVIDENCE';
-    })) {
-      failures.push('active workflow evidence accepted impossible internal chronology');
-    }
-
-    const substitutedWorkspaceFixture = installActiveWorkflowEvidenceSelftestFixture(
-      path.join(activeEvidenceTemp, 'substituted-workspace')
-    );
-    substitutedWorkspaceFixture.receipts.get('codex').workspace.post.rootIdentityFingerprint
-      = fingerprintJson({ workspace: 'substituted-root' });
-    refreshActiveWorkflowEvidenceSelftestFixture(substitutedWorkspaceFixture, 'codex');
-    const substitutedWorkspaceInspection = inspectActiveWorkflowEvidence(
-      substitutedWorkspaceFixture
-    );
-    if (!substitutedWorkspaceInspection.findings.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_GUIDE_EVIDENCE';
-    })) {
-      failures.push('active workflow evidence accepted a substituted post-run root identity');
-    }
-  } finally {
-    fs.rmSync(activeEvidenceTemp, { recursive: true, force: true });
-  }
-
-  const retiredEvidenceTemp = fs.mkdtempSync(path.join(os.tmpdir(), 'soter-retired-evidence-'));
-  try {
-    const validRetirement = installRetiredWorkflowEvidenceSelftestFixture(
-      path.join(retiredEvidenceTemp, 'valid')
-    );
-    if (inspectRetiredWorkflowEvidence(validRetirement).length) {
-      failures.push('valid retired workflow evidence fixture failed');
-    }
-
-    const stagedRetirement = installRetiredWorkflowEvidenceSelftestFixture(
-      path.join(retiredEvidenceTemp, 'staged')
-    );
-    stagedRetirement.documentsByPath.clear();
-    fs.rmSync(stagedRetirement.evidenceFile);
-    if (inspectRetiredWorkflowEvidence({
-      ...stagedRetirement,
-      requireFinalEvidence: false
-    }).length) {
-      failures.push('static retirement resolution required not-yet-generated final evidence');
-    }
-    if (!inspectRetiredWorkflowEvidence(stagedRetirement).length) {
-      failures.push('final retirement verification accepted missing evidence');
-    }
-
-    const substitutedRetirement = installRetiredWorkflowEvidenceSelftestFixture(
-      path.join(retiredEvidenceTemp, 'substituted-source')
-    );
-    substitutedRetirement.evidence.artifacts.find((artifact) => {
-      return artifact.role === 'migration-source' && artifact.path.includes('/evals/');
-    }).fingerprint = fingerprintJson({ source: 'substituted' });
-    if (!inspectRetiredWorkflowEvidence(substitutedRetirement).length) {
-      failures.push('retired workflow evidence accepted a substituted source tombstone');
-    }
-
-    const extraTargetRetirement = installRetiredWorkflowEvidenceSelftestFixture(
-      path.join(retiredEvidenceTemp, 'extra-target')
-    );
-    extraTargetRetirement.evidence.artifacts.push({
-      role: 'migration-target',
-      path: 'soter/automations/other/evaluations.json',
-      fingerprint: fingerprintJson({ target: 'extra' })
-    });
-    if (!inspectRetiredWorkflowEvidence(extraTargetRetirement).length) {
-      failures.push('retired workflow evidence accepted an extra migration target');
-    }
-
-    const staleLockRetirement = installRetiredWorkflowEvidenceSelftestFixture(
-      path.join(retiredEvidenceTemp, 'stale-lock')
-    );
-    staleLockRetirement.evidence.configurationLockFingerprint = fingerprintJson({ lock: 'stale' });
-    if (!inspectRetiredWorkflowEvidence(staleLockRetirement).length) {
-      failures.push('retired workflow evidence accepted a stale configuration lock binding');
-    }
-
-    const wrongVersionRetirement = installRetiredWorkflowEvidenceSelftestFixture(
-      path.join(retiredEvidenceTemp, 'wrong-version')
-    );
-    wrongVersionRetirement.evidence.subject.version = '9.9.9';
-    if (!inspectRetiredWorkflowEvidence(wrongVersionRetirement).length) {
-      failures.push('retired workflow evidence accepted another workflow version');
-    }
-
-    const substitutedReference = installRetiredWorkflowEvidenceSelftestFixture(
-      path.join(retiredEvidenceTemp, 'substituted-reference')
-    );
-    substitutedReference.definitionEntry.doc.lifecycle.retirement.evidence = [{
-      path: 'soter/fixtures/harness-development-catalog/other.intentional-retirement.evidence.json'
-    }];
-    if (!inspectRetiredWorkflowEvidence(substitutedReference).length) {
-      failures.push('retired workflow accepted mismatched definition and guide evidence references');
-    }
-  } finally {
-    fs.rmSync(retiredEvidenceTemp, { recursive: true, force: true });
-  }
-
   const live = verifySoter(root);
   if (live.health.valid !== 'passed') {
     failures.push('repository target fixture is not clean: ' + live.violations.map((item) => item.code).join(', '));
@@ -7217,8 +5174,6 @@ function selftest(root) {
   try {
     fs.cpSync(path.join(root, 'soter'), path.join(temp, 'soter'), { recursive: true });
     copyExternalPackArtifacts(root, temp);
-    copyMigrationSources(root, temp);
-    const definitionOnlyFixture = installDefinitionOnlySelftestGraph(temp);
     const clean = verifySoter(temp);
     if (clean.health.valid !== 'passed') {
       failures.push('copied clean fixture failed: ' + clean.violations.map((item) => item.code).join(', '));
@@ -7237,166 +5192,81 @@ function selftest(root) {
     }
     fs.writeFileSync(kernelPackFile, originalKernelPackText);
 
-    const definitionOnlyPackFile = definitionOnlyFixture.packFile;
-    const originalDefinitionOnlyPackText = fs.readFileSync(definitionOnlyPackFile, 'utf8');
-    const runtimeClaimingDefinitionPack = JSON.parse(originalDefinitionOnlyPackText);
-    runtimeClaimingDefinitionPack.operator = {
-      input: 'soter/automations/project-pulse/operator-input.json'
-    };
-    fs.writeFileSync(
-      definitionOnlyPackFile,
-      JSON.stringify(runtimeClaimingDefinitionPack, null, 2) + '\n'
-    );
-    const badDefinitionAuthority = verifySoter(temp);
-    if (!badDefinitionAuthority.violations.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_DEFINITION_AUTHORITY';
-    })) {
-      failures.push('definition-only workflow accepted a planted operator runtime declaration');
-    }
-    fs.writeFileSync(definitionOnlyPackFile, originalDefinitionOnlyPackText);
+    const workflowBase = path.join(temp, 'soter', 'automations', 'running-evals');
+    const workflowFile = path.join(workflowBase, 'definition.json');
+    const evaluationFile = path.join(workflowBase, 'evaluations.json');
+    const guideFile = path.join(workflowBase, 'guide.json');
+    const workflowPackFile = path.join(temp, 'soter', 'packs', 'automation.running-evals', 'pack.json');
+    const originalWorkflowText = fs.readFileSync(workflowFile, 'utf8');
+    const originalEvaluationText = fs.readFileSync(evaluationFile, 'utf8');
+    const originalGuideText = fs.readFileSync(guideFile, 'utf8');
+    const originalWorkflowPackText = fs.readFileSync(workflowPackFile, 'utf8');
 
-    const definitionOnlyWorkflowFile = definitionOnlyFixture.workflowFile;
-    const originalDefinitionOnlyWorkflowText = fs.readFileSync(definitionOnlyWorkflowFile, 'utf8');
-    const gappedDefinitionProcedure = JSON.parse(originalDefinitionOnlyWorkflowText);
-    gappedDefinitionProcedure.procedure[1].sequence = 3;
-    fs.writeFileSync(
-      definitionOnlyWorkflowFile,
-      JSON.stringify(gappedDefinitionProcedure, null, 2) + '\n'
-    );
-    const badDefinitionSequence = verifySoter(temp);
-    if (!badDefinitionSequence.violations.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_PROCEDURE_IDENTITY';
-    })) {
-      failures.push('definition-only workflow accepted a planted gapped procedure sequence');
+    const runtimeClaimingPack = JSON.parse(originalWorkflowPackText);
+    runtimeClaimingPack.operator = { input: 'soter/automations/project-pulse/operator-input.json' };
+    fs.writeFileSync(workflowPackFile, JSON.stringify(runtimeClaimingPack, null, 2) + '\n');
+    if (!verifySoter(temp).violations.some((item) => item.code === 'SOTER_WORKFLOW_GUIDE_AUTHORITY')) {
+      failures.push('host-guided workflow accepted a planted operator runtime declaration');
     }
-    fs.writeFileSync(definitionOnlyWorkflowFile, originalDefinitionOnlyWorkflowText);
+    fs.writeFileSync(workflowPackFile, originalWorkflowPackText);
 
-    const mismatchedEvaluationBinding = JSON.parse(originalDefinitionOnlyWorkflowText);
-    mismatchedEvaluationBinding.evaluationSet.id = 'evaluation-set.missing-workflow';
-    fs.writeFileSync(
-      definitionOnlyWorkflowFile,
-      JSON.stringify(mismatchedEvaluationBinding, null, 2) + '\n'
-    );
-    const badDefinitionEvaluationBinding = verifySoter(temp);
-    if (!badDefinitionEvaluationBinding.violations.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_EVALUATION_BINDING';
-    })) {
-      failures.push('definition-only workflow accepted a planted mismatched evaluation binding');
+    const gappedProcedure = JSON.parse(originalWorkflowText);
+    gappedProcedure.procedure[1].sequence += 1;
+    fs.writeFileSync(workflowFile, JSON.stringify(gappedProcedure, null, 2) + '\n');
+    if (!verifySoter(temp).violations.some((item) => item.code === 'SOTER_WORKFLOW_GUIDE_PROCEDURE')) {
+      failures.push('active workflow accepted a gapped procedure sequence');
     }
-    fs.writeFileSync(definitionOnlyWorkflowFile, originalDefinitionOnlyWorkflowText);
+    fs.writeFileSync(workflowFile, originalWorkflowText);
 
-    const definitionOnlyEvaluationFile = definitionOnlyFixture.evaluationFile;
-    const originalDefinitionOnlyEvaluationText = fs.readFileSync(
-      definitionOnlyEvaluationFile,
-      'utf8'
-    );
-    const duplicateEvaluationIdentity = JSON.parse(originalDefinitionOnlyEvaluationText);
-    duplicateEvaluationIdentity.cases[1].id = duplicateEvaluationIdentity.cases[0].id;
-    fs.writeFileSync(
-      definitionOnlyEvaluationFile,
-      JSON.stringify(duplicateEvaluationIdentity, null, 2) + '\n'
-    );
-    const badEvaluationIdentity = verifySoter(temp);
-    if (!badEvaluationIdentity.violations.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_EVALUATION_IDENTITY';
-    })) {
-      failures.push('definition-only workflow accepted a planted duplicate evaluation identity');
+    const mismatchedEvaluation = JSON.parse(originalWorkflowText);
+    mismatchedEvaluation.evaluationSet.id = 'evaluation-set.missing-workflow';
+    fs.writeFileSync(workflowFile, JSON.stringify(mismatchedEvaluation, null, 2) + '\n');
+    if (!verifySoter(temp).violations.some((item) => item.code === 'SOTER_WORKFLOW_EVALUATION_BINDING')) {
+      failures.push('active workflow accepted a mismatched evaluation binding');
     }
-    fs.writeFileSync(definitionOnlyEvaluationFile, originalDefinitionOnlyEvaluationText);
+    fs.writeFileSync(workflowFile, originalWorkflowText);
 
-    const definitionOnlyGuideFile = definitionOnlyFixture.guideFile;
-    const originalDefinitionOnlyGuideText = fs.readFileSync(definitionOnlyGuideFile, 'utf8');
-    const mismatchedGuideBinding = JSON.parse(originalDefinitionOnlyGuideText);
-    mismatchedGuideBinding.workflow.definitionFingerprint = 'sha256:' + 'f'.repeat(64);
-    fs.writeFileSync(
-      definitionOnlyGuideFile,
-      JSON.stringify(mismatchedGuideBinding, null, 2) + '\n'
-    );
-    const badGuideBinding = verifySoter(temp);
-    if (!badGuideBinding.violations.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_GUIDE_BINDING';
-    })) {
-      failures.push('definition-only workflow accepted a planted stale guide binding');
+    const duplicateEvaluation = JSON.parse(originalEvaluationText);
+    duplicateEvaluation.cases[1].id = duplicateEvaluation.cases[0].id;
+    fs.writeFileSync(evaluationFile, JSON.stringify(duplicateEvaluation, null, 2) + '\n');
+    if (!verifySoter(temp).violations.some((item) => item.code === 'SOTER_WORKFLOW_EVALUATION_COVERAGE')) {
+      failures.push('active workflow accepted duplicate evaluation identity');
     }
-    fs.writeFileSync(definitionOnlyGuideFile, originalDefinitionOnlyGuideText);
+    fs.writeFileSync(evaluationFile, originalEvaluationText);
 
-    const tamperedGuideContent = JSON.parse(originalDefinitionOnlyGuideText);
-    tamperedGuideContent.verification[0] = 'Tampered guide verification statement.';
-    fs.writeFileSync(
-      definitionOnlyGuideFile,
-      JSON.stringify(tamperedGuideContent, null, 2) + '\n'
-    );
-    const badGuideContent = verifySoter(temp);
-    if (!badGuideContent.violations.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_GUIDE_CONTENT_FINGERPRINT';
-    })) {
-      failures.push('definition-only workflow accepted guide content outside its semantic fingerprint');
+    const staleGuide = JSON.parse(originalGuideText);
+    staleGuide.workflow.definitionFingerprint = 'sha256:' + 'f'.repeat(64);
+    fs.writeFileSync(guideFile, JSON.stringify(staleGuide, null, 2) + '\n');
+    if (!verifySoter(temp).violations.some((item) => item.code === 'SOTER_WORKFLOW_GUIDE_BINDING')) {
+      failures.push('active workflow accepted a stale guide binding');
     }
-    fs.writeFileSync(definitionOnlyGuideFile, originalDefinitionOnlyGuideText);
+    fs.writeFileSync(guideFile, originalGuideText);
 
-    const mismatchedGuideProcedure = JSON.parse(originalDefinitionOnlyGuideText);
+    const tamperedGuide = JSON.parse(originalGuideText);
+    tamperedGuide.verification[0] = 'Tampered guide verification statement.';
+    fs.writeFileSync(guideFile, JSON.stringify(tamperedGuide, null, 2) + '\n');
+    if (!verifySoter(temp).violations.some((item) => item.code === 'SOTER_WORKFLOW_GUIDE_CONTENT_FINGERPRINT')) {
+      failures.push('active workflow accepted guide content outside its semantic fingerprint');
+    }
+    fs.writeFileSync(guideFile, originalGuideText);
+
+    const mismatchedGuideProcedure = JSON.parse(originalGuideText);
     mismatchedGuideProcedure.stepDetails[1].id = 'different-valid-step';
-    fs.writeFileSync(
-      definitionOnlyGuideFile,
-      JSON.stringify(mismatchedGuideProcedure, null, 2) + '\n'
-    );
-    const badGuideProcedure = verifySoter(temp);
-    if (!badGuideProcedure.violations.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_GUIDE_PROCEDURE';
-    })) {
-      failures.push('definition-only workflow accepted a planted guide procedure mismatch');
+    fs.writeFileSync(guideFile, JSON.stringify(mismatchedGuideProcedure, null, 2) + '\n');
+    if (!verifySoter(temp).violations.some((item) => item.code === 'SOTER_WORKFLOW_GUIDE_PROCEDURE')) {
+      failures.push('active workflow accepted a guide procedure mismatch');
     }
-    fs.writeFileSync(definitionOnlyGuideFile, originalDefinitionOnlyGuideText);
+    fs.writeFileSync(guideFile, originalGuideText);
 
-    const unevidencedActiveGuide = JSON.parse(originalDefinitionOnlyGuideText);
-    unevidencedActiveGuide.status = {
-      state: 'active',
-      reasonCode: 'WORKFLOW_GUIDE_ACTIVE',
-      proceduralAuthority: 'target',
-      behaviorParity: 'passed',
-      delivery: 'host-skill',
-      evidence: [{
-        path: 'soter/evidence/development/missing-workflow-guide-migration.json',
-        fingerprint: 'sha256:' + 'e'.repeat(64),
-        host: 'codex'
-      }, {
-        path: 'soter/evidence/development/missing-workflow-guide-migration-claude.json',
-        fingerprint: 'sha256:' + 'd'.repeat(64),
-        host: 'claude'
-      }],
-      permittedNextAction: 'invoke-through-selected-host'
-    };
-    fs.writeFileSync(
-      definitionOnlyGuideFile,
-      JSON.stringify(unevidencedActiveGuide, null, 2) + '\n'
-    );
-    const badActiveGuide = verifySoter(temp);
-    if (!badActiveGuide.violations.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_GUIDE_EVIDENCE';
-    }) || !badActiveGuide.violations.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_GUIDE_MIGRATION';
-    }) || badActiveGuide.violations.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_GUIDE_CONTENT_FINGERPRINT';
-    })) {
-      failures.push('definition-only workflow did not preserve stable guide content while rejecting unevidenced activation');
-    }
-    fs.writeFileSync(definitionOnlyGuideFile, originalDefinitionOnlyGuideText);
-
-    const guideOmittingPack = JSON.parse(originalDefinitionOnlyPackText);
+    const guideOmittingPack = JSON.parse(originalWorkflowPackText);
     guideOmittingPack.artifacts = guideOmittingPack.artifacts.filter((artifact) => {
-      return artifact.path !== 'soter/automations/definition-only-selftest/guide.json';
+      return artifact.path !== 'soter/automations/running-evals/guide.json';
     });
-    fs.writeFileSync(
-      definitionOnlyPackFile,
-      JSON.stringify(guideOmittingPack, null, 2) + '\n'
-    );
-    const badGuideArtifact = verifySoter(temp);
-    if (!badGuideArtifact.violations.some((item) => {
-      return item.code === 'SOTER_WORKFLOW_GUIDE_ARTIFACT';
-    })) {
-      failures.push('definition-only workflow accepted an undeclared workflow guide');
+    fs.writeFileSync(workflowPackFile, JSON.stringify(guideOmittingPack, null, 2) + '\n');
+    if (!verifySoter(temp).violations.some((item) => item.code === 'SOTER_WORKFLOW_ARTIFACT')) {
+      failures.push('active workflow accepted an undeclared guide artifact');
     }
-    fs.writeFileSync(definitionOnlyPackFile, originalDefinitionOnlyPackText);
+    fs.writeFileSync(workflowPackFile, originalWorkflowPackText);
 
     const candidateConfigFile = path.join(
       temp,
@@ -7859,31 +5729,6 @@ function selftest(root) {
     }
     fs.writeFileSync(lockFile, originalLockText);
 
-    const historicalBasisLockFile = path.join(
-      temp,
-      'soter',
-      'fixtures',
-      'harness-development-catalog-final',
-      'codex.lock.json'
-    );
-    const originalHistoricalBasisLockText = fs.readFileSync(historicalBasisLockFile, 'utf8');
-    const badHistoricalBasisIdentity = JSON.parse(originalHistoricalBasisLockText);
-    badHistoricalBasisIdentity.configuration.name = 'substituted-historical-basis';
-    delete badHistoricalBasisIdentity.graphFingerprint;
-    badHistoricalBasisIdentity.graphFingerprint = fingerprintJson(badHistoricalBasisIdentity);
-    fs.writeFileSync(
-      historicalBasisLockFile,
-      JSON.stringify(badHistoricalBasisIdentity, null, 2) + '\n'
-    );
-    const mismatchedHistoricalBasis = verifySoter(temp);
-    if (!mismatchedHistoricalBasis.violations.some((item) => {
-      return item.code === 'SOTER_LOCK_HOST_SELECTION'
-        && path.resolve(item.file) === path.resolve(historicalBasisLockFile);
-    })) {
-      failures.push('planted historical workflow evidence-basis identity mismatch was not detected');
-    }
-    fs.writeFileSync(historicalBasisLockFile, originalHistoricalBasisLockText);
-
     const evidenceFile = path.join(
       temp,
       'soter',
@@ -7894,7 +5739,7 @@ function selftest(root) {
     const originalEvidenceText = fs.readFileSync(evidenceFile, 'utf8');
     const incompleteEvidence = JSON.parse(originalEvidenceText);
     if (incompleteEvidence.$contract !== 'soter://contracts/evidence/v2') {
-      failures.push('generated evidence fixtures did not migrate to evidence/v2');
+      failures.push('generated evidence fixture does not use evidence/v2');
     } else {
       incompleteEvidence.dependencies = incompleteEvidence.dependencies.slice(1);
       fs.writeFileSync(evidenceFile, JSON.stringify(incompleteEvidence, null, 2) + '\n');
@@ -7992,215 +5837,6 @@ function selftest(root) {
       failures.push('ordinary evidence accepted an absent exact configuration lock');
     }
     fs.writeFileSync(evidenceFile, originalEvidenceText);
-
-    const migrationDirectory = path.join(temp, 'soter', 'migrations');
-    let scenarioMigrationFile = null;
-    let originalScenarioMigrationText = null;
-    let scenarioMigrationItem = null;
-    for (const name of fs.readdirSync(migrationDirectory).sort()) {
-      if (!name.endsWith('.migration.json')) continue;
-      const candidateFile = path.join(migrationDirectory, name);
-      const candidateText = fs.readFileSync(candidateFile, 'utf8');
-      const candidate = JSON.parse(candidateText);
-      const item = candidate.items.find((entry) => {
-        return entry.state === 'migrated'
-          && entry.targetPath.startsWith('soter/scenarios/');
-      });
-      if (!item) continue;
-      scenarioMigrationFile = candidateFile;
-      originalScenarioMigrationText = candidateText;
-      scenarioMigrationItem = item;
-      break;
-    }
-    if (!scenarioMigrationItem) {
-      failures.push('Migration fixtures did not contain an evidence-backed migrated scenario tombstone');
-    } else {
-      const mismatchedMigrationEvidence = JSON.parse(originalScenarioMigrationText);
-      const mismatchedScenarioItem = mismatchedMigrationEvidence.items.find((item) => {
-        return item.sourcePath === scenarioMigrationItem.sourcePath
-          && item.targetPath === scenarioMigrationItem.targetPath;
-      });
-      mismatchedScenarioItem.evidence = ['soter/fixtures/project-pulse/resolution.evidence.json'];
-      fs.writeFileSync(
-        scenarioMigrationFile,
-        JSON.stringify(mismatchedMigrationEvidence, null, 2) + '\n'
-      );
-      const badMigrationEvidence = verifySoter(temp);
-      if (!badMigrationEvidence.violations.some((item) => {
-        return item.code === 'SOTER_MIGRATION_EVIDENCE';
-      })) {
-        failures.push('planted migrated-scenario evidence substitution was not detected');
-      }
-      fs.writeFileSync(scenarioMigrationFile, originalScenarioMigrationText);
-
-      const scenarioEvidenceFile = path.join(temp, scenarioMigrationItem.evidence[0]);
-      const originalScenarioEvidenceText = fs.readFileSync(scenarioEvidenceFile, 'utf8');
-      const substitutedScenarioEvidence = JSON.parse(originalScenarioEvidenceText);
-      const scenarioSourceArtifact = substitutedScenarioEvidence.artifacts.find((artifact) => {
-        return artifact.role === 'migration-source'
-          && artifact.path === scenarioMigrationItem.sourcePath;
-      });
-      if (!scenarioSourceArtifact) {
-        failures.push('Migrated scenario evidence omitted its exact legacy source artifact');
-      } else {
-        scenarioSourceArtifact.fingerprint = 'sha256:' + 'a'.repeat(64);
-        fs.writeFileSync(
-          scenarioEvidenceFile,
-          JSON.stringify(substitutedScenarioEvidence, null, 2) + '\n'
-        );
-        const badMigrationSourceEvidence = verifySoter(temp);
-        if (!badMigrationSourceEvidence.violations.some((item) => {
-          return item.code === 'SOTER_MIGRATION_EVIDENCE';
-        })) {
-          failures.push('planted migrated-scenario source substitution was not detected');
-        }
-      }
-      fs.writeFileSync(scenarioEvidenceFile, originalScenarioEvidenceText);
-
-      const legacyInventoryFile = path.join(
-        temp,
-        'soter',
-        'migrations',
-        'legacy-inventory.json'
-      );
-      const originalLegacyInventoryText = fs.readFileSync(legacyInventoryFile, 'utf8');
-      const mismatchedLegacyInventory = JSON.parse(originalLegacyInventoryText);
-      const inventoryItem = mismatchedLegacyInventory.items.find((item) => {
-        return item.sourcePath === scenarioMigrationItem.sourcePath;
-      });
-      const inventoryTarget = inventoryItem?.targets.find((target) => {
-        return target.id === scenarioMigrationItem.targetPack
-          && target.path === scenarioMigrationItem.targetPath;
-      });
-      if (!inventoryTarget) {
-        failures.push('Legacy inventory omitted the migrated scenario target binding');
-      } else {
-        inventoryTarget.evidence = ['soter/fixtures/project-pulse/resolution.evidence.json'];
-        fs.writeFileSync(
-          legacyInventoryFile,
-          JSON.stringify(mismatchedLegacyInventory, null, 2) + '\n'
-        );
-        const badMigrationInventory = verifySoter(temp);
-        if (!badMigrationInventory.violations.some((item) => {
-          return item.code === 'SOTER_MIGRATION_INVENTORY';
-        })) {
-          failures.push('planted migration and legacy-inventory disagreement was not detected');
-        }
-      }
-      fs.writeFileSync(legacyInventoryFile, originalLegacyInventoryText);
-
-      const repeatedLegacyInventoryTarget = JSON.parse(originalLegacyInventoryText);
-      const repeatedInventoryItem = repeatedLegacyInventoryTarget.items.find((item) => {
-        return item.sourcePath === scenarioMigrationItem.sourcePath;
-      });
-      const repeatedBinding = repeatedInventoryItem?.targets.find((target) => {
-        return target.id === scenarioMigrationItem.targetPack
-          && target.path === scenarioMigrationItem.targetPath;
-      });
-      if (!repeatedBinding) {
-        failures.push('Legacy inventory omitted the migrated binding needed for duplicate detection');
-      } else {
-        repeatedInventoryItem.targets.push({
-          ...structuredClone(repeatedBinding),
-          responsibility: repeatedBinding.responsibility + ' Planted duplicate.'
-        });
-        fs.writeFileSync(
-          legacyInventoryFile,
-          JSON.stringify(repeatedLegacyInventoryTarget, null, 2) + '\n'
-        );
-        const duplicateMigrationInventoryTarget = verifySoter(temp);
-        if (!duplicateMigrationInventoryTarget.violations.some((item) => {
-          return item.code === 'SOTER_MIGRATION_INVENTORY';
-        })) {
-          failures.push('planted duplicate migrated inventory binding was not detected');
-        }
-      }
-      fs.writeFileSync(legacyInventoryFile, originalLegacyInventoryText);
-
-      const tombstonedSourceFile = path.join(temp, scenarioMigrationItem.sourcePath);
-      fs.mkdirSync(path.dirname(tombstonedSourceFile), { recursive: true });
-      fs.writeFileSync(
-        tombstonedSourceFile,
-        'Planted generated output reusing a migrated source path.\n'
-      );
-      const reusedTombstonedPath = verifySoter(temp);
-      if (reusedTombstonedPath.violations.some((item) => {
-        return item.code === 'SOTER_MIGRATION_SOURCE';
-      })) {
-        failures.push('different generated bytes at a tombstoned legacy path were treated as the exact legacy source');
-      }
-      const plantedFingerprint = fingerprintFile(tombstonedSourceFile);
-      const exactLiveMigration = JSON.parse(originalScenarioMigrationText);
-      exactLiveMigration.items.find((item) => {
-        return item.sourcePath === scenarioMigrationItem.sourcePath
-          && item.targetPath === scenarioMigrationItem.targetPath;
-      }).sourceFingerprint = plantedFingerprint;
-      const exactLiveInventory = JSON.parse(originalLegacyInventoryText);
-      exactLiveInventory.items.find((item) => {
-        return item.sourcePath === scenarioMigrationItem.sourcePath;
-      }).sourceFingerprint = plantedFingerprint;
-      fs.writeFileSync(
-        scenarioMigrationFile,
-        JSON.stringify(exactLiveMigration, null, 2) + '\n'
-      );
-      fs.writeFileSync(
-        legacyInventoryFile,
-        JSON.stringify(exactLiveInventory, null, 2) + '\n'
-      );
-      const exactLiveTombstonedSource = verifySoter(temp);
-      if (!exactLiveTombstonedSource.violations.some((item) => {
-        return item.code === 'SOTER_MIGRATION_SOURCE';
-      })) {
-        failures.push('exact legacy source bytes retained beside their governed tombstone were not detected');
-      }
-      fs.writeFileSync(scenarioMigrationFile, originalScenarioMigrationText);
-      fs.writeFileSync(legacyInventoryFile, originalLegacyInventoryText);
-      fs.rmSync(tombstonedSourceFile);
-    }
-
-    let nonScenarioMigrationItem = null;
-    for (const name of fs.readdirSync(migrationDirectory).sort()) {
-      if (!name.endsWith('.migration.json')) continue;
-      const candidate = JSON.parse(fs.readFileSync(path.join(migrationDirectory, name), 'utf8'));
-      nonScenarioMigrationItem = candidate.items.find((item) => {
-        return item.state === 'migrated'
-          && !item.targetPath.startsWith('soter/scenarios/');
-      }) || null;
-      if (nonScenarioMigrationItem) break;
-    }
-    if (!nonScenarioMigrationItem) {
-      failures.push('Migration fixtures omitted a finalized non-scenario migration');
-    } else {
-      const migrationEvidenceFile = path.join(temp, nonScenarioMigrationItem.evidence[0]);
-      const originalMigrationEvidenceText = fs.readFileSync(
-        migrationEvidenceFile,
-        'utf8'
-      );
-      const mismatchedTargetEvidence = JSON.parse(originalMigrationEvidenceText);
-      const migrationTargetArtifact = mismatchedTargetEvidence.artifacts.find((artifact) => {
-        return artifact.role === 'migration-target'
-          && artifact.path === nonScenarioMigrationItem.targetPath;
-      });
-      if (!migrationTargetArtifact) {
-        failures.push('Non-scenario migration omitted its exact migration target');
-      } else {
-        migrationTargetArtifact.fingerprint = 'sha256:' + 'b'.repeat(64);
-        fs.writeFileSync(
-          migrationEvidenceFile,
-          JSON.stringify(mismatchedTargetEvidence, null, 2) + '\n'
-        );
-        const badNonScenarioTarget = verifySoter(temp);
-        if (!badNonScenarioTarget.violations.some((item) => {
-          return item.code === 'SOTER_MIGRATION_EVIDENCE';
-        })) {
-          failures.push('planted non-scenario migration-target substitution was not detected');
-        }
-      }
-      fs.writeFileSync(
-        migrationEvidenceFile,
-        originalMigrationEvidenceText
-      );
-    }
 
     const configFile = path.join(temp, 'soter', 'configurations', 'meeting-intake.config.json');
     const originalConfigText = fs.readFileSync(configFile, 'utf8');
@@ -8483,15 +6119,15 @@ function selftest(root) {
     }
     fs.writeFileSync(communicationsMappingFile, originalCommunicationsMappingText);
 
-    const legacyProviderMapping = JSON.parse(originalMappingText);
-    legacyProviderMapping.$contract = 'soter://contracts/provider-mapping/v3';
-    legacyProviderMapping.contractVersion = '3.0.0';
-    fs.writeFileSync(mappingFile, JSON.stringify(legacyProviderMapping, null, 2) + '\n');
-    const badLegacyProviderMapping = verifySoter(temp);
-    if (!badLegacyProviderMapping.violations.some((item) => {
+    const outdatedProviderMapping = JSON.parse(originalMappingText);
+    outdatedProviderMapping.$contract = 'soter://contracts/provider-mapping/v3';
+    outdatedProviderMapping.contractVersion = '3.0.0';
+    fs.writeFileSync(mappingFile, JSON.stringify(outdatedProviderMapping, null, 2) + '\n');
+    const badOutdatedProviderMapping = verifySoter(temp);
+    if (!badOutdatedProviderMapping.violations.some((item) => {
       return item.code === 'SOTER_CONTRACT';
     })) {
-      failures.push('planted legacy provider-mapping/v3 contract was not rejected');
+      failures.push('planted unsupported provider-mapping/v3 contract was not rejected');
     }
     fs.writeFileSync(mappingFile, originalMappingText);
 
@@ -8601,7 +6237,7 @@ function selftest(root) {
     failures.forEach((failure) => console.error('SELFTEST FAIL: ' + failure));
     return false;
   }
-  console.log('SELFTEST PASS: schema vocabulary, composition, conditionals, bounds, deep uniqueness, version, clean graph, definition-only workflow authority and identity, exact active workflow host-evidence joins and run coverage, prepared-work, acquisition, and proposal ownership, acquisition capability and record coverage, pack settings and acquisition-required targets, portable sources, Context record model, provider mapping and configured choice-value translation, native host tool, binding, host, lock host selection, exact evidence applicability, malformed JSON, unknown-contract, and malformed-contract checks fired as expected.');
+  console.log('SELFTEST PASS: schema vocabulary, composition, conditionals, bounds, deep uniqueness, version, clean graph, active workflow identity and behavior coverage, prepared-work, acquisition, proposal ownership, pack settings, portable sources, Context models, provider mapping, native host tools, bindings, locks, evidence applicability, malformed JSON, unknown-contract, and malformed-contract checks fired as expected.');
   return true;
 }
 

@@ -1,19 +1,19 @@
 {
   "contractVersion": "2.0.0",
   "id": "workflow-guide.reviewing-forge-output",
-  "contentFingerprint": "sha256:c418c0eb18a9969cff882c5bac0eb5ac7899e3422e5148a28b8d88f3b3fd3c6e",
+  "contentFingerprint": "sha256:bb70dcd95842b95a2762ec3a24f77ce20cc9db21ca1cdead8006c43aaadff9c3",
   "$contract": "soter://contracts/workflow-guide/v2",
   "workflow": {
     "id": "automation.reviewing-forge-output",
     "version": "0.1.0",
     "definitionPath": "soter/automations/reviewing-forge-output/definition.json",
-    "definitionFingerprint": "sha256:823b233fdcf357bf57917873a1b08d13b5d8d8aad4d774ad64eaf585ccc0ed9f",
+    "definitionFingerprint": "sha256:8faad7e404c6066e02a5e0b2f4d60e92c13da014478ad555835f9718f0377e7b",
     "evaluationSetPath": "soter/automations/reviewing-forge-output/evaluations.json",
-    "evaluationSetFingerprint": "sha256:ea2c81b41e353795c560aa76f5f036822a894a06532294e03b4f9e10f1273a07"
+    "evaluationSetFingerprint": "sha256:441a1eb0c4b5badf354178cf4a7dff91cde1515cad2b1bc77b3ba35043db36bd"
   },
   "skill": {
     "name": "reviewing-forge-output",
-    "description": "Review one exact drafted harness artifact for ownership, contract correctness, behavior evidence, privacy, authority, migration impact, and bait artifacts. Use at the independent adoption gate; do not use for authoring, mechanical checks alone, or later promotion.",
+    "description": "Review one exact drafted harness artifact for ownership, contract correctness, behavior evidence, privacy, authority, compatibility and upgrade impact, and bait artifacts. Use at the independent adoption gate; do not use for authoring, mechanical checks alone, or later promotion.",
     "invocation": "explicit-only",
     "displayName": "Review a forged artifact",
     "shortDescription": "Independently review one governed artifact before adoption.",
@@ -22,21 +22,7 @@
   "status": {
     "state": "active",
     "reasonCode": "WORKFLOW_GUIDE_ACTIVE",
-    "proceduralAuthority": "target",
-    "behaviorParity": "passed",
     "delivery": "host-skill",
-    "evidence": [
-      {
-        "path": "soter/evidence/development/development-agent-migration-evidence.claude.reviewing-forge-output.json",
-        "fingerprint": "sha256:b097bb24168d2f99fe257155d618b61d49d0ffe24fdea13a4a4e59c1d47ae6aa",
-        "host": "claude"
-      },
-      {
-        "path": "soter/evidence/development/development-agent-migration-evidence.codex.reviewing-forge-output.json",
-        "fingerprint": "sha256:321e16445084b0e5661e4edf15047ae34fe224a56d3a76ddc0acecb96978f909",
-        "host": "codex"
-      }
-    ],
     "permittedNextAction": "invoke-through-selected-host"
   },
   "authority": {
@@ -93,7 +79,7 @@
       "id": "report-findings",
       "sequence": 4,
       "instructions": [
-        "Lead with actionable correctness, security, authority, privacy, migration, and claim-boundary findings ranked by consequence.",
+        "Lead with actionable correctness, security, authority, privacy, compatibility, upgrade, and claim-boundary findings ranked by consequence.",
         "For every finding, cite the exact artifact and explain the broken invariant and bounded correction.",
         "When no finding remains, state residual limitations and the exact evidence reviewed rather than offering broad reassurance."
       ],
@@ -135,7 +121,7 @@
     {
       "id": "checker-is-floor",
       "kind": "constraint",
-      "summary": "A warning-free checker can establish shape while missing behavior, authority, privacy, or migration defects.",
+      "summary": "A warning-free checker can establish shape while missing behavior, authority, privacy, compatibility, or upgrade defects.",
       "countermeasure": "Treat deterministic checks as the review floor and inspect the claims against applicable behavior evidence."
     },
     {
@@ -159,21 +145,14 @@
       "target": "soter://contracts/development-governance/v1"
     }
   ],
-  "source": {
-    "presence": "removed",
-    "legacyPath": ".claude/skills/reviewing-forge-output/SKILL.md",
-    "legacyFingerprint": "sha256:503fa0b867edab40e1996d7d3329a49358f281bc482bda66f6b0dbd8cee85370",
-    "normalization": "behavior-preserving-with-explicit-authority-boundary"
-  },
   "privacy": {
-    "rawSourceIncluded": false,
     "workspaceSpecificValuesIncluded": false,
     "credentialsIncluded": false,
     "privateInputsIncluded": false,
     "providerResponsesIncluded": false
   },
   "limitations": [
-    "This procedural review guide grants no edit, merge, publication, installation, or realization authority.",
-    "Adoption requires independent exact host-skill behavior evidence and a separate governed fallback-removal decision."
+    "This guide provides procedural guidance only and grants no worker dispatch, file-write, publication, provider, merge, or host-realization authority.",
+    "Behavior evidence requires an exact private request and an independently observed fresh-worker run through a trusted host boundary."
   ]
 }

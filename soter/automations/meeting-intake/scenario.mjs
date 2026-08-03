@@ -8,7 +8,6 @@ import {
   resolveRepoPath
 } from '../../core/lib/canonical-json.mjs';
 import { fingerprintLock } from '../../core/resolve.mjs';
-import { fingerprintLegacySource } from '../../kernel/legacy-inventory.mjs';
 import { prepareMeetingIntakeRun } from './prepare.mjs';
 
 const AUTOMATION_ID = 'automation.meeting-intake';
@@ -43,7 +42,7 @@ function exactIds(actual, expected) {
   return fingerprintJson([...actual].sort()) === fingerprintJson([...expected].sort());
 }
 
-function factsFor({ lock, input, envelope, snapshot, preview, outcomes, sourceCaseArtifacts }) {
+function factsFor({ lock, input, envelope, snapshot, preview, outcomes }) {
   const byId = new Map(snapshot.entries.map((entry) => [entry.id, entry]));
   const policyEntries = snapshot.entries.filter((entry) => {
     return entry.id.startsWith('context.meeting-intake.policy.');
@@ -84,11 +83,6 @@ function factsFor({ lock, input, envelope, snapshot, preview, outcomes, sourceCa
     && envelope.approvals.length === 0
     && envelope.effects.every((effect) => !effect.declaredEffects.includes('write'))
     && preview.proposedChanges.length === 0;
-  const sourceCasesFingerprinted = sourceCaseArtifacts.length > 0
-    && sourceCaseArtifacts.every((artifact) => {
-      return artifact.role === 'source-case'
-        && /^sha256:[a-f0-9]{64}$/.test(artifact.fingerprint);
-    });
   const policiesGrounded = configuredPolicies.length === policyEntries.length
     && configuredPolicies.length === 3
     && policyEntries.every((entry) => {
@@ -154,8 +148,7 @@ function factsFor({ lock, input, envelope, snapshot, preview, outcomes, sourceCa
         collections: preview.collections,
         privateReview: preview.privateReview,
         proposedChanges: preview.proposedChanges
-      }) && privateBodiesExcluded,
-      'source-cases-exactly-fingerprinted': sourceCasesFingerprinted
+      }) && privateBodiesExcluded
     }
   };
 }
@@ -205,11 +198,6 @@ export async function runContainedMeetingIntakePreparationScenario({
 }) {
   const resolvedRoot = path.resolve(root);
   const loaded = loadScenario(resolvedRoot, scenarioPath);
-  const sourceCaseArtifacts = loaded.scenario.sourceCases.map((sourcePath) => ({
-    role: 'source-case',
-    path: sourcePath,
-    fingerprint: fingerprintLegacySource(resolvedRoot, sourcePath)
-  }));
   const input = {
     meeting: 'meeting.fixture-001',
     recordingUri: 'https://otter.ai/u/meeting_fixture_001',
@@ -230,8 +218,7 @@ export async function runContainedMeetingIntakePreparationScenario({
     envelope: execution.envelope,
     snapshot: execution.snapshot,
     preview: execution.preview,
-    outcomes: execution.outcomes,
-    sourceCaseArtifacts
+    outcomes: execution.outcomes
   });
   const assessment = assessmentFor({
     scenario: loaded.scenario,
@@ -254,7 +241,6 @@ export async function runContainedMeetingIntakePreparationScenario({
     envelope: execution.envelope,
     scenario: loaded.scenario,
     scenarioPath: loaded.path,
-    sourceCaseArtifacts,
     assessment,
     evaluatorId: 'automation.meeting-intake.preparation-scenario-evaluator',
     id: scenarioEvidenceId,

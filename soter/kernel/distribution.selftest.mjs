@@ -218,7 +218,9 @@ try {
   const outputA = path.join(temporary, 'releases-a');
   const outputB = path.join(temporary, 'releases-b');
   const packIds = fs.readdirSync(path.join(root, 'soter', 'packs'))
-    .map((name) => JSON.parse(fs.readFileSync(path.join(root, 'soter', 'packs', name, 'pack.json'))).id)
+    .map((name) => path.join(root, 'soter', 'packs', name, 'pack.json'))
+    .filter((manifestPath) => fs.existsSync(manifestPath))
+    .map((manifestPath) => JSON.parse(fs.readFileSync(manifestPath)).id)
     .sort();
   const releases = packIds.map((pack) => buildPackRelease({
     root,

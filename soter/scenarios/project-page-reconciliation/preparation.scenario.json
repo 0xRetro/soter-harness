@@ -1,0 +1,48 @@
+{
+  "$contract": "soter://contracts/scenario/v1",
+  "contractVersion": "1.0.0",
+  "id": "project-page-reconciliation.preparation",
+  "automation": "automation.project-page-reconciliation",
+  "intent": "operate",
+  "input": {
+    "project": {
+      "identityState": "private-exact",
+      "propertyScope": "project-type-and-status-only",
+      "bodyScope": "exact-one-match-replacements-only"
+    }
+  },
+  "expected": {
+    "capabilityOrder": [
+      "projects.records.read",
+      "projects.schema.read",
+      "projects.records.read",
+      "projects.records.read"
+    ],
+    "effectModes": {
+      "read": "allow",
+      "disclosure": "allow",
+      "write": "confirm",
+      "dispatch": "prohibit",
+      "destructive": "prohibit"
+    },
+    "outcomes": [
+      "project-current-state.exact",
+      "project-change.reviewable",
+      "project-change.preparation-grants-no-authority"
+    ],
+    "invariants": [
+      "unselected-project-values-preserved",
+      "body-replacements-match-once",
+      "private-values-excluded-from-inspection",
+      "no-write-or-approval-during-preparation"
+    ],
+    "evidence": [
+      "exact-lock",
+      "policy-source-fingerprint",
+      "schema-source-fingerprint",
+      "project-source-fingerprint",
+      "private-review-fingerprint",
+      "write-boundary-state"
+    ]
+  }
+}

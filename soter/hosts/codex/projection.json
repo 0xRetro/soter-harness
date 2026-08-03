@@ -84,6 +84,6 @@
     }
   ],
   "limitations": [
-    "This definition projects local deterministic guidance, the Soter Core route, and selected active explicit-only workflow skills; it excludes candidate guides and does not install Codex or prove launch, discovery, authentication, provider reachability, connected behavior, or health."
+    "This definition projects local deterministic guidance, the Soter Core route, and selected active explicit-only workflow skills; it excludes unselected guides and does not install Codex or prove launch, discovery, authentication, provider reachability, connected behavior, or health."
   ]
 }

@@ -11,10 +11,10 @@ import {
   prepareAutomationRun
 } from '../../core/prepared-work.mjs';
 import {
-  createPreparedConnectedPlan,
-  evaluatePreparedConnectedVerification
-} from '../../core/prepared-connected-plans.mjs';
-import { createPreparedReviewBatch } from '../../core/prepared-review-batches.mjs';
+  createReviewOnlyCandidatePreview,
+  evaluateReviewOnlyCandidatePreviewVerification
+} from '../../core/review-only-candidate-previews.mjs';
+import { createReviewOnlyCandidateSelection } from '../../core/review-only-candidate-selections.mjs';
 import { resolveConfiguration } from '../../core/resolve.mjs';
 import { evaluateSlackChannelConnectedVerification } from './connected.mjs';
 import { runContainedSlackChannelIngestionScenario } from './scenario.mjs';
@@ -201,23 +201,23 @@ export async function selftestSlackChannelIngestion(root = defaultRoot) {
     }).reviewValue.every((uri) => uri.startsWith('soter-fixture://crm/person/'))));
     const createAction = proposed.find((action) => action.kind === 'channel-create');
     const updateAction = proposed.find((action) => action.kind === 'channel-update');
-    const batch = createPreparedReviewBatch({
+    const selection = createReviewOnlyCandidateSelection({
       root: temporaryRoot,
       workId: selected.id,
       actionIds: [createAction.id],
       createdAt: '2026-07-21T20:03:30.000Z'
     });
-    assert.equal(batch.scope.partial, true);
-    const plan = await createPreparedConnectedPlan({
+    assert.equal(selection.scope.partial, true);
+    const preview = await createReviewOnlyCandidatePreview({
       root: temporaryRoot,
-      batchId: batch.id,
+      selectionId: selection.id,
       createdAt: '2026-07-21T20:04:00.000Z'
     });
-    assert.equal(plan.state, 'blocked-review-only');
-    assert.equal(plan.executable, false);
-    assert.equal(plan.operations.length, 1);
-    assert.equal(plan.operations[0].capability, 'communications.records.create');
-    assert.deepEqual(plan.operations[0].verification.inputBindings, [{
+    assert.equal(preview.state, 'blocked-review-only');
+    assert.equal(preview.executable, false);
+    assert.equal(preview.operations.length, 1);
+    assert.equal(preview.operations[0].capability, 'communications.records.create');
+    assert.deepEqual(preview.operations[0].verification.inputBindings, [{
       id: 'binding.slack-channel-ingestion.created-channel-id',
       sourceStage: 'write',
       sourcePath: ['record', 'id'],
@@ -231,28 +231,28 @@ export async function selftestSlackChannelIngestion(root = defaultRoot) {
       limit: 2
     };
     assert.equal(evaluateSlackChannelConnectedVerification({
-      operation: plan.operations[0],
+      operation: preview.operations[0],
       resolvedInput: exactVerificationInput,
       output: {
         records: [{
           type: 'channel',
           id: createdChannelId,
-          fields: structuredClone(plan.operations[0].input.fields)
+          fields: structuredClone(preview.operations[0].input.fields)
         }]
       }
     }).state, 'passed');
     assert.equal(evaluateSlackChannelConnectedVerification({
-      operation: plan.operations[0],
+      operation: preview.operations[0],
       resolvedInput: exactVerificationInput,
       output: {
         records: [{
           type: 'channel',
           id: 'soter-fixture://communications/channel/concurrent-same-identity',
-          fields: structuredClone(plan.operations[0].input.fields)
+          fields: structuredClone(preview.operations[0].input.fields)
         }]
       }
     }).state, 'failed');
-    const setSemanticOperation = structuredClone(plan.operations[0]);
+    const setSemanticOperation = structuredClone(preview.operations[0]);
     const setSemanticFields = {
       ...setSemanticOperation.input.fields,
       personUris: [
@@ -307,19 +307,19 @@ export async function selftestSlackChannelIngestion(root = defaultRoot) {
       }).state, 'failed',
       'Malformed non-null relation output must never normalize to an empty or valid set.');
     }
-    const updateBatch = createPreparedReviewBatch({
+    const updateSelection = createReviewOnlyCandidateSelection({
       root: temporaryRoot,
       workId: selected.id,
       actionIds: [updateAction.id],
       createdAt: '2026-07-21T20:03:40.000Z'
     });
-    const updatePlan = await createPreparedConnectedPlan({
+    const updatePreview = await createReviewOnlyCandidatePreview({
       root: temporaryRoot,
-      batchId: updateBatch.id,
+      selectionId: updateSelection.id,
       createdAt: '2026-07-21T20:04:10.000Z'
     });
-    assert.equal(updatePlan.operations[0].capability, 'communications.records.update');
-    const updateOperation = updatePlan.operations[0];
+    assert.equal(updatePreview.operations[0].capability, 'communications.records.update');
+    const updateOperation = updatePreview.operations[0];
     const before = updateOperation.review.before.reviewValue;
     assert.equal(evaluateSlackChannelConnectedVerification({
       operation: updateOperation,
@@ -339,9 +339,9 @@ export async function selftestSlackChannelIngestion(root = defaultRoot) {
     }).state, 'passed',
     'Null provider relations must normalize to the exact empty portable before-state.');
     await assert.rejects(
-      () => evaluatePreparedConnectedVerification({
+      () => evaluateReviewOnlyCandidatePreviewVerification({
         root: temporaryRoot,
-        planId: updatePlan.id,
+        candidatePreviewId: updatePreview.id,
         operationId: updateOperation.id,
         output: {
           records: [{
@@ -368,10 +368,10 @@ export async function selftestSlackChannelIngestion(root = defaultRoot) {
           observedAt: AT
         }
       }),
-      (error) => error.code === 'PREPARED_CONNECTED_PLAN_VERIFICATION_INVALID'
+      (error) => error.code === 'REVIEW_ONLY_CANDIDATE_PREVIEW_VERIFICATION_INVALID'
     );
-    assert.equal(plan.privacy.approvalAuthorityIncluded, false);
-    assert.equal(plan.privacy.executionAuthorityIncluded, false);
+    assert.equal(preview.privacy.approvalAuthorityIncluded, false);
+    assert.equal(preview.privacy.executionAuthorityIncluded, false);
 
     const slackFixtureFile = path.join(
       temporaryRoot,
@@ -413,24 +413,24 @@ export async function selftestSlackChannelIngestion(root = defaultRoot) {
     const noPermalinkAction = selectedWithoutPermalink.preview.collections[0].rows
       .flatMap((row) => row.actions)
       .find((action) => action.kind === 'channel-create');
-    const noPermalinkBatch = createPreparedReviewBatch({
+    const noPermalinkSelection = createReviewOnlyCandidateSelection({
       root: temporaryRoot,
       workId: selectedWithoutPermalink.id,
       actionIds: [noPermalinkAction.id],
       createdAt: '2026-07-21T20:05:30.000Z'
     });
-    const noPermalinkPlan = await createPreparedConnectedPlan({
+    const noPermalinkPreview = await createReviewOnlyCandidatePreview({
       root: temporaryRoot,
-      batchId: noPermalinkBatch.id,
+      selectionId: noPermalinkSelection.id,
       createdAt: '2026-07-21T20:06:00.000Z'
     });
-    assert.equal(Object.hasOwn(noPermalinkPlan.operations[0].input.fields, 'permalink'), false);
+    assert.equal(Object.hasOwn(noPermalinkPreview.operations[0].input.fields, 'permalink'), false);
     assert.equal(Object.hasOwn(
-      noPermalinkPlan.operations[0].input.fields,
+      noPermalinkPreview.operations[0].input.fields,
       'providerWorkspaceId'
     ), false);
     assert.equal(Object.hasOwn(
-      noPermalinkPlan.operations[0].input.fields,
+      noPermalinkPreview.operations[0].input.fields,
       'providerConversationId'
     ), false);
     fs.writeFileSync(slackFixtureFile, originalSlackFixture);
@@ -454,7 +454,7 @@ export async function selftestSlackChannelIngestion(root = defaultRoot) {
       assert(!sanitized.includes(privateValue), 'Sanitized projection leaked ' + privateValue + '.');
     }
     assert.equal(fingerprintPath(path.join(temporaryRoot, 'soter')), canonicalBefore);
-    process.stdout.write('Slack channel-ingestion selftest: complete public/private identity review, explicit selected-member gate, bot exclusion, exact relation matches, fingerprint-only portable directory writes, residue handoffs, partial batch compilation, privacy, and zero live effects passed.\n');
+    process.stdout.write('Slack channel-ingestion selftest: complete public/private identity review, explicit selected-member gate, bot exclusion, exact relation matches, fingerprint-only portable directory writes, residue handoffs, partial selection compilation, privacy, and zero live effects passed.\n');
     return true;
   } finally {
     fs.rmSync(temporaryRoot, { recursive: true, force: true });

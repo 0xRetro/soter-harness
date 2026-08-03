@@ -79,9 +79,9 @@ packs, but each scope has its own authority, evidence, and promotion boundary.
 11. **Design interfaces as projections.** Agents, CLI commands, graphical
     interfaces, and generated host files consume the same structured core
     model; none implements a competing version of the truth.
-12. **Migrate through working vertical slices.** Preserve useful behavior,
-    replace one boundary at a time, compare outcomes, and retire compatibility
-    bridges when their evidence supports removal.
+12. **Change through working vertical slices.** Preserve useful behavior,
+    replace one boundary at a time, compare outcomes, and remove superseded
+    implementation only when current evidence supports the change.
 
 ### Architectural promise
 
@@ -200,16 +200,25 @@ preserve its declared meaning, effects, gates, and evidence even when the host
 uses different native mechanisms.
 
 Portable procedural guidance belongs to an Automation-owned `workflow-guide/v2`,
-not to a host skill file. A definition is closed as `definition-only`,
-`active-host-guided`, or `retired` and binds one exact guide, evaluation set,
-development request/result boundary, workspace policy, and effect boundary.
-Definition-only outputs are structurally excluded from host realization. Only an
-evidence-qualified active guide is selectable by a host projection collection.
-Generated skills remain delivery artifacts and can never be edited into canonical
-behavior. Evidence binds a guide's stable semantic
-`contentFingerprint`, which excludes activation status/evidence; the pack lock still
-seals the full document. This keeps activation evidence non-circular while preventing
-unevaluated content changes from inheriting an earlier verdict.
+not to a host skill file. Each current definition is `active-host-guided` and
+binds one exact guide, evaluation set, development request/result boundary,
+workspace policy, and effect boundary. Configuration selects the Automation;
+the host projection realizes its exact guide. Generated skills remain delivery
+artifacts and can never be edited into canonical behavior. Evidence binds the
+guide's stable semantic `contentFingerprint`, while the pack lock seals the full
+document, so changed instructions cannot inherit an earlier behavior verdict.
+
+An active host-guided workflow begins only through
+`soter_create_development_request`. Core derives the current active lock and
+realized host, fingerprints the exact normalized targets, binds the smallest
+requested subset of local reads, writes, commands, and subagent dispatch, and
+returns a sanitized development-run inspection. Provider reads or writes,
+publication, merge, protected-root mutation, and host realization require
+separate authority. `soter_inspect_development_run` revalidates and reports the
+same boundary as current, stale, or closed without granting new authority.
+Target drift closes ordinary inspection; only exact result closure may account
+for declared target before/after fingerprints while proving all untargeted
+workspace, policy, private-configuration, and managed-host facts unchanged.
 
 ### Vocabulary discipline
 
@@ -256,12 +265,12 @@ promised outcome, and records a durable run envelope and evidence.
 
 Kernel's `development-governance/v1` policy makes the `develop` boundary
 machine-readable. It owns artifact classification, contract-derived scaffolding,
-quality and evaluation rules, evidence requirements, promotion, and fallback
-retirement. It does not own the runtime that changes files: Core owns run envelopes,
+quality and evaluation rules, evidence requirements, promotion, and change
+evidence. It does not own the runtime that changes files: Core owns run envelopes,
 effects, checkpoints, and evidence; Automation owns a requested development outcome;
 Integration owns provider translation; host adapters own isolated task delivery and
 native tool confinement; configuration owns workspace and publication policy. A
-Markdown template, host task declaration, or normalized definition-only workflow is
+Markdown template, host task declaration, or workflow definition is
 therefore never executable authority by itself.
 
 Learning has three scopes: temporary adaptation within a run, private
@@ -284,10 +293,10 @@ packs are selectable subject to declared dependencies.
 Bundles are transparent recommendations that expand into ordinary
 configurations. Packs and configurations can be shared without silently
 sharing credentials, private runtime state, or optional evidence. Upgrades
-preview contract, permission, migration, projection, and verification changes
+preview contract, permission, projection, and verification changes
 and preserve a rollback path where the effects allow one.
 
-Kernel now provides the contained distribution foundation below this future
+Kernel provides the contained distribution foundation below the separate
 install lifecycle. `pack-release/v1` deterministically seals one pack manifest
 and every declared artifact into a content-addressed local capsule, while
 `bundle/v1` carries only transparent release references, reasons, and
@@ -340,7 +349,7 @@ resolved configuration. It also projects only sources explicitly marked
 portable inputs without learning an Automation's settings shape. The integration
 chooses from a narrower safe probe-tool allowlist and returns observations rather
 than a readiness verdict.
-A single safe request can use the legacy call contract. When readiness requires
+A single safe request can use the single-call contract. When readiness requires
 several resources or methods, a private probe-plan checkpoint exposes one exact
 host request at a time, fingerprints its semantic scope and arguments, and
 requires checkpoint plus call identity on resume. Core rederives the complete
@@ -362,7 +371,7 @@ graphical interfaces, and automation triggers. Business rules, graph
 resolution, effect policy, and health calculations live in core so interfaces
 cannot drift.
 
-The first operator-facing read projection is a deterministic configuration view
+The operator-facing read projection is a deterministic configuration view
 over one exact fresh lock. It explains selected systems, dependencies, host
 choice, bindings, sources, authorities, effects, maturity, and limitations while
 keeping readiness, verification, and health explicitly unknown unless separate
@@ -374,8 +383,8 @@ in-memory replacement for an existing desired configuration, and Core may
 resolve that validated document without writing it. The preview projection may
 publish the resulting lock and graph fingerprints, but it may not construct a
 candidate by editing fields on the current lock. Invalid pack settings,
-dependencies, bindings, sources, authorities, host compatibility, scenarios, or
-migrations therefore block an exact candidate before any apply authority exists.
+dependencies, bindings, sources, authorities, host compatibility, or scenarios
+therefore block an exact candidate before any apply authority exists.
 
 Applying configuration is a separate local transaction family, not an
 operational provider approval and not a capability call. Core stores the full
@@ -419,8 +428,8 @@ request through its separately configured provider tool, and return the native
 result for exact-lock validation and normalization. Codex and Claude configure
 the same server rather than reimplementing policy or translation. Each launch
 binds the server to its active host identity, so a Claude projection cannot
-consume a lock resolved for Codex or vice versa. A later UI must call this same
-service boundary as well.
+consume a lock resolved for Codex or vice versa. Graphical interfaces call this
+same service boundary.
 
 Connected Context acquisition is work-owned. Meeting Intake, Email Triage,
 Task Capture, Organization Capture, Project Capture, Contact Capture, and
@@ -489,8 +498,8 @@ steps, the current checkpoint call, verification criteria, reconciliation and
 compensation state, and one derived resume decision. The decision names one
 permitted next action and a stable reason code; it is never a reusable approval
 or a generic retry flag. Raw provider responses, credentials, and private field
-values are excluded. Proof, maturity, and migration remain separately
-unevaluated unless their own evidence families establish them.
+values are excluded. Proof and maturity remain separately unevaluated unless
+their own evidence establishes them.
 
 Human-readable decision values cross a different, selected-activity boundary.
 `connected-approval-review-material/v1` is derived from the existing private
@@ -518,7 +527,7 @@ not raw private inputs or provider responses. It creates no approval,
 consumption, continuation request, connected call, or provider-write authority;
 crossing into the connected lifecycle requires the existing exact approval
 contracts and a separately derived exact change batch. Core rejects preparation
-values that resemble credentials. Later lock drift makes the historical receipt
+values that resemble credentials. Later lock drift makes the stored receipt
 stale and its resume classification unavailable.
 
 Durable private review is a separate read boundary, not an expansion of the
@@ -552,30 +561,30 @@ fingerprints seal distinct boundaries. Applicability remains derived and is
 excluded from the immutable companion fingerprint.
 
 An operator may narrow those validated proposals into one immutable
-`prepared-review-batch/v1`. Core accepts only a non-empty exact subset of
+`review-only-candidate-selection/v1`. Core accepts only a non-empty exact subset of
 actions already in `state=proposed`, restores their canonical prepared order,
 and binds the receipt, checkpoint, configuration lock, preview, sanitized
 source row, source action, fingerprint-only change, private context item, and
 private proposed item. The create-only document under
-`.soter/state/prepared-review-batches` contains fingerprints and codes only.
-Its selected-batch material is derived on demand as
-`prepared-review-batch-material/v1`, may expose the exact normalized private
-context and proposed values for the explicitly selected batch, and preserves a
+`.soter/state/review-only-candidate-selections` contains fingerprints and codes only.
+Its selected-candidate material is derived on demand as
+`review-only-candidate-selection-material/v1`, may expose the exact normalized private
+context and proposed values for the explicitly selected candidates, and preserves a
 stable fingerprint across current-to-stale applicability changes. Neither
 document is a change set, connected operation batch, approval request,
 confirmation, continuation request, or execution checkpoint. Without an
-Automation-owned connected compiler the batch carries
+Automation-owned connected compiler the selection carries
 `CONNECTED_COMPILER_NOT_DECLARED`. Once one is declared, that blocker becomes
-`CONNECTED_PLAN_NOT_COMPILED`; the batch still remains `review-only`.
+`REVIEW_ONLY_CANDIDATE_PREVIEW_NOT_CREATED`; the selection still remains `review-only`.
 
 An Automation may declare `operator.connection` as a pack-owned implementation
 module with separate compile and verification-evaluation exports. Core loads
 only the exact implementation artifact fingerprinted by the selected lock,
-passes it one exact private review batch, and validates the returned operations
+passes it one exact private candidate selection, and validates the returned operations
 against the Automation's required portable capabilities, resolved provider
 pack, single authority, effects, and read-only verification capabilities. Core,
 not the compiler, supplies provider and authority bindings. The resulting
-`prepared-connected-plan/v1` is create-only private state with exact provider
+`review-only-candidate-preview/v1` is create-only private state with exact provider
 arguments, but remains `blocked-review-only`, `executable=false`, and
 `authority=none`. It is excluded from workspace inspection and evidence and is
 not a change set, approval request, continuation request, host call, or retry
@@ -584,7 +593,7 @@ permission.
 Project Pulse, Meeting Intake, Task Capture, Organization Capture, Contact
 Capture, Drive Filing, and Email triage all use the prepared-work and selected-work private-
 review boundaries. Email triage and Task, Organization, and Contact Capture
-also use the prepared review-batch and authority-free connected-plan
+also use the review-only candidate-selection and candidate-preview
 boundaries; Project Pulse instead uses a deterministic private decision and
 proposal over a required human health judgment and exact governed project-work
 grammar because its document and status actions must remain one complete
@@ -603,10 +612,10 @@ cited follow-up judgment. Task Capture loads one machine-readable policy,
 resolves one exact project, and performs one bounded title-deduplication read.
 It keeps the title and optional calendar date in private review material and
 projects only an after-fingerprint for a possible create. A context conflict or
-duplicate candidate holds that action so it cannot enter a selected batch. An
-exact non-conflicting action can be selected into one immutable private review
-batch and compiled by Task Capture into a deduplicated `tasks.records.create`
-candidate with a `tasks.records.read` absence precondition and verification. The plan
+duplicate candidate holds that action so it cannot enter a candidate selection. An
+exact non-conflicting action can be selected into one immutable private candidate
+selection and compiled by Task Capture into a deduplicated `tasks.records.create`
+candidate with a `tasks.records.read` absence precondition and verification. The preview
 remains `blocked-review-only`, contains no transaction batch, approval,
 continuation, or execution authority, and performs no provider call. None of
 these adapters creates connected approval or execution authority.
@@ -620,11 +629,11 @@ deterministic proposal can enter Core's generic `connected-change-set/v2` and
 request, exact confirmation, and single-use approval consumption create one
 private `connected-transaction-checkpoint/v2`. That checkpoint performs the
 duplicate-absence precondition, one create, and mandatory read-after-write
-verification. The authority-free prepared plan is never upgraded or reused as
+verification. The authority-free candidate preview is never upgraded or reused as
 that transaction source.
 
 Organization Capture and Contact Capture use the same durable decision,
-proposal, selected-batch, approval-v2, single-use start, and connected-
+proposal, candidate-selection, approval-v2, single-use start, and connected-
 checkpoint families. Organization Capture intersects deterministic Context
 classification with the current normalized Organization schema, keeps sector
 meaning in Tags, and checks bounded aliases before create. Contact Capture
@@ -662,7 +671,7 @@ contains normalized summaries, complete proposed draft and digest text, and
 AI-only label values. Preparation executes one contained read and no writes.
 Sending is not declared as a capability. Email can bind any non-empty exact
 subset of its validated label and draft proposals into the generic immutable
-prepared review-batch boundary. Its pack-owned compiler expands that exact
+review-only candidate-selection boundary. Its pack-owned compiler expands that exact
 subset into portable `mail.labels.apply` and `mail.drafts.create` operations.
 Label operations bind the exact active message IDs represented by the selected
 review row, exact existing AI/ label names, and `createMissingLabels=false`;
@@ -674,7 +683,7 @@ same-provider and same-authority read-back through `mail.labels.read` or
 when no inverse capability exists. Contained fixture evaluation proves the
 normalized comparison.
 
-Codex now declares Gmail connector routes for exact label apply and message
+Codex declares Gmail connector routes for exact label apply and message
 read-back, plus bounded message-ID search and exact thread expansion. Connected
 normalization is bound to the closed `gmail.codex.connector.v1` response
 profile; alternate result envelopes, aliases, inferred pagination state, and
@@ -818,481 +827,70 @@ distinct. Dependency changes invalidate only the affected evidence. Doctor
 operations provide offline, connected, and canary levels without representing
 checks that did not run as green.
 
-## Migration record and evolution
+## Evolution and completion
 
-The final v1 repository was a useful working prototype and a source of observed
-behavior. V2 migrated or intentionally retired each exact responsibility through
-contained vertical slices. The old bytes now survive only as fingerprinted
-inventory tombstones and external recovery history; they are not a second
-runtime, configuration source, or documentation authority.
+Soter evolves one complete, useful behavior at a time. Each change keeps one
+canonical authority, carries exact dependency and evidence fingerprints, and
+makes unavailable behavior explicit rather than routing through an undeclared
+fallback.
 
-### Starting-point assessment
+### Change method
 
-The v1 repository demonstrated several strong foundations:
-
-- Systems and artifacts carry explicit classification metadata.
-- Molds, standards, and a shared checker make important shape and safety rules
-  mechanical.
-- Checker self-tests plant failures and prove that diagnostics fire.
-- Human-gated changes, isolated worktrees, and scoped staging reduce unsafe
-  concurrent edits.
-- External writes use deliberate confirmation and fetch-merge-write discipline.
-- Live schemas are treated as authorities rather than inferred from one example.
-- Observed failures can become evaluations and durable corrections.
-
-Those mechanisms informed the target architecture and remain represented by
-exact migration evidence. Their implementations are not retained as fallbacks.
-
-The historical starting point exposed the gaps this architecture was built to close:
-
-| Area | Starting point | Required evolution |
-|---|---|---|
-| **Layers** | Kernel, core, context, and automation classify artifacts, while provider behavior is mixed into guides and configuration. | Add the integration layer and enforce its boundary through capability contracts. |
-| **Kernel** | Strong design-time governance and one checker. | Govern system contracts, graph resolution, evidence, packaging, and migrations without becoming the operational runtime. |
-| **Core** | A small policy capability rather than a complete runtime foundation. | Add configuration resolution, context assembly, effect policy, run envelopes, evidence, health, and interface services. |
-| **Context** | Useful domain systems and external authority knowledge exist, but authority and editing behavior are often encoded in prose. | Declare context, authority roles, freshness, and change contracts mechanically. |
-| **Automation** | Guides orchestrate useful real work, often with direct provider details and mutable template assumptions. | Separate outcomes and capability requirements from provider choreography. |
-| **Integration** | MCP servers, plugins, targets, and service-specific instructions are implicit implementation dependencies. | Promote providers into selectable integration packs with typed capabilities, effects, errors, and health. |
-| **Hosts** | Claude project and plugin structures are the effective delivery model. | Make provider-neutral definitions canonical and realize them through tested Claude and Codex adapters. |
-| **Evaluation** | Static checks are strong; scenario cases and golden freshness are mostly manual and direct-dependency based. | Add executable scenarios, multiple trials, durable evidence, and transitive invalidation. |
-| **Configuration** | Installed behavior is inferred from repository contents and host-specific files. | Add explicit desired configuration, resolution, locks, bindings, and generated projections. |
-| **Distribution** | Kernel can build and independently verify deterministic, content-addressed local pack capsules and transparent bundles without private state, legal assertions, or effect authority. Core separately installs or upgrades already-local verified releases through an exact checkpointed transaction. | Add parameterized shareable configuration templates and later network acquisition, uninstall, trust, or publication only through separate governed decisions. |
-
-“Built” or “sealed” is not an architectural status. Existing systems may be
-useful and green under current checks while still lacking target contracts,
-portable delivery, executable evidence, or recent health.
-
-### Migration principles
-
-Migration follows these rules:
-
-- **Keep working behavior available.** A current automation remains usable until
-  its replacement passes equivalent outcome and effect verification.
-- **One authority at a time.** Every migrated definition declares whether the
-  legacy file or the new provider-neutral source is canonical. Two writable
-  authorities are never left to drift.
-- **Bridge explicitly.** Compatibility readers, generated projections, aliases,
-  and temporary mappings have owners, diagnostics, and retirement criteria.
-- **Migrate vertical behavior.** Move one useful outcome through context,
-  automation, integration, host realization, evidence, and health instead of
-  reorganizing every file by layer first.
-- **Compare before switching.** Use fixtures, shadow runs, or contained canaries
-  to compare old and new behavior where the effects allow it.
-- **Preserve rollback.** Record the prior lock, authority mapping, generated
-  projection, and external migration consequences before switching.
-- **Remove proven redundancy.** After a bridge's dependents migrate and its
-  retirement checks pass, delete the duplicate path rather than preserving it
-  indefinitely for comfort.
-
-Provider-neutral definitions are now canonical. Claude and Codex instructions,
-MCP configuration, and active skills are generated into private consumer roots
-from the same resolved lock. No checked-in host tree is an input to resolution,
-and a generated output cannot be adopted as a canonical definition.
-
-### Migration manifest
-
-A machine-readable migration manifest tracks each existing system and artifact
-through these states:
-
-- **Current:** still authoritative for the working harness.
-- **Mapped:** assigned a target system, layer, contract, and authority without
-  changing runtime behavior.
-- **Bridged:** the exact legacy bytes have an existing target and applicable
-  evidence, while legacy remains canonical and the fallback remains retained.
-- **Migrated:** realized from the target contracts with applicable evidence and
-  health reporting.
-- **Retired:** no configured behavior depends on the legacy artifact or bridge.
-
-Each entry identifies the old location, target identifier, authority status,
-dependents, compatibility bridge, verification claims, rollback path, and
-retirement criteria. The manifest replaces memory and historical narrative as
-the answer to “has this piece migrated?”
-
-The closed v2 migration record is a deterministic, file-complete
-`legacy-inventory/v2` census of the final v1 host tree: all 143 source artifacts
-have an exact content fingerprint and one or more explicit target bindings. Each
-binding independently records `mapped|bridged|migrated|retired`, canonical
-authority, fallback, parity, evidence, and responsibility. The source-level state
-is a deterministic aggregate of those bindings, so a partial bridge cannot switch
-authority for the rest of a mixed legacy file.
-Inventory freshness fails when a source file is added or changed. Removal also
-fails while any target responsibility remains mapped or bridged. Only a source
-whose every target responsibility is migrated or retired may be absent; its
-inventory record becomes an exact tombstone that preserves the final legacy
-fingerprint and the migration evidence that authorized fallback removal. A
-tombstone cannot coexist with a live legacy file. The initial honest state is
-mapped with legacy authority and retained fallback; an existing target path is
-not parity evidence and does not justify migration or retirement.
-
-The immutable v1 checker ran once at the deletion boundary. Its exact 47-code
-surface is preserved by the target-only checker-transition catalog: 31 rules map
-to mechanical Kernel/schema enforcement and 16 carry explicit intentional-
-retirement decisions. The transition selftest proves exact source/tombstone
-identity and replacement anchors without importing, spawning, or parsing the old
-checker. Normal verification uses only Kernel, inventory, Core, fixture, and host
-gates.
-
-Promotion beyond `mapped` is an exact binding, not an editable status label.
-For a scenario bridge, the migration item, complete inventory, target scenario,
-and passed evidence must agree on the source path and fingerprint, target path
-and fingerprint, and evidence path. The scenario must cite that source case and
-the evidence must be fixture-level or stronger. Source, target, or evidence
-drift invalidates the bridge. `migrated` and `retired` additionally require
-migration-family evidence because behavior evidence alone cannot switch
-authority or prove safe fallback removal.
-
-The Project Pulse guide and three evaluation cases are exact removed
-tombstones. Separate migration-family records bind each source fingerprint to
-the current Automation and contained evidence. The target intentionally uses
-typed exact project, date, visibility, human health judgment, optional affected-
-milestone titles, and operator-note inputs rather than recovering them
-conversationally. It acquires one exact policy, project, promoted-task set, and
-current project document; parses the real milestone/work-item grammar; derives
-progress only from exact work-item/task matches; checks but never invents health;
-creates a private deterministic decision; requires the complete document-update
-plus status-create group; and exercises
-approval-v2, one-time start consumption, ordered writes, and exact read-back
-verification in a contained provider. This switches canonical workflow and
-evaluation authority and removes the fallback. It does not prove live Notion
-authentication, permission, readiness, provider conformance, verification, or
-health. The two provider writes are ordered and verified but not externally
-atomic; ambiguous or partially applied state requires manual reconciliation
-and is never retried automatically.
-
-The Email Triage slice is the first completed workflow-source migration. One
-exact fixture scenario retains all four tombstoned source-case fingerprints and
-proves bounded window reduction, complete review coverage, suspected-injection
-visibility, defanged output, private draft and handoff preparation, and zero
-writes before approval. The typed v2 operator path replaces the removed guide:
-grounded decision, private proposal, exact selected-batch review, approval,
-single-use start, label or draft execution, verification, and reconciliation
-remain separate stages. Existing `AI/*` label application is an intentional
-change from the legacy manual-only label checklist. Digest and cross-Automation
-handoffs remain review-only; send, archive, trash, and destructive effects remain
-prohibited.
-
-The mechanism-free Email system card and provider-shaped v1 fixture are removed
-tombstones. Portable mailbox meaning belongs to `context.email`, exact review
-and effect orchestration to `automation.email-triage`, and provider translation
-to `integration.gmail`. None of this establishes live Gmail authentication,
-permission, provider conformance, execution, verification, readiness, or health.
-
-The Task Capture guide and three evaluation cases are exact migrated
-tombstones. The target deliberately requires an exact project reference and
-supports only authenticated `self` or unassigned, replacing conversational
-provider search. Fixture evidence covers typed preparation, connected
-acquisition, duplicate blocking, private decision and proposal, exact approval,
-single-use start, normalized create output, and read-after-write verification.
-Projects and Tasks Contexts own the portable domain meaning. Project Capture,
-Task Capture, Project Pulse, Decision Resolution, and Project Work Promotion own
-their explicit workflow responsibilities; no mixed project card remains an
-operational fallback. Live Notion behavior, readiness, verified connected
-behavior, and health remain exact-candidate evidence, never global claims.
-
-The Organization Capture and Contact Capture guides and their three evaluation
-cases each are exact migrated tombstones. Organization evidence binds current-
-schema classification, sector/tag separation, alias deduplication, exact
-approval, one-time start, create translation, and read-back verification.
-Contact evidence binds current option observation, no invented Role/Status/
-Disposition/Authority/Tag values, no `supportive`-to-`Champion` promotion,
-optional exact organization resolution, email-or-name deduplication, and the
-same transaction boundary. CRM Context owns portable meaning and the Notion CRM
-mapping owns provider translation; neither is inferred from these workflows.
-Neither slice proves live Notion permission, behavior, readiness, verification,
-or health.
-
-The Meeting Intake guide and three evaluation cases are exact migrated
-tombstones. The target proves exact prepared input, bounded connected grounding,
-cited private decision, complete-group proposal, exact confirmation, one-time
-start, contained provider translation, and read-after-write verification while
-keeping live readiness, verification, and health unknown.
-
-Drive Filing replaces its definition-only bridge with a contained preparation
-runtime. Portable Storage Context owns retention, artifact form, registered-home,
-provisional-inbox, and human-move meaning; Docs Context owns the document-index
-record; separate Google Drive and Notion Docs Integrations own fixture translation.
-The Automation reads one exact configuration-owned registry, artifact metadata
-without content, the current document schema, bounded Link and Name candidates,
-and optional exact organization/current-user identities. It emits a private
-complete placement/index review or a human-move handoff and performs no write.
-The legacy guide and three cases are exact migrated tombstones under an
-intentional-change decision: connected shortcut creation and the cross-provider
-index compiler remain unavailable rather than falling back to prompt execution.
-Move, rename, delete, dispatch, and copy-as-move remain prohibited. No mixed
-Publishing card remains an operational fallback.
-
-Non-scenario bridge evidence uses the migration claim family. Each evidence record
-binds one exact legacy source to one exact current target, the target's selected
-lock, and one or more current supporting fixture records. A source with several
-responsibilities carries several independently checked target bindings and evidence
-records. The final inventory uses that model for every portable meaning,
-provider translation, Core transaction boundary, Automation, user configuration,
-and host responsibility. Source-level and target-binding states remain separate
-so historical partial migrations cannot be misreported as complete. The closed
-inventory contains 143 migrated-or-retired source tombstones, zero mapped or
-bridged source aggregates, and no retained operational fallback.
-
-The foundation bridge assigns portable Calendar, Docs, Onchain, Policy, Resources, and
-Sky meaning to Context; normalized policy, resource, schema-audit, and Notion workflow
-intent to authority-free Automation definitions; provider translation to Integration;
-and Claude-only plugin, MCP, hook, settings, platform, isolated-task, and checker
-delivery to the Claude host boundary. Context packs expose no capabilities or effects,
-the development configuration prohibits every effect, and the Claude projection does
-not silently adopt retained host files. These are responsibility and non-authority
-proofs, not behavior parity, host launch proof, provider readiness, or fallback-removal
-authority.
-
-### Delivery sequence
-
-The implementation sequence is:
-
-1. **Accept the architecture and preserve a baseline.** Resolve known written
-   contradictions, record current behavior and checks, and stop describing the
-   kernel as complete or sealed.
-2. **Introduce the minimum contract substrate.** Define stable identifiers,
-   system manifests, dependency and capability edges, authority roles, effect
-   declarations, configuration schema, and the migration manifest. Map current
-   artifacts before moving them.
-3. **Prove one end-to-end vertical slice.** Select a current automation that
-   exercises context, at least two integrations, an external effect, a human or
-   policy gate, and outcome verification. Meeting intake is the selected first
-   slice; its declared pack graph and migration mapping live under
-   [soter/](./soter/). Its contained Core context path is now implemented
-   through typed fixture providers without claiming automation execution or
-   connected provider readiness.
-4. **Build the minimum core runtime around that slice.** Resolve its
-   configuration, assemble its run envelope and context, bind capabilities,
-   apply effect policy, record evidence, and report health.
-5. **Separate provider integrations.** Extract provider choreography from the
-   automation into capability contracts and integration packs while retaining a
-   compatibility binding for the current workflow.
-6. **Realize both initial hosts.** Treat the working Claude behavior as a
-   reference, then prove equivalent declared behavior through a Codex adapter.
-   Test each from an otherwise empty consumer configuration.
-7. **Make verification executable.** Add contract fixtures, headless scenario
-   trials, transitive invalidation, connected smoke checks, doctor operations,
-   and CI evidence for the vertical slice.
-8. **Add user configuration and distribution flows.** The contained pack-release,
-   transparent-bundle, and exact already-local install/upgrade transactions are
-   implemented. Parameterized shareable templates, network acquisition,
-   uninstall, and any public/trust mechanism remain separate later milestones.
-9. **Expose the shared interfaces.** Build CLI and graphical experiences over
-   the same core model, beginning with configuration, graph, run, evidence, and
-   health views.
-10. **Migrate remaining systems incrementally.** Prioritize frequently used or
-    drift-prone systems, retire bridges after proof, and use observations to
-    improve the contracts and tools.
-
-The sequence establishes structured APIs for UI and distribution early, but
-does not wait for a polished interface or public registry before proving the
-runtime and contract boundaries.
-
-The current checkpoint has completed the contract substrate and the declared
-meeting-intake graph. Step 4 is partially implemented through deterministic
-resolution, artifact-fingerprinted locks, effect-free preflight, typed fixture
-capability dispatch, authority-aware context snapshots, exact-scope approvals,
-transactional fixture writes, rollback proof, read-after-write verification,
-claim-scoped evidence, an offline doctor, contract-enforced aggregation of
-short-lived connected provider probes, explicit sequential provider-probe plans,
-typed expiring summaries for exact failed provider-probe attempts,
-and private durable checkpoints for host-dispatched calls and their run
-envelopes. `context.crm`, `context.projects`, `context.tasks`,
-`context.meetings`, `context.communications`, and
-`context.communications.collaboration` own separate machine-readable portable
-models rather than inheriting domain boundaries from a provider mapping or
-fixture. Collaboration channels are workspace-scoped Communications records;
-CRM links are optional typed references and never inferred from provider members.
-Kernel checks model ownership, Context-valid Automation inputs, and the subset
-and value shapes implemented by each typed Integration mapping; Core applies the
-same input and normalized-output validation at runtime. Core now also has versioned
-sequential operation-plan contracts: v1 retains fixed inputs, while v2 binds
-typed string-list references from earlier normalized outputs into later inputs.
-The private checkpoint emits one exact policy-bound call at a time, fingerprints
-each resolution, skips empty reference chains without a provider request,
-requires both checkpoint and current-call identity on resume, and recovers the
-next step after restart without retaining native provider responses.
-Meeting-intake Automation uses that same Core service to prepare a bounded
-connected grounding plan: every policy page explicitly wired to the Automation
-as an `applicable-policy` source under its Meetings or Tasks definition authority,
-the exact transcript, exactly one Meeting matched by recording URI, and only the
-CRM Organizations, Projects, and Tasks referenced through that Meeting. Each
-exact configured policy URI and title is read directly; no generic CRM policy
-index becomes domain authority. Automation records the governed
-subjects and applicability reason for every bounded body, validates domain
-completeness, and rejects a related read that omits or adds an ID; Core binds
-every snapshot entry to an exact normalized plan output and passed effect,
-persists the private snapshot, marks each applicable definition authority loaded, updates
-the same durable run, and pauses before writes. Policy prose is grounded context,
-not executable rules: content interpretation and enforcement remain a host
-judgment boundary. Provider People IDs are not treated as portable Meeting
-participants or CRM People identities without an explicit normalization step.
-
-Email uses the same bound plan service for a two-step transport-only connected
-acquisition: exact bounded message search followed by thread expansion over
-only the bound message IDs. It requires complete pagination and exact
-requested-message coverage, persists normalized private Context state, and
-pauses before triage judgment, drafts, approval, or writes. A separate pack-
-owned private decision workspace can then bind grounded classification to
-every deterministic reduced candidate while continuing to pause before drafts,
-prepared changes, approval, continuation, or writes. The installed
-connector response shape and RFC822 header availability have synthetic
-normalizer proof only, so connected readiness and health remain unknown.
-
-The current target includes the
-first connected Otter provider mapping, exact transcript-fetch request
-translation, and identity-only probe producer. It also includes a connected
-Notion provider whose bounded reads and gated mapped-write translators,
-pack-owned settings, typed provider field mapping,
-bounded one-target query translator, normalized record versions, and exact
-per-host native tool mappings are mechanically checked. The one-target boundary
-avoids depending on plan-gated cross-data-source SQL; multi-target reads can be
-explicit ordered capability steps, and the initial connected context boundary
-now exercises that orchestration without broad reads across every configured target.
-Notion readiness is a separate private plan: identity, schema, and one-row
-bounded read checks for every mapped record type selected by the exact configuration, then an exact identity- and
-title-bound read for each of the three configured `probe-read` policy sources.
-Schema checks bind every portable field to its current provider property name
-and type; record and document checks discard row values and policy bodies before
-persisting only minimized counts, booleans, and fingerprints. The completed
-probe can establish exact-lock compatibility for the selected CRM, Projects,
-Tasks, Meetings, and document-read capabilities, but not policy interpretation.
-The checked CRM mapping now names the
-observed `🫂 Contacts` organization relation, but that development observation
-is not reusable connected evidence: another exact lock must run its own expiring
-probe. Otter's
-identity-only probe deliberately leaves transcript compatibility unknown, and
-all unobserved response shapes fail closed.
-When a host cannot execute an exact probe route, Core preserves the private
-failed checkpoint and exposes only a typed, expiring attempt summary to the
-connected doctor. This distinguishes authentication, authorization, route
-availability, and response-conformance failures from a probe that was never
-attempted without persisting arguments, raw responses, or error messages. A
-declared host tool mapping still does not establish that the active execution
-bridge exposes the tool.
-Connected readiness still fails because no current private probes are checked
-in and Notion write permissions or response conformance are unproven. Notion
-create and update translation is now declared only for explicitly mapped
-fields and record-level capabilities through the exact Context model.
-Provider mapping itself is domain-neutral: the active `provider-mapping/v1`
-binds one `<namespace>.records` Context subject to matching record and schema
-capabilities, and configuration must select exactly one model for every bound
-record namespace. Integration may declare an additional Context mapping as an
-optional dependency, but that mapping remains dormant until a configuration
-selects the Context pack and binds its capability. Core continues to own only
-generic invocation and transaction mechanics; it does not interpret the
-record namespace or provider fields.
-
-The current Notion Integration exposes separate CRM, Projects, Tasks, and Meetings
-mappings. Each mapping reads only its selected portable record types; Tasks owns Task
-create/update, Projects owns Project and project-feed-entry create/update, and Meetings
-owns Meeting-summary create. Project status updates map
-the portable headline, date, summary, visibility, processed state, and exact
-project relationship to the configured Update Feed target. Embedded project
-milestone lines remain outside record mapping and require a separate structured-
-document change contract. Task Capture is the first slice to exercise a
-portable calendar-date field and provider-scoped person identity on a task.
-Context owns `nextActionOn` as a real `YYYY-MM-DD` calendar date and
-`assigneeIds` as exact provider-person identities. The Notion Integration alone
-owns translation to expanded date columns and the person property. Its selected
-policy-row mapping identifies the external Tasks definition by name, while the
-governed Context definition owns normalized rules. Connected acquisition fails
-closed unless the external identity, exact project, optional authenticated
-current user, and bounded duplicates match that governed basis. Contained
-transaction evidence proves the local adapter and authority sequence only;
-connected identity/write permission and live response conformance remain
-unknown. The contained meeting-intake proposal
-now uses those portable fields: its summary is deduplicated and attributed by
-the canonical recording link, while the existing overlapping task receives a
-bounded Context classification. Proposal construction and acceptance checks now
-live with meeting-intake Automation; Core retains only generic approval,
-transaction checkpoint, and verifier invocation mechanics. The contained
-path now creates an `automation-decision/v1` governed by an Automation-owned
-meeting-intake schema before it creates a proposal. The decision binds the
-exact run, lock, graph, context snapshot, meeting record, transcript entry and
-segments, every bounded task candidate, every explicitly applicable policy
-entry, exact cited policy excerpts, producer, issues, limitations, and its own
-fingerprint. A `ready` decision must resolve every candidate, fold exactly one
-grounded task, cite an allow outcome for every connected policy, and contain no
-issues. A `needs-input` decision records abstention and cannot produce a change
-set. Core stores connected decisions as private runtime state, registers the
-fingerprint on the same paused run, rejects a competing decision for that
-snapshot, and lets Automation project only a ready decision into a change set
-that carries the exact decision and snapshot basis. Core can compile that
-proposal into exact `connected-change-set/v2` and
-`connected-operation-batch/v2` documents with optional read-only preconditions,
-mandatory read-after-write verification, Automation-owned expected-state
-evaluation, and a separate expiring approval fingerprint. The preview executes
-no provider calls. Durable execution uses one private
-`connected-transaction-checkpoint/v2`. Core validates the exact approval and
-single-use start before the first write, executes the selected operations in
-canonical order, verifies each effect, and recovers the exact current host call
-after restart. It preflights every selected route before consuming start
-authority so an invalid tail cannot strand earlier changes. Ambiguous or
-mismatched observations pause as `needs-attention`; Core does not retry a write
-or invent compensation. The CLI alone
-originates the authorized checkpoint; MCP only advances it or requests a
-checkpoint-bound read-only reconciliation. Reconciliation resumes only when
-the Automation evaluator recognizes the exact expected state; unexpected or
-failed observations remain paused for manual recovery. Synthetic local tests prove this Core state machine, not connected
-credentials, provider write conformance, or a live end-to-end write. Observed Otter
-transcript conformance, host-started end-to-end dispatch, policy interpretation
-quality and enforcement, participant identity resolution, validation of
-terminal-create consistency assumptions, live approval-bound provider writes,
-live health, judgment-quality evaluation, and host conformance remain future
-proof boundaries. The v2 plan contract is intentionally narrower than a
-general workflow language: arbitrary transforms, branching, parallelism,
-fan-out, retries, and compensation are not implemented.
+- Change a vertical slice across Context, Automation, Integration, Core, host
+  realization, and evidence only where the behavior requires it.
+- Compare current and proposed behavior with fixtures, isolated agent trials,
+  contained integration checks, or bounded canaries appropriate to the effect.
+- Preserve prior locks, manifests, external identifiers, and checkpoint state
+  needed for safe rollback or read-only reconciliation.
+- Delete redundant paths once the current contract and evidence own the
+  behavior; generated host outputs never become canonical definitions.
+- Keep provider, approval, execution, publication, and protected-root authority
+  separate from review or development guidance.
 
 ### Change unit and completion gate
 
-Each migration change states:
+A change states:
 
 - The user-visible behavior being preserved or intentionally changed.
-- The current and target authorities.
-- The affected graph and evidence invalidation set.
-- The new or changed contracts and compatibility bridge.
-- The verification ladder levels exercised.
-- The rollout, monitoring, rollback, and retirement conditions.
+- The current canonical authority and affected graph.
+- The contracts, dependencies, and evidence invalidated by the change.
+- The verification levels exercised and the limitations still present.
+- The deployment, monitoring, rollback, and recovery boundaries.
 
-A migration unit is complete only when target authority or explicit retirement,
-parity or an intentional behavior change, exact evidence, and fallback removal
-agree. `valid=passed` does not promote readiness, connected verification, or
-health; those remain unknown until their separate evidence exists. Creating a
-new file without switching authority never counts as completion.
+A change is complete only when implementation, authority, exact evidence, and
+the intended behavior agree. `valid=passed` does not promote readiness,
+connected verification, or health; those remain unknown until their own
+evidence exists. Creating a file without connecting and verifying its behavior
+does not count as completion.
 
 ### Change rationale
 
-V2 has no dedicated ADR archive, global numbering scheme, or separate decision
-ceremony. Rationale belongs beside the authority it explains: in architecture,
-contracts, tests, migration records, exact development evidence, and Git change
-history.
-
-For a rare cross-cutting choice, record the constraints and tradeoffs in the
+Soter has no dedicated decision archive, global numbering scheme, or separate
+decision ceremony. Rationale belongs beside the authority it explains: in
+architecture, contracts, tests, governed development evidence, and Git change
+history. A rare cross-cutting choice records constraints and tradeoffs in the
 affected canonical artifact or its governed change evidence. Rationale never
-substitutes for executable contracts, authority, or evidence, and it does not
-create a parallel Decisions system.
+substitutes for executable contracts, authority, or evidence.
 
-### Target migration proof
+### Baseline acceptance
 
-The migration has established the new foundation when a user can:
+The architecture is sustainable when a user can:
 
-- Start from the required kernel and core and understand why each base system
-  is present.
-- Select, remove, and replace context, automation, and integration packs through
+- Understand why the required Kernel and Core are present.
+- Select, remove, and replace Context, Automation, and Integration packs through
   an explicit configuration with a resolved lock.
-- Inspect the full dependency, authority, capability, effect, and evidence
-  graph without reading implementation history.
-- Run a representative automation through both Claude and Codex with equivalent
+- Inspect dependency, authority, capability, effect, and evidence relationships
+  without reading implementation history.
+- Run a representative Automation through Claude and Codex with equivalent
   declared outcomes and honest capability-gap reporting.
-- Replace one integration with another implementation of the same capability
-  without rewriting the automation.
-- Resume a run after compaction or restart from its envelope.
-- Receive precise valid, ready, verified, healthy, degraded, stale, and unknown
-  reporting through the same CLI and graphical data model.
-- Install a shared pack or configuration into an otherwise empty consumer and
-  reproduce its declared verification evidence.
-- Observe a divergence, create a contained improvement candidate, evaluate it,
-  promote it under policy, and roll it back if runtime evidence regresses.
+- Replace an Integration implementation without rewriting its Automation.
+- Resume interrupted work from a durable checkpoint.
+- Distinguish valid, ready, verified, healthy, degraded, stale, and unknown.
+- Materialize a governed local pack without granting network, publication, or
+  provider authority.
+- Turn an observed divergence into a contained candidate, evaluate it, promote
+  it under policy, and roll it back if evidence regresses.
 
-Reaching this proof does not finish Soter. It establishes a sustainable base on
-which new systems can be added without returning to guesswork.
+Meeting these conditions establishes a base for adding systems without returning
+to guesswork; it does not imply that every host, provider, or Automation is live
+or healthy.
