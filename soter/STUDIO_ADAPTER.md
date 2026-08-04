@@ -170,10 +170,12 @@ represent the candidate configuration, source inputs, settings, authority URIs,
 secret references, raw before/after values, active-lock contents, or tracked/private
 configuration paths.
 
-The closed change category `lock` represents a governed refresh after the
-canonical graph changes while the private desired configuration remains exact.
-Its row exposes only the prior and candidate lock fingerprints plus fixed
-identifier descriptors. Closed `resolution` rows identify which resolved pack,
+The closed change category `lock` represents either first private activation or
+a governed refresh after the canonical graph changes while the private desired
+configuration remains exact. Activation is one `added` active-lock row with a
+null before side and the exact candidate lock fingerprint; refresh is `changed`
+and exposes only the prior and candidate lock fingerprints plus fixed identifier
+descriptors. Closed `resolution` rows identify which resolved pack,
 capability, binding, source, authority, effect, setting, dependency, host,
 resolver, or projection facts changed and expose only nullable fingerprints;
 they never expose lock bodies or private values. The refresh still requires the
@@ -190,13 +192,32 @@ Map actions to Core without retaining authority in the renderer:
 - request: `beginConfigurationChangeRequest` with the exact plan ID and expiry;
 - confirm: `confirmConfigurationChangeRequest` with exact request ID and local
   actor; confirmation does not start or write;
-- start: `prepareConfigurationChangeExecution` consumes the confirmation once
-  into one deterministic checkpoint;
+- start: trusted main generates the checkpoint ID and
+  `prepareConfigurationChangeExecution` consumes the confirmation once into
+  that deterministic checkpoint;
+- resume start: `resumeConfigurationChangeExecution` accepts only an existing
+  exact reserved consumption and its already-bound checkpoint ID;
 - execute: `executeConfigurationChange` accepts only that checkpoint ID; and
 - recovery: `recoverConfigurationChange` reconciles only that durable
   checkpoint.
 
 `resume.permittedNextAction` is display guidance, never a continuation token.
+An exact confirmation whose request expired before start is unavailable and
+must project `request-confirmation`, never `apply`.
+A durable `reserved` consumption with no checkpoint is different: inspection
+projects `CONFIGURATION_CONSUMPTION_RESERVED` and `resume-start` with its bound
+checkpoint ID, even after expiry, but only while applicability remains current.
+Studio renders a distinct **Resume exact reserved start** action and sends that
+inspection-projected checkpoint ID; a fresh start continues to generate a new
+ID in the trusted main process. This permits only exact re-entry into the
+already-reserved one-time start and grants no new confirmation or execution authority.
+If the reserved checkpoint already exists, Core first validates the exact
+prepared-reservation binding and projects
+`CONFIGURATION_RESERVED_CHECKPOINT_PREPARED`; invalid checkpoint state fails
+inspection. A `started` consumption whose checkpoint is missing instead projects
+`requires-review` with `CONFIGURATION_CHECKPOINT_MISSING` and no next action.
+Resume guidance is fixed Core-owned text and never copies a persisted private
+checkpoint failure summary into the sanitized projection.
 There is intentionally no host/provider request in this family. Checked-in
 `soter/configurations/*.config.json` documents are portable templates with
 synthetic identifiers, and checked-in fixture locks are not active user locks.

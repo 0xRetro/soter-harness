@@ -7,7 +7,7 @@ import type {
 } from '../types';
 import { StateMark } from './StateMark';
 
-const requestReason = 'Review this exact private configuration replacement and its fingerprint-only scope.';
+const requestReason = 'Review this exact private configuration activation or update and its fingerprint-only scope.';
 const unavailableMessage = 'The local configuration transaction adapter is unavailable.';
 
 function fingerprint(value: string | null) {
@@ -44,7 +44,7 @@ export function ConfigurationTransactionDesk({ configuration }: { configuration:
         return { value: null, error: 'The candidate must declare configuration/v1.' };
       }
       if (record.name !== configuration.name) {
-        return { value: null, error: `The candidate must replace ${configuration.name}.` };
+        return { value: null, error: `The candidate must activate or update ${configuration.name}.` };
       }
       return { value: record, error: null };
     } catch {
@@ -86,6 +86,11 @@ export function ConfigurationTransactionDesk({ configuration }: { configuration:
     && inspection?.consumption === null
     && inspection?.checkpoint === null
     && inspection?.resume.classification === 'safe';
+  const canResumeStart = inspection?.confirmation !== null
+    && inspection?.consumption?.state === 'reserved'
+    && inspection?.resume.classification === 'safe'
+    && inspection?.resume.permittedNextAction === 'resume-start'
+    && Boolean(inspection?.consumption.checkpointId);
   const canExecute = inspection?.consumption?.state === 'started'
     && inspection?.checkpoint?.state === 'prepared';
   const canRecover = inspection?.checkpoint !== null
@@ -201,15 +206,24 @@ export function ConfigurationTransactionDesk({ configuration }: { configuration:
                   <button disabled={!canConfirm || !confirmationAcknowledged || busy !== null} onClick={() => settle('confirm', () => window.soterStudio.confirmConfigurationChangeRequest({ requestId: inspection.request!.id, confirmed: true }))}>{busy === 'confirm' ? 'Confirming…' : 'Confirm exact request'}</button>
                 </div>
               )}
-              {inspection.confirmation && !inspection.checkpoint && (
+              {inspection.confirmation && inspection.consumption === null && inspection.checkpoint === null && (
                 <div className="configuration-ceremony-step">
                   <span>04 · Consume</span><p>Reserve this confirmation once into one deterministic checkpoint. No desired file is changed yet.</p>
                   <button disabled={!canStart || busy !== null} onClick={() => settle('start', () => window.soterStudio.startConfigurationChange({ confirmationId: inspection.confirmation!.id }))}>{busy === 'start' ? 'Starting…' : 'Reserve one-time start'}</button>
                 </div>
               )}
-              {inspection.checkpoint && (
+              {inspection.confirmation && inspection.consumption?.state === 'reserved' && (
                 <div className="configuration-ceremony-step">
-                  <span>05 · Checkpoint</span><p>Execution replaces the desired configuration and its private active lock, then resolves and verifies both.</p>
+                  <span>04 · Resume consume</span><p>Core already reserved this confirmation. Only its exact checkpoint identity may resume the start; no desired file is changed yet.</p>
+                  <button disabled={!canResumeStart || busy !== null} onClick={() => settle('resume-start', () => window.soterStudio.startConfigurationChange({
+                    confirmationId: inspection.confirmation!.id,
+                    checkpointId: inspection.consumption!.checkpointId
+                  }))}>{busy === 'resume-start' ? 'Resuming…' : 'Resume exact reserved start'}</button>
+                </div>
+              )}
+              {inspection.checkpoint && inspection.consumption?.state === 'started' && (
+                <div className="configuration-ceremony-step">
+                  <span>05 · Checkpoint</span><p>Execution creates or replaces the desired configuration and its private active lock, then resolves and verifies both.</p>
                   <label><input type="checkbox" checked={applyAcknowledged} onChange={(event) => setApplyAcknowledged(event.target.checked)} /> <span>I understand this changes the local desired configuration.</span></label>
                   {canExecute && <button disabled={!applyAcknowledged || busy !== null} onClick={() => settle('execute', () => window.soterStudio.executeConfigurationChange({ checkpointId: inspection.checkpoint!.id, confirmed: true }))}>{busy === 'execute' ? 'Applying…' : 'Apply exact checkpoint'}</button>}
                   {canRecover && <button disabled={!applyAcknowledged || busy !== null} onClick={() => settle('recover', () => window.soterStudio.recoverConfigurationChange({ checkpointId: inspection.checkpoint!.id, confirmed: true }))}>{busy === 'recover' ? 'Recovering…' : 'Recover exact checkpoint'}</button>}

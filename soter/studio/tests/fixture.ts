@@ -658,23 +658,30 @@ export function configurationPreviewFixture(request: ConfigurationPreviewRequest
   };
 }
 
-export function configurationChangeInspectionFixture(stage: 'plan' | 'request' | 'confirmed' | 'started' | 'completed' | 'needs-attention' = 'plan'): ConfigurationChangeInspection {
+export function configurationChangeInspectionFixture(stage: 'plan' | 'request' | 'confirmed' | 'reserved' | 'reserved-prepared' | 'started' | 'completed' | 'needs-attention' = 'plan'): ConfigurationChangeInspection {
   const requested = stage !== 'plan';
-  const confirmed = ['confirmed', 'started', 'completed', 'needs-attention'].includes(stage);
+  const confirmed = ['confirmed', 'reserved', 'reserved-prepared', 'started', 'completed', 'needs-attention'].includes(stage);
+  const reserved = ['reserved', 'reserved-prepared'].includes(stage);
   const started = ['started', 'completed', 'needs-attention'].includes(stage);
+  const consumed = reserved || started;
+  const hasCheckpoint = stage === 'reserved-prepared' || started;
   const completed = stage === 'completed';
   const needsAttention = stage === 'needs-attention';
   const resume = completed
     ? { classification: 'unavailable' as const, reasonCode: 'CONFIGURATION_APPLY_COMPLETED', reason: 'The exact configuration transaction is complete.', permittedNextAction: 'none' as const }
     : needsAttention
-      ? { classification: 'requires-review' as const, reasonCode: 'CONFIGURATION_ROLLBACK_FAILED', reason: 'The exact prior configuration state could not be restored automatically.', permittedNextAction: 'inspect-checkpoint' as const }
-      : started
-        ? { classification: 'safe' as const, reasonCode: 'CONFIGURATION_CHECKPOINT_RECOVERABLE', reason: 'Core can inspect and reconcile the exact durable configuration checkpoint.', permittedNextAction: 'inspect-checkpoint' as const }
-        : confirmed
-          ? { classification: 'safe' as const, reasonCode: 'CONFIGURATION_CONFIRMATION_CURRENT', reason: 'The exact confirmation is current and has not been consumed.', permittedNextAction: 'apply' as const }
-          : requested
-            ? { classification: 'safe' as const, reasonCode: 'CONFIGURATION_REQUEST_AWAITING_CONFIRMATION', reason: 'The exact configuration request is awaiting local operator confirmation.', permittedNextAction: 'confirm' as const }
-            : { classification: 'safe' as const, reasonCode: 'CONFIGURATION_PLAN_CURRENT', reason: 'The exact configuration plan is current and may be submitted for confirmation.', permittedNextAction: 'request-confirmation' as const };
+      ? { classification: 'requires-review' as const, reasonCode: 'CONFIGURATION_CHECKPOINT_REQUIRES_REVIEW', reason: 'The exact durable configuration checkpoint requires local operator review.', permittedNextAction: 'inspect-checkpoint' as const }
+      : reserved
+        ? stage === 'reserved-prepared'
+          ? { classification: 'safe' as const, reasonCode: 'CONFIGURATION_RESERVED_CHECKPOINT_PREPARED', reason: 'The reserved one-time start has its exact prepared checkpoint and may only resume that start.', permittedNextAction: 'resume-start' as const }
+          : { classification: 'safe' as const, reasonCode: 'CONFIGURATION_CONSUMPTION_RESERVED', reason: 'The exact one-time start is reserved and may only resume with its bound checkpoint ID.', permittedNextAction: 'resume-start' as const }
+        : started
+          ? { classification: 'safe' as const, reasonCode: 'CONFIGURATION_CHECKPOINT_RECOVERABLE', reason: 'Core can inspect and reconcile the exact durable configuration checkpoint.', permittedNextAction: 'inspect-checkpoint' as const }
+          : confirmed
+            ? { classification: 'safe' as const, reasonCode: 'CONFIGURATION_CONFIRMATION_CURRENT', reason: 'The exact confirmation is current and has not been consumed.', permittedNextAction: 'apply' as const }
+            : requested
+              ? { classification: 'safe' as const, reasonCode: 'CONFIGURATION_REQUEST_AWAITING_CONFIRMATION', reason: 'The exact configuration request is awaiting local operator confirmation.', permittedNextAction: 'confirm' as const }
+              : { classification: 'safe' as const, reasonCode: 'CONFIGURATION_PLAN_CURRENT', reason: 'The exact configuration plan is current and may be submitted for confirmation.', permittedNextAction: 'request-confirmation' as const };
   return {
     $contract: 'soter://contracts/configuration-change-inspection/v1',
     contractVersion: '1.0.0',
@@ -705,10 +712,12 @@ export function configurationChangeInspectionFixture(stage: 'plan' | 'request' |
       id: 'configuration-change-confirmation.meeting-intake.ui-test', fingerprint: fp('9'),
       confirmedAt: '2026-07-16T15:02:00.000Z', actor: 'local-studio-operator'
     } : null,
-    consumption: started ? {
-      id: 'configuration-change-consumption.meeting-intake.ui-test', fingerprint: fp('a'), state: 'started'
+    consumption: consumed ? {
+      id: 'configuration-change-consumption.meeting-intake.ui-test', fingerprint: fp('a'),
+      state: reserved ? 'reserved' : 'started',
+      checkpointId: 'checkpoint.configuration.meeting-intake.ui-test'
     } : null,
-    checkpoint: started ? {
+    checkpoint: hasCheckpoint ? {
       id: 'checkpoint.configuration.meeting-intake.ui-test', fingerprint: fp('b'),
       state: completed ? 'completed' : needsAttention ? 'needs-attention' : 'prepared',
       phase: completed || needsAttention ? 'terminal' : 'prepared',

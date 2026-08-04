@@ -10,8 +10,8 @@
     "id": "feature-capture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:dabe4a4e8b3f964fa9bf6b2f6ec931ed87b42f5867769dfcb5b5588a86604ca5",
-  "graphFingerprint": "sha256:4a0e2ab27160714a90c723d348627cb81afbd39af4c3de5cfe7645cb5c5887d2",
+  "configurationLockFingerprint": "sha256:94852584f531f4a61e3a0a49544a4669c123e2a75e3facc11ce9698d2efdeda7",
+  "graphFingerprint": "sha256:40504b4eab96b14319fd41a90430b8f80309526e54daac0e9b13da62a40f8bae",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -117,7 +117,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:dabe4a4e8b3f964fa9bf6b2f6ec931ed87b42f5867769dfcb5b5588a86604ca5"
+      "fingerprint": "sha256:94852584f531f4a61e3a0a49544a4669c123e2a75e3facc11ce9698d2efdeda7"
     }
   ],
   "effects": [],

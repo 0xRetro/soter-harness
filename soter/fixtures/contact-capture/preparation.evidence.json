@@ -10,8 +10,8 @@
     "id": "run.contact-capture.preparation-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:0f7102e391d6dd029bb182b0445391781a78d61535f7f4bd7d84f50c642b8d44",
-  "graphFingerprint": "sha256:3e177980d6ed438e01f232ce3c3fb3f0b6887fbcac2481f3bdd6aa5c7155f79a",
+  "configurationLockFingerprint": "sha256:f1fb6edf682e5579c6a8e59279e5a617513ae0a4edb4f0eed31e180dfdc0fa1a",
+  "graphFingerprint": "sha256:82e825562a7a8fd95378b9c6c7748aa72e8057f60405eb9a0696af0628dd554c",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -244,7 +244,7 @@
     {
       "role": "context-snapshot",
       "id": "context.contact-capture.preparation-fixture",
-      "fingerprint": "sha256:24622522b88e83554881496c745a33b32a26675e627916b8ea688c07b703aeec"
+      "fingerprint": "sha256:b2d315843ad3794fc5cf79895d11b31bde155865987d9a598d9ee5ed6f4479c1"
     },
     {
       "role": "contact-create-preview",

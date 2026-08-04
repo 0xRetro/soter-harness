@@ -6,7 +6,7 @@
   "level": "offline",
   "configuration": {
     "name": "claude-host-projection",
-    "lockFingerprint": "sha256:3faaec49a50b3b88ad17a0b91df63ef28d226f9ddf884231e934be9dd9ada01b"
+    "lockFingerprint": "sha256:13d8c695dc45205a3ba63c6f96e36261b9d55d3961eeaeedc7a9592778e0b6fd"
   },
   "states": {
     "valid": "passed",

@@ -97,13 +97,28 @@ function atomicWriteJson(file, value) {
   ensurePrivateDirectory(path.dirname(file));
   const temporary = file + '.' + process.pid + '.' + Date.now() + '.tmp';
   let descriptor = null;
+  let temporaryIdentity = null;
   try {
-    descriptor = fs.openSync(temporary, 'w', 0o600);
+    descriptor = fs.openSync(temporary, 'wx', 0o600);
+    const temporaryStat = fs.fstatSync(descriptor);
+    temporaryIdentity = { device: temporaryStat.dev, inode: temporaryStat.ino };
     fs.writeFileSync(descriptor, JSON.stringify(value, null, 2) + '\n');
+    if (process.platform !== 'win32') fs.fchmodSync(descriptor, 0o600);
     fs.fsyncSync(descriptor);
     fs.closeSync(descriptor);
     descriptor = null;
+    const publishStat = fs.lstatSync(temporary, { throwIfNoEntry: false });
+    if (!publishStat
+      || publishStat.isSymbolicLink()
+      || !publishStat.isFile()
+      || publishStat.dev !== temporaryIdentity.device
+      || publishStat.ino !== temporaryIdentity.inode
+      || publishStat.nlink !== 1
+      || (process.platform !== 'win32' && (publishStat.mode & 0o7777) !== 0o600)) {
+      throw new Error('Private runtime-state temporary file changed before publication.');
+    }
     fs.renameSync(temporary, file);
+    temporaryIdentity = null;
     try {
       fs.chmodSync(file, 0o600);
       const directory = fs.openSync(path.dirname(file), 'r');
@@ -117,7 +132,14 @@ function atomicWriteJson(file, value) {
     }
   } finally {
     if (descriptor !== null) fs.closeSync(descriptor);
-    if (fs.existsSync(temporary)) fs.rmSync(temporary, { force: true });
+    const temporaryStat = fs.lstatSync(temporary, { throwIfNoEntry: false });
+    if (temporaryIdentity
+      && temporaryStat
+      && !temporaryStat.isSymbolicLink()
+      && temporaryStat.dev === temporaryIdentity.device
+      && temporaryStat.ino === temporaryIdentity.inode) {
+      fs.unlinkSync(temporary);
+    }
   }
 }
 
@@ -433,23 +455,33 @@ export function hasReviewOnlyCandidatePreviewState(root, candidatePreviewId) {
 }
 
 export function hasConfigurationChangePlanState(root, planId) {
-  return fs.existsSync(configurationChangePlanStatePath(root, planId));
+  const file = configurationChangePlanStatePath(root, planId);
+  assertPrivateRuntimeStatePath(file, 'Durable configuration change plan', { requireFile: false });
+  return Boolean(fs.lstatSync(file, { throwIfNoEntry: false }));
 }
 
 export function hasConfigurationChangeRequestState(root, requestId) {
-  return fs.existsSync(configurationChangeRequestStatePath(root, requestId));
+  const file = configurationChangeRequestStatePath(root, requestId);
+  assertPrivateRuntimeStatePath(file, 'Durable configuration change request', { requireFile: false });
+  return Boolean(fs.lstatSync(file, { throwIfNoEntry: false }));
 }
 
 export function hasConfigurationChangeConfirmationState(root, confirmationId) {
-  return fs.existsSync(configurationChangeConfirmationStatePath(root, confirmationId));
+  const file = configurationChangeConfirmationStatePath(root, confirmationId);
+  assertPrivateRuntimeStatePath(file, 'Durable configuration change confirmation', { requireFile: false });
+  return Boolean(fs.lstatSync(file, { throwIfNoEntry: false }));
 }
 
 export function hasConfigurationChangeConsumptionState(root, consumptionId) {
-  return fs.existsSync(configurationChangeConsumptionStatePath(root, consumptionId));
+  const file = configurationChangeConsumptionStatePath(root, consumptionId);
+  assertPrivateRuntimeStatePath(file, 'Durable configuration change consumption', { requireFile: false });
+  return Boolean(fs.lstatSync(file, { throwIfNoEntry: false }));
 }
 
 export function hasConfigurationTransactionCheckpointState(root, checkpointId) {
-  return fs.existsSync(configurationTransactionCheckpointStatePath(root, checkpointId));
+  const file = configurationTransactionCheckpointStatePath(root, checkpointId);
+  assertPrivateRuntimeStatePath(file, 'Durable configuration transaction checkpoint', { requireFile: false });
+  return Boolean(fs.lstatSync(file, { throwIfNoEntry: false }));
 }
 
 export function hasHostRealizationPlanState(root, planId) {
@@ -505,10 +537,9 @@ export function hasPackInstallManagedManifestState(root) {
 }
 
 export function hasActiveConfigurationLockState(root, configurationName) {
-  return Boolean(fs.lstatSync(
-    activeConfigurationLockStatePath(root, configurationName),
-    { throwIfNoEntry: false }
-  ));
+  const file = activeConfigurationLockStatePath(root, configurationName);
+  assertPrivateRuntimeStatePath(file, 'Active configuration lock', { requireFile: false });
+  return Boolean(fs.lstatSync(file, { throwIfNoEntry: false }));
 }
 
 export function hasDevelopmentRequestState(root, requestId) {
@@ -716,7 +747,8 @@ function readRequiredState(file, label, id, property) {
 
 export function readConfigurationChangePlanState(root, planId) {
   const file = configurationChangePlanStatePath(root, planId);
-  return readRequiredState(file, 'Durable configuration change plan', planId, 'plan');
+  assertPrivateRuntimeStatePath(file, 'Durable configuration change plan');
+  return { file, plan: readJson(file) };
 }
 
 export function createConfigurationChangePlanState(root, plan) {
@@ -727,7 +759,8 @@ export function createConfigurationChangePlanState(root, plan) {
 
 export function readConfigurationChangeRequestState(root, requestId) {
   const file = configurationChangeRequestStatePath(root, requestId);
-  return readRequiredState(file, 'Durable configuration change request', requestId, 'request');
+  assertPrivateRuntimeStatePath(file, 'Durable configuration change request');
+  return { file, request: readJson(file) };
 }
 
 export function createConfigurationChangeRequestState(root, request) {
@@ -738,12 +771,8 @@ export function createConfigurationChangeRequestState(root, request) {
 
 export function readConfigurationChangeConfirmationState(root, confirmationId) {
   const file = configurationChangeConfirmationStatePath(root, confirmationId);
-  return readRequiredState(
-    file,
-    'Durable configuration change confirmation',
-    confirmationId,
-    'confirmation'
-  );
+  assertPrivateRuntimeStatePath(file, 'Durable configuration change confirmation');
+  return { file, confirmation: readJson(file) };
 }
 
 export function createConfigurationChangeConfirmationState(root, confirmation) {
@@ -754,12 +783,8 @@ export function createConfigurationChangeConfirmationState(root, confirmation) {
 
 export function readConfigurationChangeConsumptionState(root, consumptionId) {
   const file = configurationChangeConsumptionStatePath(root, consumptionId);
-  return readRequiredState(
-    file,
-    'Durable configuration change consumption',
-    consumptionId,
-    'consumption'
-  );
+  assertPrivateRuntimeStatePath(file, 'Durable configuration change consumption');
+  return { file, consumption: readJson(file) };
 }
 
 export function createConfigurationChangeConsumptionState(root, consumption) {
@@ -770,18 +795,15 @@ export function createConfigurationChangeConsumptionState(root, consumption) {
 
 export function writeConfigurationChangeConsumptionState(root, consumption) {
   const file = configurationChangeConsumptionStatePath(root, consumption.id);
+  assertPrivateRuntimeStatePath(file, 'Durable configuration change consumption');
   atomicWriteJson(file, consumption);
   return { file, path: repoRelativePath(root, file) };
 }
 
 export function readConfigurationTransactionCheckpointState(root, checkpointId) {
   const file = configurationTransactionCheckpointStatePath(root, checkpointId);
-  return readRequiredState(
-    file,
-    'Durable configuration transaction checkpoint',
-    checkpointId,
-    'checkpoint'
-  );
+  assertPrivateRuntimeStatePath(file, 'Durable configuration transaction checkpoint');
+  return { file, checkpoint: readJson(file) };
 }
 
 export function createConfigurationTransactionCheckpointState(root, checkpoint) {
@@ -792,6 +814,7 @@ export function createConfigurationTransactionCheckpointState(root, checkpoint) 
 
 export function writeConfigurationTransactionCheckpointState(root, checkpoint) {
   const file = configurationTransactionCheckpointStatePath(root, checkpoint.id);
+  assertPrivateRuntimeStatePath(file, 'Durable configuration transaction checkpoint');
   atomicWriteJson(file, checkpoint);
   return { file, path: repoRelativePath(root, file) };
 }

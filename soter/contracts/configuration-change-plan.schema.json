@@ -5,7 +5,7 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "$contract", "contractVersion", "id", "createdAt", "configuration",
+    "$contract", "contractVersion", "id", "createdAt", "target", "configuration",
     "currentConfiguration", "candidateConfiguration", "currentLock", "candidateLock",
     "priorActiveLock", "changes", "scopeFingerprint", "planFingerprint"
   ],
@@ -14,11 +14,12 @@
     "contractVersion": { "const": "1.0.0" },
     "id": { "type": "string", "pattern": "^configuration-change-plan\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
     "createdAt": { "type": "string", "minLength": 20 },
+    "target": { "$ref": "#/$defs/target" },
     "configuration": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "name", "templatePath", "desiredStatePath", "activeLockPath",
+        "name", "templatePath", "desiredStatePath", "activeLockPath", "permissions",
         "templateFingerprint", "currentSourceKind", "currentDocumentFingerprint",
         "currentLockFingerprint", "currentGraphFingerprint", "candidateDocumentFingerprint",
         "candidateLockFingerprint", "candidateGraphFingerprint", "projectionFingerprint"
@@ -28,6 +29,17 @@
         "templatePath": { "type": "string", "pattern": "^soter/configurations/[a-z0-9]+(?:-[a-z0-9]+)*\\.config\\.json$" },
         "desiredStatePath": { "type": "string", "pattern": "^\\.soter/state/configurations/[a-z0-9]+(?:-[a-z0-9]+)*\\.json$" },
         "activeLockPath": { "type": "string", "pattern": "^\\.soter/state/configuration-locks/[a-z0-9]+(?:-[a-z0-9]+)*\\.json$" },
+        "permissions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["privateDirectories", "desiredConfiguration", "activeLock", "authorityFiles"],
+          "properties": {
+            "privateDirectories": { "const": "0700" },
+            "desiredConfiguration": { "const": "0600" },
+            "activeLock": { "const": "0600" },
+            "authorityFiles": { "const": "0600" }
+          }
+        },
         "templateFingerprint": { "$ref": "#/$defs/fingerprint" },
         "currentSourceKind": { "enum": ["tracked-template", "private-active"] },
         "currentDocumentFingerprint": { "$ref": "#/$defs/fingerprint" },
@@ -74,6 +86,18 @@
   },
   "$defs": {
     "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requestedPath", "realPath", "device", "inode", "fingerprint"],
+      "properties": {
+        "requestedPath": { "type": "string", "minLength": 1 },
+        "realPath": { "type": "string", "minLength": 1 },
+        "device": { "type": "integer", "minimum": 0 },
+        "inode": { "type": "integer", "minimum": 0 },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
     "change": {
       "type": "object", "additionalProperties": false,
       "required": ["id", "category", "subject", "state", "beforeDescriptor", "afterDescriptor", "beforeFingerprint", "afterFingerprint"],
@@ -96,12 +120,25 @@
           "properties": {
             "id": { "const": "configuration-change.lock.active" },
             "subject": { "const": "active-lock" },
-            "state": { "const": "changed" },
-            "beforeDescriptor": { "const": "prior-active-lock" },
             "afterDescriptor": { "const": "candidate-active-lock" },
-            "beforeFingerprint": { "$ref": "#/$defs/fingerprint" },
             "afterFingerprint": { "$ref": "#/$defs/fingerprint" }
-          }
+          },
+          "oneOf": [
+            {
+              "properties": {
+                "state": { "const": "added" },
+                "beforeDescriptor": { "const": null },
+                "beforeFingerprint": { "const": null }
+              }
+            },
+            {
+              "properties": {
+                "state": { "const": "changed" },
+                "beforeDescriptor": { "const": "prior-active-lock" },
+                "beforeFingerprint": { "$ref": "#/$defs/fingerprint" }
+              }
+            }
+          ]
         }
       }]
     }

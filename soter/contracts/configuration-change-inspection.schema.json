@@ -16,7 +16,7 @@
       "type": "object", "additionalProperties": false,
       "required": ["name", "sourceKind", "baselineLockFingerprint", "candidateLockFingerprint", "candidateGraphFingerprint", "observedLockFingerprint", "applicability"],
       "properties": {
-        "name": { "type": "string" },
+        "name": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
         "sourceKind": { "enum": ["tracked-template", "private-active"] },
         "baselineLockFingerprint": { "$ref": "#/$defs/fingerprint" },
         "candidateLockFingerprint": { "$ref": "#/$defs/fingerprint" },
@@ -47,8 +47,121 @@
         "classification": { "enum": ["safe", "requires-review", "unavailable"] },
         "reasonCode": { "type": "string", "pattern": "^CONFIGURATION_[A-Z0-9_]+$" },
         "reason": { "type": "string", "minLength": 8 },
-        "permittedNextAction": { "enum": ["request-confirmation", "confirm", "apply", "inspect-checkpoint", "none"] }
-      }
+        "permittedNextAction": { "enum": ["request-confirmation", "confirm", "apply", "resume-start", "inspect-checkpoint", "none"] }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "classification": { "const": "unavailable" },
+            "reasonCode": { "const": "CONFIGURATION_APPLY_COMPLETED" },
+            "reason": { "const": "The exact configuration transaction is complete." },
+            "permittedNextAction": { "const": "none" }
+          }
+        },
+        {
+          "properties": {
+            "classification": { "const": "unavailable" },
+            "reasonCode": { "const": "CONFIGURATION_APPLY_ROLLED_BACK" },
+            "reason": { "const": "The exact configuration transaction was rolled back." },
+            "permittedNextAction": { "const": "none" }
+          }
+        },
+        {
+          "properties": {
+            "classification": { "const": "unavailable" },
+            "reasonCode": {
+              "enum": [
+                "CONFIGURATION_TEMPLATE_DRIFT",
+                "CONFIGURATION_PLAN_STALE",
+                "CONFIGURATION_CANDIDATE_STALE",
+                "CONFIGURATION_CANDIDATE_APPLIED"
+              ]
+            },
+            "reason": { "const": "The exact configuration plan no longer matches the current workspace state." },
+            "permittedNextAction": { "const": "none" }
+          }
+        },
+        {
+          "properties": {
+            "classification": { "const": "safe" },
+            "reasonCode": { "const": "CONFIGURATION_RESERVED_CHECKPOINT_PREPARED" },
+            "reason": { "const": "The reserved one-time start has its exact prepared checkpoint and may only resume that start." },
+            "permittedNextAction": { "const": "resume-start" }
+          }
+        },
+        {
+          "properties": {
+            "classification": { "const": "safe" },
+            "reasonCode": { "const": "CONFIGURATION_CONSUMPTION_RESERVED" },
+            "reason": { "const": "The exact one-time start is reserved and may only resume with its bound checkpoint ID." },
+            "permittedNextAction": { "const": "resume-start" }
+          }
+        },
+        {
+          "properties": {
+            "classification": { "const": "safe" },
+            "reasonCode": { "const": "CONFIGURATION_CHECKPOINT_RECOVERABLE" },
+            "reason": { "const": "Core can inspect and reconcile the exact durable configuration checkpoint." },
+            "permittedNextAction": { "const": "inspect-checkpoint" }
+          }
+        },
+        {
+          "properties": {
+            "classification": { "const": "safe" },
+            "reasonCode": { "const": "CONFIGURATION_CHECKPOINT_ROLLBACK_IN_PROGRESS" },
+            "reason": { "const": "Core can inspect and continue the exact durable configuration rollback." },
+            "permittedNextAction": { "const": "inspect-checkpoint" }
+          }
+        },
+        {
+          "properties": {
+            "classification": { "const": "requires-review" },
+            "reasonCode": { "const": "CONFIGURATION_CHECKPOINT_REQUIRES_REVIEW" },
+            "reason": { "const": "The exact durable configuration checkpoint requires local operator review." },
+            "permittedNextAction": { "const": "inspect-checkpoint" }
+          }
+        },
+        {
+          "properties": {
+            "classification": { "const": "requires-review" },
+            "reasonCode": { "const": "CONFIGURATION_CHECKPOINT_MISSING" },
+            "reason": { "const": "The one-time start was consumed but its exact checkpoint is unavailable." },
+            "permittedNextAction": { "const": "none" }
+          }
+        },
+        {
+          "properties": {
+            "classification": { "const": "unavailable" },
+            "reasonCode": { "const": "CONFIGURATION_REQUEST_EXPIRED" },
+            "reason": { "const": "The exact configuration request expired and requires a new confirmation." },
+            "permittedNextAction": { "const": "request-confirmation" }
+          }
+        },
+        {
+          "properties": {
+            "classification": { "const": "safe" },
+            "reasonCode": { "const": "CONFIGURATION_CONFIRMATION_CURRENT" },
+            "reason": { "const": "The exact confirmation is current and has not been consumed." },
+            "permittedNextAction": { "const": "apply" }
+          }
+        },
+        {
+          "properties": {
+            "classification": { "const": "safe" },
+            "reasonCode": { "const": "CONFIGURATION_REQUEST_AWAITING_CONFIRMATION" },
+            "reason": { "const": "The exact configuration request is awaiting local operator confirmation." },
+            "permittedNextAction": { "const": "confirm" }
+          }
+        },
+        {
+          "properties": {
+            "classification": { "const": "safe" },
+            "reasonCode": { "const": "CONFIGURATION_PLAN_CURRENT" },
+            "reason": { "const": "The exact configuration plan is current and may be submitted for confirmation." },
+            "permittedNextAction": { "const": "request-confirmation" }
+          }
+        }
+      ]
     },
     "authority": {
       "type": "object", "additionalProperties": false,
@@ -60,17 +173,376 @@
       }
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "consumption": {
+            "type": "object",
+            "properties": { "state": { "const": "started" } },
+            "required": ["state"]
+          },
+          "checkpoint": { "const": null }
+        },
+        "required": ["consumption", "checkpoint"]
+      },
+      "then": {
+        "properties": {
+          "resume": {
+            "properties": {
+              "classification": { "const": "requires-review" },
+              "reasonCode": { "const": "CONFIGURATION_CHECKPOINT_MISSING" },
+              "permittedNextAction": { "const": "none" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "checkpoint": {
+            "type": "object",
+            "properties": { "state": { "const": "prepared" } },
+            "required": ["state"]
+          }
+        },
+        "required": ["checkpoint"]
+      },
+      "then": {
+        "oneOf": [
+          {
+            "properties": {
+              "consumption": {
+                "type": "object",
+                "properties": { "state": { "const": "reserved" } },
+                "required": ["state"]
+              }
+            }
+          },
+          {
+            "properties": {
+              "consumption": {
+                "type": "object",
+                "properties": { "state": { "const": "started" } },
+                "required": ["state"]
+              },
+              "resume": {
+                "properties": {
+                  "classification": { "const": "safe" },
+                  "reasonCode": { "const": "CONFIGURATION_CHECKPOINT_RECOVERABLE" },
+                  "permittedNextAction": { "const": "inspect-checkpoint" }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "checkpoint": {
+            "type": "object",
+            "properties": { "state": { "const": "applying" } },
+            "required": ["state"]
+          }
+        },
+        "required": ["checkpoint"]
+      },
+      "then": {
+        "properties": {
+          "consumption": {
+            "type": "object",
+            "properties": { "state": { "const": "started" } },
+            "required": ["state"]
+          },
+          "resume": {
+            "properties": {
+              "classification": { "const": "safe" },
+              "reasonCode": { "const": "CONFIGURATION_CHECKPOINT_RECOVERABLE" },
+              "permittedNextAction": { "const": "inspect-checkpoint" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "checkpoint": {
+            "type": "object",
+            "properties": { "state": { "const": "verifying" } },
+            "required": ["state"]
+          }
+        },
+        "required": ["checkpoint"]
+      },
+      "then": {
+        "properties": {
+          "consumption": {
+            "type": "object",
+            "properties": { "state": { "const": "started" } },
+            "required": ["state"]
+          },
+          "resume": {
+            "properties": {
+              "classification": { "const": "safe" },
+              "reasonCode": { "const": "CONFIGURATION_CHECKPOINT_RECOVERABLE" },
+              "permittedNextAction": { "const": "inspect-checkpoint" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "consumption": {
+            "type": "object",
+            "properties": { "state": { "const": "reserved" } },
+            "required": ["state"]
+          }
+        },
+        "required": ["consumption"]
+      },
+      "then": {
+        "oneOf": [
+          {
+            "properties": {
+              "configuration": {
+                "properties": { "applicability": { "const": "current" } },
+                "required": ["applicability"]
+              },
+              "checkpoint": {
+                "type": "object",
+                "properties": {
+                  "state": { "const": "prepared" },
+                  "phase": { "const": "prepared" },
+                  "reasonCode": { "const": null }
+                },
+                "required": ["state", "phase", "reasonCode"]
+              },
+              "resume": {
+                "properties": {
+                  "classification": { "const": "safe" },
+                  "reasonCode": { "const": "CONFIGURATION_RESERVED_CHECKPOINT_PREPARED" },
+                  "permittedNextAction": { "const": "resume-start" }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "configuration": {
+                "properties": { "applicability": { "const": "current" } },
+                "required": ["applicability"]
+              },
+              "checkpoint": { "const": null },
+              "resume": {
+                "properties": {
+                  "classification": { "const": "safe" },
+                  "reasonCode": { "const": "CONFIGURATION_CONSUMPTION_RESERVED" },
+                  "permittedNextAction": { "const": "resume-start" }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "configuration": {
+                "properties": { "applicability": { "const": "stale" } },
+                "required": ["applicability"]
+              },
+              "checkpoint": {
+                "oneOf": [
+                  { "const": null },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "state": { "const": "prepared" },
+                      "phase": { "const": "prepared" },
+                      "reasonCode": { "const": null }
+                    },
+                    "required": ["state", "phase", "reasonCode"]
+                  }
+                ]
+              },
+              "resume": {
+                "properties": {
+                  "classification": { "const": "unavailable" },
+                  "reasonCode": {
+                    "enum": [
+                      "CONFIGURATION_TEMPLATE_DRIFT",
+                      "CONFIGURATION_PLAN_STALE",
+                      "CONFIGURATION_CANDIDATE_STALE"
+                    ]
+                  },
+                  "permittedNextAction": { "const": "none" }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "configuration": {
+                "properties": { "applicability": { "const": "applied" } },
+                "required": ["applicability"]
+              },
+              "checkpoint": {
+                "oneOf": [
+                  { "const": null },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "state": { "const": "prepared" },
+                      "phase": { "const": "prepared" },
+                      "reasonCode": { "const": null }
+                    },
+                    "required": ["state", "phase", "reasonCode"]
+                  }
+                ]
+              },
+              "resume": {
+                "properties": {
+                  "classification": { "const": "unavailable" },
+                  "reasonCode": { "const": "CONFIGURATION_CANDIDATE_APPLIED" },
+                  "permittedNextAction": { "const": "none" }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "checkpoint": {
+            "type": "object",
+            "properties": { "state": { "const": "completed" } },
+            "required": ["state"]
+          }
+        },
+        "required": ["checkpoint"]
+      },
+      "then": {
+        "properties": {
+          "consumption": {
+            "type": "object",
+            "properties": { "state": { "const": "started" } },
+            "required": ["state"]
+          },
+          "resume": {
+            "properties": {
+              "classification": { "const": "unavailable" },
+              "reasonCode": { "const": "CONFIGURATION_APPLY_COMPLETED" },
+              "permittedNextAction": { "const": "none" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "checkpoint": {
+            "type": "object",
+            "properties": { "state": { "const": "rolling-back" } },
+            "required": ["state"]
+          }
+        },
+        "required": ["checkpoint"]
+      },
+      "then": {
+        "properties": {
+          "consumption": {
+            "type": "object",
+            "properties": { "state": { "const": "started" } },
+            "required": ["state"]
+          },
+          "resume": {
+            "properties": {
+              "classification": { "const": "safe" },
+              "reasonCode": { "const": "CONFIGURATION_CHECKPOINT_ROLLBACK_IN_PROGRESS" },
+              "permittedNextAction": { "const": "inspect-checkpoint" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "checkpoint": {
+            "type": "object",
+            "properties": { "state": { "const": "rolled-back" } },
+            "required": ["state"]
+          }
+        },
+        "required": ["checkpoint"]
+      },
+      "then": {
+        "properties": {
+          "consumption": {
+            "type": "object",
+            "properties": { "state": { "const": "started" } },
+            "required": ["state"]
+          },
+          "resume": {
+            "properties": {
+              "classification": { "const": "unavailable" },
+              "reasonCode": { "const": "CONFIGURATION_APPLY_ROLLED_BACK" },
+              "permittedNextAction": { "const": "none" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "checkpoint": {
+            "type": "object",
+            "properties": { "state": { "const": "needs-attention" } },
+            "required": ["state"]
+          }
+        },
+        "required": ["checkpoint"]
+      },
+      "then": {
+        "properties": {
+          "consumption": {
+            "type": "object",
+            "properties": { "state": { "const": "started" } },
+            "required": ["state"]
+          },
+          "resume": {
+            "properties": {
+              "classification": { "const": "requires-review" },
+              "reasonCode": { "const": "CONFIGURATION_CHECKPOINT_REQUIRES_REVIEW" },
+              "permittedNextAction": { "const": "inspect-checkpoint" }
+            }
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
     "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
     "reference": {
       "type": "object", "additionalProperties": false, "required": ["id", "fingerprint"],
-      "properties": { "id": { "type": "string" }, "fingerprint": { "$ref": "#/$defs/fingerprint" } }
+      "properties": {
+        "id": { "type": "string", "pattern": "^configuration-change-plan\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
     },
     "timedReference": {
       "type": "object", "additionalProperties": false,
       "required": ["id", "fingerprint", "createdAt", "expiresAt", "state"],
       "properties": {
-        "id": { "type": "string" }, "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "id": { "type": "string", "pattern": "^configuration-change-request\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
         "createdAt": { "type": "string" }, "expiresAt": { "type": "string" },
         "state": { "enum": ["awaiting", "expired", "confirmed"] }
       }
@@ -79,35 +551,112 @@
       "type": "object", "additionalProperties": false,
       "required": ["id", "fingerprint", "confirmedAt", "actor"],
       "properties": {
-        "id": { "type": "string" }, "fingerprint": { "$ref": "#/$defs/fingerprint" },
-        "confirmedAt": { "type": "string" }, "actor": { "type": "string" }
+        "id": { "type": "string", "pattern": "^configuration-change-confirmation\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "confirmedAt": { "type": "string" },
+        "actor": { "type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" }
       }
     },
     "consumptionReference": {
       "type": "object", "additionalProperties": false,
-      "required": ["id", "fingerprint", "state"],
+      "required": ["id", "fingerprint", "state", "checkpointId"],
       "properties": {
-        "id": { "type": "string" }, "fingerprint": { "$ref": "#/$defs/fingerprint" },
-        "state": { "enum": ["reserved", "started"] }
+        "id": { "type": "string", "pattern": "^configuration-change-consumption\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "state": { "enum": ["reserved", "started"] },
+        "checkpointId": { "type": "string", "pattern": "^checkpoint\\.configuration\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" }
       }
     },
     "checkpoint": {
       "type": "object", "additionalProperties": false,
       "required": ["id", "fingerprint", "state", "phase", "updatedAt", "reasonCode"],
       "properties": {
-        "id": { "type": "string" }, "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "id": { "type": "string", "pattern": "^checkpoint\\.configuration\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
         "state": { "enum": ["prepared", "applying", "verifying", "completed", "rolling-back", "rolled-back", "needs-attention"] },
         "phase": { "type": "string" }, "updatedAt": { "type": "string" },
         "reasonCode": { "type": ["string", "null"], "pattern": "^CONFIGURATION_[A-Z0-9_]+$" }
-      }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "state": { "const": "prepared" } }, "required": ["state"] },
+          "then": {
+            "properties": {
+              "phase": { "const": "prepared" },
+              "reasonCode": { "const": null }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "state": { "const": "applying" } }, "required": ["state"] },
+          "then": {
+            "properties": {
+              "phase": {
+                "enum": [
+                  "prepared",
+                  "configuration-unchanged",
+                  "configuration-written",
+                  "active-lock-written"
+                ]
+              },
+              "reasonCode": { "const": null }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "state": { "const": "verifying" } }, "required": ["state"] },
+          "then": {
+            "properties": {
+              "phase": { "const": "verifying" },
+              "reasonCode": { "const": null }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "state": { "const": "completed" } }, "required": ["state"] },
+          "then": {
+            "properties": {
+              "phase": { "const": "terminal" },
+              "reasonCode": { "const": null }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "state": { "const": "rolling-back" } }, "required": ["state"] },
+          "then": {
+            "properties": {
+              "phase": { "enum": ["rollback-configuration", "rollback-active-lock"] },
+              "reasonCode": { "type": "string", "pattern": "^CONFIGURATION_[A-Z0-9_]+$" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "state": { "const": "rolled-back" } }, "required": ["state"] },
+          "then": {
+            "properties": {
+              "phase": { "const": "terminal" },
+              "reasonCode": { "type": "string", "pattern": "^CONFIGURATION_[A-Z0-9_]+$" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "state": { "const": "needs-attention" } }, "required": ["state"] },
+          "then": {
+            "properties": {
+              "phase": { "const": "terminal" },
+              "reasonCode": { "type": "string", "pattern": "^CONFIGURATION_[A-Z0-9_]+$" }
+            }
+          }
+        }
+      ]
     },
     "change": {
       "type": "object", "additionalProperties": false,
       "required": ["id", "category", "subject", "state", "beforeDescriptor", "afterDescriptor", "beforeFingerprint", "afterFingerprint"],
       "properties": {
-        "id": { "type": "string" },
+        "id": { "type": "string", "pattern": "^configuration-change\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
         "category": { "enum": ["host", "pack", "binding", "source", "authority", "effect-policy", "secret-reference", "setting", "resolution", "lock"] },
-        "subject": { "type": "string" },
+        "subject": { "type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
         "state": { "enum": ["added", "removed", "changed"] },
         "beforeDescriptor": { "type": ["string", "null"], "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
         "afterDescriptor": { "type": ["string", "null"], "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
@@ -123,12 +672,25 @@
           "properties": {
             "id": { "const": "configuration-change.lock.active" },
             "subject": { "const": "active-lock" },
-            "state": { "const": "changed" },
-            "beforeDescriptor": { "const": "prior-active-lock" },
             "afterDescriptor": { "const": "candidate-active-lock" },
-            "beforeFingerprint": { "$ref": "#/$defs/fingerprint" },
             "afterFingerprint": { "$ref": "#/$defs/fingerprint" }
-          }
+          },
+          "oneOf": [
+            {
+              "properties": {
+                "state": { "const": "added" },
+                "beforeDescriptor": { "const": null },
+                "beforeFingerprint": { "const": null }
+              }
+            },
+            {
+              "properties": {
+                "state": { "const": "changed" },
+                "beforeDescriptor": { "const": "prior-active-lock" },
+                "beforeFingerprint": { "$ref": "#/$defs/fingerprint" }
+              }
+            }
+          ]
         }
       }]
     }

@@ -1188,6 +1188,29 @@ private plan document:
 `configuration-change-recover` reconciles an interrupted exact checkpoint. A
 confirmation is not start authority, a displayed next action is not execution
 authority, and a consumed confirmation cannot start a second checkpoint.
+Prepared and terminal checkpoints bind their observation to the exact prior or
+private-active candidate fingerprints; re-sealing a terminal label over
+pre-effect observation cannot produce completion.
+If a crash leaves the one-time consumption `reserved` before checkpoint
+creation, inspection returns `CONFIGURATION_CONSUMPTION_RESERVED`, `resume-start`,
+and the already-bound checkpoint ID. Exact re-entry may finish that reservation
+after expiry only when the persisted reservation was timely and the plan remains
+current; it cannot choose a new checkpoint or create fresh authority.
+An existing reserved checkpoint must validate as that exact prepared
+reservation before `resume-start` is shown. If consumption is already `started`
+but its bound checkpoint is missing, inspection returns
+`CONFIGURATION_CHECKPOINT_MISSING` as `requires-review` with no apply action.
+Checkpoint plan, request, confirmation, and consumption references must resolve
+to one exact authority chain with causal, monotonic timestamps. Sanitized
+inspection never repeats a persisted checkpoint failure summary.
+When neither private desired configuration nor active lock exists, the plan
+binds the exact consumer-root identity, governed private paths and `0700`/`0600`
+modes, absent prior state, complete candidate document, resolved lock, and
+graph. First activation is one `added` active-lock row with a null before side
+and the exact candidate-lock fingerprint after side, even when the candidate is
+byte-identical to the tracked template. The normal confirmed lifecycle still
+writes and verifies both the private desired configuration and active lock;
+after activation, a new identical private-active candidate is an empty plan.
 When the governed graph changes but an existing private desired configuration
 is byte-identical, the same lifecycle presents one explicit `lock` change from
 the exact prior active-lock fingerprint to the freshly resolved candidate

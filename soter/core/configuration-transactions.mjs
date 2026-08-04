@@ -146,12 +146,46 @@ function requireNotExpired(expiresAt, at) {
   }
 }
 
+function occursBefore(value, lowerBound) {
+  return Date.parse(value) < Date.parse(lowerBound);
+}
+
+function occursAfter(value, upperBound) {
+  return Date.parse(value) > Date.parse(upperBound);
+}
+
 function projectionFingerprint(lock) {
   return fingerprintJson(lock.projections.map((item) => ({
     path: item.path,
     role: item.role,
     fingerprint: item.fingerprint
   })));
+}
+
+function targetIdentity(root) {
+  const requestedPath = path.resolve(root);
+  const requestedStat = fs.lstatSync(requestedPath, { throwIfNoEntry: false });
+  if (!requestedStat?.isDirectory() || requestedStat.isSymbolicLink()) {
+    fail('CONFIGURATION_TARGET_INVALID', 'Configuration target root must be one ordinary directory.');
+  }
+  const realPath = fs.realpathSync(requestedPath);
+  if (realPath !== requestedPath) {
+    fail('CONFIGURATION_TARGET_INVALID', 'Configuration target root cannot contain symbolic-link traversal.');
+  }
+  const stat = fs.statSync(realPath);
+  const identity = {
+    requestedPath,
+    realPath,
+    device: Number(stat.dev),
+    inode: Number(stat.ino)
+  };
+  return { ...identity, fingerprint: fingerprintJson(identity) };
+}
+
+function assertTargetIdentity(root, expected) {
+  if (fingerprintJson(targetIdentity(root)) !== fingerprintJson(expected)) {
+    fail('CONFIGURATION_TARGET_DRIFT', 'Configuration target root identity changed after planning.');
+  }
 }
 
 function hasDuplicateSubjects(items, key) {
@@ -382,8 +416,18 @@ function configurationPlanChanges({
   priorActiveLock
 }) {
   const changes = configurationChanges(currentConfiguration, candidateConfiguration);
-  if (priorActiveLock.state === 'present'
-    && priorActiveLock.fingerprint !== fingerprintLock(currentLock)) {
+  if (priorActiveLock.state === 'absent') {
+    changes.push({
+      id: 'configuration-change.lock.active',
+      category: 'lock',
+      subject: 'active-lock',
+      state: 'added',
+      beforeDescriptor: null,
+      afterDescriptor: 'candidate-active-lock',
+      beforeFingerprint: null,
+      afterFingerprint: fingerprintLock(candidateLock)
+    });
+  } else if (priorActiveLock.fingerprint !== fingerprintLock(currentLock)) {
     changes.push(...resolvedLockChanges(priorActiveLock.lock, candidateLock));
     changes.push({
       id: 'configuration-change.lock.active',
@@ -400,7 +444,9 @@ function configurationPlanChanges({
 }
 
 function isLockOnlyRefresh(plan) {
-  return plan.configuration.currentDocumentFingerprint
+  return plan.configuration.currentSourceKind === 'private-active'
+    && plan.priorActiveLock.state === 'present'
+    && plan.configuration.currentDocumentFingerprint
       === plan.configuration.candidateDocumentFingerprint
     && plan.changes.some((change) => change.id === 'configuration-change.lock.active'
       && change.category === 'lock')
@@ -434,8 +480,21 @@ function assertCandidate(root, desiredStateFile, candidate, expectedName) {
 }
 
 function currentDesiredConfiguration(root, name, templateFile) {
-  const privatePresent = hasPrivateConfigurationState(root, name);
-  const activePresent = hasActiveConfigurationLockState(root, name);
+  let privatePresent;
+  let activePresent;
+  try {
+    privatePresent = hasPrivateConfigurationState(root, name);
+  } catch (error) {
+    fail(
+      error?.code || 'CONFIGURATION_PRIVATE_STATE_INVALID',
+      'Private desired configuration state is invalid.'
+    );
+  }
+  try {
+    activePresent = hasActiveConfigurationLockState(root, name);
+  } catch {
+    fail('CONFIGURATION_ACTIVE_LOCK_STALE', 'Private active lock state is invalid.');
+  }
   if (privatePresent !== activePresent) {
     fail(
       'CONFIGURATION_PRIVATE_STATE_UNBOUND',
@@ -510,10 +569,16 @@ function planCurrentness(root, plan) {
 
 function assertPlan(root, plan) {
   assertFingerprint(root, plan, 'plan', 'planFingerprint', 'Configuration change plan');
+  iso(plan.createdAt, 'plan.createdAt');
+  assertTargetIdentity(root, plan.target);
   const expectedTemplatePath = repoRelativePath(root, findConfiguration(root, plan.configuration.name));
   const expectedDesiredPath = repoRelativePath(
     root,
     privateConfigurationStatePath(root, plan.configuration.name)
+  );
+  const expectedActiveLockPath = repoRelativePath(
+    root,
+    activeConfigurationLockStatePath(root, plan.configuration.name)
   );
   let expectedChanges;
   try {
@@ -529,6 +594,7 @@ function assertPlan(root, plan) {
   }
   if (plan.configuration.templatePath !== expectedTemplatePath
     || plan.configuration.desiredStatePath !== expectedDesiredPath
+    || plan.configuration.activeLockPath !== expectedActiveLockPath
     || fingerprintJson(plan.currentConfiguration) !== plan.configuration.currentDocumentFingerprint
     || fingerprintJson(plan.candidateConfiguration) !== plan.configuration.candidateDocumentFingerprint
     || fingerprintLock(plan.currentLock) !== plan.configuration.currentLockFingerprint
@@ -589,6 +655,12 @@ function assertRequest(root, request) {
     fail('CONFIGURATION_REQUEST_BINDING_INVALID', 'Configuration change request does not bind its exact plan.');
   }
   requireWindow(request.createdAt, request.expiresAt);
+  if (occursBefore(request.createdAt, plan.createdAt)) {
+    fail(
+      'CONFIGURATION_REQUEST_BINDING_INVALID',
+      'Configuration request cannot predate its exact plan.'
+    );
+  }
   return { request, plan };
 }
 
@@ -616,7 +688,14 @@ function assertConfirmation(root, confirmation) {
     || plan.scopeFingerprint !== confirmation.scopeFingerprint) {
     fail('CONFIGURATION_CONFIRMATION_BINDING_INVALID', 'Configuration confirmation does not bind its exact request and plan.');
   }
-  requireNotExpired(request.expiresAt, confirmation.confirmedAt);
+  iso(confirmation.confirmedAt, 'confirmation.confirmedAt');
+  if (occursBefore(confirmation.confirmedAt, request.createdAt)
+    || occursAfter(confirmation.confirmedAt, request.expiresAt)) {
+    fail(
+      'CONFIGURATION_CONFIRMATION_BINDING_INVALID',
+      'Configuration confirmation time is outside its exact request window.'
+    );
+  }
   return { confirmation, request, plan };
 }
 
@@ -641,15 +720,148 @@ function assertConsumption(root, consumption) {
     'Configuration change consumption'
   );
   const { confirmation, request, plan } = readConfirmation(root, consumption.confirmation.id);
+  iso(consumption.createdAt, 'consumption.createdAt');
+  iso(consumption.updatedAt, 'consumption.updatedAt');
   if (confirmation.confirmationFingerprint !== consumption.confirmation.fingerprint
     || request.id !== consumption.request.id
     || request.requestFingerprint !== consumption.request.fingerprint
     || plan.id !== consumption.plan.id
     || plan.planFingerprint !== consumption.plan.fingerprint
+    || consumption.id !== configurationChangeConsumptionId(confirmation.id)
+    || occursBefore(consumption.createdAt, confirmation.confirmedAt)
+    || occursAfter(consumption.createdAt, request.expiresAt)
+    || (consumption.state === 'reserved'
+      ? consumption.updatedAt !== consumption.createdAt
+      : occursBefore(consumption.updatedAt, consumption.createdAt))
     || (consumption.state === 'reserved') !== (consumption.checkpointFingerprint === null)) {
     fail('CONFIGURATION_CONSUMPTION_BINDING_INVALID', 'Configuration consumption does not bind its exact authority chain.');
   }
   return { consumption, confirmation, request, plan };
+}
+
+function checkpointConfiguration(plan) {
+  return {
+    name: plan.configuration.name,
+    sourceKind: 'private-active',
+    currentDocumentFingerprint: plan.configuration.currentDocumentFingerprint,
+    candidateDocumentFingerprint: plan.configuration.candidateDocumentFingerprint,
+    currentLockFingerprint: plan.configuration.currentLockFingerprint,
+    candidateLockFingerprint: plan.configuration.candidateLockFingerprint
+  };
+}
+
+function checkpointObservation(plan, state) {
+  if (state === 'completed') {
+    return {
+      sourceKind: 'private-active',
+      templateFingerprint: plan.configuration.templateFingerprint,
+      documentFingerprint: plan.configuration.candidateDocumentFingerprint,
+      activeLockFingerprint: plan.configuration.candidateLockFingerprint,
+      resolutionFingerprint: plan.configuration.candidateLockFingerprint
+    };
+  }
+  if (state === 'prepared' || state === 'rolled-back') {
+    return {
+      sourceKind: plan.configuration.currentSourceKind,
+      templateFingerprint: plan.configuration.templateFingerprint,
+      documentFingerprint: plan.configuration.currentDocumentFingerprint,
+      activeLockFingerprint: plan.priorActiveLock.fingerprint,
+      resolutionFingerprint: plan.configuration.currentLockFingerprint
+    };
+  }
+  return null;
+}
+
+function planReference(plan) {
+  return { id: plan.id, fingerprint: plan.planFingerprint };
+}
+
+function requestReference(request) {
+  return { id: request.id, fingerprint: request.requestFingerprint };
+}
+
+function confirmationReference(confirmation) {
+  return { id: confirmation.id, fingerprint: confirmation.confirmationFingerprint };
+}
+
+function consumptionReference(consumption) {
+  return { id: consumption.id, fingerprint: consumption.consumptionFingerprint };
+}
+
+function referencesEqual(expected, references) {
+  return references.every((reference) => reference?.id === expected.id
+    && reference?.fingerprint === expected.fingerprint);
+}
+
+function reservedConsumption(consumption) {
+  if (consumption.state === 'reserved') return consumption;
+  return seal({
+    ...consumption,
+    updatedAt: consumption.createdAt,
+    state: 'reserved',
+    checkpointFingerprint: null
+  }, 'consumptionFingerprint');
+}
+
+function checkpointAuthorityChain(root, checkpoint) {
+  const plan = readPlan(root, checkpoint.plan.id);
+  const requestChain = readRequest(root, checkpoint.request.id);
+  const confirmationChain = readConfirmation(root, checkpoint.confirmation.id);
+  const consumptionChain = assertConsumption(
+    root,
+    readConfigurationChangeConsumptionState(root, checkpoint.consumption.id).consumption
+  );
+  const consumption = consumptionChain.consumption;
+  const reserved = reservedConsumption(consumption);
+  if (!referencesEqual(checkpoint.plan, [
+    planReference(plan),
+    requestChain.request.plan,
+    planReference(requestChain.plan),
+    confirmationChain.confirmation.plan,
+    confirmationChain.request.plan,
+    planReference(confirmationChain.plan),
+    consumptionChain.consumption.plan,
+    consumptionChain.confirmation.plan,
+    consumptionChain.request.plan,
+    planReference(consumptionChain.plan)
+  ]) || !referencesEqual(checkpoint.request, [
+    requestReference(requestChain.request),
+    confirmationChain.confirmation.request,
+    requestReference(confirmationChain.request),
+    consumptionChain.consumption.request,
+    consumptionChain.confirmation.request,
+    requestReference(consumptionChain.request)
+  ]) || !referencesEqual(checkpoint.confirmation, [
+    confirmationReference(confirmationChain.confirmation),
+    consumptionChain.consumption.confirmation,
+    confirmationReference(consumptionChain.confirmation)
+  ]) || !referencesEqual(checkpoint.consumption, [
+    consumptionReference(reserved)
+  ]) || checkpoint.id !== consumption.checkpointId) {
+    fail(
+      'CONFIGURATION_CHECKPOINT_BINDING_INVALID',
+      'Configuration checkpoint does not bind one exact authority chain.'
+    );
+  }
+  return {
+    plan,
+    request: requestChain.request,
+    confirmation: confirmationChain.confirmation,
+    consumption,
+    reservedConsumption: reserved
+  };
+}
+
+function assertCheckpointPlanState(checkpoint, plan) {
+  const expectedObservation = checkpointObservation(plan, checkpoint.state);
+  if (fingerprintJson(checkpoint.configuration) !== fingerprintJson(checkpointConfiguration(plan))
+    || (expectedObservation
+      && fingerprintJson(checkpoint.observation) !== fingerprintJson(expectedObservation))) {
+    fail(
+      'CONFIGURATION_CHECKPOINT_BINDING_INVALID',
+      'Configuration checkpoint metadata or observation does not bind its exact plan state.'
+    );
+  }
 }
 
 function assertCheckpoint(root, checkpoint) {
@@ -660,27 +872,40 @@ function assertCheckpoint(root, checkpoint) {
     'checkpointFingerprint',
     'Configuration transaction checkpoint'
   );
-  const plan = readPlan(root, checkpoint.plan.id);
-  const { request } = readRequest(root, checkpoint.request.id);
-  const { confirmation } = readConfirmation(root, checkpoint.confirmation.id);
-  const consumption = readConfigurationChangeConsumptionState(root, checkpoint.consumption.id).consumption;
-  const reservedConsumption = seal({
-    ...consumption,
-    updatedAt: consumption.createdAt,
-    state: 'reserved',
-    checkpointFingerprint: null
-  }, 'consumptionFingerprint');
-  if (plan.planFingerprint !== checkpoint.plan.fingerprint
-    || request.requestFingerprint !== checkpoint.request.fingerprint
-    || confirmation.confirmationFingerprint !== checkpoint.confirmation.fingerprint
-    || reservedConsumption.consumptionFingerprint !== checkpoint.consumption.fingerprint
-    || consumption.checkpointId !== checkpoint.id
-    || consumption.state !== 'started'
+  const allowedPhases = {
+    prepared: ['prepared'],
+    applying: ['prepared', 'configuration-written', 'configuration-unchanged', 'active-lock-written'],
+    verifying: ['verifying'],
+    completed: ['terminal'],
+    'rolling-back': ['rollback-configuration', 'rollback-active-lock'],
+    'rolled-back': ['terminal'],
+    'needs-attention': ['terminal']
+  };
+  const failureRequired = checkpoint.state === 'rolling-back'
+    || checkpoint.state === 'rolled-back'
+    || checkpoint.state === 'needs-attention';
+  if (!allowedPhases[checkpoint.state]?.includes(checkpoint.phase)
+    || failureRequired === (checkpoint.failure === null)) {
+    fail(
+      'CONFIGURATION_CHECKPOINT_BINDING_INVALID',
+      'Configuration checkpoint state, phase, and failure are mechanically inconsistent.'
+    );
+  }
+  iso(checkpoint.createdAt, 'checkpoint.createdAt');
+  iso(checkpoint.updatedAt, 'checkpoint.updatedAt');
+  const { plan, request, confirmation, consumption } = checkpointAuthorityChain(
+    root,
+    checkpoint
+  );
+  if (consumption.state !== 'started'
     || consumption.checkpointFingerprint === null
+    || checkpoint.createdAt !== consumption.updatedAt
+    || occursBefore(checkpoint.updatedAt, checkpoint.createdAt)
     || (checkpoint.state === 'prepared'
       && consumption.checkpointFingerprint !== checkpoint.checkpointFingerprint)) {
     fail('CONFIGURATION_CHECKPOINT_BINDING_INVALID', 'Configuration checkpoint does not bind its exact authority chain.');
   }
+  assertCheckpointPlanState(checkpoint, plan);
   return { checkpoint, plan, request, confirmation, consumption };
 }
 
@@ -691,6 +916,14 @@ function seal(value, property) {
 
 function persistCheckpoint(root, checkpoint) {
   checkpoint.updatedAt = checkpoint.updatedAt || checkpoint.createdAt;
+  iso(checkpoint.createdAt, 'checkpoint.createdAt');
+  iso(checkpoint.updatedAt, 'checkpoint.updatedAt');
+  if (occursBefore(checkpoint.updatedAt, checkpoint.createdAt)) {
+    fail(
+      'CONFIGURATION_CHECKPOINT_BINDING_INVALID',
+      'Configuration checkpoint update time cannot predate its exact start.'
+    );
+  }
   seal(checkpoint, 'checkpointFingerprint');
   validate(root, checkpoint, 'checkpoint', 'Configuration transaction checkpoint');
   writeConfigurationTransactionCheckpointState(root, checkpoint);
@@ -711,12 +944,7 @@ function preparedCheckpoint({ plan, request, confirmation, consumption, checkpoi
     confirmation: { id: confirmation.id, fingerprint: confirmation.confirmationFingerprint },
     consumption: { id: consumption.id, fingerprint: consumption.consumptionFingerprint },
     configuration: {
-      name: plan.configuration.name,
-      sourceKind: 'private-active',
-      currentDocumentFingerprint: plan.configuration.currentDocumentFingerprint,
-      candidateDocumentFingerprint: plan.configuration.candidateDocumentFingerprint,
-      currentLockFingerprint: plan.configuration.currentLockFingerprint,
-      candidateLockFingerprint: plan.configuration.candidateLockFingerprint
+      ...checkpointConfiguration(plan)
     },
     observation,
     failure: null,
@@ -732,22 +960,40 @@ function assertPreparedCheckpointReservation(root, checkpoint, plan, request, co
     'checkpointFingerprint',
     'Prepared configuration transaction checkpoint'
   );
+  iso(checkpoint.createdAt, 'checkpoint.createdAt');
+  iso(checkpoint.updatedAt, 'checkpoint.updatedAt');
+  const chain = checkpointAuthorityChain(root, checkpoint);
+  const directPlan = assertPlan(root, plan);
+  const directRequest = assertRequest(root, request).request;
+  const directConfirmation = assertConfirmation(root, confirmation).confirmation;
+  const directConsumption = assertConsumption(root, consumption).consumption;
   if (checkpoint.state !== 'prepared'
     || checkpoint.phase !== 'prepared'
-    || checkpoint.plan.id !== plan.id
-    || checkpoint.plan.fingerprint !== plan.planFingerprint
-    || checkpoint.request.id !== request.id
-    || checkpoint.request.fingerprint !== request.requestFingerprint
-    || checkpoint.confirmation.id !== confirmation.id
-    || checkpoint.confirmation.fingerprint !== confirmation.confirmationFingerprint
-    || checkpoint.consumption.id !== consumption.id
-    || checkpoint.consumption.fingerprint !== consumption.consumptionFingerprint) {
+    || checkpoint.failure !== null
+    || chain.consumption.state !== 'reserved'
+    || directConsumption.state !== 'reserved'
+    || directConsumption.checkpointFingerprint !== null
+    || occursBefore(checkpoint.createdAt, directConsumption.createdAt)
+    || checkpoint.updatedAt !== checkpoint.createdAt
+    || !referencesEqual(planReference(chain.plan), [planReference(directPlan)])
+    || !referencesEqual(requestReference(chain.request), [requestReference(directRequest)])
+    || !referencesEqual(confirmationReference(chain.confirmation), [
+      confirmationReference(directConfirmation)
+    ])
+    || !referencesEqual(consumptionReference(chain.consumption), [
+      consumptionReference(directConsumption)
+    ])) {
     fail('CONFIGURATION_CHECKPOINT_BINDING_INVALID', 'Prepared checkpoint does not bind the exact reserved consumption.');
   }
+  assertCheckpointPlanState(checkpoint, chain.plan);
   return checkpoint;
 }
 
 function startReservedExecution(root, { plan, request, confirmation, consumption, checkpointId, at }) {
+  iso(at, 'at');
+  if (planCurrentness(root, plan).state !== 'current') {
+    fail('CONFIGURATION_PLAN_STALE', 'Reserved configuration execution requires the exact plan to remain current.');
+  }
   let checkpoint;
   if (hasConfigurationTransactionCheckpointState(root, checkpointId)) {
     checkpoint = assertPreparedCheckpointReservation(
@@ -758,7 +1004,19 @@ function startReservedExecution(root, { plan, request, confirmation, consumption
       confirmation,
       consumption
     );
+    if (occursBefore(at, checkpoint.createdAt)) {
+      fail(
+        'CONFIGURATION_CHECKPOINT_BINDING_INVALID',
+        'Reserved configuration execution cannot move its exact checkpoint time backward.'
+      );
+    }
   } else {
+    if (occursBefore(at, consumption.createdAt)) {
+      fail(
+        'CONFIGURATION_CONSUMPTION_BINDING_INVALID',
+        'Reserved configuration execution cannot predate its exact reservation.'
+      );
+    }
     checkpoint = preparedCheckpoint({
       plan,
       request,
@@ -768,14 +1026,29 @@ function startReservedExecution(root, { plan, request, confirmation, consumption
       at,
       observation: observe(root, plan)
     });
+    assertPreparedCheckpointReservation(
+      root,
+      checkpoint,
+      plan,
+      request,
+      confirmation,
+      consumption
+    );
+    if (planCurrentness(root, plan).state !== 'current') {
+      fail('CONFIGURATION_PLAN_STALE', 'Reserved configuration execution requires the exact plan to remain current.');
+    }
     createConfigurationTransactionCheckpointState(root, checkpoint);
+  }
+  if (planCurrentness(root, plan).state !== 'current') {
+    fail('CONFIGURATION_PLAN_STALE', 'Reserved configuration execution requires the exact plan to remain current.');
   }
   const started = seal({
     ...consumption,
-    updatedAt: at,
+    updatedAt: checkpoint.createdAt,
     state: 'started',
     checkpointFingerprint: checkpoint.checkpointFingerprint
   }, 'consumptionFingerprint');
+  assertConsumption(root, started);
   writeConfigurationChangeConsumptionState(root, started);
   return { consumption: started, checkpoint };
 }
@@ -789,12 +1062,21 @@ function observe(root, plan) {
   } catch {
     // A removed or malformed portable template invalidates every private resolution.
   }
-  const privateExists = fs.existsSync(desiredFile);
-  const activeExists = hasActiveConfigurationLockState(root, plan.configuration.name);
+  let privateExists = false;
+  let activeExists = false;
+  let statePathsValid = true;
+  try {
+    privateExists = hasPrivateConfigurationState(root, plan.configuration.name);
+    activeExists = hasActiveConfigurationLockState(root, plan.configuration.name);
+  } catch {
+    statePathsValid = false;
+  }
   let documentFingerprint = null;
   let resolutionFingerprint = null;
   try {
-    if (privateExists) {
+    if (!statePathsValid) {
+      // Unsafe private ancestry, permissions, or linked leaves are invalid state.
+    } else if (privateExists) {
       const privateState = readPrivateConfigurationState(root, plan.configuration.name);
       documentFingerprint = fingerprintJson(privateState.configuration);
       resolutionFingerprint = fingerprintLock(resolveConfiguration({ root, configPath: privateState.file }));
@@ -814,9 +1096,9 @@ function observe(root, plan) {
     // Malformed private authority never falls back to the portable template.
   }
   return {
-    sourceKind: privateExists && activeExists
+    sourceKind: statePathsValid && privateExists && activeExists
       ? 'private-active'
-      : !privateExists && !activeExists ? 'tracked-template' : 'invalid',
+      : statePathsValid && !privateExists && !activeExists ? 'tracked-template' : 'invalid',
     templateFingerprint,
     documentFingerprint,
     activeLockFingerprint,
@@ -825,6 +1107,12 @@ function observe(root, plan) {
 }
 
 function restorePrior(root, checkpoint, plan, at, reasonCode, summary) {
+  if (occursBefore(at, checkpoint.updatedAt)) {
+    fail(
+      'CONFIGURATION_CHECKPOINT_BINDING_INVALID',
+      'Configuration rollback cannot move its exact checkpoint time backward.'
+    );
+  }
   checkpoint.state = 'rolling-back';
   checkpoint.phase = 'rollback-configuration';
   checkpoint.failure = { reasonCode, summary };
@@ -930,11 +1218,18 @@ export function prepareConfigurationChange({
     contractVersion: VERSION,
     id,
     createdAt,
+    target: targetIdentity(resolvedRoot),
     configuration: {
       name,
       templatePath: repoRelativePath(resolvedRoot, templateFile),
       desiredStatePath: repoRelativePath(resolvedRoot, desiredStateFile),
       activeLockPath: repoRelativePath(resolvedRoot, activeLockPath),
+      permissions: {
+        privateDirectories: '0700',
+        desiredConfiguration: '0600',
+        activeLock: '0600',
+        authorityFiles: '0600'
+      },
       templateFingerprint: fingerprintJson(templateConfiguration),
       currentSourceKind: current.sourceKind,
       currentDocumentFingerprint: fingerprintJson(currentConfiguration),
@@ -1141,6 +1436,59 @@ export function prepareConfigurationChangeExecution({
   };
 }
 
+export function resumeConfigurationChangeExecution({
+  root = DEFAULT_ROOT,
+  confirmationId,
+  checkpointId,
+  at
+} = {}) {
+  const resolvedRoot = path.resolve(root);
+  const { confirmation } = readConfirmation(resolvedRoot, confirmationId);
+  const consumptionId = configurationChangeConsumptionId(confirmation.id);
+  if (!hasConfigurationChangeConsumptionState(resolvedRoot, consumptionId)) {
+    fail(
+      'CONFIGURATION_CONSUMPTION_MISSING',
+      'Configuration start re-entry requires an existing exact reserved consumption.'
+    );
+  }
+  const existingResult = assertConsumption(
+    resolvedRoot,
+    readConfigurationChangeConsumptionState(resolvedRoot, consumptionId).consumption
+  );
+  if (existingResult.consumption.state !== 'reserved') {
+    fail(
+      'CONFIGURATION_CONSUMPTION_NOT_RESERVED',
+      'Configuration start re-entry requires the exact consumption to remain reserved.'
+    );
+  }
+  if (existingResult.consumption.checkpointId !== checkpointId) {
+    fail(
+      'CONFIGURATION_CONFIRMATION_ALREADY_CONSUMED',
+      'Configuration confirmation was already reserved for another checkpoint.'
+    );
+  }
+  const resumed = startReservedExecution(resolvedRoot, {
+    plan: existingResult.plan,
+    request: existingResult.request,
+    confirmation: existingResult.confirmation,
+    consumption: existingResult.consumption,
+    checkpointId,
+    at
+  });
+  return {
+    consumption: resumed.consumption,
+    consumptionPath: repoRelativePath(
+      resolvedRoot,
+      configurationChangeConsumptionStatePath(resolvedRoot, resumed.consumption.id)
+    ),
+    checkpoint: resumed.checkpoint,
+    checkpointPath: repoRelativePath(
+      resolvedRoot,
+      configurationTransactionCheckpointStatePath(resolvedRoot, resumed.checkpoint.id)
+    )
+  };
+}
+
 export function executeConfigurationChange({ root = DEFAULT_ROOT, checkpointId, at } = {}) {
   const resolvedRoot = path.resolve(root);
   iso(at, 'at');
@@ -1149,6 +1497,12 @@ export function executeConfigurationChange({ root = DEFAULT_ROOT, checkpointId, 
   if (checkpoint.state === 'completed' || checkpoint.state === 'rolled-back') return checkpoint;
   if (checkpoint.state !== 'prepared') {
     fail('CONFIGURATION_CHECKPOINT_NOT_EXECUTABLE', 'Configuration checkpoint must be recovered before execution.');
+  }
+  if (occursBefore(at, checkpoint.updatedAt)) {
+    fail(
+      'CONFIGURATION_CHECKPOINT_BINDING_INVALID',
+      'Configuration execution cannot move its exact checkpoint time backward.'
+    );
   }
   if (planCurrentness(resolvedRoot, plan).state !== 'current') {
     fail('CONFIGURATION_PLAN_STALE', 'Configuration execution checkpoint is no longer current.');
@@ -1226,6 +1580,12 @@ export function recoverConfigurationChange({ root = DEFAULT_ROOT, checkpointId, 
   const { checkpoint, plan } = assertCheckpoint(resolvedRoot, loaded);
   if (checkpoint.state === 'completed' || checkpoint.state === 'rolled-back' || checkpoint.state === 'needs-attention') {
     return checkpoint;
+  }
+  if (occursBefore(at, checkpoint.updatedAt)) {
+    fail(
+      'CONFIGURATION_CHECKPOINT_BINDING_INVALID',
+      'Configuration recovery cannot move its exact checkpoint time backward.'
+    );
   }
   if (checkpoint.state === 'rolling-back') {
     return restorePrior(
@@ -1340,18 +1700,33 @@ export function inspectConfigurationChange({
     'consumption',
     (value) => assertConsumption(resolvedRoot, value).consumption
   );
-  let checkpoint = optionalDocument(
-    resolvedRoot,
-    checkpointId,
-    hasConfigurationTransactionCheckpointState,
-    readConfigurationTransactionCheckpointState,
-    'checkpoint',
-    (value) => assertCheckpoint(resolvedRoot, value).checkpoint
-  );
-  if (!consumption && checkpoint) {
+  let checkpointDocument = null;
+  if (checkpointId) {
+    if (!hasConfigurationTransactionCheckpointState(resolvedRoot, checkpointId)) {
+      fail(
+        'CONFIGURATION_INSPECTION_REFERENCE_MISSING',
+        'A requested configuration transaction reference is unavailable.'
+      );
+    }
+    checkpointDocument = readConfigurationTransactionCheckpointState(
+      resolvedRoot,
+      checkpointId
+    ).checkpoint;
+    assertFingerprint(
+      resolvedRoot,
+      checkpointDocument,
+      'checkpoint',
+      'checkpointFingerprint',
+      'Configuration transaction checkpoint'
+    );
+  }
+  if (!consumption && checkpointDocument) {
     consumption = assertConsumption(
       resolvedRoot,
-      readConfigurationChangeConsumptionState(resolvedRoot, checkpoint.consumption.id).consumption
+      readConfigurationChangeConsumptionState(
+        resolvedRoot,
+        checkpointDocument.consumption.id
+      ).consumption
     ).consumption;
   }
   if (!consumption && confirmation) {
@@ -1363,27 +1738,53 @@ export function inspectConfigurationChange({
       ).consumption;
     }
   }
-  if (!confirmation && (checkpoint || consumption)) {
-    const id = checkpoint?.confirmation.id || consumption.confirmation.id;
+  if (!confirmation && (checkpointDocument || consumption)) {
+    const id = checkpointDocument?.confirmation.id || consumption.confirmation.id;
     confirmation = assertConfirmation(
       resolvedRoot,
       readConfigurationChangeConfirmationState(resolvedRoot, id).confirmation
     ).confirmation;
   }
-  if (!checkpoint && consumption?.state === 'started'
-    && hasConfigurationTransactionCheckpointState(resolvedRoot, consumption.checkpointId)) {
-    checkpoint = assertCheckpoint(
-      resolvedRoot,
-      readConfigurationTransactionCheckpointState(resolvedRoot, consumption.checkpointId).checkpoint
-    ).checkpoint;
-  }
-  if (!request && (checkpoint || consumption || confirmation)) {
-    const id = checkpoint?.request.id || consumption?.request.id || confirmation.request.id;
+  if (!request && (checkpointDocument || consumption || confirmation)) {
+    const id = checkpointDocument?.request.id || consumption?.request.id || confirmation.request.id;
     request = assertRequest(
       resolvedRoot,
       readConfigurationChangeRequestState(resolvedRoot, id).request
     ).request;
   }
+  if (!checkpointDocument && consumption
+    && hasConfigurationTransactionCheckpointState(resolvedRoot, consumption.checkpointId)) {
+    checkpointDocument = readConfigurationTransactionCheckpointState(
+      resolvedRoot,
+      consumption.checkpointId
+    ).checkpoint;
+    assertFingerprint(
+      resolvedRoot,
+      checkpointDocument,
+      'checkpoint',
+      'checkpointFingerprint',
+      'Configuration transaction checkpoint'
+    );
+  }
+  if (checkpointDocument && consumption?.checkpointId !== checkpointDocument.id) {
+    fail(
+      'CONFIGURATION_INSPECTION_BINDING_INVALID',
+      'Inspection checkpoint does not equal the consumption-bound checkpoint.'
+    );
+  }
+  const checkpoint = checkpointDocument
+    ? consumption?.state === 'reserved'
+      ? assertPreparedCheckpointReservation(
+          resolvedRoot,
+          checkpointDocument,
+          plan,
+          request,
+          confirmation,
+          consumption
+        )
+      : assertCheckpoint(resolvedRoot, checkpointDocument).checkpoint
+    : null;
+  const startedCheckpointMissing = consumption?.state === 'started' && !checkpoint;
   if ((request && request.plan.id !== plan.id)
     || (confirmation && confirmation.plan.id !== plan.id)
     || (consumption && consumption.plan.id !== plan.id)
@@ -1406,19 +1807,68 @@ export function inspectConfigurationChange({
         : 'The exact configuration transaction was rolled back.',
       permittedNextAction: 'none'
     };
-  } else if (checkpoint) {
+  } else if (consumption?.state === 'reserved' && applicability.state !== 'current') {
     resume = {
-      classification: checkpoint.state === 'needs-attention' ? 'requires-review' : 'safe',
-      reasonCode: checkpoint.failure?.reasonCode || 'CONFIGURATION_CHECKPOINT_RECOVERABLE',
-      reason: checkpoint.failure?.summary || 'Core can inspect and reconcile the exact durable configuration checkpoint.',
-      permittedNextAction: 'inspect-checkpoint'
+      classification: 'unavailable',
+      reasonCode: applicability.reasonCode,
+      reason: 'The exact configuration plan no longer matches the current workspace state.',
+      permittedNextAction: 'none'
     };
-  } else if (confirmation && applicability.state === 'current') {
+  } else if (consumption?.state === 'reserved' && checkpoint) {
     resume = {
       classification: 'safe',
-      reasonCode: 'CONFIGURATION_CONFIRMATION_CURRENT',
-      reason: 'The exact confirmation is current and has not been consumed.',
-      permittedNextAction: 'apply'
+      reasonCode: 'CONFIGURATION_RESERVED_CHECKPOINT_PREPARED',
+      reason: 'The reserved one-time start has its exact prepared checkpoint and may only resume that start.',
+      permittedNextAction: 'resume-start'
+    };
+  } else if (consumption?.state === 'reserved') {
+    resume = {
+      classification: 'safe',
+      reasonCode: 'CONFIGURATION_CONSUMPTION_RESERVED',
+      reason: 'The exact one-time start is reserved and may only resume with its bound checkpoint ID.',
+      permittedNextAction: 'resume-start'
+    };
+  } else if (checkpoint) {
+    if (checkpoint.state === 'needs-attention') {
+      resume = {
+        classification: 'requires-review',
+        reasonCode: 'CONFIGURATION_CHECKPOINT_REQUIRES_REVIEW',
+        reason: 'The exact durable configuration checkpoint requires local operator review.',
+        permittedNextAction: 'inspect-checkpoint'
+      };
+    } else if (checkpoint.state === 'rolling-back') {
+      resume = {
+        classification: 'safe',
+        reasonCode: 'CONFIGURATION_CHECKPOINT_ROLLBACK_IN_PROGRESS',
+        reason: 'Core can inspect and continue the exact durable configuration rollback.',
+        permittedNextAction: 'inspect-checkpoint'
+      };
+    } else {
+      resume = {
+        classification: 'safe',
+        reasonCode: 'CONFIGURATION_CHECKPOINT_RECOVERABLE',
+        reason: 'Core can inspect and reconcile the exact durable configuration checkpoint.',
+        permittedNextAction: 'inspect-checkpoint'
+      };
+    }
+  } else if (startedCheckpointMissing) {
+    resume = {
+      classification: 'requires-review',
+      reasonCode: 'CONFIGURATION_CHECKPOINT_MISSING',
+      reason: 'The one-time start was consumed but its exact checkpoint is unavailable.',
+      permittedNextAction: 'none'
+    };
+  } else if (confirmation && applicability.state === 'current') {
+    const expired = Date.parse(at) > Date.parse(request.expiresAt);
+    resume = {
+      classification: expired ? 'unavailable' : 'safe',
+      reasonCode: expired
+        ? 'CONFIGURATION_REQUEST_EXPIRED'
+        : 'CONFIGURATION_CONFIRMATION_CURRENT',
+      reason: expired
+        ? 'The exact configuration request expired and requires a new confirmation.'
+        : 'The exact confirmation is current and has not been consumed.',
+      permittedNextAction: expired ? 'request-confirmation' : 'apply'
     };
   } else if (request && !confirmation && applicability.state === 'current') {
     const expired = Date.parse(at) > Date.parse(request.expiresAt);
@@ -1426,7 +1876,7 @@ export function inspectConfigurationChange({
       classification: expired ? 'unavailable' : 'safe',
       reasonCode: expired ? 'CONFIGURATION_REQUEST_EXPIRED' : 'CONFIGURATION_REQUEST_AWAITING_CONFIRMATION',
       reason: expired
-        ? 'The exact configuration request expired and cannot be confirmed.'
+        ? 'The exact configuration request expired and requires a new confirmation.'
         : 'The exact configuration request is awaiting local operator confirmation.',
       permittedNextAction: expired ? 'request-confirmation' : 'confirm'
     };
@@ -1485,7 +1935,8 @@ export function inspectConfigurationChange({
     consumption: consumption ? {
       id: consumption.id,
       fingerprint: consumption.consumptionFingerprint,
-      state: consumption.state
+      state: consumption.state,
+      checkpointId: consumption.checkpointId
     } : null,
     checkpoint: checkpoint ? {
       id: checkpoint.id,

@@ -6,7 +6,7 @@
   "level": "offline",
   "configuration": {
     "name": "project-pulse",
-    "lockFingerprint": "sha256:5571b379625d02493f4ff655f224e1db83877cd206bb489d29ae73ff59b6650e"
+    "lockFingerprint": "sha256:dc7a27a1e646868b148fc620ef3cda3d85addd51521b8791b0c4a97cb4e4c27c"
   },
   "states": {
     "valid": "passed",

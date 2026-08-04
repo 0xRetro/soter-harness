@@ -694,28 +694,43 @@ evidence-bearing operations run. CLI and graphical interfaces must render these
 structured facts rather than reconstructing architecture or state from prose.
 
 The configuration-transaction family is the local apply path. It accepts one
-complete private `configuration/v1` replacement for an
-existing named configuration; a controlled preview draft is not apply
+complete private `configuration/v1` candidate for a named tracked template or
+existing private-active configuration; a controlled preview draft is not apply
 authority. Its contracts remain distinct:
 
 - `configuration-change-plan/v1` privately binds both desired-configuration
-  documents, both resolved locks, the prior active-lock state, projection
-  fingerprints, and a minimized exact change scope.
+  documents, both resolved locks, the exact consumer-root identity, enforced
+  private directory/file modes, the absent or present prior active-lock state,
+  projection fingerprints, and a minimized exact change scope. First private
+  activation is an added active-lock row even when candidate bytes equal the
+  tracked template; an unchanged private-active candidate remains an empty plan.
 - `configuration-change-request/v1` gives that plan an explicit expiry window.
 - `configuration-change-confirmation/v1` records one local operator's exact
   confirmation without starting the transaction.
 - `configuration-change-consumption/v1` reserves that confirmation once for
-  one deterministic checkpoint.
+  one deterministic checkpoint. If checkpoint creation is interrupted, the
+  reserved consumption remains exact re-entry authority for only that bound
+  checkpoint even after request expiry; an existing checkpoint must validate as
+  the exact prepared reservation and the plan must still be current. The
+  reservation itself must have been created after confirmation and before
+  request expiry. It is not a fresh start, and a started consumption with a
+  missing checkpoint requires review rather than replacement.
 - `configuration-transaction-checkpoint/v1` records local apply, verification,
-  rollback, and recovery phases.
+  rollback, and recovery phases through closed state/phase/failure combinations;
+  prepared and rolled-back observations bind the exact prior state, while a
+  completed observation binds the exact private-active candidate state. Its
+  plan, request, confirmation, and reserved-consumption references must all
+  resolve to one exact authority chain, with monotonic start/update times.
 - `configuration-change-inspection/v1` exposes only stable identifiers and
   fingerprints. Raw configuration, settings, authority URIs, source inputs,
-  secret references, and before/after values are structurally unavailable.
+  secret references, persisted failure summaries, and before/after values are
+  structurally unavailable.
 
-Core revalidates the current document, current lock, candidate document,
-candidate lock, graph, and host-projection fingerprints before request,
-confirmation, and start. Execution replaces each desired-configuration and
-`0600` active-lock file atomically, checkpointing the boundary between them; it
+Core revalidates the target root, private ancestry and modes, current document,
+current lock, candidate document, candidate lock, graph, and host-projection
+fingerprints before request, confirmation, and start. Execution creates or
+replaces each desired-configuration and `0600` active-lock file atomically,
+checkpointing the boundary between them; it
 does not rewrite checked-in fixture locks. It then resolves the written
 configuration again. Failure restores the private plan's exact prior desired
 configuration and active-lock presence/value; an unknown crash state is

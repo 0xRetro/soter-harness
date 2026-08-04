@@ -8,6 +8,8 @@ import { fileURLToPath } from 'node:url';
 import { buildBundle, buildPackRelease } from '../../../kernel/distribution.mjs';
 // @ts-expect-error The canonical Core contained-state module is checked JavaScript without declarations.
 import { materializeContainedPrivateConfiguration } from '../../../core/contained-private-configurations.mjs';
+// @ts-expect-error The canonical JSON helper is checked JavaScript without declarations.
+import { fingerprintJson } from '../../../core/lib/canonical-json.mjs';
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = path.resolve(directory, '../../../..');
@@ -715,7 +717,7 @@ test('renders the canonical lifecycle coverage without enabling fixture authorit
   }
 });
 
-test('configuration ceremony reaches a one-time local checkpoint without applying it', async () => {
+test('configuration ceremony generates a checkpoint and resumes its exact reservation without applying it', async () => {
   const root = containedWorkspace();
   const source = path.join(root, 'soter/configurations/meeting-intake.config.json');
   const fixtureLock = path.join(root, 'soter/fixtures/meeting-intake/meeting-intake.lock.json');
@@ -739,12 +741,98 @@ test('configuration ceremony reaches a one-time local checkpoint without applyin
     await page.getByRole('button', { name: 'Request confirmation' }).click();
     await page.getByLabel('I reviewed this exact fingerprint-only scope.').check();
     await page.getByRole('button', { name: 'Confirm exact request' }).click();
+
+    const confirmationDirectory = path.join(root, '.soter/state/configuration-change-confirmations');
+    const [confirmationFile] = fs.readdirSync(confirmationDirectory).filter((file) => file.endsWith('.json'));
+    expect(confirmationFile).toBeTruthy();
+    const confirmation = JSON.parse(fs.readFileSync(path.join(confirmationDirectory, confirmationFile), 'utf8')) as {
+      id: string;
+    };
+    const hostileCheckpointId = 'checkpoint.configuration.hostile-fresh-resume';
+    const hostileResume = await page.evaluate(
+      ({ confirmationId, checkpointId }) => window.soterStudio.startConfigurationChange({ confirmationId, checkpointId }),
+      { confirmationId: confirmation.id, checkpointId: hostileCheckpointId }
+    );
+    expect(hostileResume).toEqual({
+      ok: false,
+      error: {
+        code: 'CONFIGURATION_CONSUMPTION_MISSING',
+        message: 'The one-time configuration start is unavailable.'
+      }
+    });
+    const consumptionDirectory = path.join(root, '.soter/state/configuration-change-consumptions');
+    expect(fs.existsSync(consumptionDirectory)
+      ? fs.readdirSync(consumptionDirectory).filter((file) => file.endsWith('.json'))
+      : []).toEqual([]);
+    expect(fs.existsSync(path.join(
+      root,
+      '.soter/state/configuration-transactions',
+      `${hostileCheckpointId}.json`
+    ))).toBe(false);
+    await expect(page.getByRole('button', { name: 'Reserve one-time start' })).toBeEnabled();
     await page.getByRole('button', { name: 'Reserve one-time start' }).click();
     const apply = page.getByRole('button', { name: 'Apply exact checkpoint' });
     await expect(apply).toBeDisabled();
     await page.getByLabel('I understand this changes the local desired configuration.').check();
     await expect(apply).toBeEnabled();
+    await page.getByLabel('I understand this changes the local desired configuration.').uncheck();
+    await expect(apply).toBeDisabled();
     await expect(page.getByText('Core-derived guidance · not authority')).toBeVisible();
+
+    const [consumptionFile] = fs.readdirSync(consumptionDirectory).filter((file) => file.endsWith('.json'));
+    const consumptionPath = path.join(consumptionDirectory, consumptionFile);
+    const startedConsumption = JSON.parse(fs.readFileSync(consumptionPath, 'utf8')) as {
+      id: string;
+      createdAt: string;
+      updatedAt: string;
+      state: 'reserved' | 'started';
+      plan: { id: string };
+      request: { id: string };
+      confirmation: { id: string };
+      checkpointId: string;
+      checkpointFingerprint: string | null;
+      consumptionFingerprint: string;
+    };
+    expect(startedConsumption.state).toBe('started');
+    expect(startedConsumption.checkpointId).toMatch(/^checkpoint\.configuration\.[a-f0-9-]+$/);
+    const checkpointPath = path.join(
+      root,
+      '.soter/state/configuration-transactions',
+      `${startedConsumption.checkpointId}.json`
+    );
+    expect(fs.existsSync(checkpointPath)).toBe(true);
+
+    const reservedConsumption: Record<string, unknown> = {
+      ...startedConsumption,
+      updatedAt: startedConsumption.createdAt,
+      state: 'reserved' as const,
+      checkpointFingerprint: null
+    };
+    delete reservedConsumption.consumptionFingerprint;
+    reservedConsumption.consumptionFingerprint = fingerprintJson(reservedConsumption);
+    fs.writeFileSync(consumptionPath, JSON.stringify(reservedConsumption, null, 2) + '\n');
+    fs.rmSync(checkpointPath);
+
+    const existingTransaction = page.locator('.configuration-existing-transaction');
+    await existingTransaction.getByText('Open an existing exact transaction').click();
+    await existingTransaction.getByLabel('Plan ID').fill(startedConsumption.plan.id);
+    await existingTransaction.getByLabel('Request ID').fill(startedConsumption.request.id);
+    await existingTransaction.getByLabel('Confirmation ID').fill(startedConsumption.confirmation.id);
+    await existingTransaction.getByLabel('Checkpoint ID').fill('');
+    await existingTransaction.getByRole('button', { name: 'Inspect exact references' }).click();
+    const resume = page.getByRole('button', { name: 'Resume exact reserved start' });
+    await expect(resume).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'Reserve one-time start' })).toHaveCount(0);
+    await resume.click();
+    await expect(page.getByRole('button', { name: 'Apply exact checkpoint' })).toBeDisabled();
+
+    const resumedConsumption = JSON.parse(fs.readFileSync(consumptionPath, 'utf8')) as {
+      state: string;
+      checkpointId: string;
+    };
+    expect(resumedConsumption.state).toBe('started');
+    expect(resumedConsumption.checkpointId).toBe(startedConsumption.checkpointId);
+    expect(fs.existsSync(checkpointPath)).toBe(true);
 
     expect(fs.readFileSync(source, 'utf8')).toBe(sourceBefore);
     expect(fs.readFileSync(fixtureLock, 'utf8')).toBe(fixtureLockBefore);
@@ -856,7 +944,7 @@ test('canonical file changes invalidate and refresh through Core', async () => {
     fs.writeFileSync(target, JSON.stringify(capability, null, 2) + '\n');
     await expect(page.locator('.catalog-panel').getByText('Studio Test Read')).toBeVisible({ timeout: watcherRefreshTimeout });
     const privateCalls = path.join(root, '.soter/state/host-calls');
-    fs.mkdirSync(privateCalls, { recursive: true });
+    fs.mkdirSync(privateCalls, { recursive: true, mode: 0o700 });
     fs.writeFileSync(path.join(privateCalls, 'malformed.json'), '{not-json\n');
     await expect(page.getByText('SOTER_INSPECTION_RUNTIME_JSON_INVALID')).toBeAttached({ timeout: watcherRefreshTimeout });
   } finally {

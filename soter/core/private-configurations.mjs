@@ -21,8 +21,8 @@ function fail(code, message) {
 function assertNoSymlinkAncestors(directory) {
   const ancestors = [path.dirname(path.dirname(directory)), path.dirname(directory), directory];
   for (const item of ancestors) {
-    if (!fs.existsSync(item)) continue;
-    const stat = fs.lstatSync(item);
+    const stat = fs.lstatSync(item, { throwIfNoEntry: false });
+    if (!stat) continue;
     if (!stat.isDirectory() || stat.isSymbolicLink()) {
       fail('CONFIGURATION_PRIVATE_STATE_INVALID', 'Private desired configuration parent is invalid.');
     }
@@ -38,8 +38,8 @@ function safeName(name) {
 
 function assertPrivateDirectory(directory) {
   assertNoSymlinkAncestors(directory);
-  if (!fs.existsSync(directory)) return;
-  const stat = fs.lstatSync(directory);
+  const stat = fs.lstatSync(directory, { throwIfNoEntry: false });
+  if (!stat) return;
   if (!stat.isDirectory() || stat.isSymbolicLink()) {
     fail('CONFIGURATION_PRIVATE_STATE_INVALID', 'Private desired configuration directory is invalid.');
   }
@@ -49,8 +49,8 @@ function assertPrivateDirectory(directory) {
 }
 
 function assertPrivateFile(file) {
-  if (!fs.existsSync(file)) return;
-  const stat = fs.lstatSync(file);
+  const stat = fs.lstatSync(file, { throwIfNoEntry: false });
+  if (!stat) return;
   if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1) {
     fail('CONFIGURATION_PRIVATE_STATE_INVALID', 'Private desired configuration must be one regular unlinked file.');
   }
@@ -90,18 +90,18 @@ export function isPrivateConfigurationPath(root, requestedPath) {
 
 export function hasPrivateConfigurationState(root, name) {
   const file = privateConfigurationStatePath(root, name);
-  if (!fs.existsSync(file)) return false;
   assertPrivateDirectory(path.dirname(file));
+  if (!fs.lstatSync(file, { throwIfNoEntry: false })) return false;
   assertPrivateFile(file);
   return true;
 }
 
 export function readPrivateConfigurationState(root, name) {
   const file = privateConfigurationStatePath(root, name);
-  if (!fs.existsSync(file)) {
+  assertPrivateDirectory(path.dirname(file));
+  if (!fs.lstatSync(file, { throwIfNoEntry: false })) {
     fail('CONFIGURATION_PRIVATE_STATE_MISSING', 'Private desired configuration is unavailable.');
   }
-  assertPrivateDirectory(path.dirname(file));
   assertPrivateFile(file);
   let configuration;
   try {
@@ -126,7 +126,7 @@ export function writePrivateConfigurationState(root, name, configuration) {
   const file = privateConfigurationStatePath(root, name);
   const directory = path.dirname(file);
   ensurePrivateDirectory(directory);
-  if (fs.existsSync(file)) assertPrivateFile(file);
+  if (fs.lstatSync(file, { throwIfNoEntry: false })) assertPrivateFile(file);
   const temporary = file + '.' + process.pid + '.' + Date.now() + '.tmp';
   let descriptor = null;
   try {
@@ -157,9 +157,10 @@ export function writePrivateConfigurationState(root, name, configuration) {
 
 export function removePrivateConfigurationState(root, name) {
   const file = privateConfigurationStatePath(root, name);
-  if (fs.existsSync(file)) {
+  assertPrivateDirectory(path.dirname(file));
+  if (fs.lstatSync(file, { throwIfNoEntry: false })) {
     assertPrivateFile(file);
-    fs.rmSync(file);
+    fs.unlinkSync(file);
   }
   return { file, path: repoRelativePath(root, file) };
 }

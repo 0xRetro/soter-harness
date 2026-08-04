@@ -10,8 +10,8 @@
     "id": "organization-capture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:d5113f7963a2d63d3c66ce6662a81eb9afe84c2b9553e8288f0a5c1252e1e748",
-  "graphFingerprint": "sha256:aa528bb9265ae108d08b150cc8dbf1de81aa53ed5505001d0c14cdc4c9a53ebb",
+  "configurationLockFingerprint": "sha256:370f0251b7f7ea6ae0675b8c56280185d700f64030ddaed7093c6f6838f54986",
+  "graphFingerprint": "sha256:c9a61cfe5b22458c9e35be7cbccdf748b12c573d5934c8155a28aaf788c1b9dc",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -117,7 +117,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:d5113f7963a2d63d3c66ce6662a81eb9afe84c2b9553e8288f0a5c1252e1e748"
+      "fingerprint": "sha256:370f0251b7f7ea6ae0675b8c56280185d700f64030ddaed7093c6f6838f54986"
     }
   ],
   "effects": [],

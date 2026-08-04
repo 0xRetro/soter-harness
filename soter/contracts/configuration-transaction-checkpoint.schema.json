@@ -58,8 +58,69 @@
     },
     "checkpointFingerprint": { "$ref": "#/$defs/fingerprint" }
   },
+  "allOf": [
+    {
+      "if": { "properties": { "state": { "const": "prepared" } }, "required": ["state"] },
+      "then": { "properties": { "phase": { "const": "prepared" }, "failure": { "const": null } } }
+    },
+    {
+      "if": { "properties": { "state": { "const": "applying" } }, "required": ["state"] },
+      "then": {
+        "properties": {
+          "phase": { "enum": ["prepared", "configuration-unchanged", "configuration-written", "active-lock-written"] },
+          "failure": { "const": null }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "state": { "const": "verifying" } }, "required": ["state"] },
+      "then": { "properties": { "phase": { "const": "verifying" }, "failure": { "const": null } } }
+    },
+    {
+      "if": { "properties": { "state": { "const": "completed" } }, "required": ["state"] },
+      "then": {
+        "properties": {
+          "phase": { "const": "terminal" },
+          "failure": { "const": null },
+          "observation": {
+            "properties": {
+              "sourceKind": { "const": "private-active" },
+              "templateFingerprint": { "$ref": "#/$defs/fingerprint" },
+              "documentFingerprint": { "$ref": "#/$defs/fingerprint" },
+              "activeLockFingerprint": { "$ref": "#/$defs/fingerprint" },
+              "resolutionFingerprint": { "$ref": "#/$defs/fingerprint" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "state": { "const": "rolling-back" } }, "required": ["state"] },
+      "then": {
+        "properties": {
+          "phase": { "enum": ["rollback-configuration", "rollback-active-lock"] },
+          "failure": { "$ref": "#/$defs/failure" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "state": { "const": "rolled-back" } }, "required": ["state"] },
+      "then": { "properties": { "phase": { "const": "terminal" }, "failure": { "$ref": "#/$defs/failure" } } }
+    },
+    {
+      "if": { "properties": { "state": { "const": "needs-attention" } }, "required": ["state"] },
+      "then": { "properties": { "phase": { "const": "terminal" }, "failure": { "$ref": "#/$defs/failure" } } }
+    }
+  ],
   "$defs": {
     "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "failure": {
+      "type": "object", "additionalProperties": false, "required": ["reasonCode", "summary"],
+      "properties": {
+        "reasonCode": { "type": "string", "pattern": "^CONFIGURATION_[A-Z0-9_]+$" },
+        "summary": { "type": "string", "minLength": 8 }
+      }
+    },
     "reference": {
       "type": "object", "additionalProperties": false, "required": ["id", "fingerprint"],
       "properties": { "id": { "type": "string" }, "fingerprint": { "$ref": "#/$defs/fingerprint" } }

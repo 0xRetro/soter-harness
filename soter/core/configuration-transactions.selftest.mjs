@@ -11,7 +11,8 @@ import {
   inspectConfigurationChange,
   prepareConfigurationChange,
   prepareConfigurationChangeExecution,
-  recoverConfigurationChange
+  recoverConfigurationChange,
+  resumeConfigurationChangeExecution
 } from './configuration-transactions.mjs';
 import { fingerprintJson, readJson, writeJson } from './lib/canonical-json.mjs';
 import { fingerprintLock, resolveConfiguration } from './resolve.mjs';
@@ -24,12 +25,14 @@ import {
 import { prepareAutomationRun } from './prepared-work.mjs';
 import {
   activeConfigurationLockStatePath,
+  configurationChangeConfirmationStatePath,
   configurationChangeConsumptionStatePath,
   configurationChangePlanStatePath,
   configurationTransactionCheckpointStatePath,
   removeActiveConfigurationLockState,
   readConfigurationTransactionCheckpointState,
-  writeActiveConfigurationLockState
+  writeActiveConfigurationLockState,
+  writeConfigurationTransactionCheckpointState
 } from './runtime-state.mjs';
 
 const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -56,7 +59,7 @@ function assert(condition, message) {
 }
 
 function copyRoot(root, prefix) {
-  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+  const temporary = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), prefix));
   fs.cpSync(root, temporary, {
     recursive: true,
     filter(source) {
@@ -311,6 +314,571 @@ export async function selftestConfigurationTransactions(root = defaultRoot) {
       && portableSelfAddresses.every((address) => address.endsWith('.example'))
       && !JSON.stringify(portableEmailTemplate).includes('@soterlabs.com'),
     'Tracked configuration template retained user-specific mailbox identities.');
+
+    const bootstrap = copyRoot(root, 'soter-configuration-bootstrap-');
+    roots.push(bootstrap);
+    const bootstrapTemplatePath = path.join(
+      bootstrap,
+      'soter/configurations/meeting-intake.config.json'
+    );
+    const bootstrapTemplateText = fs.readFileSync(bootstrapTemplatePath, 'utf8');
+    const bootstrapCandidate = readJson(bootstrapTemplatePath);
+    const bootstrapAuthority = prepareAuthority(
+      bootstrap,
+      'exact-template-bootstrap-selftest',
+      bootstrapCandidate
+    );
+    const bootstrapPlan = bootstrapAuthority.prepared.plan;
+    const bootstrapInitialization = bootstrapPlan.changes.find(
+      (change) => change.id === 'configuration-change.lock.active'
+    );
+    assert(bootstrapPlan.configuration.currentSourceKind === 'tracked-template'
+      && bootstrapPlan.priorActiveLock.state === 'absent'
+      && bootstrapPlan.target.requestedPath === path.resolve(bootstrap)
+      && bootstrapPlan.target.realPath === fs.realpathSync(bootstrap)
+      && bootstrapPlan.configuration.permissions.privateDirectories === '0700'
+      && bootstrapPlan.configuration.permissions.desiredConfiguration === '0600'
+      && bootstrapPlan.configuration.permissions.activeLock === '0600'
+      && bootstrapPlan.configuration.permissions.authorityFiles === '0600'
+      && bootstrapPlan.configuration.currentDocumentFingerprint
+        === bootstrapPlan.configuration.candidateDocumentFingerprint
+      && bootstrapPlan.changes.length === 1
+      && bootstrapInitialization?.category === 'lock'
+      && bootstrapInitialization.state === 'added'
+      && bootstrapInitialization.beforeDescriptor === null
+      && bootstrapInitialization.beforeFingerprint === null
+      && bootstrapInitialization.afterDescriptor === 'candidate-active-lock'
+      && bootstrapInitialization.afterFingerprint
+        === bootstrapPlan.configuration.candidateLockFingerprint,
+    'Clean exact-template initialization did not produce one truthful absent-to-active lock scope.');
+    for (const [value, schemaName] of [
+      [bootstrapPlan, 'configuration-change-plan.schema.json'],
+      [bootstrapAuthority.request.request, 'configuration-change-request.schema.json'],
+      [bootstrapAuthority.execution.checkpoint, 'configuration-transaction-checkpoint.schema.json']
+    ]) {
+      const schema = readJson(path.join(bootstrap, 'soter/contracts', schemaName));
+      assert(validateJsonSchema(value, schema).length === 0,
+        schemaName + ' rejected exact-template initialization authority.');
+    }
+    assert(bootstrapAuthority.execution.checkpoint.state === 'prepared'
+      && bootstrapAuthority.execution.checkpoint.phase === 'prepared'
+      && bootstrapAuthority.execution.checkpoint.failure === null
+      && bootstrapAuthority.execution.checkpoint.observation.sourceKind === 'tracked-template',
+    'Exact-template initialization did not start from one durable absent-state checkpoint.');
+    const bootstrapCompleted = executeConfigurationChange({
+      root: bootstrap,
+      checkpointId: bootstrapAuthority.checkpointId,
+      at: APPLIED
+    });
+    assert(bootstrapCompleted.state === 'completed'
+      && bootstrapCompleted.phase === 'terminal'
+      && bootstrapCompleted.failure === null
+      && fingerprintJson(readPrivateConfigurationState(bootstrap, 'meeting-intake').configuration)
+        === fingerprintJson(bootstrapCandidate)
+      && fingerprintLock(readJson(activeConfigurationLockStatePath(bootstrap, 'meeting-intake')))
+        === bootstrapPlan.configuration.candidateLockFingerprint
+      && fs.readFileSync(bootstrapTemplatePath, 'utf8') === bootstrapTemplateText,
+    'Exact-template initialization did not atomically establish the exact private-active state.');
+    assertPrivateModes(bootstrap, bootstrapAuthority.planId, 'meeting-intake');
+    const bootstrapReentry = prepareAuthority(
+      bootstrap,
+      'exact-template-bootstrap-selftest',
+      bootstrapCandidate
+    );
+    assert(bootstrapReentry.execution.checkpoint.state === 'completed'
+      && bootstrapReentry.prepared.plan.planFingerprint === bootstrapPlan.planFingerprint,
+    'Exact initialization authority did not permit exact completed re-entry.');
+    const completedBootstrapInspection = inspectConfigurationChange({
+      root: bootstrap,
+      planId: bootstrapAuthority.planId,
+      requestId: bootstrapAuthority.requestId,
+      confirmationId: bootstrapAuthority.confirmationId,
+      consumptionId: bootstrapAuthority.execution.consumption.id,
+      checkpointId: bootstrapAuthority.checkpointId,
+      at: APPLIED
+    });
+    const bootstrapInspectionSchema = readJson(path.join(
+      bootstrap,
+      'soter/contracts/configuration-change-inspection.schema.json'
+    ));
+    assert(completedBootstrapInspection.resume.classification === 'unavailable'
+      && completedBootstrapInspection.resume.reasonCode === 'CONFIGURATION_APPLY_COMPLETED'
+      && completedBootstrapInspection.resume.permittedNextAction === 'none'
+      && validateJsonSchema(completedBootstrapInspection, bootstrapInspectionSchema).length === 0,
+    'Completed bootstrap did not project one terminal unavailable inspection.');
+    const hostileCompletedInspection = structuredClone(completedBootstrapInspection);
+    hostileCompletedInspection.resume = {
+      classification: 'safe',
+      reasonCode: 'CONFIGURATION_CHECKPOINT_RECOVERABLE',
+      reason: 'Hostile crossed guidance falsely advertises checkpoint recovery.',
+      permittedNextAction: 'inspect-checkpoint'
+    };
+    assert(validateJsonSchema(hostileCompletedInspection, bootstrapInspectionSchema).length > 0,
+      'Inspection schema accepted a completed checkpoint as recoverable authority.');
+    const applyingWithCompletedResume = structuredClone(completedBootstrapInspection);
+    applyingWithCompletedResume.checkpoint.state = 'applying';
+    applyingWithCompletedResume.checkpoint.phase = 'prepared';
+    applyingWithCompletedResume.checkpoint.reasonCode = null;
+    applyingWithCompletedResume.resume = {
+      classification: 'unavailable',
+      reasonCode: 'CONFIGURATION_APPLY_COMPLETED',
+      reason: 'The exact configuration transaction is complete.',
+      permittedNextAction: 'none'
+    };
+    assert(validateJsonSchema(
+      applyingWithCompletedResume,
+      bootstrapInspectionSchema
+    ).length > 0,
+    'Inspection schema accepted applying checkpoint state with exact completed guidance.');
+    const pathLikePlanInspection = structuredClone(completedBootstrapInspection);
+    pathLikePlanInspection.plan.id = '/Users/private/configuration-change-plan.json';
+    assert(validateJsonSchema(pathLikePlanInspection, bootstrapInspectionSchema).length > 0,
+      'Inspection schema accepted a private path as its plan identifier.');
+    const pathLikeConfigurationInspection = structuredClone(completedBootstrapInspection);
+    pathLikeConfigurationInspection.configuration.name = '/Users/private/configuration.json';
+    assert(validateJsonSchema(
+      pathLikeConfigurationInspection,
+      bootstrapInspectionSchema
+    ).length > 0,
+    'Inspection schema accepted a private path as its configuration identifier.');
+    const pathLikeChangeInspection = structuredClone(completedBootstrapInspection);
+    pathLikeChangeInspection.scope.changes[0].id = '/Users/private/configuration-change.json';
+    assert(validateJsonSchema(pathLikeChangeInspection, bootstrapInspectionSchema).length > 0,
+      'Inspection schema accepted a private path as its change identifier.');
+    const pathLikeSubjectInspection = structuredClone(completedBootstrapInspection);
+    pathLikeSubjectInspection.scope.changes[0].subject = '/Users/private/change-subject';
+    assert(validateJsonSchema(pathLikeSubjectInspection, bootstrapInspectionSchema).length > 0,
+      'Inspection schema accepted a private path as its change subject.');
+    let bootstrapReuseRejected = false;
+    try {
+      prepareConfigurationChangeExecution({
+        root: bootstrap,
+        confirmationId: bootstrapAuthority.confirmationId,
+        checkpointId: 'checkpoint.configuration.exact-template-bootstrap-reuse-selftest',
+        at: APPLIED
+      });
+    } catch (error) {
+      bootstrapReuseRejected = error.code === 'CONFIGURATION_CONFIRMATION_ALREADY_CONSUMED';
+    }
+    assert(bootstrapReuseRejected,
+      'Exact-template initialization confirmation was reusable by another checkpoint.');
+    let bootstrapNoopRejected = false;
+    try {
+      prepareConfigurationChange({
+        root: bootstrap,
+        name: 'meeting-intake',
+        candidateConfiguration: bootstrapCandidate,
+        id: 'configuration-change-plan.exact-template-bootstrap-noop-selftest',
+        createdAt: CREATED
+      });
+    } catch (error) {
+      bootstrapNoopRejected = error.code === 'CONFIGURATION_CHANGE_EMPTY';
+    }
+    assert(bootstrapNoopRejected,
+      'An unchanged private-active configuration produced a second initialization plan.');
+
+    const falseCompletedCheckpoint = structuredClone(bootstrapCompleted);
+    falseCompletedCheckpoint.observation = structuredClone(
+      bootstrapAuthority.execution.checkpoint.observation
+    );
+    reseal(falseCompletedCheckpoint, 'checkpointFingerprint');
+    writeJson(
+      configurationTransactionCheckpointStatePath(bootstrap, bootstrapAuthority.checkpointId),
+      falseCompletedCheckpoint
+    );
+    let falseCompletedRejected = false;
+    try {
+      executeConfigurationChange({
+        root: bootstrap,
+        checkpointId: bootstrapAuthority.checkpointId,
+        at: APPLIED
+      });
+    } catch (error) {
+      falseCompletedRejected = error.code === 'CONFIGURATION_CHECKPOINT_MALFORMED'
+        || error.code === 'CONFIGURATION_CHECKPOINT_BINDING_INVALID';
+    }
+    assert(falseCompletedRejected,
+      'Re-sealed completed checkpoint retained pre-effect observation and falsely completed.');
+
+    const crossedCheckpoint = structuredClone(bootstrapCompleted);
+    crossedCheckpoint.phase = 'prepared';
+    reseal(crossedCheckpoint, 'checkpointFingerprint');
+    const checkpointSchema = readJson(path.join(
+      bootstrap,
+      'soter/contracts/configuration-transaction-checkpoint.schema.json'
+    ));
+    assert(validateJsonSchema(crossedCheckpoint, checkpointSchema).length > 0,
+      'Checkpoint schema accepted completed state with prepared phase.');
+    writeJson(
+      configurationTransactionCheckpointStatePath(bootstrap, bootstrapAuthority.checkpointId),
+      crossedCheckpoint
+    );
+    let crossedCheckpointRejected = false;
+    try {
+      executeConfigurationChange({
+        root: bootstrap,
+        checkpointId: bootstrapAuthority.checkpointId,
+        at: APPLIED
+      });
+    } catch (error) {
+      crossedCheckpointRejected = error.code === 'CONFIGURATION_CHECKPOINT_MALFORMED'
+        || error.code === 'CONFIGURATION_CHECKPOINT_BINDING_INVALID';
+    }
+    assert(crossedCheckpointRejected,
+      'Re-sealed completed checkpoint with prepared phase falsely completed without effects.');
+
+    const bootstrapRollback = copyRoot(root, 'soter-configuration-bootstrap-rollback-');
+    roots.push(bootstrapRollback);
+    const bootstrapRollbackCandidate = readJson(path.join(
+      bootstrapRollback,
+      'soter/configurations/meeting-intake.config.json'
+    ));
+    const bootstrapRollbackAuthority = prepareAuthority(
+      bootstrapRollback,
+      'exact-template-bootstrap-rollback-selftest',
+      bootstrapRollbackCandidate
+    );
+    const unknownBootstrapState = structuredClone(bootstrapRollbackCandidate);
+    unknownBootstrapState.host.reason
+      = 'Unknown partial bootstrap state must restore the exact absent private baseline.';
+    writePrivateConfigurationState(
+      bootstrapRollback,
+      'meeting-intake',
+      unknownBootstrapState
+    );
+    let bootstrapDriftRejected = false;
+    try {
+      executeConfigurationChange({
+        root: bootstrapRollback,
+        checkpointId: bootstrapRollbackAuthority.checkpointId,
+        at: APPLIED
+      });
+    } catch (error) {
+      bootstrapDriftRejected = error.code === 'CONFIGURATION_PLAN_STALE';
+    }
+    assert(bootstrapDriftRejected,
+      'Unknown partial exact-template initialization state was executable as current.');
+    const bootstrapRolledBack = recoverConfigurationChange({
+      root: bootstrapRollback,
+      checkpointId: bootstrapRollbackAuthority.checkpointId,
+      at: APPLIED
+    });
+    const repeatedBootstrapRollback = recoverConfigurationChange({
+      root: bootstrapRollback,
+      checkpointId: bootstrapRollbackAuthority.checkpointId,
+      at: APPLIED
+    });
+    assert(bootstrapRolledBack.state === 'rolled-back'
+      && bootstrapRolledBack.phase === 'terminal'
+      && bootstrapRolledBack.failure !== null
+      && repeatedBootstrapRollback.checkpointFingerprint
+        === bootstrapRolledBack.checkpointFingerprint
+      && !fs.lstatSync(
+        privateConfigurationStatePath(bootstrapRollback, 'meeting-intake'),
+        { throwIfNoEntry: false }
+      )
+      && !fs.lstatSync(
+        activeConfigurationLockStatePath(bootstrapRollback, 'meeting-intake'),
+        { throwIfNoEntry: false }
+      ),
+    'Exact-template initialization recovery did not restore and verify prior absence.');
+    const falseRolledBackCheckpoint = structuredClone(bootstrapRolledBack);
+    falseRolledBackCheckpoint.observation = structuredClone(bootstrapCompleted.observation);
+    reseal(falseRolledBackCheckpoint, 'checkpointFingerprint');
+    writeJson(
+      configurationTransactionCheckpointStatePath(
+        bootstrapRollback,
+        bootstrapRollbackAuthority.checkpointId
+      ),
+      falseRolledBackCheckpoint
+    );
+    let falseRolledBackRejected = false;
+    try {
+      recoverConfigurationChange({
+        root: bootstrapRollback,
+        checkpointId: bootstrapRollbackAuthority.checkpointId,
+        at: APPLIED
+      });
+    } catch (error) {
+      falseRolledBackRejected = error.code === 'CONFIGURATION_CHECKPOINT_BINDING_INVALID';
+    }
+    assert(falseRolledBackRejected,
+      'Re-sealed rolled-back checkpoint retained candidate observation as prior state.');
+
+    const expiredBootstrap = copyRoot(root, 'soter-configuration-bootstrap-expired-');
+    roots.push(expiredBootstrap);
+    const expiredBootstrapCandidate = readJson(path.join(
+      expiredBootstrap,
+      'soter/configurations/meeting-intake.config.json'
+    ));
+    const expiredBootstrapPlan = prepareConfigurationChange({
+      root: expiredBootstrap,
+      name: 'meeting-intake',
+      candidateConfiguration: expiredBootstrapCandidate,
+      id: 'configuration-change-plan.exact-template-bootstrap-expired-selftest',
+      createdAt: CREATED
+    });
+    const expiredBootstrapRequest = beginConfigurationChangeRequest({
+      root: expiredBootstrap,
+      planId: expiredBootstrapPlan.plan.id,
+      id: 'configuration-change-request.exact-template-bootstrap-expired-selftest',
+      reason: 'Exercise confirmed bootstrap inspection after its exact request expires.',
+      createdAt: CREATED,
+      expiresAt: EXPIRES
+    });
+    const expiredBootstrapConfirmation = confirmConfigurationChangeRequest({
+      root: expiredBootstrap,
+      requestId: expiredBootstrapRequest.request.id,
+      id: 'configuration-change-confirmation.exact-template-bootstrap-expired-selftest',
+      actor: { type: 'local-operator', id: 'operator.selftest' },
+      reason: 'Confirm before expiry but deliberately delay execution start.',
+      confirmedAt: CONFIRMED
+    });
+    const absentResumeConsumptionPath = configurationChangeConsumptionStatePath(
+      expiredBootstrap,
+      'configuration-change-consumption.exact-template-bootstrap-expired-selftest'
+    );
+    const absentResumeCheckpointPath = configurationTransactionCheckpointStatePath(
+      expiredBootstrap,
+      'checkpoint.configuration.exact-template-bootstrap-resume-selftest'
+    );
+    let absentResumeRejected = false;
+    try {
+      resumeConfigurationChangeExecution({
+        root: expiredBootstrap,
+        confirmationId: expiredBootstrapConfirmation.confirmation.id,
+        checkpointId: 'checkpoint.configuration.exact-template-bootstrap-resume-selftest',
+        at: APPLIED
+      });
+    } catch (error) {
+      absentResumeRejected = error.code === 'CONFIGURATION_CONSUMPTION_MISSING';
+    }
+    assert(absentResumeRejected
+      && !fs.lstatSync(absentResumeConsumptionPath, { throwIfNoEntry: false })
+      && !fs.lstatSync(absentResumeCheckpointPath, { throwIfNoEntry: false }),
+    'Configuration start re-entry minted a fresh consumption or checkpoint.');
+    const expiredBootstrapInspection = inspectConfigurationChange({
+      root: expiredBootstrap,
+      planId: expiredBootstrapPlan.plan.id,
+      requestId: expiredBootstrapRequest.request.id,
+      confirmationId: expiredBootstrapConfirmation.confirmation.id,
+      at: '2026-07-16T15:11:00.000Z'
+    });
+    assert(expiredBootstrapInspection.resume.classification === 'unavailable'
+      && expiredBootstrapInspection.resume.reasonCode === 'CONFIGURATION_REQUEST_EXPIRED'
+      && expiredBootstrapInspection.resume.permittedNextAction === 'request-confirmation',
+    'Expired confirmed bootstrap inspection falsely projected safe apply authority.');
+
+    const linkedBootstrap = copyRoot(root, 'soter-configuration-bootstrap-linked-');
+    roots.push(linkedBootstrap);
+    const linkedBootstrapCandidate = readJson(path.join(
+      linkedBootstrap,
+      'soter/configurations/meeting-intake.config.json'
+    ));
+    const linkedBootstrapPlan = prepareConfigurationChange({
+      root: linkedBootstrap,
+      name: 'meeting-intake',
+      candidateConfiguration: linkedBootstrapCandidate,
+      id: 'configuration-change-plan.exact-template-bootstrap-linked-selftest',
+      createdAt: CREATED
+    });
+    const linkedBootstrapPlanPath = configurationChangePlanStatePath(
+      linkedBootstrap,
+      linkedBootstrapPlan.plan.id
+    );
+    const linkedBootstrapPlanBackup = linkedBootstrapPlanPath + '.backup';
+    if (process.platform !== 'win32') {
+      fs.chmodSync(linkedBootstrapPlanPath, 0o644);
+      let unsafePlanModeRejected = false;
+      try {
+        inspectConfigurationChange({
+          root: linkedBootstrap,
+          planId: linkedBootstrapPlan.plan.id,
+          at: APPLIED
+        });
+      } catch {
+        unsafePlanModeRejected = true;
+      }
+      assert(unsafePlanModeRejected,
+        'Configuration authority plan with unsafe mode was accepted on re-entry.');
+      fs.chmodSync(linkedBootstrapPlanPath, 0o600);
+    }
+    fs.renameSync(linkedBootstrapPlanPath, linkedBootstrapPlanBackup);
+    fs.symlinkSync(path.basename(linkedBootstrapPlanBackup), linkedBootstrapPlanPath);
+    let linkedPlanRejected = false;
+    try {
+      inspectConfigurationChange({
+        root: linkedBootstrap,
+        planId: linkedBootstrapPlan.plan.id,
+        at: APPLIED
+      });
+    } catch {
+      linkedPlanRejected = true;
+    }
+    assert(linkedPlanRejected, 'Linked configuration authority plan was accepted on re-entry.');
+    fs.unlinkSync(linkedBootstrapPlanPath);
+    fs.renameSync(linkedBootstrapPlanBackup, linkedBootstrapPlanPath);
+    const linkedBootstrapHardlink = path.join(linkedBootstrap, 'linked-bootstrap-plan.json');
+    fs.linkSync(linkedBootstrapPlanPath, linkedBootstrapHardlink);
+    let hardlinkedPlanRejected = false;
+    try {
+      inspectConfigurationChange({
+        root: linkedBootstrap,
+        planId: linkedBootstrapPlan.plan.id,
+        at: APPLIED
+      });
+    } catch {
+      hardlinkedPlanRejected = true;
+    }
+    assert(hardlinkedPlanRejected, 'Hardlinked configuration authority plan was accepted on re-entry.');
+    fs.unlinkSync(linkedBootstrapHardlink);
+    const exactLinkedBootstrapPlan = readJson(linkedBootstrapPlanPath);
+    const wrongActiveLockPathPlan = structuredClone(exactLinkedBootstrapPlan);
+    wrongActiveLockPathPlan.configuration.activeLockPath
+      = '.soter/state/configuration-locks/email-triage.json';
+    reseal(wrongActiveLockPathPlan, 'planFingerprint');
+    writeJson(linkedBootstrapPlanPath, wrongActiveLockPathPlan);
+    let wrongActiveLockPathRejected = false;
+    try {
+      inspectConfigurationChange({
+        root: linkedBootstrap,
+        planId: linkedBootstrapPlan.plan.id,
+        at: APPLIED
+      });
+    } catch (error) {
+      wrongActiveLockPathRejected = error.code === 'CONFIGURATION_PLAN_TAMPERED';
+    }
+    assert(wrongActiveLockPathRejected,
+      'A re-sealed plan claimed a different schema-valid active-lock path.');
+    writeJson(linkedBootstrapPlanPath, exactLinkedBootstrapPlan);
+    const replayedBootstrap = copyRoot(root, 'soter-configuration-bootstrap-replayed-');
+    roots.push(replayedBootstrap);
+    fs.cpSync(
+      path.join(linkedBootstrap, '.soter'),
+      path.join(replayedBootstrap, '.soter'),
+      { recursive: true }
+    );
+    if (process.platform !== 'win32') {
+      for (const directory of [
+        path.join(replayedBootstrap, '.soter'),
+        path.join(replayedBootstrap, '.soter/state'),
+        path.dirname(configurationChangePlanStatePath(
+          replayedBootstrap,
+          linkedBootstrapPlan.plan.id
+        ))
+      ]) fs.chmodSync(directory, 0o700);
+      fs.chmodSync(
+        configurationChangePlanStatePath(replayedBootstrap, linkedBootstrapPlan.plan.id),
+        0o600
+      );
+    }
+    let replayedPlanRejected = false;
+    try {
+      inspectConfigurationChange({
+        root: replayedBootstrap,
+        planId: linkedBootstrapPlan.plan.id,
+        at: APPLIED
+      });
+    } catch (error) {
+      replayedPlanRejected = error.code === 'CONFIGURATION_TARGET_DRIFT';
+    }
+    assert(replayedPlanRejected,
+      'A sealed configuration authority plan replayed into another consumer root.');
+    if (process.platform !== 'win32') {
+      const linkedConfigurationsDirectory = path.dirname(
+        privateConfigurationStatePath(linkedBootstrap, 'meeting-intake')
+      );
+      fs.mkdirSync(linkedConfigurationsDirectory, { mode: 0o700 });
+      const danglingDesiredPath = privateConfigurationStatePath(
+        linkedBootstrap,
+        'meeting-intake'
+      );
+      fs.symlinkSync('missing-private-configuration.json', danglingDesiredPath);
+      let danglingDesiredRejected = false;
+      try {
+        prepareConfigurationChange({
+          root: linkedBootstrap,
+          name: 'meeting-intake',
+          candidateConfiguration: linkedBootstrapCandidate,
+          id: 'configuration-change-plan.exact-template-bootstrap-dangling-leaf-selftest',
+          createdAt: CREATED
+        });
+      } catch {
+        danglingDesiredRejected = true;
+      }
+      assert(danglingDesiredRejected,
+        'Dangling private desired-configuration symlink was treated as absence.');
+      fs.unlinkSync(danglingDesiredPath);
+      fs.rmdirSync(linkedConfigurationsDirectory);
+      fs.symlinkSync(
+        path.join(linkedBootstrap, 'missing-external-configurations'),
+        linkedConfigurationsDirectory
+      );
+      let danglingParentRejected = false;
+      try {
+        prepareConfigurationChange({
+          root: linkedBootstrap,
+          name: 'meeting-intake',
+          candidateConfiguration: linkedBootstrapCandidate,
+          id: 'configuration-change-plan.exact-template-bootstrap-dangling-parent-selftest',
+          createdAt: CREATED
+        });
+      } catch {
+        danglingParentRejected = true;
+      }
+      assert(danglingParentRejected,
+        'Dangling private configuration-directory symlink was treated as clean absence.');
+      fs.unlinkSync(linkedConfigurationsDirectory);
+    }
+
+    if (process.platform !== 'win32') {
+      const rollbackSymlink = copyRoot(root, 'soter-configuration-bootstrap-symlink-rollback-');
+      roots.push(rollbackSymlink);
+      const rollbackSymlinkCandidate = readJson(path.join(
+        rollbackSymlink,
+        'soter/configurations/meeting-intake.config.json'
+      ));
+      const rollbackSymlinkAuthority = prepareAuthority(
+        rollbackSymlink,
+        'exact-template-bootstrap-symlink-rollback-selftest',
+        rollbackSymlinkCandidate
+      );
+      const externalConfigurationDirectory = fs.mkdtempSync(path.join(
+        os.tmpdir(),
+        'soter-external-configuration-sentinel-'
+      ));
+      roots.push(externalConfigurationDirectory);
+      fs.chmodSync(externalConfigurationDirectory, 0o700);
+      const externalSentinel = path.join(externalConfigurationDirectory, 'meeting-intake.json');
+      const externalSentinelText = 'EXTERNAL_CONFIGURATION_SENTINEL\n';
+      fs.writeFileSync(externalSentinel, externalSentinelText, { mode: 0o600 });
+      const configurationsDirectory = path.dirname(
+        privateConfigurationStatePath(rollbackSymlink, 'meeting-intake')
+      );
+      fs.symlinkSync(externalConfigurationDirectory, configurationsDirectory);
+      let rollbackSymlinkRejected = false;
+      try {
+        recoverConfigurationChange({
+          root: rollbackSymlink,
+          checkpointId: rollbackSymlinkAuthority.checkpointId,
+          at: APPLIED
+        });
+      } catch (error) {
+        rollbackSymlinkRejected = error.code === 'CONFIGURATION_ROLLBACK_FAILED';
+      }
+      const rollbackSymlinkCheckpoint = readConfigurationTransactionCheckpointState(
+        rollbackSymlink,
+        rollbackSymlinkAuthority.checkpointId
+      ).checkpoint;
+      assert(rollbackSymlinkRejected
+        && rollbackSymlinkCheckpoint.state === 'needs-attention'
+        && rollbackSymlinkCheckpoint.phase === 'terminal'
+        && rollbackSymlinkCheckpoint.failure.reasonCode === 'CONFIGURATION_ROLLBACK_FAILED'
+        && fs.readFileSync(externalSentinel, 'utf8') === externalSentinelText
+        && (fs.statSync(externalSentinel).mode & 0o7777) === 0o600,
+      'Rollback followed swapped private ancestry or changed the external sentinel.');
+    }
+
     const privateMarker = 'HOSTILE_PRIVATE_CONFIGURATION_SENTINEL';
     const exactCandidate = candidate(happy, privateMarker);
     const authority = prepareAuthority(happy, 'happy-selftest', exactCandidate);
@@ -839,6 +1407,117 @@ export async function selftestConfigurationTransactions(root = defaultRoot) {
     'Configuration transaction did not bind private option mappings without changing the tracked template.');
     assertPrivateModes(optionMappings, optionAuthority.planId, 'task-capture');
 
+    const crossedAuthority = copyRoot(root, 'soter-configuration-crossed-authority-');
+    roots.push(crossedAuthority);
+    const crossedAuthorityA = prepareAuthority(
+      crossedAuthority,
+      'crossed-authority-a-selftest',
+      candidate(crossedAuthority, 'crossed-authority-a')
+    );
+    const crossedAuthorityB = prepareAuthority(
+      crossedAuthority,
+      'crossed-authority-b-selftest',
+      candidate(crossedAuthority, 'crossed-authority-b')
+    );
+    const crossedCheckpointA = readJson(configurationTransactionCheckpointStatePath(
+      crossedAuthority,
+      crossedAuthorityA.checkpointId
+    ));
+    const crossedCheckpointBPath = configurationTransactionCheckpointStatePath(
+      crossedAuthority,
+      crossedAuthorityB.checkpointId
+    );
+    const crossedAuthorityCheckpoint = readJson(crossedCheckpointBPath);
+    crossedAuthorityCheckpoint.plan = structuredClone(crossedCheckpointA.plan);
+    crossedAuthorityCheckpoint.configuration = structuredClone(crossedCheckpointA.configuration);
+    crossedAuthorityCheckpoint.observation = structuredClone(crossedCheckpointA.observation);
+    reseal(crossedAuthorityCheckpoint, 'checkpointFingerprint');
+    writeJson(crossedCheckpointBPath, crossedAuthorityCheckpoint);
+    const crossedConsumptionPath = configurationChangeConsumptionStatePath(
+      crossedAuthority,
+      crossedAuthorityB.execution.consumption.id
+    );
+    const crossedConsumption = readJson(crossedConsumptionPath);
+    crossedConsumption.checkpointFingerprint
+      = crossedAuthorityCheckpoint.checkpointFingerprint;
+    reseal(crossedConsumption, 'consumptionFingerprint');
+    writeJson(crossedConsumptionPath, crossedConsumption);
+    let crossedAuthorityRejected = false;
+    try {
+      executeConfigurationChange({
+        root: crossedAuthority,
+        checkpointId: crossedAuthorityB.checkpointId,
+        at: APPLIED
+      });
+    } catch (error) {
+      crossedAuthorityRejected = error.code === 'CONFIGURATION_CHECKPOINT_BINDING_INVALID';
+    }
+    assert(crossedAuthorityRejected
+      && !fs.lstatSync(
+        privateConfigurationStatePath(crossedAuthority, 'meeting-intake'),
+        { throwIfNoEntry: false }
+      )
+      && !fs.lstatSync(
+        activeConfigurationLockStatePath(crossedAuthority, 'meeting-intake'),
+        { throwIfNoEntry: false }
+      ),
+    'A crossed but independently valid authority chain applied another plan.');
+
+    if (process.platform !== 'win32') {
+      const exclusiveWrite = copyRoot(root, 'soter-configuration-exclusive-write-');
+      roots.push(exclusiveWrite);
+      const exclusiveWriteAuthority = prepareAuthority(
+        exclusiveWrite,
+        'exclusive-checkpoint-write-selftest',
+        candidate(exclusiveWrite, 'exclusive-checkpoint-write')
+      );
+      const exclusiveCheckpointPath = configurationTransactionCheckpointStatePath(
+        exclusiveWrite,
+        exclusiveWriteAuthority.checkpointId
+      );
+      const exclusiveCheckpoint = readJson(exclusiveCheckpointPath);
+      const checkpointBytes = fs.readFileSync(exclusiveCheckpointPath);
+      const checkpointMode = fs.statSync(exclusiveCheckpointPath).mode & 0o7777;
+      const originalDateNow = Date.now;
+      try {
+        for (const linkKind of ['symlink', 'hardlink']) {
+          const fixedTime = linkKind === 'symlink' ? 1721143200001 : 1721143200002;
+          const sentinelPath = path.join(
+            exclusiveWrite,
+            'external-' + linkKind + '-checkpoint-sentinel.txt'
+          );
+          const sentinelBytes = Buffer.from('EXTERNAL_CHECKPOINT_' + linkKind.toUpperCase() + '_SENTINEL\n');
+          fs.writeFileSync(sentinelPath, sentinelBytes, { mode: 0o600 });
+          fs.chmodSync(sentinelPath, 0o600);
+          const temporaryPath = exclusiveCheckpointPath
+            + '.' + process.pid + '.' + fixedTime + '.tmp';
+          if (linkKind === 'symlink') fs.symlinkSync(sentinelPath, temporaryPath);
+          else fs.linkSync(sentinelPath, temporaryPath);
+          Date.now = () => fixedTime;
+          let linkedTemporaryRejected = false;
+          try {
+            writeConfigurationTransactionCheckpointState(
+              exclusiveWrite,
+              exclusiveCheckpoint
+            );
+          } catch {
+            linkedTemporaryRejected = true;
+          }
+          assert(linkedTemporaryRejected
+            && fs.readFileSync(sentinelPath).equals(sentinelBytes)
+            && (fs.statSync(sentinelPath).mode & 0o7777) === 0o600
+            && fs.readFileSync(exclusiveCheckpointPath).equals(checkpointBytes)
+            && fs.lstatSync(exclusiveCheckpointPath).isFile()
+            && fs.lstatSync(exclusiveCheckpointPath).nlink === 1
+            && (fs.statSync(exclusiveCheckpointPath).mode & 0o7777) === checkpointMode,
+          'Exclusive checkpoint rewrite followed a planted ' + linkKind + ' temporary.');
+          fs.unlinkSync(temporaryPath);
+        }
+      } finally {
+        Date.now = originalDateNow;
+      }
+    }
+
     const reservation = copyRoot(root, 'soter-configuration-reservation-');
     roots.push(reservation);
     const reservationAuthority = prepareAuthority(
@@ -851,25 +1530,345 @@ export async function selftestConfigurationTransactions(root = defaultRoot) {
       reservationAuthority.execution.consumption.id
     );
     const reservedConsumption = readJson(consumptionPath);
+    const reservationCheckpointPath = configurationTransactionCheckpointStatePath(
+      reservation,
+      reservationAuthority.checkpointId
+    );
+    const preparedReservationCheckpoint = readJson(reservationCheckpointPath);
     reservedConsumption.updatedAt = reservedConsumption.createdAt;
     reservedConsumption.state = 'reserved';
     reservedConsumption.checkpointFingerprint = null;
     delete reservedConsumption.consumptionFingerprint;
     reservedConsumption.consumptionFingerprint = fingerprintJson(reservedConsumption);
     writeJson(consumptionPath, reservedConsumption);
-    fs.rmSync(configurationTransactionCheckpointStatePath(
+
+    const reservationConfirmationPath = configurationChangeConfirmationStatePath(
       reservation,
-      reservationAuthority.checkpointId
+      reservationAuthority.confirmationId
+    );
+    const exactReservationConfirmation = readJson(reservationConfirmationPath);
+    const earlyReservationConfirmation = structuredClone(exactReservationConfirmation);
+    earlyReservationConfirmation.confirmedAt = '2026-07-16T14:59:00.000Z';
+    reseal(earlyReservationConfirmation, 'confirmationFingerprint');
+    writeJson(reservationConfirmationPath, earlyReservationConfirmation);
+    let earlyReservationConfirmationRejected = false;
+    try {
+      inspectConfigurationChange({
+        root: reservation,
+        planId: reservationAuthority.planId,
+        confirmationId: reservationAuthority.confirmationId,
+        at: APPLIED
+      });
+    } catch (error) {
+      earlyReservationConfirmationRejected
+        = error.code === 'CONFIGURATION_CONFIRMATION_BINDING_INVALID';
+    }
+    assert(earlyReservationConfirmationRejected,
+      'A re-sealed confirmation predating its request entered the authority chain.');
+    writeJson(reservationConfirmationPath, exactReservationConfirmation);
+
+    const lateReservedConsumption = structuredClone(reservedConsumption);
+    lateReservedConsumption.createdAt = '2026-07-16T15:11:00.000Z';
+    lateReservedConsumption.updatedAt = lateReservedConsumption.createdAt;
+    reseal(lateReservedConsumption, 'consumptionFingerprint');
+    writeJson(consumptionPath, lateReservedConsumption);
+    let lateReservationRejected = false;
+    try {
+      inspectConfigurationChange({
+        root: reservation,
+        planId: reservationAuthority.planId,
+        consumptionId: reservationAuthority.execution.consumption.id,
+        at: '2026-07-16T16:00:00.000Z'
+      });
+    } catch (error) {
+      lateReservationRejected = error.code === 'CONFIGURATION_CONSUMPTION_BINDING_INVALID';
+    }
+    assert(lateReservationRejected,
+      'A re-sealed reservation created after request expiry retained resume authority.');
+    writeJson(consumptionPath, reservedConsumption);
+
+    const reservedPreparedInspection = inspectConfigurationChange({
+      root: reservation,
+      planId: reservationAuthority.planId,
+      requestId: reservationAuthority.requestId,
+      confirmationId: reservationAuthority.confirmationId,
+      consumptionId: reservationAuthority.execution.consumption.id,
+      at: '2026-07-16T16:00:00.000Z'
+    });
+    assert(reservedPreparedInspection.consumption.state === 'reserved'
+      && reservedPreparedInspection.checkpoint.state === 'prepared'
+      && reservedPreparedInspection.resume.classification === 'safe'
+      && reservedPreparedInspection.resume.reasonCode
+        === 'CONFIGURATION_RESERVED_CHECKPOINT_PREPARED'
+      && reservedPreparedInspection.resume.permittedNextAction === 'resume-start',
+    'Reserved start with an exact prepared checkpoint did not project exact re-entry.');
+    const mismatchedResumeCheckpointId
+      = 'checkpoint.configuration.reservation-mismatched-selftest';
+    const reservedConsumptionBytes = fs.readFileSync(consumptionPath);
+    const reservedCheckpointBytes = fs.readFileSync(reservationCheckpointPath);
+    const mismatchedInspectionConsumption = structuredClone(reservedConsumption);
+    mismatchedInspectionConsumption.checkpointId = mismatchedResumeCheckpointId;
+    reseal(mismatchedInspectionConsumption, 'consumptionFingerprint');
+    writeJson(consumptionPath, mismatchedInspectionConsumption);
+    let mismatchedInspectionBindingRejected = false;
+    try {
+      inspectConfigurationChange({
+        root: reservation,
+        planId: reservationAuthority.planId,
+        consumptionId: reservationAuthority.execution.consumption.id,
+        checkpointId: reservationAuthority.checkpointId,
+        at: '2026-07-16T16:00:00.000Z'
+      });
+    } catch (error) {
+      mismatchedInspectionBindingRejected
+        = error.code === 'CONFIGURATION_INSPECTION_BINDING_INVALID';
+    }
+    writeJson(consumptionPath, reservedConsumption);
+    assert(mismatchedInspectionBindingRejected
+      && fs.readFileSync(reservationCheckpointPath).equals(reservedCheckpointBytes),
+    'Core inspection accepted a consumption checkpoint ID crossed with another checkpoint.');
+    let mismatchedResumeRejected = false;
+    try {
+      resumeConfigurationChangeExecution({
+        root: reservation,
+        confirmationId: reservationAuthority.confirmationId,
+        checkpointId: mismatchedResumeCheckpointId,
+        at: '2026-07-16T16:00:00.000Z'
+      });
+    } catch (error) {
+      mismatchedResumeRejected
+        = error.code === 'CONFIGURATION_CONFIRMATION_ALREADY_CONSUMED';
+    }
+    assert(mismatchedResumeRejected
+      && fs.readFileSync(consumptionPath).equals(reservedConsumptionBytes)
+      && fs.readFileSync(reservationCheckpointPath).equals(reservedCheckpointBytes)
+      && !fs.lstatSync(
+        configurationTransactionCheckpointStatePath(reservation, mismatchedResumeCheckpointId),
+        { throwIfNoEntry: false }
+      ),
+    'Configuration start re-entry ignored the reservation-bound checkpoint ID.');
+
+    for (const hostileField of ['configuration', 'observation']) {
+      const hostileReservationCheckpoint = structuredClone(preparedReservationCheckpoint);
+      if (hostileField === 'configuration') {
+        hostileReservationCheckpoint.configuration.currentDocumentFingerprint
+          = hostileReservationCheckpoint.configuration.candidateDocumentFingerprint;
+      } else {
+        hostileReservationCheckpoint.observation = {
+          sourceKind: 'private-active',
+          templateFingerprint: reservationAuthority.prepared.plan.configuration.templateFingerprint,
+          documentFingerprint: reservationAuthority.prepared.plan.configuration.candidateDocumentFingerprint,
+          activeLockFingerprint: reservationAuthority.prepared.plan.configuration.candidateLockFingerprint,
+          resolutionFingerprint: reservationAuthority.prepared.plan.configuration.candidateLockFingerprint
+        };
+      }
+      reseal(hostileReservationCheckpoint, 'checkpointFingerprint');
+      writeJson(reservationCheckpointPath, hostileReservationCheckpoint);
+      let hostileReservationCheckpointRejected = false;
+      try {
+        prepareConfigurationChangeExecution({
+          root: reservation,
+          confirmationId: reservationAuthority.confirmationId,
+          checkpointId: reservationAuthority.checkpointId,
+          at: '2026-07-16T16:00:00.000Z'
+        });
+      } catch (error) {
+        hostileReservationCheckpointRejected
+          = error.code === 'CONFIGURATION_CHECKPOINT_BINDING_INVALID';
+      }
+      const stillReserved = readJson(consumptionPath);
+      assert(hostileReservationCheckpointRejected
+        && stillReserved.state === 'reserved'
+        && stillReserved.consumptionFingerprint === reservedConsumption.consumptionFingerprint,
+      'A re-sealed prepared checkpoint with hostile ' + hostileField
+        + ' stranded its one-time reservation.');
+    }
+    writeJson(reservationCheckpointPath, preparedReservationCheckpoint);
+
+    const reservationTemplatePath = path.join(
+      reservation,
+      'soter/configurations/meeting-intake.config.json'
+    );
+    const reservationTemplateText = fs.readFileSync(reservationTemplatePath, 'utf8');
+    const driftedReservationTemplate = readJson(reservationTemplatePath);
+    driftedReservationTemplate.host.reason
+      = 'A reserved exact start must not survive tracked-template drift.';
+    writeJson(reservationTemplatePath, driftedReservationTemplate);
+    const driftedReservedPreparedInspection = inspectConfigurationChange({
+      root: reservation,
+      planId: reservationAuthority.planId,
+      consumptionId: reservationAuthority.execution.consumption.id,
+      at: '2026-07-16T16:00:00.000Z'
+    });
+    const reservedCheckpointBytesBeforeRejectedStart = fs.readFileSync(
+      reservationCheckpointPath
+    );
+    let driftedReservedPreparedRejected = false;
+    try {
+      prepareConfigurationChangeExecution({
+        root: reservation,
+        confirmationId: reservationAuthority.confirmationId,
+        checkpointId: reservationAuthority.checkpointId,
+        at: '2026-07-16T16:00:00.000Z'
+      });
+    } catch (error) {
+      driftedReservedPreparedRejected = error.code === 'CONFIGURATION_PLAN_STALE';
+    }
+    assert(driftedReservedPreparedInspection.configuration.applicability === 'stale'
+      && driftedReservedPreparedInspection.resume.classification === 'unavailable'
+      && driftedReservedPreparedInspection.resume.reasonCode === 'CONFIGURATION_TEMPLATE_DRIFT'
+      && driftedReservedPreparedInspection.resume.permittedNextAction === 'none'
+      && driftedReservedPreparedRejected
+      && readJson(consumptionPath).state === 'reserved'
+      && fs.readFileSync(reservationCheckpointPath).equals(
+        reservedCheckpointBytesBeforeRejectedStart
+      )
+      && !fs.lstatSync(
+        privateConfigurationStatePath(reservation, 'meeting-intake'),
+        { throwIfNoEntry: false }
+      ),
+    'Reserved prepared start ignored plan drift or mutated its exact authority state.');
+    fs.writeFileSync(reservationTemplatePath, reservationTemplateText);
+
+    const invalidReservationCheckpoint = structuredClone(preparedReservationCheckpoint);
+    invalidReservationCheckpoint.phase = 'terminal';
+    reseal(invalidReservationCheckpoint, 'checkpointFingerprint');
+    writeJson(reservationCheckpointPath, invalidReservationCheckpoint);
+    let invalidReservationCheckpointRejected = false;
+    try {
+      inspectConfigurationChange({
+        root: reservation,
+        planId: reservationAuthority.planId,
+        consumptionId: reservationAuthority.execution.consumption.id,
+        at: '2026-07-16T16:00:00.000Z'
+      });
+    } catch (error) {
+      invalidReservationCheckpointRejected
+        = error.code === 'CONFIGURATION_CHECKPOINT_MALFORMED'
+          || error.code === 'CONFIGURATION_CHECKPOINT_BINDING_INVALID';
+    }
+    assert(invalidReservationCheckpointRejected,
+      'Reserved start ignored its malformed or crossed existing checkpoint.');
+    writeJson(reservationCheckpointPath, preparedReservationCheckpoint);
+    fs.rmSync(reservationCheckpointPath);
+
+    writeJson(reservationTemplatePath, driftedReservationTemplate);
+    const driftedReservedInspection = inspectConfigurationChange({
+      root: reservation,
+      planId: reservationAuthority.planId,
+      consumptionId: reservationAuthority.execution.consumption.id,
+      at: '2026-07-16T16:00:00.000Z'
+    });
+    let driftedReservedRejected = false;
+    try {
+      prepareConfigurationChangeExecution({
+        root: reservation,
+        confirmationId: reservationAuthority.confirmationId,
+        checkpointId: reservationAuthority.checkpointId,
+        at: '2026-07-16T16:00:00.000Z'
+      });
+    } catch (error) {
+      driftedReservedRejected = error.code === 'CONFIGURATION_PLAN_STALE';
+    }
+    assert(driftedReservedInspection.configuration.applicability === 'stale'
+      && driftedReservedInspection.checkpoint === null
+      && driftedReservedInspection.resume.classification === 'unavailable'
+      && driftedReservedInspection.resume.reasonCode === 'CONFIGURATION_TEMPLATE_DRIFT'
+      && driftedReservedInspection.resume.permittedNextAction === 'none'
+      && driftedReservedRejected
+      && readJson(consumptionPath).state === 'reserved'
+      && !fs.lstatSync(reservationCheckpointPath, { throwIfNoEntry: false })
+      && !fs.lstatSync(
+        privateConfigurationStatePath(reservation, 'meeting-intake'),
+        { throwIfNoEntry: false }
+      ),
+    'Reserved checkpoint-free start minted authority or effects after plan drift.');
+    fs.writeFileSync(reservationTemplatePath, reservationTemplateText);
+
+    const reservedInspection = inspectConfigurationChange({
+      root: reservation,
+      planId: reservationAuthority.planId,
+      requestId: reservationAuthority.requestId,
+      confirmationId: reservationAuthority.confirmationId,
+      consumptionId: reservationAuthority.execution.consumption.id,
+      at: '2026-07-16T16:00:00.000Z'
+    });
+    assert(reservedInspection.consumption.state === 'reserved'
+      && reservedInspection.consumption.checkpointId === reservationAuthority.checkpointId
+      && reservedInspection.checkpoint === null
+      && reservedInspection.resume.classification === 'safe'
+      && reservedInspection.resume.reasonCode === 'CONFIGURATION_CONSUMPTION_RESERVED'
+      && reservedInspection.resume.permittedNextAction === 'resume-start',
+    'Expired reserved start crash window did not project exact re-entry guidance.');
+    const reservationInspectionSchema = readJson(path.join(
+      reservation,
+      'soter/contracts/configuration-change-inspection.schema.json'
     ));
-    const resumedReservation = prepareConfigurationChangeExecution({
+    const hostileReservedInspection = structuredClone(reservedInspection);
+    hostileReservedInspection.resume = {
+      classification: 'safe',
+      reasonCode: 'CONFIGURATION_CONFIRMATION_CURRENT',
+      reason: 'Hostile crossed guidance falsely advertises a fresh apply.',
+      permittedNextAction: 'apply'
+    };
+    assert(validateJsonSchema(hostileReservedInspection, reservationInspectionSchema).length > 0,
+      'Inspection schema accepted reserved consumption as fresh apply authority.');
+    const resumedReservation = resumeConfigurationChangeExecution({
       root: reservation,
       confirmationId: reservationAuthority.confirmationId,
       checkpointId: reservationAuthority.checkpointId,
-      at: APPLIED
+      at: '2026-07-16T16:00:00.000Z'
     });
     assert(resumedReservation.consumption.state === 'started'
       && resumedReservation.checkpoint.state === 'prepared',
     'Crash recovery did not resume the same reserved one-time configuration start.');
+    const startedPreparedInspection = inspectConfigurationChange({
+      root: reservation,
+      planId: reservationAuthority.planId,
+      consumptionId: reservationAuthority.execution.consumption.id,
+      checkpointId: reservationAuthority.checkpointId,
+      at: '2026-07-16T16:00:00.000Z'
+    });
+    const startedPreparedWithPlanResume = structuredClone(startedPreparedInspection);
+    startedPreparedWithPlanResume.resume = {
+      classification: 'safe',
+      reasonCode: 'CONFIGURATION_PLAN_CURRENT',
+      reason: 'The exact configuration plan is current and may be submitted for confirmation.',
+      permittedNextAction: 'request-confirmation'
+    };
+    assert(validateJsonSchema(startedPreparedInspection, reservationInspectionSchema).length === 0
+      && validateJsonSchema(
+        startedPreparedWithPlanResume,
+        reservationInspectionSchema
+      ).length > 0,
+    'Inspection schema accepted started prepared checkpoint state with exact plan guidance.');
+    fs.rmSync(reservationCheckpointPath);
+    const missingStartedCheckpointInspection = inspectConfigurationChange({
+      root: reservation,
+      planId: reservationAuthority.planId,
+      consumptionId: reservationAuthority.execution.consumption.id,
+      at: '2026-07-16T16:00:00.000Z'
+    });
+    assert(missingStartedCheckpointInspection.consumption.state === 'started'
+      && missingStartedCheckpointInspection.checkpoint === null
+      && missingStartedCheckpointInspection.resume.classification === 'requires-review'
+      && missingStartedCheckpointInspection.resume.reasonCode === 'CONFIGURATION_CHECKPOINT_MISSING'
+      && missingStartedCheckpointInspection.resume.permittedNextAction === 'none',
+    'Started consumption with a missing checkpoint falsely projected fresh apply authority.');
+    const hostileMissingCheckpointInspection = structuredClone(
+      missingStartedCheckpointInspection
+    );
+    hostileMissingCheckpointInspection.resume = {
+      classification: 'safe',
+      reasonCode: 'CONFIGURATION_CONFIRMATION_CURRENT',
+      reason: 'Hostile crossed guidance falsely advertises a fresh apply.',
+      permittedNextAction: 'apply'
+    };
+    assert(validateJsonSchema(
+      hostileMissingCheckpointInspection,
+      reservationInspectionSchema
+    ).length > 0,
+      'Inspection schema accepted started consumption with no checkpoint as apply authority.');
 
     const stale = copyRoot(root, 'soter-configuration-stale-');
     roots.push(stale);
@@ -1377,6 +2376,38 @@ export async function selftestConfigurationTransactions(root = defaultRoot) {
         && needsAttentionCheckpoint.failure.reasonCode
           === 'CONFIGURATION_ROLLBACK_FAILED',
       'Lock-refresh rollback failure did not persist a needs-attention checkpoint.');
+      needsAttentionCheckpoint.failure.summary
+        = 'HOSTILE_PRIVATE_PATH_SENTINEL /Users/private/secrets.json';
+      reseal(needsAttentionCheckpoint, 'checkpointFingerprint');
+      writeJson(failedRollbackCheckpointFile, needsAttentionCheckpoint);
+      const needsAttentionInspection = inspectConfigurationChange({
+        root: refreshed,
+        planId: failedRollbackAuthority.planId,
+        consumptionId: failedRollbackAuthority.execution.consumption.id,
+        checkpointId: failedRollbackAuthority.checkpointId,
+        at: APPLIED
+      });
+      assert(needsAttentionInspection.resume.classification === 'requires-review'
+        && needsAttentionInspection.resume.reasonCode
+          === 'CONFIGURATION_CHECKPOINT_REQUIRES_REVIEW'
+        && needsAttentionInspection.resume.reason
+          === 'The exact durable configuration checkpoint requires local operator review.'
+        && needsAttentionInspection.resume.permittedNextAction === 'inspect-checkpoint'
+        && !JSON.stringify(needsAttentionInspection).includes('HOSTILE_PRIVATE_PATH_SENTINEL')
+        && !JSON.stringify(needsAttentionInspection).includes('/Users/private'),
+      'Sanitized checkpoint inspection exposed a persisted private failure summary.');
+      const needsAttentionWithSafeResume = structuredClone(needsAttentionInspection);
+      needsAttentionWithSafeResume.resume = {
+        classification: 'safe',
+        reasonCode: 'CONFIGURATION_CHECKPOINT_RECOVERABLE',
+        reason: 'Core can inspect and reconcile the exact durable configuration checkpoint.',
+        permittedNextAction: 'inspect-checkpoint'
+      };
+      assert(validateJsonSchema(
+        needsAttentionWithSafeResume,
+        reservationInspectionSchema
+      ).length > 0,
+      'Inspection schema accepted needs-attention checkpoint state with exact safe guidance.');
     }
 
     removeActiveConfigurationLockState(stale, 'meeting-intake');

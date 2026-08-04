@@ -1213,6 +1213,7 @@ export interface ConfigurationChangeInspection {
     id: string;
     fingerprint: string;
     state: 'reserved' | 'started';
+    checkpointId: string;
   };
   checkpoint: null | {
     id: string;
@@ -1226,7 +1227,7 @@ export interface ConfigurationChangeInspection {
     classification: 'safe' | 'requires-review' | 'unavailable';
     reasonCode: string;
     reason: string;
-    permittedNextAction: 'request-confirmation' | 'confirm' | 'apply' | 'inspect-checkpoint' | 'none';
+    permittedNextAction: 'request-confirmation' | 'confirm' | 'apply' | 'resume-start' | 'inspect-checkpoint' | 'none';
   };
   authority: { kind: 'inspection-only'; grantsExecution: false; grantsProviderWrite: false };
 }
@@ -1708,7 +1709,7 @@ declare global {
       prepareConfigurationChange(request: { name: string; candidateConfiguration: Record<string, unknown> }): Promise<ConfigurationChangeResult>;
       beginConfigurationChangeRequest(request: { planId: string; reason: string }): Promise<ConfigurationChangeResult>;
       confirmConfigurationChangeRequest(request: { requestId: string; confirmed: true }): Promise<ConfigurationChangeResult>;
-      startConfigurationChange(request: { confirmationId: string }): Promise<ConfigurationChangeResult>;
+      startConfigurationChange(request: { confirmationId: string; checkpointId?: string }): Promise<ConfigurationChangeResult>;
       executeConfigurationChange(request: { checkpointId: string; confirmed: true }): Promise<ConfigurationChangeResult>;
       recoverConfigurationChange(request: { checkpointId: string; confirmed: true }): Promise<ConfigurationChangeResult>;
       inspectConfigurationChange(request: ConfigurationChangeReferences): Promise<ConfigurationChangeResult>;

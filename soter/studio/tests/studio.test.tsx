@@ -467,8 +467,18 @@ describe('Soter Studio canonical operator projection', () => {
     const snapshot = studioFixture();
     const configuration = snapshot.configurations.find((item) => item.name === 'meeting-intake')!;
     expect(validateJsonSchema(configurationChangeInspectionFixture('plan'), configurationChangeInspectionSchema)).toEqual([]);
+    expect(validateJsonSchema(configurationChangeInspectionFixture('reserved'), configurationChangeInspectionSchema)).toEqual([]);
+    expect(validateJsonSchema(configurationChangeInspectionFixture('reserved-prepared'), configurationChangeInspectionSchema)).toEqual([]);
     expect(validateJsonSchema(configurationChangeInspectionFixture('started'), configurationChangeInspectionSchema)).toEqual([]);
     expect(validateJsonSchema(configurationChangeInspectionFixture('completed'), configurationChangeInspectionSchema)).toEqual([]);
+    const needsAttentionInspection = configurationChangeInspectionFixture('needs-attention');
+    expect(validateJsonSchema(needsAttentionInspection, configurationChangeInspectionSchema)).toEqual([]);
+    expect(needsAttentionInspection.resume).toEqual({
+      classification: 'requires-review',
+      reasonCode: 'CONFIGURATION_CHECKPOINT_REQUIRES_REVIEW',
+      reason: 'The exact durable configuration checkpoint requires local operator review.',
+      permittedNextAction: 'inspect-checkpoint'
+    });
     const { container } = render(<ConfigView snapshot={snapshot} configuration={configuration} />);
 
     expect(await screen.findByText('Exact lock transfer')).toBeVisible();
@@ -488,6 +498,10 @@ describe('Soter Studio canonical operator projection', () => {
     expect(window.soterStudio.prepareConfigurationChange).toHaveBeenCalledWith(expect.objectContaining({ name: 'meeting-intake' }));
 
     await user.click(screen.getByRole('button', { name: 'Request confirmation' }));
+    expect(window.soterStudio.beginConfigurationChangeRequest).toHaveBeenCalledWith({
+      planId: 'configuration-change-plan.meeting-intake.ui-test',
+      reason: 'Review this exact private configuration activation or update and its fingerprint-only scope.'
+    });
     expect(await screen.findByText('Confirmation records the local actor decision. It does not start or write.')).toBeVisible();
     expect(window.soterStudio.confirmConfigurationChangeRequest).not.toHaveBeenCalled();
     await user.click(screen.getByLabelText('I reviewed this exact fingerprint-only scope.'));
@@ -496,10 +510,38 @@ describe('Soter Studio canonical operator projection', () => {
     expect(window.soterStudio.startConfigurationChange).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Reserve one-time start' }));
     expect(await screen.findByRole('button', { name: 'Apply exact checkpoint' })).toBeDisabled();
+    expect(screen.getByText('Execution creates or replaces the desired configuration and its private active lock, then resolves and verifies both.')).toBeVisible();
     expect(window.soterStudio.executeConfigurationChange).not.toHaveBeenCalled();
     expect(screen.getByText('Core-derived guidance · not authority')).toBeVisible();
     expect(screen.getAllByText('No provider calls').length).toBeGreaterThan(0);
     expect((await axe.run(container, { rules: { 'color-contrast': { enabled: false } } })).violations).toEqual([]);
+  });
+
+  it.each(['reserved', 'reserved-prepared'] as const)('resumes the exact %s configuration start without reconstructing authority', async (stage) => {
+    const user = userEvent.setup();
+    const snapshot = studioFixture();
+    const configuration = snapshot.configurations.find((item) => item.name === 'meeting-intake')!;
+    const reservedInspection = configurationChangeInspectionFixture(stage);
+    window.soterStudio.prepareConfigurationChange = vi.fn().mockResolvedValue({ ok: true as const, inspection: reservedInspection });
+    render(<ConfigView snapshot={snapshot} configuration={configuration} />);
+
+    fireEvent.change(await screen.findByLabelText('Complete private candidate'), { target: { value: JSON.stringify({
+      $contract: 'soter://contracts/configuration/v1',
+      name: configuration.name
+    }) } });
+    await user.click(screen.getByRole('button', { name: 'Seal exact private plan' }));
+
+    const resume = await screen.findByRole('button', { name: 'Resume exact reserved start' });
+    expect(resume).toBeEnabled();
+    expect(screen.queryByRole('button', { name: 'Reserve one-time start' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Apply exact checkpoint' })).not.toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent('/private/target/root');
+    await user.click(resume);
+
+    expect(window.soterStudio.startConfigurationChange).toHaveBeenCalledWith({
+      confirmationId: reservedInspection.confirmation!.id,
+      checkpointId: reservedInspection.consumption!.checkpointId
+    });
   });
 
   it('discards hostile configuration adapter rejection prose', async () => {

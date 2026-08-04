@@ -25,7 +25,8 @@ import {
   inspectConfigurationChange,
   prepareConfigurationChange,
   prepareConfigurationChangeExecution,
-  recoverConfigurationChange
+  recoverConfigurationChange,
+  resumeConfigurationChangeExecution
 } from '../../core/configuration-transactions.mjs';
 import {
   beginHostRealizationRequest,
@@ -911,16 +912,27 @@ async function createWindow() {
   ipcMain.handle('configuration:change-start', async (event, request) => {
     assertSender(event);
     try {
-      if (!exactObject(request, ['confirmationId']) || typeof request.confirmationId !== 'string') {
-        throw new TypeError('Configuration start requires one exact confirmation id.');
+      const freshStart = exactObject(request, ['confirmationId']);
+      const resumedStart = exactObject(request, ['confirmationId', 'checkpointId']);
+      if ((!freshStart && !resumedStart)
+        || typeof request.confirmationId !== 'string'
+        || (resumedStart && typeof request.checkpointId !== 'string')) {
+        throw new TypeError('Configuration start requires one exact confirmation id and, only for re-entry, one exact checkpoint id.');
       }
       const at = new Date().toISOString();
-      const result = prepareConfigurationChangeExecution({
-        root,
-        confirmationId: request.confirmationId,
-        checkpointId: `checkpoint.configuration.${randomUUID()}`,
-        at
-      });
+      const result = resumedStart
+        ? resumeConfigurationChangeExecution({
+            root,
+            confirmationId: request.confirmationId,
+            checkpointId: request.checkpointId,
+            at
+          })
+        : prepareConfigurationChangeExecution({
+            root,
+            confirmationId: request.confirmationId,
+            checkpointId: `checkpoint.configuration.${randomUUID()}`,
+            at
+          });
       workspaceWatcher.invalidate();
       return {
         ok: true,

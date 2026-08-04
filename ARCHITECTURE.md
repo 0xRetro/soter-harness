@@ -379,7 +379,7 @@ evidence establishes them. Terminal and graphical renderers consume that same
 view contract.
 
 Configuration drafts use the same authority path. Kernel may validate one
-in-memory replacement for an existing desired configuration, and Core may
+in-memory candidate for a named tracked template or private-active desired configuration, and Core may
 resolve that validated document without writing it. The preview projection may
 publish the resulting lock and graph fingerprints, but it may not construct a
 candidate by editing fields on the current lock. Invalid pack settings,
@@ -389,13 +389,22 @@ therefore block an exact candidate before any apply authority exists.
 Applying configuration is a separate local transaction family, not an
 operational provider approval and not a capability call. Core stores the full
 current and candidate `configuration/v1` documents and their exact locks only
-in private runtime state, projects a minimized fingerprint-only change scope,
+in private runtime state, binds the exact consumer-root identity and private
+file modes, projects a minimized fingerprint-only change scope,
 issues an expiring request, records an exact local-operator confirmation, and
 consumes that confirmation once into a durable checkpoint. Execution atomically
-replaces the selected desired-configuration file, writes the active lock under
+creates or replaces the selected desired-configuration file, writes the active lock under
 ignored private `.soter/state`, resolves the written document again, and either
 completes or restores the exact prior configuration and active lock. A crash is
-reconciled from those observed fingerprints. Checked-in fixture locks remain
+reconciled from those observed fingerprints. First private activation is a real
+absent-to-active-lock transaction even when the candidate exactly equals the
+tracked template; the same candidate is a no-op after it is private-active.
+Checkpoint state, phase, and failure combinations are closed so a re-sealed
+crossed state cannot project false completion; prepared and terminal checkpoint
+observations must also equal the exact prior or candidate fingerprints for that
+state. Every checkpoint also resolves its plan, request, confirmation, and
+consumption through one exact causal authority chain; a timely reserved start
+may resume after expiry only while that plan is still current. Checked-in fixture locks remain
 portable evidence and are never the active user lock. Deterministic host
 projection candidates are part of the lock, but this transaction does not
 inspect, generate, or realize consumer host files.
