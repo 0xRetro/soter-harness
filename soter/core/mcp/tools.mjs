@@ -139,19 +139,28 @@ const localDevelopmentEffect = z.enum([
   'local-command',
   'subagent-dispatch'
 ]);
+const canonicalDevelopmentEffects = [
+  'local-workspace-read',
+  'local-workspace-write',
+  'local-command',
+  'subagent-dispatch'
+];
 const requestedDevelopmentEffects = z.array(localDevelopmentEffect)
   .min(1)
   .max(4)
   .refine((value) => new Set(value).size === value.length, 'Requested effects must be unique.')
   .refine((value) => {
-    const order = [
-      'local-workspace-read',
-      'local-workspace-write',
-      'local-command',
-      'subagent-dispatch'
-    ];
-    return value.every((item, index) => order.indexOf(item) > order.indexOf(value[index - 1]));
+    return value.every((item, index) => {
+      return canonicalDevelopmentEffects.indexOf(item)
+        > canonicalDevelopmentEffects.indexOf(value[index - 1]);
+    });
   }, 'Requested effects must use canonical order.');
+const evaluationDevelopmentEffects = z.array(localDevelopmentEffect)
+  .min(4)
+  .max(4)
+  .refine((value) => {
+    return value.every((item, index) => item === canonicalDevelopmentEffects[index]);
+  }, 'Evaluation-suite effects must use the complete canonical order.');
 const developmentInvocation = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('develop'),
@@ -165,12 +174,7 @@ const developmentInvocation = z.discriminatedUnion('kind', [
   }).strict(),
   z.object({
     kind: z.literal('evaluation-suite'),
-    requested_effects: z.tuple([
-      z.literal('local-workspace-read'),
-      z.literal('local-workspace-write'),
-      z.literal('local-command'),
-      z.literal('subagent-dispatch')
-    ])
+    requested_effects: evaluationDevelopmentEffects
   }).strict()
 ]);
 

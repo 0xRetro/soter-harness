@@ -10,8 +10,8 @@
     "id": "run.email-triage.preparation-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:ab2d223798dbf168477edbb6632245692d33a58d47cacb23a4d3fa19d0b31c7e",
-  "graphFingerprint": "sha256:bb2b396d0452941bd7b5922c0f7560db6109edd09b8318dd5caa9be406708020",
+  "configurationLockFingerprint": "sha256:eafdb6e9c72e6999a8751d0d230b8c7b8991fd80e904ae21abae938ba4a504c5",
+  "graphFingerprint": "sha256:fd96dd5b8e2451df87b6782530d239eca3078a8417706d9e51a29c6bf88b2e47",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -284,7 +284,7 @@
     {
       "role": "context-snapshot",
       "id": "context.email-triage.preparation-fixture",
-      "fingerprint": "sha256:eb0ede00d610461943b9730f99ae0b47f64b75a360c6ca56e7f03d79f5cd9d18"
+      "fingerprint": "sha256:64c90eeadaa7ec6939cc115921a87ea708a6a9819c0afa11998038c077f94f75"
     },
     {
       "role": "email-review",

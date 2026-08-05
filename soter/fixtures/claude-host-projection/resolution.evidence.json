@@ -10,8 +10,8 @@
     "id": "claude-host-projection",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:13d8c695dc45205a3ba63c6f96e36261b9d55d3961eeaeedc7a9592778e0b6fd",
-  "graphFingerprint": "sha256:6948dd87b89b309f2f5254643f68cb146f208522595b9f5b288f50e11e245f71",
+  "configurationLockFingerprint": "sha256:52b953b44a22330a60abc2fccad66a4a17d1cd9398f135dbc36a28e8a2ff230e",
+  "graphFingerprint": "sha256:b895c6ec69dae20d6b610d29179df55045bc6dcb0eec11363cf00aafd19de1e1",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -77,7 +77,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:13d8c695dc45205a3ba63c6f96e36261b9d55d3961eeaeedc7a9592778e0b6fd"
+      "fingerprint": "sha256:52b953b44a22330a60abc2fccad66a4a17d1cd9398f135dbc36a28e8a2ff230e"
     }
   ],
   "effects": [],

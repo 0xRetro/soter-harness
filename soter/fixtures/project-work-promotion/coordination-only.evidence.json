@@ -10,8 +10,8 @@
     "id": "run.project-work-promotion.coordination-only-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:40a756e14dd39f59a3b3b37c8863d4d201308319969280cfa0d0554159c35c42",
-  "graphFingerprint": "sha256:3cd127d7074f3dc3a06fafa55c02337ab5de5c0ade6db081174977a5a02b39c5",
+  "configurationLockFingerprint": "sha256:3cded652fb2b179345d342a42a9097760259e0a7b50f15685bb6d495d559ea0a",
+  "graphFingerprint": "sha256:6194b5a7edb9d0ee2a0dba61983f5b307e85373d260198353e124cb7e565c3e7",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -236,7 +236,7 @@
     {
       "role": "context-snapshot",
       "id": "context.project-work-promotion.coordination-only-fixture",
-      "fingerprint": "sha256:15b822369f69a658bf2f5eddec9f9f21431e2755ced671836764a35c1e11b337"
+      "fingerprint": "sha256:935902218841252f9de3b94e54993505930bebf3019188481293a1a1aec15977"
     },
     {
       "role": "project-work-promotion-preview",

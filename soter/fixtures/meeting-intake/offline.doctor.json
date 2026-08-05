@@ -6,7 +6,7 @@
   "level": "offline",
   "configuration": {
     "name": "meeting-intake",
-    "lockFingerprint": "sha256:c24cbb643ff605a1fbde169686b12a9fbaadd1937d9cab4b8f8e97ee420c3525"
+    "lockFingerprint": "sha256:954bfa8998805f91b520e4432cd0c7998b9910c0400af759a1b403a84704441a"
   },
   "states": {
     "valid": "passed",

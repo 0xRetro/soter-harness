@@ -6,7 +6,7 @@
   "level": "offline",
   "configuration": {
     "name": "feature-capture",
-    "lockFingerprint": "sha256:94852584f531f4a61e3a0a49544a4669c123e2a75e3facc11ce9698d2efdeda7"
+    "lockFingerprint": "sha256:872125dc2c5625adbec8b5c3bfc74a4f62ff74b66058c507feef6b76135b8f62"
   },
   "states": {
     "valid": "passed",

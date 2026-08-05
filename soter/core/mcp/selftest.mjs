@@ -63,6 +63,22 @@ function compareText(left, right) {
   return left < right ? -1 : left > right ? 1 : 0;
 }
 
+function assertPortableMcpInputSchema(value, path = []) {
+  if (!value || typeof value !== 'object') return;
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => assertPortableMcpInputSchema(item, [...path, String(index)]));
+    return;
+  }
+  if (Array.isArray(value.items)) {
+    throw new Error(
+      'MCP input schema uses non-portable tuple-form items at ' + path.join('.') + '.items.'
+    );
+  }
+  for (const [key, item] of Object.entries(value)) {
+    assertPortableMcpInputSchema(item, [...path, key]);
+  }
+}
+
 function exactPrivateFinalizationProjection({
   root,
   lockPath,
@@ -1208,6 +1224,9 @@ async function selftest(root) {
   );
   try {
     const listed = await client.listTools();
+    for (const tool of listed.tools) {
+      assertPortableMcpInputSchema(tool.inputSchema, [tool.name, 'inputSchema']);
+    }
     const names = listed.tools.map((tool) => tool.name).sort();
     const expectedNames = [
       'soter_advance_connected_transaction',
@@ -1400,6 +1419,64 @@ async function selftest(root) {
     );
     if (reenteredDevelopment.request.fingerprint !== createdDevelopment.request.fingerprint) {
       throw new Error('Exact MCP development request re-entry was not idempotent.');
+    }
+
+    const evaluationDevelopment = await call(
+      client,
+      'soter_create_development_request',
+      {
+        workflow_id: 'automation.running-evals',
+        request_id: 'development-request.mcp-running-evals',
+        invocation: {
+          kind: 'evaluation-suite',
+          requested_effects: [
+            'local-workspace-read',
+            'local-workspace-write',
+            'local-command',
+            'subagent-dispatch'
+          ]
+        },
+        at: fixtureTime
+      }
+    );
+    if (evaluationDevelopment.workflow.id !== 'automation.running-evals'
+      || evaluationDevelopment.invocation.kind !== 'evaluation-suite'
+      || evaluationDevelopment.requestBoundary.declared.localWorkspaceRead !== 'request-scoped'
+      || evaluationDevelopment.requestBoundary.declared.localWorkspaceWrite !== 'request-scoped'
+      || evaluationDevelopment.requestBoundary.declared.localCommand !== 'request-scoped'
+      || evaluationDevelopment.requestBoundary.declared.subagentDispatch !== 'request-scoped'
+      || evaluationDevelopment.authority.grantsProviderRead
+      || evaluationDevelopment.authority.grantsProviderWrite
+      || evaluationDevelopment.authority.grantsPublication
+      || evaluationDevelopment.authority.grantsMerge
+      || evaluationDevelopment.authority.grantsHostRealization) {
+      throw new Error(
+        'Portable MCP evaluation-suite request did not preserve its exact local-only boundary.'
+      );
+    }
+    const noncanonicalEvaluationId = 'development-request.mcp-running-evals-noncanonical';
+    const noncanonicalEvaluation = await client.callTool({
+      name: 'soter_create_development_request',
+      arguments: {
+        workflow_id: 'automation.running-evals',
+        request_id: noncanonicalEvaluationId,
+        invocation: {
+          kind: 'evaluation-suite',
+          requested_effects: [
+            'local-workspace-write',
+            'local-workspace-read',
+            'local-command',
+            'subagent-dispatch'
+          ]
+        },
+        at: fixtureTime
+      }
+    });
+    if (!noncanonicalEvaluation.isError
+      || fs.existsSync(developmentRequestStatePath(root, noncanonicalEvaluationId))) {
+      throw new Error(
+        'Portable MCP evaluation-suite schema accepted noncanonical effect order.'
+      );
     }
 
     const changedOutcomeSentinel = 'PRIVATE_CHANGED_DEVELOPMENT_OUTCOME_SENTINEL';

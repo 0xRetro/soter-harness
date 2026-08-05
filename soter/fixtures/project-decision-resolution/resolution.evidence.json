@@ -10,8 +10,8 @@
     "id": "project-decision-resolution",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:bb696f362925ce1670092fef02903c886291ea2db288edf185149da67fbf1911",
-  "graphFingerprint": "sha256:68adec07decda01887a39564a04a8523e7eda5a116fc76f140fd499404c2c293",
+  "configurationLockFingerprint": "sha256:944cf8e591676dfd0b2bc0b2910d811cabee0c4bc90b970392f5c456a0edf2cb",
+  "graphFingerprint": "sha256:2456a80a7e28dee4b03c92b7fb9fb23b4eebcef751aa63189c6408d21c9800e5",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -117,7 +117,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:bb696f362925ce1670092fef02903c886291ea2db288edf185149da67fbf1911"
+      "fingerprint": "sha256:944cf8e591676dfd0b2bc0b2910d811cabee0c4bc90b970392f5c456a0edf2cb"
     }
   ],
   "effects": [],
