@@ -207,6 +207,27 @@ export async function selftestHostRealizations(sourceRoot) {
     );
     const codexLock = activate(codexNotionTool, 'harness-development-catalog');
     assert.equal(codexLock.host.version, '0.3.1');
+    const codexUnselectedRendered = renderHostProjectionCandidates({
+      root: codexNotionTool,
+      adapter: currentCodexAdapter,
+      configurationId: codexLock.configuration.name,
+      packIds: codexLock.packs.map((pack) => pack.id),
+      capabilityIds: codexLock.capabilities.map((capability) => capability.id),
+      effectPolicies: codexLock.effectPolicies
+    });
+    const codexUnselectedTools = codexUnselectedRendered.outputs.find((output) => {
+      return output.id === 'output.codex.tools';
+    });
+    assert.equal(codexUnselectedTools.content, [
+      '[mcp_servers.soter]',
+      'command = "node"',
+      'args = ["soter/core/mcp/server.mjs", "--host", "codex"]',
+      ''
+    ].join('\n'), 'An unselected provider changed the byte-exact base Codex MCP projection.');
+    assert(!codexUnselectedTools.content.includes('mcp_servers.otter')
+      && !codexUnselectedTools.content.includes('mcp.otter.ai')
+      && !codexUnselectedTools.content.includes('auth = "oauth"'),
+    'An unselected Otter provider leaked into the Codex MCP projection.');
     const expectCodexDriftToInvalidateActiveLock = () => {
       const drifted = resolveConfiguration({
         root: codexNotionTool,
@@ -1219,6 +1240,21 @@ export async function selftestHostRealizations(sourceRoot) {
       effectPolicies: lock.effectPolicies
     });
     const instructions = rendered.outputs.find((output) => output.role === 'instructions');
+    const tools = rendered.outputs.find((output) => output.id === 'output.codex.tools');
+    assert.equal(tools.content, [
+      '[mcp_servers.soter]',
+      'command = "node"',
+      'args = ["soter/core/mcp/server.mjs", "--host", "codex"]',
+      '',
+      '[mcp_servers.otter]',
+      'url = "https://mcp.otter.ai/mcp"',
+      'auth = "oauth"',
+      ''
+    ].join('\n'), 'Selected Otter provider did not render one exact Codex MCP endpoint block.');
+    assert.equal(tools.content.split('[mcp_servers.otter]').length - 1, 1,
+      'Selected Otter provider rendered a duplicate Codex MCP endpoint block.');
+    assert.notEqual(tools.contentFingerprint, codexUnselectedTools.contentFingerprint,
+      'Provider selection did not change the deterministic Codex tools candidate fingerprint.');
     assert(instructions.content.includes('`integration.notion` requires `notion`')
       && instructions.content.includes('`integration.otter` requires `otter`')
       && !instructions.content.includes('`integration.slack` requires `slack`')
@@ -1241,6 +1277,53 @@ export async function selftestHostRealizations(sourceRoot) {
         effectPolicies: lock.effectPolicies
       }),
       (error) => error.code === 'HOST_PROJECTION_PROVIDER_REQUIREMENT_UNAVAILABLE'
+    );
+    const happyProjectionFile = path.join(happy, 'soter/hosts/codex/projection.json');
+    const originalHappyProjection = fs.readFileSync(happyProjectionFile, 'utf8');
+    const honestHappyProjection = JSON.parse(originalHappyProjection);
+    const renderHappyProjection = () => renderHostProjectionCandidates({
+      root: happy,
+      adapter,
+      configurationId: lock.configuration.name,
+      packIds: lock.packs.map((pack) => pack.id),
+      capabilityIds: lock.capabilities.map((capability) => capability.id),
+      effectPolicies: lock.effectPolicies
+    });
+    const assertEndpointMutationRejected = (mutate, expectedCode, message) => {
+      const mutated = structuredClone(honestHappyProjection);
+      mutate(mutated);
+      fs.writeFileSync(happyProjectionFile, JSON.stringify(mutated, null, 2) + '\n');
+      try {
+        assert.throws(renderHappyProjection, (error) => error.code === expectedCode, message);
+      } finally {
+        fs.writeFileSync(happyProjectionFile, originalHappyProjection);
+      }
+    };
+    assertEndpointMutationRejected((projection) => {
+      projection.providerEndpointBlocks.push({
+        ...projection.providerEndpointBlocks[0],
+        id: 'provider-endpoint.codex.otter-duplicate'
+      });
+    }, 'HOST_PROJECTION_PROVIDER_ENDPOINT_AMBIGUOUS',
+    'Duplicate provider endpoint ownership did not fail closed.');
+    assertEndpointMutationRejected((projection) => {
+      projection.providerEndpointBlocks[0].server = 'notion';
+    }, 'HOST_PROJECTION_PROVIDER_ENDPOINT_BINDING_INVALID',
+    'Provider endpoint server mismatch did not fail closed.');
+    assertEndpointMutationRejected((projection) => {
+      projection.providerEndpointBlocks[0].content += 'api_key = "sk-hostile-private-sentinel"\n';
+    }, 'HOST_PROJECTION_CREDENTIAL_REJECTED',
+    'Credential-like provider endpoint material did not fail closed.');
+    assertEndpointMutationRejected((projection) => {
+      projection.providerEndpointBlocks[0].content =
+        projection.providerEndpointBlocks[0].content.replace('{{SERVER_ID}}', '{{UNDECLARED}}');
+    }, 'HOST_PROJECTION_TEMPLATE_INVALID',
+    'Unresolved provider endpoint marker did not fail closed.');
+    assert.equal(
+      renderHappyProjection().outputs.find((output) => output.id === 'output.codex.tools')
+        .contentFingerprint,
+      tools.contentFingerprint,
+      'Rejected provider endpoint mutations changed the restored deterministic candidate.'
     );
     for (const output of rendered.outputs) {
       const file = path.join(happy, output.path);

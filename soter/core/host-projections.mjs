@@ -16,7 +16,8 @@ import {
 } from './lib/canonical-json.mjs';
 
 export const HOST_PROJECTION_GENERATOR_ID = 'core.host-projection-generator';
-export const HOST_PROJECTION_GENERATOR_VERSION = '2.1.0';
+export const HOST_PROJECTION_GENERATOR_VERSION = '2.2.0';
+const HOST_PROJECTION_GENERATOR_VERSIONS = new Set(['2.1.0', '2.2.0']);
 
 const IDENTIFIER = /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/;
 const CONTEXT_KEYS = new Map([
@@ -27,6 +28,7 @@ const CONTEXT_KEYS = new Map([
   ['workflow-guide-ids', 'WORKFLOW_GUIDE_IDS'],
   ['effect-policy-modes', 'EFFECT_POLICY_MODES'],
   ['provider-requirements', 'PROVIDER_REQUIREMENTS'],
+  ['provider-endpoint-blocks', 'PROVIDER_ENDPOINT_BLOCKS'],
   ['development-guards', 'DEVELOPMENT_GUARDS']
 ]);
 const EFFECTS = ['read', 'disclosure', 'write', 'dispatch', 'destructive'];
@@ -82,38 +84,122 @@ function list(ids, label) {
   return sorted.length ? sorted.map((id) => '- `' + id + '`').join('\n') : '- None declared.';
 }
 
-function providerRequirements(root, adapter, packIds) {
-  const selected = new Set(packIds);
+function mcpProviderInventory(root) {
   const providersRoot = resolveRepoPath(root, 'soter/providers');
-  const requirements = [];
-  if (fs.existsSync(providersRoot)) {
-    for (const entry of fs.readdirSync(providersRoot, { withFileTypes: true })) {
-      if (!entry.isFile() || !entry.name.endsWith('.json')) continue;
-      const provider = readJson(path.join(providersRoot, entry.name));
-      if (provider.$contract !== 'soter://contracts/capability-provider/v1'
-        || !selected.has(provider.pack)
-        || provider.runtime?.engine !== 'mcp') continue;
-      const route = adapter.mcpServers.find((server) => server.id === provider.runtime.server);
-      if (!route) {
-        fail(
-          'HOST_PROJECTION_PROVIDER_REQUIREMENT_UNAVAILABLE',
-          'Selected connected provider has no declared route on the selected host.'
-        );
-      }
-      requirements.push({
-        pack: assertIdentifier(provider.pack, 'Provider pack id'),
-        server: assertIdentifier(route.id, 'Provider server id'),
-        delivery: assertIdentifier(route.delivery, 'Provider delivery'),
-        state: assertIdentifier(route.state, 'Provider route state')
-      });
+  if (!fs.existsSync(providersRoot)) return [];
+  const providers = [];
+  const ids = new Set();
+  for (const entry of fs.readdirSync(providersRoot, { withFileTypes: true }).sort((left, right) => {
+    return compareText(left.name, right.name);
+  })) {
+    if (!entry.isFile() || !entry.name.endsWith('.json')) continue;
+    const provider = readJson(path.join(providersRoot, entry.name));
+    if (provider.$contract !== 'soter://contracts/capability-provider/v1'
+      || provider.runtime?.engine !== 'mcp') continue;
+    const row = {
+      id: assertIdentifier(provider.id, 'Provider id'),
+      pack: assertIdentifier(provider.pack, 'Provider pack id'),
+      server: assertIdentifier(provider.runtime.server, 'Provider server id')
+    };
+    if (ids.has(row.id)) {
+      fail('HOST_PROJECTION_PROVIDER_REQUIREMENT_AMBIGUOUS', 'MCP provider identity is duplicated.');
     }
+    ids.add(row.id);
+    providers.push(row);
   }
-  requirements.sort((left, right) => compareText(left.pack, right.pack));
-  return requirements.length
-    ? requirements.map((item) => '- `' + item.pack + '` requires `' + item.server
+  return providers.sort((left, right) => compareText(left.id, right.id));
+}
+
+function selectedMcpProviders(root, adapter, packIds) {
+  const selected = new Set(packIds);
+  const providers = [];
+  const servers = new Set();
+  for (const provider of mcpProviderInventory(root)) {
+    if (!selected.has(provider.pack)) continue;
+    const route = adapter.mcpServers.find((server) => server.id === provider.server);
+    if (!route) {
+      fail(
+        'HOST_PROJECTION_PROVIDER_REQUIREMENT_UNAVAILABLE',
+        'Selected connected provider has no declared route on the selected host.'
+      );
+    }
+    if (servers.has(provider.server)) {
+      fail(
+        'HOST_PROJECTION_PROVIDER_REQUIREMENT_AMBIGUOUS',
+        'Selected connected providers ambiguously share one host server route.'
+      );
+    }
+    servers.add(provider.server);
+    providers.push({
+      ...provider,
+      delivery: assertIdentifier(route.delivery, 'Provider delivery'),
+      state: assertIdentifier(route.state, 'Provider route state')
+    });
+  }
+  return providers.sort((left, right) => compareText(left.id, right.id));
+}
+
+function providerRequirements(providers) {
+  return providers.length
+    ? providers.map((item) => '- `' + item.pack + '` requires `' + item.server
       + '` via `' + item.delivery + '` (`' + item.state
       + '`); discovery and authentication must be proven separately.').join('\n')
     : '- No connected provider route is selected.';
+}
+
+function providerEndpointBlocks({ root, adapter, blocks, selectedProviders }) {
+  if (!Array.isArray(blocks)) {
+    fail('HOST_PROJECTION_PROVIDER_ENDPOINT_INVALID', 'Provider endpoint blocks must be a closed list.');
+  }
+  const inventory = new Map(mcpProviderInventory(root).map((provider) => [provider.id, provider]));
+  const selected = new Set(selectedProviders.map((provider) => provider.id));
+  const ids = new Set();
+  const providers = new Set();
+  const servers = new Set();
+  const rendered = [];
+  for (const block of blocks) {
+    const id = assertIdentifier(block.id, 'Provider endpoint block id');
+    const providerId = assertIdentifier(block.provider, 'Provider endpoint provider id');
+    const server = assertIdentifier(block.server, 'Provider endpoint server id');
+    const provider = inventory.get(providerId);
+    const route = adapter.mcpServers.find((item) => item.id === server);
+    if (!provider || provider.server !== server || !route) {
+      fail(
+        'HOST_PROJECTION_PROVIDER_ENDPOINT_BINDING_INVALID',
+        'Provider endpoint block does not match an exact MCP provider and host route.'
+      );
+    }
+    if (ids.has(id) || providers.has(providerId) || servers.has(server)) {
+      fail(
+        'HOST_PROJECTION_PROVIDER_ENDPOINT_AMBIGUOUS',
+        'Provider endpoint block identity, provider, and server must be unique.'
+      );
+    }
+    ids.add(id);
+    providers.add(providerId);
+    servers.add(server);
+    if (block.selection !== 'selected-mcp-provider'
+      || block.encoding !== 'utf-8' || block.newline !== 'lf'
+      || block.finalNewline !== true
+      || normalizeTemplate(block.content, true) !== block.content) {
+      fail(
+        'HOST_PROJECTION_PROVIDER_ENDPOINT_INVALID',
+        'Provider endpoint block does not satisfy its deterministic rendering policy.'
+      );
+    }
+    const content = renderClosedTemplate(block.content, { SERVER_ID: server });
+    if (containsCredentialMaterial(content)) {
+      fail(
+        'HOST_PROJECTION_CREDENTIAL_REJECTED',
+        'Provider endpoint block contains credential-like material.'
+      );
+    }
+    if (selected.has(providerId)) rendered.push({ id, content });
+  }
+  return rendered
+    .sort((left, right) => compareText(left.id, right.id))
+    .map((item) => item.content)
+    .join('\n');
 }
 
 function developmentGuards(root) {
@@ -130,13 +216,28 @@ function developmentGuards(root) {
     .join('\n');
 }
 
-function renderContext({ root, adapter, configurationId, hostId, packIds, capabilityIds }) {
+function renderContext({
+  root,
+  adapter,
+  configurationId,
+  hostId,
+  packIds,
+  capabilityIds,
+  providerEndpointBlockDefinitions
+}) {
+  const selectedProviders = selectedMcpProviders(root, adapter, packIds);
   return {
     CONFIGURATION_ID: assertIdentifier(configurationId, 'Configuration id'),
     HOST_ID: assertIdentifier(hostId, 'Host id'),
     PACK_IDS: list(packIds, 'Pack ids'),
     CAPABILITY_IDS: list(capabilityIds, 'Capability ids'),
-    PROVIDER_REQUIREMENTS: providerRequirements(root, adapter, packIds),
+    PROVIDER_REQUIREMENTS: providerRequirements(selectedProviders),
+    PROVIDER_ENDPOINT_BLOCKS: providerEndpointBlocks({
+      root,
+      adapter,
+      blocks: providerEndpointBlockDefinitions,
+      selectedProviders
+    }),
     DEVELOPMENT_GUARDS: developmentGuards(root)
   };
 }
@@ -335,7 +436,7 @@ export function renderWorkflowGuideEvaluatedInstructions({
     host: adapter.host,
     generator: {
       id: HOST_PROJECTION_GENERATOR_ID,
-      version: HOST_PROJECTION_GENERATOR_VERSION
+      version: loaded.definition.generator.version
     },
     projectionDefinition: {
       id: loaded.definition.id,
@@ -495,7 +596,9 @@ export function loadHostProjectionDefinition({ root, adapter }) {
     || definition.id !== adapter.projectionDefinition.id
     || definition.version !== adapter.projectionDefinition.version
     || definition.generator.id !== HOST_PROJECTION_GENERATOR_ID
-    || definition.generator.version !== HOST_PROJECTION_GENERATOR_VERSION) {
+    || !HOST_PROJECTION_GENERATOR_VERSIONS.has(definition.generator.version)
+    || (definition.providerEndpointBlocks?.length
+      && definition.generator.version !== HOST_PROJECTION_GENERATOR_VERSION)) {
     fail('HOST_PROJECTION_DEFINITION_BINDING_INVALID', 'Host adapter and projection definition disagree.');
   }
   const adapterRows = adapter.projections.map(({ path: outputPath, role }) => ({
@@ -593,7 +696,8 @@ function renderHostProjectionCandidatesInternal({
     configurationId,
     hostId: adapter.host,
     packIds,
-    capabilityIds
+    capabilityIds,
+    providerEndpointBlockDefinitions: loaded.definition.providerEndpointBlocks || []
   });
   const outputs = loaded.definition.outputs.map((output) => {
     const template = projectionTemplate({
@@ -667,7 +771,7 @@ function renderHostProjectionCandidatesInternal({
     },
     generator: {
       id: HOST_PROJECTION_GENERATOR_ID,
-      version: HOST_PROJECTION_GENERATOR_VERSION
+      version: loaded.definition.generator.version
     },
     workflowGuides: guides.map(({ guide }) => ({
       id: guide.id,

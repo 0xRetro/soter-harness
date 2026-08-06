@@ -6,7 +6,7 @@
   "version": "0.3.0",
   "generator": {
     "id": "core.host-projection-generator",
-    "version": "2.1.0"
+    "version": "2.2.0"
   },
   "target": {
     "root": "consumer-root",
@@ -23,7 +23,19 @@
   "renderContext": [
     "configuration-id", "host-id", "pack-ids", "capability-ids",
     "workflow-guide-ids", "effect-policy-modes", "provider-requirements",
-    "development-guards"
+    "provider-endpoint-blocks", "development-guards"
+  ],
+  "providerEndpointBlocks": [
+    {
+      "id": "provider-endpoint.codex.otter",
+      "provider": "provider.integration.otter.mcp",
+      "server": "otter",
+      "selection": "selected-mcp-provider",
+      "content": "[mcp_servers.{{SERVER_ID}}]\nurl = \"https://mcp.otter.ai/mcp\"\nauth = \"oauth\"\n",
+      "encoding": "utf-8",
+      "newline": "lf",
+      "finalNewline": true
+    }
   ],
   "outputs": [
     {
@@ -49,7 +61,7 @@
       "newline": "lf",
       "finalNewline": true,
       "mode": "0644",
-      "renderContext": ["host-id"]
+      "renderContext": ["host-id", "provider-endpoint-blocks"]
     }
   ],
   "collections": [

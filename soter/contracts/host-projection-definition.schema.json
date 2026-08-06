@@ -53,9 +53,14 @@
         "enum": [
           "configuration-id", "host-id", "pack-ids", "capability-ids",
           "workflow-guide-ids", "effect-policy-modes", "provider-requirements",
-          "development-guards"
+          "provider-endpoint-blocks", "development-guards"
         ]
       }
+    },
+    "providerEndpointBlocks": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/providerEndpointBlock" }
     },
     "outputs": {
       "type": "array",
@@ -85,7 +90,7 @@
               "enum": [
                 "configuration-id", "host-id", "pack-ids", "capability-ids",
                 "workflow-guide-ids", "effect-policy-modes", "provider-requirements",
-                "development-guards"
+                "provider-endpoint-blocks", "development-guards"
               ]
             }
           }
@@ -159,6 +164,30 @@
     }
   },
   "$defs": {
-    "version": { "type": "string", "pattern": "^[0-9]+[.][0-9]+[.][0-9]+$" }
+    "version": { "type": "string", "pattern": "^[0-9]+[.][0-9]+[.][0-9]+$" },
+    "providerEndpointBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "provider", "server", "selection", "content",
+        "encoding", "newline", "finalNewline"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^provider-endpoint[.][a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "provider": {
+          "type": "string",
+          "pattern": "^provider[.][a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "server": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "selection": { "const": "selected-mcp-provider" },
+        "content": { "type": "string", "minLength": 1, "maxLength": 4096 },
+        "encoding": { "const": "utf-8" },
+        "newline": { "const": "lf" },
+        "finalNewline": { "const": true }
+      }
+    }
   }
 }
