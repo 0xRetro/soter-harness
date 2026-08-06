@@ -41,6 +41,10 @@ const STARTED = '2026-07-16T12:06:00.000Z';
 const EXECUTED = '2026-07-16T12:07:00.000Z';
 const VALID_UNTIL = '2026-07-16T13:00:00.000Z';
 
+function soterSyntheticCredentialFixture(value) {
+  return value;
+}
+
 function copyRuntime(sourceRoot, label) {
   const root = fs.mkdtempSync(path.join(
     fs.realpathSync(os.tmpdir()),
@@ -1190,7 +1194,7 @@ export async function selftestHostRealizations(sourceRoot) {
     assert.equal(validateJsonSchema(honestAttention, inspectionSchema).length, 0,
       'Honest needs-attention host inspection failed its closed resume contract.');
     for (const hostileSummary of [
-      'sk-' + 'proj-' + 'abcdefghijklmnopqrstuvwxyz0123456789',
+      soterSyntheticCredentialFixture('sk-test-fixture-projection-abcdefghijklmnopqrstuvwxyz0123456789'),
       'Read /Users/retro/private/secrets.json before recovery.',
       'rawProviderResponse: HOSTILE_RAW_PROVIDER_SENTINEL'
     ]) {
@@ -1311,7 +1315,7 @@ export async function selftestHostRealizations(sourceRoot) {
     }, 'HOST_PROJECTION_PROVIDER_ENDPOINT_BINDING_INVALID',
     'Provider endpoint server mismatch did not fail closed.');
     assertEndpointMutationRejected((projection) => {
-      projection.providerEndpointBlocks[0].content += 'api_key = "sk-hostile-private-sentinel"\n';
+      projection.providerEndpointBlocks[0].content += soterSyntheticCredentialFixture('api_key = "sk-hostile-private-sentinel"\n');
     }, 'HOST_PROJECTION_CREDENTIAL_REJECTED',
     'Credential-like provider endpoint material did not fail closed.');
     assertEndpointMutationRejected((projection) => {

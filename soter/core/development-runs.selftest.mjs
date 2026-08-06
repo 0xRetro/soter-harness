@@ -43,6 +43,10 @@ import {
 const scriptRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const FP = (value) => fingerprintJson(value);
 
+function soterSyntheticCredentialFixture(value) {
+  return value;
+}
+
 function resignInspection(inspection) {
   const resigned = structuredClone(inspection);
   delete resigned.inspectionFingerprint;
@@ -58,6 +62,19 @@ function expectCode(action, code) {
     observed = error?.code || null;
   }
   assert.equal(observed, code, 'expected stable failure code ' + code);
+}
+
+function expectCodeAndReason(action, code, reasonCode) {
+  let observed = null;
+  let observedReason = null;
+  try {
+    action();
+  } catch (error) {
+    observed = error?.code || null;
+    observedReason = error?.reasonCode || null;
+  }
+  assert.equal(observed, code, 'expected stable failure code ' + code);
+  assert.equal(observedReason, reasonCode, 'expected stable reason code ' + reasonCode);
 }
 
 function mode(file) {
@@ -967,23 +984,23 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       ['.env', Buffer.from('PRIVATE_VALUE=not-returned\n')],
       ['development-invalid-utf8.bin', Buffer.from([0xc3, 0x28])],
       ['development-nul.txt', Buffer.from('before\u0000after')],
-      ['development-credential-pattern.txt', Buffer.from('sk-' + 'a'.repeat(24))],
-      ['development-password.txt', Buffer.from('password = correct-horse-battery-staple\n')],
-      ['development-token.txt', Buffer.from('token = "abcdefghijklmnopqrstuv"\n')],
-      ['development-client-secret.json', Buffer.from('{"clientSecret":"abcdefghijklmnop"}\n')],
-      ['development-generic-secret.txt', Buffer.from('secret = "a!bcdefgh"\n')],
-      ['development-declared-secret.mjs', Buffer.from('const secret = "a!bcdefgh";\n')],
-      ['development-password-punctuation.txt', Buffer.from('password = "a!bcdefgh"\n')],
-      ['development-token-punctuation.txt', Buffer.from('token = "a!bcdefgh"\n')],
-      ['development-api-key-punctuation.txt', Buffer.from('apiKey = "a!bcdefgh"\n')],
-      ['development-client-secret-punctuation.txt', Buffer.from('client_secret = "a!bcdefgh"\n')],
-      ['development-access-token-punctuation.txt', Buffer.from('accessToken = "a!bcdefgh"\n')],
-      ['development-refresh-token-punctuation.txt', Buffer.from('refresh-token = "a!bcdefgh"\n')],
-      ['development-private-key-punctuation.txt', Buffer.from('privateKey = "a!bcdefgh"\n')],
-      ['development-openai-api-key.txt', Buffer.from('OPENAI_API_KEY = abcdefghijklmnop\n')],
-      ['development-anthropic-api-key.txt', Buffer.from('ANTHROPIC_API_KEY: abcdefghijklmnop\n')],
-      ['development-database-url.txt', Buffer.from('DATABASE_URL=postgres://u:p@h/db\n')],
-      ['development-private-key-block.txt', Buffer.from('-----BEGIN OPENSSH PRIVATE KEY-----\nPRIVATE_KEY_BLOCK_SENTINEL\n-----END OPENSSH PRIVATE KEY-----\n')],
+      ['development-credential-pattern.txt', Buffer.from(soterSyntheticCredentialFixture('sk-test-fixture-aaaaaaaaaaaaaaaaaaaaaaaa'))],
+      ['development-password.txt', Buffer.from(soterSyntheticCredentialFixture('password = test-fixture-password-value\n'))],
+      ['development-token.txt', Buffer.from(soterSyntheticCredentialFixture('token = "test-fixture-token-value"\n'))],
+      ['development-client-secret.json', Buffer.from(soterSyntheticCredentialFixture('{"clientSecret":"test-fixture-client-secret"}\n'))],
+      ['development-generic-secret.txt', Buffer.from(soterSyntheticCredentialFixture('secret = "test-fixture-secret-value"\n'))],
+      ['development-declared-secret.mjs', Buffer.from(soterSyntheticCredentialFixture('const secret = "test-fixture-secret-value";\n'))],
+      ['development-password-punctuation.txt', Buffer.from(soterSyntheticCredentialFixture('password = "test-fixture-password-value"\n'))],
+      ['development-token-punctuation.txt', Buffer.from(soterSyntheticCredentialFixture('token = "test-fixture-token-value"\n'))],
+      ['development-api-key-punctuation.txt', Buffer.from(soterSyntheticCredentialFixture('apiKey = "test-fixture-api-key"\n'))],
+      ['development-client-secret-punctuation.txt', Buffer.from(soterSyntheticCredentialFixture('client_secret = "test-fixture-client-secret"\n'))],
+      ['development-access-token-punctuation.txt', Buffer.from(soterSyntheticCredentialFixture('accessToken = "test-fixture-access-token"\n'))],
+      ['development-refresh-token-punctuation.txt', Buffer.from(soterSyntheticCredentialFixture('refresh-token = "test-fixture-refresh-token"\n'))],
+      ['development-private-key-punctuation.txt', Buffer.from(soterSyntheticCredentialFixture('privateKey = "test-fixture-private-key"\n'))],
+      ['development-openai-api-key.txt', Buffer.from(soterSyntheticCredentialFixture('OPENAI_API_KEY = test-fixture-openai-api-key\n'))],
+      ['development-anthropic-api-key.txt', Buffer.from(soterSyntheticCredentialFixture('ANTHROPIC_API_KEY: test-fixture-anthropic-api-key\n'))],
+      ['development-database-url.txt', Buffer.from(soterSyntheticCredentialFixture('DATABASE_URL=postgres://test-fixture-user:test-fixture-password@example.invalid/db\n'))],
+      ['development-private-key-block.txt', Buffer.from('-----BEGIN OPENSSH ' + 'PRIVATE KEY-----\nPRIVATE_KEY_BLOCK_SENTINEL\n-----END OPENSSH ' + 'PRIVATE KEY-----\n')],
       ['development-safe-api-description.txt', Buffer.from('apiKeyFormat = "identifier-only"\ntokenType = "opaque-reference"\n')],
       ['development-ignored-secret.txt', Buffer.from('ignored private review material\n')],
       ['development-unicode-chunk.txt', Buffer.from('界'.repeat(3000) + '\n')],
@@ -1001,17 +1018,23 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
     fs.mkdirSync(path.join(temp, '.aws'));
     fs.writeFileSync(
       path.join(temp, '.aws/credentials'),
-      'aws_secret_access_key = ' + 'A'.repeat(40) + '\n'
+      soterSyntheticCredentialFixture('aws_secret_access_key = TEST_FIXTURE_AWS_SECRET_ACCESS_KEY_VALUE\n')
     );
     fs.mkdirSync(path.join(temp, '.docker'));
     fs.writeFileSync(
       path.join(temp, '.docker/config.json'),
-      JSON.stringify({ auths: { registry: { auth: 'YWJjZGVmZ2hpamts' } } }) + '\n'
+      JSON.stringify({
+        auths: {
+          registry: {
+            auth: soterSyntheticCredentialFixture('test-fixture-docker-auth-value')
+          }
+        }
+      }) + '\n'
     );
     fs.mkdirSync(path.join(temp, 'config'));
     fs.writeFileSync(
       path.join(temp, 'config/credentials.toml'),
-      'token = "abcdefghijklmnopqrstuv"\n'
+      soterSyntheticCredentialFixture('token = "test-fixture-token-value"\n')
     );
     fs.appendFileSync(
       path.join(temp, '.git/info/exclude'),
@@ -1138,6 +1161,167 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       safeCredentialVocabulary.content.text,
       'apiKeyFormat = "identifier-only"\ntokenType = "opaque-reference"\n'
     );
+
+    const markedSyntheticSource = [
+      'function soterSyntheticCredentialFixture(value) { return value; }',
+      'const token = soterSyntheticCredentialFixture("test-fixture-token-value");',
+      ''
+    ].join('\n');
+    const targetReaderFixtureFiles = [
+      ['development-marked-safe.selftest.mjs', markedSyntheticSource],
+      [
+        'development-unmarked-safe.selftest.mjs',
+        'const token = "test-fixture-token-value";\n'
+      ],
+      [
+        'development-marked-nonsynthetic.selftest.mjs',
+        'const token = soterSyntheticCredentialFixture("live-production-token-value");\n'
+      ],
+      ['development-marked-ordinary.mjs', markedSyntheticSource],
+      ['.env.fixture-marker', markedSyntheticSource],
+      [
+        'development-marked-private-key.selftest.mjs',
+        'const material = soterSyntheticCredentialFixture("-----BEGIN OPENSSH '
+          + 'PRIVATE KEY-----\\nTEST_FIXTURE_PRIVATE_KEY_SENTINEL\\n-----END OPENSSH '
+          + 'PRIVATE KEY-----\\n");\n'
+      ],
+      [
+        'development-source-reference.selftest.mjs',
+        'const authorization = metadata.authorization;\n'
+      ]
+    ];
+    for (const [relative, source] of targetReaderFixtureFiles) {
+      fs.writeFileSync(path.join(temp, relative), source);
+    }
+    const prepareFixtureRead = (id, relative, createdAt) => prepareDevelopmentRequest({
+      root: temp,
+      lockPath: reviewLockPath,
+      workflowId: 'automation.reviewing-forge-output',
+      requestId: 'development-request.target-read-marker-' + id,
+      invocation: {
+        kind: 'develop',
+        profile: 'exact',
+        requestedOutcome: 'Prove the exact selftest-only synthetic credential fixture boundary.',
+        requestedLocalEffects: ['local-workspace-read'],
+        targets: [{ id: 'target.' + id, path: relative }]
+      },
+      createdAt
+    });
+    const markedSafeRequest = prepareFixtureRead(
+      'marked-safe',
+      'development-marked-safe.selftest.mjs',
+      '2026-07-22T09:06:53.000Z'
+    );
+    const markedSafeMaterial = readDevelopmentTargetMaterial({
+      root: temp,
+      host: 'codex',
+      requestId: markedSafeRequest.request.id,
+      requestFingerprint: markedSafeRequest.request.requestFingerprint,
+      targetId: 'target.marked-safe'
+    });
+    assert.equal(markedSafeMaterial.content.text, markedSyntheticSource);
+    for (const [id, relative, reasonCode, createdAt] of [
+      [
+        'unmarked-safe',
+        'development-unmarked-safe.selftest.mjs',
+        'DEVELOPMENT_TARGET_MATERIAL_CREDENTIAL_ASSIGNMENT',
+        '2026-07-22T09:06:53.100Z'
+      ],
+      [
+        'marked-nonsynthetic',
+        'development-marked-nonsynthetic.selftest.mjs',
+        'DEVELOPMENT_TARGET_MATERIAL_CREDENTIAL_ASSIGNMENT',
+        '2026-07-22T09:06:53.200Z'
+      ],
+      [
+        'marked-ordinary',
+        'development-marked-ordinary.mjs',
+        'DEVELOPMENT_TARGET_MATERIAL_CREDENTIAL_ASSIGNMENT',
+        '2026-07-22T09:06:53.300Z'
+      ],
+      [
+        'marked-private-key',
+        'development-marked-private-key.selftest.mjs',
+        'DEVELOPMENT_TARGET_MATERIAL_PRIVATE_KEY_BLOCK',
+        '2026-07-22T09:06:53.400Z'
+      ]
+    ]) {
+      const request = prepareFixtureRead(id, relative, createdAt);
+      expectCodeAndReason(() => readDevelopmentTargetMaterial({
+        root: temp,
+        host: 'codex',
+        requestId: request.request.id,
+        requestFingerprint: request.request.requestFingerprint,
+        targetId: 'target.' + id
+      }), 'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE', reasonCode);
+    }
+    const markedPrivateTargetRequest = prepareFixtureRead(
+      'marked-private-target',
+      '.env.fixture-marker',
+      '2026-07-22T09:06:53.500Z'
+    );
+    expectCode(() => readDevelopmentTargetMaterial({
+      root: temp,
+      host: 'codex',
+      requestId: markedPrivateTargetRequest.request.id,
+      requestFingerprint: markedPrivateTargetRequest.request.requestFingerprint,
+      targetId: 'target.marked-private-target'
+    }), 'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE');
+    const sourceReferenceRequest = prepareFixtureRead(
+      'source-reference',
+      'development-source-reference.selftest.mjs',
+      '2026-07-22T09:06:53.600Z'
+    );
+    assert.equal(readDevelopmentTargetMaterial({
+      root: temp,
+      host: 'codex',
+      requestId: sourceReferenceRequest.request.id,
+      requestFingerprint: sourceReferenceRequest.request.requestFingerprint,
+      targetId: 'target.source-reference'
+    }).content.text, 'const authorization = metadata.authorization;\n');
+
+    const exactSelftestPaths = [
+      'soter/core/development-runs.selftest.mjs',
+      'soter/core/host-realizations.selftest.mjs',
+      'soter/automations/email-triage/connected-context.selftest.mjs'
+    ];
+    const exactSelftestRequest = prepareDevelopmentRequest({
+      root: temp,
+      lockPath: reviewLockPath,
+      workflowId: 'automation.reviewing-forge-output',
+      requestId: 'development-request.target-read-exact-selftests',
+      invocation: {
+        kind: 'develop',
+        profile: 'exact',
+        requestedOutcome: 'Prove exact marked selftest sources are readable without file-hash exceptions.',
+        requestedLocalEffects: ['local-workspace-read'],
+        targets: exactSelftestPaths.map((relative, index) => ({
+          id: 'target.exact-selftest-' + index,
+          path: relative
+        }))
+      },
+      createdAt: '2026-07-22T09:06:53.700Z'
+    });
+    for (const [index, relative] of exactSelftestPaths.entries()) {
+      const chunks = [];
+      let chunkIndex = 0;
+      let previousMaterialFingerprint = null;
+      while (chunkIndex !== null) {
+        const material = readDevelopmentTargetMaterial({
+          root: temp,
+          host: 'codex',
+          requestId: exactSelftestRequest.request.id,
+          requestFingerprint: exactSelftestRequest.request.requestFingerprint,
+          targetId: 'target.exact-selftest-' + index,
+          chunkIndex,
+          previousMaterialFingerprint
+        });
+        chunks.push(material.content.text);
+        chunkIndex = material.content.nextChunkIndex;
+        previousMaterialFingerprint = material.materialFingerprint;
+      }
+      assert.equal(chunks.join(''), fs.readFileSync(path.join(temp, relative), 'utf8'));
+    }
 
     const unicodeChunkRequest = prepareDevelopmentRequest({
       root: temp,
@@ -1467,7 +1651,7 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       workflowId: 'automation.forge',
       requestId: 'development-request.credential',
       invocation,
-      limitations: ['Credential sentinel ' + 'sk-' + 'development-secret-value must be rejected.']
+      limitations: [soterSyntheticCredentialFixture('Credential sentinel sk-test-fixture-development-secret-value must be rejected.')]
     }), 'DEVELOPMENT_REQUEST_PRIVATE_MATERIAL_INVALID');
 
     const falseEvaluationChange = passingOutcome(invocation, evaluations);

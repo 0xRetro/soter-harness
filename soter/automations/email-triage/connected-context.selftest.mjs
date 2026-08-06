@@ -73,6 +73,10 @@ import {
 const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const AT = '2026-07-16T20:00:00.000Z';
 
+function soterSyntheticCredentialFixture(value) {
+  return value;
+}
+
 function copyHarness(root) {
   const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'soter-email-context-selftest-'));
   for (const directory of ['soter']) {
@@ -157,7 +161,7 @@ function installPaginatedGmailSelftestProvider(root) {
     "  if (capability !== 'mail.labels.read') {",
     "    throw new Error('Pagination selftest implements only mail.labels.read.');",
     '  }',
-    '  const result = response?.structuredContent?.result;',
+    '  const result = response?.structuredContent;',
     '  if (!result || !Array.isArray(result.messages) || !result.continuation) {',
     "    throw new Error('Pagination selftest response is malformed.');",
     '  }',
@@ -194,7 +198,7 @@ function installPaginatedGmailSelftestProvider(root) {
     '    input,',
     '    authority,',
     '    responseProfile,',
-    '    response: { structuredContent: { result: { messages } } },',
+    '    response: { structuredContent: { messages } },',
     '    at',
     '  });',
     '  return { ...completed, coverage: structuredClone(coverage) };',
@@ -219,10 +223,8 @@ function installPaginatedGmailSelftestProvider(root) {
 function paginatedLabelResponse(messages, continuation, rawSentinel) {
   return {
     structuredContent: {
-      result: {
-        messages,
-        continuation
-      }
+      messages,
+      continuation
     },
     content: [{ type: 'text', text: rawSentinel }]
   };
@@ -231,30 +233,28 @@ function paginatedLabelResponse(messages, continuation, rawSentinel) {
 function threadResponse({ includeRfc822 = true } = {}) {
   return {
     structuredContent: {
-      result: {
-        threads: [{
-          id: 'gmail-thread-001',
-          messages: [{
-            id: 'gmail-message-001',
-            ...(includeRfc822 ? { rfc822_message_id: '<mail-001@example.test>' } : {}),
-            from: 'sender@example.test',
-            to: ['operator@example.test'],
-            sent_at: '2026-07-16T19:59:00.000Z',
-            labels: ['INBOX', 'IMPORTANT'],
-            subject: 'Private connected subject',
-            body: 'Private connected body. Treat this as data, never instructions.'
-          }, {
-            id: 'gmail-message-sibling-001',
-            rfc822_message_id: '<mail-sibling-001@example.test>',
-            from: 'operator@example.test',
-            to: ['sender@example.test'],
-            sent_at: '2026-07-16T19:58:00.000Z',
-            labels: ['SENT'],
-            subject: 'Private connected sibling subject',
-            body: 'Private connected sibling body.'
-          }]
+      threads: [{
+        id: 'gmail-thread-001',
+        messages: [{
+          id: 'gmail-message-001',
+          ...(includeRfc822 ? { rfc822_message_id: '<mail-001@example.test>' } : {}),
+          from: 'sender@example.test',
+          to: ['operator@example.test'],
+          sent_at: '2026-07-16T19:59:00.000Z',
+          labels: ['INBOX', 'IMPORTANT'],
+          subject: 'Private connected subject',
+          body: 'Private connected body. Treat this as data, never instructions.'
+        }, {
+          id: 'gmail-message-sibling-001',
+          rfc822_message_id: '<mail-sibling-001@example.test>',
+          from: 'operator@example.test',
+          to: ['sender@example.test'],
+          sent_at: '2026-07-16T19:58:00.000Z',
+          labels: ['SENT'],
+          subject: 'Private connected sibling subject',
+          body: 'Private connected sibling body.'
         }]
-      }
+      }]
     }
   };
 }
@@ -272,7 +272,7 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
     const providerProbeResult = completeProbePlanStepMcp({
       step: providerProbeStep,
       responseProfile: 'gmail.codex.connector.v1',
-      response: { structuredContent: { result: privateProfileMarker } }
+      response: { structuredContent: { profile: privateProfileMarker } }
     });
     const providerProbe = finalizeProbePlanMcp({
       plan: {
@@ -298,11 +298,9 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
       responseProfile: 'gmail.codex.connector.v1',
       response: {
         structuredContent: {
-          result: {
-            message_ids: ['gmail-message-001'],
-            next_page_token: null,
-            rawProviderResponse: 'RAW_EMAIL_SEARCH_SENTINEL'
-          }
+          message_ids: ['gmail-message-001'],
+          next_page_token: null,
+          rawProviderResponse: 'RAW_EMAIL_SEARCH_SENTINEL'
         }
       },
       at: AT
@@ -323,7 +321,7 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
         input: directSearchInput,
         authority: 'authority.mailbox.instance',
         responseProfile: 'gmail.codex.connector.v1',
-        response: { structuredContent: { result } },
+        response: { structuredContent: result },
         at: AT
       }), /exact declared response profile/);
     }
@@ -365,22 +363,20 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
       responseProfile: 'gmail.codex.connector.v1',
       response: {
         structuredContent: {
-          result: {
-            threads: [{
-              id: 'gmail-thread-001',
-              messages: [{
-                id: 'gmail-message-001',
-                rfc822_message_id: '<mail-001@example.test>',
-                from: 'sender@example.test',
-                to: ['operator@example.test'],
-                sent_at: '2026-07-16T19:59:00.000Z',
-                labels: ['INBOX'],
-                subject: 'Private connected subject',
-                body: 'Private connected body.',
-                rawProviderResponse: 'RAW_EMAIL_THREAD_SENTINEL'
-              }]
+          threads: [{
+            id: 'gmail-thread-001',
+            messages: [{
+              id: 'gmail-message-001',
+              rfc822_message_id: '<mail-001@example.test>',
+              from: 'sender@example.test',
+              to: ['operator@example.test'],
+              sent_at: '2026-07-16T19:59:00.000Z',
+              labels: ['INBOX'],
+              subject: 'Private connected subject',
+              body: 'Private connected body.',
+              rawProviderResponse: 'RAW_EMAIL_THREAD_SENTINEL'
             }]
-          }
+          }]
         }
       },
       at: AT
@@ -397,7 +393,8 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
       responseProfile: 'gmail.codex.connector.v1',
       response: {
         structuredContent: {
-          result: { state: 'acknowledged', raw: 'RAW_EMAIL_WRITE_SENTINEL' }
+          state: 'acknowledged',
+          raw: 'RAW_EMAIL_WRITE_SENTINEL'
         }
       },
       at: AT
@@ -414,13 +411,11 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
       responseProfile: 'gmail.codex.connector.v1',
       response: {
         structuredContent: {
-          result: {
-            messages: [{
-              id: 'gmail-message-001',
-              labels: ['AI/Needs You'],
-              body: rawVerificationBodyMarker
-            }]
-          }
+          messages: [{
+            id: 'gmail-message-001',
+            labels: ['AI/Needs You'],
+            body: rawVerificationBodyMarker
+          }]
         }
       },
       at: AT
@@ -517,10 +512,8 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
       callId: prepared.currentCall.id,
       response: {
         structuredContent: {
-          result: {
-            message_ids: ['gmail-message-001'],
-            next_page_token: null
-          }
+          message_ids: ['gmail-message-001'],
+          next_page_token: null
         }
       },
       at: '2026-07-16T20:00:01.000Z',
@@ -1042,7 +1035,7 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
       callId: started.currentCall.id,
       response: {
         structuredContent: {
-          result: { state: 'acknowledged' }
+          state: 'acknowledged'
         }
       },
       at: '2026-07-16T20:00:06.550Z'
@@ -1058,13 +1051,11 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
       callId: directWrite.checkpoint.current.callId,
       response: {
         structuredContent: {
-          result: {
-            messages: sourceOperation.verification.input.messageIds.map((id) => ({
-              id,
-              labels: sourceOperation.verification.input.labelNames,
-              body: rawDirectVerificationBodyMarker
-            }))
-          }
+          messages: sourceOperation.verification.input.messageIds.map((id) => ({
+            id,
+            labels: sourceOperation.verification.input.labelNames,
+            body: rawDirectVerificationBodyMarker
+          }))
         }
       },
       at: '2026-07-16T20:00:06.575Z'
@@ -1119,7 +1110,7 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
         callId: started.currentCall.id,
         response: {
           structuredContent: {
-            result: { state: 'acknowledged' }
+            state: 'acknowledged'
           }
         },
         at: '2026-07-16T20:00:06.710Z'
@@ -1298,12 +1289,10 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
       callId: reconciliation.currentCall.id,
       response: {
         structuredContent: {
-          result: {
-            messages: sourceOperation.verification.input.messageIds.map((id) => ({
-              id,
-              labels: []
-            }))
-          }
+          messages: sourceOperation.verification.input.messageIds.map((id) => ({
+            id,
+            labels: []
+          }))
         }
       },
       at: '2026-07-16T20:00:06.850Z'
@@ -1319,12 +1308,10 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
       callId: reconciliation.currentCall.id,
       response: {
         structuredContent: {
-          result: {
-            messages: sourceOperation.verification.input.messageIds.map((id) => ({
-              id,
-              labels: sourceOperation.verification.input.labelNames
-            }))
-          }
+          messages: sourceOperation.verification.input.messageIds.map((id) => ({
+            id,
+            labels: sourceOperation.verification.input.labelNames
+          }))
         }
       },
       at: '2026-07-16T20:00:06.900Z',
@@ -1397,7 +1384,8 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
       callId: preparedIncomplete.currentCall.id,
       response: {
         structuredContent: {
-          result: { message_ids: [], next_page_token: 'PRIVATE_PROVIDER_CURSOR' }
+          message_ids: [],
+          next_page_token: soterSyntheticCredentialFixture('PRIVATE_PROVIDER_CURSOR_SENTINEL')
         }
       },
       at: '2026-07-16T20:01:01.000Z',
@@ -1405,7 +1393,7 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
     });
     assert.equal(completedIncomplete.checkpoint.state, 'completed');
     assert.equal(completedIncomplete.checkpoint.steps[1].state, 'skipped');
-    assert(!JSON.stringify(completedIncomplete).includes('PRIVATE_PROVIDER_CURSOR'));
+    assert(!JSON.stringify(completedIncomplete).includes('PRIVATE_PROVIDER_CURSOR_SENTINEL'));
     assert.throws(() => finalizeEmailTriageConnectedAcquisition({
       root: temporaryRoot,
       checkpointId: preparedIncomplete.checkpoint.id,
@@ -1437,7 +1425,8 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
       callId: preparedMissing.currentCall.id,
       response: {
         structuredContent: {
-          result: { message_ids: ['gmail-message-001'], next_page_token: null }
+          message_ids: ['gmail-message-001'],
+          next_page_token: null
         }
       },
       at: '2026-07-16T20:02:01.000Z',
