@@ -249,8 +249,7 @@ export function prepareMcp({ capability, input }) {
     return {
       tool: 'batch_read_email_threads',
       arguments: {
-        ids: exactStrings(input.messageIds, 'Mail thread message IDs', 100),
-        id_type: 'message',
+        message_ids: exactStrings(input.messageIds, 'Mail thread message IDs', 100),
         max_messages: input.maximumMessagesPerThread
       }
     };

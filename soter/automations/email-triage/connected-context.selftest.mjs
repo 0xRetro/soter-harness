@@ -785,8 +785,7 @@ export async function selftestEmailConnectedContext(root = defaultRoot) {
       'mcp__codex_apps__gmail_batch_read_email_threads'
     );
     assert.deepEqual(searched.currentCall.arguments, {
-      ids: ['gmail-message-001'],
-      id_type: 'message',
+      message_ids: ['gmail-message-001'],
       max_messages: 500
     });
 

@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import {
   completeMcp,
-  completeProbePlanStepMcp
+  completeProbePlanStepMcp,
+  prepareMcp
 } from './mcp.mjs';
 
 const RESPONSE_PROFILE = 'gmail.codex.connector.v1';
@@ -48,6 +49,21 @@ const direct = completeSearch(searchResponse({
 assert.deepEqual(direct.messageIds, ['message.1', 'message.2']);
 assert.equal(direct.returnedMessageCount, 2);
 assert.equal(direct.complete, true);
+
+assert.deepEqual(prepareMcp({
+  capability: 'mail.threads.read',
+  input: {
+    messageIds: ['message.2', 'message.1'],
+    maximumThreads: 2,
+    maximumMessagesPerThread: 25
+  }
+}), {
+  tool: 'batch_read_email_threads',
+  arguments: {
+    message_ids: ['message.2', 'message.1'],
+    max_messages: 25
+  }
+});
 
 const directProbe = completeProbePlanStepMcp({
   step: {
