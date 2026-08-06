@@ -13,9 +13,9 @@
   },
   "configurationLock": {
     "path": "soter/fixtures/project-capture/project-capture.lock.json",
-    "fingerprint": "sha256:2cbc791c8c1d74d8c3d50cedbaa6dad56420f98c3f4678306444cf6fe7dad183"
+    "fingerprint": "sha256:a067631a0569218e1e1cb84190cdbdc7d265c4350b402a89414ce0df78fbe774"
   },
-  "graphFingerprint": "sha256:598595e4a8719a8e6ee6c3246320c33f4bec7c46da8998c255e862764ff7086d",
+  "graphFingerprint": "sha256:d9fcba3d45a3d6740f2a9d52d4539ab0d88ff23d0b57e22c07b498c267d77f31",
   "context": [
     {
       "subject": "crm.records",
@@ -24,7 +24,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/crm-policies",
       "declarationFingerprint": "sha256:3d57e543eb317047a3dd1e66c7ebc375a14da087d8d149eb037df7598d6b2484",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:2cbc791c8c1d74d8c3d50cedbaa6dad56420f98c3f4678306444cf6fe7dad183",
+      "provenance": "configuration-lock:sha256:a067631a0569218e1e1cb84190cdbdc7d265c4350b402a89414ce0df78fbe774",
       "freshness": "unknown"
     },
     {
@@ -44,7 +44,7 @@
       "uri": "soter-fixture://configuration-template/notion/account/operator",
       "declarationFingerprint": "sha256:ac5069cd8caaa12d0875e257a94dfe28297822278cb3eaab9dcbe9fa112517d5",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:2cbc791c8c1d74d8c3d50cedbaa6dad56420f98c3f4678306444cf6fe7dad183",
+      "provenance": "configuration-lock:sha256:a067631a0569218e1e1cb84190cdbdc7d265c4350b402a89414ce0df78fbe774",
       "freshness": "unknown"
     },
     {
@@ -74,7 +74,7 @@
       "uri": "soter-state://runs",
       "declarationFingerprint": "sha256:b6e3b94a81e9cf35143a6c5e6e686a4ea26b27bbdd09eaa5ccb559a361a45a5e",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:2cbc791c8c1d74d8c3d50cedbaa6dad56420f98c3f4678306444cf6fe7dad183",
+      "provenance": "configuration-lock:sha256:a067631a0569218e1e1cb84190cdbdc7d265c4350b402a89414ce0df78fbe774",
       "freshness": "unknown"
     }
   ],
@@ -202,7 +202,7 @@
     {
       "id": "context.project-capture.preparation-fixture",
       "type": "context-snapshot",
-      "fingerprint": "sha256:73046312c4d2faa5021de9d60147068579baf82d856e79fc5907a407936735dc"
+      "fingerprint": "sha256:213bf7a6f104aba43ebc14383c677fdebe63b6c288478c30e6c7664db2a21dbe"
     }
   ],
   "effects": [

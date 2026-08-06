@@ -760,7 +760,7 @@ export function selftestDevelopmentHostObservations(root = scriptRoot) {
     ...args,
     observation: nonzeroExternalObservation,
     result: nonzeroExternalResult
-  }), 'DEVELOPMENT_HOST_OBSERVATION_EXTERNAL_EFFECT_INVALID');
+  }), 'DEVELOPMENT_HOST_OBSERVATION_RESULT_INVALID');
 
   const omittedExternalResult = structuredClone(result);
   omittedExternalResult.effects = omittedExternalResult.effects.filter((item) => {

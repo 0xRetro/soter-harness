@@ -1764,6 +1764,20 @@ fingerprints the normalized target set inside Core. The caller supplies the
 smallest canonical requested local-effect subset; it cannot select another
 configuration or predeclare target fingerprints. `soter_inspect_development_run`
 returns the same sanitized `development-run-inspection/v1` after revalidation.
+Selected hosts may privately read one exact bound text target through
+`soter_read_development_target`. The initial cursor is
+`{index: 0, previous_material_fingerprint: null}`; each continuation pairs the
+returned `nextChunkIndex` with the preceding `materialFingerprint`.
+`development-target-material/v1`
+contains private untrusted target text and exact chunk/whole-target fingerprints;
+the exact chunk is delivered only through a dedicated model-visible MCP text
+block and mirrored structured output for the selected active host. The host may
+transmit and retain it under its task and provider policies. This relies on an
+ambient selected-host transport boundary Soter neither grants nor verifies and
+grants no onward disclosure authority. The material
+must never enter Studio state, workspace inspection, evidence, fixtures,
+diagnostics, or a general activity projection. There is intentionally no Studio
+adapter or renderer contract for this selected-host transcript material.
 Its `applicability` and discriminated `requestBoundary` report current, stale,
 or closed state plus declared and effective effects. Provider read/write,
 publication, merge, protected-root mutation, and host realization remain

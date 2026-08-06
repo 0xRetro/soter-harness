@@ -309,6 +309,7 @@ export async function selftestHostRealizations(sourceRoot) {
     assert(!realizedClaudeSkillContent.includes('disable-model-invocation:'),
       'Active Claude workflow skill remained unavailable to the governed host agent.');
     assert(realizedClaudeSkillContent.includes('soter_create_development_request')
+      && realizedClaudeSkillContent.includes('soter_read_development_target')
       && realizedClaudeSkillContent.includes('soter_record_development_result')
       && realizedClaudeSkillContent.includes('grants no provider'),
     'Active Claude workflow skill omitted its exact request, result, or no-authority boundary.');

@@ -1739,6 +1739,24 @@ The MCP operation `soter_create_development_request` derives the current active
 lock and realized host, fingerprints every normalized repository target inside
 Core, binds one explicit canonical subset of local effects, and returns
 `development-run-inspection/v1` without target paths or requested-outcome text.
+`soter_read_development_target` accepts only the exact request fingerprint,
+target id, and exact chained cursor for an open request-scoped read. The initial
+cursor is `{index: 0, previous_material_fingerprint: null}`; each continuation
+pairs the returned `nextChunkIndex` with the preceding `materialFingerprint`.
+It returns `development-target-material/v1`: one fingerprinted private UTF-8
+chunk, whole target fingerprint and bounded size, exact continuation index,
+observed read fact, and false authority flags. The exact chunk appears in a
+dedicated model-visible MCP text block while the complete contract is mirrored
+in structured output, so supported hosts can consume the same authoritative
+material and cursor chain. Core never persists or aggregates the content; the
+active host model may transmit and retain the MCP result in its private task
+transcript under that provider's policies. `hostTransportBoundary` names this
+ambient selected-host consequence explicitly, while
+`grantsOnwardDisclosure=false` makes the exact target-material authority and
+Core boundary prohibit onward or third-party disclosure. The selected
+configuration allows only exact request-bound material to enter the
+already-active host task, but Soter neither grants nor verifies that ambient
+host transport boundary.
 `soter_inspect_development_run` revalidates one request ID and returns a
 discriminated current, stale, or closed boundary with declared and effective
 effects. Neither operation executes development work or grants provider,

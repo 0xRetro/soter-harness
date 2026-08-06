@@ -111,6 +111,26 @@ export function selftestPrivateJsonInput() {
       );
     }
 
+    const boundedRoot = path.join(temporaryRoot, 'bounded-root');
+    const oversized = path.join(boundedRoot, 'oversized.txt');
+    fs.mkdirSync(boundedRoot);
+    fs.writeFileSync(oversized, Buffer.alloc(8193, 0x61));
+    let oversizedOpened = false;
+    const originalOpenSync = fs.openSync;
+    fs.openSync = (...args) => {
+      if (args[0] === oversized) oversizedOpened = true;
+      return originalOpenSync(...args);
+    };
+    try {
+      rejects(
+        () => readGovernedFile(boundedRoot, 'oversized.txt', { maxBytes: 8192 }),
+        /bounded read limit/
+      );
+      assert.equal(oversizedOpened, false, 'oversized governed reads must reject before open');
+    } finally {
+      fs.openSync = originalOpenSync;
+    }
+
     process.stdout.write('Private JSON input and governed artifact selftest passed.\n');
     return true;
   } finally {

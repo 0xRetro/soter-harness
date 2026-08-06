@@ -13,9 +13,9 @@
   },
   "configurationLock": {
     "path": "soter/fixtures/project-work-promotion/project-work-promotion.lock.json",
-    "fingerprint": "sha256:1ac8d7ac87edc40b27a26ddb377da2b0bd98fc5fcf4173fd43b11ac0f8fb88fc"
+    "fingerprint": "sha256:1846cc0eaf71e395ef96df9de6d9777e062b1d7878935f0005952391b0299824"
   },
-  "graphFingerprint": "sha256:a6d975f06af8bdd9705ca08233d502fa9db29c9f40a2e924957993384707c9e9",
+  "graphFingerprint": "sha256:adb0d82f6a638b43cc5bf711c1b1e53ebf1107250c8cd89722175edcdfd5274f",
   "context": [
     {
       "subject": "notion.workspace",
@@ -24,7 +24,7 @@
       "uri": "soter-fixture://configuration-template/notion/account/operator",
       "declarationFingerprint": "sha256:b2a6155ddd2cb4f2e5b33b1fc3920d4f8c42aa9b4b33d0f3068de3ba47058138",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:1ac8d7ac87edc40b27a26ddb377da2b0bd98fc5fcf4173fd43b11ac0f8fb88fc",
+      "provenance": "configuration-lock:sha256:1846cc0eaf71e395ef96df9de6d9777e062b1d7878935f0005952391b0299824",
       "freshness": "unknown"
     },
     {
@@ -54,7 +54,7 @@
       "uri": "soter-state://runs",
       "declarationFingerprint": "sha256:8afe5da5de9d67a21267be3ba143ca970bf2a316ca513dd3146f805613c7ee46",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:1ac8d7ac87edc40b27a26ddb377da2b0bd98fc5fcf4173fd43b11ac0f8fb88fc",
+      "provenance": "configuration-lock:sha256:1846cc0eaf71e395ef96df9de6d9777e062b1d7878935f0005952391b0299824",
       "freshness": "unknown"
     },
     {
@@ -74,7 +74,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/tasks",
       "declarationFingerprint": "sha256:6b77c07a3badd1f399c0a6fd6fbcf292bc6b88644b2c1f907c8f8320b816bd28",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:1ac8d7ac87edc40b27a26ddb377da2b0bd98fc5fcf4173fd43b11ac0f8fb88fc",
+      "provenance": "configuration-lock:sha256:1846cc0eaf71e395ef96df9de6d9777e062b1d7878935f0005952391b0299824",
       "freshness": "unknown"
     }
   ],
@@ -224,7 +224,7 @@
     {
       "id": "context.project-work-promotion.coordination-only-fixture",
       "type": "context-snapshot",
-      "fingerprint": "sha256:6023c35a74932d12d8b7ede209a4ddcde0c480dc0f8976191a73e9466b3eb60c"
+      "fingerprint": "sha256:5f8b92c21f4d7e78d2adee6d9731ca790af2595c7282273917fafc68afedd788"
     }
   ],
   "effects": [

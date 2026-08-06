@@ -56,6 +56,7 @@
       "soter://contracts/workflow-definition/v2",
       "soter://contracts/workflow-evaluation-set/v2",
       "soter://contracts/development-request/v1",
+      "soter://contracts/development-target-material/v1",
       "soter://contracts/development-result/v1",
       "soter://contracts/host-projection-definition/v2"
     ]

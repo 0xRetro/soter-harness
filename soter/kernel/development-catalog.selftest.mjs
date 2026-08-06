@@ -47,13 +47,15 @@ assert.deepEqual(
   })),
   {
     read: 'allow',
-    disclosure: 'prohibit',
+    disclosure: 'allow',
     write: 'allow',
     dispatch: 'allow',
     destructive: 'prohibit'
   },
-  'catalog must expose only the exact request-scoped local development effects'
+  'catalog must expose only exact request-scoped development and selected-host transport effects'
 );
+assert(lock.effectPolicies.disclosure.reason.includes('ambient host transport boundary'));
+assert(lock.effectPolicies.disclosure.reason.includes('no onward or third-party disclosure authority'));
 
 const codexAdapter = readJson(path.join(root, 'soter/hosts/codex/adapter.json'));
 const claudeAdapter = readJson(path.join(root, 'soter/hosts/claude/adapter.json'));
@@ -117,10 +119,20 @@ for (const slug of expected) {
   assert(codexSkill.content.startsWith(`---\nname: ${slug}\ndescription: `));
   assert(codexSkill.content.includes('This file is procedural guidance only.'));
   assert(codexSkill.content.includes('Guide state: `active`'));
+  assert(codexSkill.content.includes('soter_create_development_request'));
+  assert(codexSkill.content.includes('soter_read_development_target'));
+  assert(codexSkill.content.includes('soter_inspect_development_run'));
+  assert(codexSkill.content.includes('soter_record_development_result'));
+  assert(codexSkill.content.includes('Core derives request-and-target-bound claim fingerprints'));
+  assert(codexSkill.content.includes('not independent verification'));
   assert(codexMetadata.content.includes('allow_implicit_invocation: false'));
   assert(!claudeSkill.content.includes('disable-model-invocation:'));
   assert(claudeSkill.content.includes('soter_create_development_request'));
+  assert(claudeSkill.content.includes('soter_read_development_target'));
+  assert(claudeSkill.content.includes('soter_inspect_development_run'));
   assert(claudeSkill.content.includes('soter_record_development_result'));
+  assert(claudeSkill.content.includes('Core derives request-and-target-bound claim fingerprints'));
+  assert(claudeSkill.content.includes('not independent verification'));
   assert(claudeSkill.content.includes('grants no provider'));
   for (const sentinel of privateSourceSentinels) {
     assert(!codexSkill.content.includes(sentinel) && !claudeSkill.content.includes(sentinel));

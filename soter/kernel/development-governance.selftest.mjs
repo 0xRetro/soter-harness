@@ -41,6 +41,9 @@ assert.deepEqual(policy.artifactModel.roles, [
   'fixture'
 ]);
 assert.equal(policy.artifactModel.scaffolding, 'derived-from-governing-contract');
+assert(policy.artifactModel.governingContracts.includes(
+  'soter://contracts/development-target-material/v1'
+));
 
 assert.deepEqual(
   policy.lifecycle.map((item) => item.sequence),
@@ -70,6 +73,7 @@ for (const contractId of policy.artifactModel.governingContracts) {
 
 for (const [artifactPath, role] of [
   [schemaPath, 'definition'],
+  ['soter/contracts/development-target-material.schema.json', 'definition'],
   [policyPath, 'definition'],
   [selftestPath, 'evaluation']
 ]) {

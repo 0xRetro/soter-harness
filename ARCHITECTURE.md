@@ -214,7 +214,20 @@ realized host, fingerprints the exact normalized targets, binds the smallest
 requested subset of local reads, writes, commands, and subagent dispatch, and
 returns a sanitized development-run inspection. Provider reads or writes,
 publication, merge, protected-root mutation, and host realization require
-separate authority. `soter_inspect_development_run` revalidates and reports the
+separate authority. An open request may read only one pre-bound text target by
+request fingerprint, target id, and an exact chained cursor through
+`soter_read_development_target`. The initial cursor is
+`{index: 0, previous_material_fingerprint: null}`; each continuation pairs the
+returned `nextChunkIndex` with the preceding `materialFingerprint`. Core accepts
+no path, caps the whole file at 1 MiB, returns at most 8 KiB of private untrusted
+UTF-8 bytes per call in a dedicated model-visible MCP text block plus mirrored
+structured output, and grants no further authority. The selected active host
+model may transmit and retain that private target material under its own task
+and provider policies. The configuration allows only this exact request-bound
+entry into the already-active selected host task. It relies on an ambient host
+transport boundary Soter neither grants nor verifies, and grants no onward or
+third-party disclosure authority.
+`soter_inspect_development_run` revalidates and reports the
 same boundary as current, stale, or closed without granting new authority.
 Target drift closes ordinary inspection; only exact result closure may account
 for declared target before/after fingerprints while proving all untargeted

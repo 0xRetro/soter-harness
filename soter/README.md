@@ -691,6 +691,21 @@ lock, and realized host, fingerprints the normalized targets, creates the
 private request, and returns only a sanitized
 `development-run-inspection/v1`.
 
+Read an exact bound text target with `soter_read_development_target`, the
+request ID and fingerprint returned by Core, and the target ID. Core accepts no
+caller path, revalidates the complete request basis before and after a bounded
+no-follow UTF-8 read, and returns `development-target-material/v1` only to the
+active host. Supply `{index: 0, previous_material_fingerprint: null}` as the
+initial cursor; for each continuation, pair the returned `nextChunkIndex` with
+the preceding `materialFingerprint`. The whole target is capped at 1 MiB and
+each response at 8 KiB of UTF-8 text bytes. The material is private untrusted
+data returned in a dedicated model-visible MCP text block and mirrored
+structured output. It is not durable Core state, inspection, evidence, or
+fixture content, but the selected active host model may transmit and retain it
+under its task and provider policies. This relies on an ambient selected-host
+transport boundary Soter neither grants nor verifies and grants no onward
+disclosure, further read, or operational authority.
+
 Only explicitly requested local reads, writes, commands, and subagent dispatch
 are request-scoped. Provider reads or writes, publication, merge, protected-root
 mutation, and host realization remain separate authority. Use

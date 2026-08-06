@@ -348,12 +348,12 @@ assert.deepEqual(
   })),
   {
     read: 'allow',
-    disclosure: 'prohibit',
+    disclosure: 'allow',
     write: 'allow',
     dispatch: 'allow',
     destructive: 'prohibit'
   },
-  'development catalog may allow only the exact request-scoped local worker effects'
+  'development catalog may allow only exact request-scoped worker and selected-host transport effects'
 );
 assert.equal(
   developmentCatalogLock.capabilities.length,
@@ -362,6 +362,8 @@ assert.equal(
 );
 assert(developmentCatalogLock.effectPolicies.read.reason.includes('bound contained workspace'));
 assert(developmentCatalogLock.effectPolicies.read.reason.includes('no provider-read authority'));
+assert(developmentCatalogLock.effectPolicies.disclosure.reason.includes('ambient host transport boundary'));
+assert(developmentCatalogLock.effectPolicies.disclosure.reason.includes('no onward or third-party disclosure authority'));
 assert(developmentCatalogLock.effectPolicies.write.reason.includes('bound contained worker workspace'));
 assert(developmentCatalogLock.effectPolicies.dispatch.reason.includes('separately trusted host executor'));
 assert(!developmentCatalogLock.projections.some((output) => output.path.startsWith('.claude/skills/')),

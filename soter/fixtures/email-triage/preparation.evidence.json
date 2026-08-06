@@ -10,13 +10,13 @@
     "id": "run.email-triage.preparation-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:8145e33b822c52ec034b7f558d046b4b616001d1c8598a4ecfc9ea1c200d8a94",
-  "graphFingerprint": "sha256:e0bc6b52e6cefcb8b2b577003773151f66f10f53199cf39b9f813740c2a38040",
+  "configurationLockFingerprint": "sha256:ad650090c1ce0e0f5949b9c3accb57d0e0a557157c3cf86b9dc80ccff6dd8988",
+  "graphFingerprint": "sha256:4ac8220ff532ad0e5bcabed776a05a281f2aa53298374a92e2c272a601766501",
   "dependencies": [
     {
       "id": "kernel.soter",
       "version": "0.1.0",
-      "fingerprint": "sha256:a329fb60fdd3e46a9cdce1b0f6d5ea574812105be6bd235eb998a347c3339bfa"
+      "fingerprint": "sha256:88abbc2dd21e627c5e4359cd113e403af8f5b3db630194929a8a2757e7b04ea6"
     },
     {
       "id": "core.runtime",
@@ -284,7 +284,7 @@
     {
       "role": "context-snapshot",
       "id": "context.email-triage.preparation-fixture",
-      "fingerprint": "sha256:38afb3275fe5581fa2ae83cae7bc5782ef0a8a3a9ed12d2e201df81c87fc42d1"
+      "fingerprint": "sha256:72d58a80e73919956bd65d5f8c6a90a6ac5e45da13ac8ffafa54530d9e13a85d"
     },
     {
       "role": "email-review",

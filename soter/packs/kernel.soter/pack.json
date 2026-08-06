@@ -52,6 +52,7 @@
     { "path": "soter/contracts/workflow-guide.schema.json", "role": "definition" },
     { "path": "soter/contracts/workflow-evaluation-set.schema.json", "role": "definition" },
     { "path": "soter/contracts/development-request.schema.json", "role": "definition" },
+    { "path": "soter/contracts/development-target-material.schema.json", "role": "definition" },
     { "path": "soter/contracts/development-result.schema.json", "role": "definition" },
     { "path": "soter/contracts/development-run-inspection.schema.json", "role": "definition" },
     { "path": "soter/contracts/development-host-execution.schema.json", "role": "definition" },

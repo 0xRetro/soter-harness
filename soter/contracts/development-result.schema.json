@@ -93,6 +93,22 @@
     "privacy": { "$ref": "#/$defs/privacy" },
     "limitations": { "$ref": "#/$defs/limitations" }
   },
+  "allOf": [
+    {
+      "if": {
+        "required": ["state"],
+        "properties": { "state": { "const": "passed" } }
+      },
+      "then": {
+        "properties": {
+          "checks": {
+            "minItems": 1,
+            "items": { "properties": { "state": { "const": "passed" } } }
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
     "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
     "instant": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:[.][0-9]{3})?Z$" },
@@ -214,16 +230,32 @@
       }
     },
     "effect": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["category", "scope", "state", "count", "observedFingerprint"],
-      "properties": {
-        "category": { "enum": ["local-workspace-read", "local-workspace-write", "local-command", "subagent-dispatch", "provider-read", "provider-write", "publication", "merge", "protected-root-mutation", "host-realization"] },
-        "scope": { "enum": ["request-scoped", "separate-authority"] },
-        "state": { "enum": ["observed", "not-observed", "blocked", "unknown"] },
-        "count": { "type": "integer", "minimum": 0 },
-        "observedFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
-      }
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["category", "scope", "state", "count", "observedFingerprint"],
+          "properties": {
+            "category": { "enum": ["local-workspace-read", "local-workspace-write", "local-command", "subagent-dispatch", "provider-read", "provider-write", "publication", "merge", "protected-root-mutation", "host-realization"] },
+            "scope": { "enum": ["request-scoped", "separate-authority"] },
+            "state": { "const": "observed" },
+            "count": { "type": "integer", "minimum": 1 },
+            "observedFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["category", "scope", "state", "count", "observedFingerprint"],
+          "properties": {
+            "category": { "enum": ["local-workspace-read", "local-workspace-write", "local-command", "subagent-dispatch", "provider-read", "provider-write", "publication", "merge", "protected-root-mutation", "host-realization"] },
+            "scope": { "enum": ["request-scoped", "separate-authority"] },
+            "state": { "enum": ["not-observed", "blocked", "unknown"] },
+            "count": { "const": 0 },
+            "observedFingerprint": { "type": "null" }
+          }
+        }
+      ]
     },
     "promotion": {
       "oneOf": [

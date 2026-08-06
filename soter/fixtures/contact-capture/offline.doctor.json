@@ -6,7 +6,7 @@
   "level": "offline",
   "configuration": {
     "name": "contact-capture",
-    "lockFingerprint": "sha256:9c85df0e233e3692f35442e92279555b5379dd9b2d019b6e94b1f78111f3f015"
+    "lockFingerprint": "sha256:21f43f4ac26a1b62f256257a547fdf17d0a0ad3e88643979d4cf4883d019020f"
   },
   "states": {
     "valid": "passed",

@@ -156,8 +156,16 @@ system-level truth, not the selected work item's lifecycle state.
   skill directory. Before following one, the host calls
   `soter_create_development_request` for the workflow, outcome, smallest local-
   effect subset, and exact targets. Core derives the active realized
-  configuration; `soter_inspect_development_run` reports the sanitized current,
-  stale, or closed boundary. A realized guide alone is not runnable authority.
+  configuration. Each selected text target is read through
+  `soter_read_development_target`, which accepts no caller path and returns
+  private untrusted content in a dedicated model-visible MCP text block plus
+  mirrored structured output, using bounded fingerprinted chunks without
+  persisting or aggregating it. The initial cursor is
+  `{index: 0, previous_material_fingerprint: null}`; each continuation pairs
+  the returned `nextChunkIndex` with the preceding `materialFingerprint`. The
+  host may retain each result in its private task transcript.
+  `soter_inspect_development_run` reports the sanitized current, stale, or
+  closed boundary. A realized guide alone is not runnable authority.
 - **Private prepared work.** Studio and the CLI can validate inputs, perform
   fixture-contained reads, and produce review material without creating write
   authority.

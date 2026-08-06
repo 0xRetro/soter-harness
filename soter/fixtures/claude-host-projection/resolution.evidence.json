@@ -10,13 +10,13 @@
     "id": "claude-host-projection",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:f7caf342b7da1e8ae99ab084a60ffb289cf8e6d49b4a450e50d39e62b62fb92d",
-  "graphFingerprint": "sha256:692884f1c32e2e8ed0dedce8b470b1bd0f248228a0aac99c2c23a893864eb11c",
+  "configurationLockFingerprint": "sha256:9d6546912a32097da0d901df00ab5989b3540aaf8d620e6d11f6993f934b703c",
+  "graphFingerprint": "sha256:53955459856a3d048277c8086e4a765b7c147f2fae91be8237ba1824dbee3dd0",
   "dependencies": [
     {
       "id": "kernel.soter",
       "version": "0.1.0",
-      "fingerprint": "sha256:a329fb60fdd3e46a9cdce1b0f6d5ea574812105be6bd235eb998a347c3339bfa"
+      "fingerprint": "sha256:88abbc2dd21e627c5e4359cd113e403af8f5b3db630194929a8a2757e7b04ea6"
     },
     {
       "id": "core.runtime",
@@ -77,7 +77,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:f7caf342b7da1e8ae99ab084a60ffb289cf8e6d49b4a450e50d39e62b62fb92d"
+      "fingerprint": "sha256:9d6546912a32097da0d901df00ab5989b3540aaf8d620e6d11f6993f934b703c"
     }
   ],
   "effects": [],

@@ -24,12 +24,18 @@
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["id", "fingerprint", "state", "completedAt"],
+          "required": ["id", "fingerprint", "state", "completedAt", "evidenceBasis"],
           "properties": {
             "id": { "type": "string" },
             "fingerprint": { "$ref": "#/$defs/fingerprint" },
             "state": { "enum": ["passed", "failed", "blocked", "partial"] },
-            "completedAt": { "type": "string" }
+            "completedAt": { "type": "string" },
+            "evidenceBasis": {
+              "oneOf": [
+                { "$ref": "#/$defs/hostReportedEvidenceBasis" },
+                { "$ref": "#/$defs/independentlyEvaluatedEvidenceBasis" }
+              ]
+            }
           }
         }
       ]
@@ -288,9 +294,85 @@
     "limitations": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
     "inspectionFingerprint": { "$ref": "#/$defs/fingerprint" }
   },
+  "allOf": [
+    {
+      "if": {
+        "required": ["invocation"],
+        "properties": {
+          "invocation": {
+            "required": ["kind"],
+            "properties": { "kind": { "const": "develop" } }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "result": {
+            "oneOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "required": ["evidenceBasis"],
+                "properties": {
+                  "evidenceBasis": { "$ref": "#/$defs/hostReportedEvidenceBasis" }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": ["invocation"],
+        "properties": {
+          "invocation": {
+            "required": ["kind"],
+            "properties": { "kind": { "const": "evaluation-suite" } }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "result": {
+            "oneOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "required": ["evidenceBasis"],
+                "properties": {
+                  "evidenceBasis": { "$ref": "#/$defs/independentlyEvaluatedEvidenceBasis" }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
     "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
     "nullableFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+    "hostReportedEvidenceBasis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "reasonCode", "independentlyVerified"],
+      "properties": {
+        "state": { "const": "host-reported" },
+        "reasonCode": { "const": "DEVELOPMENT_RESULT_HOST_REPORTED_UNVERIFIED" },
+        "independentlyVerified": { "const": false }
+      }
+    },
+    "independentlyEvaluatedEvidenceBasis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "reasonCode", "independentlyVerified"],
+      "properties": {
+        "state": { "const": "independently-evaluated" },
+        "reasonCode": { "const": "DEVELOPMENT_RESULT_INDEPENDENT_EVALUATION_RECORDED" },
+        "independentlyVerified": { "const": true }
+      }
+    },
     "effectBoundary": {
       "type": "object",
       "additionalProperties": false,

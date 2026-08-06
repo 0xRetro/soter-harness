@@ -10,13 +10,13 @@
     "id": "run.project-page-reconciliation.preparation-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:b7c8155b7585d5d4075d260d202353310d2e17e99cab5b9fb440699fcb0510a8",
-  "graphFingerprint": "sha256:34640dbf0f27f7edecdb16158849374e02ce3af8d3026eb41b3097e7d9cae848",
+  "configurationLockFingerprint": "sha256:0827cfa9c0b03c89de1a9dd34742d461a53b32ca3ed950c2637e48329e925a51",
+  "graphFingerprint": "sha256:f33b75a37155e7086aafb8ba06a5a07b146d58c094255992eeef38d9861bd575",
   "dependencies": [
     {
       "id": "kernel.soter",
       "version": "0.1.0",
-      "fingerprint": "sha256:a329fb60fdd3e46a9cdce1b0f6d5ea574812105be6bd235eb998a347c3339bfa"
+      "fingerprint": "sha256:88abbc2dd21e627c5e4359cd113e403af8f5b3db630194929a8a2757e7b04ea6"
     },
     {
       "id": "core.runtime",
@@ -209,7 +209,7 @@
     {
       "role": "context-snapshot",
       "id": "context.project-page-reconciliation.preparation-fixture",
-      "fingerprint": "sha256:0ceec8879088e7dfb7d54ff7643c17015e36757aef2d044bd9f9e6392708f08a"
+      "fingerprint": "sha256:15ae55362b7dd6d809261e5d363cf5b663925cac7a4bf9c0a7e40235dbcca213"
     },
     {
       "role": "project-page-reconciliation-preview",

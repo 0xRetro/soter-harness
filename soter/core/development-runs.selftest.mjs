@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import assert from 'node:assert/strict';
+import childProcess from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -8,10 +9,12 @@ import { fileURLToPath } from 'node:url';
 
 import { inspectWorkspace } from './inspection.mjs';
 import {
+  assertDevelopmentTargetMaterial,
   assertDevelopmentRequest,
   buildDevelopmentEvaluationInvocation,
   inspectDevelopmentRun,
   prepareDevelopmentRequest,
+  readDevelopmentTargetMaterial,
   recordHostDevelopmentResult,
   recordDevelopmentResult
 } from './development-runs.mjs';
@@ -20,9 +23,11 @@ import {
   fingerprintPath,
   readJson,
   resolveRepoPath,
+  sha256,
   writeJson
 } from './lib/canonical-json.mjs';
 import { materializeDevelopmentCandidateLock } from './development-candidate-locks.mjs';
+import { validateJsonSchema } from '../kernel/verify.mjs';
 import { renderHostProjectionCandidates } from './host-projections.mjs';
 import { privateConfigurationStatePath, writePrivateConfigurationState } from './private-configurations.mjs';
 import { fingerprintLock, resolveConfiguration } from './resolve.mjs';
@@ -489,6 +494,8 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
   const temp = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'soter-development-runs-'));
   try {
     copyHarnessRoot(root, temp);
+    childProcess.execFileSync('git', ['-C', temp, 'init', '--quiet']);
+    childProcess.execFileSync('git', ['-C', temp, 'add', '--all']);
     const activeLock = materializeExactDevelopmentHost(temp);
     const configPath = path.relative(
       temp,
@@ -501,7 +508,13 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       host: 'codex'
     });
     const lockPath = candidateLock.path;
-    const auditLockPath = materializeDevelopmentCandidateLock({
+    const reviewLockPath = materializeDevelopmentCandidateLock({
+      root: temp,
+      configPath,
+      workflowId: 'automation.reviewing-forge-output',
+      host: 'codex'
+    }).path;
+    const auditEvaluationLockPath = materializeDevelopmentCandidateLock({
       root: temp,
       configPath,
       workflowId: 'automation.auditing-a-schema-doc',
@@ -514,8 +527,8 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
     const readOnlyBytes = fs.readFileSync(readOnlyFile);
     const readOnlyRequest = prepareDevelopmentRequest({
       root: temp,
-      lockPath: auditLockPath,
-      workflowId: 'automation.auditing-a-schema-doc',
+      lockPath: reviewLockPath,
+      workflowId: 'automation.reviewing-forge-output',
       requestId: 'development-request.read-only-staleness',
       invocation: {
         kind: 'develop',
@@ -528,9 +541,201 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
     });
     assert.equal(readOnlyRequest.inspection.applicability.state, 'current');
     assert.equal(readOnlyRequest.inspection.requestBoundary.declared.localWorkspaceWrite, 'not-requested');
+    const readOnlyMaterialInput = {
+      root: temp,
+      host: 'codex',
+      requestId: readOnlyRequest.request.id,
+      requestFingerprint: readOnlyRequest.request.requestFingerprint,
+      targetId: 'target.host-runtime-schema'
+    };
+    const readOnlyMaterial = readDevelopmentTargetMaterial(readOnlyMaterialInput);
+    assert.equal(readOnlyMaterial.$contract, 'soter://contracts/development-target-material/v1');
+    assert.equal(readOnlyMaterial.content.text, readOnlyBytes.toString('utf8'));
+    assert.equal(readOnlyMaterial.content.totalByteLength, readOnlyBytes.length);
+    assert.equal(readOnlyMaterial.content.totalTextLength, readOnlyBytes.toString('utf8').length);
+    assert.equal(readOnlyMaterial.content.chunkIndex, 0);
+    assert.equal(readOnlyMaterial.content.chunkCount, 1);
+    assert.equal(readOnlyMaterial.content.chunkByteLength, readOnlyBytes.length);
+    assert.equal(readOnlyMaterial.content.complete, true);
+    assert.equal(readOnlyMaterial.content.nextChunkIndex, null);
+    assert.equal(readOnlyMaterial.target.contentFingerprint,
+      readOnlyRequest.request.invocation.targets[0].beforeFingerprint);
+    assert.equal(readOnlyMaterial.content.chunkFingerprint, sha256(readOnlyBytes));
+    assert.equal(readOnlyMaterial.observation.observedFingerprint, fingerprintJson({
+      requestFingerprint: readOnlyRequest.request.requestFingerprint,
+      targetId: 'target.host-runtime-schema',
+      contentFingerprint: readOnlyMaterial.target.contentFingerprint,
+      mode: readOnlyMaterial.target.mode,
+      totalByteLength: readOnlyBytes.length,
+      chunkIndex: 0,
+      chunkCount: 1,
+      chunkByteLength: readOnlyBytes.length,
+      chunkFingerprint: readOnlyMaterial.content.chunkFingerprint
+    }));
+    const unsignedReadOnlyMaterial = structuredClone(readOnlyMaterial);
+    delete unsignedReadOnlyMaterial.materialFingerprint;
+    assert.equal(readOnlyMaterial.materialFingerprint, fingerprintJson(unsignedReadOnlyMaterial));
+    assert.deepEqual(readOnlyMaterial.observation, {
+      category: 'local-workspace-read',
+      scope: 'request-scoped',
+      state: 'observed',
+      count: 1,
+      observedFingerprint: readOnlyMaterial.observation.observedFingerprint
+    });
+    assert.equal(readOnlyMaterial.authority.grantsFurtherRead, false);
+    assert.equal(readOnlyMaterial.authority.grantsOnwardDisclosure, false);
+    assert.equal(readOnlyMaterial.authority.grantsExecution, false);
+    assert.equal(readOnlyMaterial.privacy.persistedByCore, false);
+    assert.equal(readOnlyMaterial.privacy.hostTranscriptRetention, 'host-dependent');
+    assert.equal(readOnlyMaterial.privacy.hostTransportBoundary, 'ambient-selected-host');
+    assert.equal(
+      readDevelopmentTargetMaterial(readOnlyMaterialInput).materialFingerprint,
+      readOnlyMaterial.materialFingerprint
+    );
+    const contradictoryMaterial = structuredClone(readOnlyMaterial);
+    contradictoryMaterial.content.chunkCount = 2;
+    contradictoryMaterial.observation.observedFingerprint = fingerprintJson({
+      requestFingerprint: contradictoryMaterial.request.fingerprint,
+      targetId: contradictoryMaterial.target.id,
+      contentFingerprint: contradictoryMaterial.target.contentFingerprint,
+      mode: contradictoryMaterial.target.mode,
+      totalByteLength: contradictoryMaterial.content.totalByteLength,
+      chunkIndex: contradictoryMaterial.content.chunkIndex,
+      chunkCount: contradictoryMaterial.content.chunkCount,
+      chunkByteLength: contradictoryMaterial.content.chunkByteLength,
+      chunkFingerprint: contradictoryMaterial.content.chunkFingerprint
+    });
+    delete contradictoryMaterial.materialFingerprint;
+    contradictoryMaterial.materialFingerprint = fingerprintJson(contradictoryMaterial);
+    assert.deepEqual(validateJsonSchema(
+      contradictoryMaterial,
+      readJson(path.join(temp, 'soter/contracts/development-target-material.schema.json'))
+    ), []);
+    expectCode(() => assertDevelopmentTargetMaterial(temp, contradictoryMaterial),
+      'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE');
+    const tamperedMaterial = structuredClone(readOnlyMaterial);
+    tamperedMaterial.content.text += 'tampered';
+    expectCode(() => assertDevelopmentTargetMaterial(temp, tamperedMaterial),
+      'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE');
+    const reorderedLimitations = structuredClone(readOnlyMaterial);
+    reorderedLimitations.limitations.reverse();
+    assert.notDeepEqual(validateJsonSchema(
+      reorderedLimitations,
+      readJson(path.join(temp, 'soter/contracts/development-target-material.schema.json'))
+    ), []);
+    assert(!JSON.stringify({
+      request: readOnlyMaterial.request,
+      host: readOnlyMaterial.host,
+      target: readOnlyMaterial.target,
+      observation: readOnlyMaterial.observation,
+      authority: readOnlyMaterial.authority,
+      privacy: readOnlyMaterial.privacy
+    }).includes(readOnlyPath));
+    expectCode(() => readDevelopmentTargetMaterial({
+      ...readOnlyMaterialInput,
+      requestFingerprint: FP({ wrong: 'request' })
+    }), 'DEVELOPMENT_REQUEST_BINDING_INVALID');
+    expectCode(() => readDevelopmentTargetMaterial({
+      ...readOnlyMaterialInput,
+      host: 'claude'
+    }), 'DEVELOPMENT_REQUEST_BINDING_INVALID');
+    expectCode(() => readDevelopmentTargetMaterial({
+      ...readOnlyMaterialInput,
+      targetId: 'target.sibling'
+    }), 'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE');
+    const originalExecFileSync = childProcess.execFileSync;
+    childProcess.execFileSync = (command, args, options) => {
+      if (command === 'git'
+        && Array.isArray(args)
+        && args.includes('--show-toplevel')) {
+        throw new Error('planted exact Git inventory failure');
+      }
+      return originalExecFileSync(command, args, options);
+    };
+    try {
+      expectCode(() => readDevelopmentTargetMaterial(readOnlyMaterialInput),
+        'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE');
+    } finally {
+      childProcess.execFileSync = originalExecFileSync;
+    }
+    let malformedChunkOpened = false;
+    const originalOpenSync = fs.openSync;
+    fs.openSync = (...args) => {
+      if (args[0] === readOnlyFile) malformedChunkOpened = true;
+      return originalOpenSync(...args);
+    };
+    try {
+      expectCode(() => readDevelopmentTargetMaterial({
+        ...readOnlyMaterialInput,
+        chunkIndex: -1
+      }), 'DEVELOPMENT_REQUEST_TARGET_READ_INVALID');
+      assert.equal(malformedChunkOpened, false);
+    } finally {
+      fs.openSync = originalOpenSync;
+    }
+
+    const multiChunkPath = 'soter/contracts/development-request.schema.json';
+    const multiChunkBytes = fs.readFileSync(path.join(temp, multiChunkPath));
+    assert(multiChunkBytes.length > 8 * 1024);
+    const multiChunkRequest = prepareDevelopmentRequest({
+      root: temp,
+      lockPath: reviewLockPath,
+      workflowId: 'automation.reviewing-forge-output',
+      requestId: 'development-request.multi-chunk-target',
+      invocation: {
+        kind: 'develop',
+        profile: 'exact',
+        requestedOutcome: 'Prove a larger exact governed text target remains fully readable in bounded chunks.',
+        requestedLocalEffects: ['local-workspace-read'],
+        targets: [{ id: 'target.multi-chunk-schema', path: multiChunkPath }]
+      },
+      createdAt: '2026-07-22T09:00:30.000Z'
+    });
+    const multiChunkParts = [];
+    let nextChunkIndex = 0;
+    let previousMultiChunkFingerprint = null;
+    let lastChunk;
+    while (nextChunkIndex !== null) {
+      lastChunk = readDevelopmentTargetMaterial({
+        root: temp,
+        host: 'codex',
+        requestId: multiChunkRequest.request.id,
+        requestFingerprint: multiChunkRequest.request.requestFingerprint,
+        targetId: 'target.multi-chunk-schema',
+        chunkIndex: nextChunkIndex,
+        previousMaterialFingerprint: previousMultiChunkFingerprint
+      });
+      assert.equal(lastChunk.content.chunkIndex, nextChunkIndex);
+      multiChunkParts.push(lastChunk.content.text);
+      previousMultiChunkFingerprint = lastChunk.materialFingerprint;
+      nextChunkIndex = lastChunk.content.nextChunkIndex;
+    }
+    assert.equal(multiChunkParts.join(''), multiChunkBytes.toString('utf8'));
+    assert.equal(lastChunk.content.complete, true);
+    assert(lastChunk.content.chunkCount > 1);
+    expectCode(() => readDevelopmentTargetMaterial({
+      root: temp,
+      host: 'codex',
+      requestId: multiChunkRequest.request.id,
+      requestFingerprint: multiChunkRequest.request.requestFingerprint,
+      targetId: 'target.multi-chunk-schema',
+      chunkIndex: 1,
+      previousMaterialFingerprint: FP({ wrong: 'previous-material' })
+    }), 'DEVELOPMENT_REQUEST_BINDING_INVALID');
+    expectCode(() => readDevelopmentTargetMaterial({
+      root: temp,
+      host: 'codex',
+      requestId: multiChunkRequest.request.id,
+      requestFingerprint: multiChunkRequest.request.requestFingerprint,
+      targetId: 'target.multi-chunk-schema',
+      chunkIndex: lastChunk.content.chunkCount,
+      previousMaterialFingerprint: lastChunk.materialFingerprint
+    }), 'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE');
     if (process.platform !== 'win32') {
       assert.equal(readOnlyRequest.request.invocation.targets[0].beforeMode, '0644');
       fs.chmodSync(readOnlyFile, 0o600);
+      expectCode(() => readDevelopmentTargetMaterial(readOnlyMaterialInput),
+        'DEVELOPMENT_REQUEST_TARGET_STALE');
       const modeStale = inspectDevelopmentRun({
         root: temp,
         requestId: 'development-request.read-only-staleness'
@@ -544,6 +749,8 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       }).applicability.state, 'current');
     }
     fs.appendFileSync(readOnlyFile, '\n');
+    expectCode(() => readDevelopmentTargetMaterial(readOnlyMaterialInput),
+      'DEVELOPMENT_REQUEST_TARGET_STALE');
     let staleInspection = inspectDevelopmentRun({
       root: temp,
       requestId: 'development-request.read-only-staleness'
@@ -555,6 +762,8 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
     const heldReadOnly = readOnlyFile + '.held';
     fs.renameSync(readOnlyFile, heldReadOnly);
     fs.symlinkSync(heldReadOnly, readOnlyFile);
+    expectCode(() => readDevelopmentTargetMaterial(readOnlyMaterialInput),
+      'DEVELOPMENT_REQUEST_TARGET_STALE');
     staleInspection = inspectDevelopmentRun({
       root: temp,
       requestId: 'development-request.read-only-staleness'
@@ -562,8 +771,16 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
     assert.equal(staleInspection.applicability.reasonCode, 'DEVELOPMENT_REQUEST_TARGET_STALE');
     fs.unlinkSync(readOnlyFile);
     fs.renameSync(heldReadOnly, readOnlyFile);
+    fs.renameSync(readOnlyFile, heldReadOnly);
+    fs.linkSync(heldReadOnly, readOnlyFile);
+    expectCode(() => readDevelopmentTargetMaterial(readOnlyMaterialInput),
+      'DEVELOPMENT_REQUEST_TARGET_STALE');
+    fs.unlinkSync(readOnlyFile);
+    fs.renameSync(heldReadOnly, readOnlyFile);
     const unrelatedFile = path.join(temp, 'unrelated-development-drift.txt');
     fs.writeFileSync(unrelatedFile, 'unrelated drift\n');
+    expectCode(() => readDevelopmentTargetMaterial(readOnlyMaterialInput),
+      'DEVELOPMENT_REQUEST_WORKSPACE_STALE');
     staleInspection = inspectDevelopmentRun({
       root: temp,
       requestId: 'development-request.read-only-staleness'
@@ -576,10 +793,10 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
     }).applicability.state, 'current');
 
     const hostClosureRequestId = 'development-request.host-closure';
-    prepareDevelopmentRequest({
+    const hostClosureRequest = prepareDevelopmentRequest({
       root: temp,
-      lockPath: auditLockPath,
-      workflowId: 'automation.auditing-a-schema-doc',
+      lockPath: reviewLockPath,
+      workflowId: 'automation.reviewing-forge-output',
       requestId: hostClosureRequestId,
       invocation: {
         kind: 'develop',
@@ -590,18 +807,27 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       },
       createdAt: '2026-07-22T09:05:00.000Z'
     });
+    const hostClosureMaterialInput = {
+      root: temp,
+      host: 'codex',
+      requestId: hostClosureRequestId,
+      requestFingerprint: hostClosureRequest.request.requestFingerprint,
+      targetId: 'target.host-closure-schema'
+    };
+    assert.equal(
+      readDevelopmentTargetMaterial(hostClosureMaterialInput).content.text,
+      readOnlyBytes.toString('utf8')
+    );
     const hostClosureEffects = [
       {
         category: 'local-workspace-read',
         state: 'observed',
-        count: 1,
-        observedFingerprint: FP({ hostClosure: 'read' })
+        count: 1
       },
       ...['local-workspace-write', 'local-command', 'subagent-dispatch'].map((category) => ({
         category,
         state: 'not-observed',
-        count: 0,
-        observedFingerprint: null
+        count: 0
       }))
     ];
     expectCode(() => recordHostDevelopmentResult({
@@ -618,22 +844,390 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       state: 'passed',
       checks: [{
         id: 'check.host-closure-schema',
-        state: 'passed',
-        observedFingerprint: FP({ hostClosure: 'check' })
+        state: 'passed'
       }],
       localEffects: hostClosureEffects,
       completedAt: '2026-07-22T09:06:00.000Z'
     });
     assert.equal(hostClosure.inspection.progress.state, 'passed');
+    assert.deepEqual(hostClosure.inspection.result.evidenceBasis, {
+      state: 'host-reported',
+      reasonCode: 'DEVELOPMENT_RESULT_HOST_REPORTED_UNVERIFIED',
+      independentlyVerified: false
+    });
+    assert(hostClosure.inspection.limitations.some((limitation) => {
+      return limitation.includes('not independent verification');
+    }));
+    const developmentInspectionSchema = readJson(path.join(
+      temp,
+      'soter/contracts/development-run-inspection.schema.json'
+    ));
+    const crossedHostEvidenceBasis = structuredClone(hostClosure.inspection);
+    crossedHostEvidenceBasis.result.evidenceBasis = {
+      state: 'independently-evaluated',
+      reasonCode: 'DEVELOPMENT_RESULT_INDEPENDENT_EVALUATION_RECORDED',
+      independentlyVerified: true
+    };
+    assert(validateJsonSchema(crossedHostEvidenceBasis, developmentInspectionSchema).length > 0);
     assert.equal(hostClosure.inspection.requestBoundary.state, 'closed');
     assert.deepEqual(hostClosure.result.changes.map(({ id, kind }) => ({ id, kind })), [{
       id: 'change.target.host-closure-schema',
       kind: 'unchanged'
     }]);
+    assert.match(hostClosure.result.checks[0].observedFingerprint, /^sha256:[a-f0-9]{64}$/);
+    assert.match(
+      hostClosure.result.effects.find((effect) => effect.category === 'local-workspace-read')
+        .observedFingerprint,
+      /^sha256:[a-f0-9]{64}$/
+    );
     assert.equal(
       readDevelopmentResultState(temp, 'development-result.host-closure').result.resultFingerprint,
       hostClosure.result.resultFingerprint
     );
+    expectCode(() => readDevelopmentTargetMaterial(hostClosureMaterialInput),
+      'DEVELOPMENT_REQUEST_CLOSED');
+
+    const boundedReadCases = [
+      ['development-no-read.txt', Buffer.from('no read authority\n')],
+      ['.env', Buffer.from('PRIVATE_VALUE=not-returned\n')],
+      ['development-invalid-utf8.bin', Buffer.from([0xc3, 0x28])],
+      ['development-nul.txt', Buffer.from('before\u0000after')],
+      ['development-credential-pattern.txt', Buffer.from('sk-' + 'a'.repeat(24))],
+      ['development-password.txt', Buffer.from('password = correct-horse-battery-staple\n')],
+      ['development-token.txt', Buffer.from('token = "abcdefghijklmnopqrstuv"\n')],
+      ['development-client-secret.json', Buffer.from('{"clientSecret":"abcdefghijklmnop"}\n')],
+      ['development-generic-secret.txt', Buffer.from('secret = "a!bcdefgh"\n')],
+      ['development-declared-secret.mjs', Buffer.from('const secret = "a!bcdefgh";\n')],
+      ['development-password-punctuation.txt', Buffer.from('password = "a!bcdefgh"\n')],
+      ['development-token-punctuation.txt', Buffer.from('token = "a!bcdefgh"\n')],
+      ['development-api-key-punctuation.txt', Buffer.from('apiKey = "a!bcdefgh"\n')],
+      ['development-client-secret-punctuation.txt', Buffer.from('client_secret = "a!bcdefgh"\n')],
+      ['development-access-token-punctuation.txt', Buffer.from('accessToken = "a!bcdefgh"\n')],
+      ['development-refresh-token-punctuation.txt', Buffer.from('refresh-token = "a!bcdefgh"\n')],
+      ['development-private-key-punctuation.txt', Buffer.from('privateKey = "a!bcdefgh"\n')],
+      ['development-openai-api-key.txt', Buffer.from('OPENAI_API_KEY = abcdefghijklmnop\n')],
+      ['development-anthropic-api-key.txt', Buffer.from('ANTHROPIC_API_KEY: abcdefghijklmnop\n')],
+      ['development-database-url.txt', Buffer.from('DATABASE_URL=postgres://u:p@h/db\n')],
+      ['development-private-key-block.txt', Buffer.from('-----BEGIN OPENSSH PRIVATE KEY-----\nPRIVATE_KEY_BLOCK_SENTINEL\n-----END OPENSSH PRIVATE KEY-----\n')],
+      ['development-safe-api-description.txt', Buffer.from('apiKeyFormat = "identifier-only"\ntokenType = "opaque-reference"\n')],
+      ['development-ignored-secret.txt', Buffer.from('ignored private review material\n')],
+      ['development-unicode-chunk.txt', Buffer.from('界'.repeat(3000) + '\n')],
+      ['development-bom.txt', Buffer.concat([
+        Buffer.from([0xef, 0xbb, 0xbf]),
+        Buffer.from('BOM-preserved\n')
+      ])],
+      ['development-oversized.txt', Buffer.alloc((1024 * 1024) + 1, 0x61)],
+      ['development-sibling-a.txt', Buffer.from('sibling a\n')],
+      ['development-sibling-b.txt', Buffer.from('sibling b\n')]
+    ];
+    for (const [relative, bytes] of boundedReadCases) {
+      fs.writeFileSync(path.join(temp, relative), bytes);
+    }
+    fs.mkdirSync(path.join(temp, '.aws'));
+    fs.writeFileSync(
+      path.join(temp, '.aws/credentials'),
+      'aws_secret_access_key = ' + 'A'.repeat(40) + '\n'
+    );
+    fs.mkdirSync(path.join(temp, '.docker'));
+    fs.writeFileSync(
+      path.join(temp, '.docker/config.json'),
+      JSON.stringify({ auths: { registry: { auth: 'YWJjZGVmZ2hpamts' } } }) + '\n'
+    );
+    fs.mkdirSync(path.join(temp, 'config'));
+    fs.writeFileSync(
+      path.join(temp, 'config/credentials.toml'),
+      'token = "abcdefghijklmnopqrstuv"\n'
+    );
+    fs.appendFileSync(
+      path.join(temp, '.git/info/exclude'),
+      '\ndevelopment-ignored-secret.txt\n'
+    );
+    const noReadRequest = prepareDevelopmentRequest({
+      root: temp,
+      lockPath,
+      workflowId: 'automation.forge',
+      requestId: 'development-request.no-read-effect',
+      invocation: {
+        kind: 'develop',
+        profile: 'exact',
+        requestedOutcome: 'Prove target material requires explicit local read authority.',
+        requestedLocalEffects: ['local-workspace-write'],
+        targets: [{ id: 'target.no-read', path: 'development-no-read.txt' }]
+      },
+      createdAt: '2026-07-22T09:06:30.000Z'
+    });
+    expectCode(() => readDevelopmentTargetMaterial({
+      root: temp,
+      host: 'codex',
+      requestId: noReadRequest.request.id,
+      requestFingerprint: noReadRequest.request.requestFingerprint,
+      targetId: 'target.no-read'
+    }), 'DEVELOPMENT_REQUEST_EFFECT_POLICY_INVALID');
+
+    const evaluationRequest = prepareDevelopmentRequest({
+      root: temp,
+      lockPath: auditEvaluationLockPath,
+      workflowId: 'automation.auditing-a-schema-doc',
+      requestId: 'development-request.target-read-evaluation',
+      invocation: buildDevelopmentEvaluationInvocation({
+        root: temp,
+        workflowId: 'automation.auditing-a-schema-doc'
+      }),
+      createdAt: '2026-07-22T09:06:40.000Z'
+    });
+    expectCode(() => readDevelopmentTargetMaterial({
+      root: temp,
+      host: 'codex',
+      requestId: evaluationRequest.request.id,
+      requestFingerprint: evaluationRequest.request.requestFingerprint,
+      targetId: 'target.none'
+    }), 'DEVELOPMENT_REQUEST_EFFECT_POLICY_INVALID');
+
+    const unavailableTargetCases = [
+      ['missing', 'development-missing.txt'],
+      ['private-name', '.env'],
+      ['invalid-utf8', 'development-invalid-utf8.bin'],
+      ['nul', 'development-nul.txt'],
+      ['credential-pattern', 'development-credential-pattern.txt'],
+      ['password-assignment', 'development-password.txt'],
+      ['token-assignment', 'development-token.txt'],
+      ['client-secret-assignment', 'development-client-secret.json'],
+      ['generic-secret-punctuation', 'development-generic-secret.txt'],
+      ['declared-secret-punctuation', 'development-declared-secret.mjs'],
+      ['password-punctuation', 'development-password-punctuation.txt'],
+      ['token-punctuation', 'development-token-punctuation.txt'],
+      ['api-key-punctuation', 'development-api-key-punctuation.txt'],
+      ['client-secret-punctuation', 'development-client-secret-punctuation.txt'],
+      ['access-token-punctuation', 'development-access-token-punctuation.txt'],
+      ['refresh-token-punctuation', 'development-refresh-token-punctuation.txt'],
+      ['private-key-punctuation', 'development-private-key-punctuation.txt'],
+      ['openai-api-key-assignment', 'development-openai-api-key.txt'],
+      ['anthropic-api-key-assignment', 'development-anthropic-api-key.txt'],
+      ['database-url-assignment', 'development-database-url.txt'],
+      ['private-key-block', 'development-private-key-block.txt'],
+      ['credentials-extension', 'config/credentials.toml'],
+      ['aws-credentials', '.aws/credentials'],
+      ['docker-auth', '.docker/config.json'],
+      ['ignored-private', 'development-ignored-secret.txt'],
+      ['oversized', 'development-oversized.txt']
+    ];
+    for (const [id, relative] of unavailableTargetCases) {
+      const request = prepareDevelopmentRequest({
+        root: temp,
+        lockPath: reviewLockPath,
+        workflowId: 'automation.reviewing-forge-output',
+        requestId: 'development-request.target-read-' + id,
+        invocation: {
+          kind: 'develop',
+          profile: 'exact',
+          requestedOutcome: 'Prove unsafe or unavailable target material fails closed.',
+          requestedLocalEffects: ['local-workspace-read'],
+          targets: [{ id: 'target.' + id, path: relative }]
+        },
+        createdAt: '2026-07-22T09:06:50.000Z'
+      });
+      expectCode(() => readDevelopmentTargetMaterial({
+        root: temp,
+        host: 'codex',
+        requestId: request.request.id,
+        requestFingerprint: request.request.requestFingerprint,
+        targetId: 'target.' + id
+      }), 'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE');
+    }
+
+    const safeCredentialVocabularyRequest = prepareDevelopmentRequest({
+      root: temp,
+      lockPath: reviewLockPath,
+      workflowId: 'automation.reviewing-forge-output',
+      requestId: 'development-request.target-read-safe-credential-vocabulary',
+      invocation: {
+        kind: 'develop',
+        profile: 'exact',
+        requestedOutcome: 'Prove schema-like credential vocabulary without credential values remains readable.',
+        requestedLocalEffects: ['local-workspace-read'],
+        targets: [{
+          id: 'target.safe-credential-vocabulary',
+          path: 'development-safe-api-description.txt'
+        }]
+      },
+      createdAt: '2026-07-22T09:06:52.000Z'
+    });
+    const safeCredentialVocabulary = readDevelopmentTargetMaterial({
+      root: temp,
+      host: 'codex',
+      requestId: safeCredentialVocabularyRequest.request.id,
+      requestFingerprint: safeCredentialVocabularyRequest.request.requestFingerprint,
+      targetId: 'target.safe-credential-vocabulary'
+    });
+    assert.equal(
+      safeCredentialVocabulary.content.text,
+      'apiKeyFormat = "identifier-only"\ntokenType = "opaque-reference"\n'
+    );
+
+    const unicodeChunkRequest = prepareDevelopmentRequest({
+      root: temp,
+      lockPath: reviewLockPath,
+      workflowId: 'automation.reviewing-forge-output',
+      requestId: 'development-request.target-read-unicode-chunks',
+      invocation: {
+        kind: 'develop',
+        profile: 'exact',
+        requestedOutcome: 'Prove multi-byte UTF-8 text remains complete and byte-bounded.',
+        requestedLocalEffects: ['local-workspace-read'],
+        targets: [{ id: 'target.unicode-chunks', path: 'development-unicode-chunk.txt' }]
+      },
+      createdAt: '2026-07-22T09:06:55.000Z'
+    });
+    const unicodeParts = [];
+    let unicodeIndex = 0;
+    let previousUnicodeFingerprint = null;
+    while (unicodeIndex !== null) {
+      const material = readDevelopmentTargetMaterial({
+        root: temp,
+        host: 'codex',
+        requestId: unicodeChunkRequest.request.id,
+        requestFingerprint: unicodeChunkRequest.request.requestFingerprint,
+        targetId: 'target.unicode-chunks',
+        chunkIndex: unicodeIndex,
+        previousMaterialFingerprint: previousUnicodeFingerprint
+      });
+      assert(material.content.chunkByteLength <= 8 * 1024);
+      assert.equal(
+        material.content.chunkByteLength,
+        Buffer.byteLength(material.content.text, 'utf8')
+      );
+      unicodeParts.push(material.content.text);
+      previousUnicodeFingerprint = material.materialFingerprint;
+      unicodeIndex = material.content.nextChunkIndex;
+    }
+    assert.equal(unicodeParts.join(''), '界'.repeat(3000) + '\n');
+
+    const bomRequest = prepareDevelopmentRequest({
+      root: temp,
+      lockPath: reviewLockPath,
+      workflowId: 'automation.reviewing-forge-output',
+      requestId: 'development-request.target-read-bom',
+      invocation: {
+        kind: 'develop',
+        profile: 'exact',
+        requestedOutcome: 'Prove an exact UTF-8 BOM remains present in returned target bytes.',
+        requestedLocalEffects: ['local-workspace-read'],
+        targets: [{ id: 'target.bom', path: 'development-bom.txt' }]
+      },
+      createdAt: '2026-07-22T09:06:57.000Z'
+    });
+    const bomMaterial = readDevelopmentTargetMaterial({
+      root: temp,
+      host: 'codex',
+      requestId: bomRequest.request.id,
+      requestFingerprint: bomRequest.request.requestFingerprint,
+      targetId: 'target.bom'
+    });
+    assert.deepEqual(
+      Buffer.from(bomMaterial.content.text, 'utf8'),
+      fs.readFileSync(path.join(temp, 'development-bom.txt'))
+    );
+
+    const siblingRequest = prepareDevelopmentRequest({
+      root: temp,
+      lockPath: reviewLockPath,
+      workflowId: 'automation.reviewing-forge-output',
+      requestId: 'development-request.target-read-sibling-drift',
+      invocation: {
+        kind: 'develop',
+        profile: 'exact',
+        requestedOutcome: 'Prove every exact sibling target remains current before one target is returned.',
+        requestedLocalEffects: ['local-workspace-read'],
+        targets: [
+          { id: 'target.sibling-a', path: 'development-sibling-a.txt' },
+          { id: 'target.sibling-b', path: 'development-sibling-b.txt' }
+        ]
+      },
+      createdAt: '2026-07-22T09:06:55.000Z'
+    });
+    fs.appendFileSync(path.join(temp, 'development-sibling-b.txt'), 'drift\n');
+    expectCode(() => readDevelopmentTargetMaterial({
+      root: temp,
+      host: 'codex',
+      requestId: siblingRequest.request.id,
+      requestFingerprint: siblingRequest.request.requestFingerprint,
+      targetId: 'target.sibling-a'
+    }), 'DEVELOPMENT_REQUEST_TARGET_STALE');
+    const legacyHostClosureRequestId = 'development-request.host-closure-legacy';
+    const legacyHostClosureRequest = prepareDevelopmentRequest({
+      root: temp,
+      lockPath: reviewLockPath,
+      workflowId: 'automation.reviewing-forge-output',
+      requestId: legacyHostClosureRequestId,
+      invocation: {
+        kind: 'develop',
+        profile: 'exact',
+        requestedOutcome: 'Prove a persisted host result remains idempotently readable after the recorder derives its own claim fingerprints.',
+        requestedLocalEffects: ['local-workspace-read'],
+        targets: [{ id: 'target.host-closure-schema', path: readOnlyPath }]
+      },
+      createdAt: '2026-07-22T09:06:10.000Z'
+    });
+    const legacyTarget = legacyHostClosureRequest.request.invocation.targets[0];
+    const legacyCheckFingerprint = FP({ legacyHostClosure: 'check' });
+    const legacyReadFingerprint = FP({ legacyHostClosure: 'read' });
+    const legacyOutcome = {
+      state: 'passed',
+      workerRuns: [],
+      judgments: [],
+      changes: [{
+        id: 'change.target.host-closure-schema',
+        path: readOnlyPath,
+        kind: 'unchanged',
+        beforeFingerprint: legacyTarget.beforeFingerprint,
+        afterFingerprint: legacyTarget.beforeFingerprint
+      }],
+      checks: [{
+        id: 'check.host-closure-schema',
+        state: 'passed',
+        observedFingerprint: legacyCheckFingerprint
+      }],
+      effects: hostClosure.result.effects.map((effect) => ({
+        ...structuredClone(effect),
+        observedFingerprint: effect.category === 'local-workspace-read'
+          ? legacyReadFingerprint
+          : effect.state === 'observed'
+            ? effect.observedFingerprint
+            : null
+      })),
+      promotion: {
+        state: 'held',
+        artifactFingerprint: null,
+        reasonCode: 'PROMOTION_AUTHORITY_NOT_GRANTED'
+      },
+      decisionEvidence: [],
+      limitations: ['This pre-derivation host result is immutable and grants no operational authority.']
+    };
+    const legacyRecorded = recordDevelopmentResult({
+      root: temp,
+      lockPath: reviewLockPath,
+      requestId: legacyHostClosureRequestId,
+      outcome: legacyOutcome,
+      completedAt: '2026-07-22T09:06:20.000Z'
+    });
+    const legacyReentry = recordHostDevelopmentResult({
+      root: temp,
+      requestId: legacyHostClosureRequestId,
+      state: 'passed',
+      checks: [{ id: 'check.host-closure-schema', state: 'passed' }],
+      localEffects: hostClosureEffects,
+      completedAt: '2026-07-22T09:06:20.000Z'
+    });
+    assert.equal(legacyReentry.result.resultFingerprint, legacyRecorded.result.resultFingerprint);
+    assert.equal(legacyReentry.result.checks[0].observedFingerprint, legacyCheckFingerprint);
+    expectCode(() => recordHostDevelopmentResult({
+      root: temp,
+      requestId: legacyHostClosureRequestId,
+      state: 'passed',
+      checks: [{ id: 'check.host-closure-schema-changed', state: 'passed' }],
+      localEffects: hostClosureEffects,
+      completedAt: '2026-07-22T09:06:20.000Z'
+    }), 'DEVELOPMENT_RESULT_REENTRY_MISMATCH');
     const reorderedEffects = structuredClone(hostClosureEffects);
     [reorderedEffects[0], reorderedEffects[1]] = [reorderedEffects[1], reorderedEffects[0]];
     expectCode(() => recordHostDevelopmentResult({
@@ -642,6 +1236,26 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       state: 'blocked',
       checks: [],
       localEffects: reorderedEffects,
+      completedAt: '2026-07-22T09:07:00.000Z'
+    }), 'DEVELOPMENT_RESULT_EFFECT_BOUNDARY_VIOLATED');
+    const zeroObservedEffects = structuredClone(hostClosureEffects);
+    zeroObservedEffects[0].count = 0;
+    expectCode(() => recordHostDevelopmentResult({
+      root: temp,
+      requestId: 'development-request.read-only-staleness',
+      state: 'blocked',
+      checks: [],
+      localEffects: zeroObservedEffects,
+      completedAt: '2026-07-22T09:07:00.000Z'
+    }), 'DEVELOPMENT_RESULT_EFFECT_BOUNDARY_VIOLATED');
+    const nonzeroUnobservedEffects = structuredClone(hostClosureEffects);
+    nonzeroUnobservedEffects[1].count = 1;
+    expectCode(() => recordHostDevelopmentResult({
+      root: temp,
+      requestId: 'development-request.read-only-staleness',
+      state: 'blocked',
+      checks: [],
+      localEffects: nonzeroUnobservedEffects,
       completedAt: '2026-07-22T09:07:00.000Z'
     }), 'DEVELOPMENT_RESULT_EFFECT_BOUNDARY_VIOLATED');
 
@@ -790,6 +1404,21 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       completedAt: '2026-07-22T10:10:00.000Z'
     });
     assert.equal(recorded.inspection.progress.state, 'passed');
+    assert.deepEqual(recorded.inspection.result.evidenceBasis, {
+      state: 'independently-evaluated',
+      reasonCode: 'DEVELOPMENT_RESULT_INDEPENDENT_EVALUATION_RECORDED',
+      independentlyVerified: true
+    });
+    const crossedEvaluationEvidenceBasis = structuredClone(recorded.inspection);
+    crossedEvaluationEvidenceBasis.result.evidenceBasis = {
+      state: 'host-reported',
+      reasonCode: 'DEVELOPMENT_RESULT_HOST_REPORTED_UNVERIFIED',
+      independentlyVerified: false
+    };
+    assert(validateJsonSchema(
+      crossedEvaluationEvidenceBasis,
+      developmentInspectionSchema
+    ).length > 0);
     assert.deepEqual(recorded.inspection.authority, {
       kind: 'inspection-only',
       grantsExecution: false,
@@ -903,7 +1532,7 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       nonzeroExternalEffect.effects.find((item) => item.category === 'provider-write').count = 1;
       expectCode(
         () => recordHostile(nonzeroExternalEffect),
-        'DEVELOPMENT_RESULT_EFFECT_BOUNDARY_VIOLATED'
+        'DEVELOPMENT_RESULT_MALFORMED'
       );
       const omittedExternalEffect = passingOutcome(invocation, evaluations);
       omittedExternalEffect.effects = omittedExternalEffect.effects.filter((item) => {
@@ -937,7 +1566,7 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       observedRead.observedFingerprint = null;
       expectCode(
         () => recordHostile(incoherentObservedLocalEffect),
-        'DEVELOPMENT_RESULT_EFFECT_BOUNDARY_VIOLATED'
+        'DEVELOPMENT_RESULT_MALFORMED'
       );
       const incoherentUnobservedLocalEffect = passingOutcome(invocation, evaluations);
       const unobservedCommand = incoherentUnobservedLocalEffect.effects.find((item) => {
@@ -947,7 +1576,7 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       unobservedCommand.count = 1;
       expectCode(
         () => recordHostile(incoherentUnobservedLocalEffect),
-        'DEVELOPMENT_RESULT_EFFECT_BOUNDARY_VIOLATED'
+        'DEVELOPMENT_RESULT_MALFORMED'
       );
       const answerKey = passingOutcome(invocation, evaluations);
       answerKey.workerRuns.find((item) => item.arm === 'guided').answerKeyAccess = 'observed';
@@ -1138,6 +1767,54 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
     assert.equal(governedResult.inspection.requestBoundary.state, 'closed');
     assert.equal(governedResult.inspection.requestBoundary.reasonCode, 'DEVELOPMENT_RESULT_RECORDED');
     assert.equal(governedResult.inspection.result.state, 'passed');
+
+    const nonRepositoryRoot = fs.mkdtempSync(path.join(
+      fs.realpathSync(os.tmpdir()),
+      'soter-development-nonrepo-'
+    ));
+    try {
+      copyHarnessRoot(root, nonRepositoryRoot);
+      const nonRepositoryLock = materializeExactDevelopmentHost(nonRepositoryRoot);
+      const nonRepositoryConfigPath = path.relative(
+        nonRepositoryRoot,
+        privateConfigurationStatePath(
+          nonRepositoryRoot,
+          nonRepositoryLock.configuration.name
+        )
+      ).split(path.sep).join('/');
+      const nonRepositoryReviewLockPath = materializeDevelopmentCandidateLock({
+        root: nonRepositoryRoot,
+        configPath: nonRepositoryConfigPath,
+        workflowId: 'automation.reviewing-forge-output',
+        host: 'codex'
+      }).path;
+      const nonRepositoryRequest = prepareDevelopmentRequest({
+        root: nonRepositoryRoot,
+        lockPath: nonRepositoryReviewLockPath,
+        workflowId: 'automation.reviewing-forge-output',
+        requestId: 'development-request.nonrepository-target-read',
+        invocation: {
+          kind: 'develop',
+          profile: 'exact',
+          requestedOutcome: 'Prove target reads fail closed without exact Git repository membership.',
+          requestedLocalEffects: ['local-workspace-read'],
+          targets: [{
+            id: 'target.nonrepository-schema',
+            path: 'soter/contracts/host-runtime-inspection.schema.json'
+          }]
+        },
+        createdAt: '2026-07-22T11:11:00.000Z'
+      });
+      expectCode(() => readDevelopmentTargetMaterial({
+        root: nonRepositoryRoot,
+        host: 'codex',
+        requestId: nonRepositoryRequest.request.id,
+        requestFingerprint: nonRepositoryRequest.request.requestFingerprint,
+        targetId: 'target.nonrepository-schema'
+      }), 'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE');
+    } finally {
+      fs.rmSync(nonRepositoryRoot, { recursive: true, force: true });
+    }
 
     process.stdout.write('Soter private development request/result self-test passed.\n');
     return true;

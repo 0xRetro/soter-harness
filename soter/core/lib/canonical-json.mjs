@@ -134,8 +134,28 @@ export function resolveGovernedFile(root, requestedPath) {
   return governedFileState(root, requestedPath).path;
 }
 
-export function readGovernedFile(root, requestedPath) {
+function readBoundedDescriptor(descriptor, maxBytes) {
+  const buffer = Buffer.allocUnsafe(maxBytes + 1);
+  let offset = 0;
+  while (offset < buffer.length) {
+    const read = fs.readSync(descriptor, buffer, offset, buffer.length - offset, null);
+    if (read === 0) break;
+    offset += read;
+  }
+  if (offset > maxBytes) {
+    throw new Error('Governed artifact exceeds its exact bounded read limit.');
+  }
+  return buffer.subarray(0, offset);
+}
+
+export function readGovernedFile(root, requestedPath, { maxBytes = null } = {}) {
+  if (maxBytes !== null && (!Number.isSafeInteger(maxBytes) || maxBytes < 0)) {
+    throw new Error('Governed artifact bounded read limit must be a non-negative safe integer.');
+  }
   const before = governedFileState(root, requestedPath);
+  if (maxBytes !== null && before.size > maxBytes) {
+    throw new Error('Governed artifact exceeds its exact bounded read limit.');
+  }
   const noFollow = fs.constants.O_NOFOLLOW || 0;
   const descriptor = fs.openSync(before.path, fs.constants.O_RDONLY | noFollow);
   try {
@@ -144,7 +164,12 @@ export function readGovernedFile(root, requestedPath) {
       || opened.dev !== before.dev || opened.ino !== before.ino) {
       throw new Error('Governed artifact changed before its exact read.');
     }
-    const bytes = fs.readFileSync(descriptor);
+    if (maxBytes !== null && opened.size > maxBytes) {
+      throw new Error('Governed artifact exceeds its exact bounded read limit.');
+    }
+    const bytes = maxBytes === null
+      ? fs.readFileSync(descriptor)
+      : readBoundedDescriptor(descriptor, maxBytes);
     const afterRead = fs.fstatSync(descriptor);
     const after = governedFileState(root, requestedPath);
     if (afterRead.dev !== opened.dev || afterRead.ino !== opened.ino

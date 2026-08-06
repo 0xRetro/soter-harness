@@ -4,7 +4,7 @@
   "configuration": {
     "name": "harness-development-catalog-claude",
     "path": "soter/configurations/harness-development-catalog-claude.config.json",
-    "fingerprint": "sha256:5a650788e4de0298b2f066b988f1c4f8d21aa01726de49afa5ab30085a6415d8",
+    "fingerprint": "sha256:e3009a639e1f2b55f75ffaf59e4f233f5d4783227610bac604551f8f0a101e0a",
     "hostSelection": {
       "id": "claude",
       "source": "configuration"
@@ -39,7 +39,7 @@
       "evidenceMaturity": "declared",
       "source": "base",
       "reason": "Required kernel foundation: Governs how Soter systems are defined, validated, evaluated, changed, versioned, and packaged.",
-      "manifestFingerprint": "sha256:a329fb60fdd3e46a9cdce1b0f6d5ea574812105be6bd235eb998a347c3339bfa",
+      "manifestFingerprint": "sha256:88abbc2dd21e627c5e4359cd113e403af8f5b3db630194929a8a2757e7b04ea6",
       "artifacts": [
         {
           "path": "soter/contracts/approval-consumption.schema.json",
@@ -214,12 +214,17 @@
         {
           "path": "soter/contracts/development-result.schema.json",
           "role": "definition",
-          "fingerprint": "sha256:4614bc2943669da54d0349469e706a5e9f57d6546b264f7e7e9bca002829d19d"
+          "fingerprint": "sha256:f79af3d70a69ee475d13932f407e2a2979df653ca6390a0b19507c4c29ac813f"
         },
         {
           "path": "soter/contracts/development-run-inspection.schema.json",
           "role": "definition",
-          "fingerprint": "sha256:215fb3673cb1fef488e2351a4b0862e6a889a8e4926df70ad63d4304f61d48e6"
+          "fingerprint": "sha256:a890d30c90c685909367e5280291c77833b2dfb46ca3d18e7e1efb3ae24f36cf"
+        },
+        {
+          "path": "soter/contracts/development-target-material.schema.json",
+          "role": "definition",
+          "fingerprint": "sha256:e30c682d59733d1f1641c3e8f0795c44787b7ffc443884b480adbbaebbde18ec"
         },
         {
           "path": "soter/contracts/doctor-result.schema.json",
@@ -484,7 +489,7 @@
         {
           "path": "soter/kernel/architecture-foundations.selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:3beb9a52592cf486347b3c5186a80b95386d8d17c574eef3fd27eb7b9513750a"
+          "fingerprint": "sha256:7506e26f829615a8dae8b1ab110ca1c7dfa340554bc1881f3e969a42b3e3c5f5"
         },
         {
           "path": "soter/kernel/configuration-template-portability.mjs",
@@ -499,17 +504,17 @@
         {
           "path": "soter/kernel/development-catalog.selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:c23d81cd790e70b83394ea693ea961a6d4a0117b6379c361744c07bb45a26313"
+          "fingerprint": "sha256:5b99528947d3acb0a93f901fcd92746626802b426c6585ee917f69c07bccd047"
         },
         {
           "path": "soter/kernel/development-governance.json",
           "role": "definition",
-          "fingerprint": "sha256:d8688a10fe8151a60d279d75cc2e34f3ed39dbac2811ea77504489d9037b7ef3"
+          "fingerprint": "sha256:43917e2104637683ebf949dfc5e767cf6f435ba687067e22170a8cfbb640baf8"
         },
         {
           "path": "soter/kernel/development-governance.selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:17ba175f6649e3b2f2e1211875091ccc7aa8314812338872b28da1f5bd450d4a"
+          "fingerprint": "sha256:2d45b7755bbd3b3a6d42a1acf20407379e752fd921ebc6c17105e246b7682d8c"
         },
         {
           "path": "soter/kernel/development-workspace.settings.json",
@@ -686,7 +691,7 @@
         {
           "path": "soter/core/development-host-observations.selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:4100554cc6673429894420d1c031a511aa794bec6c47ea10cf76609c9a8c96db"
+          "fingerprint": "sha256:24e61149d1b34e065dbd9b21f6bb16120e759c34ad419eaedea4414e9d4c3903"
         },
         {
           "path": "soter/core/development-host-runner.mjs",
@@ -701,12 +706,12 @@
         {
           "path": "soter/core/development-runs.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:c89daebaf9cfc0bb25f244976c9313aaa7af6653d832438d8bfea3af948c5534"
+          "fingerprint": "sha256:37fcd6e49916668aecc41ccc541873b838122c8c46a18555dfd9ffab0a4904e3"
         },
         {
           "path": "soter/core/development-runs.selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:d021f8c85a870163d1428009a8e00530672912e735974716f5d902d2354fdc28"
+          "fingerprint": "sha256:060a39fe8d6599ffaee737439a26facd67b3976e6425fb5ae43a5c516fadb893"
         },
         {
           "path": "soter/core/doctor.mjs",
@@ -741,7 +746,7 @@
         {
           "path": "soter/core/host-realizations.selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:12699a530ba0277af81f8bc0da0c57f379ad898612715da8238e19c601efbf2d"
+          "fingerprint": "sha256:ee50f30a8209435fc6552f0452c8d2eeabbe35db629cc18f284a7b4ef68afb41"
         },
         {
           "path": "soter/core/host-runtime-inspection.mjs",
@@ -771,12 +776,12 @@
         {
           "path": "soter/core/lib/canonical-json.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:9e10813403ed7e3b54477797e24bdb00ebfa22a407b1d9d215724b3c622ddf29"
+          "fingerprint": "sha256:1a13c122fa5df77eb897fe651e9e4bce3632360aefaf03108fb9b1be9753f2eb"
         },
         {
           "path": "soter/core/lib/canonical-json.selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:5dd5a020b624b7ee7c46c9c6a3fce7ccfba939c571eae8ed5ffc2cd16ad0df9b"
+          "fingerprint": "sha256:3636906f32f73b6ba45f4ae7e87989387a6f62dea2a6f6e54d7bb2d55491bba3"
         },
         {
           "path": "soter/core/maturity.mjs",
@@ -786,7 +791,7 @@
         {
           "path": "soter/core/mcp/selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:5f065ba2a0a962ddd73f0c26432c390a4fd78aa07a03f53659041d2221eb27a5"
+          "fingerprint": "sha256:24ee9df362c53d55938e84d1c8c876a96407025c8fea788e4cd9750ba6a0c95e"
         },
         {
           "path": "soter/core/mcp/server.mjs",
@@ -796,7 +801,7 @@
         {
           "path": "soter/core/mcp/tools.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:fd5f835f53d1f3330f78040a162ed550d715b49b5014749a970052b56902438d"
+          "fingerprint": "sha256:b7a7f8207db4d5b3a1dc373da219977d67c3cd9c7c178f01c5148d1363e3a210"
         },
         {
           "path": "soter/core/operation-plans.mjs",
@@ -1679,8 +1684,8 @@
       "reason": "Exact private development requests may read their bound contained workspace; this grants no provider-read authority."
     },
     "disclosure": {
-      "mode": "prohibit",
-      "reason": "The development catalog prohibits disclosure effects."
+      "mode": "allow",
+      "reason": "The development catalog allows exact request-bound target material to enter the already-active selected host task. This relies on an ambient host transport boundary Soter neither grants nor verifies and grants no onward or third-party disclosure authority."
     },
     "write": {
       "mode": "allow",
@@ -1715,9 +1720,9 @@
       "role": "skills",
       "mode": "0644",
       "templatePath": "soter/hosts/claude/templates/workflow-guide.SKILL.md.tmpl",
-      "templateFingerprint": "sha256:40e3c88962e535f49504cc67d11e7b16725eed156b5d32e0436e121966e0f003",
-      "contentFingerprint": "sha256:6e5d8f7a156605df77524c2b0ffaf959120f350eaccaeb54087c55da3a1c86a0",
-      "fingerprint": "sha256:ec4dd94eea53f04357d4cdf814bf737b5115b2efe9db5d37ee877dee6833310f"
+      "templateFingerprint": "sha256:01e93b1151d34db73371e8a51bff8c28ae5d42a94aba5774bb2a6c9ea6609ea4",
+      "contentFingerprint": "sha256:54333e75c76dd6de72d643fa4d3991d4c3e6837bf88226d6b61a9a5d6eba6c60",
+      "fingerprint": "sha256:38fc0558041045ddf83d44dc3aded69726f428f25bf33bec00064516bf6b1137"
     },
     {
       "id": "output.claude.workflow-guide.authoring-a-policy-standard.skill",
@@ -1725,9 +1730,9 @@
       "role": "skills",
       "mode": "0644",
       "templatePath": "soter/hosts/claude/templates/workflow-guide.SKILL.md.tmpl",
-      "templateFingerprint": "sha256:40e3c88962e535f49504cc67d11e7b16725eed156b5d32e0436e121966e0f003",
-      "contentFingerprint": "sha256:262931e3501027484c95438f41e0ca3739657937e9069ee6d995ae3137f9e44e",
-      "fingerprint": "sha256:29e36574c35c159d28fc478a5522183dfa8938d792051643a038726171c36654"
+      "templateFingerprint": "sha256:01e93b1151d34db73371e8a51bff8c28ae5d42a94aba5774bb2a6c9ea6609ea4",
+      "contentFingerprint": "sha256:c076f40cfd9ba4070bd695ad7ccc7879c9a6c4b21c110e73945cc7da373e87f0",
+      "fingerprint": "sha256:b17488021abe26b74f8fcf0dab7b6269c56dfe0a62d6999b47a1e4ee47566fc3"
     },
     {
       "id": "output.claude.workflow-guide.forge.skill",
@@ -1735,9 +1740,9 @@
       "role": "skills",
       "mode": "0644",
       "templatePath": "soter/hosts/claude/templates/workflow-guide.SKILL.md.tmpl",
-      "templateFingerprint": "sha256:40e3c88962e535f49504cc67d11e7b16725eed156b5d32e0436e121966e0f003",
-      "contentFingerprint": "sha256:f3aa5224ef4de0fb13ed0f5d57a089b0c11eb55299e6658b1455f14b6759a3d4",
-      "fingerprint": "sha256:db1205d1e576d528f4878b1dec0e86e10ec95de1b5198df7464565b4ef595996"
+      "templateFingerprint": "sha256:01e93b1151d34db73371e8a51bff8c28ae5d42a94aba5774bb2a6c9ea6609ea4",
+      "contentFingerprint": "sha256:f10e03d6a9452580135e0086e9176efdcca8755c41c2fe84510089e4125b0962",
+      "fingerprint": "sha256:601376211aa3fb7cb405197a4cb474ae4364b4623325d5caa96ef88d2fc94bf4"
     },
     {
       "id": "output.claude.workflow-guide.promoting-pieces.skill",
@@ -1745,9 +1750,9 @@
       "role": "skills",
       "mode": "0644",
       "templatePath": "soter/hosts/claude/templates/workflow-guide.SKILL.md.tmpl",
-      "templateFingerprint": "sha256:40e3c88962e535f49504cc67d11e7b16725eed156b5d32e0436e121966e0f003",
-      "contentFingerprint": "sha256:2713abc7fa8c73e93314d281f925332983873059b74e36a9af0b762fbb10c8c9",
-      "fingerprint": "sha256:c207b3064fd5e2e597808f623fec1cf5872f82e7d96b6f2ed48f0a08bcb84f96"
+      "templateFingerprint": "sha256:01e93b1151d34db73371e8a51bff8c28ae5d42a94aba5774bb2a6c9ea6609ea4",
+      "contentFingerprint": "sha256:0fac7866cb343c85f92573c70f8db2345f2dafcad6d5ae264eae974809ea7e1c",
+      "fingerprint": "sha256:773afdd524e3280f74d5ac397c6873a5c44344246b4948caf8996cc00aaedb9c"
     },
     {
       "id": "output.claude.workflow-guide.reviewing-forge-output.skill",
@@ -1755,9 +1760,9 @@
       "role": "skills",
       "mode": "0644",
       "templatePath": "soter/hosts/claude/templates/workflow-guide.SKILL.md.tmpl",
-      "templateFingerprint": "sha256:40e3c88962e535f49504cc67d11e7b16725eed156b5d32e0436e121966e0f003",
-      "contentFingerprint": "sha256:633f6a56da9bb0fa2cfe716c57a573e7b4f376b211714a7885a1fb1cbbea5727",
-      "fingerprint": "sha256:c140f58f7e1847c0b9b29c97067a31633caf4e35c4c49e5b0fe40e225868eef3"
+      "templateFingerprint": "sha256:01e93b1151d34db73371e8a51bff8c28ae5d42a94aba5774bb2a6c9ea6609ea4",
+      "contentFingerprint": "sha256:858e95755a55e6ea34e84c3ab120c1993b46929543f474a174d6ae18ca70596a",
+      "fingerprint": "sha256:8e44218b442f5937a1829ea50ba69bebcfbcc53676b7dd1b16c0fb64dc33be87"
     },
     {
       "id": "output.claude.workflow-guide.running-evals.skill",
@@ -1765,9 +1770,9 @@
       "role": "skills",
       "mode": "0644",
       "templatePath": "soter/hosts/claude/templates/workflow-guide.SKILL.md.tmpl",
-      "templateFingerprint": "sha256:40e3c88962e535f49504cc67d11e7b16725eed156b5d32e0436e121966e0f003",
-      "contentFingerprint": "sha256:0bb40722294155e63046dc8c611610950d037130ea36d326f935350c126e77f9",
-      "fingerprint": "sha256:8ed54de315aa87b1aca7671f3e93e9e263c5bfbba71e5c946becafa053667314"
+      "templateFingerprint": "sha256:01e93b1151d34db73371e8a51bff8c28ae5d42a94aba5774bb2a6c9ea6609ea4",
+      "contentFingerprint": "sha256:03413708a8ebe4319fe8156dca38d933b22b7c00dc61baffd4b94357c561c09a",
+      "fingerprint": "sha256:f12011ea523502e6c59ce1873bbc872012faced9f805ad8dd9f4f6b70e10d01a"
     },
     {
       "id": "output.claude.workflow-guide.validating-resources.skill",
@@ -1775,9 +1780,9 @@
       "role": "skills",
       "mode": "0644",
       "templatePath": "soter/hosts/claude/templates/workflow-guide.SKILL.md.tmpl",
-      "templateFingerprint": "sha256:40e3c88962e535f49504cc67d11e7b16725eed156b5d32e0436e121966e0f003",
-      "contentFingerprint": "sha256:298f7b9ab5a0407cb7fbcb61b851167c528d22ec70e9c1181162f4a3053efc10",
-      "fingerprint": "sha256:4800521a82546749229f62caf42a7ed7bb69ec511bca610dd044f7268f51b05e"
+      "templateFingerprint": "sha256:01e93b1151d34db73371e8a51bff8c28ae5d42a94aba5774bb2a6c9ea6609ea4",
+      "contentFingerprint": "sha256:aa8d78e4431334b193e587bda59dbfe0c32a8c4bb0ccf20bd5c20ddfc3705545",
+      "fingerprint": "sha256:28db76c9a4dd6f0b29f3085fedbe4c59891fb0d4f448af4e7fa952e946c4bdef"
     },
     {
       "id": "output.claude.tools",
@@ -1795,10 +1800,10 @@
       "role": "instructions",
       "mode": "0644",
       "templatePath": "soter/hosts/claude/templates/CLAUDE.md.tmpl",
-      "templateFingerprint": "sha256:1495b866a4abd19c3df04e76d7511f0cca0edd1d9cc0c84ecd13be223eb3093c",
-      "contentFingerprint": "sha256:f949c502a78993daa559413b5a04b953b1b018015bb4d8c3517a94241dc5286d",
-      "fingerprint": "sha256:0ed6a410e378e1c1c0640cb03a691cbc93e47029a2c1be8ea545af4eebde549e"
+      "templateFingerprint": "sha256:ea286020ae95f47aa40574fbf09d7f9d7c701010c721b63431b35b865b04f6d8",
+      "contentFingerprint": "sha256:5642754aecdb7af4976596d628711d027e27af0acd1eb3eed59c07ce32a0eb80",
+      "fingerprint": "sha256:dec53147c5b5ed79f5586fbcaf44a696e517e8055ead09978ac44f898b8ba6f0"
     }
   ],
-  "graphFingerprint": "sha256:1b1ab24473134aef280e687785b00ca3c2606edfe8e505d226cf7b2c2ecf7b50"
+  "graphFingerprint": "sha256:883ae14e8eb48de475bd4e0048bbb693fbf5efe3358987cffd5ef57fae61c291"
 }

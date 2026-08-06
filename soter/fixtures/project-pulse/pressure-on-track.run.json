@@ -13,9 +13,9 @@
   },
   "configurationLock": {
     "path": "soter/fixtures/project-pulse/project-pulse.lock.json",
-    "fingerprint": "sha256:5122430ffdd0f4f10a1985f04debebb46d47bbbddd1f98035ab5dba8a2540881"
+    "fingerprint": "sha256:7201839fc2b63148976907e762848483067f7fd502ed936fac44df71b5550cb8"
   },
-  "graphFingerprint": "sha256:0379b340f8c9884eb3647a3ccf0771d963e66584915c9bf6be9d521e2b782046",
+  "graphFingerprint": "sha256:d7e65fdf94e860c2fc05e53939d5bf56961285fcf3a60096d51a9299a3f511b5",
   "context": [
     {
       "subject": "notion.workspace",
@@ -24,7 +24,7 @@
       "uri": "soter-fixture://configuration-template/notion/account/operator",
       "declarationFingerprint": "sha256:e3e11d347b7a0109668facaeb7b12311023da39949d1328bfd918c53a406c756",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:5122430ffdd0f4f10a1985f04debebb46d47bbbddd1f98035ab5dba8a2540881",
+      "provenance": "configuration-lock:sha256:7201839fc2b63148976907e762848483067f7fd502ed936fac44df71b5550cb8",
       "freshness": "unknown"
     },
     {
@@ -54,7 +54,7 @@
       "uri": "soter-state://runs",
       "declarationFingerprint": "sha256:29aefe23c870f66c4c851f271e58223059743752e2d73572e812bd7f2ef29379",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:5122430ffdd0f4f10a1985f04debebb46d47bbbddd1f98035ab5dba8a2540881",
+      "provenance": "configuration-lock:sha256:7201839fc2b63148976907e762848483067f7fd502ed936fac44df71b5550cb8",
       "freshness": "unknown"
     },
     {
@@ -64,7 +64,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/task-policies",
       "declarationFingerprint": "sha256:9c445d27249ac5d8b56dc4f153c08b59dc1d8e6b6b3793eb6d257dbc176e0c86",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:5122430ffdd0f4f10a1985f04debebb46d47bbbddd1f98035ab5dba8a2540881",
+      "provenance": "configuration-lock:sha256:7201839fc2b63148976907e762848483067f7fd502ed936fac44df71b5550cb8",
       "freshness": "unknown"
     },
     {
@@ -215,7 +215,7 @@
     {
       "id": "context.project-pulse.pressure-on-track-fixture",
       "type": "context-snapshot",
-      "fingerprint": "sha256:865f687e7b2fad968a6b1f49f3f6d05ed6b2a12190484bb3e820de7159def2c7"
+      "fingerprint": "sha256:926c06d7cf4c2c7f7a86d0da58d001bec373e2776ae855307fa22aa8803006bb"
     },
     {
       "id": "preview.project-pulse.pressure-on-track",

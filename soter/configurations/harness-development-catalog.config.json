@@ -262,8 +262,8 @@
       "reason": "Exact private development requests may read their bound contained workspace; this grants no provider-read authority."
     },
     "disclosure": {
-      "mode": "prohibit",
-      "reason": "The development catalog prohibits disclosure effects."
+      "mode": "allow",
+      "reason": "The development catalog allows exact request-bound target material to enter the already-active selected host task. This relies on an ambient host transport boundary Soter neither grants nor verifies and grants no onward or third-party disclosure authority."
     },
     "write": {
       "mode": "allow",
