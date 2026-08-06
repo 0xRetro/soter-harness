@@ -21,6 +21,7 @@ import {
   normalizeProjectionPath,
   renderHostProjectionCandidates
 } from '../host-projections.mjs';
+import { assertHostRuntimeInspection } from '../host-runtime-inspection.mjs';
 import { materializeContainedPrivateConfiguration } from '../contained-private-configurations.mjs';
 import {
   assertDeclaredAutomationAcquisitionFinalization
@@ -42,6 +43,7 @@ import {
 import {
   activeConfigurationLockStatePath,
   developmentRequestStatePath,
+  developmentResultStatePath,
   readHostManagedManifestState,
   runStatePath,
   writeActiveConfigurationLockState,
@@ -1280,6 +1282,7 @@ async function selftest(root) {
       'soter_prepare_automation_acquisition',
       'soter_prepare_provider_probe',
       'soter_reconcile_connected_transaction',
+      'soter_record_development_result',
       'soter_recover_automation_acquisition',
       'soter_stage_automation_acquisition'
     ];
@@ -1298,16 +1301,27 @@ async function selftest(root) {
     const developmentInspectTool = listed.tools.find((tool) => {
       return tool.name === 'soter_inspect_development_run';
     });
+    const developmentResultTool = listed.tools.find((tool) => {
+      return tool.name === 'soter_record_development_result';
+    });
     if (!developmentCreateTool
       || !developmentInspectTool
+      || !developmentResultTool
       || developmentCreateTool.annotations?.readOnlyHint !== false
       || developmentCreateTool.annotations?.idempotentHint !== true
       || developmentInspectTool.annotations?.readOnlyHint !== true
+      || developmentResultTool.annotations?.readOnlyHint !== false
+      || developmentResultTool.annotations?.idempotentHint !== true
       || JSON.stringify(developmentCreateTool.inputSchema).includes('configuration_name')
       || JSON.stringify(developmentCreateTool.inputSchema).includes('lock_path')
       || JSON.stringify(developmentCreateTool.inputSchema).includes('before_fingerprint')
       || JSON.stringify(developmentCreateTool.inputSchema).includes('provider')
-      || JSON.stringify(developmentInspectTool.inputSchema).includes('path')) {
+      || JSON.stringify(developmentInspectTool.inputSchema).includes('path')
+      || JSON.stringify(developmentResultTool.inputSchema).includes('path')
+      || JSON.stringify(developmentResultTool.inputSchema).includes('before_fingerprint')
+      || JSON.stringify(developmentResultTool.inputSchema).includes('after_fingerprint')
+      || JSON.stringify(developmentResultTool.inputSchema).includes('provider')
+      || JSON.stringify(developmentResultTool.inputSchema).includes('promotion')) {
       throw new Error(
         'Development MCP tools do not preserve their strict candidate-lock, Core-fingerprinted, sanitized boundary.'
       );
@@ -1421,6 +1435,116 @@ async function selftest(root) {
       throw new Error('Exact MCP development request re-entry was not idempotent.');
     }
 
+    const developmentResultArguments = {
+      request_id: developmentRequestId,
+      state: 'passed',
+      checks: [{
+        id: 'check.mcp-schema-audit',
+        state: 'passed',
+        observed_fingerprint: fingerprintJson({ check: 'mcp-schema-audit' })
+      }],
+      local_effects: [
+        {
+          category: 'local-workspace-read',
+          state: 'observed',
+          count: 1,
+          observed_fingerprint: fingerprintJson({ effect: 'mcp-schema-read' })
+        },
+        ...['local-workspace-write', 'local-command', 'subagent-dispatch'].map((category) => ({
+          category,
+          state: 'not-observed',
+          count: 0,
+          observed_fingerprint: null
+        }))
+      ],
+      at: fixtureTime
+    };
+    const recordedDevelopment = await call(
+      client,
+      'soter_record_development_result',
+      developmentResultArguments
+    );
+    const serializedRecordedDevelopment = JSON.stringify(recordedDevelopment);
+    if (recordedDevelopment.result?.state !== 'passed'
+      || recordedDevelopment.progress.state !== 'passed'
+      || recordedDevelopment.requestBoundary.state !== 'closed'
+      || recordedDevelopment.requestBoundary.reasonCode !== 'DEVELOPMENT_RESULT_RECORDED'
+      || recordedDevelopment.requestBoundary.permittedNextAction !== 'none'
+      || recordedDevelopment.authority.kind !== 'inspection-only'
+      || recordedDevelopment.authority.grantsExecution
+      || recordedDevelopment.authority.grantsProviderRead
+      || recordedDevelopment.authority.grantsProviderWrite
+      || serializedRecordedDevelopment.includes(privateDevelopmentOutcome)
+      || serializedRecordedDevelopment.includes(developmentTarget)
+      || serializedRecordedDevelopment.includes(root)
+      || serializedRecordedDevelopment.includes('.soter/state/')) {
+      throw new Error(
+        'Development result recording did not return the exact sanitized closed no-authority inspection.'
+      );
+    }
+    const developmentResultFile = developmentResultStatePath(
+      root,
+      'development-result.mcp-schema-audit'
+    );
+    assertPrivateFile(developmentResultFile);
+    if (process.platform !== 'win32'
+      && (fs.statSync(path.dirname(developmentResultFile)).mode & 0o777) !== 0o700) {
+      throw new Error('Private development result directory does not use mode 0700.');
+    }
+    const privateDevelopmentResult = readJson(developmentResultFile);
+    if (privateDevelopmentResult.changes.length !== 1
+      || privateDevelopmentResult.changes[0].path !== developmentTarget
+      || privateDevelopmentResult.changes[0].kind !== 'unchanged'
+      || privateDevelopmentResult.effects.some((effect) => {
+        return effect.scope === 'separate-authority'
+          && (effect.state !== 'not-observed'
+            || effect.count !== 0
+            || effect.observedFingerprint !== null);
+      })) {
+      throw new Error(
+        'Private MCP development result did not derive exact target changes and external zero effects.'
+      );
+    }
+    const reenteredResult = await call(
+      client,
+      'soter_record_development_result',
+      developmentResultArguments
+    );
+    if (reenteredResult.result.fingerprint !== recordedDevelopment.result.fingerprint) {
+      throw new Error('Exact MCP development result re-entry was not idempotent.');
+    }
+    const changedResult = await client.callTool({
+      name: 'soter_record_development_result',
+      arguments: {
+        ...developmentResultArguments,
+        checks: [{
+          ...developmentResultArguments.checks[0],
+          observed_fingerprint: fingerprintJson({ check: 'different-private-result' })
+        }]
+      }
+    });
+    assertSafeMcpFailure(
+      changedResult,
+      'DEVELOPMENT_RESULT_INVALID',
+      [privateDevelopmentOutcome, developmentTarget, root]
+    );
+    const emptyPassedResult = await client.callTool({
+      name: 'soter_record_development_result',
+      arguments: { ...developmentResultArguments, checks: [] }
+    });
+    assertSafeMcpFailure(
+      emptyPassedResult,
+      'DEVELOPMENT_RESULT_INVALID',
+      [privateDevelopmentOutcome, developmentTarget, root]
+    );
+    const resultAuthorityInjection = await client.callTool({
+      name: 'soter_record_development_result',
+      arguments: { ...developmentResultArguments, provider_write: true }
+    });
+    if (!resultAuthorityInjection.isError) {
+      throw new Error('Development result MCP input accepted undeclared provider authority.');
+    }
+
     const evaluationDevelopment = await call(
       client,
       'soter_create_development_request',
@@ -1453,6 +1577,26 @@ async function selftest(root) {
       throw new Error(
         'Portable MCP evaluation-suite request did not preserve its exact local-only boundary.'
       );
+    }
+    const unsupportedEvaluationResult = await client.callTool({
+      name: 'soter_record_development_result',
+      arguments: {
+        ...developmentResultArguments,
+        request_id: 'development-request.mcp-running-evals',
+        state: 'blocked',
+        checks: []
+      }
+    });
+    assertSafeMcpFailure(
+      unsupportedEvaluationResult,
+      'DEVELOPMENT_RESULT_INVALID',
+      [root, '.soter/state/']
+    );
+    if (fs.existsSync(developmentResultStatePath(
+      root,
+      'development-result.mcp-running-evals'
+    ))) {
+      throw new Error('Unsupported MCP evaluation result created durable private state.');
     }
     const noncanonicalEvaluationId = 'development-request.mcp-running-evals-noncanonical';
     const noncanonicalEvaluation = await client.callTool({
@@ -1671,6 +1815,43 @@ async function selftest(root) {
       || JSON.stringify(currentRuntime).includes('.soter/state/')) {
       throw new Error('MCP host runtime inspection exposed private runtime paths.');
     }
+    const runtimeInspectionSchema = readJson(path.join(
+      root,
+      'soter/contracts/host-runtime-inspection.schema.json'
+    ));
+    const signRuntimeInspection = (candidate) => {
+      const signed = structuredClone(candidate);
+      delete signed.inspectionFingerprint;
+      candidate.inspectionFingerprint = fingerprintJson(signed);
+      return candidate;
+    };
+    const mismatchedCurrentRuntime = signRuntimeInspection({
+      ...structuredClone(currentRuntime),
+      runtime: {
+        ...currentRuntime.runtime,
+        currentFingerprint: fingerprintJson({ hostile: 'different-current-runtime' })
+      }
+    });
+    assert.throws(
+      () => assertHostRuntimeInspection(mismatchedCurrentRuntime, runtimeInspectionSchema),
+      /state facts are contradictory/
+    );
+    const impossibleRuntimeDate = signRuntimeInspection({
+      ...structuredClone(currentRuntime),
+      inspectedAt: '2026-02-30T12:00:00.000Z'
+    });
+    assert.throws(
+      () => assertHostRuntimeInspection(impossibleRuntimeDate, runtimeInspectionSchema),
+      /valid UTC instant/
+    );
+    const predatingRuntimeInspection = signRuntimeInspection({
+      ...structuredClone(currentRuntime),
+      inspectedAt: '2025-01-01T00:00:00.000Z'
+    });
+    assert.throws(
+      () => assertHostRuntimeInspection(predatingRuntimeInspection, runtimeInspectionSchema),
+      /cannot predate/
+    );
 
     const runtimeArtifact = path.join(root, 'AGENTS.md');
     const runtimeArtifactSource = fs.readFileSync(runtimeArtifact, 'utf8');

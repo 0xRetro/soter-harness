@@ -4,8 +4,8 @@
   "id": "context.project-pulse.no-invented-progress-fixture",
   "runId": "run.project-pulse.no-invented-progress-fixture",
   "createdAt": "2026-07-16T12:00:00.000Z",
-  "configurationLockFingerprint": "sha256:739f0eeab35865abca0ddfadaf958af96edca4b6a9c1e91a402415b6e31ca707",
-  "graphFingerprint": "sha256:040fff6cea5cc9abc6ca84eab054f158a3db507dc77de95925128a5062b06638",
+  "configurationLockFingerprint": "sha256:5122430ffdd0f4f10a1985f04debebb46d47bbbddd1f98035ab5dba8a2540881",
+  "graphFingerprint": "sha256:0379b340f8c9884eb3647a3ccf0771d963e66584915c9bf6be9d521e2b782046",
   "containment": "fixture",
   "entries": [
     {

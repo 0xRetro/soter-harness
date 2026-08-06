@@ -10,8 +10,8 @@
     "id": "meeting-intake",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:954bfa8998805f91b520e4432cd0c7998b9910c0400af759a1b403a84704441a",
-  "graphFingerprint": "sha256:3a79ba1bfe2a7424c7da1df5533c6560c978bbfe0e475e9f50ec723eb9dcb67e",
+  "configurationLockFingerprint": "sha256:70289694d0cfefccd5347ef6f77f4ceeb45fbdd691aed7243dcc60c00e88a1a2",
+  "graphFingerprint": "sha256:11645d8623a806e14d98a0dbe54a9c7309422c3d52de9b647f9ec556feebab96",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -185,7 +185,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:954bfa8998805f91b520e4432cd0c7998b9910c0400af759a1b403a84704441a"
+      "fingerprint": "sha256:70289694d0cfefccd5347ef6f77f4ceeb45fbdd691aed7243dcc60c00e88a1a2"
     }
   ],
   "effects": [],

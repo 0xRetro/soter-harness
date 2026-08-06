@@ -12,6 +12,7 @@ import {
   buildDevelopmentEvaluationInvocation,
   inspectDevelopmentRun,
   prepareDevelopmentRequest,
+  recordHostDevelopmentResult,
   recordDevelopmentResult
 } from './development-runs.mjs';
 import {
@@ -573,6 +574,76 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       root: temp,
       requestId: 'development-request.read-only-staleness'
     }).applicability.state, 'current');
+
+    const hostClosureRequestId = 'development-request.host-closure';
+    prepareDevelopmentRequest({
+      root: temp,
+      lockPath: auditLockPath,
+      workflowId: 'automation.auditing-a-schema-doc',
+      requestId: hostClosureRequestId,
+      invocation: {
+        kind: 'develop',
+        profile: 'exact',
+        requestedOutcome: 'Review the exact schema and close the request with path-free host observations.',
+        requestedLocalEffects: ['local-workspace-read'],
+        targets: [{ id: 'target.host-closure-schema', path: readOnlyPath }]
+      },
+      createdAt: '2026-07-22T09:05:00.000Z'
+    });
+    const hostClosureEffects = [
+      {
+        category: 'local-workspace-read',
+        state: 'observed',
+        count: 1,
+        observedFingerprint: FP({ hostClosure: 'read' })
+      },
+      ...['local-workspace-write', 'local-command', 'subagent-dispatch'].map((category) => ({
+        category,
+        state: 'not-observed',
+        count: 0,
+        observedFingerprint: null
+      }))
+    ];
+    expectCode(() => recordHostDevelopmentResult({
+      root: temp,
+      requestId: hostClosureRequestId,
+      state: 'passed',
+      checks: [],
+      localEffects: hostClosureEffects,
+      completedAt: '2026-07-22T09:06:00.000Z'
+    }), 'DEVELOPMENT_RESULT_PASS_UNSUPPORTED');
+    const hostClosure = recordHostDevelopmentResult({
+      root: temp,
+      requestId: hostClosureRequestId,
+      state: 'passed',
+      checks: [{
+        id: 'check.host-closure-schema',
+        state: 'passed',
+        observedFingerprint: FP({ hostClosure: 'check' })
+      }],
+      localEffects: hostClosureEffects,
+      completedAt: '2026-07-22T09:06:00.000Z'
+    });
+    assert.equal(hostClosure.inspection.progress.state, 'passed');
+    assert.equal(hostClosure.inspection.requestBoundary.state, 'closed');
+    assert.deepEqual(hostClosure.result.changes.map(({ id, kind }) => ({ id, kind })), [{
+      id: 'change.target.host-closure-schema',
+      kind: 'unchanged'
+    }]);
+    assert.equal(
+      readDevelopmentResultState(temp, 'development-result.host-closure').result.resultFingerprint,
+      hostClosure.result.resultFingerprint
+    );
+    const reorderedEffects = structuredClone(hostClosureEffects);
+    [reorderedEffects[0], reorderedEffects[1]] = [reorderedEffects[1], reorderedEffects[0]];
+    expectCode(() => recordHostDevelopmentResult({
+      root: temp,
+      requestId: 'development-request.read-only-staleness',
+      state: 'blocked',
+      checks: [],
+      localEffects: reorderedEffects,
+      completedAt: '2026-07-22T09:07:00.000Z'
+    }), 'DEVELOPMENT_RESULT_EFFECT_BOUNDARY_VIOLATED');
 
     const writablePath = 'development-request-write-target.txt';
     const writableFile = path.join(temp, writablePath);

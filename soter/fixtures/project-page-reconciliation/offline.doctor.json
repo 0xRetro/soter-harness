@@ -6,7 +6,7 @@
   "level": "offline",
   "configuration": {
     "name": "project-page-reconciliation",
-    "lockFingerprint": "sha256:94c69d51a8cd3c01d013d031ac654b8180941556c8fc302bbfa426ddd21d3694"
+    "lockFingerprint": "sha256:b7c8155b7585d5d4075d260d202353310d2e17e99cab5b9fb440699fcb0510a8"
   },
   "states": {
     "valid": "passed",

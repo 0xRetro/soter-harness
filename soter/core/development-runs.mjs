@@ -1455,6 +1455,109 @@ export function recordDevelopmentResult({
   return { result, inspection: inspectDevelopmentRun({ root: resolvedRoot, requestId }) };
 }
 
+function derivedDevelopmentChange(root, target) {
+  const current = inspectDevelopmentTarget(root, target, {
+    requireCurrentManagedOwnership: false
+  });
+  const beforeFingerprint = target.beforeFingerprint;
+  const afterFingerprint = current.beforeFingerprint;
+  const kind = beforeFingerprint === null
+    ? 'create'
+    : afterFingerprint === null
+      ? 'remove'
+      : beforeFingerprint === afterFingerprint
+        ? 'unchanged'
+        : 'modify';
+  return {
+    id: 'change.' + target.id,
+    path: target.path,
+    kind,
+    beforeFingerprint,
+    afterFingerprint
+  };
+}
+
+/**
+ * Close one ordinary exact development request from host-observed, path-free
+ * facts. Core derives the complete target change set and every external
+ * zero-effect row; callers cannot submit target paths, provider effects, or
+ * promotion authority through this boundary.
+ */
+export function recordHostDevelopmentResult({
+  root,
+  requestId,
+  state,
+  checks,
+  localEffects,
+  completedAt = null
+}) {
+  const resolvedRoot = path.resolve(root);
+  const request = readDevelopmentRequestState(resolvedRoot, requestId).request;
+  assertDevelopmentRequest(resolvedRoot, request);
+  if (request.invocation.kind !== 'develop') {
+    throw codedError(
+      'DEVELOPMENT_RESULT_INVOCATION_UNSUPPORTED',
+      'Host result recording supports ordinary exact development requests only.'
+    );
+  }
+  if (!Array.isArray(checks)
+    || (state === 'passed' && (checks.length === 0
+      || checks.some((check) => check?.state !== 'passed')))) {
+    throw codedError(
+      'DEVELOPMENT_RESULT_PASS_UNSUPPORTED',
+      'A passed host development result requires at least one exact passed check.'
+    );
+  }
+  if (!Array.isArray(localEffects)
+    || localEffects.length !== LOCAL_EFFECTS.length
+    || localEffects.some((effect, index) => effect?.category !== LOCAL_EFFECTS[index])) {
+    throw codedError(
+      'DEVELOPMENT_RESULT_EFFECT_BOUNDARY_VIOLATED',
+      'Host development result requires every local effect exactly once in canonical order.'
+    );
+  }
+  const outcome = {
+    state,
+    workerRuns: [],
+    judgments: [],
+    changes: request.invocation.targets.map((target) => {
+      return derivedDevelopmentChange(resolvedRoot, target);
+    }),
+    checks: structuredClone(checks),
+    effects: [
+      ...localEffects.map((effect) => ({
+        category: effect.category,
+        scope: 'request-scoped',
+        state: effect.state,
+        count: effect.count,
+        observedFingerprint: effect.observedFingerprint
+      })),
+      ...[...EXTERNAL_EFFECTS].map((category) => ({
+        category,
+        scope: 'separate-authority',
+        state: 'not-observed',
+        count: 0,
+        observedFingerprint: null
+      }))
+    ],
+    promotion: {
+      state: 'held',
+      artifactFingerprint: null,
+      reasonCode: 'PROMOTION_AUTHORITY_NOT_GRANTED'
+    },
+    decisionEvidence: [],
+    limitations: [
+      'This host-recorded result is scoped development evidence and grants no operational authority.'
+    ]
+  };
+  return recordDevelopmentResult({
+    root: resolvedRoot,
+    requestId,
+    outcome,
+    completedAt
+  });
+}
+
 function inspectionFingerprint(inspection) {
   return unsignedFingerprint(inspection, 'inspectionFingerprint');
 }

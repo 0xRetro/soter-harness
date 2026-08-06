@@ -6,7 +6,7 @@
   "level": "offline",
   "configuration": {
     "name": "drive-filing",
-    "lockFingerprint": "sha256:5bbabd56316f09c07d4fd3682cb0008f8aa7de11f598279bc2d5ccbb0ffff327"
+    "lockFingerprint": "sha256:1a69299dcb4ddbab33edebb6a23b6bb97a2b7aa0104b4f909c7cd51dba95c2d0"
   },
   "states": {
     "valid": "passed",

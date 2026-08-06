@@ -19,6 +19,7 @@ export const HOST_RUNTIME_REASON_CODES = Object.freeze({
 const ACTIVE_ARTIFACT_ROLES = new Set(['definition', 'implementation', 'projection']);
 const SERVER_NAME = 'soter-core';
 const SERVER_VERSION = '0.1.0';
+const INSTANT_RE = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:[.][0-9]{3})?Z$/;
 
 function compareText(left, right) {
   return left < right ? -1 : left > right ? 1 : 0;
@@ -146,7 +147,19 @@ function inspectionFingerprint(inspection) {
   return fingerprintJson(unsigned);
 }
 
-function assertInspection(inspection, schema) {
+function assertInstant(value, label) {
+  const canonical = typeof value === 'string' && !value.includes('.')
+    ? value.replace(/Z$/, '.000Z')
+    : value;
+  if (typeof value !== 'string'
+    || !INSTANT_RE.test(value)
+    || !Number.isFinite(Date.parse(value))
+    || new Date(value).toISOString() !== canonical) {
+    throw new Error(label + ' must be one valid UTC instant.');
+  }
+}
+
+export function assertHostRuntimeInspection(inspection, schema) {
   const failures = validateJsonSchema(inspection, schema);
   if (failures.length) {
     throw new Error('Host runtime inspection does not satisfy its contract: '
@@ -154,6 +167,11 @@ function assertInspection(inspection, schema) {
   }
   if (inspection.inspectionFingerprint !== inspectionFingerprint(inspection)) {
     throw new Error('Host runtime inspection fingerprint is stale.');
+  }
+  assertInstant(inspection.inspectedAt, 'Host runtime inspection inspectedAt');
+  assertInstant(inspection.server.startedAt, 'Host runtime inspection server.startedAt');
+  if (Date.parse(inspection.inspectedAt) < Date.parse(inspection.server.startedAt)) {
+    throw new Error('Host runtime inspection cannot predate the loaded server runtime.');
   }
   const runtime = inspection.runtime;
   if ((runtime.state === 'current'
@@ -182,6 +200,7 @@ function assertInspection(inspection, schema) {
 }
 
 export function createHostRuntimeBasis({ root, host, startedAt = new Date().toISOString() }) {
+  assertInstant(startedAt, 'Host runtime basis startedAt');
   const resolvedRoot = path.resolve(root);
   const startup = runtimeSnapshot(resolvedRoot, host);
   return Object.freeze({
@@ -199,6 +218,7 @@ export function createHostRuntimeBasis({ root, host, startedAt = new Date().toIS
 }
 
 export function inspectHostRuntime({ root, basis, inspectedAt = new Date().toISOString() }) {
+  assertInstant(inspectedAt, 'Host runtime inspection inspectedAt');
   const resolvedRoot = path.resolve(root);
   const observed = runtimeSnapshot(
     resolvedRoot,
@@ -252,5 +272,5 @@ export function inspectHostRuntime({ root, basis, inspectedAt = new Date().toISO
     inspectionFingerprint: fingerprintJson(null)
   };
   inspection.inspectionFingerprint = inspectionFingerprint(inspection);
-  return assertInspection(inspection, basis.inspectionSchema);
+  return assertHostRuntimeInspection(inspection, basis.inspectionSchema);
 }

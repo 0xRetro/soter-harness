@@ -299,10 +299,19 @@ export async function selftestHostRealizations(sourceRoot) {
     assert(fs.existsSync(path.join(claudeRootMcp, '.mcp.json')));
     assert(!fs.existsSync(path.join(claudeRootMcp, '.claude/.mcp.json')),
       'Current Claude realization reproduced the retired nested MCP path.');
-    assert(fs.existsSync(path.join(
+    const realizedClaudeSkill = path.join(
       claudeRootMcp,
       '.claude/skills/running-evals/SKILL.md'
-    )), 'Current Claude realization omitted an active governed workflow skill.');
+    );
+    assert(fs.existsSync(realizedClaudeSkill),
+      'Current Claude realization omitted an active governed workflow skill.');
+    const realizedClaudeSkillContent = fs.readFileSync(realizedClaudeSkill, 'utf8');
+    assert(!realizedClaudeSkillContent.includes('disable-model-invocation:'),
+      'Active Claude workflow skill remained unavailable to the governed host agent.');
+    assert(realizedClaudeSkillContent.includes('soter_create_development_request')
+      && realizedClaudeSkillContent.includes('soter_record_development_result')
+      && realizedClaudeSkillContent.includes('grants no provider'),
+    'Active Claude workflow skill omitted its exact request, result, or no-authority boundary.');
     assertMode(path.join(claudeRootMcp, '.mcp.json'), '0644');
     assert.equal(inspectManagedHostProjectionOwnership({
       root: claudeRootMcp,

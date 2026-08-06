@@ -93,7 +93,8 @@ import {
 import {
   buildDevelopmentEvaluationInvocation,
   inspectDevelopmentRun,
-  prepareDevelopmentRequest
+  prepareDevelopmentRequest,
+  recordHostDevelopmentResult
 } from '../development-runs.mjs';
 import { materializeDevelopmentCandidateLock } from '../development-candidate-locks.mjs';
 import {
@@ -124,6 +125,7 @@ const developmentWorkflowId = z.string().regex(/^automation\.[a-z0-9]+(?:[.-][a-
 const developmentRequestId = z.string().regex(
   /^development-request\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/
 );
+const sha256Fingerprint = z.string().regex(/^sha256:[a-f0-9]{64}$/);
 const developmentTargetPath = z.string()
   .min(1)
   .max(300)
@@ -177,6 +179,23 @@ const developmentInvocation = z.discriminatedUnion('kind', [
     requested_effects: evaluationDevelopmentEffects
   }).strict()
 ]);
+const developmentCheckObservation = z.object({
+  id: developmentId,
+  state: z.enum(['passed', 'failed', 'blocked', 'unknown']),
+  observed_fingerprint: sha256Fingerprint.nullable()
+}).strict();
+const developmentLocalEffectObservation = z.object({
+  category: localDevelopmentEffect,
+  state: z.enum(['observed', 'not-observed', 'blocked', 'unknown']),
+  count: z.number().int().min(0),
+  observed_fingerprint: sha256Fingerprint.nullable()
+}).strict();
+const developmentLocalEffectObservations = z.array(developmentLocalEffectObservation)
+  .min(4)
+  .max(4)
+  .refine((value) => {
+    return value.every((item, index) => item.category === canonicalDevelopmentEffects[index]);
+  }, 'Local effect observations must cover the complete canonical order.');
 
 function result(value, summary) {
   const structuredContent = { result: value };
@@ -272,7 +291,7 @@ export function createSoterMcpServer({ root, host }) {
         'Before operational work, use soter_inspect_host_runtime; follow only its guidance action. A stale runtime with action none has no automatic recovery route and must be repaired outside inspection; restart only when the exact action is restart-host-runtime. If it reports SOTER_HOST_RUNTIME_NOT_REALIZED, realize the declared host outputs first because no restart or retry can satisfy them.',
         'Soter Core validates exact locks and runs for the active ' + host + ' host projection, then saves a private durable checkpoint before emitting a provider-neutral operation resolved to an exact native host tool.',
         'After compaction or restart, use soter_list_host_calls and soter_get_host_call to recover pending work.',
-        'Before using an active host-guided development workflow, use soter_create_development_request with its exact target set and the smallest requested local-effect subset. Core derives the selected configuration from the current managed host realization. Then use soter_inspect_development_run to recover only sanitized current, stale, or closed request/result facts. The private request grants no provider, approval, publication, merge, protected-root, or host-realization authority.',
+        'Before using an active host-guided development workflow, use soter_create_development_request with its exact target set and the smallest requested local-effect subset. Core derives the selected configuration from the current managed host realization. Then use soter_inspect_development_run to recover only sanitized current, stale, or closed request/result facts. After ordinary request-scoped work, use soter_record_development_result with path-free checks and exact local-effect observations; Core derives every target change and closes the request without accepting provider, promotion, or target-path authority. The private request and result grant no provider, approval, publication, merge, protected-root, or host-realization authority.',
         'Use soter_stage_automation_acquisition to validate one exact private operator input and create the zero-effect prepared-work/run boundary, then use soter_prepare_automation_acquisition with that exact Automation and work identity.',
         'If an exact declared acquisition read fails with an eligible transient code, use soter_recover_automation_acquisition only with the exact failed checkpoint, step, call, and fingerprints. The returned currentCall is the only executable replacement; the recovery record is a locator and grants no reusable retry or write authority.',
         'Invoke exactly currentCall.transport.tool when currentCall is present; otherwise invoke checkpoint.call.transport.tool only for a checkpoint that still uses the v1 single-call contract.',
@@ -412,6 +431,42 @@ export function createSoterMcpServer({ root, host }) {
     return result(
       inspection,
       'Returned the exact sanitized development run inspection without executing work or granting authority.'
+    );
+  });
+
+  registerGuardedDevelopmentTool('soter_record_development_result', {
+    title: 'Record exact private Soter development result',
+    description: 'Close one ordinary exact development request from path-free check fingerprints and the complete canonical local-effect observation set. Core derives every target change from the private request and current bytes, fixes all external effects to not-observed, holds promotion, writes one create-only private result, and returns only the sanitized inspection. This tool accepts no target path, before/after fingerprint, provider effect, approval, publication, merge, protected-root, or host-realization authority.',
+    inputSchema: z.object({
+      request_id: developmentRequestId,
+      state: z.enum(['passed', 'failed', 'blocked', 'partial']),
+      checks: z.array(developmentCheckObservation).max(500),
+      local_effects: developmentLocalEffectObservations,
+      at: z.string().min(20).optional()
+    }).strict(),
+    outputSchema: resultSchema,
+    annotations: completionAnnotations
+  }, 'DEVELOPMENT_RESULT_INVALID', async (input) => {
+    const recorded = recordHostDevelopmentResult({
+      root,
+      requestId: input.request_id,
+      state: input.state,
+      checks: input.checks.map((check) => ({
+        id: check.id,
+        state: check.state,
+        observedFingerprint: check.observed_fingerprint
+      })),
+      localEffects: input.local_effects.map((effect) => ({
+        category: effect.category,
+        state: effect.state,
+        count: effect.count,
+        observedFingerprint: effect.observed_fingerprint
+      })),
+      completedAt: input.at || null
+    });
+    return result(
+      recorded.inspection,
+      'Recorded one exact private development result and returned only its sanitized closed no-authority inspection.'
     );
   });
 

@@ -118,7 +118,10 @@ for (const slug of expected) {
   assert(codexSkill.content.includes('This file is procedural guidance only.'));
   assert(codexSkill.content.includes('Guide state: `active`'));
   assert(codexMetadata.content.includes('allow_implicit_invocation: false'));
-  assert(claudeSkill.content.includes('disable-model-invocation: true'));
+  assert(!claudeSkill.content.includes('disable-model-invocation:'));
+  assert(claudeSkill.content.includes('soter_create_development_request'));
+  assert(claudeSkill.content.includes('soter_record_development_result'));
+  assert(claudeSkill.content.includes('grants no provider'));
   for (const sentinel of privateSourceSentinels) {
     assert(!codexSkill.content.includes(sentinel) && !claudeSkill.content.includes(sentinel));
   }

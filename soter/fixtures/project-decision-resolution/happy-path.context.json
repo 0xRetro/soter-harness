@@ -4,8 +4,8 @@
   "id": "context.project-decision-resolution.happy-path-fixture",
   "runId": "run.project-decision-resolution.happy-path-fixture",
   "createdAt": "2026-07-22T12:00:00.000Z",
-  "configurationLockFingerprint": "sha256:944cf8e591676dfd0b2bc0b2910d811cabee0c4bc90b970392f5c456a0edf2cb",
-  "graphFingerprint": "sha256:2456a80a7e28dee4b03c92b7fb9fb23b4eebcef751aa63189c6408d21c9800e5",
+  "configurationLockFingerprint": "sha256:0307512346fe4976eed80c472b27bf6f71b573bab10396f75d243d70e6d677c1",
+  "graphFingerprint": "sha256:a70e597559f6a1a6d74d5757f296a76f9a524c409e271455fb75009ad261c163",
   "containment": "fixture",
   "entries": [
     {

@@ -10,8 +10,8 @@
     "id": "project-work-promotion",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:3cded652fb2b179345d342a42a9097760259e0a7b50f15685bb6d495d559ea0a",
-  "graphFingerprint": "sha256:6194b5a7edb9d0ee2a0dba61983f5b307e85373d260198353e124cb7e565c3e7",
+  "configurationLockFingerprint": "sha256:1ac8d7ac87edc40b27a26ddb377da2b0bd98fc5fcf4173fd43b11ac0f8fb88fc",
+  "graphFingerprint": "sha256:a6d975f06af8bdd9705ca08233d502fa9db29c9f40a2e924957993384707c9e9",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -134,7 +134,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:3cded652fb2b179345d342a42a9097760259e0a7b50f15685bb6d495d559ea0a"
+      "fingerprint": "sha256:1ac8d7ac87edc40b27a26ddb377da2b0bd98fc5fcf4173fd43b11ac0f8fb88fc"
     }
   ],
   "effects": [],

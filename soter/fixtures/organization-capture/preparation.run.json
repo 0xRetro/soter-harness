@@ -13,9 +13,9 @@
   },
   "configurationLock": {
     "path": "soter/fixtures/organization-capture/organization-capture.lock.json",
-    "fingerprint": "sha256:b95d10c3aa7e6219f5952dda87c7677d77113609a19b23f453991a837ded93bf"
+    "fingerprint": "sha256:4096799f4280df4205d017ec19356913c7c64f06d69314683b821c0c4c6ca425"
   },
-  "graphFingerprint": "sha256:2aa58d36248508de758c55c11b00ced953df8c4f01cdb68a23d6454462293511",
+  "graphFingerprint": "sha256:53d8ae94c69f19fba4b715675fc9ff948f39a3ca811a4d43c9899189819ca258",
   "context": [
     {
       "subject": "crm.records",
@@ -44,7 +44,7 @@
       "uri": "soter-fixture://configuration-template/notion/account/operator",
       "declarationFingerprint": "sha256:cdee230730b0f3c9c6ca06e6578e38324ed0b7f7da89339d7628c70061e960e1",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:b95d10c3aa7e6219f5952dda87c7677d77113609a19b23f453991a837ded93bf",
+      "provenance": "configuration-lock:sha256:4096799f4280df4205d017ec19356913c7c64f06d69314683b821c0c4c6ca425",
       "freshness": "unknown"
     },
     {
@@ -54,7 +54,7 @@
       "uri": "soter-state://runs",
       "declarationFingerprint": "sha256:74c8fdd14e981038f959c469d6709fe66186b5f854f5f337f65bc67a6e7926c0",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:b95d10c3aa7e6219f5952dda87c7677d77113609a19b23f453991a837ded93bf",
+      "provenance": "configuration-lock:sha256:4096799f4280df4205d017ec19356913c7c64f06d69314683b821c0c4c6ca425",
       "freshness": "unknown"
     }
   ],
@@ -162,7 +162,7 @@
     {
       "id": "context.organization-capture.preparation-fixture",
       "type": "context-snapshot",
-      "fingerprint": "sha256:129b4ce957eb67002a8391254ad1e9fe5831eff8dae4721d757c196a23dd1bcf"
+      "fingerprint": "sha256:5e87b1cdb6de9b4126b0752824f00ba51a6a5094c7bbe65d6e6108ed1bde565a"
     }
   ],
   "effects": [

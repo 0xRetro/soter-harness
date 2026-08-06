@@ -10,8 +10,8 @@
     "id": "run.project-page-review.preparation-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:e28daeaec29577b55d65b2089350c9d8332e4bf097ae3aa6f986a5a58107b79b",
-  "graphFingerprint": "sha256:3ca5801b6cb0182817c988d887858a6085f3e61a007897db0621ccbd2ea91f60",
+  "configurationLockFingerprint": "sha256:54f448e705e638d129e18ccf3d1d50891c61e1e3a30f6d8ec70ca1ca464869c0",
+  "graphFingerprint": "sha256:4255db80e1e6f0234eef15049280bf30ab61eced9394e5acccda013e9ac22a10",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -247,7 +247,7 @@
     {
       "role": "context-snapshot",
       "id": "context.project-page-review.preparation-fixture",
-      "fingerprint": "sha256:f63dbc95e2df080405c8a6500596154d94bca6caa5a145c882e3e80682a8e641"
+      "fingerprint": "sha256:af40571d1340cb55b83aee986bcd379185e3f5a6da82fe8089ea01bc3dc4b49d"
     },
     {
       "role": "project-page-review-preview",
