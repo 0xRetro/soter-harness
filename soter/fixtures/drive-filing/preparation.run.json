@@ -13,9 +13,9 @@
   },
   "configurationLock": {
     "path": "soter/fixtures/drive-filing/drive-filing.lock.json",
-    "fingerprint": "sha256:26c53f3af0f9911d8f4767a0632bc5d510e1883c6372948a866699bf417a469b"
+    "fingerprint": "sha256:d7ed3051f5547c5e76e5980acb0d54ddfd990c37b2e180c89b761e25475b6a26"
   },
-  "graphFingerprint": "sha256:c842a5306e9b84eb0870bc967fef69c5d6936c6ab89f071be09183976a299789",
+  "graphFingerprint": "sha256:8888cbcafe7c6c8ed3b54b94623182199e09bcef297200e0df63b8b3dd70ed3d",
   "context": [
     {
       "subject": "crm.records",
@@ -24,7 +24,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/policies",
       "declarationFingerprint": "sha256:5dcd7b166e69d5be3bf39ed57adf225ede8a4a2bd73d0d4800b3a38981ebce8d",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:26c53f3af0f9911d8f4767a0632bc5d510e1883c6372948a866699bf417a469b",
+      "provenance": "configuration-lock:sha256:d7ed3051f5547c5e76e5980acb0d54ddfd990c37b2e180c89b761e25475b6a26",
       "freshness": "unknown"
     },
     {
@@ -64,7 +64,7 @@
       "uri": "soter-fixture://configuration-template/storage/provider/google-drive",
       "declarationFingerprint": "sha256:01a83215e98a812ba14b9b0e2013835e4165a31cbde2b54c6cdef42094b4f334",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:26c53f3af0f9911d8f4767a0632bc5d510e1883c6372948a866699bf417a469b",
+      "provenance": "configuration-lock:sha256:d7ed3051f5547c5e76e5980acb0d54ddfd990c37b2e180c89b761e25475b6a26",
       "freshness": "unknown"
     },
     {
@@ -84,7 +84,7 @@
       "uri": "soter-state://runs",
       "declarationFingerprint": "sha256:8c419343899d33fbd2ef0b1c128c9b04b32ec716905dd04ae0934b803b0b9cad",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:26c53f3af0f9911d8f4767a0632bc5d510e1883c6372948a866699bf417a469b",
+      "provenance": "configuration-lock:sha256:d7ed3051f5547c5e76e5980acb0d54ddfd990c37b2e180c89b761e25475b6a26",
       "freshness": "unknown"
     },
     {
@@ -168,7 +168,7 @@
       "capability": "storage.artifacts.read",
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.google-drive",
-      "providerVersion": "0.1.0",
+      "providerVersion": "0.2.0",
       "authorities": [
         "authority.storage.artifacts"
       ],
@@ -182,7 +182,7 @@
       "capability": "storage.files.copy",
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.google-drive",
-      "providerVersion": "0.1.0",
+      "providerVersion": "0.2.0",
       "authorities": [
         "authority.storage.artifacts"
       ],
@@ -195,7 +195,7 @@
       "capability": "storage.registry.read",
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.google-drive",
-      "providerVersion": "0.1.0",
+      "providerVersion": "0.2.0",
       "authorities": [
         "authority.storage.locations"
       ],
@@ -209,7 +209,7 @@
       "capability": "storage.shortcuts.create",
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.google-drive",
-      "providerVersion": "0.1.0",
+      "providerVersion": "0.2.0",
       "authorities": [
         "authority.storage.artifacts"
       ],
@@ -237,7 +237,7 @@
     "id": "codex",
     "adapter": "host.codex",
     "version": "0.3.1",
-    "manifestFingerprint": "sha256:845e7cecf13f9865f967d3078176bb0d4f0565b18506484b10499d5f60a26621",
+    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818",
     "projectionDefinition": {
       "id": "host-projection.codex",
       "version": "0.3.0",
@@ -293,7 +293,7 @@
     {
       "id": "context.drive-filing.preparation-fixture",
       "type": "context-snapshot",
-      "fingerprint": "sha256:d886ba0b58b42f695851a22a5ded5d102a7e2974553b7767cf30a02ed7a99ab0"
+      "fingerprint": "sha256:f8d794ab2650830c9970472501320e96b033b04fda3b4d2b9c11e1a7b91d7c42"
     }
   ],
   "effects": [

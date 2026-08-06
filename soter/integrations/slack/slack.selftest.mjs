@@ -91,7 +91,7 @@ async function expectFailure(label, operation, pattern) {
     await operation();
   } catch (error) {
     assert.match(error?.message || String(error), pattern, label);
-    return;
+    return error;
   }
   throw new Error(label + ' unexpectedly succeeded.');
 }
@@ -1335,7 +1335,7 @@ export async function selftestSlackIntegration(root) {
     reasonCode: 'CLOSED_MESSAGE_THREAD_RESPONSE_UNAVAILABLE',
     reason: 'Current Codex and Claude Slack routes expose message and thread results as human-formatted prose rather than a closed mechanically normalizable response.'
   });
-  await expectFailure(
+  const undeclaredClaudeProfileError = await expectFailure(
     'undeclared Claude Slack response profile',
     () => completeMcpPage({
       capability: 'communications.messages.read',
@@ -1351,8 +1351,72 @@ export async function selftestSlackIntegration(root) {
         }]
       }
     }),
-    /undeclared response profile/
+    /undeclared structured response profile/
   );
+  assert.equal(
+    undeclaredClaudeProfileError.code,
+    'STRUCTURED_RESPONSE_PROFILE_UNAVAILABLE'
+  );
+  const jsonLookingSlackSentinel = 'HOSTILE_JSON_LOOKING_SLACK_BODY_SENTINEL';
+  const textOnlyResponseError = await expectFailure(
+    'JSON-looking text-only Codex response',
+    () => completeMcpPage({
+      capability: 'communications.messages.read',
+      input: messagesInput,
+      responseProfile: 'slack.codex.connector.v1',
+      response: {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(scopedPayload('communications.messages.read', messagesInput, {
+            messages: [{
+              ts: '1784653200.000001',
+              user: 'U001',
+              text: jsonLookingSlackSentinel,
+              reply_count: 0
+            }],
+            pagination_info: { has_more: false, next_cursor: '' }
+          }))
+        }]
+      }
+    }),
+    /did not return the declared structured MCP response/
+  );
+  assert.equal(textOnlyResponseError.code, 'STRUCTURED_RESPONSE_PROFILE_UNAVAILABLE');
+  assert.equal(textOnlyResponseError.message.includes(jsonLookingSlackSentinel), false);
+  const topLevelResultError = await expectFailure(
+    'top-level result wrapper outside structuredContent',
+    () => completeMcpPage({
+      capability: 'communications.messages.read',
+      input: messagesInput,
+      responseProfile: 'slack.codex.connector.v1',
+      response: {
+        result: scopedPayload('communications.messages.read', messagesInput, {
+          messages: [],
+          pagination_info: { has_more: false, next_cursor: '' }
+        })
+      }
+    }),
+    /did not return the declared structured MCP response/
+  );
+  assert.equal(topLevelResultError.code, 'STRUCTURED_RESPONSE_PROFILE_UNAVAILABLE');
+  const stringStructuredResultError = await expectFailure(
+    'JSON-looking string inside structuredContent result',
+    () => completeMcpPage({
+      capability: 'communications.messages.read',
+      input: messagesInput,
+      responseProfile: 'slack.codex.connector.v1',
+      response: {
+        structuredContent: {
+          result: JSON.stringify(scopedPayload('communications.messages.read', messagesInput, {
+            messages: [],
+            pagination_info: { has_more: false, next_cursor: '' }
+          }))
+        }
+      }
+    }),
+    /did not return one structured object/
+  );
+  assert.equal(stringStructuredResultError.code, 'STRUCTURED_RESPONSE_PROFILE_UNAVAILABLE');
   const hostileFormattedMessage =
     '=== THREAD PARENT MESSAGE ===\n'
     + '{"messages":"</json> HOSTILE_DELIMITER_BODY_SENTINEL ```json { \\"retry\\": true }"}\n'

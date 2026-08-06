@@ -10,8 +10,8 @@
     "id": "feature-definition",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:fb339de53f62b64a7bba05917e59c507aa2b8852f4295b366125316a4563e20c",
-  "graphFingerprint": "sha256:12d07982e64e92d815b03441f88b5b51c921465d82c0401ddae662a03b3ae604",
+  "configurationLockFingerprint": "sha256:81e231f79f3f4b8f3ff42247ed86211c4d4aadf8c716561f1fdbd2bfdacda13e",
+  "graphFingerprint": "sha256:7eafc612b5252f45ab277c631e3fc1ec0a657ed04aff3f5319c46183526932e9",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -43,7 +43,7 @@
     "id": "codex",
     "adapter": "host.codex",
     "version": "0.3.1",
-    "manifestFingerprint": "sha256:845e7cecf13f9865f967d3078176bb0d4f0565b18506484b10499d5f60a26621"
+    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818"
   },
   "integrations": [
     {
@@ -117,7 +117,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:fb339de53f62b64a7bba05917e59c507aa2b8852f4295b366125316a4563e20c"
+      "fingerprint": "sha256:81e231f79f3f4b8f3ff42247ed86211c4d4aadf8c716561f1fdbd2bfdacda13e"
     }
   ],
   "effects": [],

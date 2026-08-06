@@ -13,9 +13,9 @@
   },
   "configurationLock": {
     "path": "soter/fixtures/project-decision-resolution/project-decision-resolution.lock.json",
-    "fingerprint": "sha256:5c5d407a6afa36acb08bee96038f13e4a85c2300b4c41145e7c8fa495e3ecd39"
+    "fingerprint": "sha256:75a3fd54e16961de63d3b7e1b46ed820cc66485659f7d11267d0db79bd135276"
   },
-  "graphFingerprint": "sha256:3ff92fc159013ed903f951991de43d3716f889d818d54510fb59a3b555ab843c",
+  "graphFingerprint": "sha256:cdaaebd0c0e9520a661c38f3f9f13b4aefd9b98ec98d45ea25655aa4c8bf38a7",
   "context": [
     {
       "subject": "notion.workspace",
@@ -24,7 +24,7 @@
       "uri": "soter-fixture://configuration-template/notion/account/operator",
       "declarationFingerprint": "sha256:e3e11d347b7a0109668facaeb7b12311023da39949d1328bfd918c53a406c756",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:5c5d407a6afa36acb08bee96038f13e4a85c2300b4c41145e7c8fa495e3ecd39",
+      "provenance": "configuration-lock:sha256:75a3fd54e16961de63d3b7e1b46ed820cc66485659f7d11267d0db79bd135276",
       "freshness": "unknown"
     },
     {
@@ -54,7 +54,7 @@
       "uri": "soter-state://runs",
       "declarationFingerprint": "sha256:8afe5da5de9d67a21267be3ba143ca970bf2a316ca513dd3146f805613c7ee46",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:5c5d407a6afa36acb08bee96038f13e4a85c2300b4c41145e7c8fa495e3ecd39",
+      "provenance": "configuration-lock:sha256:75a3fd54e16961de63d3b7e1b46ed820cc66485659f7d11267d0db79bd135276",
       "freshness": "unknown"
     }
   ],
@@ -132,7 +132,7 @@
     "id": "codex",
     "adapter": "host.codex",
     "version": "0.3.1",
-    "manifestFingerprint": "sha256:845e7cecf13f9865f967d3078176bb0d4f0565b18506484b10499d5f60a26621",
+    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818",
     "projectionDefinition": {
       "id": "host-projection.codex",
       "version": "0.3.0",
@@ -188,7 +188,7 @@
     {
       "id": "context.project-decision-resolution.missing-why-fixture",
       "type": "context-snapshot",
-      "fingerprint": "sha256:05190c6b36a4a1fb02e763eb6797d2c89a1a362fc8041bdb60c1274915e327f2"
+      "fingerprint": "sha256:7c0fdcf0e950f371567d3a59c34a7678b0e8e00e2c741f82424df921dc79902a"
     }
   ],
   "effects": [

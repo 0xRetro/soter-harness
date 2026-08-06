@@ -1,0 +1,41 @@
+{
+  "$contract": "soter://contracts/capability-provider/v1",
+  "contractVersion": "1.0.0",
+  "id": "provider.integration.google-drive.mcp",
+  "pack": "integration.google-drive",
+  "version": "0.1.0",
+  "containment": "connected",
+  "runtime": {
+    "engine": "mcp",
+    "module": "soter/integrations/google-drive/mcp.mjs",
+    "prepareExport": "prepareMcp",
+    "completeExport": "completeMcp",
+    "probePlanExport": "prepareProbePlanMcp",
+    "probeStepCompleteExport": "completeProbePlanStepMcp",
+    "probeFinalizeExport": "finalizeProbePlanMcp",
+    "responseProfiles": ["google-drive.codex.connector.v1"],
+    "server": "google-drive",
+    "tools": ["get_profile"],
+    "probeTools": ["get_profile"]
+  },
+  "capabilities": [
+    { "id": "storage.registry.read", "version": "1.0.0" },
+    { "id": "storage.artifacts.read", "version": "1.0.0" }
+  ],
+  "authorities": [
+    { "role": "definition", "subject": "storage.locations" },
+    { "role": "instance", "subject": "storage.artifacts" },
+    { "role": "provider", "subject": "google-drive.account" }
+  ],
+  "effects": ["read", "disclosure"],
+  "mappings": [],
+  "fixtures": [],
+  "limitations": [
+    "The exact direct Codex get_profile structuredContent contract supports one identity-only probe. The minimized result persists only an acknowledgment and fingerprints; account id, name, email, nickname, picture, content text, and raw provider response remain excluded.",
+    "Portable storage.registry.read and storage.artifacts.read execution fails closed with GOOGLE_DRIVE_PORTABLE_CAPABILITY_UNAVAILABLE because profile evidence establishes neither configured registry semantics nor exact normalized artifact response compatibility.",
+    "Claude connected support is unavailable because no exact structured Claude response contract is declared. The contained fixture implementation remains independently portable and does not establish connected parity.",
+    "Search and metadata tool discovery or isolated native response evidence does not establish either portable storage capability. Those tools are not emitted by this provider until a later exact governed mapping binds portable input, complete coverage, minimized output, and configured registry meaning.",
+    "File content, inline bytes, raw downloads, exports, comments, sharing, copy, shortcut, create, update, delete, dispatch, and destructive operations are excluded.",
+    "Native provider responses, file identifiers, account identifiers, local paths, credential values, and private configuration values are never persisted by this adapter."
+  ]
+}

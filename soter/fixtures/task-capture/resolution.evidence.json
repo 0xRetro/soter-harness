@@ -10,8 +10,8 @@
     "id": "task-capture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:1d8deb5f5aff847edb67c9ad646a9bb00424a0fa217f2e24989382d8e142298d",
-  "graphFingerprint": "sha256:9ab62935877597559d0df05133d7ec78e27fee159424c8ab7f62dcff424b66c7",
+  "configurationLockFingerprint": "sha256:1f8565810fee46bdff6d0d43228502cc0eac60383f19a2901753337dfd477a8b",
+  "graphFingerprint": "sha256:ae7ec1e422097c2d537078447559307f51fbc0a9d0309f5ce2629ea058982b31",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -48,7 +48,7 @@
     "id": "codex",
     "adapter": "host.codex",
     "version": "0.3.1",
-    "manifestFingerprint": "sha256:845e7cecf13f9865f967d3078176bb0d4f0565b18506484b10499d5f60a26621"
+    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818"
   },
   "integrations": [
     {
@@ -134,7 +134,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:1d8deb5f5aff847edb67c9ad646a9bb00424a0fa217f2e24989382d8e142298d"
+      "fingerprint": "sha256:1f8565810fee46bdff6d0d43228502cc0eac60383f19a2901753337dfd477a8b"
     }
   ],
   "effects": [],

@@ -51,7 +51,8 @@
   "mappings": [],
   "fixtures": [],
   "limitations": [
-    "The closed Codex response profile is a parser contract for mechanically structured payloads, not a current live-route claim. Current Codex and Claude Slack message and thread routes expose formatted prose, so Slack Conversation Review connected acquisition is unavailable and prose is never parsed.",
+    "The closed Codex response profile accepts only an MCP structuredContent object. Text content, JSON-looking prose, top-level result wrappers, and string-valued structured results fail with STRUCTURED_RESPONSE_PROFILE_UNAVAILABLE and are never parsed.",
+    "The Codex response profile is a normalization contract, not a current live-route claim. Current Codex and Claude Slack message and thread routes expose formatted prose, so Slack Conversation Review connected acquisition is unavailable.",
     "Slack Channel Ingestion uses separate conversation-identity and participant capabilities. Those live routes remain declared but unverified; this correction neither promotes nor disables them.",
     "Connected reads use a Core-checkpointed bounded cursor sequence. Only cursor-exhausted aggregates become portable capability output; page cursors remain private current-call arguments.",
     "Direct messages are modeled by the portable conversation contract but excluded by the first Slack Conversation Review Automation policy.",

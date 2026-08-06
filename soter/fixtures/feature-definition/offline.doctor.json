@@ -6,7 +6,7 @@
   "level": "offline",
   "configuration": {
     "name": "feature-definition",
-    "lockFingerprint": "sha256:fb339de53f62b64a7bba05917e59c507aa2b8852f4295b366125316a4563e20c"
+    "lockFingerprint": "sha256:81e231f79f3f4b8f3ff42247ed86211c4d4aadf8c716561f1fdbd2bfdacda13e"
   },
   "states": {
     "valid": "passed",

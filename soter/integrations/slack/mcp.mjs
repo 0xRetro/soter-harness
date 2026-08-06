@@ -5,9 +5,10 @@ function compareCodepoint(left, right) {
   return left < right ? -1 : left > right ? 1 : 0;
 }
 
-function providerError(kind, message) {
+function providerError(kind, message, code = null) {
   const error = new Error(message);
   error.kind = kind;
+  if (code) error.code = code;
   return error;
 }
 
@@ -87,7 +88,11 @@ const RESPONSE_PROFILES = new Set([CODEX_RESPONSE_PROFILE]);
 function exactResponseProfile(value) {
   const profile = value ?? CODEX_RESPONSE_PROFILE;
   if (!RESPONSE_PROFILES.has(profile)) {
-    throw providerError('validation', 'Slack returned an undeclared response profile.');
+    throw providerError(
+      'validation',
+      'Slack returned an undeclared structured response profile.',
+      'STRUCTURED_RESPONSE_PROFILE_UNAVAILABLE'
+    );
   }
   return profile;
 }
@@ -97,23 +102,22 @@ function nativePayload(response, label) {
     throw providerError('unknown', label + ' returned an error result.');
   }
   const structuredContent = response?.structuredContent;
-  let value = structuredContent?.result ?? response?.result;
-  if (value === undefined && structuredContent
-    && typeof structuredContent === 'object' && !Array.isArray(structuredContent)) {
-    value = structuredContent;
+  if (!structuredContent || typeof structuredContent !== 'object' || Array.isArray(structuredContent)) {
+    throw providerError(
+      'validation',
+      label + ' did not return the declared structured MCP response.',
+      'STRUCTURED_RESPONSE_PROFILE_UNAVAILABLE'
+    );
   }
-  if (value === undefined || value === null) {
-    value = response?.content?.find((item) => item?.type === 'text')?.text;
-  }
-  if (typeof value === 'string') {
-    try {
-      value = JSON.parse(value);
-    } catch {
-      throw providerError('validation', label + ' text result was not canonical JSON.');
-    }
-  }
+  const value = Object.hasOwn(structuredContent, 'result')
+    ? structuredContent.result
+    : structuredContent;
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw providerError('validation', label + ' did not return one structured object.');
+    throw providerError(
+      'validation',
+      label + ' did not return one structured object.',
+      'STRUCTURED_RESPONSE_PROFILE_UNAVAILABLE'
+    );
   }
   return value;
 }

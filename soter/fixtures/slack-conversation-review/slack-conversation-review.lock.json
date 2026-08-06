@@ -4,7 +4,7 @@
   "configuration": {
     "name": "slack-conversation-review",
     "path": "soter/configurations/slack-conversation-review.config.json",
-    "fingerprint": "sha256:22a6dc96f39682ca48788674fde880e1985142621d49a4b754216651866b9364",
+    "fingerprint": "sha256:d3984d7dca611b2cbf799b7b9fb34e7bab8f448bb671027e93365149a59c9904",
     "hostSelection": {
       "id": "codex",
       "source": "configuration"
@@ -18,7 +18,7 @@
     "id": "codex",
     "adapter": "host.codex",
     "version": "0.3.1",
-    "manifestFingerprint": "sha256:845e7cecf13f9865f967d3078176bb0d4f0565b18506484b10499d5f60a26621",
+    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818",
     "projectionDefinition": {
       "id": "host-projection.codex",
       "version": "0.3.0",
@@ -1300,8 +1300,8 @@
       "releaseStage": "experimental",
       "evidenceMaturity": "declared",
       "source": "binding",
-      "reason": "The selected Integration supplies provider-neutral Slack capability contracts and contained fixtures; this Automation's connected message and thread acquisition mode is unavailable.",
-      "manifestFingerprint": "sha256:af80c0e344e1425c4ed127b14170155bc55bd31a57494d288b611f37afc2840c",
+      "reason": "The selected Integration supplies provider-neutral Slack capability contracts and contained fixtures; this Automation's connected message and thread acquisition mode is unavailable because neither host exposes its required closed structuredContent response.",
+      "manifestFingerprint": "sha256:6d3b4d9eb0f9949d10057ff023a6177b2b4058d7418b21113dfcfbc246f0f06d",
       "artifacts": [
         {
           "path": "soter/capabilities/communications.conversations.list.json",
@@ -1336,7 +1336,7 @@
         {
           "path": "soter/integrations/slack/mcp.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:7c9103d1c50e3e515437d6a05658bcd810b7137f0392dafa9b47df2a612d02d8"
+          "fingerprint": "sha256:6d4e506e035ddb7f09dedb1bad9d4c4b1c9a28083cdb13b47eba2552efec008d"
         },
         {
           "path": "soter/integrations/slack/settings.json",
@@ -1346,7 +1346,7 @@
         {
           "path": "soter/integrations/slack/slack.selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:798d9a241dda648381e7f184a67a67bc16816f8234138d52aad7b0d96dd70afc"
+          "fingerprint": "sha256:d733687e6d51115d45d38b86bdafd2188209a88b6e71ff96e19eac084a768fa9"
         },
         {
           "path": "soter/providers/provider.integration.slack.fixture.json",
@@ -1356,7 +1356,7 @@
         {
           "path": "soter/providers/provider.integration.slack.mcp.json",
           "role": "implementation",
-          "fingerprint": "sha256:5635ecc195e7a426e84e98eebb783af9e08945f311ede08356ed3fbdcde9a9e3"
+          "fingerprint": "sha256:0f0901a86952b7fdb4d90ac11c282aad763e28ee2205d2a8482e5e05e6e741c6"
         }
       ]
     }
@@ -1524,7 +1524,7 @@
         "disclosure",
         "read"
       ],
-      "reason": "The capability contract owns complete bounded top-level message windows for exact selected channels; current connected Slack routes return prose and cannot execute this acquisition mode."
+      "reason": "The capability contract owns complete bounded top-level message windows for exact selected channels; current connected Slack routes return prose and fail closed with STRUCTURED_RESPONSE_PROFILE_UNAVAILABLE."
     },
     {
       "capability": "communications.records.read",
@@ -1553,7 +1553,7 @@
         "disclosure",
         "read"
       ],
-      "reason": "The capability contract owns complete bounded threads only for roots present in the selected window or explicitly selected exactly; current connected Slack routes return prose and cannot execute this acquisition mode."
+      "reason": "The capability contract owns complete bounded threads only for roots present in the selected window or explicitly selected exactly; current connected Slack routes return prose and fail closed with STRUCTURED_RESPONSE_PROFILE_UNAVAILABLE."
     }
   ],
   "sources": [
@@ -1709,5 +1709,5 @@
       "fingerprint": "sha256:59066627899aa225e2f6885b630cfaf24753ec303e86291cdad209d5187e6170"
     }
   ],
-  "graphFingerprint": "sha256:f74009290d23b3498a1e1a205eb4a4c6c58d379faeb41052673433d548b993b0"
+  "graphFingerprint": "sha256:0deab149aff7cd89c1068485ac02ded935deef04ec057eecd0ef122415b0473c"
 }

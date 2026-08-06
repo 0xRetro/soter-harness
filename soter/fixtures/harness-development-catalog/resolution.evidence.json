@@ -10,8 +10,8 @@
     "id": "harness-development-catalog",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:61b34a32c948a3192b76d9a973d5db3e0638a1c4abc96da06b221c617bc16440",
-  "graphFingerprint": "sha256:eadc6d9daa2bfed0b3b26731a9b5dfb5035ba08c960db6dcc7f848641c09f9a6",
+  "configurationLockFingerprint": "sha256:c9cd34b936dab770cd9a3ba83341465de114d337f5df1263e3fbb4ab6864e98d",
+  "graphFingerprint": "sha256:e23c7680835b97717cb18aa80b1977e2ee44a453831eee5a9bc48c0226e2370c",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -118,7 +118,7 @@
     "id": "codex",
     "adapter": "host.codex",
     "version": "0.3.1",
-    "manifestFingerprint": "sha256:845e7cecf13f9865f967d3078176bb0d4f0565b18506484b10499d5f60a26621"
+    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818"
   },
   "integrations": [],
   "authorities": [
@@ -293,7 +293,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:61b34a32c948a3192b76d9a973d5db3e0638a1c4abc96da06b221c617bc16440"
+      "fingerprint": "sha256:c9cd34b936dab770cd9a3ba83341465de114d337f5df1263e3fbb4ab6864e98d"
     }
   ],
   "effects": [],

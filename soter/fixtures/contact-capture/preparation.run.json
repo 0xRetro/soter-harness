@@ -13,9 +13,9 @@
   },
   "configurationLock": {
     "path": "soter/fixtures/contact-capture/contact-capture.lock.json",
-    "fingerprint": "sha256:b9ed5231d2cfc9dacaf83a35b19cb4bb1eca218be380f43cca917f7c2506dbf1"
+    "fingerprint": "sha256:94e6646a90129766dd533868a99b1ace234fe002e98036391f1f532eef336198"
   },
-  "graphFingerprint": "sha256:4b43d52be1ce9b0da5d71d8e2f5f43eb496a98a9f7dcaa9795325ca2fbd86226",
+  "graphFingerprint": "sha256:ceadd3ef7f32cd75c34e7803c479cb23fdbe2d8577f3e110aadc5eb0b2d05cf0",
   "context": [
     {
       "subject": "crm.records",
@@ -44,7 +44,7 @@
       "uri": "soter-fixture://configuration-template/notion/account/operator",
       "declarationFingerprint": "sha256:cdee230730b0f3c9c6ca06e6578e38324ed0b7f7da89339d7628c70061e960e1",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:b9ed5231d2cfc9dacaf83a35b19cb4bb1eca218be380f43cca917f7c2506dbf1",
+      "provenance": "configuration-lock:sha256:94e6646a90129766dd533868a99b1ace234fe002e98036391f1f532eef336198",
       "freshness": "unknown"
     },
     {
@@ -54,7 +54,7 @@
       "uri": "soter-state://runs",
       "declarationFingerprint": "sha256:460a19b01a4b563273ab8064bb14cbafcacce77a8c9e39130533ebc3bae22546",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:b9ed5231d2cfc9dacaf83a35b19cb4bb1eca218be380f43cca917f7c2506dbf1",
+      "provenance": "configuration-lock:sha256:94e6646a90129766dd533868a99b1ace234fe002e98036391f1f532eef336198",
       "freshness": "unknown"
     }
   ],
@@ -106,7 +106,7 @@
     "id": "codex",
     "adapter": "host.codex",
     "version": "0.3.1",
-    "manifestFingerprint": "sha256:845e7cecf13f9865f967d3078176bb0d4f0565b18506484b10499d5f60a26621",
+    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818",
     "projectionDefinition": {
       "id": "host-projection.codex",
       "version": "0.3.0",
@@ -162,7 +162,7 @@
     {
       "id": "context.contact-capture.preparation-fixture",
       "type": "context-snapshot",
-      "fingerprint": "sha256:56e439525ab11a1d51723e7fe0540926a61ec4221dc110a8584843f60a4af2db"
+      "fingerprint": "sha256:08a3f8932b505a84bc8379cce5d8466e37f1fedc23126f912a5724af10762272"
     }
   ],
   "effects": [

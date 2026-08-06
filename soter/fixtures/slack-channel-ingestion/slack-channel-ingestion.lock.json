@@ -4,7 +4,7 @@
   "configuration": {
     "name": "slack-channel-ingestion",
     "path": "soter/configurations/slack-channel-ingestion.config.json",
-    "fingerprint": "sha256:b96c9e4ec685e5778f46016dba5e9f9e9c2d09769ffd8b53fe17abbd6be6a57a",
+    "fingerprint": "sha256:15feea9110482e0ecaa7f339a9a90b4d022e329011bb04cfcde68299e3eca678",
     "hostSelection": {
       "id": "codex",
       "source": "configuration"
@@ -18,7 +18,7 @@
     "id": "codex",
     "adapter": "host.codex",
     "version": "0.3.1",
-    "manifestFingerprint": "sha256:845e7cecf13f9865f967d3078176bb0d4f0565b18506484b10499d5f60a26621",
+    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818",
     "projectionDefinition": {
       "id": "host-projection.codex",
       "version": "0.3.0",
@@ -1332,8 +1332,8 @@
       "releaseStage": "experimental",
       "evidenceMaturity": "declared",
       "source": "binding",
-      "reason": "The configured Slack workspace supplies bounded channel identities and selected member profiles.",
-      "manifestFingerprint": "sha256:af80c0e344e1425c4ed127b14170155bc55bd31a57494d288b611f37afc2840c",
+      "reason": "The configured Slack workspace supplies bounded channel identities and selected member profiles only through the declared structuredContent response profile; prose and wrapper drift fail closed.",
+      "manifestFingerprint": "sha256:6d3b4d9eb0f9949d10057ff023a6177b2b4058d7418b21113dfcfbc246f0f06d",
       "artifacts": [
         {
           "path": "soter/capabilities/communications.conversations.list.json",
@@ -1368,7 +1368,7 @@
         {
           "path": "soter/integrations/slack/mcp.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:7c9103d1c50e3e515437d6a05658bcd810b7137f0392dafa9b47df2a612d02d8"
+          "fingerprint": "sha256:6d4e506e035ddb7f09dedb1bad9d4c4b1c9a28083cdb13b47eba2552efec008d"
         },
         {
           "path": "soter/integrations/slack/settings.json",
@@ -1378,7 +1378,7 @@
         {
           "path": "soter/integrations/slack/slack.selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:798d9a241dda648381e7f184a67a67bc16816f8234138d52aad7b0d96dd70afc"
+          "fingerprint": "sha256:d733687e6d51115d45d38b86bdafd2188209a88b6e71ff96e19eac084a768fa9"
         },
         {
           "path": "soter/providers/provider.integration.slack.fixture.json",
@@ -1388,7 +1388,7 @@
         {
           "path": "soter/providers/provider.integration.slack.mcp.json",
           "role": "implementation",
-          "fingerprint": "sha256:5635ecc195e7a426e84e98eebb783af9e08945f311ede08356ed3fbdcde9a9e3"
+          "fingerprint": "sha256:0f0901a86952b7fdb4d90ac11c282aad763e28ee2205d2a8482e5e05e6e741c6"
         }
       ]
     }
@@ -1826,5 +1826,5 @@
       "fingerprint": "sha256:373524e0f1ec5f3a68629b8275bd26e3792075365e48fa3c8b2ed252c43d03b7"
     }
   ],
-  "graphFingerprint": "sha256:999423000f044fce1db5f3bcc36d1e0193dedcccdc692b41f65eab1343874530"
+  "graphFingerprint": "sha256:76a97674df46728999127ebbed04a766463c14314612d446833fd55ba22cc34b"
 }

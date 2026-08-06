@@ -18,7 +18,7 @@
     "id": "codex",
     "adapter": "host.codex",
     "version": "0.3.1",
-    "manifestFingerprint": "sha256:845e7cecf13f9865f967d3078176bb0d4f0565b18506484b10499d5f60a26621",
+    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818",
     "projectionDefinition": {
       "id": "host-projection.codex",
       "version": "0.3.0",
@@ -1055,13 +1055,13 @@
     },
     {
       "id": "integration.google-drive",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "layer": "integration",
       "releaseStage": "experimental",
       "evidenceMaturity": "declared",
       "source": "binding",
       "reason": "The selected contained provider supplies storage registry and artifact metadata plus fixture-only placement capability definitions.",
-      "manifestFingerprint": "sha256:13ae555e49db0a4a0beebfca838035c529e0edb1737c9c0bcc718edacade1b25",
+      "manifestFingerprint": "sha256:048c2d58b8c20c65a7b5f764c80bebc04dda7420a120d36c605e7b1755c6d335",
       "artifacts": [
         {
           "path": "soter/capabilities/storage.artifacts.read.json",
@@ -1094,9 +1094,24 @@
           "fingerprint": "sha256:24c97b80ed8701c5f9e93c1331c4dad9c735b47b2f5d3e31f4603dbad2e26765"
         },
         {
+          "path": "soter/integrations/google-drive/google-drive.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:6e8347f7b9f361f1f6b991738fc84afcd5bceb6c12f129becb9283c92feb786a"
+        },
+        {
+          "path": "soter/integrations/google-drive/mcp.mjs",
+          "role": "implementation",
+          "fingerprint": "sha256:6e5f55df41c9275ecda9e5982e3a51a06d5e229a5364c3cb18b3f2fff80d3e49"
+        },
+        {
           "path": "soter/providers/provider.integration.google-drive.fixture.json",
           "role": "implementation",
           "fingerprint": "sha256:f882773024648d8b3b2b1886659e99ff9fd230305d8fc8f58c5967403a2f8a24"
+        },
+        {
+          "path": "soter/providers/provider.integration.google-drive.mcp.json",
+          "role": "implementation",
+          "fingerprint": "sha256:d5df5123e04b0887576000105ace7dd44cf46997a682ff6dd74acc3809592c0c"
         }
       ]
     },
@@ -1409,6 +1424,13 @@
       "reason": "Core runtime contracts are governed and verified by the Soter kernel."
     },
     {
+      "from": "integration.google-drive",
+      "to": "core.runtime",
+      "version": "^0.1.0",
+      "optional": false,
+      "reason": "Connected provider resolution, private runtime state, effect policy, and evidence boundaries are supplied by Core."
+    },
+    {
       "from": "integration.notion",
       "to": "context.communications.collaboration",
       "version": "^0.1.0",
@@ -1586,7 +1608,7 @@
       "capability": "storage.artifacts.read",
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.google-drive",
-      "providerVersion": "0.1.0",
+      "providerVersion": "0.2.0",
       "authorities": [
         "authority.storage.artifacts"
       ],
@@ -1600,7 +1622,7 @@
       "capability": "storage.files.copy",
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.google-drive",
-      "providerVersion": "0.1.0",
+      "providerVersion": "0.2.0",
       "authorities": [
         "authority.storage.artifacts"
       ],
@@ -1613,7 +1635,7 @@
       "capability": "storage.registry.read",
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.google-drive",
-      "providerVersion": "0.1.0",
+      "providerVersion": "0.2.0",
       "authorities": [
         "authority.storage.locations"
       ],
@@ -1627,7 +1649,7 @@
       "capability": "storage.shortcuts.create",
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.google-drive",
-      "providerVersion": "0.1.0",
+      "providerVersion": "0.2.0",
       "authorities": [
         "authority.storage.artifacts"
       ],
@@ -1806,9 +1828,9 @@
       "mode": "0644",
       "templatePath": "soter/hosts/codex/templates/AGENTS.md.tmpl",
       "templateFingerprint": "sha256:ea286020ae95f47aa40574fbf09d7f9d7c701010c721b63431b35b865b04f6d8",
-      "contentFingerprint": "sha256:83dc18a1e2126270fcfcf869e62b7c42b70384f2acc60a4a0230dae51f3a529b",
-      "fingerprint": "sha256:01c27ff41ce60560f703fb10c970c45a662400d92f29a49af4212bf6922624ee"
+      "contentFingerprint": "sha256:367ce166409b1d4ddce3b972c8492d94005ce22fad753ec8e4939f096f7bd80a",
+      "fingerprint": "sha256:417e7449872b4a756ab7745a1b2ed708c26a8141f24a2a758980849b5cfca9cf"
     }
   ],
-  "graphFingerprint": "sha256:c842a5306e9b84eb0870bc967fef69c5d6936c6ab89f071be09183976a299789"
+  "graphFingerprint": "sha256:8888cbcafe7c6c8ed3b54b94623182199e09bcef297200e0df63b8b3dd70ed3d"
 }

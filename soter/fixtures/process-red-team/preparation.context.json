@@ -4,8 +4,8 @@
   "id": "context.process-red-team.preparation-fixture",
   "runId": "run.process-red-team.preparation-fixture",
   "createdAt": "2026-07-21T23:00:00.000Z",
-  "configurationLockFingerprint": "sha256:b3bdc5a9a6ef51deb05ef8dd8b7e483489a2e433e942fc2c1c3313abf817a466",
-  "graphFingerprint": "sha256:44639c34a7e0414f83a8a52fcca103bbbf7d423c76ac2fc990ae0b5177c7918a",
+  "configurationLockFingerprint": "sha256:a7a965977ec91f9b87721153c949446cac2074a0db8552798dacc36b5bafe30b",
+  "graphFingerprint": "sha256:9bd450d191e56540ac9dbb41a3564cd933fc532876076ac0c8c161bbbbf9fec0",
   "containment": "fixture",
   "entries": [
     {

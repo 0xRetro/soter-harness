@@ -114,6 +114,34 @@
       "reason": "The installed Gmail connector supplies authenticated message-scoped label tools outside repository configuration; declaration does not establish authentication or behavior."
     },
     {
+      "id": "google-drive",
+      "delivery": "connector",
+      "state": "declared",
+      "toolMappings": [
+        {
+          "logical": "get_profile",
+          "native": "mcp__codex_apps__google_drive_get_profile",
+          "responseProfile": "google-drive.codex.connector.v1"
+        },
+        {
+          "logical": "get_file_metadata",
+          "native": "mcp__codex_apps__google_drive_get_file_metadata",
+          "responseProfile": "google-drive.codex.connector.v1"
+        },
+        {
+          "logical": "list_folder",
+          "native": "mcp__codex_apps__google_drive_list_folder",
+          "responseProfile": "google-drive.codex.connector.v1"
+        },
+        {
+          "logical": "search",
+          "native": "mcp__codex_apps__google_drive_search",
+          "responseProfile": "google-drive.codex.connector.v1"
+        }
+      ],
+      "reason": "The Google Drive app connector supplies declared profile, metadata, bounded folder-list, and metadata-search tools outside repository configuration. Only the exact profile response is currently normalized for an identity probe; portable storage capabilities remain fail-closed."
+    },
+    {
       "id": "slack",
       "delivery": "connector",
       "state": "declared",

@@ -8,7 +8,7 @@
     { "id": "context.communications.collaboration", "source": "dependency", "reason": "Collaboration Context owns portable workspaces, channels, participants, channel-directory records, duplicates, and ingestion policy." },
     { "id": "context.crm", "source": "dependency", "reason": "CRM owns only optional exact Person and Organization identities linked after explicit participant review." },
     { "id": "automation.slack-channel-ingestion", "source": "user", "reason": "The user selected staged Slack channel identity review and exact selected-channel enrichment." },
-    { "id": "integration.slack", "source": "binding", "reason": "The configured Slack workspace supplies bounded channel identities and selected member profiles." },
+    { "id": "integration.slack", "source": "binding", "reason": "The configured Slack workspace supplies bounded channel identities and selected member profiles only through the declared structuredContent response profile; prose and wrapper drift fail closed." },
     { "id": "integration.notion", "source": "binding", "reason": "The configured CRM supplies policy, schema, channel, contact, organization, and eventual channel write capabilities." }
   ],
   "bindings": [

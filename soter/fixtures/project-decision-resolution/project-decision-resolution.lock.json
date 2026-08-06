@@ -18,7 +18,7 @@
     "id": "codex",
     "adapter": "host.codex",
     "version": "0.3.1",
-    "manifestFingerprint": "sha256:845e7cecf13f9865f967d3078176bb0d4f0565b18506484b10499d5f60a26621",
+    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818",
     "projectionDefinition": {
       "id": "host-projection.codex",
       "version": "0.3.0",
@@ -1555,5 +1555,5 @@
       "fingerprint": "sha256:bc258466120b39c7373dc0e9c939d94d8cc726c2c5ac0fc0ea6110b7cfb7e3fc"
     }
   ],
-  "graphFingerprint": "sha256:3ff92fc159013ed903f951991de43d3716f889d818d54510fb59a3b555ab843c"
+  "graphFingerprint": "sha256:cdaaebd0c0e9520a661c38f3f9f13b4aefd9b98ec98d45ea25655aa4c8bf38a7"
 }

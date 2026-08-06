@@ -10,8 +10,8 @@
     "id": "drive-filing",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:26c53f3af0f9911d8f4767a0632bc5d510e1883c6372948a866699bf417a469b",
-  "graphFingerprint": "sha256:c842a5306e9b84eb0870bc967fef69c5d6936c6ab89f071be09183976a299789",
+  "configurationLockFingerprint": "sha256:d7ed3051f5547c5e76e5980acb0d54ddfd990c37b2e180c89b761e25475b6a26",
+  "graphFingerprint": "sha256:8888cbcafe7c6c8ed3b54b94623182199e09bcef297200e0df63b8b3dd70ed3d",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -45,8 +45,8 @@
     },
     {
       "id": "integration.google-drive",
-      "version": "0.1.0",
-      "fingerprint": "sha256:13ae555e49db0a4a0beebfca838035c529e0edb1737c9c0bcc718edacade1b25"
+      "version": "0.2.0",
+      "fingerprint": "sha256:048c2d58b8c20c65a7b5f764c80bebc04dda7420a120d36c605e7b1755c6d335"
     },
     {
       "id": "integration.notion",
@@ -63,13 +63,13 @@
     "id": "codex",
     "adapter": "host.codex",
     "version": "0.3.1",
-    "manifestFingerprint": "sha256:845e7cecf13f9865f967d3078176bb0d4f0565b18506484b10499d5f60a26621"
+    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818"
   },
   "integrations": [
     {
       "id": "integration.google-drive",
-      "version": "0.1.0",
-      "manifestFingerprint": "sha256:13ae555e49db0a4a0beebfca838035c529e0edb1737c9c0bcc718edacade1b25",
+      "version": "0.2.0",
+      "manifestFingerprint": "sha256:048c2d58b8c20c65a7b5f764c80bebc04dda7420a120d36c605e7b1755c6d335",
       "evidenceMaturity": "declared"
     },
     {
@@ -179,7 +179,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:26c53f3af0f9911d8f4767a0632bc5d510e1883c6372948a866699bf417a469b"
+      "fingerprint": "sha256:d7ed3051f5547c5e76e5980acb0d54ddfd990c37b2e180c89b761e25475b6a26"
     }
   ],
   "effects": [],

@@ -10,8 +10,8 @@
     "id": "run.contact-capture.preparation-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:b9ed5231d2cfc9dacaf83a35b19cb4bb1eca218be380f43cca917f7c2506dbf1",
-  "graphFingerprint": "sha256:4b43d52be1ce9b0da5d71d8e2f5f43eb496a98a9f7dcaa9795325ca2fbd86226",
+  "configurationLockFingerprint": "sha256:94e6646a90129766dd533868a99b1ace234fe002e98036391f1f532eef336198",
+  "graphFingerprint": "sha256:ceadd3ef7f32cd75c34e7803c479cb23fdbe2d8577f3e110aadc5eb0b2d05cf0",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -43,7 +43,7 @@
     "id": "codex",
     "adapter": "host.codex",
     "version": "0.3.1",
-    "manifestFingerprint": "sha256:845e7cecf13f9865f967d3078176bb0d4f0565b18506484b10499d5f60a26621"
+    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818"
   },
   "integrations": [
     {
@@ -244,7 +244,7 @@
     {
       "role": "context-snapshot",
       "id": "context.contact-capture.preparation-fixture",
-      "fingerprint": "sha256:56e439525ab11a1d51723e7fe0540926a61ec4221dc110a8584843f60a4af2db"
+      "fingerprint": "sha256:08a3f8932b505a84bc8379cce5d8466e37f1fedc23126f912a5724af10762272"
     },
     {
       "role": "contact-create-preview",

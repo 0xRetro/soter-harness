@@ -55,7 +55,7 @@
       {
         "id": "claude",
         "reasonCode": "STRUCTURED_RESPONSE_PROFILE_UNAVAILABLE",
-        "reason": "The declared Claude Slack route does not expose closed mechanically normalizable provider response profiles."
+        "reason": "The declared Claude Slack route does not expose the closed structuredContent response profile required for mechanical normalization; formatted text and JSON-looking prose are never parsed."
       }
     ]
   },

@@ -22,7 +22,7 @@
     {
       "id": "integration.slack",
       "source": "binding",
-      "reason": "The selected Integration supplies provider-neutral Slack capability contracts and contained fixtures; this Automation's connected message and thread acquisition mode is unavailable."
+      "reason": "The selected Integration supplies provider-neutral Slack capability contracts and contained fixtures; this Automation's connected message and thread acquisition mode is unavailable because neither host exposes its required closed structuredContent response."
     },
     {
       "id": "integration.notion",
@@ -50,14 +50,14 @@
       "providerPack": "integration.slack",
       "authorities": ["authority.slack.instance"],
       "secretRef": "secret-ref.slack",
-      "reason": "The capability contract owns complete bounded top-level message windows for exact selected channels; current connected Slack routes return prose and cannot execute this acquisition mode."
+      "reason": "The capability contract owns complete bounded top-level message windows for exact selected channels; current connected Slack routes return prose and fail closed with STRUCTURED_RESPONSE_PROFILE_UNAVAILABLE."
     },
     {
       "capability": "communications.thread.read",
       "providerPack": "integration.slack",
       "authorities": ["authority.slack.instance"],
       "secretRef": "secret-ref.slack",
-      "reason": "The capability contract owns complete bounded threads only for roots present in the selected window or explicitly selected exactly; current connected Slack routes return prose and cannot execute this acquisition mode."
+      "reason": "The capability contract owns complete bounded threads only for roots present in the selected window or explicitly selected exactly; current connected Slack routes return prose and fail closed with STRUCTURED_RESPONSE_PROFILE_UNAVAILABLE."
     }
   ],
   "sources": [

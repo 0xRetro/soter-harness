@@ -10,8 +10,8 @@
     "id": "run.slack-conversation-review.preparation-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:67943363f456ea4611920d0e26126a4ed771f237115392df85969086424503c5",
-  "graphFingerprint": "sha256:f74009290d23b3498a1e1a205eb4a4c6c58d379faeb41052673433d548b993b0",
+  "configurationLockFingerprint": "sha256:f851da85af37df4916444452991f286eba36168516ad7964295544f895ac3111",
+  "graphFingerprint": "sha256:0deab149aff7cd89c1068485ac02ded935deef04ec057eecd0ef122415b0473c",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -46,14 +46,14 @@
     {
       "id": "integration.slack",
       "version": "0.1.0",
-      "fingerprint": "sha256:af80c0e344e1425c4ed127b14170155bc55bd31a57494d288b611f37afc2840c"
+      "fingerprint": "sha256:6d3b4d9eb0f9949d10057ff023a6177b2b4058d7418b21113dfcfbc246f0f06d"
     }
   ],
   "host": {
     "id": "codex",
     "adapter": "host.codex",
     "version": "0.3.1",
-    "manifestFingerprint": "sha256:845e7cecf13f9865f967d3078176bb0d4f0565b18506484b10499d5f60a26621"
+    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818"
   },
   "integrations": [
     {
@@ -65,7 +65,7 @@
     {
       "id": "integration.slack",
       "version": "0.1.0",
-      "manifestFingerprint": "sha256:af80c0e344e1425c4ed127b14170155bc55bd31a57494d288b611f37afc2840c",
+      "manifestFingerprint": "sha256:6d3b4d9eb0f9949d10057ff023a6177b2b4058d7418b21113dfcfbc246f0f06d",
       "evidenceMaturity": "declared"
     }
   ],
@@ -265,7 +265,7 @@
     {
       "role": "context-snapshot",
       "id": "context.slack-conversation-review.preparation-fixture",
-      "fingerprint": "sha256:f087c77921ac054a5a9e6af8af72cdd3ca76b917c662e76080a7506951f85ba5"
+      "fingerprint": "sha256:186425f9f4163444ada9a44c7534655fa051d11b4c4642c9be276b6d84ace2ad"
     },
     {
       "role": "slack-conversation-review-preview",
