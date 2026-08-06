@@ -107,6 +107,98 @@ const TARGET_MATERIAL_LIMITATIONS = Object.freeze([
 const ABSOLUTE_PATH_RE = /(?:^|[\s"'(=])(?:file:\/\/|[A-Za-z]:[\\/]|\/\/[^\s/]+[\\/]|\/(?=$|[),;.!?"'])|\/(?![\/\s])[^\/\s]+)/iu;
 const RAW_DIFF_RE = /(?:^|\n)(?:diff --git\s|@@\s+-[0-9])/;
 
+function sourceExecutableOffsets(content) {
+  const executable = new Uint8Array(content.length);
+  const stack = [{ type: 'code', templateExpression: false, braceDepth: 0 }];
+  let index = 0;
+  while (index < content.length) {
+    const context = stack[stack.length - 1];
+    const character = content[index];
+    const next = content[index + 1];
+    if (context.type === 'line-comment') {
+      if (character === '\n' || character === '\r') {
+        stack.pop();
+        continue;
+      }
+      index += 1;
+      continue;
+    }
+    if (context.type === 'block-comment') {
+      if (character === '*' && next === '/') {
+        index += 2;
+        stack.pop();
+        continue;
+      }
+      index += 1;
+      continue;
+    }
+    if (context.type === 'single-quote' || context.type === 'double-quote') {
+      if (character === '\\') {
+        index += Math.min(2, content.length - index);
+        continue;
+      }
+      if ((context.type === 'single-quote' && character === "'")
+        || (context.type === 'double-quote' && character === '"')) {
+        stack.pop();
+      }
+      index += 1;
+      continue;
+    }
+    if (context.type === 'template') {
+      if (character === '\\') {
+        index += Math.min(2, content.length - index);
+        continue;
+      }
+      if (character === '`') {
+        stack.pop();
+        index += 1;
+        continue;
+      }
+      if (character === '$' && next === '{') {
+        stack.push({ type: 'code', templateExpression: true, braceDepth: 1 });
+        index += 2;
+        continue;
+      }
+      index += 1;
+      continue;
+    }
+
+    if (character === '/' && next === '/') {
+      stack.push({ type: 'line-comment' });
+      index += 2;
+      continue;
+    }
+    if (character === '/' && next === '*') {
+      stack.push({ type: 'block-comment' });
+      index += 2;
+      continue;
+    }
+    executable[index] = 1;
+    if (character === "'") {
+      stack.push({ type: 'single-quote' });
+    } else if (character === '"') {
+      stack.push({ type: 'double-quote' });
+    } else if (character === '`') {
+      stack.push({ type: 'template' });
+    } else if (context.templateExpression && character === '{') {
+      context.braceDepth += 1;
+    } else if (context.templateExpression && character === '}') {
+      context.braceDepth -= 1;
+      if (context.braceDepth === 0) stack.pop();
+    }
+    index += 1;
+  }
+  return executable;
+}
+
+function sourceCredentialKeyIsExecutable(content, match, executable) {
+  const keyOffset = match.index + match[0].indexOf(match[1]);
+  if (executable[keyOffset] === 1) return true;
+  const preceding = content[keyOffset - 1];
+  return (preceding === '"' || preceding === "'")
+    && executable[keyOffset - 1] === 1;
+}
+
 function chunkUtf8Text(content) {
   if (content.length === 0) return [''];
   const chunks = [];
@@ -127,7 +219,11 @@ function chunkUtf8Text(content) {
 }
 
 function containsCredentialAssignment(content, { sourceCode = false } = {}) {
+  const executable = sourceCode ? sourceExecutableOffsets(content) : null;
   for (const match of content.matchAll(CREDENTIAL_ASSIGNMENT_RE)) {
+    if (sourceCode && !sourceCredentialKeyIsExecutable(content, match, executable)) {
+      continue;
+    }
     const normalizedKey = match[1].toLowerCase().replace(/[^a-z0-9]/g, '');
     if (CREDENTIAL_KEY_SUFFIX_RE.test(normalizedKey)
       || CREDENTIAL_CONNECTION_KEY_RE.test(normalizedKey)) {
