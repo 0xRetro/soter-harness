@@ -737,10 +737,10 @@ export function hostRealizationInspectionFixture(stage: 'plan' | 'request' | 're
   const recoverable = stage === 'recoverable';
   const needsAttention = stage === 'needs-attention';
   const applicability = completed ? 'applied' : stage === 'stale' ? 'stale' : stage === 'expired' ? 'expired' : 'current';
-  const resume = completed
+  const resume: HostRealizationInspection['resume'] = completed
     ? { classification: 'unavailable' as const, reasonCode: 'HOST_REALIZATION_COMPLETED', reason: 'The exact deterministic local projection is complete.', permittedNextAction: 'none' as const }
     : needsAttention
-      ? { classification: 'requires-review' as const, reasonCode: 'HOST_REALIZATION_OUTPUT_DRIFT', reason: 'Checkpoint state requires exact local inspection before any further action.', permittedNextAction: 'inspect-checkpoint' as const }
+      ? { classification: 'requires-review' as const, reasonCode: 'HOST_REALIZATION_NEEDS_ATTENTION', reason: 'Checkpoint state requires exact local inspection before any further action.', permittedNextAction: 'inspect-checkpoint' as const }
       : recoverable
         ? { classification: 'safe' as const, reasonCode: 'HOST_REALIZATION_CHECKPOINT_RECOVERABLE', reason: 'The exact checkpoint may continue through Core recovery.', permittedNextAction: 'recover-checkpoint' as const }
         : started
@@ -755,15 +755,38 @@ export function hostRealizationInspectionFixture(stage: 'plan' | 'request' | 're
                 ? { classification: 'safe' as const, reasonCode: 'HOST_REALIZATION_PLAN_CURRENT', reason: 'The exact private plan is current and may request confirmation.', permittedNextAction: 'request-confirmation' as const }
                 : { classification: 'unavailable' as const, reasonCode: applicability === 'expired' ? 'HOST_REALIZATION_PLAN_EXPIRED' : 'HOST_REALIZATION_PLAN_STALE', reason: 'The private host realization plan is no longer current.', permittedNextAction: 'replan' as const };
   const outputs = [
-    { id: 'output.instructions', sequence: 0, path: 'AGENTS.md', role: 'instructions' as const, action: 'create' as const, mode: '0644', beforeFingerprint: null, afterFingerprint: fp('c') },
-    { id: 'output.configuration', sequence: 1, path: '.codex/config.toml', role: 'configuration' as const, action: 'replace' as const, mode: '0644', beforeFingerprint: fp('d'), afterFingerprint: fp('e') },
+    { id: 'output.instructions', sequence: 0, path: 'AGENTS.md', role: 'instructions' as const, action: 'create' as const, mode: '0644' as const, beforeFingerprint: null, afterFingerprint: fp('c') },
+    { id: 'output.configuration', sequence: 1, path: '.codex/config.toml', role: 'configuration' as const, action: 'replace' as const, mode: '0644' as const, beforeFingerprint: fp('d'), afterFingerprint: fp('e') },
     { id: 'output.obsolete-tools', sequence: 2, path: '.codex/obsolete-tools.json', role: 'tools' as const, action: 'remove' as const, mode: null, beforeFingerprint: fp('f'), afterFingerprint: null }
   ];
-  return {
+  const planReference = { id: 'host-realization-plan.meeting-intake.ui-test', fingerprint: fp('1') };
+  const requestReference = { id: 'host-realization-request.meeting-intake.ui-test', fingerprint: fp('8') };
+  const confirmationReference = { id: 'host-realization-confirmation.meeting-intake.ui-test', fingerprint: fp('9') };
+  const consumptionId = 'host-realization-consumption.meeting-intake.ui-test';
+  const checkpointId = 'checkpoint.host-realization.meeting-intake.ui-test';
+  const scopeFingerprint = fingerprintJson(outputs);
+  const reservationFingerprint = fingerprintJson({
+    id: consumptionId,
+    confirmation: confirmationReference,
+    request: requestReference,
+    plan: planReference,
+    checkpointId
+  });
+  const configuration = { name: 'meeting-intake', lockFingerprint: fp('5'), graphFingerprint: fp('6') };
+  const authorityFingerprint = fingerprintJson({
+    plan: planReference,
+    request: requestReference,
+    confirmation: confirmationReference,
+    consumption: { id: consumptionId, fingerprint: reservationFingerprint },
+    targetFingerprint: fp('2'),
+    configuration,
+    outputs: outputs.map(({ id, sequence, path, action }) => ({ id, sequence, path, action }))
+  });
+  const inspection: HostRealizationInspection = {
     $contract: 'soter://contracts/host-realization-inspection/v1',
     contractVersion: '1.0.0',
     plan: {
-      id: 'host-realization-plan.meeting-intake.ui-test', fingerprint: fp('1'),
+      ...planReference,
       createdAt: '2026-07-16T16:00:00.000Z', validUntil: '2026-07-16T16:20:00.000Z', applicability
     },
     target: { fingerprint: fp('2') },
@@ -772,22 +795,31 @@ export function hostRealizationInspectionFixture(stage: 'plan' | 'request' | 're
       definition: { id: 'host-projection.codex', version: '0.3.0', fingerprint: fp('3') },
       generator: { id: 'core.host-projection-generator', version: '2.1.0', fingerprint: fp('4') }
     },
-    configuration: { name: 'meeting-intake', lockFingerprint: fp('5'), graphFingerprint: fp('6') },
-    scope: { fingerprint: fp('7'), outputs },
+    configuration,
+    scope: { fingerprint: scopeFingerprint, outputs },
     request: requested ? {
-      id: 'host-realization-request.meeting-intake.ui-test', fingerprint: fp('8'),
-      state: stage === 'request-expired' ? 'expired' : 'current', at: '2026-07-16T16:08:00.000Z'
+      ...requestReference,
+      plan: planReference,
+      scopeFingerprint,
+      state: stage === 'request-expired' ? 'expired' : 'current',
+      createdAt: '2026-07-16T16:01:00.000Z', expiresAt: '2026-07-16T16:08:00.000Z'
     } : null,
     confirmation: confirmed ? {
-      id: 'host-realization-confirmation.meeting-intake.ui-test', fingerprint: fp('9'),
-      state: 'confirmed', at: '2026-07-16T16:02:00.000Z', actor: 'local-studio-operator'
+      ...confirmationReference,
+      request: requestReference,
+      state: 'confirmed', confirmedAt: '2026-07-16T16:02:00.000Z', actor: 'local-studio-operator'
     } : null,
     consumption: started ? {
-      id: 'host-realization-consumption.meeting-intake.ui-test', fingerprint: fp('a'),
-      state: 'started', at: '2026-07-16T16:03:00.000Z'
+      id: consumptionId, fingerprint: fp('a'),
+      confirmation: confirmationReference,
+      checkpointId,
+      reservationFingerprint,
+      checkpointFingerprint: authorityFingerprint,
+      state: 'started', createdAt: '2026-07-16T16:03:00.000Z', updatedAt: '2026-07-16T16:03:00.000Z'
     } : null,
     checkpoint: started ? {
-      id: 'checkpoint.host-realization.meeting-intake.ui-test', fingerprint: fp('b'),
+      id: checkpointId, fingerprint: fp('b'),
+      authorityFingerprint,
       state: completed ? 'completed' : needsAttention ? 'needs-attention' : recoverable ? 'applying' : 'prepared',
       phase: completed || needsAttention ? 'terminal' : recoverable ? 'outputs' : 'prepared',
       currentOutputId: recoverable ? outputs[1].id : null,
@@ -796,15 +828,30 @@ export function hostRealizationInspectionFixture(stage: 'plan' | 'request' | 're
         sequence: output.sequence,
         state: completed ? 'verified' as const : recoverable && output.sequence === 0 ? 'applied' as const : 'pending' as const
       })),
-      failure: needsAttention ? { reasonCode: 'HOST_REALIZATION_OUTPUT_DRIFT', summary: 'Managed output does not match the exact prior or candidate fingerprint.' } : null
+      failure: needsAttention ? { reasonCode: 'HOST_REALIZATION_OUTPUT_DRIFT', summary: 'Managed output is neither its exact prior state nor exact candidate.' } : null
     } : null,
     resume,
     claims: {
       localProjection: completed ? 'passed' : 'unknown', hostLaunch: 'unknown', toolDiscovery: 'unknown',
       authentication: 'unknown', providerReachability: 'unknown', connectedBehavior: 'unknown', health: 'unknown'
     },
-    inspectionFingerprint: fp('0')
+    authority: {
+      kind: 'inspection-only', grantsExecution: false, grantsApproval: false,
+      grantsHostRealization: false, grantsProviderRead: false, grantsProviderWrite: false
+    },
+    privacy: {
+      consumerRootIncluded: false, absolutePathsIncluded: false, managedRelativePathsIncluded: true,
+      confirmationActorIdIncluded: true,
+      templateBytesIncluded: false, priorBytesIncluded: false, candidateBytesIncluded: false,
+      rawManagedManifestIncluded: false, privateConfigurationValuesIncluded: false,
+      privateStateIncluded: false, credentialValuesIncluded: false, rawProviderResponsesIncluded: false
+    },
+    inspectionFingerprint: ''
   };
+  const unsigned = structuredClone(inspection);
+  delete (unsigned as Partial<HostRealizationInspection>).inspectionFingerprint;
+  inspection.inspectionFingerprint = fingerprintJson(unsigned);
+  return inspection;
 }
 
 function projectPulseFixtureBundle() {

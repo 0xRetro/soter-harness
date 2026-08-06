@@ -60,6 +60,11 @@ export function normalizeProjectionPath(value) {
     || value === '.' || value === '..' || value.startsWith('../') || value.includes('/../')) {
     fail('HOST_PROJECTION_PATH_INVALID', 'Host projection paths must be normalized relative paths.');
   }
+  const folded = value.toLowerCase();
+  if (folded === '.git' || folded.startsWith('.git/')
+    || folded === '.soter/state' || folded.startsWith('.soter/state/')) {
+    fail('HOST_PROJECTION_PATH_INVALID', 'Host projection paths cannot target protected local namespaces.');
+  }
   return value;
 }
 

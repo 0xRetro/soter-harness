@@ -279,7 +279,7 @@
         {
           "path": "soter/contracts/host-realization-inspection.schema.json",
           "role": "definition",
-          "fingerprint": "sha256:2d0786e3f149019a59993a6573b6dc6765dd3f6b572eb1bad1f470285ad95129"
+          "fingerprint": "sha256:9986f777fd434be231b1b763dc33e0c6c169d1d6dc33483103fa82491555caf0"
         },
         {
           "path": "soter/contracts/host-realization-plan.schema.json",
@@ -736,17 +736,17 @@
         {
           "path": "soter/core/host-projections.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:1364ddece6ce849def3ae705ebd7aa4094ac27860b1fff3a11c285c369efc6ce"
+          "fingerprint": "sha256:4297f934192b5afce64508d256df761e23cd460e10efc00458e6877622b0ed6d"
         },
         {
           "path": "soter/core/host-realizations.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:f9ba056b217a398698d89c762bacf434514bd2b21aed8e0f028284a7a78f4a7d"
+          "fingerprint": "sha256:79fef4d1a9cefcad1d7c86d79a0cbdb65e749250a2a0199f3ed1cda4a8fa2548"
         },
         {
           "path": "soter/core/host-realizations.selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:97e35aa69a6b31b4061a90488e768b52b78b90f3dc04257d9e55385651e256f8"
+          "fingerprint": "sha256:927d5e1ab97bc587a958d6862529d7ded004d268bfc937daeee4c63e7fa28d6e"
         },
         {
           "path": "soter/core/host-runtime-inspection.mjs",
@@ -1660,5 +1660,5 @@
       "fingerprint": "sha256:a36e30c960fbcaff0de27a486006a3adcc2dc86dc4cac63ccbc1dd8c040ce360"
     }
   ],
-  "graphFingerprint": "sha256:1b2ebd0e1843bd89508eef64b88a1c8c23ed26b45ffa504ad91e29f5a2cf3adc"
+  "graphFingerprint": "sha256:2a51068945ddc460d5bb94e25a3caf293c78fe2223ed0e10f012e52979bda6ec"
 }

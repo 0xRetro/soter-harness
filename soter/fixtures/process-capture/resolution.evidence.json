@@ -10,8 +10,8 @@
     "id": "process-capture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:c51adcf0e634c75f70eeef462172e7b278addb3890af62cd200a61f4ed638f75",
-  "graphFingerprint": "sha256:c523b0634230a7350c16d93435d4728af048f80d5888df7202594128e12c5aa6",
+  "configurationLockFingerprint": "sha256:e3567695bde1d772da5237967f4251990da6b84fb05682909ae59e3ef6968791",
+  "graphFingerprint": "sha256:6daabaa0124784abe664eaa1130ff25ab1bebaa42fa41c62e6d9a1f1d12dfe38",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -117,7 +117,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:c51adcf0e634c75f70eeef462172e7b278addb3890af62cd200a61f4ed638f75"
+      "fingerprint": "sha256:e3567695bde1d772da5237967f4251990da6b84fb05682909ae59e3ef6968791"
     }
   ],
   "effects": [],

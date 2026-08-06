@@ -767,9 +767,44 @@ The local authority chain is:
   needs-attention state;
 - `host-managed-manifest/v1` is private ownership state, not a shareable lock;
   and
-- `host-realization-inspection/v1` exposes only stable identifiers, relative
-  paths, fingerprints, lifecycle facts, reason codes, and derived next-action
-  guidance. It cannot represent the consumer-root path or file contents.
+- `host-realization-inspection/v1` exposes only stable identifiers, normalized
+  relative managed paths, closed modes, fingerprints, lifecycle facts, reason
+  codes, and derived next-action guidance. Its request carries the exact plan
+  and scope references plus explicit creation/expiry instants, confirmation
+  carries the exact request reference and confirmation instant, consumption
+  carries the exact confirmation/checkpoint reservation facts plus explicit
+  creation/update instants, and checkpoint carries the authority fingerprint.
+  Core recomputes the scope,
+  reservation, and checkpoint authority fingerprints and requires exact
+  checkpoint/scope output identity and sequence parity before returning the
+  projection. JSON Schema closes the
+  shapes and lifecycle branches; cross-field equality remains a Core semantic
+  check. The inspection fingerprint is a content seal, not a signature, trust
+  assertion, or execution authority.
+
+The inspection's required `authority` is always `kind=inspection-only` with
+execution, approval, host-realization, provider-read, and provider-write grants
+all `false`. Its required `privacy` facts withhold the consumer root, absolute
+paths, template/prior/candidate bytes, raw managed manifest, private
+configuration values, private state, credential values, and raw provider
+responses. They explicitly declare that normalized managed relative paths and
+the constrained local confirmation actor identifier are included; the actor
+identifier is not authenticated identity or raw confirmation state. Such paths are
+at most 300 characters, contain only the closed portable segment vocabulary,
+and cannot contain absolute, backslash, `.` or `..` traversal forms or target
+the protected `.git/**` and `.soter/state/**` namespaces. Core also rejects
+credential material or absolute local paths anywhere in the sanitized
+inspection. Create and
+replace rows have mode `0644`; remove rows have mode `null`, with before/after
+fingerprint presence fixed by the action branch.
+
+Checkpoint failure retains the specific stable blocker reason code, but its
+summary is one of the contract's fixed sanitized host-realization summaries.
+For `needs-attention`, the separate resume projection always uses
+`HOST_REALIZATION_NEEDS_ATTENTION` with `requires-review` and
+`inspect-checkpoint`; it never copies the specific checkpoint failure code into
+resume guidance. Neither the fixed summary nor the resume classification grants
+recovery or file effects.
 
 Version 1 supports whole-file ownership only. An existing output without an
 exact manifest is a collision; an orphan written before manifest commit is

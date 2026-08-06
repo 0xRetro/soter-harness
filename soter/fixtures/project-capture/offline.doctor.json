@@ -6,7 +6,7 @@
   "level": "offline",
   "configuration": {
     "name": "project-capture",
-    "lockFingerprint": "sha256:a294632496281f27c6c0387304a45a5ca3575a457ff7c8b5105e4e1947254182"
+    "lockFingerprint": "sha256:5d31604c30541e2c2f71522021e77bfb5809154da2fe59cceefbe3d00c6bdc52"
   },
   "states": {
     "valid": "passed",

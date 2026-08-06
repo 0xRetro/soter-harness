@@ -1098,11 +1098,37 @@ Generated skills are managed host outputs. They are never inputs to generation
 and never become canonical definitions.
 
 `host-realization-inspection/v1` is the general UI/CLI projection. It contains
-relative paths, fingerprints, lifecycle facts, stable reason codes, and derived
-next-action guidance, never the private consumer-root path or file contents.
-`localProjection=passed` proves only deterministic local bytes and modes. Host
-launch, discovery, authentication, provider reachability, connected behavior,
-and health stay `unknown`.
+normalized managed relative paths, closed action/mode branches, fingerprints,
+lifecycle facts, stable reason codes, and derived next-action guidance, never
+the private consumer-root path or file contents. Sanitized request, confirmation,
+consumption, and checkpoint binding facts use explicit creation, expiry,
+confirmation, and consumption instants and let Core recompute the scope,
+reservation, and checkpoint authority fingerprints and require exact
+scope/checkpoint output identity and sequence parity before returning the
+projection. JSON Schema closes the shapes;
+dynamic equality remains a Core semantic check, and `inspectionFingerprint` is
+a content seal rather than a signature or independent authority.
+
+The required inspection `authority` grants no execution, approval, host
+realization, provider read, or provider write. Its required `privacy` block says
+that managed relative paths are included while the consumer root, absolute
+paths, template/prior/candidate bytes, raw manifest, private configuration
+values, private state, credentials, and raw provider responses are not. It also
+declares `confirmationActorIdIncluded=true` for the constrained local actor ID
+shown in the lifecycle; that value is not authenticated identity or raw private
+confirmation state. Paths
+are at most 300 characters and reject absolute, backslash, traversal, `.git/**`,
+and `.soter/state/**` forms; Core also rejects credential material or absolute
+local paths anywhere in the sanitized inspection. Create/replace rows are mode
+`0644`, while remove rows are mode `null`. `localProjection=passed` is valid
+only for an exact completed checkpoint.
+Checkpoint failure keeps the specific stable blocker with a fixed sanitized
+summary. The separate `needs-attention` resume classification always uses
+`HOST_REALIZATION_NEEDS_ATTENTION` and `inspect-checkpoint`; it does not repeat
+the checkpoint failure reason or grant recovery. `localProjection=passed` proves
+only deterministic local bytes and modes. Host launch, discovery,
+authentication, provider reachability, connected behavior, and health stay
+`unknown`.
 
 The Harness Development Catalog selects seven governed workflows: Running
 Evals, Forge, Reviewing Forge Output, Promoting Pieces, Auditing a Schema,

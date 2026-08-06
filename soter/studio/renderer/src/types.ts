@@ -1248,6 +1248,31 @@ export interface ConfigurationChangeReferences {
   checkpointId?: string;
 }
 
+export type HostRealizationFailureSummary =
+  | 'Host realization stopped and attempted exact rollback.'
+  | 'Automatic host realization rollback could not establish exact prior state.'
+  | 'Managed manifest is neither the exact prior state nor the exact checkpoint candidate.'
+  | 'Managed output is neither its exact prior state nor exact candidate.'
+  | 'Expired host realization checkpoint was rolled back instead of resumed.'
+  | 'Host realization recovery could not establish one exact checkpoint state.';
+
+export type HostRealizationResume =
+  | { classification: 'unavailable'; reasonCode: 'HOST_REALIZATION_COMPLETED'; reason: 'The exact deterministic local projection is complete.'; permittedNextAction: 'none' }
+  | { classification: 'unavailable'; reasonCode: 'HOST_REALIZATION_ROLLED_BACK'; reason: 'The exact host realization checkpoint was rolled back and is terminal.'; permittedNextAction: 'none' }
+  | { classification: 'requires-review'; reasonCode: 'HOST_REALIZATION_NEEDS_ATTENTION'; reason: 'Checkpoint state requires exact local inspection before any further action.'; permittedNextAction: 'inspect-checkpoint' }
+  | { classification: 'safe'; reasonCode: 'HOST_REALIZATION_CHECKPOINT_READY'; reason: 'The one-time start is bound to an exact prepared checkpoint.'; permittedNextAction: 'execute-checkpoint' }
+  | { classification: 'requires-review'; reasonCode: 'HOST_REALIZATION_CHECKPOINT_REVIEW_REQUIRED'; reason: 'The prepared checkpoint must be inspected because its plan is no longer current.'; permittedNextAction: 'inspect-checkpoint' }
+  | { classification: 'safe'; reasonCode: 'HOST_REALIZATION_CHECKPOINT_RECOVERABLE'; reason: 'The exact checkpoint may continue through Core recovery.'; permittedNextAction: 'recover-checkpoint' }
+  | { classification: 'requires-review'; reasonCode: 'HOST_REALIZATION_CHECKPOINT_REVIEW_REQUIRED'; reason: 'The exact checkpoint must be inspected because its plan is no longer current.'; permittedNextAction: 'inspect-checkpoint' }
+  | { classification: 'requires-review'; reasonCode: 'HOST_REALIZATION_CONSUMPTION_INCOMPLETE'; reason: 'The one-time start was reserved without its exact durable checkpoint.'; permittedNextAction: 'inspect-checkpoint' }
+  | { classification: 'unavailable'; reasonCode: 'HOST_REALIZATION_PLAN_EXPIRED'; reason: 'The private host realization plan is no longer current.'; permittedNextAction: 'replan' }
+  | { classification: 'unavailable'; reasonCode: 'HOST_REALIZATION_PLAN_STALE'; reason: 'The private host realization plan is no longer current.'; permittedNextAction: 'replan' }
+  | { classification: 'unavailable'; reasonCode: 'HOST_REALIZATION_CONFIRMATION_EXPIRED'; reason: 'The exact confirmation can no longer start work because its request expired.'; permittedNextAction: 'request-confirmation' }
+  | { classification: 'safe'; reasonCode: 'HOST_REALIZATION_CONFIRMATION_CURRENT'; reason: 'The exact confirmation may be consumed once before its request expires.'; permittedNextAction: 'start' }
+  | { classification: 'unavailable'; reasonCode: 'HOST_REALIZATION_REQUEST_EXPIRED'; reason: 'The exact confirmation request expired.'; permittedNextAction: 'request-confirmation' }
+  | { classification: 'safe'; reasonCode: 'HOST_REALIZATION_CONFIRMATION_PENDING'; reason: 'The exact expiring request is awaiting local operator confirmation.'; permittedNextAction: 'confirm' }
+  | { classification: 'safe'; reasonCode: 'HOST_REALIZATION_PLAN_CURRENT'; reason: 'The exact private plan is current and may request confirmation.'; permittedNextAction: 'request-confirmation' };
+
 export interface HostRealizationInspection {
   $contract: 'soter://contracts/host-realization-inspection/v1';
   contractVersion: '1.0.0';
@@ -1273,30 +1298,52 @@ export interface HostRealizationInspection {
       sequence: number;
       path: string;
       role: 'instructions' | 'skills' | 'tools' | 'lifecycle' | 'configuration';
-      action: 'create' | 'replace' | 'remove';
-      mode: string | null;
-      beforeFingerprint: string | null;
-      afterFingerprint: string | null;
-    }>;
+    } & (
+      | { action: 'create'; mode: '0644'; beforeFingerprint: null; afterFingerprint: string }
+      | { action: 'replace'; mode: '0644'; beforeFingerprint: string; afterFingerprint: string }
+      | { action: 'remove'; mode: null; beforeFingerprint: string; afterFingerprint: null }
+    )>;
   };
-  request: null | { id: string; fingerprint: string; state: 'current' | 'expired'; at: string };
-  confirmation: null | { id: string; fingerprint: string; state: 'confirmed'; at: string; actor: string };
-  consumption: null | { id: string; fingerprint: string; state: 'reserved' | 'started'; at: string };
+  request: null | {
+    id: string;
+    fingerprint: string;
+    plan: { id: string; fingerprint: string };
+    scopeFingerprint: string;
+    state: 'current' | 'expired';
+    createdAt: string;
+    expiresAt: string;
+  };
+  confirmation: null | {
+    id: string;
+    fingerprint: string;
+    request: { id: string; fingerprint: string };
+    state: 'confirmed';
+    confirmedAt: string;
+    actor: string;
+  };
+  consumption: null | ({
+    id: string;
+    fingerprint: string;
+    confirmation: { id: string; fingerprint: string };
+    checkpointId: string;
+    reservationFingerprint: string;
+    createdAt: string;
+    updatedAt: string;
+  } & (
+    | { state: 'reserved'; checkpointFingerprint: null }
+    | { state: 'started'; checkpointFingerprint: string }
+  ));
   checkpoint: null | {
     id: string;
     fingerprint: string;
+    authorityFingerprint: string;
     state: 'prepared' | 'applying' | 'verifying' | 'completed' | 'rolling-back' | 'rolled-back' | 'needs-attention';
     phase: 'prepared' | 'directories' | 'outputs' | 'manifest' | 'verifying' | 'rollback' | 'terminal';
     currentOutputId: string | null;
     outputs: Array<{ id: string; sequence: number; state: 'pending' | 'applied' | 'verified' | 'rolled-back' }>;
-    failure: null | { reasonCode: string; summary: string };
+    failure: null | { reasonCode: string; summary: HostRealizationFailureSummary };
   };
-  resume: {
-    classification: 'safe' | 'requires-review' | 'unavailable';
-    reasonCode: string;
-    reason: string;
-    permittedNextAction: 'request-confirmation' | 'confirm' | 'start' | 'execute-checkpoint' | 'recover-checkpoint' | 'inspect-checkpoint' | 'replan' | 'none';
-  };
+  resume: HostRealizationResume;
   claims: {
     localProjection: 'unknown' | 'passed';
     hostLaunch: 'unknown';
@@ -1305,6 +1352,28 @@ export interface HostRealizationInspection {
     providerReachability: 'unknown';
     connectedBehavior: 'unknown';
     health: 'unknown';
+  };
+  authority: {
+    kind: 'inspection-only';
+    grantsExecution: false;
+    grantsApproval: false;
+    grantsHostRealization: false;
+    grantsProviderRead: false;
+    grantsProviderWrite: false;
+  };
+  privacy: {
+    consumerRootIncluded: false;
+    absolutePathsIncluded: false;
+    managedRelativePathsIncluded: true;
+    confirmationActorIdIncluded: true;
+    templateBytesIncluded: false;
+    priorBytesIncluded: false;
+    candidateBytesIncluded: false;
+    rawManagedManifestIncluded: false;
+    privateConfigurationValuesIncluded: false;
+    privateStateIncluded: false;
+    credentialValuesIncluded: false;
+    rawProviderResponsesIncluded: false;
   };
   inspectionFingerprint: string;
 }

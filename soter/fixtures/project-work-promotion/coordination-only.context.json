@@ -4,8 +4,8 @@
   "id": "context.project-work-promotion.coordination-only-fixture",
   "runId": "run.project-work-promotion.coordination-only-fixture",
   "createdAt": "2026-07-22T13:00:00.000Z",
-  "configurationLockFingerprint": "sha256:f73464eca60bdc9435f98200db7538ca89c5c591f1f065941660469cbc944523",
-  "graphFingerprint": "sha256:2c6206968ce9c3613398d4a210667eccc99b97a2c28363624a0b80f3a26d0c88",
+  "configurationLockFingerprint": "sha256:d6618cbf7dc7b278c4250170e5230165292454560b4c3c2fbd4a74bf15738ce1",
+  "graphFingerprint": "sha256:ee629a80b074f417e5747f1544c56be5ad0c6a3203c1428bc3352ce5da9d95a9",
   "containment": "fixture",
   "entries": [
     {

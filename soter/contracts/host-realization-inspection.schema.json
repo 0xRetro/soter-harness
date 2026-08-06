@@ -3,7 +3,7 @@
   "$id": "soter://contracts/host-realization-inspection/v1",
   "title": "Soter sanitized host realization inspection",
   "type": "object", "additionalProperties": false,
-  "required": ["$contract", "contractVersion", "plan", "target", "host", "configuration", "scope", "request", "confirmation", "consumption", "checkpoint", "resume", "claims", "inspectionFingerprint"],
+  "required": ["$contract", "contractVersion", "plan", "target", "host", "configuration", "scope", "request", "confirmation", "consumption", "checkpoint", "resume", "claims", "authority", "privacy", "inspectionFingerprint"],
   "properties": {
     "$contract": { "const": "soter://contracts/host-realization-inspection/v1" },
     "contractVersion": { "const": "1.0.0" },
@@ -11,10 +11,10 @@
       "type": "object", "additionalProperties": false,
       "required": ["id", "fingerprint", "createdAt", "validUntil", "applicability"],
       "properties": {
-        "id": { "type": "string" },
+        "id": { "$ref": "#/$defs/id" },
         "fingerprint": { "$ref": "#/$defs/fingerprint" },
-        "createdAt": { "type": "string" },
-        "validUntil": { "type": "string" },
+        "createdAt": { "$ref": "#/$defs/instant" },
+        "validUntil": { "$ref": "#/$defs/instant" },
         "applicability": { "enum": ["current", "stale", "expired", "applied"] }
       }
     },
@@ -27,8 +27,8 @@
       "type": "object", "additionalProperties": false,
       "required": ["id", "adapter", "definition", "generator"],
       "properties": {
-        "id": { "type": "string" },
-        "adapter": { "type": "string" },
+        "id": { "$ref": "#/$defs/id" },
+        "adapter": { "$ref": "#/$defs/id" },
         "definition": { "$ref": "#/$defs/versionedReference" },
         "generator": { "$ref": "#/$defs/versionedReference" }
       }
@@ -37,7 +37,7 @@
       "type": "object", "additionalProperties": false,
       "required": ["name", "lockFingerprint", "graphFingerprint"],
       "properties": {
-        "name": { "type": "string" },
+        "name": { "$ref": "#/$defs/id" },
         "lockFingerprint": { "$ref": "#/$defs/fingerprint" },
         "graphFingerprint": { "$ref": "#/$defs/fingerprint" }
       }
@@ -53,15 +53,20 @@
             "type": "object", "additionalProperties": false,
             "required": ["id", "sequence", "path", "role", "action", "mode", "beforeFingerprint", "afterFingerprint"],
             "properties": {
-              "id": { "type": "string" },
+              "id": { "$ref": "#/$defs/id" },
               "sequence": { "type": "integer", "minimum": 0 },
-              "path": { "type": "string" },
+              "path": { "$ref": "#/$defs/relativeOutputPath" },
               "role": { "enum": ["instructions", "skills", "tools", "lifecycle", "configuration"] },
               "action": { "enum": ["create", "replace", "remove"] },
-              "mode": { "type": ["string", "null"] },
+              "mode": { "enum": ["0644", null] },
               "beforeFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
               "afterFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" }
-            }
+            },
+            "oneOf": [
+              { "properties": { "action": { "const": "create" }, "mode": { "const": "0644" }, "beforeFingerprint": { "const": null }, "afterFingerprint": { "$ref": "#/$defs/fingerprint" } } },
+              { "properties": { "action": { "const": "replace" }, "mode": { "const": "0644" }, "beforeFingerprint": { "$ref": "#/$defs/fingerprint" }, "afterFingerprint": { "$ref": "#/$defs/fingerprint" } } },
+              { "properties": { "action": { "const": "remove" }, "mode": { "const": null }, "beforeFingerprint": { "$ref": "#/$defs/fingerprint" }, "afterFingerprint": { "const": null } } }
+            ]
           }
         }
       }
@@ -74,20 +79,26 @@
         { "const": null },
         {
           "type": "object", "additionalProperties": false,
-          "required": ["id", "fingerprint", "state", "phase", "currentOutputId", "outputs", "failure"],
+          "required": ["id", "fingerprint", "authorityFingerprint", "state", "phase", "currentOutputId", "outputs", "failure"],
           "properties": {
-            "id": { "type": "string" },
+            "id": { "$ref": "#/$defs/id" },
             "fingerprint": { "$ref": "#/$defs/fingerprint" },
+            "authorityFingerprint": { "$ref": "#/$defs/fingerprint" },
             "state": { "enum": ["prepared", "applying", "verifying", "completed", "rolling-back", "rolled-back", "needs-attention"] },
             "phase": { "enum": ["prepared", "directories", "outputs", "manifest", "verifying", "rollback", "terminal"] },
-            "currentOutputId": { "type": ["string", "null"] },
+            "currentOutputId": {
+              "oneOf": [
+                { "const": null },
+                { "$ref": "#/$defs/id" }
+              ]
+            },
             "outputs": {
               "type": "array",
               "items": {
                 "type": "object", "additionalProperties": false,
                 "required": ["id", "sequence", "state"],
                 "properties": {
-                  "id": { "type": "string" },
+                  "id": { "$ref": "#/$defs/id" },
                   "sequence": { "type": "integer" },
                   "state": { "enum": ["pending", "applied", "verified", "rolled-back"] }
                 }
@@ -101,7 +112,7 @@
                   "required": ["reasonCode", "summary"],
                   "properties": {
                     "reasonCode": { "type": "string", "pattern": "^HOST_REALIZATION_[A-Z0-9_]+$" },
-                    "summary": { "type": "string" }
+                    "summary": { "$ref": "#/$defs/failureSummary" }
                   }
                 }
               ]
@@ -122,7 +133,7 @@
       "oneOf": [
         { "properties": { "classification": { "const": "unavailable" }, "reasonCode": { "const": "HOST_REALIZATION_COMPLETED" }, "reason": { "const": "The exact deterministic local projection is complete." }, "permittedNextAction": { "const": "none" } } },
         { "properties": { "classification": { "const": "unavailable" }, "reasonCode": { "const": "HOST_REALIZATION_ROLLED_BACK" }, "reason": { "const": "The exact host realization checkpoint was rolled back and is terminal." }, "permittedNextAction": { "const": "none" } } },
-        { "properties": { "classification": { "const": "requires-review" }, "reasonCode": { "pattern": "^HOST_REALIZATION_[A-Z0-9_]+$" }, "reason": { "const": "Checkpoint state requires exact local inspection before any further action." }, "permittedNextAction": { "const": "inspect-checkpoint" } } },
+        { "properties": { "classification": { "const": "requires-review" }, "reasonCode": { "const": "HOST_REALIZATION_NEEDS_ATTENTION" }, "reason": { "const": "Checkpoint state requires exact local inspection before any further action." }, "permittedNextAction": { "const": "inspect-checkpoint" } } },
         { "properties": { "classification": { "const": "safe" }, "reasonCode": { "const": "HOST_REALIZATION_CHECKPOINT_READY" }, "reason": { "const": "The one-time start is bound to an exact prepared checkpoint." }, "permittedNextAction": { "const": "execute-checkpoint" } } },
         { "properties": { "classification": { "const": "requires-review" }, "reasonCode": { "const": "HOST_REALIZATION_CHECKPOINT_REVIEW_REQUIRED" }, "reason": { "const": "The prepared checkpoint must be inspected because its plan is no longer current." }, "permittedNextAction": { "const": "inspect-checkpoint" } } },
         { "properties": { "classification": { "const": "safe" }, "reasonCode": { "const": "HOST_REALIZATION_CHECKPOINT_RECOVERABLE" }, "reason": { "const": "The exact checkpoint may continue through Core recovery." }, "permittedNextAction": { "const": "recover-checkpoint" } } },
@@ -150,6 +161,8 @@
         "health": { "const": "unknown" }
       }
     },
+    "authority": { "$ref": "#/$defs/authority" },
+    "privacy": { "$ref": "#/$defs/privacy" },
     "inspectionFingerprint": { "$ref": "#/$defs/fingerprint" }
   },
   "allOf": [
@@ -250,6 +263,7 @@
           "resume": {
             "properties": {
               "classification": { "const": "requires-review" },
+              "reasonCode": { "const": "HOST_REALIZATION_NEEDS_ATTENTION" },
               "reason": { "const": "Checkpoint state requires exact local inspection before any further action." },
               "permittedNextAction": { "const": "inspect-checkpoint" }
             }
@@ -267,12 +281,16 @@
       "then": { "properties": { "checkpoint": { "type": "object", "properties": { "state": { "const": "completed" } }, "required": ["state"] } } }
     },
     {
+      "if": { "properties": { "claims": { "properties": { "localProjection": { "const": "passed" } }, "required": ["localProjection"] } }, "required": ["claims"] },
+      "then": { "properties": { "checkpoint": { "type": "object", "properties": { "state": { "const": "completed" } }, "required": ["state"] } } }
+    },
+    {
       "if": { "properties": { "plan": { "properties": { "applicability": { "const": "current" } }, "required": ["applicability"] }, "checkpoint": { "type": "object", "properties": { "state": { "const": "prepared" } }, "required": ["state"] } }, "required": ["plan", "checkpoint"] },
       "then": { "properties": { "resume": { "properties": { "reasonCode": { "const": "HOST_REALIZATION_CHECKPOINT_READY" } } } } }
     },
     {
       "if": { "properties": { "plan": { "properties": { "applicability": { "enum": ["stale", "expired"] } }, "required": ["applicability"] }, "checkpoint": { "type": "object", "properties": { "state": { "const": "prepared" } }, "required": ["state"] } }, "required": ["plan", "checkpoint"] },
-      "then": { "properties": { "resume": { "properties": { "reasonCode": { "const": "HOST_REALIZATION_CHECKPOINT_REVIEW_REQUIRED" } } } } }
+      "then": { "properties": { "resume": { "properties": { "reasonCode": { "const": "HOST_REALIZATION_CHECKPOINT_REVIEW_REQUIRED" }, "reason": { "const": "The prepared checkpoint must be inspected because its plan is no longer current." } } } } }
     },
     {
       "if": { "properties": { "plan": { "properties": { "applicability": { "const": "current" } }, "required": ["applicability"] }, "checkpoint": { "type": "object", "properties": { "state": { "enum": ["applying", "verifying", "rolling-back"] } }, "required": ["state"] } }, "required": ["plan", "checkpoint"] },
@@ -280,7 +298,7 @@
     },
     {
       "if": { "properties": { "plan": { "properties": { "applicability": { "enum": ["stale", "expired"] } }, "required": ["applicability"] }, "checkpoint": { "type": "object", "properties": { "state": { "enum": ["applying", "verifying", "rolling-back"] } }, "required": ["state"] } }, "required": ["plan", "checkpoint"] },
-      "then": { "properties": { "resume": { "properties": { "reasonCode": { "const": "HOST_REALIZATION_CHECKPOINT_REVIEW_REQUIRED" } } } } }
+      "then": { "properties": { "resume": { "properties": { "reasonCode": { "const": "HOST_REALIZATION_CHECKPOINT_REVIEW_REQUIRED" }, "reason": { "const": "The exact checkpoint must be inspected because its plan is no longer current." } } } } }
     },
     {
       "if": { "properties": { "plan": { "properties": { "applicability": { "const": "stale" } }, "required": ["applicability"] }, "checkpoint": { "const": null }, "consumption": { "const": null } }, "required": ["plan", "checkpoint", "consumption"] },
@@ -313,13 +331,69 @@
   ],
   "$defs": {
     "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "relativeOutputPath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "pattern": "^(?!(?:[.][gG][iI][tT])(?:/|$))(?!(?:[.][sS][oO][tT][eE][rR]/[sS][tT][aA][tT][eE])(?:/|$))(?!(?:[.][.]?)(?:/|$))(?!.*[/](?:[.][.]?)(?:/|$))[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$"
+    },
+    "failureSummary": {
+      "enum": [
+        "Host realization stopped and attempted exact rollback.",
+        "Automatic host realization rollback could not establish exact prior state.",
+        "Managed manifest is neither the exact prior state nor the exact checkpoint candidate.",
+        "Managed output is neither its exact prior state nor exact candidate.",
+        "Expired host realization checkpoint was rolled back instead of resumed.",
+        "Host realization recovery could not establish one exact checkpoint state."
+      ]
+    },
+    "authority": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "grantsExecution", "grantsApproval", "grantsHostRealization", "grantsProviderRead", "grantsProviderWrite"],
+      "properties": {
+        "kind": { "const": "inspection-only" },
+        "grantsExecution": { "const": false },
+        "grantsApproval": { "const": false },
+        "grantsHostRealization": { "const": false },
+        "grantsProviderRead": { "const": false },
+        "grantsProviderWrite": { "const": false }
+      }
+    },
+    "privacy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["consumerRootIncluded", "absolutePathsIncluded", "managedRelativePathsIncluded", "confirmationActorIdIncluded", "templateBytesIncluded", "priorBytesIncluded", "candidateBytesIncluded", "rawManagedManifestIncluded", "privateConfigurationValuesIncluded", "privateStateIncluded", "credentialValuesIncluded", "rawProviderResponsesIncluded"],
+      "properties": {
+        "consumerRootIncluded": { "const": false },
+        "absolutePathsIncluded": { "const": false },
+        "managedRelativePathsIncluded": { "const": true },
+        "confirmationActorIdIncluded": { "const": true },
+        "templateBytesIncluded": { "const": false },
+        "priorBytesIncluded": { "const": false },
+        "candidateBytesIncluded": { "const": false },
+        "rawManagedManifestIncluded": { "const": false },
+        "privateConfigurationValuesIncluded": { "const": false },
+        "privateStateIncluded": { "const": false },
+        "credentialValuesIncluded": { "const": false },
+        "rawProviderResponsesIncluded": { "const": false }
+      }
+    },
+    "instant": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:[.][0-9]{3})?Z$" },
+    "id": { "type": "string", "minLength": 1, "maxLength": 240, "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
     "version": { "type": "string", "pattern": "^[0-9]+[.][0-9]+[.][0-9]+$" },
     "versionedReference": {
       "type": "object", "additionalProperties": false,
       "required": ["id", "version", "fingerprint"],
       "properties": {
-        "id": { "type": "string" },
+        "id": { "$ref": "#/$defs/id" },
         "version": { "$ref": "#/$defs/version" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "reference": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "fingerprint"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
         "fingerprint": { "$ref": "#/$defs/fingerprint" }
       }
     },
@@ -328,12 +402,15 @@
         { "const": null },
         {
           "type": "object", "additionalProperties": false,
-          "required": ["id", "fingerprint", "state", "at"],
+          "required": ["id", "fingerprint", "plan", "scopeFingerprint", "state", "createdAt", "expiresAt"],
           "properties": {
-            "id": { "type": "string" },
+            "id": { "$ref": "#/$defs/id" },
             "fingerprint": { "$ref": "#/$defs/fingerprint" },
+            "plan": { "$ref": "#/$defs/reference" },
+            "scopeFingerprint": { "$ref": "#/$defs/fingerprint" },
             "state": { "enum": ["current", "expired"] },
-            "at": { "type": "string", "minLength": 20 }
+            "createdAt": { "$ref": "#/$defs/instant" },
+            "expiresAt": { "$ref": "#/$defs/instant" }
           }
         }
       ]
@@ -343,13 +420,28 @@
         { "const": null },
         {
           "type": "object", "additionalProperties": false,
-          "required": ["id", "fingerprint", "state", "at"],
+          "required": ["id", "fingerprint", "confirmation", "checkpointId", "reservationFingerprint", "checkpointFingerprint", "state", "createdAt", "updatedAt"],
           "properties": {
-            "id": { "type": "string" },
+            "id": { "$ref": "#/$defs/id" },
             "fingerprint": { "$ref": "#/$defs/fingerprint" },
+            "confirmation": { "$ref": "#/$defs/reference" },
+            "checkpointId": { "type": "string", "pattern": "^checkpoint[.]host-realization[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+            "reservationFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "checkpointFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
             "state": { "enum": ["reserved", "started"] },
-            "at": { "type": "string", "minLength": 20 }
-          }
+            "createdAt": { "$ref": "#/$defs/instant" },
+            "updatedAt": { "$ref": "#/$defs/instant" }
+          },
+          "allOf": [
+            {
+              "if": { "properties": { "state": { "const": "reserved" } }, "required": ["state"] },
+              "then": { "properties": { "checkpointFingerprint": { "const": null } } }
+            },
+            {
+              "if": { "properties": { "state": { "const": "started" } }, "required": ["state"] },
+              "then": { "properties": { "checkpointFingerprint": { "$ref": "#/$defs/fingerprint" } } }
+            }
+          ]
         }
       ]
     },
@@ -358,13 +450,14 @@
         { "const": null },
         {
           "type": "object", "additionalProperties": false,
-          "required": ["id", "fingerprint", "state", "at", "actor"],
+          "required": ["id", "fingerprint", "request", "state", "confirmedAt", "actor"],
           "properties": {
-            "id": { "type": "string" },
+            "id": { "$ref": "#/$defs/id" },
             "fingerprint": { "$ref": "#/$defs/fingerprint" },
+            "request": { "$ref": "#/$defs/reference" },
             "state": { "const": "confirmed" },
-            "at": { "type": "string" },
-            "actor": { "type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" }
+            "confirmedAt": { "$ref": "#/$defs/instant" },
+            "actor": { "$ref": "#/$defs/id" }
           }
         }
       ]

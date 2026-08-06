@@ -250,11 +250,30 @@ Studio should consume only `host-realization-inspection/v1`. Available facts:
 - private target identity represented only by `target.fingerprint`;
 - host adapter, projection definition, generator, configuration, lock, and
   graph identifiers/fingerprints;
-- ordered whole-file output ID, relative path, role, create/replace/remove
-  action, mode, and nullable prior/candidate fingerprints;
-- request, confirmation (including sanitized local actor ID), consumption,
-  checkpoint, current output, per-output state, failure reason code, and one
-  derived `resume` object; and
+- ordered whole-file output ID, normalized relative path, role,
+  create/replace/remove action, closed mode, and action-bound nullable
+  prior/candidate fingerprints;
+- request-to-plan/scope with explicit `createdAt`/`expiresAt`,
+  confirmation-to-request with explicit `confirmedAt`,
+  consumption-to-confirmation/checkpoint-reservation with explicit
+  `createdAt`/`updatedAt`, and checkpoint-authority references sufficient for
+  Core to recompute one exact sanitized ancestry and reject crossed chronology;
+- checkpoint current output, exact scope-parity output states, a specific
+  failure reason code with a fixed sanitized summary, and one separate derived
+  `resume` object;
+- required `authority` facts fixed to `kind=inspection-only` and
+  `grantsExecution=false`, `grantsApproval=false`,
+  `grantsHostRealization=false`, `grantsProviderRead=false`, and
+  `grantsProviderWrite=false`;
+- required `privacy` facts declaring
+  `managedRelativePathsIncluded=true` and
+  `confirmationActorIdIncluded=true`, while `consumerRootIncluded`,
+  `absolutePathsIncluded`, `templateBytesIncluded`, `priorBytesIncluded`,
+  `candidateBytesIncluded`, `rawManagedManifestIncluded`,
+  `privateConfigurationValuesIncluded`, `privateStateIncluded`,
+  `credentialValuesIncluded`, and `rawProviderResponsesIncluded` are all
+  `false`; the constrained actor ID is lifecycle display data, not authenticated
+  identity or raw private confirmation state; and
 - claim boundaries: `localProjection` may become `passed`; host launch, tool
   discovery, authentication, provider reachability, connected behavior, and
   health remain `unknown`.
@@ -264,6 +283,20 @@ template bytes, prior/candidate file contents, secret values, provider data, or
 raw manifest documents. Do not recover those values from errors or private
 plan state. If a selected private exact-file review is ever needed, it requires
 a separate selected-work contract; it is intentionally unavailable here.
+Managed paths are portable normalized relative paths of at most 300 characters:
+absolute paths, backslashes, `.`/`..` traversal segments, `.git/**`, and
+`.soter/state/**` are unavailable. Core rejects credential material or absolute
+local paths anywhere in this sanitized projection.
+Create and replace rows are exactly mode `0644`; remove rows have mode `null`.
+These path and mode facts describe the sealed scope and do not grant a renderer
+filesystem authority.
+
+Core, not Studio, checks the dynamic equalities that JSON Schema cannot express:
+it recomputes the scope fingerprint, consumption reservation, and checkpoint authority, then
+requires exact scope/checkpoint output ID and sequence parity before returning
+the inspection. `inspectionFingerprint` is a deterministic content seal, not an
+independent signature or trust proof. Studio must not accept a separately
+assembled or re-fingerprinted inspection as authority.
 
 Core operations map directly:
 
@@ -277,9 +310,14 @@ Core operations map directly:
 - `recoverHostRealization` reconciles only that checkpoint's exact prior or
   candidate fingerprints.
 
-`resume.permittedNextAction` is display guidance, never authority. Enable an
-execute action only for the separately returned exact checkpoint ID; enable
-recovery only for that checkpoint. The whole-file host-realization contract has
+`resume.permittedNextAction` is display guidance, never authority. A
+`needs-attention` checkpoint retains its specific blocker in
+`checkpoint.failure.reasonCode`, while resume always uses the constant
+`HOST_REALIZATION_NEEDS_ATTENTION`, `classification=requires-review`, and
+`permittedNextAction=inspect-checkpoint`. The checkpoint summary is selected
+from a closed set of fixed sanitized sentences; never render thrown prose in
+its place. Enable an execute action only for the separately returned exact
+checkpoint ID; enable recovery only for that checkpoint. The whole-file host-realization contract has
 no raw confirmation token, generic retry, adoption, force-overwrite,
 shared-output, managed-region, installer, uninstall, host-launch, or provider
 action. Root development files and existing unmanaged host files are not

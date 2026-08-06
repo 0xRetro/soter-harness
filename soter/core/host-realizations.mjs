@@ -19,6 +19,7 @@ import {
   privateConfigurationStatePath,
   readPrivateConfigurationState
 } from './private-configurations.mjs';
+import { containsCredentialMaterial } from './host-runtime.mjs';
 import {
   activeConfigurationLockStatePath,
   createHostRealizationCheckpointState,
@@ -60,6 +61,7 @@ const CONTRACTS = {
 
 const FILE_MODE = '0644';
 const DIRECTORY_MODE = 0o755;
+const ABSOLUTE_LOCAL_PATH_RE = /(?:^|[\s"'(=])(?:file:\/\/|[A-Za-z]:[\\/]|\/\/[^\s/]+[\\/]|\/(?=$|[),;.!?"'])|\/(?![\/\s])[^\/\s]+)/iu;
 
 function fail(code, message) {
   const error = new Error(message);
@@ -78,6 +80,19 @@ function compareText(left, right) {
 
 function clone(value) {
   return structuredClone(value);
+}
+
+function walkStrings(value, visit) {
+  if (typeof value === 'string') {
+    visit(value);
+    return;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) walkStrings(item, visit);
+    return;
+  }
+  if (!value || typeof value !== 'object') return;
+  for (const item of Object.values(value)) walkStrings(item, visit);
 }
 
 function seal(value, property) {
@@ -125,6 +140,12 @@ function requireWindow(createdAt, expiresAt, label) {
 function requireNotExpired(expiresAt, currentAt, code = 'HOST_REALIZATION_REQUEST_EXPIRED') {
   if (at(currentAt, 'Current time') > at(expiresAt, 'Expiry')) {
     fail(code, 'Host realization authority has expired.');
+  }
+}
+
+function requireCausalOrder(earlierAt, laterAt, code, message) {
+  if (at(laterAt, 'Later lifecycle time') < at(earlierAt, 'Earlier lifecycle time')) {
+    fail(code, message);
   }
 }
 
@@ -183,6 +204,11 @@ function normalizedRelative(value) {
     || path.posix.isAbsolute(value) || path.posix.normalize(value) !== value
     || value === '.' || value === '..' || value.startsWith('../') || value.includes('/../')) {
     fail('HOST_REALIZATION_PATH_INVALID', 'Managed output path is not normalized and relative.');
+  }
+  const folded = value.toLowerCase();
+  if (folded === '.git' || folded.startsWith('.git/')
+    || folded === '.soter/state' || folded.startsWith('.soter/state/')) {
+    fail('HOST_REALIZATION_PATH_INVALID', 'Managed output path targets a protected local namespace.');
   }
   return value;
 }
@@ -1112,8 +1138,11 @@ function readRequest(root, requestId) {
     'Host realization request'
   );
   const plan = readPlan(root, request.plan.id);
+  requireWindow(request.createdAt, request.expiresAt, 'Host realization request');
   if (request.plan.fingerprint !== plan.planFingerprint
-    || request.scopeFingerprint !== plan.scopeFingerprint) {
+    || request.scopeFingerprint !== plan.scopeFingerprint
+    || at(request.createdAt, 'Request creation') < at(plan.createdAt, 'Plan creation')
+    || at(request.expiresAt, 'Request expiry') > at(plan.validUntil, 'Plan expiry')) {
     fail('HOST_REALIZATION_REQUEST_BINDING_INVALID', 'Host realization request does not bind its exact plan.');
   }
   return { request, plan };
@@ -1131,8 +1160,9 @@ export function beginHostRealizationRequest({
   requireWindow(createdAt, expiresAt, 'Host realization request');
   const plan = readPlan(resolvedRoot, planId);
   planCurrentness(resolvedRoot, plan, createdAt);
-  if (at(expiresAt, 'Request expiry') > at(plan.validUntil, 'Plan expiry')) {
-    fail('HOST_REALIZATION_REQUEST_WINDOW_INVALID', 'Confirmation request cannot outlive its exact plan.');
+  if (at(createdAt, 'Request creation') < at(plan.createdAt, 'Plan creation')
+    || at(expiresAt, 'Request expiry') > at(plan.validUntil, 'Plan expiry')) {
+    fail('HOST_REALIZATION_REQUEST_WINDOW_INVALID', 'Confirmation request must remain within its exact plan window.');
   }
   const request = seal({
     $contract: CONTRACTS.request[0],
@@ -1175,7 +1205,10 @@ function readConfirmation(root, confirmationId) {
     || confirmation.scopeFingerprint !== plan.scopeFingerprint) {
     fail('HOST_REALIZATION_CONFIRMATION_BINDING_INVALID', 'Host realization confirmation does not bind the exact request and plan.');
   }
-  requireNotExpired(request.expiresAt, confirmation.confirmedAt);
+  if (at(confirmation.confirmedAt, 'Confirmation time') < at(request.createdAt, 'Request creation')
+    || at(confirmation.confirmedAt, 'Confirmation time') > at(request.expiresAt, 'Request expiry')) {
+    fail('HOST_REALIZATION_CONFIRMATION_BINDING_INVALID', 'Host realization confirmation falls outside its exact request window.');
+  }
   return { confirmation, request, plan };
 }
 
@@ -1189,6 +1222,12 @@ export function confirmHostRealizationRequest({
 }) {
   const resolvedRoot = path.resolve(root);
   const { request, plan } = readRequest(resolvedRoot, requestId);
+  requireCausalOrder(
+    request.createdAt,
+    confirmedAt,
+    'HOST_REALIZATION_TIME_INVALID',
+    'Host realization confirmation cannot precede its exact request.'
+  );
   requireNotExpired(request.expiresAt, confirmedAt);
   planCurrentness(resolvedRoot, plan, confirmedAt);
   const confirmation = seal({
@@ -1254,6 +1293,11 @@ function assertConsumption(root, consumption) {
     || (consumption.state === 'reserved') !== (consumption.checkpointFingerprint === null)) {
     fail('HOST_REALIZATION_CONSUMPTION_BINDING_INVALID', 'Host realization consumption does not bind its authority chain.');
   }
+  if (at(consumption.createdAt, 'Consumption creation') < at(confirmation.confirmedAt, 'Confirmation time')
+    || at(consumption.updatedAt, 'Consumption update') < at(consumption.createdAt, 'Consumption creation')
+    || at(consumption.updatedAt, 'Consumption update') > at(request.expiresAt, 'Request expiry')) {
+    fail('HOST_REALIZATION_CONSUMPTION_BINDING_INVALID', 'Host realization consumption falls outside its exact authority window.');
+  }
   return { consumption, confirmation, request, plan };
 }
 
@@ -1292,7 +1336,23 @@ function assertCheckpointShape(root, checkpoint) {
   })) {
     fail('HOST_REALIZATION_CHECKPOINT_TAMPERED', 'Host realization checkpoint authority fingerprint is invalid.');
   }
+  if (at(checkpoint.updatedAt, 'Checkpoint update') < at(checkpoint.createdAt, 'Checkpoint creation')) {
+    fail('HOST_REALIZATION_CHECKPOINT_BINDING_INVALID', 'Host realization checkpoint time moved backward.');
+  }
   return checkpoint;
+}
+
+function requireCheckpointConsumptionOrder(checkpoint, consumption) {
+  const checkpointCreatedAt = at(checkpoint.createdAt, 'Checkpoint creation');
+  const consumptionCreatedAt = at(consumption.createdAt, 'Consumption creation');
+  const consumptionUpdatedAt = at(consumption.updatedAt, 'Consumption update');
+  if (checkpointCreatedAt < consumptionCreatedAt
+    || (consumption.state === 'started' && checkpointCreatedAt > consumptionUpdatedAt)) {
+    fail(
+      'HOST_REALIZATION_CHECKPOINT_BINDING_INVALID',
+      'Host realization checkpoint falls outside its one-time start lifecycle.'
+    );
+  }
 }
 
 function readCheckpoint(root, checkpointId) {
@@ -1307,6 +1367,7 @@ function readCheckpoint(root, checkpointId) {
   const { request } = readRequest(root, checkpoint.request.id);
   const { confirmation } = readConfirmation(root, checkpoint.confirmation.id);
   const { consumption } = readConsumption(root, checkpoint.consumption.id);
+  requireCheckpointConsumptionOrder(checkpoint, consumption);
   const expectedOutputs = plan.operations.map(({ id, sequence, path: output, action }) => ({
     id, sequence, path: output, action
   }));
@@ -1344,6 +1405,21 @@ function readCheckpoint(root, checkpointId) {
     fail('HOST_REALIZATION_CHECKPOINT_BINDING_INVALID', 'Host realization checkpoint does not bind the exact one-time authority chain.');
   }
   return { checkpoint, plan, request, confirmation, consumption };
+}
+
+function requireCheckpointOperationTime(chain, currentAt) {
+  requireCausalOrder(
+    chain.checkpoint.updatedAt,
+    currentAt,
+    'HOST_REALIZATION_TIME_INVALID',
+    'Host realization operation time cannot precede the durable checkpoint.'
+  );
+  requireCausalOrder(
+    chain.consumption.updatedAt,
+    currentAt,
+    'HOST_REALIZATION_TIME_INVALID',
+    'Host realization operation time cannot precede one-time start consumption.'
+  );
 }
 
 function preparedCheckpoint({ plan, request, confirmation, consumption, checkpointId, at: createdAt }) {
@@ -1402,6 +1478,12 @@ export function prepareHostRealizationExecution({
 }) {
   const resolvedRoot = path.resolve(root);
   const { confirmation, request, plan } = readConfirmation(resolvedRoot, confirmationId);
+  requireCausalOrder(
+    confirmation.confirmedAt,
+    startedAt,
+    'HOST_REALIZATION_TIME_INVALID',
+    'Host realization execution cannot start before exact confirmation.'
+  );
   requireNotExpired(request.expiresAt, startedAt);
   planCurrentness(resolvedRoot, plan, startedAt);
   const consumptionId = hostRealizationConsumptionId(confirmation.id);
@@ -1413,8 +1495,17 @@ export function prepareHostRealizationExecution({
     checkpointId
   };
   const reservationFingerprint = fingerprintJson(authority);
+  const consumptionExists = hasHostRealizationConsumptionState(resolvedRoot, consumptionId);
+  const checkpointExists = hasHostRealizationCheckpointState(resolvedRoot, checkpointId);
+  if (!consumptionExists && checkpointExists) {
+    fail(
+      'HOST_REALIZATION_CHECKPOINT_BINDING_INVALID',
+      'Host realization checkpoint is occupied without its exact one-time reservation.'
+    );
+  }
   let consumption;
-  if (hasHostRealizationConsumptionState(resolvedRoot, consumptionId)) {
+  let checkpoint = null;
+  if (consumptionExists) {
     consumption = readConsumption(resolvedRoot, consumptionId).consumption;
     if (consumption.checkpointId !== checkpointId
       || consumption.reservationFingerprint !== reservationFingerprint) {
@@ -1423,10 +1514,18 @@ export function prepareHostRealizationExecution({
         'Host realization confirmation was consumed by another checkpoint.'
       );
     }
+    requireCausalOrder(
+      consumption.updatedAt,
+      startedAt,
+      'HOST_REALIZATION_TIME_INVALID',
+      'Host realization start retry cannot precede its existing reservation.'
+    );
     if (consumption.state === 'started') {
+      const existingCheckpoint = readCheckpoint(resolvedRoot, checkpointId);
+      requireCheckpointOperationTime(existingCheckpoint, startedAt);
       return {
         consumption,
-        checkpoint: readCheckpoint(resolvedRoot, checkpointId).checkpoint
+        checkpoint: existingCheckpoint.checkpoint
       };
     }
   } else {
@@ -1442,10 +1541,18 @@ export function prepareHostRealizationExecution({
       consumptionFingerprint: null
     }, 'consumptionFingerprint');
     assertConsumption(resolvedRoot, consumption);
+    checkpoint = preparedCheckpoint({
+      plan,
+      request,
+      confirmation,
+      consumption,
+      checkpointId,
+      at: startedAt
+    });
+    assertCheckpointShape(resolvedRoot, checkpoint);
     createHostRealizationConsumptionState(resolvedRoot, consumption);
   }
-  let checkpoint;
-  if (hasHostRealizationCheckpointState(resolvedRoot, checkpointId)) {
+  if (checkpointExists) {
     checkpoint = assertCheckpointShape(
       resolvedRoot,
       readHostRealizationCheckpointState(resolvedRoot, checkpointId).checkpoint
@@ -1458,16 +1565,25 @@ export function prepareHostRealizationExecution({
         'Prepared host realization checkpoint does not bind the reserved consumption.'
       );
     }
+    requireCheckpointConsumptionOrder(checkpoint, consumption);
+    requireCausalOrder(
+      checkpoint.updatedAt,
+      startedAt,
+      'HOST_REALIZATION_TIME_INVALID',
+      'Host realization start retry cannot precede its prepared checkpoint.'
+    );
   } else {
-    checkpoint = preparedCheckpoint({
-      plan,
-      request,
-      confirmation,
-      consumption,
-      checkpointId,
-      at: startedAt
-    });
-    assertCheckpointShape(resolvedRoot, checkpoint);
+    if (checkpoint === null) {
+      checkpoint = preparedCheckpoint({
+        plan,
+        request,
+        confirmation,
+        consumption,
+        checkpointId,
+        at: startedAt
+      });
+      assertCheckpointShape(resolvedRoot, checkpoint);
+    }
     createHostRealizationCheckpointState(resolvedRoot, checkpoint);
   }
   consumption = seal({
@@ -1478,6 +1594,7 @@ export function prepareHostRealizationExecution({
     consumptionFingerprint: null
   }, 'consumptionFingerprint');
   assertConsumption(resolvedRoot, consumption);
+  requireCheckpointConsumptionOrder(checkpoint, consumption);
   writeHostRealizationConsumptionState(resolvedRoot, consumption);
   return { consumption, checkpoint };
 }
@@ -1782,6 +1899,7 @@ export function executeHostRealization({ root, checkpointId, at: currentAt, faul
   const resolvedRoot = path.resolve(root);
   const chain = readCheckpoint(resolvedRoot, checkpointId);
   const { checkpoint, plan } = chain;
+  requireCheckpointOperationTime(chain, currentAt);
   if (['completed', 'rolled-back', 'needs-attention'].includes(checkpoint.state)) return checkpoint;
   try {
     assertTarget(resolvedRoot, plan.target);
@@ -1871,6 +1989,7 @@ export function recoverHostRealization({ root, checkpointId, at: currentAt, faul
   const resolvedRoot = path.resolve(root);
   const chain = readCheckpoint(resolvedRoot, checkpointId);
   const { checkpoint, plan } = chain;
+  requireCheckpointOperationTime(chain, currentAt);
   if (['completed', 'rolled-back', 'needs-attention'].includes(checkpoint.state)) return checkpoint;
   try {
     assertTarget(resolvedRoot, plan.target);
@@ -1938,12 +2057,15 @@ export function recoverHostRealization({ root, checkpointId, at: currentAt, faul
   }
 }
 
-function lifecycleRecord(value, property, state, recordAt = null) {
+function requestRecord(value, state) {
   return value ? {
     id: value.id,
-    fingerprint: value[property],
+    fingerprint: value.requestFingerprint,
+    plan: clone(value.plan),
+    scopeFingerprint: value.scopeFingerprint,
     state,
-    at: recordAt
+    createdAt: value.createdAt,
+    expiresAt: value.expiresAt
   } : null;
 }
 
@@ -1951,10 +2073,167 @@ function confirmationRecord(value) {
   return value ? {
     id: value.id,
     fingerprint: value.confirmationFingerprint,
+    request: clone(value.request),
     state: 'confirmed',
-    at: value.confirmedAt,
+    confirmedAt: value.confirmedAt,
     actor: value.actor.id
   } : null;
+}
+
+function consumptionRecord(value) {
+  return value ? {
+    id: value.id,
+    fingerprint: value.consumptionFingerprint,
+    confirmation: clone(value.confirmation),
+    checkpointId: value.checkpointId,
+    reservationFingerprint: value.reservationFingerprint,
+    checkpointFingerprint: value.checkpointFingerprint,
+    state: value.state,
+    createdAt: value.createdAt,
+    updatedAt: value.updatedAt
+  } : null;
+}
+
+function sameReference(left, right) {
+  return left?.id === right?.id && left?.fingerprint === right?.fingerprint;
+}
+
+function assertInspectionProjectionBindings(inspection) {
+  const planReference = {
+    id: inspection.plan.id,
+    fingerprint: inspection.plan.fingerprint
+  };
+  const requestReference = inspection.request ? {
+    id: inspection.request.id,
+    fingerprint: inspection.request.fingerprint
+  } : null;
+  const confirmationReference = inspection.confirmation ? {
+    id: inspection.confirmation.id,
+    fingerprint: inspection.confirmation.fingerprint
+  } : null;
+  const consumptionReference = inspection.consumption ? {
+    id: inspection.consumption.id,
+    fingerprint: inspection.consumption.reservationFingerprint
+  } : null;
+  let valid = inspection.scope.fingerprint === fingerprintJson(inspection.scope.outputs);
+
+  try {
+    const planCreatedAt = at(inspection.plan.createdAt, 'Inspection plan creation');
+    const planValidUntil = at(inspection.plan.validUntil, 'Inspection plan expiry');
+    valid = valid && planCreatedAt < planValidUntil;
+    if (inspection.request) {
+      const requestCreatedAt = at(inspection.request.createdAt, 'Inspection request creation');
+      const requestExpiresAt = at(inspection.request.expiresAt, 'Inspection request expiry');
+      valid = valid
+        && planCreatedAt <= requestCreatedAt
+        && requestCreatedAt < requestExpiresAt
+        && requestExpiresAt <= planValidUntil;
+      if (inspection.confirmation) {
+        const confirmedAt = at(inspection.confirmation.confirmedAt, 'Inspection confirmation');
+        valid = valid
+          && requestCreatedAt <= confirmedAt
+          && confirmedAt <= requestExpiresAt;
+        if (inspection.consumption) {
+          const consumptionCreatedAt = at(inspection.consumption.createdAt, 'Inspection consumption creation');
+          const consumptionUpdatedAt = at(inspection.consumption.updatedAt, 'Inspection consumption update');
+          valid = valid
+            && confirmedAt <= consumptionCreatedAt
+            && consumptionCreatedAt <= consumptionUpdatedAt
+            && consumptionUpdatedAt <= requestExpiresAt;
+        }
+      }
+    }
+  } catch {
+    valid = false;
+  }
+
+  if (inspection.request) {
+    valid = valid
+      && sameReference(inspection.request.plan, planReference)
+      && inspection.request.scopeFingerprint === inspection.scope.fingerprint;
+  }
+  if (inspection.confirmation) {
+    valid = valid
+      && requestReference !== null
+      && sameReference(inspection.confirmation.request, requestReference);
+  }
+  if (inspection.consumption) {
+    const expectedReservationFingerprint = requestReference && confirmationReference
+      ? fingerprintJson({
+        id: inspection.consumption.id,
+        confirmation: confirmationReference,
+        request: requestReference,
+        plan: planReference,
+        checkpointId: inspection.consumption.checkpointId
+      })
+      : null;
+    valid = valid
+      && confirmationReference !== null
+      && sameReference(inspection.consumption.confirmation, confirmationReference)
+      && inspection.consumption.reservationFingerprint === expectedReservationFingerprint;
+  }
+  if (inspection.checkpoint) {
+    const expectedOutputs = inspection.scope.outputs.map(({ id, sequence }) => ({ id, sequence }));
+    const observedOutputs = inspection.checkpoint.outputs.map(({ id, sequence }) => ({ id, sequence }));
+    const expectedAuthorityFingerprint = requestReference && confirmationReference && consumptionReference
+      ? fingerprintJson({
+        plan: planReference,
+        request: requestReference,
+        confirmation: confirmationReference,
+        consumption: consumptionReference,
+        targetFingerprint: inspection.target.fingerprint,
+        configuration: clone(inspection.configuration),
+        outputs: inspection.scope.outputs.map(({ id, sequence, path: output, action }) => ({
+          id,
+          sequence,
+          path: output,
+          action
+        }))
+      })
+      : null;
+    valid = valid
+      && inspection.consumption !== null
+      && inspection.consumption.checkpointId === inspection.checkpoint.id
+      && inspection.consumption.checkpointFingerprint === inspection.checkpoint.authorityFingerprint
+      && inspection.checkpoint.authorityFingerprint === expectedAuthorityFingerprint
+      && fingerprintJson(observedOutputs) === fingerprintJson(expectedOutputs)
+      && (inspection.checkpoint.currentOutputId === null
+        || observedOutputs.some(({ id }) => id === inspection.checkpoint.currentOutputId));
+  }
+  if (!valid) {
+    fail(
+      'HOST_REALIZATION_INSPECTION_BINDING_INVALID',
+      'Sanitized host realization facts do not bind one exact authority chain and output scope.'
+    );
+  }
+  return inspection;
+}
+
+export function assertHostRealizationInspection(root, inspection) {
+  const validated = assertFingerprint(
+    path.resolve(root),
+    inspection,
+    'inspection',
+    'inspectionFingerprint',
+    'Host realization inspection'
+  );
+  if (containsCredentialMaterial(validated)) {
+    fail(
+      'HOST_REALIZATION_INSPECTION_PRIVACY_INVALID',
+      'Sanitized host realization facts cannot contain credential material.'
+    );
+  }
+  let containsAbsolutePath = false;
+  walkStrings(validated, (value) => {
+    if (ABSOLUTE_LOCAL_PATH_RE.test(value)) containsAbsolutePath = true;
+  });
+  if (containsAbsolutePath) {
+    fail(
+      'HOST_REALIZATION_INSPECTION_PRIVACY_INVALID',
+      'Sanitized host realization facts cannot contain absolute local paths.'
+    );
+  }
+  return assertInspectionProjectionBindings(validated);
 }
 
 function applicability(root, plan, currentAt, checkpoint) {
@@ -1980,7 +2259,7 @@ function resumeProjection({ planState, request, confirmation, consumption, check
   if (checkpoint?.state === 'needs-attention') {
     return {
       classification: 'requires-review',
-      reasonCode: checkpoint.failure?.reasonCode || 'HOST_REALIZATION_NEEDS_ATTENTION',
+      reasonCode: 'HOST_REALIZATION_NEEDS_ATTENTION',
       reason: 'Checkpoint state requires exact local inspection before any further action.',
       permittedNextAction: 'inspect-checkpoint'
     };
@@ -2159,24 +2438,18 @@ export function inspectHostRealization({
       fingerprint: plan.scopeFingerprint,
       outputs: scopeRows(plan.operations)
     },
-    request: lifecycleRecord(
+    request: requestRecord(
       request,
-      'requestFingerprint',
       request && at(currentAt, 'Inspection time') > at(request.expiresAt, 'Request expiry')
         ? 'expired'
-        : 'current',
-      request?.expiresAt || null
+        : 'current'
     ),
     confirmation: confirmationRecord(confirmation),
-    consumption: lifecycleRecord(
-      consumption,
-      'consumptionFingerprint',
-      consumption?.state || 'reserved',
-      consumption?.updatedAt || null
-    ),
+    consumption: consumptionRecord(consumption),
     checkpoint: checkpoint ? {
       id: checkpoint.id,
       fingerprint: checkpoint.checkpointFingerprint,
+      authorityFingerprint: checkpoint.authorityFingerprint,
       state: checkpoint.state,
       phase: checkpoint.phase,
       currentOutputId: checkpoint.currentOutputId,
@@ -2200,14 +2473,30 @@ export function inspectHostRealization({
       connectedBehavior: 'unknown',
       health: 'unknown'
     },
+    authority: {
+      kind: 'inspection-only',
+      grantsExecution: false,
+      grantsApproval: false,
+      grantsHostRealization: false,
+      grantsProviderRead: false,
+      grantsProviderWrite: false
+    },
+    privacy: {
+      consumerRootIncluded: false,
+      absolutePathsIncluded: false,
+      managedRelativePathsIncluded: true,
+      confirmationActorIdIncluded: true,
+      templateBytesIncluded: false,
+      priorBytesIncluded: false,
+      candidateBytesIncluded: false,
+      rawManagedManifestIncluded: false,
+      privateConfigurationValuesIncluded: false,
+      privateStateIncluded: false,
+      credentialValuesIncluded: false,
+      rawProviderResponsesIncluded: false
+    },
     inspectionFingerprint: null
   };
   seal(inspection, 'inspectionFingerprint');
-  return assertFingerprint(
-    resolvedRoot,
-    inspection,
-    'inspection',
-    'inspectionFingerprint',
-    'Host realization inspection'
-  );
+  return assertHostRealizationInspection(resolvedRoot, inspection);
 }

@@ -10,8 +10,8 @@
     "id": "run.project-pulse.no-invented-progress-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:6817dbdeb7feb072e9d99354d4107f63dabc3f94e7b880b0ab0545bf22964019",
-  "graphFingerprint": "sha256:78175fb64c97b13f48b19531307f510b07ad9d864bc746c12b62b9178710850c",
+  "configurationLockFingerprint": "sha256:91cc650adcd52f4ff30f49e68d5043c0e501ca4be192c613b07d2644e5d91890",
+  "graphFingerprint": "sha256:a37f0418e3b4166454c16893712c2b3e814be7a2fa28034ffa981c77567d0e17",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -216,7 +216,7 @@
     {
       "role": "context-snapshot",
       "id": "context.project-pulse.no-invented-progress-fixture",
-      "fingerprint": "sha256:870fa569779e8b7ae9aea8a65270a6cd296b38c44b028a9e57142a04f5cb9ae9"
+      "fingerprint": "sha256:333b23c8cca230f11f6ebfaa971a9e72e20ea5e6f02df4857d7a180da058c767"
     },
     {
       "role": "project-pulse-preview",

@@ -26,6 +26,8 @@ import workspaceInspectionSchema from '../../contracts/workspace-inspection.sche
 import emailDerivedReviewDefinition from '../../automations/email-triage/derived-review.json';
 // @ts-expect-error The canonical verifier is a checked JavaScript module without a declaration file.
 import { validateJsonSchema } from '../../kernel/verify.mjs';
+// @ts-expect-error Canonical Core is a checked JavaScript module without a declaration file.
+import { assertHostRealizationInspection } from '../../core/host-realizations.mjs';
 
 import { App } from '../renderer/src/App';
 import { AutomationProposalDossier } from '../renderer/src/components/AutomationProposalDossier';
@@ -580,8 +582,10 @@ describe('Soter Studio canonical operator projection', () => {
     const user = userEvent.setup();
     const snapshot = studioFixture();
     const configuration = snapshot.configurations.find((item) => item.name === 'meeting-intake')!;
-    for (const stage of ['plan', 'started', 'recoverable', 'completed', 'needs-attention'] as const) {
-      expect(validateJsonSchema(hostRealizationInspectionFixture(stage), hostRealizationInspectionSchema)).toEqual([]);
+    for (const stage of ['plan', 'request', 'request-expired', 'confirmed', 'started', 'recoverable', 'completed', 'stale', 'expired', 'needs-attention'] as const) {
+      const inspection = hostRealizationInspectionFixture(stage);
+      expect(validateJsonSchema(inspection, hostRealizationInspectionSchema)).toEqual([]);
+      expect(() => assertHostRealizationInspection(process.cwd(), inspection)).not.toThrow();
     }
     const { container } = render(<HostRealizationDesk configuration={configuration} />);
 
