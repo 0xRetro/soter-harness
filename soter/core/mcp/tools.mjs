@@ -332,9 +332,18 @@ const developmentTargetMaterialSchema = z.object({
   limitations: developmentTargetLimitations,
   materialFingerprint: z.string().regex(/^sha256:[a-f0-9]{64}$/)
 }).strict();
+const developmentTargetMaterialReasonCodes = new Set([
+  'DEVELOPMENT_TARGET_MATERIAL_SIZE_LIMIT_EXCEEDED',
+  'DEVELOPMENT_TARGET_MATERIAL_UTF8_INVALID',
+  'DEVELOPMENT_TARGET_MATERIAL_NUL_BYTE',
+  'DEVELOPMENT_TARGET_MATERIAL_CREDENTIAL_PATTERN',
+  'DEVELOPMENT_TARGET_MATERIAL_CREDENTIAL_ASSIGNMENT',
+  'DEVELOPMENT_TARGET_MATERIAL_PRIVATE_KEY_BLOCK'
+]);
 const developmentTargetReadFailureSchema = z.object({
   code: z.string().regex(/^DEVELOPMENT_(?:REQUEST|RESULT|INSPECTION)_[A-Z0-9_]+$/),
-  message: z.string().min(1).max(500)
+  message: z.string().min(1).max(500),
+  reasonCode: z.enum([...developmentTargetMaterialReasonCodes]).optional()
 }).strict();
 const developmentTargetReadRuntimeBlockedSchema = z.object({
   code: z.string().regex(/^SOTER_HOST_RUNTIME_[A-Z0-9_]+$/),
@@ -412,8 +421,11 @@ function blockedRuntimeResult(inspection) {
   };
 }
 
-function developmentFailure(code, message) {
+function developmentFailure(code, message, reasonCode = null) {
   const value = { code, message };
+  if (developmentTargetMaterialReasonCodes.has(reasonCode)) {
+    value.reasonCode = reasonCode;
+  }
   return {
     isError: true,
     content: [{ type: 'text', text: code + ': ' + message }],
@@ -465,7 +477,11 @@ function safeDevelopmentFailure(error, fallbackCode) {
     DEVELOPMENT_RESULT_INVALID: 'The private development result is malformed, tampered, unsafe, or does not bind its exact request.',
     DEVELOPMENT_RESULT_STALE: 'The private development result no longer matches its exact current workspace or request basis.'
   };
-  return developmentFailure(code, messages[code] || messages[fallbackCode]);
+  const reasonCode = code === 'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE'
+    && developmentTargetMaterialReasonCodes.has(error?.reasonCode)
+    ? error.reasonCode
+    : null;
+  return developmentFailure(code, messages[code] || messages[fallbackCode], reasonCode);
 }
 
 export function createSoterMcpServer({ root, host }) {
