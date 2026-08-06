@@ -10,8 +10,8 @@
     "id": "run.slack-channel-ingestion.preparation-fixture.identity",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:172e17d2be80d49e1bc97378d7363ef1553191038b298597bb2d1a082dc36b0f",
-  "graphFingerprint": "sha256:05746a55e7f129068441ae0b2027b4c678cfdd3a2fcef845a48bc3516ccfdbad",
+  "configurationLockFingerprint": "sha256:83daf163bcab4a7fd14cea6845afe15589c5c56eae60849d0ec088ae417e88a5",
+  "graphFingerprint": "sha256:58ff5f6509c7b5164bc7a9f9011c68ba526863e87a7fbb1d0ad01dbe7a4d09a1",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -265,12 +265,12 @@
     {
       "role": "identity-context-snapshot",
       "id": "context.slack-channel-ingestion.preparation-fixture.identity",
-      "fingerprint": "sha256:eb03259f22c979ba412a2b332cb3e535c9b14ef81604c91525b620be8dfbf054"
+      "fingerprint": "sha256:2b97e5661c27994c83fd484c509148c9af5762d83f709c57ae7271cfa4b88c2e"
     },
     {
       "role": "selected-context-snapshot",
       "id": "context.slack-channel-ingestion.preparation-fixture.selected",
-      "fingerprint": "sha256:e5332cfd303549738b066b0c6cb2fb1caf5c8e73e4980afd1a8745ffce71a843"
+      "fingerprint": "sha256:3321ae0607cbe7910f7222807a807258ba49071c1310cf7aafc09e35bbca60a1"
     },
     {
       "role": "identity-review-preview",

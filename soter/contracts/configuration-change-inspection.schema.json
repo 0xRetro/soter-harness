@@ -177,6 +177,77 @@
     {
       "if": {
         "properties": {
+          "confirmation": { "type": "object" }
+        },
+        "required": ["confirmation"]
+      },
+      "then": {
+        "properties": {
+          "request": {
+            "type": "object",
+            "properties": { "state": { "const": "confirmed" } },
+            "required": ["state"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "request": {
+            "type": "object",
+            "properties": { "state": { "const": "confirmed" } },
+            "required": ["state"]
+          }
+        },
+        "required": ["request"]
+      },
+      "then": {
+        "properties": {
+          "confirmation": { "type": "object" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "consumption": { "type": "object" }
+        },
+        "required": ["consumption"]
+      },
+      "then": {
+        "properties": {
+          "request": {
+            "type": "object",
+            "properties": { "state": { "const": "confirmed" } },
+            "required": ["state"]
+          },
+          "confirmation": { "type": "object" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "checkpoint": { "type": "object" }
+        },
+        "required": ["checkpoint"]
+      },
+      "then": {
+        "properties": {
+          "request": {
+            "type": "object",
+            "properties": { "state": { "const": "confirmed" } },
+            "required": ["state"]
+          },
+          "confirmation": { "type": "object" },
+          "consumption": { "type": "object" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
           "consumption": {
             "type": "object",
             "properties": { "state": { "const": "started" } },

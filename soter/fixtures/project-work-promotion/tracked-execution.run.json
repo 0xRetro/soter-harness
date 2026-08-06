@@ -13,9 +13,9 @@
   },
   "configurationLock": {
     "path": "soter/fixtures/project-work-promotion/project-work-promotion.lock.json",
-    "fingerprint": "sha256:1846cc0eaf71e395ef96df9de6d9777e062b1d7878935f0005952391b0299824"
+    "fingerprint": "sha256:f73464eca60bdc9435f98200db7538ca89c5c591f1f065941660469cbc944523"
   },
-  "graphFingerprint": "sha256:adb0d82f6a638b43cc5bf711c1b1e53ebf1107250c8cd89722175edcdfd5274f",
+  "graphFingerprint": "sha256:2c6206968ce9c3613398d4a210667eccc99b97a2c28363624a0b80f3a26d0c88",
   "context": [
     {
       "subject": "notion.workspace",
@@ -54,7 +54,7 @@
       "uri": "soter-state://runs",
       "declarationFingerprint": "sha256:8afe5da5de9d67a21267be3ba143ca970bf2a316ca513dd3146f805613c7ee46",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:1846cc0eaf71e395ef96df9de6d9777e062b1d7878935f0005952391b0299824",
+      "provenance": "configuration-lock:sha256:f73464eca60bdc9435f98200db7538ca89c5c591f1f065941660469cbc944523",
       "freshness": "unknown"
     },
     {
@@ -224,7 +224,7 @@
     {
       "id": "context.project-work-promotion.tracked-execution-fixture",
       "type": "context-snapshot",
-      "fingerprint": "sha256:ac9798801deef2157369b2782cfb9a9e838c79259c36cdc9b6a80dbb72d3e86b"
+      "fingerprint": "sha256:066724b01c7682e4c311d565067a8f03e80a9f262e69f262f253d11e4ebc17da"
     }
   ],
   "effects": [

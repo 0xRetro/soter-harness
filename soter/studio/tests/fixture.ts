@@ -776,7 +776,7 @@ export function hostRealizationInspectionFixture(stage: 'plan' | 'request' | 're
     scope: { fingerprint: fp('7'), outputs },
     request: requested ? {
       id: 'host-realization-request.meeting-intake.ui-test', fingerprint: fp('8'),
-      state: confirmed ? 'confirmed' : stage === 'request-expired' ? 'expired' : 'current', at: '2026-07-16T16:08:00.000Z'
+      state: stage === 'request-expired' ? 'expired' : 'current', at: '2026-07-16T16:08:00.000Z'
     } : null,
     confirmation: confirmed ? {
       id: 'host-realization-confirmation.meeting-intake.ui-test', fingerprint: fp('9'),

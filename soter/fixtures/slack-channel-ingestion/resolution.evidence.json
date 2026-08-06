@@ -10,8 +10,8 @@
     "id": "slack-channel-ingestion",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:172e17d2be80d49e1bc97378d7363ef1553191038b298597bb2d1a082dc36b0f",
-  "graphFingerprint": "sha256:05746a55e7f129068441ae0b2027b4c678cfdd3a2fcef845a48bc3516ccfdbad",
+  "configurationLockFingerprint": "sha256:83daf163bcab4a7fd14cea6845afe15589c5c56eae60849d0ec088ae417e88a5",
+  "graphFingerprint": "sha256:58ff5f6509c7b5164bc7a9f9011c68ba526863e87a7fbb1d0ad01dbe7a4d09a1",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -168,7 +168,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:172e17d2be80d49e1bc97378d7363ef1553191038b298597bb2d1a082dc36b0f"
+      "fingerprint": "sha256:83daf163bcab4a7fd14cea6845afe15589c5c56eae60849d0ec088ae417e88a5"
     }
   ],
   "effects": [],

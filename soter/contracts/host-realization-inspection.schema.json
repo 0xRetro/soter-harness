@@ -66,9 +66,9 @@
         }
       }
     },
-    "request": { "$ref": "#/$defs/lifecycleRecord" },
+    "request": { "$ref": "#/$defs/requestRecord" },
     "confirmation": { "$ref": "#/$defs/confirmationRecord" },
-    "consumption": { "$ref": "#/$defs/lifecycleRecord" },
+    "consumption": { "$ref": "#/$defs/consumptionRecord" },
     "checkpoint": {
       "oneOf": [
         { "const": null },
@@ -118,7 +118,24 @@
         "reasonCode": { "type": "string", "pattern": "^HOST_REALIZATION_[A-Z0-9_]+$" },
         "reason": { "type": "string", "minLength": 8 },
         "permittedNextAction": { "enum": ["request-confirmation", "confirm", "start", "execute-checkpoint", "recover-checkpoint", "inspect-checkpoint", "replan", "none"] }
-      }
+      },
+      "oneOf": [
+        { "properties": { "classification": { "const": "unavailable" }, "reasonCode": { "const": "HOST_REALIZATION_COMPLETED" }, "reason": { "const": "The exact deterministic local projection is complete." }, "permittedNextAction": { "const": "none" } } },
+        { "properties": { "classification": { "const": "unavailable" }, "reasonCode": { "const": "HOST_REALIZATION_ROLLED_BACK" }, "reason": { "const": "The exact host realization checkpoint was rolled back and is terminal." }, "permittedNextAction": { "const": "none" } } },
+        { "properties": { "classification": { "const": "requires-review" }, "reasonCode": { "pattern": "^HOST_REALIZATION_[A-Z0-9_]+$" }, "reason": { "const": "Checkpoint state requires exact local inspection before any further action." }, "permittedNextAction": { "const": "inspect-checkpoint" } } },
+        { "properties": { "classification": { "const": "safe" }, "reasonCode": { "const": "HOST_REALIZATION_CHECKPOINT_READY" }, "reason": { "const": "The one-time start is bound to an exact prepared checkpoint." }, "permittedNextAction": { "const": "execute-checkpoint" } } },
+        { "properties": { "classification": { "const": "requires-review" }, "reasonCode": { "const": "HOST_REALIZATION_CHECKPOINT_REVIEW_REQUIRED" }, "reason": { "const": "The prepared checkpoint must be inspected because its plan is no longer current." }, "permittedNextAction": { "const": "inspect-checkpoint" } } },
+        { "properties": { "classification": { "const": "safe" }, "reasonCode": { "const": "HOST_REALIZATION_CHECKPOINT_RECOVERABLE" }, "reason": { "const": "The exact checkpoint may continue through Core recovery." }, "permittedNextAction": { "const": "recover-checkpoint" } } },
+        { "properties": { "classification": { "const": "requires-review" }, "reasonCode": { "const": "HOST_REALIZATION_CHECKPOINT_REVIEW_REQUIRED" }, "reason": { "const": "The exact checkpoint must be inspected because its plan is no longer current." }, "permittedNextAction": { "const": "inspect-checkpoint" } } },
+        { "properties": { "classification": { "const": "requires-review" }, "reasonCode": { "const": "HOST_REALIZATION_CONSUMPTION_INCOMPLETE" }, "reason": { "const": "The one-time start was reserved without its exact durable checkpoint." }, "permittedNextAction": { "const": "inspect-checkpoint" } } },
+        { "properties": { "classification": { "const": "unavailable" }, "reasonCode": { "const": "HOST_REALIZATION_PLAN_EXPIRED" }, "reason": { "const": "The private host realization plan is no longer current." }, "permittedNextAction": { "const": "replan" } } },
+        { "properties": { "classification": { "const": "unavailable" }, "reasonCode": { "const": "HOST_REALIZATION_PLAN_STALE" }, "reason": { "const": "The private host realization plan is no longer current." }, "permittedNextAction": { "const": "replan" } } },
+        { "properties": { "classification": { "const": "unavailable" }, "reasonCode": { "const": "HOST_REALIZATION_CONFIRMATION_EXPIRED" }, "reason": { "const": "The exact confirmation can no longer start work because its request expired." }, "permittedNextAction": { "const": "request-confirmation" } } },
+        { "properties": { "classification": { "const": "safe" }, "reasonCode": { "const": "HOST_REALIZATION_CONFIRMATION_CURRENT" }, "reason": { "const": "The exact confirmation may be consumed once before its request expires." }, "permittedNextAction": { "const": "start" } } },
+        { "properties": { "classification": { "const": "unavailable" }, "reasonCode": { "const": "HOST_REALIZATION_REQUEST_EXPIRED" }, "reason": { "const": "The exact confirmation request expired." }, "permittedNextAction": { "const": "request-confirmation" } } },
+        { "properties": { "classification": { "const": "safe" }, "reasonCode": { "const": "HOST_REALIZATION_CONFIRMATION_PENDING" }, "reason": { "const": "The exact expiring request is awaiting local operator confirmation." }, "permittedNextAction": { "const": "confirm" } } },
+        { "properties": { "classification": { "const": "safe" }, "reasonCode": { "const": "HOST_REALIZATION_PLAN_CURRENT" }, "reason": { "const": "The exact private plan is current and may request confirmation." }, "permittedNextAction": { "const": "request-confirmation" } } }
+      ]
     },
     "claims": {
       "type": "object", "additionalProperties": false,
@@ -135,6 +152,165 @@
     },
     "inspectionFingerprint": { "$ref": "#/$defs/fingerprint" }
   },
+  "allOf": [
+    {
+      "if": { "properties": { "confirmation": { "type": "object" } }, "required": ["confirmation"] },
+      "then": { "properties": { "request": { "type": "object" } } }
+    },
+    {
+      "if": { "properties": { "consumption": { "type": "object" } }, "required": ["consumption"] },
+      "then": { "properties": { "request": { "type": "object" }, "confirmation": { "type": "object" } } }
+    },
+    {
+      "if": { "properties": { "checkpoint": { "type": "object" } }, "required": ["checkpoint"] },
+      "then": { "properties": { "request": { "type": "object" }, "confirmation": { "type": "object" }, "consumption": { "type": "object", "properties": { "state": { "const": "started" } } } } }
+    },
+    {
+      "if": { "properties": { "consumption": { "type": "object", "properties": { "state": { "const": "reserved" } }, "required": ["state"] } }, "required": ["consumption"] },
+      "then": {
+        "properties": {
+          "checkpoint": { "const": null },
+          "resume": { "properties": { "reasonCode": { "const": "HOST_REALIZATION_CONSUMPTION_INCOMPLETE" } } }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "consumption": { "type": "object", "properties": { "state": { "const": "started" } }, "required": ["state"] } }, "required": ["consumption"] },
+      "then": { "properties": { "checkpoint": { "type": "object" } } }
+    },
+    {
+      "if": { "properties": { "checkpoint": { "type": "object", "properties": { "state": { "const": "prepared" } }, "required": ["state"] } }, "required": ["checkpoint"] },
+      "then": { "properties": { "checkpoint": { "properties": { "phase": { "const": "prepared" }, "currentOutputId": { "const": null }, "outputs": { "items": { "properties": { "state": { "const": "pending" } } } }, "failure": { "const": null } } } } }
+    },
+    {
+      "if": { "properties": { "checkpoint": { "type": "object", "properties": { "state": { "enum": ["applying", "verifying"] } }, "required": ["state"] } }, "required": ["checkpoint"] },
+      "then": { "properties": { "checkpoint": { "properties": { "failure": { "const": null } } } } }
+    },
+    {
+      "if": { "properties": { "checkpoint": { "type": "object", "properties": { "state": { "const": "applying" } }, "required": ["state"] } }, "required": ["checkpoint"] },
+      "then": { "properties": { "checkpoint": { "properties": { "phase": { "enum": ["directories", "outputs", "manifest"] }, "outputs": { "items": { "properties": { "state": { "enum": ["pending", "applied"] } } } } } } } }
+    },
+    {
+      "if": { "properties": { "checkpoint": { "type": "object", "properties": { "state": { "const": "verifying" } }, "required": ["state"] } }, "required": ["checkpoint"] },
+      "then": {
+        "properties": {
+          "checkpoint": {
+            "properties": {
+              "phase": { "const": "verifying" },
+              "outputs": { "items": { "properties": { "state": { "const": "applied" } } } }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "checkpoint": { "type": "object", "properties": { "state": { "const": "completed" } }, "required": ["state"] } }, "required": ["checkpoint"] },
+      "then": {
+        "properties": {
+          "plan": { "properties": { "applicability": { "const": "applied" } } },
+          "checkpoint": {
+            "properties": {
+              "phase": { "const": "terminal" },
+              "currentOutputId": { "const": null },
+              "outputs": { "items": { "properties": { "state": { "const": "verified" } } } },
+              "failure": { "const": null }
+            }
+          },
+          "resume": { "properties": { "reasonCode": { "const": "HOST_REALIZATION_COMPLETED" } } },
+          "claims": { "properties": { "localProjection": { "const": "passed" } } }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "checkpoint": { "type": "object", "properties": { "state": { "const": "rolling-back" } }, "required": ["state"] } }, "required": ["checkpoint"] },
+      "then": { "properties": { "checkpoint": { "properties": { "phase": { "const": "rollback" }, "failure": { "type": "object" } } } } }
+    },
+    {
+      "if": { "properties": { "checkpoint": { "type": "object", "properties": { "state": { "const": "rolled-back" } }, "required": ["state"] } }, "required": ["checkpoint"] },
+      "then": {
+        "properties": {
+          "checkpoint": {
+            "properties": {
+              "phase": { "const": "terminal" },
+              "currentOutputId": { "const": null },
+              "outputs": { "items": { "properties": { "state": { "const": "rolled-back" } } } },
+              "failure": { "type": "object" }
+            }
+          },
+          "resume": { "properties": { "reasonCode": { "const": "HOST_REALIZATION_ROLLED_BACK" } } },
+          "claims": { "properties": { "localProjection": { "const": "unknown" } } }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "checkpoint": { "type": "object", "properties": { "state": { "const": "needs-attention" } }, "required": ["state"] } }, "required": ["checkpoint"] },
+      "then": {
+        "properties": {
+          "checkpoint": { "properties": { "phase": { "const": "terminal" }, "failure": { "type": "object" } } },
+          "resume": {
+            "properties": {
+              "classification": { "const": "requires-review" },
+              "reason": { "const": "Checkpoint state requires exact local inspection before any further action." },
+              "permittedNextAction": { "const": "inspect-checkpoint" }
+            }
+          },
+          "claims": { "properties": { "localProjection": { "const": "unknown" } } }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "checkpoint": { "const": null } }, "required": ["checkpoint"] },
+      "then": { "properties": { "plan": { "properties": { "applicability": { "enum": ["current", "stale", "expired"] } } }, "claims": { "properties": { "localProjection": { "const": "unknown" } } } } }
+    },
+    {
+      "if": { "properties": { "plan": { "properties": { "applicability": { "const": "applied" } }, "required": ["applicability"] } }, "required": ["plan"] },
+      "then": { "properties": { "checkpoint": { "type": "object", "properties": { "state": { "const": "completed" } }, "required": ["state"] } } }
+    },
+    {
+      "if": { "properties": { "plan": { "properties": { "applicability": { "const": "current" } }, "required": ["applicability"] }, "checkpoint": { "type": "object", "properties": { "state": { "const": "prepared" } }, "required": ["state"] } }, "required": ["plan", "checkpoint"] },
+      "then": { "properties": { "resume": { "properties": { "reasonCode": { "const": "HOST_REALIZATION_CHECKPOINT_READY" } } } } }
+    },
+    {
+      "if": { "properties": { "plan": { "properties": { "applicability": { "enum": ["stale", "expired"] } }, "required": ["applicability"] }, "checkpoint": { "type": "object", "properties": { "state": { "const": "prepared" } }, "required": ["state"] } }, "required": ["plan", "checkpoint"] },
+      "then": { "properties": { "resume": { "properties": { "reasonCode": { "const": "HOST_REALIZATION_CHECKPOINT_REVIEW_REQUIRED" } } } } }
+    },
+    {
+      "if": { "properties": { "plan": { "properties": { "applicability": { "const": "current" } }, "required": ["applicability"] }, "checkpoint": { "type": "object", "properties": { "state": { "enum": ["applying", "verifying", "rolling-back"] } }, "required": ["state"] } }, "required": ["plan", "checkpoint"] },
+      "then": { "properties": { "resume": { "properties": { "reasonCode": { "const": "HOST_REALIZATION_CHECKPOINT_RECOVERABLE" } } } } }
+    },
+    {
+      "if": { "properties": { "plan": { "properties": { "applicability": { "enum": ["stale", "expired"] } }, "required": ["applicability"] }, "checkpoint": { "type": "object", "properties": { "state": { "enum": ["applying", "verifying", "rolling-back"] } }, "required": ["state"] } }, "required": ["plan", "checkpoint"] },
+      "then": { "properties": { "resume": { "properties": { "reasonCode": { "const": "HOST_REALIZATION_CHECKPOINT_REVIEW_REQUIRED" } } } } }
+    },
+    {
+      "if": { "properties": { "plan": { "properties": { "applicability": { "const": "stale" } }, "required": ["applicability"] }, "checkpoint": { "const": null }, "consumption": { "const": null } }, "required": ["plan", "checkpoint", "consumption"] },
+      "then": { "properties": { "resume": { "properties": { "reasonCode": { "const": "HOST_REALIZATION_PLAN_STALE" } } } } }
+    },
+    {
+      "if": { "properties": { "plan": { "properties": { "applicability": { "const": "expired" } }, "required": ["applicability"] }, "checkpoint": { "const": null }, "consumption": { "const": null } }, "required": ["plan", "checkpoint", "consumption"] },
+      "then": { "properties": { "resume": { "properties": { "reasonCode": { "const": "HOST_REALIZATION_PLAN_EXPIRED" } } } } }
+    },
+    {
+      "if": { "properties": { "plan": { "properties": { "applicability": { "const": "current" } }, "required": ["applicability"] }, "request": { "const": null }, "confirmation": { "const": null }, "consumption": { "const": null }, "checkpoint": { "const": null } }, "required": ["plan", "request", "confirmation", "consumption", "checkpoint"] },
+      "then": { "properties": { "resume": { "properties": { "reasonCode": { "const": "HOST_REALIZATION_PLAN_CURRENT" } } } } }
+    },
+    {
+      "if": { "properties": { "plan": { "properties": { "applicability": { "const": "current" } }, "required": ["applicability"] }, "request": { "type": "object", "properties": { "state": { "const": "current" } }, "required": ["state"] }, "confirmation": { "const": null }, "consumption": { "const": null }, "checkpoint": { "const": null } }, "required": ["plan", "request", "confirmation", "consumption", "checkpoint"] },
+      "then": { "properties": { "resume": { "properties": { "reasonCode": { "const": "HOST_REALIZATION_CONFIRMATION_PENDING" } } } } }
+    },
+    {
+      "if": { "properties": { "plan": { "properties": { "applicability": { "const": "current" } }, "required": ["applicability"] }, "request": { "type": "object", "properties": { "state": { "const": "expired" } }, "required": ["state"] }, "confirmation": { "const": null }, "consumption": { "const": null }, "checkpoint": { "const": null } }, "required": ["plan", "request", "confirmation", "consumption", "checkpoint"] },
+      "then": { "properties": { "resume": { "properties": { "reasonCode": { "const": "HOST_REALIZATION_REQUEST_EXPIRED" } } } } }
+    },
+    {
+      "if": { "properties": { "plan": { "properties": { "applicability": { "const": "current" } }, "required": ["applicability"] }, "request": { "type": "object", "properties": { "state": { "const": "current" } }, "required": ["state"] }, "confirmation": { "type": "object" }, "consumption": { "const": null }, "checkpoint": { "const": null } }, "required": ["plan", "request", "confirmation", "consumption", "checkpoint"] },
+      "then": { "properties": { "resume": { "properties": { "reasonCode": { "const": "HOST_REALIZATION_CONFIRMATION_CURRENT" } } } } }
+    },
+    {
+      "if": { "properties": { "plan": { "properties": { "applicability": { "const": "current" } }, "required": ["applicability"] }, "request": { "type": "object", "properties": { "state": { "const": "expired" } }, "required": ["state"] }, "confirmation": { "type": "object" }, "consumption": { "const": null }, "checkpoint": { "const": null } }, "required": ["plan", "request", "confirmation", "consumption", "checkpoint"] },
+      "then": { "properties": { "resume": { "properties": { "reasonCode": { "const": "HOST_REALIZATION_CONFIRMATION_EXPIRED" } } } } }
+    }
+  ],
   "$defs": {
     "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
     "version": { "type": "string", "pattern": "^[0-9]+[.][0-9]+[.][0-9]+$" },
@@ -147,7 +323,7 @@
         "fingerprint": { "$ref": "#/$defs/fingerprint" }
       }
     },
-    "lifecycleRecord": {
+    "requestRecord": {
       "oneOf": [
         { "const": null },
         {
@@ -156,8 +332,23 @@
           "properties": {
             "id": { "type": "string" },
             "fingerprint": { "$ref": "#/$defs/fingerprint" },
-            "state": { "enum": ["pending", "current", "expired", "confirmed", "reserved", "started"] },
-            "at": { "type": ["string", "null"] }
+            "state": { "enum": ["current", "expired"] },
+            "at": { "type": "string", "minLength": 20 }
+          }
+        }
+      ]
+    },
+    "consumptionRecord": {
+      "oneOf": [
+        { "const": null },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["id", "fingerprint", "state", "at"],
+          "properties": {
+            "id": { "type": "string" },
+            "fingerprint": { "$ref": "#/$defs/fingerprint" },
+            "state": { "enum": ["reserved", "started"] },
+            "at": { "type": "string", "minLength": 20 }
           }
         }
       ]

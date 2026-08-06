@@ -10,8 +10,8 @@
     "id": "project-page-review",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:4799a8bba2896bb3aee6d8ca520609d2bfb4775752dccf7f458fa401e0baf9db",
-  "graphFingerprint": "sha256:984e3da2e8f802ac7e7a4a1e2de70ac3f0fd5b179eb9dec9264b9635fceb3be3",
+  "configurationLockFingerprint": "sha256:e59260b220370dbd53c0572265ed63f4446311226b4c91a4fe923dc6fbd7887f",
+  "graphFingerprint": "sha256:d058640cc99da80a247a5ccbe76653e37fa0d0117677686fac63954b3053a085",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -134,7 +134,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:4799a8bba2896bb3aee6d8ca520609d2bfb4775752dccf7f458fa401e0baf9db"
+      "fingerprint": "sha256:e59260b220370dbd53c0572265ed63f4446311226b4c91a4fe923dc6fbd7887f"
     }
   ],
   "effects": [],

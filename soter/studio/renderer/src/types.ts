@@ -1279,9 +1279,9 @@ export interface HostRealizationInspection {
       afterFingerprint: string | null;
     }>;
   };
-  request: null | { id: string; fingerprint: string; state: 'pending' | 'current' | 'expired' | 'confirmed' | 'reserved' | 'started'; at: string | null };
+  request: null | { id: string; fingerprint: string; state: 'current' | 'expired'; at: string };
   confirmation: null | { id: string; fingerprint: string; state: 'confirmed'; at: string; actor: string };
-  consumption: null | { id: string; fingerprint: string; state: 'pending' | 'current' | 'expired' | 'confirmed' | 'reserved' | 'started'; at: string | null };
+  consumption: null | { id: string; fingerprint: string; state: 'reserved' | 'started'; at: string };
   checkpoint: null | {
     id: string;
     fingerprint: string;

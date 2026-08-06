@@ -13,9 +13,9 @@
   },
   "configurationLock": {
     "path": "soter/fixtures/meeting-intake/meeting-intake.lock.json",
-    "fingerprint": "sha256:cee118dc825213bd32ba0f8a74fcc1933706c9274a503e6e41d35cd4fa884b9e"
+    "fingerprint": "sha256:3dd341a9ac6ff19e22ebd07946d665ab923535e65ae6d5f33f3a787291524888"
   },
-  "graphFingerprint": "sha256:c624cf25bea9fd057ca1c6732152b70b2d36e07e681e40d08fe6614c8740d63e",
+  "graphFingerprint": "sha256:c65ecac6910dfea1264122e880489963d0822b34ee186d2282755c2cc41f76dc",
   "context": [
     {
       "subject": "crm.records",
@@ -24,7 +24,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/policies",
       "declarationFingerprint": "sha256:bb8707ba433f49d40250874f67667e8e3fb9243ba31895b026d530750f2c7b88",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:cee118dc825213bd32ba0f8a74fcc1933706c9274a503e6e41d35cd4fa884b9e",
+      "provenance": "configuration-lock:sha256:3dd341a9ac6ff19e22ebd07946d665ab923535e65ae6d5f33f3a787291524888",
       "freshness": "unknown"
     },
     {
@@ -34,7 +34,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/crm",
       "declarationFingerprint": "sha256:23a6dd9d0b3aa51376f36403b34c0e0530399afab401429e72b3a30eddf14e11",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:cee118dc825213bd32ba0f8a74fcc1933706c9274a503e6e41d35cd4fa884b9e",
+      "provenance": "configuration-lock:sha256:3dd341a9ac6ff19e22ebd07946d665ab923535e65ae6d5f33f3a787291524888",
       "freshness": "unknown"
     },
     {
@@ -44,7 +44,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/meeting-policies",
       "declarationFingerprint": "sha256:98e080ad675a7d7ba10d62449164df4b2b7774f5fec5a6f8ab8c02213caeb7c6",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:cee118dc825213bd32ba0f8a74fcc1933706c9274a503e6e41d35cd4fa884b9e",
+      "provenance": "configuration-lock:sha256:3dd341a9ac6ff19e22ebd07946d665ab923535e65ae6d5f33f3a787291524888",
       "freshness": "unknown"
     },
     {
@@ -54,7 +54,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/meetings",
       "declarationFingerprint": "sha256:8abd68d26f22693f3573546c995297998e5655b35ac6c21524e3b548ecddce60",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:cee118dc825213bd32ba0f8a74fcc1933706c9274a503e6e41d35cd4fa884b9e",
+      "provenance": "configuration-lock:sha256:3dd341a9ac6ff19e22ebd07946d665ab923535e65ae6d5f33f3a787291524888",
       "freshness": "unknown"
     },
     {
@@ -64,7 +64,7 @@
       "uri": "soter-fixture://configuration-template/notion/account/operator",
       "declarationFingerprint": "sha256:e3e11d347b7a0109668facaeb7b12311023da39949d1328bfd918c53a406c756",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:cee118dc825213bd32ba0f8a74fcc1933706c9274a503e6e41d35cd4fa884b9e",
+      "provenance": "configuration-lock:sha256:3dd341a9ac6ff19e22ebd07946d665ab923535e65ae6d5f33f3a787291524888",
       "freshness": "unknown"
     },
     {
@@ -74,7 +74,7 @@
       "uri": "soter-fixture://configuration-template/otter/account/operator",
       "declarationFingerprint": "sha256:b2acdfc57c3b02106dcfe5c7b9e6838548a644c6e8927999d7a051057ba64331",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:cee118dc825213bd32ba0f8a74fcc1933706c9274a503e6e41d35cd4fa884b9e",
+      "provenance": "configuration-lock:sha256:3dd341a9ac6ff19e22ebd07946d665ab923535e65ae6d5f33f3a787291524888",
       "freshness": "unknown"
     },
     {
@@ -84,7 +84,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/project-policies",
       "declarationFingerprint": "sha256:fce3445f679b41227242b5dbc7fafd2cb86c9a95020d887a50c5df612eee0f83",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:cee118dc825213bd32ba0f8a74fcc1933706c9274a503e6e41d35cd4fa884b9e",
+      "provenance": "configuration-lock:sha256:3dd341a9ac6ff19e22ebd07946d665ab923535e65ae6d5f33f3a787291524888",
       "freshness": "unknown"
     },
     {
@@ -94,7 +94,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/projects",
       "declarationFingerprint": "sha256:97b91257bdd2ef42a8ce3efcb23bc86d5a337118c9d81058af64035b7e7a0aa6",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:cee118dc825213bd32ba0f8a74fcc1933706c9274a503e6e41d35cd4fa884b9e",
+      "provenance": "configuration-lock:sha256:3dd341a9ac6ff19e22ebd07946d665ab923535e65ae6d5f33f3a787291524888",
       "freshness": "unknown"
     },
     {
@@ -104,7 +104,7 @@
       "uri": "soter-state://runs",
       "declarationFingerprint": "sha256:6f39e99f1ebc86fe11ee09cc7170824ac4c11a6fc88371edb673bd2379dacdc8",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:cee118dc825213bd32ba0f8a74fcc1933706c9274a503e6e41d35cd4fa884b9e",
+      "provenance": "configuration-lock:sha256:3dd341a9ac6ff19e22ebd07946d665ab923535e65ae6d5f33f3a787291524888",
       "freshness": "unknown"
     },
     {
@@ -114,7 +114,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/task-policies",
       "declarationFingerprint": "sha256:88a0f55602be20f6491a2faf0180ed8b16b309f23d937f41878065bd784358bb",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:cee118dc825213bd32ba0f8a74fcc1933706c9274a503e6e41d35cd4fa884b9e",
+      "provenance": "configuration-lock:sha256:3dd341a9ac6ff19e22ebd07946d665ab923535e65ae6d5f33f3a787291524888",
       "freshness": "unknown"
     },
     {
@@ -124,7 +124,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/tasks",
       "declarationFingerprint": "sha256:dcb3e8d127b4bcc04235daa8426dce206db992719e80880e7fb994f670cf1d8a",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:cee118dc825213bd32ba0f8a74fcc1933706c9274a503e6e41d35cd4fa884b9e",
+      "provenance": "configuration-lock:sha256:3dd341a9ac6ff19e22ebd07946d665ab923535e65ae6d5f33f3a787291524888",
       "freshness": "unknown"
     }
   ],

@@ -25,6 +25,9 @@
     "limitations": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 12 } },
     "inspectionFingerprint": { "$ref": "#/$defs/fingerprint" }
   },
+  "allOf": [
+    { "$ref": "#/$defs/lifecycle" }
+  ],
   "$defs": {
     "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
     "nullableFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
@@ -118,9 +121,95 @@
     "nullableConfirmation": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/confirmation" }] },
     "consumption": { "type": "object", "additionalProperties": false, "required": ["id", "fingerprint", "state", "checkpointId"], "properties": { "id": { "type": "string" }, "fingerprint": { "$ref": "#/$defs/fingerprint" }, "state": { "enum": ["reserved", "started"] }, "checkpointId": { "type": "string" } } },
     "nullableConsumption": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/consumption" }] },
-    "checkpoint": { "type": "object", "additionalProperties": false, "required": ["id", "fingerprint", "state", "reasonCode", "currentStep", "completedPrefix", "pendingSteps", "manifestState", "blocker"], "properties": { "id": { "type": "string" }, "fingerprint": { "$ref": "#/$defs/fingerprint" }, "state": { "enum": ["prepared", "applying", "committing", "completed", "rolling-back", "rolled-back", "failed", "needs-attention"] }, "reasonCode": { "type": "string" }, "currentStep": { "type": ["string", "null"] }, "completedPrefix": { "type": "array", "uniqueItems": true, "items": { "type": "string" } }, "pendingSteps": { "type": "array", "uniqueItems": true, "items": { "type": "string" } }, "manifestState": { "enum": ["pending", "written", "verified", "rolled-back"] }, "blocker": { "type": ["string", "null"] } } },
+    "checkpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fingerprint", "state", "reasonCode", "currentStep", "completedPrefix", "pendingSteps", "manifestState", "blocker"],
+      "properties": {
+        "id": { "type": "string" },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "state": { "enum": ["prepared", "applying", "committing", "completed", "rolling-back", "rolled-back", "failed", "needs-attention"] },
+        "reasonCode": { "type": "string", "pattern": "^PACK_INSTALL_[A-Z0-9_]+$" },
+        "currentStep": { "type": ["string", "null"] },
+        "completedPrefix": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+        "pendingSteps": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+        "manifestState": { "enum": ["pending", "written", "verified", "rolled-back"] },
+        "blocker": { "type": ["string", "null"], "pattern": "^PACK_INSTALL_[A-Z0-9_]+$" }
+      },
+      "allOf": [{ "$ref": "#/$defs/checkpointState" }]
+    },
     "nullableCheckpoint": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/checkpoint" }] },
-    "resume": { "type": "object", "additionalProperties": false, "required": ["classification", "reasonCode", "reason", "permittedNextAction"], "properties": { "classification": { "enum": ["safe", "requires-review", "unavailable"] }, "reasonCode": { "type": "string", "pattern": "^PACK_INSTALL_[A-Z0-9_]+$" }, "reason": { "type": "string", "minLength": 12 }, "permittedNextAction": { "enum": ["create-request", "renew-request", "confirm-request", "start-install", "execute-checkpoint", "recover-checkpoint", "inspect-install", "none"] } } },
+    "resume": {
+      "oneOf": [
+        { "$ref": "#/$defs/resumeStateUnavailable" },
+        { "$ref": "#/$defs/resumePlanExpired" },
+        { "$ref": "#/$defs/resumeRequestAvailable" },
+        { "$ref": "#/$defs/resumeRequestExpired" },
+        { "$ref": "#/$defs/resumeConfirmationAvailable" },
+        { "$ref": "#/$defs/resumeConfirmationExpired" },
+        { "$ref": "#/$defs/resumeStartAvailable" },
+        { "$ref": "#/$defs/resumeConsumptionIncomplete" },
+        { "$ref": "#/$defs/resumeCheckpointExecutable" },
+        { "$ref": "#/$defs/resumeRecoverable" },
+        { "$ref": "#/$defs/resumeCompleted" },
+        { "$ref": "#/$defs/resumeRolledBack" },
+        { "$ref": "#/$defs/resumeFailed" }
+      ]
+    },
+    "resumeShape": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["classification", "reasonCode", "reason", "permittedNextAction"],
+      "properties": {
+        "classification": { "enum": ["safe", "requires-review", "unavailable"] },
+        "reasonCode": { "type": "string", "pattern": "^PACK_INSTALL_[A-Z0-9_]+$" },
+        "reason": { "type": "string", "minLength": 12 },
+        "permittedNextAction": { "enum": ["create-request", "renew-request", "confirm-request", "start-install", "execute-checkpoint", "recover-checkpoint", "inspect-install", "none"] }
+      }
+    },
+    "resumeStateUnavailable": { "allOf": [{ "$ref": "#/$defs/resumeShape" }, { "properties": { "classification": { "const": "unavailable" }, "reasonCode": { "const": "PACK_INSTALL_STATE_UNAVAILABLE" }, "permittedNextAction": { "const": "inspect-install" } } }] },
+    "resumePlanExpired": { "allOf": [{ "$ref": "#/$defs/resumeShape" }, { "properties": { "classification": { "const": "unavailable" }, "reasonCode": { "const": "PACK_INSTALL_PLAN_EXPIRED" }, "permittedNextAction": { "const": "inspect-install" } } }] },
+    "resumeRequestAvailable": { "allOf": [{ "$ref": "#/$defs/resumeShape" }, { "properties": { "classification": { "const": "safe" }, "reasonCode": { "const": "PACK_INSTALL_REQUEST_AVAILABLE" }, "permittedNextAction": { "const": "create-request" } } }] },
+    "resumeRequestExpired": { "allOf": [{ "$ref": "#/$defs/resumeShape" }, { "properties": { "classification": { "const": "requires-review" }, "reasonCode": { "const": "PACK_INSTALL_REQUEST_EXPIRED" }, "permittedNextAction": { "const": "renew-request" } } }] },
+    "resumeConfirmationAvailable": { "allOf": [{ "$ref": "#/$defs/resumeShape" }, { "properties": { "classification": { "const": "safe" }, "reasonCode": { "const": "PACK_INSTALL_CONFIRMATION_AVAILABLE" }, "permittedNextAction": { "const": "confirm-request" } } }] },
+    "resumeConfirmationExpired": { "allOf": [{ "$ref": "#/$defs/resumeShape" }, { "properties": { "classification": { "const": "requires-review" }, "reasonCode": { "const": "PACK_INSTALL_CONFIRMATION_EXPIRED" }, "permittedNextAction": { "const": "renew-request" } } }] },
+    "resumeStartAvailable": { "allOf": [{ "$ref": "#/$defs/resumeShape" }, { "properties": { "classification": { "const": "safe" }, "reasonCode": { "const": "PACK_INSTALL_START_AVAILABLE" }, "permittedNextAction": { "const": "start-install" } } }] },
+    "resumeConsumptionIncomplete": { "allOf": [{ "$ref": "#/$defs/resumeShape" }, { "properties": { "classification": { "const": "requires-review" }, "reasonCode": { "const": "PACK_INSTALL_CONSUMPTION_INCOMPLETE" }, "permittedNextAction": { "const": "inspect-install" } } }] },
+    "resumeCheckpointExecutable": { "allOf": [{ "$ref": "#/$defs/resumeShape" }, { "properties": { "classification": { "const": "safe" }, "reasonCode": { "const": "PACK_INSTALL_CHECKPOINT_EXECUTABLE" }, "permittedNextAction": { "const": "execute-checkpoint" } } }] },
+    "resumeRecoveryRequired": { "allOf": [{ "$ref": "#/$defs/resumeShape" }, { "properties": { "classification": { "const": "requires-review" }, "reasonCode": { "const": "PACK_INSTALL_RECOVERY_REQUIRED" }, "permittedNextAction": { "const": "recover-checkpoint" } } }] },
+    "resumeRecoverable": { "allOf": [{ "$ref": "#/$defs/resumeShape" }, { "properties": { "classification": { "const": "requires-review" }, "permittedNextAction": { "const": "recover-checkpoint" } } }] },
+    "resumeCompleted": { "allOf": [{ "$ref": "#/$defs/resumeShape" }, { "properties": { "classification": { "const": "unavailable" }, "reasonCode": { "const": "PACK_INSTALL_COMPLETED" }, "reason": { "const": "This local pack install checkpoint is terminal and grants no further execution authority." }, "permittedNextAction": { "const": "none" } } }] },
+    "resumeRolledBack": { "allOf": [{ "$ref": "#/$defs/resumeShape" }, { "properties": { "classification": { "const": "unavailable" }, "reasonCode": { "const": "PACK_INSTALL_ROLLED_BACK" }, "reason": { "const": "This local pack install checkpoint is terminal and grants no further execution authority." }, "permittedNextAction": { "const": "none" } } }] },
+    "resumeFailed": { "allOf": [{ "$ref": "#/$defs/resumeShape" }, { "properties": { "classification": { "const": "unavailable" }, "reasonCode": { "pattern": "^PACK_INSTALL_(?!(?:COMPLETED|ROLLED_BACK)$)[A-Z0-9_]+$" }, "reason": { "const": "This local pack install checkpoint is terminal and grants no further execution authority." }, "permittedNextAction": { "const": "none" } } }] },
+    "checkpointState": {
+      "oneOf": [
+        { "properties": { "state": { "const": "prepared" }, "reasonCode": { "const": "PACK_INSTALL_CHECKPOINT_PREPARED" }, "currentStep": { "type": "null" }, "completedPrefix": { "maxItems": 0 }, "pendingSteps": { "minItems": 1 }, "manifestState": { "const": "pending" }, "blocker": { "type": "null" } } },
+        { "properties": { "state": { "const": "applying" }, "reasonCode": { "enum": ["PACK_INSTALL_DIRECTORY_APPLYING", "PACK_INSTALL_DIRECTORY_CREATED", "PACK_INSTALL_FILE_APPLYING", "PACK_INSTALL_FILE_APPLIED", "PACK_INSTALL_FILE_VERIFIED"] }, "currentStep": { "type": "string", "minLength": 1 }, "manifestState": { "const": "pending" }, "blocker": { "type": "null" } } },
+        { "properties": { "state": { "const": "committing" }, "reasonCode": { "const": "PACK_INSTALL_MANIFEST_WRITING" }, "currentStep": { "const": "pack-install-manifest" }, "pendingSteps": { "maxItems": 0 }, "manifestState": { "const": "pending" }, "blocker": { "type": "null" } } },
+        { "properties": { "state": { "const": "completed" }, "reasonCode": { "const": "PACK_INSTALL_COMPLETED" }, "currentStep": { "type": "null" }, "completedPrefix": { "minItems": 1 }, "pendingSteps": { "maxItems": 0 }, "manifestState": { "const": "verified" }, "blocker": { "type": "null" } } },
+        { "properties": { "state": { "const": "rolling-back" }, "reasonCode": { "const": "PACK_INSTALL_ROLLBACK_STARTED" }, "currentStep": { "type": "null" }, "manifestState": { "const": "pending" } } },
+        { "properties": { "state": { "const": "rolled-back" }, "reasonCode": { "const": "PACK_INSTALL_ROLLED_BACK" }, "currentStep": { "type": "null" }, "manifestState": { "const": "rolled-back" } } },
+        { "properties": { "state": { "const": "failed" }, "currentStep": { "type": "null" }, "manifestState": { "const": "pending" }, "blocker": { "type": "string" } } },
+        { "properties": { "state": { "const": "needs-attention" }, "currentStep": { "type": "null" }, "manifestState": { "const": "pending" }, "blocker": { "type": "string" } } }
+      ]
+    },
+    "lifecycle": {
+      "oneOf": [
+        { "properties": { "plan": { "type": "null" }, "request": { "type": "null" }, "confirmation": { "type": "null" }, "consumption": { "type": "null" }, "checkpoint": { "type": "null" }, "resume": { "$ref": "#/$defs/resumeStateUnavailable" } } },
+        { "properties": { "plan": { "$ref": "#/$defs/plan" }, "request": { "type": "null" }, "confirmation": { "type": "null" }, "consumption": { "type": "null" }, "checkpoint": { "type": "null" }, "resume": { "oneOf": [{ "$ref": "#/$defs/resumeRequestAvailable" }, { "$ref": "#/$defs/resumePlanExpired" }] } } },
+        { "properties": { "plan": { "$ref": "#/$defs/plan" }, "request": { "allOf": [{ "$ref": "#/$defs/request" }, { "properties": { "state": { "const": "current" } } }] }, "confirmation": { "type": "null" }, "consumption": { "type": "null" }, "checkpoint": { "type": "null" }, "resume": { "$ref": "#/$defs/resumeConfirmationAvailable" } } },
+        { "properties": { "plan": { "$ref": "#/$defs/plan" }, "request": { "allOf": [{ "$ref": "#/$defs/request" }, { "properties": { "state": { "const": "expired" } } }] }, "confirmation": { "type": "null" }, "consumption": { "type": "null" }, "checkpoint": { "type": "null" }, "resume": { "$ref": "#/$defs/resumeRequestExpired" } } },
+        { "properties": { "plan": { "$ref": "#/$defs/plan" }, "request": { "allOf": [{ "$ref": "#/$defs/request" }, { "properties": { "state": { "const": "current" } } }] }, "confirmation": { "$ref": "#/$defs/confirmation" }, "consumption": { "type": "null" }, "checkpoint": { "type": "null" }, "resume": { "$ref": "#/$defs/resumeStartAvailable" } } },
+        { "properties": { "plan": { "$ref": "#/$defs/plan" }, "request": { "allOf": [{ "$ref": "#/$defs/request" }, { "properties": { "state": { "const": "expired" } } }] }, "confirmation": { "$ref": "#/$defs/confirmation" }, "consumption": { "type": "null" }, "checkpoint": { "type": "null" }, "resume": { "$ref": "#/$defs/resumeConfirmationExpired" } } },
+        { "properties": { "plan": { "$ref": "#/$defs/plan" }, "request": { "$ref": "#/$defs/request" }, "confirmation": { "$ref": "#/$defs/confirmation" }, "consumption": { "$ref": "#/$defs/consumption" }, "checkpoint": { "type": "null" }, "resume": { "$ref": "#/$defs/resumeConsumptionIncomplete" } } },
+        { "properties": { "plan": { "$ref": "#/$defs/plan" }, "request": { "$ref": "#/$defs/request" }, "confirmation": { "$ref": "#/$defs/confirmation" }, "consumption": { "allOf": [{ "$ref": "#/$defs/consumption" }, { "properties": { "state": { "const": "started" } } }] }, "checkpoint": { "allOf": [{ "$ref": "#/$defs/checkpoint" }, { "properties": { "state": { "const": "prepared" } } }] }, "resume": { "$ref": "#/$defs/resumeCheckpointExecutable" } } },
+        { "properties": { "plan": { "$ref": "#/$defs/plan" }, "request": { "$ref": "#/$defs/request" }, "confirmation": { "$ref": "#/$defs/confirmation" }, "consumption": { "allOf": [{ "$ref": "#/$defs/consumption" }, { "properties": { "state": { "const": "started" } } }] }, "checkpoint": { "allOf": [{ "$ref": "#/$defs/checkpoint" }, { "properties": { "state": { "enum": ["applying", "committing", "rolling-back"] } } }] }, "resume": { "$ref": "#/$defs/resumeRecoveryRequired" } } },
+        { "properties": { "plan": { "$ref": "#/$defs/plan" }, "request": { "$ref": "#/$defs/request" }, "confirmation": { "$ref": "#/$defs/confirmation" }, "consumption": { "allOf": [{ "$ref": "#/$defs/consumption" }, { "properties": { "state": { "const": "started" } } }] }, "checkpoint": { "allOf": [{ "$ref": "#/$defs/checkpoint" }, { "properties": { "state": { "const": "needs-attention" } } }] }, "resume": { "$ref": "#/$defs/resumeRecoverable" } } },
+        { "properties": { "plan": { "$ref": "#/$defs/plan" }, "request": { "$ref": "#/$defs/request" }, "confirmation": { "$ref": "#/$defs/confirmation" }, "consumption": { "allOf": [{ "$ref": "#/$defs/consumption" }, { "properties": { "state": { "const": "started" } } }] }, "checkpoint": { "allOf": [{ "$ref": "#/$defs/checkpoint" }, { "properties": { "state": { "const": "completed" } } }] }, "resume": { "$ref": "#/$defs/resumeCompleted" } } },
+        { "properties": { "plan": { "$ref": "#/$defs/plan" }, "request": { "$ref": "#/$defs/request" }, "confirmation": { "$ref": "#/$defs/confirmation" }, "consumption": { "allOf": [{ "$ref": "#/$defs/consumption" }, { "properties": { "state": { "const": "started" } } }] }, "checkpoint": { "allOf": [{ "$ref": "#/$defs/checkpoint" }, { "properties": { "state": { "const": "rolled-back" } } }] }, "resume": { "$ref": "#/$defs/resumeRolledBack" } } },
+        { "properties": { "plan": { "$ref": "#/$defs/plan" }, "request": { "$ref": "#/$defs/request" }, "confirmation": { "$ref": "#/$defs/confirmation" }, "consumption": { "allOf": [{ "$ref": "#/$defs/consumption" }, { "properties": { "state": { "const": "started" } } }] }, "checkpoint": { "allOf": [{ "$ref": "#/$defs/checkpoint" }, { "properties": { "state": { "const": "failed" } } }] }, "resume": { "$ref": "#/$defs/resumeFailed" } } }
+      ]
+    },
     "claims": { "type": "object", "additionalProperties": false, "required": ["localReleaseBytes", "dependencyConstraints", "localMaterialization", "installedRegistry", "configured", "hostRealization", "npmDependencies", "ready", "verified", "healthy", "networkAvailability", "publisherIdentity", "legalSufficiency", "trust"], "properties": { "localReleaseBytes": { "const": "passed" }, "dependencyConstraints": { "const": "passed" }, "localMaterialization": { "enum": ["unknown", "passed", "failed"] }, "installedRegistry": { "enum": ["unknown", "passed", "failed"] }, "configured": { "const": "unknown" }, "hostRealization": { "const": "unknown" }, "npmDependencies": { "const": "not-evaluated" }, "ready": { "const": "unknown" }, "verified": { "const": "unknown" }, "healthy": { "const": "unknown" }, "networkAvailability": { "const": "unknown" }, "publisherIdentity": { "const": "not-evaluated" }, "legalSufficiency": { "const": "not-evaluated" }, "trust": { "const": "not-evaluated" } } },
     "authority": { "type": "object", "additionalProperties": false, "required": ["fetch", "install", "upgrade", "uninstall", "configure", "realizeHost", "runPackageManager", "network", "publish", "trust"], "properties": { "fetch": { "const": false }, "install": { "const": false }, "upgrade": { "const": false }, "uninstall": { "const": false }, "configure": { "const": false }, "realizeHost": { "const": false }, "runPackageManager": { "const": false }, "network": { "const": false }, "publish": { "const": false }, "trust": { "const": false } } },
     "privacy": { "type": "object", "additionalProperties": false, "required": ["targetRootIncluded", "capsulePathsIncluded", "capsuleBytesIncluded", "priorBytesIncluded", "candidateBytesIncluded", "rawManagedManifestIncluded", "privateStateIncluded", "credentialValuesIncluded", "rawProviderResponsesIncluded"], "properties": { "targetRootIncluded": { "const": false }, "capsulePathsIncluded": { "const": false }, "capsuleBytesIncluded": { "const": false }, "priorBytesIncluded": { "const": false }, "candidateBytesIncluded": { "const": false }, "rawManagedManifestIncluded": { "const": false }, "privateStateIncluded": { "const": false }, "credentialValuesIncluded": { "const": false }, "rawProviderResponsesIncluded": { "const": false } } }

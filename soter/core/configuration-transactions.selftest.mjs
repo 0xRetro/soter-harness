@@ -926,6 +926,16 @@ export async function selftestConfigurationTransactions(root = defaultRoot) {
     ));
     assert(validateJsonSchema(hostileInspection, inspectionSchema).length >= 5,
       'Sanitized configuration inspection schema accepted raw configuration escape fields.');
+    for (const missingAncestors of [
+      ['request'],
+      ['confirmation'],
+      ['request', 'confirmation']
+    ]) {
+      const orphanedInspection = structuredClone(beforeInspection);
+      for (const property of missingAncestors) orphanedInspection[property] = null;
+      assert(validateJsonSchema(orphanedInspection, inspectionSchema).length > 0,
+        `Configuration inspection schema accepted ${missingAncestors.join(' and ')} missing from a consumed checkpoint.`);
+    }
     const completed = executeConfigurationChange({
       root: happy,
       checkpointId: authority.checkpointId,
@@ -1855,6 +1865,11 @@ export async function selftestConfigurationTransactions(root = defaultRoot) {
       && missingStartedCheckpointInspection.resume.reasonCode === 'CONFIGURATION_CHECKPOINT_MISSING'
       && missingStartedCheckpointInspection.resume.permittedNextAction === 'none',
     'Started consumption with a missing checkpoint falsely projected fresh apply authority.');
+    assert(validateJsonSchema(
+      missingStartedCheckpointInspection,
+      reservationInspectionSchema
+    ).length === 0,
+      'Inspection schema rejected the intentional consumed-start missing-checkpoint state.');
     const hostileMissingCheckpointInspection = structuredClone(
       missingStartedCheckpointInspection
     );

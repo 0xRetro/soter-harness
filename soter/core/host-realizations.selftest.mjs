@@ -452,6 +452,131 @@ export async function selftestHostRealizations(sourceRoot) {
     ));
     assert(validateJsonSchema(hostileInspection, inspectionSchema).length >= 3,
       'Sanitized host inspection accepted private target or raw output escape fields.');
+    const hydratedInspection = inspectHostRealization({
+      root: happy,
+      planId: exact.plan.id,
+      checkpointId: exact.execution.checkpoint.id,
+      at: STARTED
+    });
+    assert.equal(hydratedInspection.request.id, exact.request.id);
+    assert.equal(hydratedInspection.confirmation.id, exact.confirmation.id);
+    assert.equal(hydratedInspection.consumption.id, exact.execution.consumption.id);
+    assert.equal(validateJsonSchema(hydratedInspection, inspectionSchema).length, 0,
+      'Checkpoint inspection did not hydrate one exact authority chain.');
+
+    const crossedRequest = beginHostRealizationRequest({
+      root: happy,
+      planId: exact.plan.id,
+      id: 'host-realization-request.crossed',
+      reason: 'Create a second same-plan request for inspection binding pressure.',
+      createdAt: CREATED,
+      expiresAt: '2026-07-16T12:30:00.000Z'
+    }).request;
+    const crossedConfirmation = confirmHostRealizationRequest({
+      root: happy,
+      requestId: crossedRequest.id,
+      id: 'host-realization-confirmation.crossed',
+      actor: { type: 'local-operator', id: 'operator.selftest' },
+      reason: 'Create a second same-plan confirmation for inspection binding pressure.',
+      confirmedAt: CONFIRMED
+    }).confirmation;
+    assert.throws(
+      () => inspectHostRealization({
+        root: happy,
+        planId: exact.plan.id,
+        requestId: crossedRequest.id,
+        confirmationId: crossedConfirmation.id,
+        consumptionId: exact.execution.consumption.id,
+        checkpointId: exact.execution.checkpoint.id,
+        at: STARTED
+      }),
+      (error) => error.code === 'HOST_REALIZATION_INSPECTION_BINDING_INVALID'
+    );
+    const expiredConfirmationInspection = inspectHostRealization({
+      root: happy,
+      planId: exact.plan.id,
+      requestId: exact.request.id,
+      confirmationId: exact.confirmation.id,
+      at: '2026-07-16T12:31:00.000Z'
+    });
+    assert.equal(expiredConfirmationInspection.resume.reasonCode, 'HOST_REALIZATION_CONFIRMATION_EXPIRED');
+    assert.equal(expiredConfirmationInspection.resume.permittedNextAction, 'request-confirmation');
+
+    const orphanConsumption = structuredClone(inspection);
+    orphanConsumption.request = null;
+    orphanConsumption.confirmation = null;
+    orphanConsumption.checkpoint = null;
+    orphanConsumption.resume = {
+      classification: 'safe',
+      reasonCode: 'HOST_REALIZATION_PLAN_CURRENT',
+      reason: 'The exact private plan is current and may request confirmation.',
+      permittedNextAction: 'request-confirmation'
+    };
+    assert(validateJsonSchema(orphanConsumption, inspectionSchema).length > 0,
+      'Host inspection accepted started consumption without its authority ancestry or checkpoint.');
+
+    const falsePlanOnlyStart = inspectHostRealization({
+      root: happy,
+      planId: exact.plan.id,
+      at: STARTED
+    });
+    assert.equal(validateJsonSchema(falsePlanOnlyStart, inspectionSchema).length, 0,
+      'Honest plan-only host inspection failed its lifecycle contract.');
+    falsePlanOnlyStart.resume = {
+      classification: 'safe',
+      reasonCode: 'HOST_REALIZATION_CHECKPOINT_READY',
+      reason: 'The one-time start is bound to an exact prepared checkpoint.',
+      permittedNextAction: 'execute-checkpoint'
+    };
+    assert(validateJsonSchema(falsePlanOnlyStart, inspectionSchema).length > 0,
+      'Plan-only host inspection accepted checkpoint execution guidance.');
+
+    const orphanCompleted = structuredClone(inspection);
+    orphanCompleted.request = null;
+    orphanCompleted.confirmation = null;
+    orphanCompleted.consumption = null;
+    orphanCompleted.plan.applicability = 'applied';
+    orphanCompleted.checkpoint.state = 'completed';
+    orphanCompleted.checkpoint.phase = 'terminal';
+    orphanCompleted.checkpoint.currentOutputId = null;
+    orphanCompleted.checkpoint.outputs.forEach((output) => { output.state = 'verified'; });
+    orphanCompleted.checkpoint.failure = null;
+    orphanCompleted.resume = {
+      classification: 'unavailable',
+      reasonCode: 'HOST_REALIZATION_COMPLETED',
+      reason: 'The exact deterministic local projection is complete.',
+      permittedNextAction: 'none'
+    };
+    orphanCompleted.claims.localProjection = 'passed';
+    assert(validateJsonSchema(orphanCompleted, inspectionSchema).length > 0,
+      'Host inspection accepted a completed checkpoint without its authority ancestry.');
+
+    const unsafeAttention = structuredClone(inspection);
+    unsafeAttention.request.state = 'expired';
+    unsafeAttention.checkpoint.state = 'needs-attention';
+    unsafeAttention.checkpoint.phase = 'terminal';
+    unsafeAttention.checkpoint.failure = {
+      reasonCode: 'HOST_REALIZATION_RECOVERY_FAILED',
+      summary: 'Exact recovery requires operator review.'
+    };
+    unsafeAttention.resume = {
+      classification: 'safe',
+      reasonCode: 'HOST_REALIZATION_CHECKPOINT_READY',
+      reason: 'The one-time start is bound to an exact prepared checkpoint.',
+      permittedNextAction: 'execute-checkpoint'
+    };
+    assert(validateJsonSchema(unsafeAttention, inspectionSchema).length > 0,
+      'Host inspection accepted safe execution guidance for a needs-attention checkpoint.');
+
+    const crossedPrepared = structuredClone(inspection);
+    crossedPrepared.checkpoint.phase = 'terminal';
+    crossedPrepared.checkpoint.outputs[0].state = 'rolled-back';
+    crossedPrepared.checkpoint.failure = {
+      reasonCode: 'HOST_REALIZATION_EXECUTION_FAILED',
+      summary: 'Failure cannot coexist with one prepared checkpoint.'
+    };
+    assert(validateJsonSchema(crossedPrepared, inspectionSchema).length > 0,
+      'Host inspection accepted crossed prepared checkpoint phase, output, and failure states.');
     const completed = executeHostRealization({
       root: happy,
       checkpointId: exact.execution.checkpoint.id,
@@ -577,6 +702,59 @@ export async function selftestHostRealizations(sourceRoot) {
       at: '2026-07-16T12:09:00.000Z'
     }).state, 'completed');
 
+    const staleInProgress = copyRuntime(sourceRoot, 'stale-in-progress');
+    roots.push(staleInProgress);
+    activate(staleInProgress, 'meeting-intake');
+    const staleInProgressAuthority = authority(staleInProgress, 'stale-in-progress');
+    const staleInProgressFirstOutput = staleInProgressAuthority.plan.operations[0].id;
+    assert.throws(
+      () => executeHostRealization({
+        root: staleInProgress,
+        checkpointId: staleInProgressAuthority.execution.checkpoint.id,
+        at: EXECUTED,
+        faultAfter: 'before-output:' + staleInProgressFirstOutput
+      }),
+      (error) => error.code === 'HOST_REALIZATION_TEST_CRASH'
+    );
+    const stalePrivateConfigurationPath = privateConfigurationStatePath(
+      staleInProgress,
+      'meeting-intake'
+    );
+    const stalePrivateConfiguration = readJson(stalePrivateConfigurationPath);
+    stalePrivateConfiguration.packs[0].reason += ' Planted post-preview configuration drift.';
+    fs.writeFileSync(
+      stalePrivateConfigurationPath,
+      JSON.stringify(stalePrivateConfiguration, null, 2) + '\n',
+      { mode: 0o600 }
+    );
+    const staleInProgressInspection = inspectHostRealization({
+      root: staleInProgress,
+      planId: staleInProgressAuthority.plan.id,
+      checkpointId: staleInProgressAuthority.execution.checkpoint.id,
+      at: EXECUTED
+    });
+    assert.equal(staleInProgressInspection.plan.applicability, 'stale');
+    assert.equal(staleInProgressInspection.checkpoint.state, 'applying');
+    assert.deepEqual(staleInProgressInspection.resume, {
+      classification: 'requires-review',
+      reasonCode: 'HOST_REALIZATION_CHECKPOINT_REVIEW_REQUIRED',
+      reason: 'The exact checkpoint must be inspected because its plan is no longer current.',
+      permittedNextAction: 'inspect-checkpoint'
+    });
+    assert.equal(validateJsonSchema(staleInProgressInspection, inspectionSchema).length, 0,
+      'Honest stale in-progress host inspection failed its resume contract.');
+    const expiredInProgressInspection = inspectHostRealization({
+      root: staleInProgress,
+      planId: staleInProgressAuthority.plan.id,
+      checkpointId: staleInProgressAuthority.execution.checkpoint.id,
+      at: '2026-07-16T13:01:00.000Z'
+    });
+    assert.equal(expiredInProgressInspection.plan.applicability, 'expired');
+    assert.equal(expiredInProgressInspection.checkpoint.state, 'applying');
+    assert.deepEqual(expiredInProgressInspection.resume, staleInProgressInspection.resume);
+    assert.equal(validateJsonSchema(expiredInProgressInspection, inspectionSchema).length, 0,
+      'Honest expired in-progress host inspection failed its resume contract.');
+
     const filesystemFailure = copyRuntime(sourceRoot, 'filesystem-failure');
     roots.push(filesystemFailure);
     activate(filesystemFailure, 'meeting-intake');
@@ -603,6 +781,16 @@ export async function selftestHostRealizations(sourceRoot) {
     assert.equal(filesystemStopped.state, 'rolled-back');
     assert.equal(filesystemStopped.failure.reasonCode, 'HOST_REALIZATION_EXECUTION_FAILED');
     assert(!JSON.stringify(filesystemStopped).includes('EACCES'));
+    const rolledBackInspection = inspectHostRealization({
+      root: filesystemFailure,
+      planId: filesystemAuthority.plan.id,
+      checkpointId: filesystemAuthority.execution.checkpoint.id,
+      at: EXECUTED
+    });
+    assert.equal(rolledBackInspection.resume.reasonCode, 'HOST_REALIZATION_ROLLED_BACK');
+    assert.equal(rolledBackInspection.resume.permittedNextAction, 'none');
+    assert.equal(validateJsonSchema(rolledBackInspection, inspectionSchema).length, 0,
+      'Honest rolled-back host inspection failed its terminal lifecycle contract.');
 
     const beforeOutputCrash = copyRuntime(sourceRoot, 'before-output-crash');
     roots.push(beforeOutputCrash);

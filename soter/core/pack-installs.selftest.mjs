@@ -462,6 +462,26 @@ export async function selftestPackInstalls(root = defaultRoot) {
         at: executedAt,
         faultAfter: marker
       }));
+      const interrupted = inspectPackInstall({
+        sourceRoot,
+        targetRoot: target,
+        checkpointId: ceremony.checkpointId,
+        at: executedAt
+      });
+      assert(['applying', 'committing'].includes(interrupted.checkpoint.state), marker);
+      assert.deepEqual(
+        {
+          classification: interrupted.resume.classification,
+          reasonCode: interrupted.resume.reasonCode,
+          permittedNextAction: interrupted.resume.permittedNextAction
+        },
+        {
+          classification: 'requires-review',
+          reasonCode: 'PACK_INSTALL_RECOVERY_REQUIRED',
+          permittedNextAction: 'recover-checkpoint'
+        },
+        marker
+      );
       const recovered = recoverPackInstall({
         sourceRoot,
         targetRoot: target,
@@ -604,6 +624,11 @@ export async function selftestPackInstalls(root = defaultRoot) {
     });
     assert.equal(needsAttention.checkpoint.state, 'needs-attention');
     assert.equal(needsAttention.resume.classification, 'requires-review');
+    assert.equal(
+      needsAttention.resume.reasonCode,
+      needsAttention.checkpoint.blocker,
+      'the honest inspection must derive its recovery reason from the exact checkpoint blocker'
+    );
 
     const serializedInspection = JSON.stringify(first.plan);
     assert.equal(serializedInspection.includes(temporary), false);
@@ -614,10 +639,108 @@ export async function selftestPackInstalls(root = defaultRoot) {
       path.join(sourceRoot, 'soter/contracts/pack-install-inspection.schema.json'),
       'utf8'
     ));
-    assert.equal(validateJsonSchema(first.plan, inspectionSchema).length, 0);
+    for (const [label, inspection] of [
+      ['plan', first.plan],
+      ['request', first.request],
+      ['confirmation', first.confirmation],
+      ['prepared checkpoint', first.started],
+      ['completed checkpoint', first.inspection],
+      ['execution failure', executionFailureInspection],
+      ['needs attention', needsAttention]
+    ]) {
+      assert.equal(
+        validateJsonSchema(inspection, inspectionSchema).length,
+        0,
+        `${label} inspection must satisfy the closed lifecycle contract`
+      );
+    }
     const hostileInspection = structuredClone(first.plan);
     hostileInspection.plan.effects[0].path = '/private/target/PATH_SENTINEL';
     assert(validateJsonSchema(hostileInspection, inspectionSchema).length > 0);
+
+    const orphanStartedConsumption = structuredClone(first.started);
+    orphanStartedConsumption.checkpoint = null;
+    orphanStartedConsumption.resume = {
+      classification: 'safe',
+      reasonCode: 'PACK_INSTALL_START_AVAILABLE',
+      reason: 'A hostile crossed tuple attempts to start an already-consumed confirmation.',
+      permittedNextAction: 'start-install'
+    };
+    assert(
+      validateJsonSchema(orphanStartedConsumption, inspectionSchema).length > 0,
+      'a started consumption without its checkpoint cannot advertise safe start authority'
+    );
+
+    const completedWithoutAuthorityChain = structuredClone(first.inspection);
+    completedWithoutAuthorityChain.request = null;
+    completedWithoutAuthorityChain.confirmation = null;
+    completedWithoutAuthorityChain.consumption = null;
+    completedWithoutAuthorityChain.resume = {
+      classification: 'safe',
+      reasonCode: 'PACK_INSTALL_CHECKPOINT_EXECUTABLE',
+      reason: 'A hostile terminal checkpoint attempts to advertise another execution.',
+      permittedNextAction: 'execute-checkpoint'
+    };
+    assert(
+      validateJsonSchema(completedWithoutAuthorityChain, inspectionSchema).length > 0,
+      'a completed checkpoint requires its full authority ancestry and cannot execute again'
+    );
+
+    const completedWithRolledBackResume = structuredClone(first.inspection);
+    completedWithRolledBackResume.resume.reasonCode = 'PACK_INSTALL_ROLLED_BACK';
+    assert(
+      validateJsonSchema(completedWithRolledBackResume, inspectionSchema).length > 0,
+      'a completed checkpoint cannot carry the rolled-back terminal reason code'
+    );
+
+    const rolledBackInspection = structuredClone(first.inspection);
+    rolledBackInspection.checkpoint.state = 'rolled-back';
+    rolledBackInspection.checkpoint.reasonCode = 'PACK_INSTALL_ROLLED_BACK';
+    rolledBackInspection.checkpoint.manifestState = 'rolled-back';
+    rolledBackInspection.checkpoint.blocker = null;
+    rolledBackInspection.resume.reasonCode = 'PACK_INSTALL_ROLLED_BACK';
+    assert.equal(
+      validateJsonSchema(rolledBackInspection, inspectionSchema).length,
+      0,
+      'the closed lifecycle contract must accept one internally consistent rolled-back inspection'
+    );
+    const rolledBackWithCompletedResume = structuredClone(rolledBackInspection);
+    rolledBackWithCompletedResume.resume.reasonCode = 'PACK_INSTALL_COMPLETED';
+    assert(
+      validateJsonSchema(rolledBackWithCompletedResume, inspectionSchema).length > 0,
+      'a rolled-back checkpoint cannot carry the completed terminal reason code'
+    );
+
+    const expiredAttentionWithExecute = structuredClone(needsAttention);
+    expiredAttentionWithExecute.request.state = 'expired';
+    expiredAttentionWithExecute.resume = {
+      classification: 'safe',
+      reasonCode: 'PACK_INSTALL_CHECKPOINT_EXECUTABLE',
+      reason: 'A hostile attention checkpoint attempts to bypass exact recovery.',
+      permittedNextAction: 'execute-checkpoint'
+    };
+    assert(
+      validateJsonSchema(expiredAttentionWithExecute, inspectionSchema).length > 0,
+      'an expired confirmed and started attention checkpoint cannot advertise execution'
+    );
+
+    const crossedPreparedCheckpoint = structuredClone(first.started);
+    crossedPreparedCheckpoint.confirmation = null;
+    crossedPreparedCheckpoint.checkpoint.currentStep = crossedPreparedCheckpoint.checkpoint.pendingSteps[0];
+    crossedPreparedCheckpoint.checkpoint.completedPrefix = [crossedPreparedCheckpoint.checkpoint.currentStep];
+    crossedPreparedCheckpoint.checkpoint.pendingSteps = [];
+    crossedPreparedCheckpoint.checkpoint.manifestState = 'verified';
+    crossedPreparedCheckpoint.checkpoint.blocker = 'PACK_INSTALL_RECOVERY_REQUIRED';
+    crossedPreparedCheckpoint.resume = {
+      classification: 'safe',
+      reasonCode: 'PACK_INSTALL_CONFIRMATION_AVAILABLE',
+      reason: 'A hostile crossed checkpoint attempts to return to confirmation.',
+      permittedNextAction: 'confirm-request'
+    };
+    assert(
+      validateJsonSchema(crossedPreparedCheckpoint, inspectionSchema).length > 0,
+      'a prepared checkpoint cannot omit confirmation or cross its step, manifest, blocker, and resume facts'
+    );
     const implementation = fs.readFileSync(path.join(sourceRoot, 'soter/core/pack-installs.mjs'), 'utf8');
     assert.equal(/node:(?:http|https|net|child_process)/.test(implementation), false);
     assert.equal(/\b(?:fetch|spawn|execFile|npm|pnpm|yarn)\s*\(/.test(implementation), false);

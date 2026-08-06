@@ -10,8 +10,8 @@
     "id": "project-pulse",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:7201839fc2b63148976907e762848483067f7fd502ed936fac44df71b5550cb8",
-  "graphFingerprint": "sha256:d7e65fdf94e860c2fc05e53939d5bf56961285fcf3a60096d51a9299a3f511b5",
+  "configurationLockFingerprint": "sha256:6817dbdeb7feb072e9d99354d4107f63dabc3f94e7b880b0ab0545bf22964019",
+  "graphFingerprint": "sha256:78175fb64c97b13f48b19531307f510b07ad9d864bc746c12b62b9178710850c",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -134,7 +134,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:7201839fc2b63148976907e762848483067f7fd502ed936fac44df71b5550cb8"
+      "fingerprint": "sha256:6817dbdeb7feb072e9d99354d4107f63dabc3f94e7b880b0ab0545bf22964019"
     }
   ],
   "effects": [],

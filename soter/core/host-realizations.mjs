@@ -1985,6 +1985,14 @@ function resumeProjection({ planState, request, confirmation, consumption, check
       permittedNextAction: 'inspect-checkpoint'
     };
   }
+  if (checkpoint?.state === 'rolled-back') {
+    return {
+      classification: 'unavailable',
+      reasonCode: 'HOST_REALIZATION_ROLLED_BACK',
+      reason: 'The exact host realization checkpoint was rolled back and is terminal.',
+      permittedNextAction: 'none'
+    };
+  }
   if (checkpoint?.state === 'prepared') {
     return {
       classification: planState === 'current' ? 'safe' : 'requires-review',
@@ -1997,7 +2005,7 @@ function resumeProjection({ planState, request, confirmation, consumption, check
       permittedNextAction: planState === 'current' ? 'execute-checkpoint' : 'inspect-checkpoint'
     };
   }
-  if (checkpoint && checkpoint.state !== 'rolled-back') {
+  if (checkpoint) {
     return {
       classification: planState === 'current' ? 'safe' : 'requires-review',
       reasonCode: planState === 'current'
@@ -2009,6 +2017,14 @@ function resumeProjection({ planState, request, confirmation, consumption, check
       permittedNextAction: planState === 'current' ? 'recover-checkpoint' : 'inspect-checkpoint'
     };
   }
+  if (consumption?.state === 'reserved') {
+    return {
+      classification: 'requires-review',
+      reasonCode: 'HOST_REALIZATION_CONSUMPTION_INCOMPLETE',
+      reason: 'The one-time start was reserved without its exact durable checkpoint.',
+      permittedNextAction: 'inspect-checkpoint'
+    };
+  }
   if (planState !== 'current') {
     return {
       classification: 'unavailable',
@@ -2018,6 +2034,14 @@ function resumeProjection({ planState, request, confirmation, consumption, check
     };
   }
   if (confirmation) {
+    if (at(currentAt, 'Inspection time') > at(request.expiresAt, 'Request expiry')) {
+      return {
+        classification: 'unavailable',
+        reasonCode: 'HOST_REALIZATION_CONFIRMATION_EXPIRED',
+        reason: 'The exact confirmation can no longer start work because its request expired.',
+        permittedNextAction: 'request-confirmation'
+      };
+    }
     return {
       classification: 'safe',
       reasonCode: 'HOST_REALIZATION_CONFIRMATION_CURRENT',
@@ -2047,6 +2071,58 @@ function resumeProjection({ planState, request, confirmation, consumption, check
   };
 }
 
+function loadHostRealizationInspectionState(root, {
+  planId,
+  requestId,
+  confirmationId,
+  consumptionId,
+  checkpointId
+}) {
+  let state;
+  if (checkpointId) {
+    state = readCheckpoint(root, checkpointId);
+  } else if (consumptionId) {
+    state = readConsumption(root, consumptionId);
+    if (state.consumption.state === 'started') {
+      state = readCheckpoint(root, state.consumption.checkpointId);
+    } else {
+      state = { ...state, checkpoint: null };
+    }
+  } else if (confirmationId) {
+    state = { ...readConfirmation(root, confirmationId), consumption: null, checkpoint: null };
+  } else if (requestId) {
+    state = {
+      ...readRequest(root, requestId),
+      confirmation: null,
+      consumption: null,
+      checkpoint: null
+    };
+  } else {
+    state = {
+      plan: readPlan(root, planId),
+      request: null,
+      confirmation: null,
+      consumption: null,
+      checkpoint: null
+    };
+  }
+  const expected = { planId, requestId, confirmationId, consumptionId, checkpointId };
+  const observed = {
+    planId: state.plan?.id || null,
+    requestId: state.request?.id || null,
+    confirmationId: state.confirmation?.id || null,
+    consumptionId: state.consumption?.id || null,
+    checkpointId: state.checkpoint?.id || null
+  };
+  if (!planId || Object.entries(expected).some(([key, value]) => value && value !== observed[key])) {
+    fail(
+      'HOST_REALIZATION_INSPECTION_BINDING_INVALID',
+      'Inspection references do not bind one exact host realization authority chain.'
+    );
+  }
+  return state;
+}
+
 export function inspectHostRealization({
   root,
   planId,
@@ -2057,21 +2133,10 @@ export function inspectHostRealization({
   at: currentAt
 }) {
   const resolvedRoot = path.resolve(root);
-  const plan = readPlan(resolvedRoot, planId);
-  const request = requestId ? readRequest(resolvedRoot, requestId).request : null;
-  const confirmation = confirmationId
-    ? readConfirmation(resolvedRoot, confirmationId).confirmation
-    : null;
-  const consumption = consumptionId
-    ? readConsumption(resolvedRoot, consumptionId).consumption
-    : null;
-  const checkpoint = checkpointId ? readCheckpoint(resolvedRoot, checkpointId).checkpoint : null;
-  if ((request && request.plan.id !== plan.id)
-    || (confirmation && confirmation.plan.id !== plan.id)
-    || (consumption && consumption.plan.id !== plan.id)
-    || (checkpoint && checkpoint.plan.id !== plan.id)) {
-    fail('HOST_REALIZATION_INSPECTION_BINDING_INVALID', 'Inspection references do not bind one exact host realization plan.');
-  }
+  const { plan, request, confirmation, consumption, checkpoint } = loadHostRealizationInspectionState(
+    resolvedRoot,
+    { planId, requestId, confirmationId, consumptionId, checkpointId }
+  );
   const planState = applicability(resolvedRoot, plan, currentAt, checkpoint);
   const inspection = {
     $contract: CONTRACTS.inspection[0],
