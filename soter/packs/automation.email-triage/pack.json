@@ -38,32 +38,32 @@
       {
         "id": "mail.window.read",
         "version": "^1.0.0",
-        "optional": false,
-        "reason": "Preparation must read exactly one bounded mailbox window through the selected instance authority."
+        "optional": true,
+        "reason": "A contained window adapter may supply one bounded mailbox window; connected acquisition instead requires granular search and thread reads."
       },
       {
         "id": "mail.labels.apply",
         "version": "^2.0.0",
-        "optional": false,
-        "reason": "The complete private review may propose exact existing AI-namespace label names over exact message IDs for later approval."
+        "optional": true,
+        "reason": "A later approved transaction may apply exact existing AI-namespace label names over exact message IDs when this optional write capability is selected."
       },
       {
         "id": "mail.labels.read",
         "version": "^2.0.0",
-        "optional": false,
-        "reason": "Exact label writes must be re-read by message identity and label name before completion or ambiguity resolution."
+        "optional": true,
+        "reason": "When label writes are selected, their paired optional verifier must re-read exact message identities and label names before completion or ambiguity resolution."
       },
       {
         "id": "mail.drafts.create",
         "version": "^2.0.0",
-        "optional": false,
-        "reason": "The complete private review may propose exact reply-message draft creation for later approval, never sending."
+        "optional": true,
+        "reason": "A later approved transaction may create an exact reply-message draft when this optional write capability is selected; it never sends."
       },
       {
         "id": "mail.drafts.list",
         "version": "^2.0.0",
-        "optional": false,
-        "reason": "Exact draft creation must be verified by reply-message identity, idempotency key, minimized metadata, and content fingerprint before completion or ambiguity resolution."
+        "optional": true,
+        "reason": "When draft creation is selected, its paired optional verifier must match reply-message identity, idempotency key, minimized metadata, and content fingerprint before completion or ambiguity resolution."
       }
     ],
     "provides": []

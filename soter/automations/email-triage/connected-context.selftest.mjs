@@ -113,12 +113,17 @@ function createRun(root, lock, workId) {
   return { lockPath, runPath, run, copiedLockPath, unrelatedRunPath, unrelatedRun };
 }
 
-function materializeEmailPrivateConfiguration(root) {
+function materializeEmailPrivateConfiguration(root, { requiredCapabilities = null } = {}) {
   const configurationName = 'email-triage';
   const configuration = readJson(path.join(
     root,
     'soter/configurations/email-triage.config.json'
   ));
+  if (requiredCapabilities) {
+    configuration.bindings = configuration.bindings.filter((binding) => {
+      return requiredCapabilities.has(binding.capability);
+    });
+  }
   writePrivateConfigurationState(root, configurationName, configuration);
   const lock = resolveConfiguration({
     root,
@@ -127,6 +132,102 @@ function materializeEmailPrivateConfiguration(root) {
   });
   writeActiveConfigurationLockState(root, configurationName, lock);
   return { configuration, lock };
+}
+
+async function assertReducedEmailAcquisition(root) {
+  const temporaryRoot = copyHarness(root);
+  try {
+    const requiredCapabilities = new Set([
+      'mail.messages.search',
+      'mail.threads.read'
+    ]);
+    const { lock } = materializeEmailPrivateConfiguration(temporaryRoot, {
+      requiredCapabilities
+    });
+    assert.deepEqual(
+      lock.bindings.map((binding) => binding.capability).sort(),
+      [...requiredCapabilities].sort()
+    );
+    const query = 'in:inbox newer_than:1d';
+    const preparedWork = await prepareAutomationRun({
+      root: temporaryRoot,
+      automationId: 'automation.email-triage',
+      configurationName: 'email-triage',
+      configurationBasis: 'private-active',
+      preparationMode: 'connected-acquisition',
+      input: {
+        query,
+        scope: 'triage-drafts-handoffs-digest',
+        focus: 'PRIVATE_REDUCED_EMAIL_FOCUS_SENTINEL'
+      },
+      createdAt: '2026-07-16T19:57:00.000Z'
+    });
+    const primary = createRun(temporaryRoot, lock, preparedWork.id);
+    const prepared = await prepareEmailTriageConnectedAcquisition({
+      root: temporaryRoot,
+      workId: preparedWork.id,
+      at: '2026-07-16T19:57:01.000Z',
+      expectedHost: 'codex'
+    });
+    const observedCapabilities = [prepared.currentCall.capability.id];
+    const searched = await completeDurableOperationPlanExecution({
+      root: temporaryRoot,
+      checkpointId: prepared.checkpoint.id,
+      callId: prepared.currentCall.id,
+      response: {
+        structuredContent: {
+          message_ids: ['gmail-message-001'],
+          next_page_token: null
+        }
+      },
+      at: '2026-07-16T19:57:02.000Z',
+      expectedHost: 'codex'
+    });
+    observedCapabilities.push(searched.currentCall.capability.id);
+    const completed = await completeDurableOperationPlanExecution({
+      root: temporaryRoot,
+      checkpointId: prepared.checkpoint.id,
+      callId: searched.currentCall.id,
+      response: threadResponse(),
+      at: '2026-07-16T19:57:03.000Z',
+      expectedHost: 'codex'
+    });
+    assert.deepEqual(observedCapabilities, [
+      'mail.messages.search',
+      'mail.threads.read'
+    ]);
+    assert.equal(completed.checkpoint.state, 'completed');
+    assert.equal(completed.currentCall, null);
+    const finalized = finalizeEmailTriageConnectedAcquisition({
+      root: temporaryRoot,
+      checkpointId: prepared.checkpoint.id,
+      expectedHost: 'codex'
+    });
+    assert.equal(finalized.run.lifecycleState, 'paused');
+    assert.equal(finalized.run.approvals.length, 0);
+    const acquisitionText = JSON.stringify({
+      preparedWork,
+      prepared,
+      searched,
+      completed,
+      finalized
+    });
+    for (const unavailable of [
+      'mail.window.read',
+      'mail.labels.apply',
+      'mail.labels.read',
+      'mail.drafts.create',
+      'mail.drafts.list',
+      'mail.send',
+      'approval-request'
+    ]) {
+      assert(!acquisitionText.includes(unavailable),
+        unavailable + ' entered the reduced connected acquisition.');
+    }
+    assert.equal(fingerprintLock(lock), primary.run.configurationLock.fingerprint);
+  } finally {
+    fs.rmSync(temporaryRoot, { recursive: true, force: true });
+  }
 }
 
 function installPaginatedGmailSelftestProvider(root) {
@@ -259,7 +360,165 @@ function threadResponse({ includeRfc822 = true } = {}) {
   };
 }
 
+async function assertHalfBoundEmailActions(root) {
+  const temporaryRoot = copyHarness(root);
+  try {
+    const halfBoundCapabilities = new Set([
+      'mail.messages.search',
+      'mail.threads.read',
+      'mail.labels.apply',
+      'mail.drafts.create'
+    ]);
+    const { lock } = materializeEmailPrivateConfiguration(temporaryRoot, {
+      requiredCapabilities: halfBoundCapabilities
+    });
+    assert.deepEqual(
+      lock.bindings.map((binding) => binding.capability).sort(),
+      [...halfBoundCapabilities].sort()
+    );
+    const preparedWork = await prepareAutomationRun({
+      root: temporaryRoot,
+      automationId: 'automation.email-triage',
+      configurationName: 'email-triage',
+      configurationBasis: 'private-active',
+      preparationMode: 'connected-acquisition',
+      input: {
+        query: 'in:inbox newer_than:1d',
+        scope: 'triage-drafts-handoffs-digest',
+        focus: 'PRIVATE_HALF_BOUND_EMAIL_FOCUS_SENTINEL'
+      },
+      createdAt: '2026-07-16T19:56:00.000Z'
+    });
+    const primary = createRun(temporaryRoot, lock, preparedWork.id);
+    const prepared = await prepareEmailTriageConnectedAcquisition({
+      root: temporaryRoot,
+      workId: preparedWork.id,
+      at: '2026-07-16T19:56:01.000Z',
+      expectedHost: 'codex'
+    });
+    const searched = await completeDurableOperationPlanExecution({
+      root: temporaryRoot,
+      checkpointId: prepared.checkpoint.id,
+      callId: prepared.currentCall.id,
+      response: {
+        structuredContent: {
+          message_ids: ['gmail-message-001'],
+          next_page_token: null
+        }
+      },
+      at: '2026-07-16T19:56:02.000Z',
+      expectedHost: 'codex'
+    });
+    const completed = await completeDurableOperationPlanExecution({
+      root: temporaryRoot,
+      checkpointId: prepared.checkpoint.id,
+      callId: searched.currentCall.id,
+      response: threadResponse(),
+      at: '2026-07-16T19:56:03.000Z',
+      expectedHost: 'codex'
+    });
+    assert.equal(completed.currentCall, null);
+    const finalized = finalizeEmailTriageConnectedAcquisition({
+      root: temporaryRoot,
+      checkpointId: prepared.checkpoint.id,
+      expectedHost: 'codex'
+    });
+    const inspectedDecision = inspectEmailTriageDecisionContext({
+      root: temporaryRoot,
+      lockPath: primary.lockPath,
+      snapshotId: finalized.snapshot.id,
+      expectedHost: 'codex'
+    });
+    const candidate = inspectedDecision.reduction.candidates[0];
+    const decisionInput = structuredClone(inspectedDecision.inputTemplate);
+    decisionInput.state = 'ready';
+    decisionInput.candidates[0] = {
+      candidateId: candidate.id,
+      group: 'needs-you',
+      attention: 'operator',
+      suspectedInjection: false,
+      providerImportantIgnored: true,
+      summary: 'PRIVATE_HALF_BOUND_DECISION_SUMMARY_SENTINEL',
+      reason: 'The bounded message requests operator attention and reviewed follow-up.',
+      replyDisposition: 'draft-review',
+      handoffIntent: 'none',
+      evidence: [{
+        messageId: candidate.newestMessageId,
+        field: 'body',
+        quote: 'Private connected body.'
+      }]
+    };
+    decisionInput.issues = [];
+    decisionInput.limitations = [
+      'This decision creates no provider call, approval, draft, label, or send authority.'
+    ];
+    const committedDecision = commitEmailTriageDecision({
+      root: temporaryRoot,
+      lockPath: primary.lockPath,
+      snapshotId: finalized.snapshot.id,
+      id: 'decision.email-triage.half-bound-pairs',
+      input: decisionInput,
+      producer: { kind: 'host', id: 'host.codex', host: 'codex' },
+      at: '2026-07-16T19:56:04.000Z',
+      expectedHost: 'codex'
+    });
+    const inspectedProposal = inspectEmailTriageProposalDecision({
+      root: temporaryRoot,
+      lockPath: primary.lockPath,
+      decisionId: committedDecision.decision.id,
+      expectedHost: 'codex'
+    });
+    const proposalInput = structuredClone(inspectedProposal.inputTemplate);
+    proposalInput.candidates[0].draftBody = 'PRIVATE_HALF_BOUND_DRAFT_BODY_SENTINEL';
+    proposalInput.digestBody = 'PRIVATE_HALF_BOUND_DIGEST_BODY_SENTINEL';
+    const committedProposal = commitEmailTriageProposal({
+      root: temporaryRoot,
+      lockPath: primary.lockPath,
+      decisionId: committedDecision.decision.id,
+      id: 'proposal.email-triage.half-bound-pairs',
+      input: proposalInput,
+      producer: { kind: 'host', id: 'host.codex', host: 'codex' },
+      at: '2026-07-16T19:56:05.000Z',
+      expectedHost: 'codex'
+    });
+    for (const actionCapability of ['mail.labels.apply', 'mail.drafts.create']) {
+      const action = committedProposal.proposal.review.collections
+        .flatMap((collection) => collection.rows)
+        .flatMap((row) => row.actions)
+        .find((candidateAction) => {
+          return candidateAction.state === 'proposed'
+            && candidateAction.capability === actionCapability;
+        });
+      assert(action, 'Half-bound Email fixture did not expose the expected review action.');
+      await assert.rejects(
+        () => createProposalConnectedBatch({
+          root: temporaryRoot,
+          lockPath: primary.lockPath,
+          proposalId: committedProposal.proposal.id,
+          actionIds: [action.id],
+          changeSetId: 'changeset.email-triage.half-bound-' + actionCapability.split('.')[1],
+          batchId: 'batch.email-triage.half-bound-' + actionCapability.split('.')[1],
+          createdAt: '2026-07-16T19:56:06.000Z',
+          expectedHost: 'codex'
+        }),
+        (error) => error.code === 'CONNECTED_COMPILER_BINDING_INVALID'
+      );
+    }
+    assert.equal(committedProposal.run.approvals.length, 0);
+    assert(!lock.bindings.some((binding) => binding.capability === 'mail.send'));
+    assert(!committedProposal.proposal.review.collections.some((collection) => {
+      return collection.rows.some((row) => row.actions.some((reviewAction) => {
+        return reviewAction.capability === 'mail.send';
+      }));
+    }));
+  } finally {
+    fs.rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+}
+
 export async function selftestEmailConnectedContext(root = defaultRoot) {
+  await assertReducedEmailAcquisition(root);
+  await assertHalfBoundEmailActions(root);
   const temporaryRoot = copyHarness(root);
   try {
     const canonicalBefore = fingerprintPath(path.join(temporaryRoot, 'soter'));

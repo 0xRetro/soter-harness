@@ -4680,11 +4680,13 @@ function checkConfiguration(
     }
   }
 
+  const declaredCapabilities = new Set();
   const requiredCapabilities = new Set();
   for (const id of selected) {
     const pack = packs.get(id);
     if (!pack) continue;
     for (const requirement of pack.doc.capabilities.requires) {
+      declaredCapabilities.add(requirement.id);
       if (!requirement.optional) requiredCapabilities.add(requirement.id);
     }
   }
@@ -4700,7 +4702,7 @@ function checkConfiguration(
     }
   }
   for (const capability of bindings.keys()) {
-    if (!requiredCapabilities.has(capability)) {
+    if (!declaredCapabilities.has(capability)) {
       out.push(violation(
         entry.file,
         'SOTER_BINDING',
@@ -5613,6 +5615,63 @@ function selftest(root) {
       'pack.json'
     );
     const originalEmailPackText = fs.readFileSync(emailPackFile, 'utf8');
+    const emailConfigurationFile = path.join(
+      temp,
+      'soter',
+      'configurations',
+      'email-triage.config.json'
+    );
+    const emailConfigurationText = fs.readFileSync(emailConfigurationFile, 'utf8');
+    const emailConfiguration = JSON.parse(emailConfigurationText);
+    const declaredOptionalEmailBindings = verifyConfigurationCandidate(temp, {
+      configPath: emailConfigurationFile,
+      configuration: emailConfiguration
+    });
+    if (declaredOptionalEmailBindings.health.valid !== 'passed') {
+      failures.push(
+        'Email Triage rejected explicitly bound optional phase capabilities: '
+          + declaredOptionalEmailBindings.violations.map((item) => item.code).join(', ')
+      );
+    }
+    const reducedEmailConfiguration = structuredClone(emailConfiguration);
+    const requiredEmailCapabilities = new Set([
+      'mail.messages.search',
+      'mail.threads.read'
+    ]);
+    reducedEmailConfiguration.bindings = reducedEmailConfiguration.bindings.filter((binding) => {
+      return requiredEmailCapabilities.has(binding.capability);
+    });
+    const omittedOptionalEmailBindings = verifyConfigurationCandidate(temp, {
+      configPath: emailConfigurationFile,
+      configuration: reducedEmailConfiguration
+    });
+    if (omittedOptionalEmailBindings.health.valid !== 'passed') {
+      failures.push(
+        'Email Triage rejected a configuration omitting every optional phase capability: '
+          + omittedOptionalEmailBindings.violations.map((item) => item.code).join(', ')
+      );
+    }
+    const emailPackWithoutWindowDeclaration = JSON.parse(originalEmailPackText);
+    emailPackWithoutWindowDeclaration.capabilities.requires =
+      emailPackWithoutWindowDeclaration.capabilities.requires.filter((requirement) => {
+        return requirement.id !== 'mail.window.read';
+      });
+    fs.writeFileSync(
+      emailPackFile,
+      JSON.stringify(emailPackWithoutWindowDeclaration, null, 2) + '\n'
+    );
+    const undeclaredEmailCapability = verifyConfigurationCandidate(temp, {
+      configPath: emailConfigurationFile,
+      configuration: emailConfiguration
+    });
+    if (!undeclaredEmailCapability.violations.some((item) => {
+      return item.code === 'SOTER_BINDING'
+        && item.what === 'configuration binds an unrequested capability: mail.window.read';
+    })) {
+      failures.push('Email Triage accepted a binding absent from every selected pack declaration');
+    }
+    fs.writeFileSync(emailPackFile, originalEmailPackText);
+
     const unownedProposal = JSON.parse(originalEmailPackText);
     unownedProposal.operator.proposal.module = unownedProposal.operator.proposal.schema;
     fs.writeFileSync(emailPackFile, JSON.stringify(unownedProposal, null, 2) + '\n');
