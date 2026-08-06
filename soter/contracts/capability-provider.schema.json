@@ -82,6 +82,15 @@
           "type": "string",
           "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"
         },
+        "endpointProvisioning": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["target", "state"],
+          "properties": {
+            "target": { "const": "host-project-config" },
+            "state": { "const": "required" }
+          }
+        },
         "tools": {
           "type": "array",
           "minItems": 1,
@@ -115,6 +124,13 @@
               "tools",
               "probeTools"
             ]
+          }
+        },
+        {
+          "if": { "required": ["endpointProvisioning"] },
+          "then": {
+            "properties": { "engine": { "const": "mcp" } },
+            "required": ["engine"]
           }
         }
       ]

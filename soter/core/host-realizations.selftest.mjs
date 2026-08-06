@@ -232,6 +232,35 @@ export async function selftestHostRealizations(sourceRoot) {
       && !codexUnselectedTools.content.includes('mcp.otter.ai')
       && !codexUnselectedTools.content.includes('auth = "oauth"'),
     'An unselected Otter provider leaked into the Codex MCP projection.');
+    const capabilityProviderSchema = readJson(path.join(
+      codexNotionTool,
+      'soter/contracts/capability-provider.schema.json'
+    ));
+    const exactOtterProvider = readJson(path.join(
+      codexNotionTool,
+      'soter/providers/provider.integration.otter.mcp.json'
+    ));
+    assert.equal(validateJsonSchema(exactOtterProvider, capabilityProviderSchema).length, 0,
+      'Otter endpoint provisioning did not satisfy the closed provider contract.');
+    for (const [label, mutate] of [
+      ['extra field', (provider) => {
+        provider.runtime.endpointProvisioning.host = 'codex';
+      }],
+      ['wrong target', (provider) => {
+        provider.runtime.endpointProvisioning.target = 'provider-runtime';
+      }],
+      ['wrong state', (provider) => {
+        provider.runtime.endpointProvisioning.state = 'optional';
+      }],
+      ['non-MCP engine', (provider) => {
+        provider.runtime.engine = 'node';
+      }]
+    ]) {
+      const invalidProvider = structuredClone(exactOtterProvider);
+      mutate(invalidProvider);
+      assert(validateJsonSchema(invalidProvider, capabilityProviderSchema).length > 0,
+        `Capability provider schema accepted endpoint provisioning ${label}.`);
+    }
     const expectCodexDriftToInvalidateActiveLock = () => {
       const drifted = resolveConfiguration({
         root: codexNotionTool,
@@ -296,6 +325,22 @@ export async function selftestHostRealizations(sourceRoot) {
     );
     const originalClaudeAdapter = fs.readFileSync(claudeAdapterFile, 'utf8');
     const originalClaudeProjection = fs.readFileSync(claudeProjectionFile, 'utf8');
+    assert.deepEqual(JSON.parse(originalClaudeProjection).providerEndpointBlocks || [], [],
+      'Claude projection acquired a provider endpoint block despite explicit unavailability.');
+    const claudeRendered = renderHostProjectionCandidates({
+      root: claudeRootMcp,
+      adapter: JSON.parse(originalClaudeAdapter),
+      configurationId: claudeLock.configuration.name,
+      packIds: claudeLock.packs.map((pack) => pack.id),
+      capabilityIds: claudeLock.capabilities.map((capability) => capability.id),
+      effectPolicies: claudeLock.effectPolicies
+    });
+    const claudeRenderedTools = claudeRendered.outputs.find((output) => {
+      return output.id === 'output.claude.tools';
+    });
+    assert(!claudeRenderedTools.content.includes('mcp.otter.ai')
+      && !claudeRenderedTools.content.includes('"otter"'),
+    'Claude rendered an Otter endpoint despite its explicit unsupported/no-block boundary.');
     const expectClaudeDriftToInvalidateActiveLock = () => {
       const drifted = resolveConfiguration({
         root: claudeRootMcp,
@@ -1285,6 +1330,11 @@ export async function selftestHostRealizations(sourceRoot) {
     const happyProjectionFile = path.join(happy, 'soter/hosts/codex/projection.json');
     const originalHappyProjection = fs.readFileSync(happyProjectionFile, 'utf8');
     const honestHappyProjection = JSON.parse(originalHappyProjection);
+    const exactManagedToolsBytes = fs.readFileSync(path.join(happy, tools.path), 'utf8');
+    const exactManagedManifestBytes = fs.readFileSync(
+      hostManagedManifestStatePath(happy, 'codex'),
+      'utf8'
+    );
     const renderHappyProjection = () => renderHostProjectionCandidates({
       root: happy,
       adapter,
@@ -1315,6 +1365,10 @@ export async function selftestHostRealizations(sourceRoot) {
     }, 'HOST_PROJECTION_PROVIDER_ENDPOINT_BINDING_INVALID',
     'Provider endpoint server mismatch did not fail closed.');
     assertEndpointMutationRejected((projection) => {
+      projection.providerEndpointBlocks = [];
+    }, 'HOST_PROJECTION_PROVIDER_ENDPOINT_REQUIRED',
+    'Selected provider endpoint requirement did not fail closed when its block was missing.');
+    assertEndpointMutationRejected((projection) => {
       projection.providerEndpointBlocks[0].content += soterSyntheticCredentialFixture('api_key = "sk-hostile-private-sentinel"\n');
     }, 'HOST_PROJECTION_CREDENTIAL_REJECTED',
     'Credential-like provider endpoint material did not fail closed.');
@@ -1323,6 +1377,33 @@ export async function selftestHostRealizations(sourceRoot) {
         projection.providerEndpointBlocks[0].content.replace('{{SERVER_ID}}', '{{UNDECLARED}}');
     }, 'HOST_PROJECTION_TEMPLATE_INVALID',
     'Unresolved provider endpoint marker did not fail closed.');
+    const happyOtterProviderFile = path.join(
+      happy,
+      'soter/providers/provider.integration.otter.mcp.json'
+    );
+    const originalHappyOtterProvider = fs.readFileSync(happyOtterProviderFile, 'utf8');
+    const undeclaredHappyOtterProvider = JSON.parse(originalHappyOtterProvider);
+    delete undeclaredHappyOtterProvider.runtime.endpointProvisioning;
+    fs.writeFileSync(
+      happyOtterProviderFile,
+      JSON.stringify(undeclaredHappyOtterProvider, null, 2) + '\n'
+    );
+    try {
+      assert.throws(
+        renderHappyProjection,
+        (error) => error.code === 'HOST_PROJECTION_PROVIDER_ENDPOINT_UNDECLARED',
+        'Provider endpoint block without a provider-owned requirement did not fail closed.'
+      );
+    } finally {
+      fs.writeFileSync(happyOtterProviderFile, originalHappyOtterProvider);
+    }
+    assert.equal(fs.readFileSync(path.join(happy, tools.path), 'utf8'), exactManagedToolsBytes,
+      'Rejected provider endpoint declarations changed managed host output bytes.');
+    assert.equal(
+      fs.readFileSync(hostManagedManifestStatePath(happy, 'codex'), 'utf8'),
+      exactManagedManifestBytes,
+      'Rejected provider endpoint declarations changed the managed host manifest.'
+    );
     assert.equal(
       renderHappyProjection().outputs.find((output) => output.id === 'output.codex.tools')
         .contentFingerprint,

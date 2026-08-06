@@ -96,10 +96,21 @@ function mcpProviderInventory(root) {
     const provider = readJson(path.join(providersRoot, entry.name));
     if (provider.$contract !== 'soter://contracts/capability-provider/v1'
       || provider.runtime?.engine !== 'mcp') continue;
+    const endpointProvisioning = provider.runtime.endpointProvisioning || null;
+    if (endpointProvisioning !== null
+      && (endpointProvisioning.target !== 'host-project-config'
+        || endpointProvisioning.state !== 'required'
+        || Object.keys(endpointProvisioning).length !== 2)) {
+      fail(
+        'HOST_PROJECTION_PROVIDER_ENDPOINT_DECLARATION_INVALID',
+        'MCP provider endpoint provisioning must use the exact closed requirement.'
+      );
+    }
     const row = {
       id: assertIdentifier(provider.id, 'Provider id'),
       pack: assertIdentifier(provider.pack, 'Provider pack id'),
-      server: assertIdentifier(provider.runtime.server, 'Provider server id')
+      server: assertIdentifier(provider.runtime.server, 'Provider server id'),
+      endpointProvisioning
     };
     if (ids.has(row.id)) {
       fail('HOST_PROJECTION_PROVIDER_REQUIREMENT_AMBIGUOUS', 'MCP provider identity is duplicated.');
@@ -169,6 +180,13 @@ function providerEndpointBlocks({ root, adapter, blocks, selectedProviders }) {
         'Provider endpoint block does not match an exact MCP provider and host route.'
       );
     }
+    if (provider.endpointProvisioning?.target !== 'host-project-config'
+      || provider.endpointProvisioning?.state !== 'required') {
+      fail(
+        'HOST_PROJECTION_PROVIDER_ENDPOINT_UNDECLARED',
+        'Provider endpoint block has no matching provider-owned provisioning requirement.'
+      );
+    }
     if (ids.has(id) || providers.has(providerId) || servers.has(server)) {
       fail(
         'HOST_PROJECTION_PROVIDER_ENDPOINT_AMBIGUOUS',
@@ -195,6 +213,16 @@ function providerEndpointBlocks({ root, adapter, blocks, selectedProviders }) {
       );
     }
     if (selected.has(providerId)) rendered.push({ id, content });
+  }
+  for (const provider of selectedProviders) {
+    if (provider.endpointProvisioning?.target === 'host-project-config'
+      && provider.endpointProvisioning?.state === 'required'
+      && !providers.has(provider.id)) {
+      fail(
+        'HOST_PROJECTION_PROVIDER_ENDPOINT_REQUIRED',
+        'Selected provider requires one exact host project-config endpoint block.'
+      );
+    }
   }
   return rendered
     .sort((left, right) => compareText(left.id, right.id))
