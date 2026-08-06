@@ -77,10 +77,8 @@ function candidate(root, marker) {
   const file = path.join(root, 'soter/configurations/meeting-intake.config.json');
   const value = readJson(file);
   value.host = {
-    id: 'claude',
-    adapter: 'host.claude',
-    version: '0.3.1',
-    reason: 'Exercise the exact local configuration transaction through the declared Claude projection.'
+    ...value.host,
+    reason: 'Exercise the exact local configuration transaction through the declared Codex projection.'
   };
   value.authorities = value.authorities.map((authority) => authority.id === 'authority.crm.instance'
     ? { ...authority, uri: 'notion://private-configuration-' + marker }
@@ -2086,6 +2084,8 @@ export async function selftestConfigurationTransactions(root = defaultRoot) {
       && packResolutionChange?.state === 'changed'
       && refreshPlan.plan.configuration.currentDocumentFingerprint
         === refreshPlan.plan.configuration.candidateDocumentFingerprint
+      && refreshPlan.plan.priorActiveLock.fingerprint
+        !== refreshPlan.plan.configuration.candidateLockFingerprint
       && refreshPlan.plan.configuration.currentLockFingerprint
         === refreshPlan.plan.configuration.candidateLockFingerprint
       && preparedRefreshInspection.configuration.baselineLockFingerprint

@@ -427,7 +427,7 @@ function configurationPlanChanges({
       beforeFingerprint: null,
       afterFingerprint: fingerprintLock(candidateLock)
     });
-  } else if (priorActiveLock.fingerprint !== fingerprintLock(currentLock)) {
+  } else if (priorActiveLock.fingerprint !== fingerprintLock(candidateLock)) {
     changes.push(...resolvedLockChanges(priorActiveLock.lock, candidateLock));
     changes.push({
       id: 'configuration-change.lock.active',
