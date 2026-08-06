@@ -250,6 +250,12 @@ function codedError(code, message, cause = null) {
   return error;
 }
 
+function reasonedCodedError(code, reasonCode, message, cause = null) {
+  const error = codedError(code, message, cause);
+  error.reasonCode = reasonCode;
+  return error;
+}
+
 function validate(root, value, relativeSchema, label, code) {
   const failures = validateJsonSchema(value, readJson(path.join(root, relativeSchema)));
   if (failures.length) {
@@ -288,14 +294,26 @@ function walkStrings(value, visit) {
 
 function assertPrivateRecordSafety(value, code) {
   if (containsCredentialMaterial(value)) {
-    throw codedError(code, 'Development state cannot contain credential material.');
+    throw reasonedCodedError(
+      code,
+      'DEVELOPMENT_PRIVATE_RECORD_CREDENTIAL_MATERIAL',
+      'Development state cannot contain credential material.'
+    );
   }
   walkStrings(value, (item) => {
     if (ABSOLUTE_PATH_RE.test(item)) {
-      throw codedError(code, 'Development state cannot contain absolute local paths.');
+      throw reasonedCodedError(
+        code,
+        'DEVELOPMENT_PRIVATE_RECORD_ABSOLUTE_PATH',
+        'Development state cannot contain absolute local paths.'
+      );
     }
     if (RAW_DIFF_RE.test(item)) {
-      throw codedError(code, 'Development state cannot contain raw diff hunks.');
+      throw reasonedCodedError(
+        code,
+        'DEVELOPMENT_PRIVATE_RECORD_RAW_DIFF',
+        'Development state cannot contain raw diff hunks.'
+      );
     }
   });
 }
@@ -1368,8 +1386,9 @@ export function readDevelopmentTargetMaterial({
     });
   } catch (error) {
     if (error?.message === 'Governed artifact exceeds its exact bounded read limit.') {
-      throw codedError(
+      throw reasonedCodedError(
         'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE',
+        'DEVELOPMENT_TARGET_MATERIAL_SIZE_LIMIT_EXCEEDED',
         'The selected request target exceeds the bounded text-review limit.',
         error
       );
@@ -1389,8 +1408,9 @@ export function readDevelopmentTargetMaterial({
     );
   }
   if (exact.bytes.length > TARGET_MATERIAL_MAX_BYTES) {
-    throw codedError(
+    throw reasonedCodedError(
       'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE',
+      'DEVELOPMENT_TARGET_MATERIAL_SIZE_LIMIT_EXCEEDED',
       'The selected request target exceeds the bounded text-review limit.'
     );
   }
@@ -1398,19 +1418,39 @@ export function readDevelopmentTargetMaterial({
   try {
     content = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(exact.bytes);
   } catch (error) {
-    throw codedError(
+    throw reasonedCodedError(
       'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE',
+      'DEVELOPMENT_TARGET_MATERIAL_UTF8_INVALID',
       'The selected request target is not exact UTF-8 text.',
       error
     );
   }
   const sourceCode = SOURCE_CODE_TARGET_EXTENSION_RE.test(target.path);
-  if (content.includes('\u0000')
-    || containsCredentialMaterial(content)
-    || containsCredentialAssignment(content, { sourceCode })
-    || PRIVATE_KEY_BLOCK_RE.test(content)) {
-    throw codedError(
+  if (content.includes('\u0000')) {
+    throw reasonedCodedError(
       'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE',
+      'DEVELOPMENT_TARGET_MATERIAL_NUL_BYTE',
+      'The selected request target contains prohibited private or binary material.'
+    );
+  }
+  if (containsCredentialMaterial(content)) {
+    throw reasonedCodedError(
+      'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE',
+      'DEVELOPMENT_TARGET_MATERIAL_CREDENTIAL_PATTERN',
+      'The selected request target contains prohibited private or binary material.'
+    );
+  }
+  if (containsCredentialAssignment(content, { sourceCode })) {
+    throw reasonedCodedError(
+      'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE',
+      'DEVELOPMENT_TARGET_MATERIAL_CREDENTIAL_ASSIGNMENT',
+      'The selected request target contains prohibited private or binary material.'
+    );
+  }
+  if (PRIVATE_KEY_BLOCK_RE.test(content)) {
+    throw reasonedCodedError(
+      'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE',
+      'DEVELOPMENT_TARGET_MATERIAL_PRIVATE_KEY_BLOCK',
       'The selected request target contains prohibited private or binary material.'
     );
   }
