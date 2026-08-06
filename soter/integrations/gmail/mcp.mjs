@@ -63,13 +63,18 @@ function nativePayload(response, responseProfile, label) {
   if (response?.isError === true) {
     throw providerError('unknown', label + ' returned an error result.');
   }
-  const structured = exactObject(response.structuredContent, label + ' structured result', {
-    required: ['result']
-  });
-  if (structured.result === undefined || structured.result === null) {
-    throw providerError('validation', label + ' omitted its exact structured result.');
+  const structured = exactObject(
+    response.structuredContent,
+    label + ' direct structured result',
+    { allowed: Object.keys(response.structuredContent ?? {}) }
+  );
+  if (Object.hasOwn(structured, 'result')) {
+    throw providerError(
+      'validation',
+      label + ' returned an unsupported legacy or mixed result wrapper.'
+    );
   }
-  return structured.result;
+  return structured;
 }
 
 function provenance(authority, source) {
