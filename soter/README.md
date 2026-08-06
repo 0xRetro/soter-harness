@@ -1097,6 +1097,13 @@ inputs or adopted authority.
 Generated skills are managed host outputs. They are never inputs to generation
 and never become canonical definitions.
 
+Host projection files are host control-plane outputs. Realization must run
+through a trusted local executor that can write those paths; an ordinary
+sandboxed host session may deny that effect. Core reports such filesystem
+denial only as `HOST_REALIZATION_EFFECT_DENIED`, attempts exact rollback, and
+does not make the consumed one-time start reusable. A corrected execution
+environment therefore requires a new exact plan and confirmation.
+
 `host-realization-inspection/v1` is the general UI/CLI projection. It contains
 normalized managed relative paths, closed action/mode branches, fingerprints,
 lifecycle facts, stable reason codes, and derived next-action guidance, never

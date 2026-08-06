@@ -1423,42 +1423,116 @@ export async function selftestHostRealizations(sourceRoot) {
     assert.equal(validateJsonSchema(expiredInProgressInspection, inspectionSchema).length, 0,
       'Honest expired in-progress host inspection failed its resume contract.');
 
-    const filesystemFailure = copyRuntime(sourceRoot, 'filesystem-failure');
-    roots.push(filesystemFailure);
-    activate(filesystemFailure, 'meeting-intake');
-    const filesystemAuthority = authority(filesystemFailure, 'filesystem-failure');
-    const originalMkdirSync = fs.mkdirSync;
-    let filesystemStopped;
-    try {
-      fs.mkdirSync = function guardedMkdirSync(file, options) {
-        if (path.resolve(file) === path.join(filesystemFailure, '.codex')) {
-          const error = new Error('Contained filesystem permission failure.');
-          error.code = 'EACCES';
-          throw error;
-        }
-        return originalMkdirSync.call(fs, file, options);
-      };
-      filesystemStopped = executeHostRealization({
+    for (const nativeCode of ['EACCES', 'EPERM', 'EROFS']) {
+      const label = 'filesystem-failure-' + nativeCode.toLowerCase();
+      const filesystemFailure = copyRuntime(sourceRoot, label);
+      roots.push(filesystemFailure);
+      activate(filesystemFailure, 'meeting-intake');
+      const initialAuthority = authority(filesystemFailure, label + '-initial');
+      assert.equal(executeHostRealization({
         root: filesystemFailure,
-        checkpointId: filesystemAuthority.execution.checkpoint.id,
+        checkpointId: initialAuthority.execution.checkpoint.id,
+        at: EXECUTED
+      }).state, 'completed');
+      const priorManifest = structuredClone(
+        readHostManagedManifestState(filesystemFailure, 'codex').manifest
+      );
+      const priorOutputs = priorManifest.outputs.map((output) => ({
+        path: output.path,
+        content: fs.readFileSync(path.join(filesystemFailure, output.path), 'utf8'),
+        mode: output.mode
+      }));
+
+      activate(filesystemFailure, 'project-pulse');
+      const filesystemAuthority = authority(
+        filesystemFailure,
+        label,
+        'project-pulse'
+      );
+      const deniedOperation = filesystemAuthority.plan.operations.find((operation) => {
+        return operation.action !== 'remove';
+      });
+      assert(deniedOperation, 'Permission regression requires one create or replace effect.');
+      const checkpointId = filesystemAuthority.execution.checkpoint.id;
+      const temporary = path.join(
+        filesystemFailure,
+        deniedOperation.path + '.' + checkpointId.replace(/[^a-z0-9.-]/g, '-') + '.tmp'
+      );
+      const originalOpenSync = fs.openSync;
+      let filesystemStopped;
+      try {
+        fs.openSync = function guardedOpenSync(file, flags, mode) {
+          if (path.resolve(file) === temporary) {
+            const error = new Error('Contained filesystem permission failure.');
+            error.code = nativeCode;
+            throw error;
+          }
+          return originalOpenSync.call(fs, file, flags, mode);
+        };
+        filesystemStopped = executeHostRealization({
+          root: filesystemFailure,
+          checkpointId,
+          at: EXECUTED
+        });
+      } finally {
+        fs.openSync = originalOpenSync;
+      }
+      assert.equal(filesystemStopped.state, 'rolled-back');
+      assert.equal(filesystemStopped.failure.reasonCode, 'HOST_REALIZATION_EFFECT_DENIED');
+      const serializedFailure = JSON.stringify(filesystemStopped);
+      assert(!serializedFailure.includes(nativeCode));
+      assert(!serializedFailure.includes('Contained filesystem permission failure.'));
+      assert(!serializedFailure.includes(filesystemFailure));
+      assert.deepEqual(
+        readHostManagedManifestState(filesystemFailure, 'codex').manifest,
+        priorManifest,
+        'Permission denial did not restore the exact prior managed manifest.'
+      );
+      for (const output of priorOutputs) {
+        const file = path.join(filesystemFailure, output.path);
+        assert.equal(fs.readFileSync(file, 'utf8'), output.content,
+          'Permission denial changed prior managed output bytes.');
+        assertMode(file, output.mode);
+      }
+      for (const operation of filesystemAuthority.plan.operations) {
+        const file = path.join(filesystemFailure, operation.path);
+        if (operation.before.state === 'absent') {
+          assert(!fs.existsSync(file), 'Permission rollback retained a candidate-only output.');
+        } else {
+          assert.equal(fs.readFileSync(file, 'utf8'), operation.before.content,
+            'Permission rollback did not restore exact prior operation bytes.');
+          assertMode(file, operation.before.mode);
+        }
+        const suffix = checkpointId.replace(/[^a-z0-9.-]/g, '-');
+        const rollbackSuffix = (checkpointId + '.rollback').replace(/[^a-z0-9.-]/g, '-');
+        assert(!fs.existsSync(file + '.' + suffix + '.tmp'),
+          'Permission denial retained an apply temporary file.');
+        assert(!fs.existsSync(file + '.' + rollbackSuffix + '.tmp'),
+          'Permission denial retained a rollback temporary file.');
+      }
+      assert.throws(
+        () => prepareHostRealizationExecution({
+          root: filesystemFailure,
+          confirmationId: filesystemAuthority.confirmation.id,
+          checkpointId: checkpointId + '.reuse',
+          at: '2026-07-16T12:08:00.000Z'
+        }),
+        (error) => error.code === 'HOST_REALIZATION_CONFIRMATION_ALREADY_CONSUMED',
+        'Permission rollback made the exact confirmation reusable.'
+      );
+      const rolledBackInspection = inspectHostRealization({
+        root: filesystemFailure,
+        planId: filesystemAuthority.plan.id,
+        checkpointId,
         at: EXECUTED
       });
-    } finally {
-      fs.mkdirSync = originalMkdirSync;
+      assert.equal(rolledBackInspection.checkpoint.failure.reasonCode,
+        'HOST_REALIZATION_EFFECT_DENIED');
+      assert.equal(rolledBackInspection.resume.reasonCode, 'HOST_REALIZATION_ROLLED_BACK');
+      assert.equal(rolledBackInspection.resume.permittedNextAction, 'none');
+      assert.equal(validateJsonSchema(rolledBackInspection, inspectionSchema).length, 0,
+        'Honest rolled-back host inspection failed its terminal lifecycle contract.');
     }
-    assert.equal(filesystemStopped.state, 'rolled-back');
-    assert.equal(filesystemStopped.failure.reasonCode, 'HOST_REALIZATION_EXECUTION_FAILED');
-    assert(!JSON.stringify(filesystemStopped).includes('EACCES'));
-    const rolledBackInspection = inspectHostRealization({
-      root: filesystemFailure,
-      planId: filesystemAuthority.plan.id,
-      checkpointId: filesystemAuthority.execution.checkpoint.id,
-      at: EXECUTED
-    });
-    assert.equal(rolledBackInspection.resume.reasonCode, 'HOST_REALIZATION_ROLLED_BACK');
-    assert.equal(rolledBackInspection.resume.permittedNextAction, 'none');
-    assert.equal(validateJsonSchema(rolledBackInspection, inspectionSchema).length, 0,
-      'Honest rolled-back host inspection failed its terminal lifecycle contract.');
 
     const beforeOutputCrash = copyRuntime(sourceRoot, 'before-output-crash');
     roots.push(beforeOutputCrash);

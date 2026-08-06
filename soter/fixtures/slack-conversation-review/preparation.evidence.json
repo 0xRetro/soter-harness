@@ -10,8 +10,8 @@
     "id": "run.slack-conversation-review.preparation-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:609f77bedf50dec727036ad114bea39f344ca20f23b5d9e98fdad617d9cf707c",
-  "graphFingerprint": "sha256:4e2b9a6cb2f5d25248feb55bed0786c5c0b49ad651b8836c6d2944c2dec3a103",
+  "configurationLockFingerprint": "sha256:67943363f456ea4611920d0e26126a4ed771f237115392df85969086424503c5",
+  "graphFingerprint": "sha256:f74009290d23b3498a1e1a205eb4a4c6c58d379faeb41052673433d548b993b0",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -265,7 +265,7 @@
     {
       "role": "context-snapshot",
       "id": "context.slack-conversation-review.preparation-fixture",
-      "fingerprint": "sha256:7c1fffa6f66bf4b0f9555d55afdbc850e1490bc8feca1422129f8fc6cc794841"
+      "fingerprint": "sha256:f087c77921ac054a5a9e6af8af72cdd3ca76b917c662e76080a7506951f85ba5"
     },
     {
       "role": "slack-conversation-review-preview",

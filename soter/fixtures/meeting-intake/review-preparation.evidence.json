@@ -10,8 +10,8 @@
     "id": "run.meeting-intake.review-preparation-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:8b64fa7d47838f607903b8927ac0587f811d4d86fc579c32efd9eb60e1f4ce84",
-  "graphFingerprint": "sha256:a6363c3674f2b0fb320af424c86a46f1329f71a7f96448eabc780266644ab911",
+  "configurationLockFingerprint": "sha256:fee529e881e99e8df52c2002b821beb9e88ee3127d9e8275e103eb52875687a0",
+  "graphFingerprint": "sha256:30e742305da6e086e13d401a23626a09a3f475ac1832ca2f44748ad4a43aaaad",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -295,7 +295,7 @@
     {
       "role": "context-snapshot",
       "id": "context.meeting-intake.review-preparation-fixture",
-      "fingerprint": "sha256:3b61c1e4b49ddc5e221f030bc3c374b2ba8584ee738195a60a65c7a3e7b6e778"
+      "fingerprint": "sha256:a26ada625bd3eb51ac85dc94fec94de6accdec9333c646640f403f70d0daa0f6"
     },
     {
       "role": "meeting-preparation-review",

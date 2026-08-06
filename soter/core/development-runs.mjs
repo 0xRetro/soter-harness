@@ -1512,8 +1512,23 @@ function assertResultSemantics(root, result, request, lockPath, requireCurrent) 
   assertUnique(result.effects, (item) => item.category, 'Development effect category', 'DEVELOPMENT_RESULT_BINDING_INVALID');
   assertUnique(result.decisionEvidence, (item) => item.id, 'Decision evidence', 'DEVELOPMENT_RESULT_BINDING_INVALID');
   assertUnique(result.decisionEvidence, (item) => item.reference, 'Decision evidence reference', 'DEVELOPMENT_RESULT_BINDING_INVALID');
+  if (result.state === 'passed'
+    && (result.checks.length === 0
+      || result.checks.some((item) => item.state !== 'passed'
+        || item.observedFingerprint === null))) {
+    throw codedError(
+      'DEVELOPMENT_RESULT_PASS_UNSUPPORTED',
+      'A passed development result requires at least one exact passed check with an observation fingerprint.'
+    );
+  }
   for (const change of result.changes) assertRelativePath(change.path, 'Development change', 'DEVELOPMENT_RESULT_BINDING_INVALID');
   if (request.invocation.kind === 'develop') {
+    if (result.workerRuns.length !== 0 || result.judgments.length !== 0) {
+      throw codedError(
+        'DEVELOPMENT_RESULT_BINDING_INVALID',
+        'Ordinary development result closure cannot claim evaluation worker runs or judgments.'
+      );
+    }
     const targets = new Map(request.invocation.targets.map((target) => [target.path, target]));
     if (result.changes.length !== targets.size) {
       throw codedError(
@@ -1562,6 +1577,12 @@ function assertResultSemantics(root, result, request, lockPath, requireCurrent) 
         );
       }
     }
+  }
+  if (request.invocation.kind === 'evaluation-suite' && result.changes.length !== 0) {
+    throw codedError(
+      'DEVELOPMENT_RESULT_BINDING_INVALID',
+      'Evaluation-suite result closure cannot claim target changes.'
+    );
   }
   for (const evidence of result.decisionEvidence) assertRelativePath(evidence.reference, 'Decision evidence reference', 'DEVELOPMENT_RESULT_BINDING_INVALID');
   if (result.workerRuns.some((run) => run.answerKeyAccess !== 'not-observed')) {
@@ -1987,6 +2008,172 @@ function inspectionFingerprint(inspection) {
   return unsignedFingerprint(inspection, 'inspectionFingerprint');
 }
 
+export function assertDevelopmentRunInspection(root, inspection) {
+  const resolvedRoot = path.resolve(root);
+  validate(
+    resolvedRoot,
+    inspection,
+    INSPECTION_SCHEMA,
+    'Development run inspection',
+    'DEVELOPMENT_INSPECTION_INVALID'
+  );
+  assertPrivateRecordSafety(inspection, 'DEVELOPMENT_INSPECTION_PRIVATE_MATERIAL_INVALID');
+  assertDate(inspection.request.createdAt, 'Development inspection request createdAt', 'DEVELOPMENT_INSPECTION_INVALID');
+  if (inspection.result) {
+    assertDate(
+      inspection.result.completedAt,
+      'Development inspection result completedAt',
+      'DEVELOPMENT_INSPECTION_INVALID'
+    );
+  }
+  if (inspection.inspectionFingerprint !== inspectionFingerprint(inspection)) {
+    throw codedError(
+      'DEVELOPMENT_INSPECTION_TAMPERED',
+      'Development run inspection fingerprint does not match its exact sanitized contents.'
+    );
+  }
+
+  assertUnique(
+    inspection.invocation.targetIds,
+    (item) => item,
+    'Development inspection target',
+    'DEVELOPMENT_INSPECTION_INVALID'
+  );
+  assertUnique(
+    inspection.invocation.plannedRuns,
+    (item) => item.id,
+    'Development inspection planned run',
+    'DEVELOPMENT_INSPECTION_INVALID'
+  );
+  assertUnique(
+    inspection.invocation.plannedRuns,
+    (item) => item.caseId + ':' + item.arm,
+    'Development inspection planned case arm',
+    'DEVELOPMENT_INSPECTION_INVALID'
+  );
+  assertContiguous(
+    inspection.invocation.plannedRuns,
+    'Development inspection planned run',
+    'DEVELOPMENT_INSPECTION_INVALID'
+  );
+  assertUnique(
+    inspection.changes,
+    (item) => item.id,
+    'Development inspection change',
+    'DEVELOPMENT_INSPECTION_INVALID'
+  );
+  assertUnique(
+    inspection.checks,
+    (item) => item.id,
+    'Development inspection check',
+    'DEVELOPMENT_INSPECTION_INVALID'
+  );
+  assertUnique(
+    inspection.effects,
+    (item) => item.category,
+    'Development inspection effect category',
+    'DEVELOPMENT_INSPECTION_INVALID'
+  );
+
+  const resultPresent = inspection.result !== null;
+  const evaluationSuite = inspection.invocation.kind === 'evaluation-suite';
+  const plannedRunCount = inspection.invocation.plannedRuns.length;
+  const expectedCompletedRuns = resultPresent && evaluationSuite ? plannedRunCount : 0;
+  const expectedJudgments = resultPresent && evaluationSuite ? plannedRunCount : 0;
+  if (inspection.progress.totalRuns !== plannedRunCount
+    || inspection.progress.completedRuns !== expectedCompletedRuns
+    || inspection.progress.judgments !== expectedJudgments) {
+    throw codedError(
+      'DEVELOPMENT_INSPECTION_INVALID',
+      'Development run inspection progress does not match its exact invocation and result state.'
+    );
+  }
+
+  if (!resultPresent) {
+    if (inspection.requestBoundary.state !== inspection.applicability.state
+      || inspection.requestBoundary.reasonCode !== inspection.applicability.reasonCode
+      || inspection.progress.state !== 'requested'
+      || inspection.changes.length !== 0
+      || inspection.checks.length !== 0
+      || inspection.effects.length !== 0) {
+      throw codedError(
+        'DEVELOPMENT_INSPECTION_INVALID',
+        'Open development inspection facts do not match one current or stale request without a result.'
+      );
+    }
+  } else {
+    if (inspection.result.id !== resultIdForRequest(inspection.request.id)
+      || inspection.requestBoundary.state !== 'closed'
+      || inspection.progress.state !== inspection.result.state
+      || Date.parse(inspection.result.completedAt) < Date.parse(inspection.request.createdAt)
+      || inspection.effects.length !== LOCAL_EFFECTS.length + EXTERNAL_EFFECTS.size
+      || (evaluationSuite
+        ? inspection.changes.length !== 0
+        : inspection.changes.length !== inspection.invocation.targetIds.length)) {
+      throw codedError(
+        'DEVELOPMENT_INSPECTION_INVALID',
+        'Closed development inspection facts do not match the exact result lifecycle.'
+      );
+    }
+    if (inspection.result.state === 'passed'
+      && (inspection.checks.length === 0
+        || inspection.checks.some((item) => item.state !== 'passed'
+          || item.observedFingerprint === null))) {
+      throw codedError(
+        'DEVELOPMENT_INSPECTION_INVALID',
+        'Passed development inspection requires exact passed check observations.'
+      );
+    }
+  }
+
+  for (const change of inspection.changes) {
+    const coherent = change.kind === 'create'
+      ? change.beforeFingerprint === null && change.afterFingerprint !== null
+      : change.kind === 'remove'
+        ? change.beforeFingerprint !== null && change.afterFingerprint === null
+        : change.kind === 'modify'
+          ? change.beforeFingerprint !== null
+            && change.afterFingerprint !== null
+            && change.beforeFingerprint !== change.afterFingerprint
+          : change.beforeFingerprint === change.afterFingerprint;
+    if (!coherent) {
+      throw codedError(
+        'DEVELOPMENT_INSPECTION_INVALID',
+        'Development inspection change kind does not match its exact before and after fingerprints.'
+      );
+    }
+  }
+
+  const expectedEffectCategories = [...LOCAL_EFFECTS, ...EXTERNAL_EFFECTS];
+  if (resultPresent && expectedEffectCategories.some((category) => {
+    return !inspection.effects.some((effect) => effect.category === category);
+  })) {
+    throw codedError(
+      'DEVELOPMENT_INSPECTION_INVALID',
+      'Closed development inspection does not account for every governed effect category.'
+    );
+  }
+  for (const effect of inspection.effects) {
+    const external = EXTERNAL_EFFECTS.has(effect.category);
+    const coherent = external
+      ? effect.scope === 'separate-authority'
+        && effect.state === 'not-observed'
+        && effect.count === 0
+        && effect.observedFingerprint === null
+      : effect.scope === 'request-scoped'
+        && (effect.state === 'observed'
+          ? effect.count >= 1 && effect.observedFingerprint !== null
+          : effect.count === 0 && effect.observedFingerprint === null);
+    if (!coherent) {
+      throw codedError(
+        'DEVELOPMENT_INSPECTION_INVALID',
+        'Development inspection effect state does not match its scope, count, and observation fingerprint.'
+      );
+    }
+  }
+  return inspection;
+}
+
 export function inspectDevelopmentRun({ root, requestId }) {
   const resolvedRoot = path.resolve(root);
   const request = readDevelopmentRequestState(resolvedRoot, requestId).request;
@@ -2134,8 +2321,7 @@ export function inspectDevelopmentRun({ root, requestId }) {
     inspectionFingerprint: 'sha256:' + '0'.repeat(64)
   };
   inspection.inspectionFingerprint = inspectionFingerprint(inspection);
-  validate(resolvedRoot, inspection, INSPECTION_SCHEMA, 'Development run inspection', 'DEVELOPMENT_INSPECTION_INVALID');
-  return inspection;
+  return assertDevelopmentRunInspection(resolvedRoot, inspection);
 }
 
 export function listDevelopmentRunInspections({ root }) {

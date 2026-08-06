@@ -219,7 +219,7 @@
         {
           "path": "soter/contracts/development-run-inspection.schema.json",
           "role": "definition",
-          "fingerprint": "sha256:a890d30c90c685909367e5280291c77833b2dfb46ca3d18e7e1efb3ae24f36cf"
+          "fingerprint": "sha256:6c2b1430d4174a99053987b6eb1ae63814e1627dcd711520188dced2d7911c8e"
         },
         {
           "path": "soter/contracts/development-target-material.schema.json",
@@ -706,12 +706,12 @@
         {
           "path": "soter/core/development-runs.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:37fcd6e49916668aecc41ccc541873b838122c8c46a18555dfd9ffab0a4904e3"
+          "fingerprint": "sha256:bb3de0b1640140529e31896e98220ac7e15b13188cb74511a02b48048fab6255"
         },
         {
           "path": "soter/core/development-runs.selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:060a39fe8d6599ffaee737439a26facd67b3976e6425fb5ae43a5c516fadb893"
+          "fingerprint": "sha256:0f5736fdd8f5108d5bdd2e30482b4028b64a0fc4c12446757aabe632a6696d64"
         },
         {
           "path": "soter/core/doctor.mjs",
@@ -741,12 +741,12 @@
         {
           "path": "soter/core/host-realizations.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:79fef4d1a9cefcad1d7c86d79a0cbdb65e749250a2a0199f3ed1cda4a8fa2548"
+          "fingerprint": "sha256:e6dcc7ea38c40c29a7c7272649238deba0c147fe0c7ce648dd01bab78ce9338d"
         },
         {
           "path": "soter/core/host-realizations.selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:927d5e1ab97bc587a958d6862529d7ded004d268bfc937daeee4c63e7fa28d6e"
+          "fingerprint": "sha256:9131262864bd7fa04efd67ed9f2c2121915200211cad38cc881ee20a1c672e0c"
         },
         {
           "path": "soter/core/host-runtime-inspection.mjs",
@@ -1826,5 +1826,5 @@
       "fingerprint": "sha256:373524e0f1ec5f3a68629b8275bd26e3792075365e48fa3c8b2ed252c43d03b7"
     }
   ],
-  "graphFingerprint": "sha256:3358f4edb632aee447d183ef89b2a811e1faab5e60398ab5ab6b3b158fc49d17"
+  "graphFingerprint": "sha256:999423000f044fce1db5f3bcc36d1e0193dedcccdc692b41f65eab1343874530"
 }

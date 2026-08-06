@@ -6,7 +6,7 @@
   "level": "offline",
   "configuration": {
     "name": "harness-development-catalog",
-    "lockFingerprint": "sha256:e7e5246f5620ae864c8e56f767de2bea6672caff7be057ab24998b864cf092c6"
+    "lockFingerprint": "sha256:61b34a32c948a3192b76d9a973d5db3e0638a1c4abc96da06b221c617bc16440"
   },
   "states": {
     "valid": "passed",

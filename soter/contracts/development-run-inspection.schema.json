@@ -13,9 +13,9 @@
       "additionalProperties": false,
       "required": ["id", "fingerprint", "createdAt"],
       "properties": {
-        "id": { "type": "string" },
+        "id": { "$ref": "#/$defs/requestId" },
         "fingerprint": { "$ref": "#/$defs/fingerprint" },
-        "createdAt": { "type": "string" }
+        "createdAt": { "$ref": "#/$defs/instant" }
       }
     },
     "result": {
@@ -26,10 +26,10 @@
           "additionalProperties": false,
           "required": ["id", "fingerprint", "state", "completedAt", "evidenceBasis"],
           "properties": {
-            "id": { "type": "string" },
+            "id": { "$ref": "#/$defs/resultId" },
             "fingerprint": { "$ref": "#/$defs/fingerprint" },
             "state": { "enum": ["passed", "failed", "blocked", "partial"] },
-            "completedAt": { "type": "string" },
+            "completedAt": { "$ref": "#/$defs/instant" },
             "evidenceBasis": {
               "oneOf": [
                 { "$ref": "#/$defs/hostReportedEvidenceBasis" },
@@ -45,8 +45,8 @@
       "additionalProperties": false,
       "required": ["id", "version", "evaluatedSubjectFingerprint", "definitionFingerprint", "guideContentFingerprint", "evaluationSetFingerprint"],
       "properties": {
-        "id": { "type": "string" },
-        "version": { "type": "string" },
+        "id": { "$ref": "#/$defs/workflowId" },
+        "version": { "$ref": "#/$defs/version" },
         "evaluatedSubjectFingerprint": { "$ref": "#/$defs/fingerprint" },
         "definitionFingerprint": { "$ref": "#/$defs/fingerprint" },
         "guideContentFingerprint": { "$ref": "#/$defs/fingerprint" },
@@ -70,7 +70,7 @@
       "additionalProperties": false,
       "required": ["name", "lockFingerprint", "graphFingerprint"],
       "properties": {
-        "name": { "type": "string" },
+        "name": { "$ref": "#/$defs/slug" },
         "lockFingerprint": { "$ref": "#/$defs/fingerprint" },
         "graphFingerprint": { "$ref": "#/$defs/fingerprint" }
       }
@@ -103,7 +103,7 @@
           "uniqueItems": true,
           "items": { "enum": ["local-workspace-read", "local-workspace-write", "local-command", "subagent-dispatch"] }
         },
-        "targetIds": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+        "targetIds": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
         "plannedRuns": {
           "type": "array",
           "items": {
@@ -111,9 +111,9 @@
             "additionalProperties": false,
             "required": ["id", "sequence", "caseId", "arm", "guideState"],
             "properties": {
-              "id": { "type": "string" },
+              "id": { "$ref": "#/$defs/evaluationRunId" },
               "sequence": { "type": "integer", "minimum": 1 },
-              "caseId": { "type": "string" },
+              "caseId": { "$ref": "#/$defs/slug" },
               "arm": { "enum": ["baseline", "guided"] },
               "guideState": { "enum": ["withheld", "candidate"] }
             }
@@ -210,26 +210,18 @@
     },
     "changes": {
       "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["id", "kind", "beforeFingerprint", "afterFingerprint"],
-        "properties": {
-          "id": { "type": "string" },
-          "kind": { "enum": ["create", "modify", "remove", "unchanged"] },
-          "beforeFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
-          "afterFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
-        }
-      }
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/change" }
     },
     "checks": {
       "type": "array",
+      "uniqueItems": true,
       "items": {
         "type": "object",
         "additionalProperties": false,
         "required": ["id", "state", "observedFingerprint"],
         "properties": {
-          "id": { "type": "string" },
+          "id": { "$ref": "#/$defs/id" },
           "state": { "enum": ["passed", "failed", "blocked", "unknown"] },
           "observedFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
         }
@@ -237,29 +229,34 @@
     },
     "effects": {
       "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["category", "scope", "state", "count", "observedFingerprint"],
-        "properties": {
-          "category": { "type": "string" },
-          "scope": { "type": "string" },
-          "state": { "type": "string" },
-          "count": { "type": "integer", "minimum": 0 },
-          "observedFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
-        }
-      }
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/effect" }
     },
     "promotion": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["state", "artifactFingerprint", "reasonCode", "decisionEvidenceIds"],
-      "properties": {
-        "state": { "enum": ["not-requested", "held", "proposed", "accepted", "declined"] },
-        "artifactFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
-        "reasonCode": { "type": "string" },
-        "decisionEvidenceIds": { "type": "array", "uniqueItems": true, "items": { "type": "string" } }
-      }
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "artifactFingerprint", "reasonCode", "decisionEvidenceIds"],
+          "properties": {
+            "state": { "enum": ["not-requested", "held"] },
+            "artifactFingerprint": { "type": "null" },
+            "reasonCode": { "$ref": "#/$defs/reasonCode" },
+            "decisionEvidenceIds": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/id" } }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state", "artifactFingerprint", "reasonCode", "decisionEvidenceIds"],
+          "properties": {
+            "state": { "enum": ["proposed", "accepted", "declined"] },
+            "artifactFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "reasonCode": { "$ref": "#/$defs/reasonCode" },
+            "decisionEvidenceIds": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/id" } }
+          }
+        }
+      ]
     },
     "authority": {
       "type": "object",
@@ -291,7 +288,13 @@
         "credentialsIncluded": { "const": false }
       }
     },
-    "limitations": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+    "limitations": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 12, "maxLength": 500 }
+    },
     "inspectionFingerprint": { "$ref": "#/$defs/fingerprint" }
   },
   "allOf": [
@@ -307,6 +310,19 @@
       },
       "then": {
         "properties": {
+          "invocation": {
+            "properties": {
+              "targetIds": { "minItems": 1 },
+              "plannedRuns": { "maxItems": 0 }
+            }
+          },
+          "progress": {
+            "properties": {
+              "completedRuns": { "const": 0 },
+              "totalRuns": { "const": 0 },
+              "judgments": { "const": 0 }
+            }
+          },
           "result": {
             "oneOf": [
               { "type": "null" },
@@ -334,6 +350,12 @@
       },
       "then": {
         "properties": {
+          "invocation": {
+            "properties": {
+              "targetIds": { "maxItems": 0 },
+              "plannedRuns": { "minItems": 2 }
+            }
+          },
           "result": {
             "oneOf": [
               { "type": "null" },
@@ -348,11 +370,177 @@
           }
         }
       }
+    },
+    {
+      "oneOf": [
+        {
+          "properties": {
+            "result": { "type": "null" },
+            "requestBoundary": { "properties": { "state": { "enum": ["current", "stale"] } } },
+            "progress": {
+              "properties": {
+                "state": { "const": "requested" },
+                "completedRuns": { "const": 0 },
+                "judgments": { "const": 0 }
+              }
+            },
+            "changes": { "maxItems": 0 },
+            "checks": { "maxItems": 0 },
+            "effects": { "maxItems": 0 },
+            "promotion": {
+              "properties": {
+                "state": { "const": "not-requested" },
+                "artifactFingerprint": { "type": "null" },
+                "reasonCode": { "const": "DEVELOPMENT_RESULT_NOT_RECORDED" },
+                "decisionEvidenceIds": { "maxItems": 0 }
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "result": { "type": "object", "properties": { "state": { "const": "passed" } } },
+            "requestBoundary": { "properties": { "state": { "const": "closed" } } },
+            "progress": { "properties": { "state": { "const": "passed" } } },
+            "checks": {
+              "minItems": 1,
+              "items": {
+                "properties": {
+                  "state": { "const": "passed" },
+                  "observedFingerprint": { "$ref": "#/$defs/fingerprint" }
+                }
+              }
+            },
+            "effects": { "minItems": 10, "maxItems": 10 }
+          }
+        },
+        {
+          "properties": {
+            "result": { "type": "object", "properties": { "state": { "const": "failed" } } },
+            "requestBoundary": { "properties": { "state": { "const": "closed" } } },
+            "progress": { "properties": { "state": { "const": "failed" } } },
+            "effects": { "minItems": 10, "maxItems": 10 }
+          }
+        },
+        {
+          "properties": {
+            "result": { "type": "object", "properties": { "state": { "const": "blocked" } } },
+            "requestBoundary": { "properties": { "state": { "const": "closed" } } },
+            "progress": { "properties": { "state": { "const": "blocked" } } },
+            "effects": { "minItems": 10, "maxItems": 10 }
+          }
+        },
+        {
+          "properties": {
+            "result": { "type": "object", "properties": { "state": { "const": "partial" } } },
+            "requestBoundary": { "properties": { "state": { "const": "closed" } } },
+            "progress": { "properties": { "state": { "const": "partial" } } },
+            "effects": { "minItems": 10, "maxItems": 10 }
+          }
+        }
+      ]
     }
   ],
   "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "requestId": { "type": "string", "pattern": "^development-request[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "resultId": { "type": "string", "pattern": "^development-result[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "workflowId": { "type": "string", "pattern": "^automation[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "evaluationRunId": { "type": "string", "pattern": "^evaluation-run[.][a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "version": { "type": "string", "pattern": "^(?:0|[1-9][0-9]*)[.](?:0|[1-9][0-9]*)[.](?:0|[1-9][0-9]*)$" },
+    "instant": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:[.][0-9]{3})?Z$" },
+    "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" },
     "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
     "nullableFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+    "change": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "kind", "beforeFingerprint", "afterFingerprint"],
+          "properties": {
+            "id": { "$ref": "#/$defs/id" },
+            "kind": { "const": "create" },
+            "beforeFingerprint": { "type": "null" },
+            "afterFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "kind", "beforeFingerprint", "afterFingerprint"],
+          "properties": {
+            "id": { "$ref": "#/$defs/id" },
+            "kind": { "const": "modify" },
+            "beforeFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "afterFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "kind", "beforeFingerprint", "afterFingerprint"],
+          "properties": {
+            "id": { "$ref": "#/$defs/id" },
+            "kind": { "const": "remove" },
+            "beforeFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "afterFingerprint": { "type": "null" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "kind", "beforeFingerprint", "afterFingerprint"],
+          "properties": {
+            "id": { "$ref": "#/$defs/id" },
+            "kind": { "const": "unchanged" },
+            "beforeFingerprint": { "$ref": "#/$defs/nullableFingerprint" },
+            "afterFingerprint": { "$ref": "#/$defs/nullableFingerprint" }
+          }
+        }
+      ]
+    },
+    "effect": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["category", "scope", "state", "count", "observedFingerprint"],
+          "properties": {
+            "category": { "enum": ["local-workspace-read", "local-workspace-write", "local-command", "subagent-dispatch"] },
+            "scope": { "const": "request-scoped" },
+            "state": { "const": "observed" },
+            "count": { "type": "integer", "minimum": 1 },
+            "observedFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["category", "scope", "state", "count", "observedFingerprint"],
+          "properties": {
+            "category": { "enum": ["local-workspace-read", "local-workspace-write", "local-command", "subagent-dispatch"] },
+            "scope": { "const": "request-scoped" },
+            "state": { "enum": ["not-observed", "blocked", "unknown"] },
+            "count": { "const": 0 },
+            "observedFingerprint": { "type": "null" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["category", "scope", "state", "count", "observedFingerprint"],
+          "properties": {
+            "category": { "enum": ["provider-read", "provider-write", "publication", "merge", "protected-root-mutation", "host-realization"] },
+            "scope": { "const": "separate-authority" },
+            "state": { "const": "not-observed" },
+            "count": { "const": 0 },
+            "observedFingerprint": { "type": "null" }
+          }
+        }
+      ]
+    },
     "hostReportedEvidenceBasis": {
       "type": "object",
       "additionalProperties": false,

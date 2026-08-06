@@ -6,7 +6,7 @@
   "level": "offline",
   "configuration": {
     "name": "repository-review",
-    "lockFingerprint": "sha256:44811c93eaa69f165af5479e4613b30953fe5be9935e10cacc2253efd1758d3c"
+    "lockFingerprint": "sha256:5dd822eca60a57057b7acca48ea16748b4999853eef78df43eff74b013f8e226"
   },
   "states": {
     "valid": "passed",

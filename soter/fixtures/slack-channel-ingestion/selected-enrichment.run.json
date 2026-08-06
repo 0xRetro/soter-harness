@@ -13,9 +13,9 @@
   },
   "configurationLock": {
     "path": "soter/fixtures/slack-channel-ingestion/slack-channel-ingestion.lock.json",
-    "fingerprint": "sha256:d6c4ea98722564b8385576e44f0cd8d6ed629099fd659daf6e9a83c86c36b61c"
+    "fingerprint": "sha256:bd5c21a7b9103937ef65eec06d079d23cd3eeb047f6fa6e3c00f42d0cd3df1f0"
   },
-  "graphFingerprint": "sha256:3358f4edb632aee447d183ef89b2a811e1faab5e60398ab5ab6b3b158fc49d17",
+  "graphFingerprint": "sha256:999423000f044fce1db5f3bcc36d1e0193dedcccdc692b41f65eab1343874530",
   "context": [
     {
       "subject": "communications.records",
@@ -44,7 +44,7 @@
       "uri": "soter://context/communications",
       "declarationFingerprint": "sha256:0b465d80100b2ccb7a4a6486fe2b4a6844b1f43eb18dad379d82b8af79ac93c9",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:d6c4ea98722564b8385576e44f0cd8d6ed629099fd659daf6e9a83c86c36b61c",
+      "provenance": "configuration-lock:sha256:bd5c21a7b9103937ef65eec06d079d23cd3eeb047f6fa6e3c00f42d0cd3df1f0",
       "freshness": "unknown"
     },
     {
@@ -54,7 +54,7 @@
       "uri": "soter://context/crm",
       "declarationFingerprint": "sha256:502352d07fedd267c13487a51fa06ebb3bee5550c6b5aa168e59899dba62aba2",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:d6c4ea98722564b8385576e44f0cd8d6ed629099fd659daf6e9a83c86c36b61c",
+      "provenance": "configuration-lock:sha256:bd5c21a7b9103937ef65eec06d079d23cd3eeb047f6fa6e3c00f42d0cd3df1f0",
       "freshness": "unknown"
     },
     {
@@ -74,7 +74,7 @@
       "uri": "soter-fixture://configuration-template/notion/account/operator",
       "declarationFingerprint": "sha256:cdee230730b0f3c9c6ca06e6578e38324ed0b7f7da89339d7628c70061e960e1",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:d6c4ea98722564b8385576e44f0cd8d6ed629099fd659daf6e9a83c86c36b61c",
+      "provenance": "configuration-lock:sha256:bd5c21a7b9103937ef65eec06d079d23cd3eeb047f6fa6e3c00f42d0cd3df1f0",
       "freshness": "unknown"
     },
     {
@@ -84,7 +84,7 @@
       "uri": "soter-state://runs",
       "declarationFingerprint": "sha256:9d785399ed6214659b768c25bec1cbb10b5e1fac5b42d9bbd7908d0529a9d6e7",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:d6c4ea98722564b8385576e44f0cd8d6ed629099fd659daf6e9a83c86c36b61c",
+      "provenance": "configuration-lock:sha256:bd5c21a7b9103937ef65eec06d079d23cd3eeb047f6fa6e3c00f42d0cd3df1f0",
       "freshness": "unknown"
     },
     {
@@ -104,7 +104,7 @@
       "uri": "soter-fixture://configuration-template/slack/account/operator",
       "declarationFingerprint": "sha256:2558293ca5572f625738bf204fe52e651f3254e2e7478474d75dde0895967382",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:d6c4ea98722564b8385576e44f0cd8d6ed629099fd659daf6e9a83c86c36b61c",
+      "provenance": "configuration-lock:sha256:bd5c21a7b9103937ef65eec06d079d23cd3eeb047f6fa6e3c00f42d0cd3df1f0",
       "freshness": "unknown"
     }
   ],
@@ -267,7 +267,7 @@
     {
       "id": "context.slack-channel-ingestion.preparation-fixture.selected",
       "type": "context-snapshot",
-      "fingerprint": "sha256:fe84020b93f5aa1ca5bbe8d2f4953bc6df543f36349e278c042fcd6853e7f1d6"
+      "fingerprint": "sha256:314f3ac1f9eaead97d55c29b9b569a883312b25ba6244736cf4d1e419af002d3"
     }
   ],
   "effects": [

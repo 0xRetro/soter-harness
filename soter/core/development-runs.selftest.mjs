@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 import { inspectWorkspace } from './inspection.mjs';
 import {
+  assertDevelopmentRunInspection,
   assertDevelopmentTargetMaterial,
   assertDevelopmentRequest,
   buildDevelopmentEvaluationInvocation,
@@ -41,6 +42,13 @@ import {
 
 const scriptRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const FP = (value) => fingerprintJson(value);
+
+function resignInspection(inspection) {
+  const resigned = structuredClone(inspection);
+  delete resigned.inspectionFingerprint;
+  resigned.inspectionFingerprint = fingerprintJson(resigned);
+  return resigned;
+}
 
 function expectCode(action, code) {
   let observed = null;
@@ -353,13 +361,7 @@ function passingOutcome(invocation, evaluations) {
       verdict: 'passed',
       criteria: criterionRows(cases.get(run.caseId))
     })),
-    changes: [{
-      id: 'change.forge.result',
-      path: 'soter/scratch/forge-result.mjs',
-      kind: 'modify',
-      beforeFingerprint: FP({ state: 'before' }),
-      afterFingerprint: FP({ state: 'after' })
-    }],
+    changes: [],
     checks: [{
       id: 'check.forge.result',
       state: 'passed',
@@ -869,6 +871,79 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       independentlyVerified: true
     };
     assert(validateJsonSchema(crossedHostEvidenceBasis, developmentInspectionSchema).length > 0);
+    const closedWithoutResult = structuredClone(hostClosure.inspection);
+    closedWithoutResult.result = null;
+    assert(validateJsonSchema(closedWithoutResult, developmentInspectionSchema).length > 0);
+
+    const crossedPassedProgress = structuredClone(hostClosure.inspection);
+    crossedPassedProgress.progress.state = 'failed';
+    crossedPassedProgress.checks[0].state = 'failed';
+    assert(validateJsonSchema(crossedPassedProgress, developmentInspectionSchema).length > 0);
+
+    const incoherentCreateInspection = structuredClone(hostClosure.inspection);
+    incoherentCreateInspection.changes[0].kind = 'create';
+    incoherentCreateInspection.changes[0].beforeFingerprint = FP({ unexpected: 'before' });
+    incoherentCreateInspection.changes[0].afterFingerprint = null;
+    assert(validateJsonSchema(incoherentCreateInspection, developmentInspectionSchema).length > 0);
+
+    const incoherentEffectInspection = structuredClone(hostClosure.inspection);
+    const incoherentEffect = incoherentEffectInspection.effects.find((item) => {
+      return item.category === 'local-workspace-read';
+    });
+    incoherentEffect.count = 0;
+    incoherentEffect.observedFingerprint = null;
+    assert(validateJsonSchema(incoherentEffectInspection, developmentInspectionSchema).length > 0);
+
+    for (const field of ['changes', 'checks', 'effects']) {
+      const duplicateInspection = structuredClone(hostClosure.inspection);
+      duplicateInspection[field].push(structuredClone(duplicateInspection[field][0]));
+      assert(validateJsonSchema(duplicateInspection, developmentInspectionSchema).length > 0);
+    }
+
+    const duplicateChangeId = structuredClone(hostClosure.inspection);
+    duplicateChangeId.changes.push({
+      ...structuredClone(duplicateChangeId.changes[0]),
+      kind: 'modify',
+      afterFingerprint: FP({ different: 'after' })
+    });
+    expectCode(
+      () => assertDevelopmentRunInspection(temp, resignInspection(duplicateChangeId)),
+      'DEVELOPMENT_INSPECTION_INVALID'
+    );
+
+    const unequalUnchanged = structuredClone(hostClosure.inspection);
+    unequalUnchanged.changes[0].afterFingerprint = FP({ unequal: 'unchanged' });
+    expectCode(
+      () => assertDevelopmentRunInspection(temp, resignInspection(unequalUnchanged)),
+      'DEVELOPMENT_INSPECTION_INVALID'
+    );
+
+    const equalModify = structuredClone(hostClosure.inspection);
+    equalModify.changes[0].kind = 'modify';
+    expectCode(
+      () => assertDevelopmentRunInspection(temp, resignInspection(equalModify)),
+      'DEVELOPMENT_INSPECTION_INVALID'
+    );
+
+    const privateInspection = structuredClone(hostClosure.inspection);
+    privateInspection.limitations[0] = 'Inspect the private local source at /tmp/private-development-inspection.';
+    expectCode(
+      () => assertDevelopmentRunInspection(temp, resignInspection(privateInspection)),
+      'DEVELOPMENT_INSPECTION_PRIVATE_MATERIAL_INVALID'
+    );
+
+    const tamperedInspection = structuredClone(hostClosure.inspection);
+    tamperedInspection.progress.completedRuns += 1;
+    expectCode(
+      () => assertDevelopmentRunInspection(temp, tamperedInspection),
+      'DEVELOPMENT_INSPECTION_INVALID'
+    );
+    const mismatchedInspectionFingerprint = structuredClone(hostClosure.inspection);
+    mismatchedInspectionFingerprint.inspectionFingerprint = FP({ mismatched: 'inspection' });
+    expectCode(
+      () => assertDevelopmentRunInspection(temp, mismatchedInspectionFingerprint),
+      'DEVELOPMENT_INSPECTION_TAMPERED'
+    );
     assert.equal(hostClosure.inspection.requestBoundary.state, 'closed');
     assert.deepEqual(hostClosure.result.changes.map(({ id, kind }) => ({ id, kind })), [{
       id: 'change.target.host-closure-schema',
@@ -1395,6 +1470,32 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       limitations: ['Credential sentinel ' + 'sk-' + 'development-secret-value must be rejected.']
     }), 'DEVELOPMENT_REQUEST_PRIVATE_MATERIAL_INVALID');
 
+    const falseEvaluationChange = passingOutcome(invocation, evaluations);
+    falseEvaluationChange.changes = [{
+      id: 'change.false-evaluation-target',
+      path: 'soter/scratch/false-evaluation-target.mjs',
+      kind: 'create',
+      beforeFingerprint: FP({ false: 'before' }),
+      afterFingerprint: null
+    }];
+    expectCode(() => recordDevelopmentResult({
+      root: temp,
+      lockPath,
+      requestId,
+      outcome: falseEvaluationChange,
+      completedAt: '2026-07-22T10:09:00.000Z'
+    }), 'DEVELOPMENT_RESULT_BINDING_INVALID');
+
+    const unsupportedPassedCheck = passingOutcome(invocation, evaluations);
+    unsupportedPassedCheck.checks[0].observedFingerprint = null;
+    expectCode(() => recordDevelopmentResult({
+      root: temp,
+      lockPath,
+      requestId,
+      outcome: unsupportedPassedCheck,
+      completedAt: '2026-07-22T10:09:30.000Z'
+    }), 'DEVELOPMENT_RESULT_PASS_UNSUPPORTED');
+
     const outcome = passingOutcome(invocation, evaluations);
     const recorded = recordDevelopmentResult({
       root: temp,
@@ -1419,6 +1520,12 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       crossedEvaluationEvidenceBasis,
       developmentInspectionSchema
     ).length > 0);
+    const crossedEvaluationProgress = structuredClone(recorded.inspection);
+    crossedEvaluationProgress.progress.completedRuns -= 1;
+    expectCode(
+      () => assertDevelopmentRunInspection(temp, resignInspection(crossedEvaluationProgress)),
+      'DEVELOPMENT_INSPECTION_INVALID'
+    );
     assert.deepEqual(recorded.inspection.authority, {
       kind: 'inspection-only',
       grantsExecution: false,
@@ -1711,6 +1818,17 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       beforeFingerprint: governedBefore,
       afterFingerprint: governedAfter
     });
+    const evaluationFactsOnDevelop = structuredClone(governedOutcome);
+    const evaluationSource = passingOutcome(invocation, evaluations);
+    evaluationFactsOnDevelop.workerRuns = [structuredClone(evaluationSource.workerRuns[0])];
+    evaluationFactsOnDevelop.judgments = [structuredClone(evaluationSource.judgments[0])];
+    expectCode(() => recordDevelopmentResult({
+      root: temp,
+      lockPath,
+      requestId: governedRequest.request.id,
+      outcome: evaluationFactsOnDevelop,
+      completedAt: '2026-07-22T11:08:00.000Z'
+    }), 'DEVELOPMENT_RESULT_BINDING_INVALID');
     if (process.platform !== 'win32') {
       fs.chmodSync(governedTargetFile, 0o755);
       expectCode(() => recordDevelopmentResult({

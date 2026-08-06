@@ -71,7 +71,11 @@ function fail(code, message) {
 
 function stableFailureCode(error, fallback) {
   const code = typeof error?.code === 'string' ? error.code : '';
-  return /^HOST_REALIZATION_[A-Z0-9_]+$/.test(code) ? code : fallback;
+  if (/^HOST_REALIZATION_[A-Z0-9_]+$/.test(code)) return code;
+  if (['EACCES', 'EPERM', 'EROFS'].includes(code)) {
+    return 'HOST_REALIZATION_EFFECT_DENIED';
+  }
+  return fallback;
 }
 
 function compareText(left, right) {
