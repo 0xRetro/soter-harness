@@ -14,16 +14,22 @@
     "probeStepCompleteExport": "completeProbePlanStepMcp",
     "probeFinalizeExport": "finalizeProbePlanMcp",
     "responseProfiles": ["gmail.codex.connector.v1"],
+    "pagination": {
+      "capabilities": ["mail.threads.read"],
+      "completePageExport": "completeMcpPage",
+      "finalizeExport": "finalizeMcpPages",
+      "maximumPages": 101
+    },
     "server": "gmail",
     "tools": [
       "get_profile", "search_email_ids", "batch_read_email_threads",
-      "apply_labels_to_emails", "batch_read_email"
+      "read_email", "apply_labels_to_emails", "batch_read_email"
     ],
     "probeTools": ["get_profile"]
   },
   "capabilities": [
     { "id": "mail.messages.search", "version": "1.0.0" },
-    { "id": "mail.threads.read", "version": "1.0.0" },
+    { "id": "mail.threads.read", "version": "2.0.0" },
     { "id": "mail.labels.read", "version": "2.0.0" },
     { "id": "mail.labels.apply", "version": "2.0.0" }
   ],
@@ -36,9 +42,11 @@
   "fixtures": [],
   "limitations": [
     "The connector route is declared for Codex only. It is not connected evidence and does not establish authentication, permission, tool availability, response compatibility, readiness, verification, or health for an installation.",
-    "Message search, thread expansion, label acknowledgement, and label read-back accept only the declared gmail.codex.connector.v1 response profile. Static tests prove fail-closed normalization; live connector compatibility, pagination behavior, RFC822 Message-ID availability, and connected readiness remain unknown until expiring exact-lock evidence exists.",
+    "Message search, thread expansion, RFC822 identity enrichment, label acknowledgement, and label read-back accept only the declared gmail.codex.connector.v1 response profile. A thread batch must be complete, untruncated, and within the exact aggregate message bound before a deterministic queue of at most 100 exact-request single-message raw-MIME reads is issued serially; contextual sibling messages receive no RFC822 identity. Raw MIME is discarded immediately after one valid Message-ID is extracted and joined by exact Gmail message and thread identity.",
+    "The connector's max_messages argument is a per-thread bound. Integration separately checks the declared aggregate maximumTotalMessages after the complete batch response and stops before identity enrichment when it is exceeded.",
     "Label writes use exact Gmail message IDs and existing label display names with create_missing_labels=false. The write result is only an acknowledged request scope; exact read-back through batch_read_email is still required.",
     "Draft creation is intentionally absent because the installed connector exposes no exact idempotency-key lookup or bounded draft read-back sufficient for ambiguity reconciliation.",
-    "No mail send, archive, trash, forwarding, label creation, or destructive capability is declared. Native provider responses and account identity values remain private and are never persisted by Core."
+    "Static tests prove fail-closed normalization, bounds, and raw-MIME exclusion. Connected readiness, verification, and health remain unknown until expiring exact-lock evidence exists.",
+    "No mail send, archive, trash, forwarding, label creation, or destructive capability is declared. Native provider responses, raw MIME, and account identity values remain private and are never persisted by Core."
   ]
 }

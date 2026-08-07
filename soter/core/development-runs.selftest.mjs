@@ -984,7 +984,9 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       ['.env', Buffer.from('PRIVATE_VALUE=not-returned\n')],
       ['development-invalid-utf8.bin', Buffer.from([0xc3, 0x28])],
       ['development-nul.txt', Buffer.from('before\u0000after')],
-      ['development-credential-pattern.txt', Buffer.from(soterSyntheticCredentialFixture('sk-test-fixture-aaaaaaaaaaaaaaaaaaaaaaaa'))],
+      ['development-credential-pattern.txt', Buffer.from(soterSyntheticCredentialFixture(
+        'sk-' + 'test-fixture-' + 'a'.repeat(24)
+      ))],
       ['development-password.txt', Buffer.from(soterSyntheticCredentialFixture('password = test-fixture-password-value\n'))],
       ['development-token.txt', Buffer.from(soterSyntheticCredentialFixture('token = "test-fixture-token-value"\n'))],
       ['development-client-secret.json', Buffer.from(soterSyntheticCredentialFixture('{"clientSecret":"test-fixture-client-secret"}\n'))],
@@ -1651,7 +1653,9 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       workflowId: 'automation.forge',
       requestId: 'development-request.credential',
       invocation,
-      limitations: [soterSyntheticCredentialFixture('Credential sentinel sk-test-fixture-development-secret-value must be rejected.')]
+      limitations: [soterSyntheticCredentialFixture(
+        'Credential sentinel ' + 'sk-' + 'test-fixture-development-secret-value must be rejected.'
+      )]
     }), 'DEVELOPMENT_REQUEST_PRIVATE_MATERIAL_INVALID');
 
     const falseEvaluationChange = passingOutcome(invocation, evaluations);

@@ -4,8 +4,8 @@
   "id": "context.drive-filing.preparation-fixture",
   "runId": "run.drive-filing.preparation-fixture",
   "createdAt": "2026-07-21T16:00:00.000Z",
-  "configurationLockFingerprint": "sha256:d7ed3051f5547c5e76e5980acb0d54ddfd990c37b2e180c89b761e25475b6a26",
-  "graphFingerprint": "sha256:8888cbcafe7c6c8ed3b54b94623182199e09bcef297200e0df63b8b3dd70ed3d",
+  "configurationLockFingerprint": "sha256:f4b262980d8f7c0c4d37cf8c71ad1a5e85921da4e350677aba6f3e08b3069f31",
+  "graphFingerprint": "sha256:f8feac2f1eb1f33c46137bacf7f8af0f2de075c9cda5f120b3d52270016d039f",
   "containment": "fixture",
   "entries": [
     {

@@ -14,7 +14,7 @@
     "plan": { "$ref": "#/$defs/reference" },
     "configuration": {
       "type": "object", "additionalProperties": false,
-      "required": ["name", "sourceKind", "baselineLockFingerprint", "candidateLockFingerprint", "candidateGraphFingerprint", "observedLockFingerprint", "applicability"],
+      "required": ["name", "sourceKind", "baselineLockFingerprint", "candidateLockFingerprint", "candidateGraphFingerprint", "observedLockFingerprint", "observedResolution", "applicability"],
       "properties": {
         "name": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
         "sourceKind": { "enum": ["tracked-template", "private-active"] },
@@ -22,6 +22,7 @@
         "candidateLockFingerprint": { "$ref": "#/$defs/fingerprint" },
         "candidateGraphFingerprint": { "$ref": "#/$defs/fingerprint" },
         "observedLockFingerprint": { "type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$" },
+        "observedResolution": { "$ref": "#/$defs/resolutionObservation" },
         "applicability": { "enum": ["current", "stale", "applied"] }
       }
     },
@@ -601,6 +602,26 @@
   ],
   "$defs": {
     "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "resolutionObservation": {
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["state", "fingerprint"],
+          "properties": {
+            "state": { "const": "resolved" },
+            "fingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["state", "fingerprint"],
+          "properties": {
+            "state": { "const": "unavailable" },
+            "fingerprint": { "const": null }
+          }
+        }
+      ]
+    },
     "reference": {
       "type": "object", "additionalProperties": false, "required": ["id", "fingerprint"],
       "properties": {

@@ -28,6 +28,7 @@ import {
 import {
   completeDurableCapabilityExecution,
   completeDurableOperationPlanExecution,
+  failDurableHostExecution,
   prepareDurableCapabilityExecution,
   prepareDurableOperationPlanExecution
 } from '../../core/service.mjs';
@@ -798,6 +799,43 @@ async function assertDurableCapabilityPagination({ root, lock, lockPath, host })
     expectedHost: host
   });
   assert.equal(execution.checkpoint.call.id, callId);
+  const checkpointFile = hostCallCheckpointPath(root, execution.checkpoint.id);
+  const initialCheckpointFingerprint = fingerprintJson(readJson(checkpointFile));
+  for (const at of [
+    'not-a-valid-iso-instant',
+    '2026-07-21T19:00:59.999Z'
+  ]) {
+    await assert.rejects(
+      () => completeDurableCapabilityExecution({
+        root,
+        checkpointId: execution.checkpoint.id,
+        callId,
+        response: structured({
+          messages: [],
+          pagination_info: { has_more: false, next_cursor: '' }
+        }, 'RAW_INVALID_PAGINATION_TIME_SENTINEL'),
+        at,
+        expectedHost: host
+      }),
+      /transition time must be a valid canonical ISO instant/
+    );
+    await assert.rejects(
+      () => failDurableHostExecution({
+        root,
+        checkpointId: execution.checkpoint.id,
+        callId,
+        errorKind: 'provider',
+        at,
+        expectedHost: host
+      }),
+      /transition time must be a valid canonical ISO instant/
+    );
+    assert.equal(
+      fingerprintJson(readJson(checkpointFile)),
+      initialCheckpointFingerprint,
+      'Rejected pagination chronology must not mutate its durable checkpoint.'
+    );
+  }
   const firstResponse = structured({
     team_id: WORKSPACE_ID,
     channel_id: 'C001',
@@ -822,6 +860,30 @@ async function assertDurableCapabilityPagination({ root, lock, lockPath, host })
   });
   assert.equal(execution.checkpoint.state, 'requested');
   assert.equal(execution.checkpoint.call.pagination.pages.length, 1);
+  assert.equal(execution.checkpoint.call.createdAt, '2026-07-21T19:01:01.000Z');
+  assert.equal(execution.checkpoint.updatedAt, '2026-07-21T19:01:01.000Z');
+  const advancedCheckpointFingerprint = fingerprintJson(readJson(checkpointFile));
+  for (const at of [
+    '2026-07-21 19:01:02 UTC',
+    '2026-07-21T19:01:00.999Z'
+  ]) {
+    await assert.rejects(
+      () => failDurableHostExecution({
+        root,
+        checkpointId: execution.checkpoint.id,
+        callId: execution.checkpoint.call.id,
+        errorKind: 'provider',
+        at,
+        expectedHost: host
+      }),
+      /transition time must be a valid canonical ISO instant/
+    );
+    assert.equal(
+      fingerprintJson(readJson(checkpointFile)),
+      advancedCheckpointFingerprint,
+      'Rejected continuation failure chronology must not move checkpoint time backward.'
+    );
+  }
   const exactAdvancedFingerprint = execution.checkpoint.checkpointFingerprint;
   const replayed = await completeDurableCapabilityExecution({
     root,
@@ -1093,8 +1155,44 @@ async function runConnectedHost(root, host) {
     assert.equal(execution.run.approvals.length, 0);
 
     const responses = responseSequence();
+    let operationPlanChronologyChecked = false;
     for (const [index, expected] of responses.entries()) {
       assertNativeCall(execution.currentCall, host, expected);
+      if (!operationPlanChronologyChecked && execution.currentCall.pagination) {
+        const checkpointFile = path.join(temporaryRoot, execution.checkpointPath);
+        const checkpointBefore = fingerprintJson(readJson(checkpointFile));
+        const regressingAt = new Date(
+          Date.parse(execution.currentCall.createdAt) - 1
+        ).toISOString();
+        await assert.rejects(
+          () => completeDurableOperationPlanExecution({
+            root: temporaryRoot,
+            checkpointId: execution.checkpoint.id,
+            callId: execution.currentCall.id,
+            response: expected.response,
+            at: regressingAt,
+            expectedHost: host
+          }),
+          /transition time must be a valid canonical ISO instant/
+        );
+        await assert.rejects(
+          () => failDurableHostExecution({
+            root: temporaryRoot,
+            checkpointId: execution.checkpoint.id,
+            callId: execution.currentCall.id,
+            errorKind: 'provider',
+            at: regressingAt,
+            expectedHost: host
+          }),
+          /transition time must be a valid canonical ISO instant/
+        );
+        assert.equal(
+          fingerprintJson(readJson(checkpointFile)),
+          checkpointBefore,
+          'Rejected pagination chronology must not regress an operation-plan checkpoint.'
+        );
+        operationPlanChronologyChecked = true;
+      }
       execution = await completeDurableOperationPlanExecution({
         root: temporaryRoot,
         checkpointId: execution.checkpoint.id,
@@ -1104,6 +1202,7 @@ async function runConnectedHost(root, host) {
         expectedHost: host
       });
     }
+    assert.equal(operationPlanChronologyChecked, true);
     assert.equal(execution.checkpoint.state, 'completed');
     assert.equal(execution.currentCall, null);
     assert.equal(execution.run.approvals.length, 0);

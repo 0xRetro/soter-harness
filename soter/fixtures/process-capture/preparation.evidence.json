@@ -10,8 +10,8 @@
     "id": "run.process-capture.preparation-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:f5a9bf79c14ab37c5e7a4c470ab2c8f8ecb0bfedbeefe9730c0549be28bd1e9b",
-  "graphFingerprint": "sha256:1623296e2bb4394ea25c3d5e46ebc03a55ada675bbd87a56d5b68f631994997d",
+  "configurationLockFingerprint": "sha256:d282944accb486f1baf5d968e0c17f4b42ee30e2b572f6be8edefc7000b278d9",
+  "graphFingerprint": "sha256:5ca7768651385b483dcaab4debf23fdef3d67b695f34b586435e3f74c0bf4aa5",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -42,8 +42,8 @@
   "host": {
     "id": "codex",
     "adapter": "host.codex",
-    "version": "0.3.1",
-    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818"
+    "version": "0.3.2",
+    "manifestFingerprint": "sha256:cf50c9418a9af38255f994a6bcb062472a062708a3a95a89167843dd50eafa89"
   },
   "integrations": [
     {
@@ -236,7 +236,7 @@
     {
       "role": "context-snapshot",
       "id": "context.process-capture.preparation-fixture",
-      "fingerprint": "sha256:aa5b3dcbc6f8fe9769f941890ab86d404aa2b3cae1fd1f3fcf705caa1094f962"
+      "fingerprint": "sha256:24abeca35050c8d24f71b6ee631bed76b3f2db2c2bb4275c402d4fea3b7009a9"
     },
     {
       "role": "process-capture-preview",

@@ -1,6 +1,20 @@
 import { fingerprintJson } from '../../core/lib/canonical-json.mjs';
 
 const RESPONSE_PROFILE = 'gmail.codex.connector.v1';
+const THREAD_READ_MAXIMUM_PAGES = 101;
+const MAXIMUM_RAW_MIME_BYTES = 20_000_000;
+const MAXIMUM_RAW_MIME_BASE64URL_CHARACTERS = Math.ceil(MAXIMUM_RAW_MIME_BYTES * 4 / 3) + 2;
+const MAXIMUM_RFC822_HEADER_BYTES = 262_144;
+const MAXIMUM_PROVIDER_ID_CHARACTERS = 500;
+const MAXIMUM_ADDRESS_CHARACTERS = 1000;
+const MAXIMUM_ADDRESSES = 500;
+const MAXIMUM_LABEL_CHARACTERS = 500;
+const MAXIMUM_LABELS = 100;
+const MAXIMUM_SUBJECT_CHARACTERS = 10_000;
+const MAXIMUM_BODY_CHARACTERS = 1_000_000;
+const MAXIMUM_THREAD_COUNT = 100;
+const MAXIMUM_MESSAGES_PER_THREAD = 500;
+const MAXIMUM_REQUESTED_MESSAGES = 100;
 
 function compareCodepoint(left, right) {
   return left < right ? -1 : left > right ? 1 : 0;
@@ -15,6 +29,21 @@ function providerError(kind, message) {
 function requiredString(value, label) {
   if (typeof value !== 'string' || !value.trim()) {
     throw providerError('validation', label + ' must be a non-empty string.');
+  }
+  return value;
+}
+
+function boundedRequiredString(value, label, maximumCharacters) {
+  const result = requiredString(value, label);
+  if (result.length > maximumCharacters) {
+    throw providerError('validation', label + ' exceeds its exact character bound.');
+  }
+  return result;
+}
+
+function boundedText(value, label, maximumCharacters) {
+  if (typeof value !== 'string' || value.length > maximumCharacters) {
+    throw providerError('validation', label + ' exceeds its exact character bound.');
   }
   return value;
 }
@@ -118,14 +147,6 @@ function searchResult(payload, maximumMessages) {
   return { ids, complete: nextPageToken === null };
 }
 
-function threadRecords(payload) {
-  const parsed = exactObject(payload, 'Gmail thread read result', { required: ['threads'] });
-  if (!Array.isArray(parsed.threads)) {
-    throw providerError('validation', 'Gmail thread read threads must be an array.');
-  }
-  return parsed.threads;
-}
-
 function exactOptionalStrings(value, label, maximum) {
   if (!Array.isArray(value)
     || value.length > maximum
@@ -136,13 +157,68 @@ function exactOptionalStrings(value, label, maximum) {
   return [...value];
 }
 
-function recipientList(record) {
-  return exactOptionalStrings(record.to, 'Gmail message recipients', 500);
+function exactBoundedStrings(value, label, maximumItems, maximumCharacters, { required = false } = {}) {
+  const result = required
+    ? exactStrings(value, label, maximumItems)
+    : exactOptionalStrings(value, label, maximumItems);
+  for (const item of result) {
+    boundedRequiredString(item, label + ' item', maximumCharacters);
+  }
+  return result;
 }
 
-function normalizedSentAt(record) {
-  const value = record.sent_at;
-  if (typeof value !== 'string' || !value.trim()) {
+function assertThreadReadInput(input) {
+  exactObject(input, 'Mail thread read input', {
+    required: [
+      'messageIds', 'maximumThreads', 'maximumMessagesPerThread', 'maximumTotalMessages'
+    ]
+  });
+  const messageIds = exactBoundedStrings(
+    input.messageIds,
+    'Mail thread message IDs',
+    MAXIMUM_REQUESTED_MESSAGES,
+    MAXIMUM_PROVIDER_ID_CHARACTERS,
+    { required: true }
+  );
+  if (!Number.isInteger(input.maximumThreads)
+    || input.maximumThreads < 1
+    || input.maximumThreads > MAXIMUM_THREAD_COUNT
+    || !Number.isInteger(input.maximumMessagesPerThread)
+    || input.maximumMessagesPerThread < 1
+    || input.maximumMessagesPerThread > MAXIMUM_MESSAGES_PER_THREAD
+    || !Number.isInteger(input.maximumTotalMessages)
+    || input.maximumTotalMessages < 1
+    || input.maximumTotalMessages > MAXIMUM_MESSAGES_PER_THREAD
+    || input.maximumMessagesPerThread > input.maximumTotalMessages
+    || messageIds.length > input.maximumTotalMessages) {
+    throw providerError('validation', 'Mail thread read bounds are invalid.');
+  }
+  return input;
+}
+
+function normalizedAddresses(value, label) {
+  if (typeof value === 'string') {
+    return [boundedRequiredString(value, label, MAXIMUM_ADDRESS_CHARACTERS)];
+  }
+  return exactBoundedStrings(
+    value,
+    label,
+    MAXIMUM_ADDRESSES,
+    MAXIMUM_ADDRESS_CHARACTERS
+  );
+}
+
+function normalizedSentAtValue(value) {
+  if (typeof value === 'string' && /^\d+(?:\.\d+)?$/.test(value.trim())) {
+    value = Number(value);
+  }
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) {
+      throw providerError('validation', 'Gmail message timestamp is invalid.');
+    }
+    value *= Math.abs(value) < 100_000_000_000 ? 1000 : 1;
+  }
+  if (typeof value !== 'string' && typeof value !== 'number') {
     throw providerError('validation', 'Gmail message timestamp is unavailable.');
   }
   const date = new Date(value);
@@ -152,54 +228,114 @@ function normalizedSentAt(record) {
   return date.toISOString();
 }
 
-function normalizedThreadMessage(record) {
+function assertNullableRawMime(record, label) {
+  for (const key of ['raw_mime', 'raw_mime_base64url']) {
+    if (Object.hasOwn(record, key) && record[key] !== null) {
+      throw providerError('validation', label + ' exposed raw MIME outside identity enrichment.');
+    }
+  }
+}
+
+const LIVE_MESSAGE_KEYS = [
+  'id', 'thread_id', 'email_ts', 'from_', 'to', 'cc', 'bcc', 'labels', 'subject',
+  'body', 'snippet', 'display_title', 'display_url', 'has_attachment', 'attachments',
+  'inline_images', 'raw_mime', 'raw_mime_base64url'
+];
+
+function normalizedBatchMessage(record, threadId, requested) {
   exactObject(record, 'Gmail thread message', {
-    required: [
-      'id', 'rfc822_message_id', 'from', 'to', 'sent_at', 'labels', 'subject', 'body'
-    ]
+    required: ['id', 'thread_id', 'email_ts', 'from_', 'to', 'labels', 'subject', 'body'],
+    allowed: LIVE_MESSAGE_KEYS
   });
-  const body = record.body;
-  if (typeof body !== 'string') {
-    throw providerError('validation', 'Gmail message body normalization is unavailable.');
+  if (boundedRequiredString(
+    record.thread_id,
+    'Gmail message thread identity',
+    MAXIMUM_PROVIDER_ID_CHARACTERS
+  ) !== threadId) {
+    throw providerError('conflict', 'Gmail thread message does not match its exact parent thread.');
   }
-  if (typeof record.subject !== 'string') {
-    throw providerError('validation', 'Gmail message subject must be a string.');
+  assertNullableRawMime(record, 'Gmail thread message');
+  for (const key of ['attachments', 'inline_images']) {
+    if (Object.hasOwn(record, key)
+      && (!Array.isArray(record[key]) || record[key].length > MAXIMUM_MESSAGES_PER_THREAD)) {
+      throw providerError('validation', 'Gmail message ' + key + ' must be an array when present.');
+    }
   }
+  for (const key of ['snippet', 'display_title', 'display_url']) {
+    if (Object.hasOwn(record, key)
+      && record[key] !== null
+      && (typeof record[key] !== 'string'
+        || record[key].length > MAXIMUM_SUBJECT_CHARACTERS)) {
+      throw providerError('validation', 'Gmail message ' + key + ' must be text when present.');
+    }
+  }
+  if (Object.hasOwn(record, 'has_attachment') && typeof record.has_attachment !== 'boolean') {
+    throw providerError('validation', 'Gmail message attachment state must be boolean.');
+  }
+  for (const key of ['cc', 'bcc']) {
+    if (Object.hasOwn(record, key)) normalizedAddresses(record[key], 'Gmail message ' + key);
+  }
+  const id = messageId(record);
+  const body = boundedText(record.body, 'Gmail message body', MAXIMUM_BODY_CHARACTERS);
+  const subject = boundedText(
+    record.subject,
+    'Gmail message subject',
+    MAXIMUM_SUBJECT_CHARACTERS
+  );
   return {
-    id: messageId(record),
-    rfc822MessageId: requiredString(record.rfc822_message_id, 'Gmail RFC822 Message-ID'),
-    from: requiredString(record.from, 'Gmail sender'),
-    to: recipientList(record),
-    sentAt: normalizedSentAt(record),
+    id,
+    membership: requested.has(id) ? 'exact-request' : 'thread-context',
+    rfc822MessageId: null,
+    from: boundedRequiredString(record.from_, 'Gmail sender', MAXIMUM_ADDRESS_CHARACTERS),
+    to: normalizedAddresses(record.to, 'Gmail message recipients'),
+    sentAt: normalizedSentAtValue(record.email_ts),
     labels: messageLabels(record),
-    subject: record.subject,
+    subject,
     body
   };
 }
 
-function normalizedThreads(payload, input) {
+function normalizedThreadBatch(payload, input) {
   const requested = new Set(input.messageIds);
   const seenRequested = new Set();
   const seenMessages = new Set();
   const seenThreads = new Set();
-  const records = threadRecords(payload);
+  const parsed = exactObject(payload, 'Gmail thread read result', { required: ['responses'] });
+  if (!Array.isArray(parsed.responses)) {
+    throw providerError('validation', 'Gmail thread read responses must be an array.');
+  }
+  const records = parsed.responses;
   if (records.length < 1 || records.length > input.maximumThreads) {
     throw providerError('validation', 'Gmail thread read returned an invalid thread count.');
   }
   const threads = records.map((record) => {
-    exactObject(record, 'Gmail thread', { required: ['id', 'messages'] });
-    const id = requiredString(record.id, 'Gmail thread identity');
+    exactObject(record, 'Gmail thread', {
+      required: ['thread_id', 'total_messages', 'truncated', 'messages']
+    });
+    const id = boundedRequiredString(
+      record.thread_id,
+      'Gmail thread identity',
+      MAXIMUM_PROVIDER_ID_CHARACTERS
+    );
     if (seenThreads.has(id)) {
       throw providerError('conflict', 'Gmail thread read returned a duplicate thread identity.');
     }
     seenThreads.add(id);
+    if (!Number.isInteger(record.total_messages) || record.total_messages < 1
+      || typeof record.truncated !== 'boolean') {
+      throw providerError('validation', 'Gmail thread read returned invalid coverage metadata.');
+    }
+    if (record.truncated) {
+      throw providerError('validation', 'Gmail thread read returned a truncated thread.');
+    }
     const rawMessages = record.messages;
     if (!Array.isArray(rawMessages)
       || rawMessages.length < 1
-      || rawMessages.length > input.maximumMessagesPerThread) {
+      || rawMessages.length > input.maximumMessagesPerThread
+      || rawMessages.length !== record.total_messages) {
       throw providerError('validation', 'Gmail thread read returned an invalid message count.');
     }
-    const messages = rawMessages.map(normalizedThreadMessage);
+    const messages = rawMessages.map((message) => normalizedBatchMessage(message, id, requested));
     if (!messages.some((message) => requested.has(message.id))) {
       throw providerError(
         'conflict',
@@ -218,24 +354,387 @@ function normalizedThreads(payload, input) {
   if (seenRequested.size !== requested.size) {
     throw providerError('not-found', 'Gmail thread read omitted one or more requested messages.');
   }
+  if (seenMessages.size > input.maximumTotalMessages) {
+    throw providerError('validation', 'Gmail thread read exceeded the exact aggregate message bound.');
+  }
   return threads;
 }
 
+function threadMessageQueue(threads) {
+  return threads.flatMap((thread) => thread.messages.filter((message) => {
+    return message.membership === 'exact-request';
+  }).map((message) => ({
+    messageId: message.id,
+    threadId: thread.id
+  }))).sort((left, right) => {
+    return compareCodepoint(left.messageId, right.messageId)
+      || compareCodepoint(left.threadId, right.threadId);
+  });
+}
+
+function priorPageReceipts(priorPages, sequence) {
+  if (!Array.isArray(priorPages) || priorPages.length !== sequence - 1) {
+    throw providerError('conflict', 'Gmail thread enrichment prior pages are incomplete.');
+  }
+  for (let index = 0; index < priorPages.length; index += 1) {
+    const receipt = exactObject(priorPages[index], 'Gmail prior page receipt', {
+      required: ['sequence', 'page', 'pageFingerprint']
+    });
+    if (receipt.sequence !== index + 1
+      || receipt.pageFingerprint !== fingerprintJson(receipt.page)) {
+      throw providerError('conflict', 'Gmail prior page receipt fingerprint is invalid.');
+    }
+  }
+  return priorPages;
+}
+
+function exactNormalizedPage(receipt, label) {
+  const page = exactObject(receipt.page, label, {
+    required: [
+      'observedCount',
+      'includedCount',
+      'excludedCount',
+      'observedIdentityFingerprints',
+      'data'
+    ]
+  });
+  if (!Number.isInteger(page.observedCount) || page.observedCount < 0
+    || !Number.isInteger(page.includedCount) || page.includedCount < 0
+    || !Number.isInteger(page.excludedCount) || page.excludedCount < 0
+    || page.observedCount !== page.includedCount + page.excludedCount
+    || !Array.isArray(page.observedIdentityFingerprints)
+    || page.observedIdentityFingerprints.length !== page.observedCount
+    || new Set(page.observedIdentityFingerprints).size
+      !== page.observedIdentityFingerprints.length
+    || page.observedIdentityFingerprints.some((item) => {
+      return typeof item !== 'string' || !/^sha256:[a-f0-9]{64}$/.test(item);
+    })) {
+    throw providerError('conflict', label + ' coverage is invalid.');
+  }
+  return page;
+}
+
+function exactStoredBatchThreads(data, input) {
+  const stored = exactObject(data, 'Gmail stored thread batch', {
+    required: ['kind', 'threads']
+  });
+  if (stored.kind !== 'gmail-thread-batch'
+    || !input || typeof input !== 'object' || Array.isArray(input)
+    || !Array.isArray(stored.threads)
+    || stored.threads.length < 1
+    || stored.threads.length > input.maximumThreads) {
+    throw providerError('conflict', 'Gmail stored thread batch is invalid or unbounded.');
+  }
+  const requested = new Set(exactBoundedStrings(
+    input.messageIds,
+    'Mail thread message IDs',
+    MAXIMUM_REQUESTED_MESSAGES,
+    MAXIMUM_PROVIDER_ID_CHARACTERS,
+    { required: true }
+  ));
+  const seenThreads = new Set();
+  const seenMessages = new Set();
+  const seenRequested = new Set();
+  for (const thread of stored.threads) {
+    const normalizedThread = exactObject(thread, 'Gmail stored thread', {
+      required: ['id', 'messages']
+    });
+    const threadId = boundedRequiredString(
+      normalizedThread.id,
+      'Gmail stored thread identity',
+      MAXIMUM_PROVIDER_ID_CHARACTERS
+    );
+    if (seenThreads.has(threadId)
+      || !Array.isArray(normalizedThread.messages)
+      || normalizedThread.messages.length < 1
+      || normalizedThread.messages.length > input.maximumMessagesPerThread) {
+      throw providerError('conflict', 'Gmail stored thread identities or bounds are invalid.');
+    }
+    seenThreads.add(threadId);
+    let related = false;
+    for (const message of normalizedThread.messages) {
+      const normalizedMessage = exactObject(message, 'Gmail stored thread message', {
+        required: [
+          'id', 'membership', 'rfc822MessageId', 'from', 'to', 'sentAt', 'labels',
+          'subject', 'body'
+        ]
+      });
+      const id = boundedRequiredString(
+        normalizedMessage.id,
+        'Gmail stored message identity',
+        MAXIMUM_PROVIDER_ID_CHARACTERS
+      );
+      if (seenMessages.has(id)) {
+        throw providerError('conflict', 'Gmail stored thread batch repeats a message identity.');
+      }
+      seenMessages.add(id);
+      const isRequested = requested.has(id);
+      if (normalizedMessage.membership !== (isRequested ? 'exact-request' : 'thread-context')
+        || normalizedMessage.rfc822MessageId !== null) {
+        throw providerError(
+          'conflict',
+          'Gmail stored message membership does not match the exact request.'
+        );
+      }
+      boundedRequiredString(
+        normalizedMessage.from,
+        'Gmail stored message sender',
+        MAXIMUM_ADDRESS_CHARACTERS
+      );
+      exactBoundedStrings(
+        normalizedMessage.to,
+        'Gmail stored message recipients',
+        MAXIMUM_ADDRESSES,
+        MAXIMUM_ADDRESS_CHARACTERS
+      );
+      if (typeof normalizedMessage.sentAt !== 'string'
+        || normalizedSentAtValue(normalizedMessage.sentAt) !== normalizedMessage.sentAt) {
+        throw providerError('conflict', 'Gmail stored message timestamp is not normalized.');
+      }
+      messageLabels(normalizedMessage);
+      boundedText(
+        normalizedMessage.subject,
+        'Gmail stored message subject',
+        MAXIMUM_SUBJECT_CHARACTERS
+      );
+      boundedText(
+        normalizedMessage.body,
+        'Gmail stored message body',
+        MAXIMUM_BODY_CHARACTERS
+      );
+      if (isRequested) {
+        related = true;
+        seenRequested.add(id);
+      }
+    }
+    if (!related) {
+      throw providerError(
+        'conflict',
+        'Gmail stored thread batch contains a thread unrelated to the exact request.'
+      );
+    }
+  }
+  if (seenRequested.size !== requested.size) {
+    throw providerError('conflict', 'Gmail stored thread batch omits an exact requested message.');
+  }
+  if (seenMessages.size > input.maximumTotalMessages) {
+    throw providerError('conflict', 'Gmail stored thread batch exceeds its aggregate message bound.');
+  }
+  return stored.threads;
+}
+
+function assertRfc822MessageId(value) {
+  const match = typeof value === 'string'
+    ? /^<([^<>@\s]+)@([^<>@\s]+)>$/.exec(value)
+    : null;
+  const atom = /^[A-Za-z0-9!#$%&'*+\-/=?^_`{|}~]+$/;
+  const isDotAtom = (part) => part.split('.').every((component) => atom.test(component));
+  if (typeof value !== 'string'
+    || value.length > 1000
+    || !/^[\x20-\x7e]+$/.test(value)
+    || !match
+    || !isDotAtom(match[1])
+    || !isDotAtom(match[2])) {
+    throw providerError('validation', 'Gmail raw MIME must contain exactly one valid RFC822 Message-ID.');
+  }
+  return value;
+}
+
+function exactBatchReceipt(receipt, input) {
+  const page = exactNormalizedPage(receipt, 'Gmail stored thread batch page');
+  const threads = exactStoredBatchThreads(page.data, input);
+  const expectedIdentities = threads.map((thread) => fingerprintJson({
+    phase: 'thread-batch',
+    providerThreadId: thread.id
+  }));
+  if (page.observedCount !== threads.length
+    || page.includedCount !== threads.length
+    || page.excludedCount !== 0
+    || fingerprintJson(page.observedIdentityFingerprints)
+      !== fingerprintJson(expectedIdentities)) {
+    throw providerError('conflict', 'Gmail stored thread batch page coverage is invalid.');
+  }
+  return threads;
+}
+
+function exactIdentityReceipt(receipt, expected) {
+  const page = exactNormalizedPage(receipt, 'Gmail stored RFC822 identity page');
+  const data = exactObject(page.data, 'Gmail stored RFC822 identity', {
+    required: ['kind', 'messageId', 'threadId', 'rfc822MessageId']
+  });
+  if (data.kind !== 'gmail-rfc822-identity'
+    || boundedRequiredString(
+      data.messageId,
+      'Gmail stored identity message ID',
+      MAXIMUM_PROVIDER_ID_CHARACTERS
+    ) !== expected.messageId
+    || boundedRequiredString(
+      data.threadId,
+      'Gmail stored identity thread ID',
+      MAXIMUM_PROVIDER_ID_CHARACTERS
+    ) !== expected.threadId) {
+    throw providerError(
+      'conflict',
+      'Gmail stored RFC822 identity does not match the deterministic batch queue.'
+    );
+  }
+  assertRfc822MessageId(data.rfc822MessageId);
+  const expectedIdentity = fingerprintJson({
+    phase: 'rfc822-identity',
+    providerThreadId: expected.threadId,
+    providerMessageId: expected.messageId
+  });
+  if (page.observedCount !== 1
+    || page.includedCount !== 1
+    || page.excludedCount !== 0
+    || fingerprintJson(page.observedIdentityFingerprints)
+      !== fingerprintJson([expectedIdentity])) {
+    throw providerError('conflict', 'Gmail stored RFC822 identity page coverage is invalid.');
+  }
+  return data;
+}
+
+function exactThreadPageState(page, priorPages, input) {
+  assertThreadReadInput(input);
+  const sequence = page?.sequence ?? 1;
+  const maximumPages = page?.maximumPages ?? THREAD_READ_MAXIMUM_PAGES;
+  if (!Number.isInteger(sequence) || sequence < 1
+    || !Number.isInteger(maximumPages) || maximumPages !== THREAD_READ_MAXIMUM_PAGES) {
+    throw providerError('validation', 'Gmail thread enrichment page state is invalid.');
+  }
+  const receipts = priorPageReceipts(priorPages ?? [], sequence);
+  if (sequence === 1) return { sequence, maximumPages, receipts, queue: [] };
+  const threads = exactBatchReceipt(receipts[0], input);
+  const queue = threadMessageQueue(threads);
+  if (queue.length + 1 > maximumPages) {
+    throw providerError('validation', 'Gmail thread enrichment exceeds its exact maximum page bound.');
+  }
+  for (let index = 1; index < receipts.length; index += 1) {
+    const expected = queue[index - 1];
+    if (!expected) {
+      throw providerError('conflict', 'Gmail thread enrichment prior identity pages do not match the batch queue.');
+    }
+    exactIdentityReceipt(receipts[index], expected);
+  }
+  return { sequence, maximumPages, receipts, queue };
+}
+
+function decodeRawMime(value) {
+  if (typeof value !== 'string' || !value
+    || value.length > MAXIMUM_RAW_MIME_BASE64URL_CHARACTERS
+    || !/^[A-Za-z0-9_-]+={0,2}$/.test(value)) {
+    throw providerError('validation', 'Gmail raw MIME base64url payload is invalid.');
+  }
+  const unpadded = value.replace(/=+$/, '');
+  const bytes = Buffer.from(unpadded, 'base64url');
+  if (bytes.length > MAXIMUM_RAW_MIME_BYTES
+    || bytes.toString('base64url') !== unpadded) {
+    throw providerError('validation', 'Gmail raw MIME base64url payload is invalid.');
+  }
+  return bytes;
+}
+
+function rfc822MessageId(rawMime) {
+  if (!Buffer.isBuffer(rawMime) && typeof rawMime !== 'string') {
+    throw providerError('validation', 'Gmail raw MIME source is unavailable.');
+  }
+  const bytes = Buffer.isBuffer(rawMime) ? rawMime : Buffer.from(rawMime, 'utf8');
+  if (bytes.length < 1 || bytes.length > MAXIMUM_RAW_MIME_BYTES) {
+    throw providerError('validation', 'Gmail raw MIME source is unavailable.');
+  }
+  const headerWindow = bytes.subarray(0, MAXIMUM_RFC822_HEADER_BYTES + 4);
+  const separator = [
+    Buffer.from('\r\n\r\n', 'ascii'),
+    Buffer.from('\n\n', 'ascii'),
+    Buffer.from('\r\r', 'ascii')
+  ].map((value) => headerWindow.indexOf(value))
+    .filter((value) => value >= 0)
+    .sort((left, right) => left - right)[0] ?? -1;
+  if (separator < 0 || separator > MAXIMUM_RFC822_HEADER_BYTES) {
+    throw providerError('validation', 'Gmail raw MIME headers are malformed or unbounded.');
+  }
+  const unfolded = headerWindow.subarray(0, separator).toString('latin1')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/\n[ \t]+/g, ' ');
+  const values = unfolded.split('\n').flatMap((line) => {
+    const match = /^message-id\s*:(.*)$/i.exec(line);
+    return match ? [match[1].trim()] : [];
+  });
+  if (values.length !== 1) {
+    throw providerError('validation', 'Gmail raw MIME must contain exactly one valid RFC822 Message-ID.');
+  }
+  return assertRfc822MessageId(values[0]);
+}
+
+function normalizedRfc822Identity(payload, expected) {
+  const record = exactObject(payload, 'Gmail single-message identity result', {
+    required: ['id', 'thread_id'],
+    allowed: LIVE_MESSAGE_KEYS
+  });
+  if (boundedRequiredString(
+    record.id,
+    'Gmail identity message ID',
+    MAXIMUM_PROVIDER_ID_CHARACTERS
+  ) !== expected.messageId
+    || boundedRequiredString(
+      record.thread_id,
+      'Gmail identity thread ID',
+      MAXIMUM_PROVIDER_ID_CHARACTERS
+    ) !== expected.threadId) {
+    throw providerError('conflict', 'Gmail RFC822 identity result does not match the exact queued message.');
+  }
+  const sources = [];
+  if (Object.hasOwn(record, 'raw_mime') && record.raw_mime !== null) {
+    sources.push(record.raw_mime);
+  }
+  if (Object.hasOwn(record, 'raw_mime_base64url') && record.raw_mime_base64url !== null) {
+    sources.push(decodeRawMime(record.raw_mime_base64url));
+  }
+  if (!sources.length) {
+    throw providerError('validation', 'Gmail RFC822 identity result omitted raw MIME.');
+  }
+  const identities = sources.map(rfc822MessageId);
+  if (new Set(identities).size !== 1) {
+    throw providerError('conflict', 'Gmail raw MIME representations disagree on RFC822 Message-ID.');
+  }
+  return {
+    messageId: expected.messageId,
+    threadId: expected.threadId,
+    rfc822MessageId: identities[0]
+  };
+}
+
 function messageId(record) {
-  return requiredString(record.id, 'Gmail batch read message identity');
+  return boundedRequiredString(
+    record.id,
+    'Gmail batch read message identity',
+    MAXIMUM_PROVIDER_ID_CHARACTERS
+  );
 }
 
 function messageLabels(record) {
   const labels = record.labels;
   if (!Array.isArray(labels)
-    || labels.some((label) => typeof label !== 'string' || !label.trim())
+    || labels.length > MAXIMUM_LABELS
+    || labels.some((label) => {
+      return typeof label !== 'string'
+        || !label.trim()
+        || label.length > MAXIMUM_LABEL_CHARACTERS;
+    })
     || new Set(labels).size !== labels.length) {
     throw providerError('validation', 'Gmail batch read labels must be unique strings.');
   }
   return labels;
 }
 
-export function prepareMcp({ capability, input }) {
+export function prepareMcp({
+  capability,
+  input,
+  continuation = null,
+  page = null,
+  priorPages = []
+}) {
   if (capability === 'mail.messages.search') {
     return {
       tool: 'search_email_ids',
@@ -246,11 +745,28 @@ export function prepareMcp({ capability, input }) {
     };
   }
   if (capability === 'mail.threads.read') {
+    const state = exactThreadPageState(page, priorPages, input);
+    if (state.sequence === 1) {
+      if (continuation !== null && continuation !== undefined) {
+        throw providerError('conflict', 'Gmail initial thread batch cannot accept continuation state.');
+      }
+      return {
+        tool: 'batch_read_email_threads',
+        arguments: {
+          message_ids: exactStrings(input.messageIds, 'Mail thread message IDs', 100),
+          max_messages: input.maximumMessagesPerThread
+        }
+      };
+    }
+    const expected = state.queue[state.sequence - 2];
+    if (!expected || continuation?.cursor !== expected.messageId) {
+      throw providerError('conflict', 'Gmail thread enrichment cursor does not match the deterministic queue.');
+    }
     return {
-      tool: 'batch_read_email_threads',
+      tool: 'read_email',
       arguments: {
-        message_ids: exactStrings(input.messageIds, 'Mail thread message IDs', 100),
-        max_messages: input.maximumMessagesPerThread
+        message_id: expected.messageId,
+        include_raw_mime: true
       }
     };
   }
@@ -318,22 +834,7 @@ export function completeMcp({ capability, input, authority, responseProfile, res
     };
   }
   if (capability === 'mail.threads.read') {
-    const threads = normalizedThreads(
-      nativePayload(response, responseProfile, 'Gmail thread read'),
-      input
-    );
-    return {
-      requestedMessageIds: [...input.messageIds].sort(compareCodepoint),
-      returnedThreadCount: threads.length,
-      threads,
-      provenance: provenance(authority, {
-        capability,
-        messageIds: [...input.messageIds].sort(compareCodepoint),
-        maximumThreads: input.maximumThreads,
-        maximumMessagesPerThread: input.maximumMessagesPerThread
-      }),
-      observedAt: at
-    };
+    throw providerError('validation', 'Gmail thread reads require bounded RFC822 enrichment pages.');
   }
   if (capability === 'mail.labels.apply') {
     const acknowledged = exactObject(
@@ -401,6 +902,151 @@ export function completeMcp({ capability, input, authority, responseProfile, res
     };
   }
   throw providerError('validation', 'Gmail MCP adapter does not implement ' + capability + '.');
+}
+
+export function completeMcpPage({
+  capability,
+  input,
+  responseProfile,
+  response,
+  page = null,
+  priorPages = []
+}) {
+  if (capability !== 'mail.threads.read') {
+    throw providerError('validation', 'Gmail MCP pagination does not implement ' + capability + '.');
+  }
+  const state = exactThreadPageState(page, priorPages, input);
+  if (state.sequence === 1) {
+    const threads = normalizedThreadBatch(
+      nativePayload(response, responseProfile, 'Gmail thread read'),
+      input
+    );
+    const queue = threadMessageQueue(threads);
+    if (queue.length + 1 > state.maximumPages) {
+      throw providerError('validation', 'Gmail thread enrichment exceeds its exact maximum page bound.');
+    }
+    return {
+      page: {
+        observedCount: threads.length,
+        includedCount: threads.length,
+        excludedCount: 0,
+        observedIdentityFingerprints: threads.map((thread) => fingerprintJson({
+          phase: 'thread-batch',
+          providerThreadId: thread.id
+        })),
+        data: { kind: 'gmail-thread-batch', threads }
+      },
+      continuation: { state: 'more', cursor: queue[0].messageId }
+    };
+  }
+  const expected = state.queue[state.sequence - 2];
+  if (!expected) {
+    throw providerError('conflict', 'Gmail thread enrichment page exceeds its deterministic queue.');
+  }
+  const identity = normalizedRfc822Identity(
+    nativePayload(response, responseProfile, 'Gmail single-message identity'),
+    expected
+  );
+  const next = state.queue[state.sequence - 1] ?? null;
+  return {
+    page: {
+      observedCount: 1,
+      includedCount: 1,
+      excludedCount: 0,
+      observedIdentityFingerprints: [fingerprintJson({
+        phase: 'rfc822-identity',
+        providerThreadId: identity.threadId,
+        providerMessageId: identity.messageId
+      })],
+      data: { kind: 'gmail-rfc822-identity', ...identity }
+    },
+    continuation: next
+      ? { state: 'more', cursor: next.messageId }
+      : { state: 'exhausted' }
+  };
+}
+
+export function finalizeMcpPages({
+  capability,
+  input,
+  authority,
+  pages,
+  coverage,
+  at
+}) {
+  if (capability !== 'mail.threads.read') {
+    throw providerError('validation', 'Gmail MCP pagination does not implement ' + capability + '.');
+  }
+  const exactCoverage = exactObject(coverage, 'Gmail thread enrichment coverage', {
+    required: [
+      'complete',
+      'cursorExhausted',
+      'pagesRead',
+      'observedCount',
+      'includedCount',
+      'excludedCount'
+    ]
+  });
+  if (exactCoverage.complete !== true || exactCoverage.cursorExhausted !== true
+    || exactCoverage.pagesRead !== pages?.length || !Array.isArray(pages) || pages.length < 2) {
+    throw providerError('validation', 'Gmail thread enrichment requires exact exhausted coverage.');
+  }
+  const state = exactThreadPageState(
+    { sequence: pages.length + 1, maximumPages: THREAD_READ_MAXIMUM_PAGES },
+    pages,
+    input
+  );
+  if (pages.length !== state.queue.length + 1) {
+    throw providerError('conflict', 'Gmail thread enrichment omitted one or more identity pages.');
+  }
+  const totals = pages.reduce((value, receipt) => ({
+    observedCount: value.observedCount + receipt.page.observedCount,
+    includedCount: value.includedCount + receipt.page.includedCount,
+    excludedCount: value.excludedCount + receipt.page.excludedCount
+  }), { observedCount: 0, includedCount: 0, excludedCount: 0 });
+  if (exactCoverage.observedCount !== totals.observedCount
+    || exactCoverage.includedCount !== totals.includedCount
+    || exactCoverage.excludedCount !== totals.excludedCount) {
+    throw providerError('conflict', 'Gmail thread enrichment coverage totals are invalid.');
+  }
+  const identities = new Map(pages.slice(1).map((receipt) => {
+    const data = receipt.page.data;
+    return [data.messageId, data];
+  }));
+  if (identities.size !== state.queue.length) {
+    throw providerError('conflict', 'Gmail thread enrichment contains duplicate message identities.');
+  }
+  const threads = pages[0].page.data.threads.map((thread) => ({
+    id: thread.id,
+    messages: thread.messages.map((message) => {
+      if (message.membership === 'thread-context') {
+        if (identities.has(message.id)) {
+          throw providerError('conflict', 'Gmail thread context received an undeclared RFC822 identity.');
+        }
+        return { ...message, rfc822MessageId: null };
+      }
+      const identity = identities.get(message.id);
+      if (!identity || identity.threadId !== thread.id) {
+        throw providerError('conflict', 'Gmail thread enrichment identity join is incomplete.');
+      }
+      return { ...message, rfc822MessageId: identity.rfc822MessageId };
+    })
+  }));
+  return {
+    requestedMessageIds: [...input.messageIds].sort(compareCodepoint),
+    returnedThreadCount: threads.length,
+    returnedMessageCount: threads.reduce((total, thread) => total + thread.messages.length, 0),
+    threads,
+    provenance: provenance(authority, {
+      capability,
+      messageIds: [...input.messageIds].sort(compareCodepoint),
+      maximumThreads: input.maximumThreads,
+      maximumMessagesPerThread: input.maximumMessagesPerThread,
+      maximumTotalMessages: input.maximumTotalMessages,
+      pageFingerprints: pages.map((receipt) => receipt.pageFingerprint)
+    }),
+    observedAt: at
+  };
 }
 
 export function prepareProbePlanMcp() {

@@ -282,7 +282,7 @@
   "host": {
     "id": "codex",
     "adapter": "host.codex",
-    "version": "0.3.1",
+    "version": "0.3.2",
     "reason": "Realize selected active guides through one declared host while keeping development-request authority separate and explicit."
   },
   "settings": {

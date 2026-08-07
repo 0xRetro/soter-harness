@@ -13,9 +13,9 @@
   },
   "configurationLock": {
     "path": "soter/fixtures/slack-channel-ingestion/slack-channel-ingestion.lock.json",
-    "fingerprint": "sha256:a9e4594f5723960b62b680c8575f2eab7bebf2364e13d345f29b9fa49cff271a"
+    "fingerprint": "sha256:4ba6c7da60ca7088fd691584537e77006a29c826748102b20fd8de7784ecddef"
   },
-  "graphFingerprint": "sha256:76a97674df46728999127ebbed04a766463c14314612d446833fd55ba22cc34b",
+  "graphFingerprint": "sha256:9f18c100fda96a7d42c4be1ef0835494135ed0a7e7c9a8d1bf383365b6c72599",
   "context": [
     {
       "subject": "communications.records",
@@ -44,7 +44,7 @@
       "uri": "soter://context/communications",
       "declarationFingerprint": "sha256:0b465d80100b2ccb7a4a6486fe2b4a6844b1f43eb18dad379d82b8af79ac93c9",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:a9e4594f5723960b62b680c8575f2eab7bebf2364e13d345f29b9fa49cff271a",
+      "provenance": "configuration-lock:sha256:4ba6c7da60ca7088fd691584537e77006a29c826748102b20fd8de7784ecddef",
       "freshness": "unknown"
     },
     {
@@ -54,7 +54,7 @@
       "uri": "soter://context/crm",
       "declarationFingerprint": "sha256:502352d07fedd267c13487a51fa06ebb3bee5550c6b5aa168e59899dba62aba2",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:a9e4594f5723960b62b680c8575f2eab7bebf2364e13d345f29b9fa49cff271a",
+      "provenance": "configuration-lock:sha256:4ba6c7da60ca7088fd691584537e77006a29c826748102b20fd8de7784ecddef",
       "freshness": "unknown"
     },
     {
@@ -64,7 +64,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/crm",
       "declarationFingerprint": "sha256:0a64464ffcf631127f54283b034ea5ea4ee7d136e4740880d427261bf61c8b6e",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:a9e4594f5723960b62b680c8575f2eab7bebf2364e13d345f29b9fa49cff271a",
+      "provenance": "configuration-lock:sha256:4ba6c7da60ca7088fd691584537e77006a29c826748102b20fd8de7784ecddef",
       "freshness": "unknown"
     },
     {
@@ -74,7 +74,7 @@
       "uri": "soter-fixture://configuration-template/notion/account/operator",
       "declarationFingerprint": "sha256:cdee230730b0f3c9c6ca06e6578e38324ed0b7f7da89339d7628c70061e960e1",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:a9e4594f5723960b62b680c8575f2eab7bebf2364e13d345f29b9fa49cff271a",
+      "provenance": "configuration-lock:sha256:4ba6c7da60ca7088fd691584537e77006a29c826748102b20fd8de7784ecddef",
       "freshness": "unknown"
     },
     {
@@ -84,7 +84,7 @@
       "uri": "soter-state://runs",
       "declarationFingerprint": "sha256:9d785399ed6214659b768c25bec1cbb10b5e1fac5b42d9bbd7908d0529a9d6e7",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:a9e4594f5723960b62b680c8575f2eab7bebf2364e13d345f29b9fa49cff271a",
+      "provenance": "configuration-lock:sha256:4ba6c7da60ca7088fd691584537e77006a29c826748102b20fd8de7784ecddef",
       "freshness": "unknown"
     },
     {
@@ -104,7 +104,7 @@
       "uri": "soter-fixture://configuration-template/slack/account/operator",
       "declarationFingerprint": "sha256:2558293ca5572f625738bf204fe52e651f3254e2e7478474d75dde0895967382",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:a9e4594f5723960b62b680c8575f2eab7bebf2364e13d345f29b9fa49cff271a",
+      "provenance": "configuration-lock:sha256:4ba6c7da60ca7088fd691584537e77006a29c826748102b20fd8de7784ecddef",
       "freshness": "unknown"
     }
   ],
@@ -210,17 +210,17 @@
   "host": {
     "id": "codex",
     "adapter": "host.codex",
-    "version": "0.3.1",
-    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818",
+    "version": "0.3.2",
+    "manifestFingerprint": "sha256:cf50c9418a9af38255f994a6bcb062472a062708a3a95a89167843dd50eafa89",
     "projectionDefinition": {
       "id": "host-projection.codex",
       "version": "0.3.0",
       "path": "soter/hosts/codex/projection.json",
-      "fingerprint": "sha256:09fe78fb567ec40ac12e71e1bd5304f44246669a23fe8ac84c5eef755cb95727"
+      "fingerprint": "sha256:aca563d19908234cc49c8938d0ec760d22779844d450705c032b86d34f6f812a"
     },
     "projectionGenerator": {
       "id": "core.host-projection-generator",
-      "version": "2.1.0"
+      "version": "2.2.0"
     }
   },
   "effectPolicies": {
@@ -267,7 +267,7 @@
     {
       "id": "context.slack-channel-ingestion.preparation-fixture.identity",
       "type": "context-snapshot",
-      "fingerprint": "sha256:3df4e513997eb4ebd5273e4a9d6591ef0e9ec3199511f26d9cf8defdd32aaa27"
+      "fingerprint": "sha256:bc6b89c5a3ea18c9ce37d86cb36b47cbdda33168aea4572196e55ea7e16b2d9b"
     }
   ],
   "effects": [

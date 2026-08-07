@@ -10,8 +10,8 @@
     "id": "run.project-page-reconciliation.preparation-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:b4693f816f60522cafffe5f3456dd6a2962672b3582a0c3832d5ab76f6dcb709",
-  "graphFingerprint": "sha256:93954948c07e3d10b5c5c86e463f676eddbd5462be8cdde255495e194eca365d",
+  "configurationLockFingerprint": "sha256:6eefcae3097b68c5538bfdbfcb1e5e225ba19814fac2cb679d6339a220806460",
+  "graphFingerprint": "sha256:2f41d725c1576353fea2166d46685d4bca37a2750b1265061e4323095f4c75fa",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -42,8 +42,8 @@
   "host": {
     "id": "codex",
     "adapter": "host.codex",
-    "version": "0.3.1",
-    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818"
+    "version": "0.3.2",
+    "manifestFingerprint": "sha256:cf50c9418a9af38255f994a6bcb062472a062708a3a95a89167843dd50eafa89"
   },
   "integrations": [
     {
@@ -209,7 +209,7 @@
     {
       "role": "context-snapshot",
       "id": "context.project-page-reconciliation.preparation-fixture",
-      "fingerprint": "sha256:a6adb820d77a7731b4bba45587b4aa7a62d9a8326ab2f6fdcb5fe353ae72cad1"
+      "fingerprint": "sha256:913065820de9556c804faebf5c4561ed6ec2aa191d7acbb0fe9d4eac34f56970"
     },
     {
       "role": "project-page-reconciliation-preview",

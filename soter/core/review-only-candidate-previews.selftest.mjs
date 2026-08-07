@@ -232,7 +232,7 @@ export async function selftestReviewOnlyCandidatePreviews(root = defaultRoot) {
       input: connectedLabel.input,
       response: {
         structuredContent: {
-          result: { state: 'acknowledged' }
+          state: 'acknowledged'
         }
       },
       at: '2026-07-16T19:04:11.000Z'
@@ -258,7 +258,8 @@ export async function selftestReviewOnlyCandidatePreviews(root = defaultRoot) {
       input: connectedLabel.input,
       response: {
         structuredContent: {
-          result: { state: 'acknowledged', rawProviderResponse: rawWriteMarker }
+          state: 'acknowledged',
+          rawProviderResponse: rawWriteMarker
         }
       },
       at: '2026-07-16T19:04:11.200Z'
@@ -295,13 +296,11 @@ export async function selftestReviewOnlyCandidatePreviews(root = defaultRoot) {
       input: connectedLabel.verification.input,
       response: {
         structuredContent: {
-          result: {
-            messages: connectedLabel.verification.input.messageIds.map((id) => ({
-              id,
-              labels: ['INBOX', ...connectedLabel.verification.input.labelNames],
-              body: rawBodyMarker
-            }))
-          }
+          messages: connectedLabel.verification.input.messageIds.map((id) => ({
+            id,
+            labels: ['INBOX', ...connectedLabel.verification.input.labelNames],
+            body: rawBodyMarker
+          }))
         }
       },
       at: '2026-07-16T19:04:13.000Z'

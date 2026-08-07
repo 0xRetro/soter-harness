@@ -10,8 +10,8 @@
     "id": "email-triage",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:35f30be42cab17027b180dbb7efc88b491c250c029a175dcf48e314244224bb1",
-  "graphFingerprint": "sha256:e7e2fd307a79cc54923cbd207ea8a157dcf349906cdee9a655f77cb152651ffd",
+  "configurationLockFingerprint": "sha256:4521896eaf0ede378bc72b6f7b6d1c46b06550032ef41c9d79bb5ef2ea4f1645",
+  "graphFingerprint": "sha256:6d37be273b33d84cf181fa383f4dbcca5d31556765bf623aaee910fc7b79ce85",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -36,25 +36,25 @@
     {
       "id": "automation.email-triage",
       "version": "0.1.0",
-      "fingerprint": "sha256:c6adcd80e08cacae51f29601945c6fc7e7bf9941006bb6f207b79e1171333893"
+      "fingerprint": "sha256:d1841dc5336b2cd9f385e8336f8f4baa0e37acdcf1a685854fa1c1e509e14268"
     },
     {
       "id": "integration.gmail",
       "version": "0.1.0",
-      "fingerprint": "sha256:ee4a8da441382963fd5435c0b2d0112eba00a98c00ed81c2f8d6bed9df37299d"
+      "fingerprint": "sha256:49b558524b16a6f1ddac733474ef500572520347a33798f8117b19bd50ad7ee8"
     }
   ],
   "host": {
     "id": "codex",
     "adapter": "host.codex",
-    "version": "0.3.1",
-    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818"
+    "version": "0.3.2",
+    "manifestFingerprint": "sha256:cf50c9418a9af38255f994a6bcb062472a062708a3a95a89167843dd50eafa89"
   },
   "integrations": [
     {
       "id": "integration.gmail",
       "version": "0.1.0",
-      "manifestFingerprint": "sha256:ee4a8da441382963fd5435c0b2d0112eba00a98c00ed81c2f8d6bed9df37299d",
+      "manifestFingerprint": "sha256:49b558524b16a6f1ddac733474ef500572520347a33798f8117b19bd50ad7ee8",
       "evidenceMaturity": "declared"
     }
   ],
@@ -124,11 +124,11 @@
     {
       "role": "configuration",
       "path": "soter/configurations/email-triage.config.json",
-      "fingerprint": "sha256:30260cf801cdb1673db025c0053e4ff1c8ccea7e77abffa5830ec25c496df67e"
+      "fingerprint": "sha256:bf4e0b7268108b9e434d534c1f880e147f41af9ff636581cb9a4af2e2478fe43"
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:35f30be42cab17027b180dbb7efc88b491c250c029a175dcf48e314244224bb1"
+      "fingerprint": "sha256:4521896eaf0ede378bc72b6f7b6d1c46b06550032ef41c9d79bb5ef2ea4f1645"
     }
   ],
   "effects": [],

@@ -10,8 +10,8 @@
     "id": "slack-conversation-review",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:f851da85af37df4916444452991f286eba36168516ad7964295544f895ac3111",
-  "graphFingerprint": "sha256:0deab149aff7cd89c1068485ac02ded935deef04ec057eecd0ef122415b0473c",
+  "configurationLockFingerprint": "sha256:9cc49309a05be86f39b995e17b536b0ec5d2e9c419ab0ee5511868e5bcc0af4b",
+  "graphFingerprint": "sha256:a1883ef39f6547e7fc72e2330e9b67d9e56fc6d3ab78efc9cd4ebc7255051100",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -52,8 +52,8 @@
   "host": {
     "id": "codex",
     "adapter": "host.codex",
-    "version": "0.3.1",
-    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818"
+    "version": "0.3.2",
+    "manifestFingerprint": "sha256:cf50c9418a9af38255f994a6bcb062472a062708a3a95a89167843dd50eafa89"
   },
   "integrations": [
     {
@@ -147,11 +147,11 @@
     {
       "role": "configuration",
       "path": "soter/configurations/slack-conversation-review.config.json",
-      "fingerprint": "sha256:d3984d7dca611b2cbf799b7b9fb34e7bab8f448bb671027e93365149a59c9904"
+      "fingerprint": "sha256:005278600f1720fec4842f3345b067ae2767608ca7e18e0565bcaf7d037e2dd0"
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:f851da85af37df4916444452991f286eba36168516ad7964295544f895ac3111"
+      "fingerprint": "sha256:9cc49309a05be86f39b995e17b536b0ec5d2e9c419ab0ee5511868e5bcc0af4b"
     }
   ],
   "effects": [],

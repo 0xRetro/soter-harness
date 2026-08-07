@@ -3,7 +3,7 @@
   "contractVersion": "2.0.0",
   "id": "host.codex",
   "host": "codex",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "releaseStage": "experimental",
   "evidenceMaturity": "declared",
   "summary": "Projects resolved Soter behavior into Codex instructions, skills, tools, lifecycle controls, and structured task workflows.",
@@ -98,6 +98,11 @@
         {
           "logical": "batch_read_email_threads",
           "native": "mcp__codex_apps__gmail_batch_read_email_threads",
+          "responseProfile": "gmail.codex.connector.v1"
+        },
+        {
+          "logical": "read_email",
+          "native": "mcp__codex_apps__gmail_read_email",
           "responseProfile": "gmail.codex.connector.v1"
         },
         {

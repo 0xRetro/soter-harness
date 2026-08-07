@@ -1,9 +1,13 @@
-export function activeMailMessages(thread) {
+export function activeMailMessages(thread, exactMessageIds = null) {
   if (!thread || !Array.isArray(thread.messages)) {
     throw new Error('Email reduction requires a typed message array for every thread.');
   }
+  if (exactMessageIds !== null && !(exactMessageIds instanceof Set)) {
+    throw new Error('Email reduction exact window must be one message-identity set.');
+  }
   return thread.messages.filter((message) => {
-    return Array.isArray(message.labels)
+    return (exactMessageIds === null || exactMessageIds.has(message.id))
+      && Array.isArray(message.labels)
       && message.labels.includes('INBOX')
       && !message.labels.includes('TRASH')
       && !message.labels.includes('ARCHIVED');
@@ -13,13 +17,28 @@ export function activeMailMessages(thread) {
   });
 }
 
-export function reduceMailThreads({ threads, selfAddresses, triagedLabel }) {
+export function reduceMailThreads({
+  threads,
+  selfAddresses,
+  triagedLabel,
+  exactMessageIds = null
+}) {
   if (!Array.isArray(threads)
     || !Array.isArray(selfAddresses)
     || selfAddresses.length < 1
     || typeof triagedLabel !== 'string'
     || !triagedLabel.startsWith('AI/')) {
     throw new Error('Email reduction requires bounded threads, self identities, and one AI triage label.');
+  }
+  const exactWindow = exactMessageIds === null
+    ? null
+    : new Set(exactMessageIds);
+  if (exactMessageIds !== null
+    && (!Array.isArray(exactMessageIds)
+      || exactMessageIds.length < 1
+      || exactWindow.size !== exactMessageIds.length
+      || exactMessageIds.some((id) => typeof id !== 'string' || !id))) {
+    throw new Error('Email reduction exact window must contain unique message identities.');
   }
   const self = new Set(selfAddresses.map((address) => address.toLowerCase()));
   const exclusions = new Map([
@@ -32,7 +51,7 @@ export function reduceMailThreads({ threads, selfAddresses, triagedLabel }) {
   for (const thread of [...threads].sort((left, right) => {
     return left.id.localeCompare(right.id, 'en');
   })) {
-    const active = activeMailMessages(thread);
+    const active = activeMailMessages(thread, exactWindow);
     if (!active.length) {
       exclusions.set(
         'NO_ACTIVE_INBOX_MESSAGE_REMOVED',

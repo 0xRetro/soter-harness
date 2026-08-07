@@ -10,8 +10,8 @@
     "id": "project-capture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:dda878f234f3cf5034b554276e613c0fb892f96adabd2b4554c175c99bec491c",
-  "graphFingerprint": "sha256:8010acd3a2b4d1aab60a07b476acba128f584d488ccd8e94fa2fa76a9d414eb5",
+  "configurationLockFingerprint": "sha256:4b3f35098abd33db9e2bc32f23683f44b9dd0a725f9a5b6d3d2e06a652861bba",
+  "graphFingerprint": "sha256:8d08e99c71ba8a3eb97e47eeb1d2e694665e8f96836965a8531c1ec9ed4c5123",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -47,8 +47,8 @@
   "host": {
     "id": "codex",
     "adapter": "host.codex",
-    "version": "0.3.1",
-    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818"
+    "version": "0.3.2",
+    "manifestFingerprint": "sha256:cf50c9418a9af38255f994a6bcb062472a062708a3a95a89167843dd50eafa89"
   },
   "integrations": [
     {
@@ -130,11 +130,11 @@
     {
       "role": "configuration",
       "path": "soter/configurations/project-capture.config.json",
-      "fingerprint": "sha256:4c236c5a1d7138eb7e8fe75da4e97b266233fdae8a2822e206813f06325de942"
+      "fingerprint": "sha256:a5742ec0ec4089021fe26f6fa1cece6c78d9aa8585b350f50f84aaf41f26c49b"
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:dda878f234f3cf5034b554276e613c0fb892f96adabd2b4554c175c99bec491c"
+      "fingerprint": "sha256:4b3f35098abd33db9e2bc32f23683f44b9dd0a725f9a5b6d3d2e06a652861bba"
     }
   ],
   "effects": [],

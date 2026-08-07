@@ -252,6 +252,22 @@
         },
         "replacementRequestFingerprint": { "$ref": "#/$defs/fingerprint" },
         "replacementArgumentsFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "page": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sequence",
+            "maximumPages",
+            "requestFingerprint",
+            "completedPageReceiptsFingerprint"
+          ],
+          "properties": {
+            "sequence": { "type": "integer", "minimum": 1, "maximum": 101 },
+            "maximumPages": { "type": "integer", "minimum": 2, "maximum": 101 },
+            "requestFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "completedPageReceiptsFingerprint": { "$ref": "#/$defs/fingerprint" }
+          }
+        },
         "inputFingerprint": { "$ref": "#/$defs/fingerprint" },
         "capability": {
           "type": "object",

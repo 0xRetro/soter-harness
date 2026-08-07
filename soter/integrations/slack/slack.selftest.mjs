@@ -4,7 +4,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { validateJsonSchema } from '../../kernel/verify.mjs';
-import { completeHostToolCall, prepareHostToolCall } from '../../core/host-tools.mjs';
+import {
+  completeHostToolCall,
+  failHostToolCall,
+  prepareHostToolCall
+} from '../../core/host-tools.mjs';
 import {
   completeOperationPlanStep,
   createOperationPlanCheckpoint,
@@ -152,7 +156,15 @@ function sealCheckpoint(checkpoint) {
   return checkpoint;
 }
 
-async function completePages({ root, lock, capability, input, responses, callId }) {
+async function completePages({
+  root,
+  lock,
+  capability,
+  input,
+  responses,
+  callId,
+  translator = null
+}) {
   const prepared = await prepareHostToolCall({
     root,
     lock,
@@ -164,7 +176,8 @@ async function completePages({ root, lock, capability, input, responses, callId 
     providerImplementation: 'provider.integration.slack.mcp',
     input,
     at: AT,
-    approvedEffects: []
+    approvedEffects: [],
+    translator
   });
   assert.equal(prepared.call.state, 'requested');
   assert(prepared.call.pagination, capability + ' did not enter paginated execution.');
@@ -178,7 +191,8 @@ async function completePages({ root, lock, capability, input, responses, callId 
       call: JSON.parse(JSON.stringify(call)),
       input,
       response: structured(response),
-      at: AT
+      at: AT,
+      translator
     });
     call = completed.call;
     if (call.state !== 'requested') return { ...completed, requestedLimits };
@@ -716,6 +730,43 @@ export async function selftestSlackIntegration(root) {
   assert.equal(boundedExact.output.conversations[0].providerConversationId, 'C001');
   assert.deepEqual(boundedExact.requestedLimits, [1]);
 
+  const mismatchedCoverage = await completePages({
+    root,
+    lock,
+    capability: 'communications.conversations.list',
+    input: {
+      mode: 'exact',
+      workspaceId: CONNECTED_WORKSPACE_ID,
+      conversationIds: ['C001'],
+      maximumConversations: 1,
+      maximumObservedConversations: 1
+    },
+    callId: 'toolcall.slack-pagination.coverage-mismatch',
+    responses: [{
+      conversations: [{ id: 'C001', type: 'private_channel', name: 'selected' }],
+      workspace: { id: CONNECTED_WORKSPACE_ID, name: 'Soter' },
+      pagination_info: { has_more: false, next_cursor: '' }
+    }],
+    translator: {
+      prepareMcp: prepareMcpRaw,
+      completeMcp: completeMcpRaw,
+      completeMcpPage: completeMcpPageRaw,
+      finalizeMcpPages(options) {
+        const output = finalizeMcpPagesRaw(options);
+        return {
+          ...output,
+          coverage: {
+            ...output.coverage,
+            pagesRead: output.coverage.pagesRead + 1
+          }
+        };
+      }
+    }
+  });
+  assert.equal(mismatchedCoverage.call.state, 'failed');
+  assert.equal(mismatchedCoverage.call.error.code, 'HOST_CALL_VALIDATION_FAILED');
+  assert.equal(mismatchedCoverage.call.arguments, null);
+
   const pagedParticipants = await completePages({
     root,
     lock,
@@ -743,6 +794,44 @@ export async function selftestSlackIntegration(root) {
   assert.equal(pagedParticipants.output.coverage.observedCount, 3);
   assert.equal(pagedParticipants.output.coverage.excludedBotCount, 1);
   assert.deepEqual(pagedParticipants.requestedLimits, [4, 2]);
+
+  const abandonedPage = await completePages({
+    root,
+    lock,
+    capability: 'communications.participants.read',
+    input: {
+      workspaceId: CONNECTED_WORKSPACE_ID,
+      conversationId: 'C001',
+      excludeBots: true,
+      maximumParticipants: 4
+    },
+    callId: 'toolcall.slack-pagination.abandoned-page',
+    responses: [{
+      members: [{ id: 'U001', real_name: 'Ada' }],
+      pagination_info: {
+        has_more: true,
+        next_cursor: 'PRIVATE_ABANDONED_PAGINATION_CURSOR'
+      }
+    }]
+  });
+  assert.equal(abandonedPage.call.state, 'requested');
+  assert.equal(abandonedPage.call.arguments.cursor, 'PRIVATE_ABANDONED_PAGINATION_CURSOR');
+  const minimizedAbandonedPage = failHostToolCall({
+    root,
+    lock,
+    call: abandonedPage.call,
+    error: { kind: 'unavailable' },
+    at: '2026-07-21T19:30:01.000Z'
+  });
+  assert.equal(minimizedAbandonedPage.arguments, null);
+  assert.match(
+    minimizedAbandonedPage.pagination.failedRequestFingerprint,
+    /^sha256:[a-f0-9]{64}$/
+  );
+  assert.equal(
+    JSON.stringify(minimizedAbandonedPage).includes('PRIVATE_ABANDONED_PAGINATION_CURSOR'),
+    false
+  );
 
   const pagedMessages = await completePages({
     root,

@@ -13,9 +13,9 @@
   },
   "configurationLock": {
     "path": "soter/fixtures/email-triage/email-triage.lock.json",
-    "fingerprint": "sha256:35f30be42cab17027b180dbb7efc88b491c250c029a175dcf48e314244224bb1"
+    "fingerprint": "sha256:4521896eaf0ede378bc72b6f7b6d1c46b06550032ef41c9d79bb5ef2ea4f1645"
   },
-  "graphFingerprint": "sha256:e7e2fd307a79cc54923cbd207ea8a157dcf349906cdee9a655f77cb152651ffd",
+  "graphFingerprint": "sha256:6d37be273b33d84cf181fa383f4dbcca5d31556765bf623aaee910fc7b79ce85",
   "context": [
     {
       "subject": "communications.semantics.records",
@@ -24,7 +24,7 @@
       "uri": "soter://context/communications",
       "declarationFingerprint": "sha256:0b465d80100b2ccb7a4a6486fe2b4a6844b1f43eb18dad379d82b8af79ac93c9",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:35f30be42cab17027b180dbb7efc88b491c250c029a175dcf48e314244224bb1",
+      "provenance": "configuration-lock:sha256:4521896eaf0ede378bc72b6f7b6d1c46b06550032ef41c9d79bb5ef2ea4f1645",
       "freshness": "unknown"
     },
     {
@@ -34,7 +34,7 @@
       "uri": "soter-fixture://configuration-template/gmail/account/operator",
       "declarationFingerprint": "sha256:b786e80d1e624e4e70559562497b367e3855d508fcdffc50832ee40f55fa68c9",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:35f30be42cab17027b180dbb7efc88b491c250c029a175dcf48e314244224bb1",
+      "provenance": "configuration-lock:sha256:4521896eaf0ede378bc72b6f7b6d1c46b06550032ef41c9d79bb5ef2ea4f1645",
       "freshness": "unknown"
     },
     {
@@ -44,7 +44,7 @@
       "uri": "soter-pack://context.email/processing",
       "declarationFingerprint": "sha256:6ad65b455c19f6c64fb13d12d0b7d9fbae4de3a1f09661696acd4f8c8c411273",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:35f30be42cab17027b180dbb7efc88b491c250c029a175dcf48e314244224bb1",
+      "provenance": "configuration-lock:sha256:4521896eaf0ede378bc72b6f7b6d1c46b06550032ef41c9d79bb5ef2ea4f1645",
       "freshness": "unknown"
     },
     {
@@ -64,7 +64,7 @@
       "uri": "soter-state://runs",
       "declarationFingerprint": "sha256:dedfa34444ef6f06fdf8796e903f8c085009564339efce087f663abdd91d299b",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:35f30be42cab17027b180dbb7efc88b491c250c029a175dcf48e314244224bb1",
+      "provenance": "configuration-lock:sha256:4521896eaf0ede378bc72b6f7b6d1c46b06550032ef41c9d79bb5ef2ea4f1645",
       "freshness": "unknown"
     }
   ],
@@ -139,7 +139,7 @@
     },
     {
       "capability": "mail.threads.read",
-      "capabilityVersion": "1.0.0",
+      "capabilityVersion": "2.0.0",
       "providerPack": "integration.gmail",
       "providerVersion": "0.1.0",
       "authorities": [
@@ -169,17 +169,17 @@
   "host": {
     "id": "codex",
     "adapter": "host.codex",
-    "version": "0.3.1",
-    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818",
+    "version": "0.3.2",
+    "manifestFingerprint": "sha256:cf50c9418a9af38255f994a6bcb062472a062708a3a95a89167843dd50eafa89",
     "projectionDefinition": {
       "id": "host-projection.codex",
       "version": "0.3.0",
       "path": "soter/hosts/codex/projection.json",
-      "fingerprint": "sha256:09fe78fb567ec40ac12e71e1bd5304f44246669a23fe8ac84c5eef755cb95727"
+      "fingerprint": "sha256:aca563d19908234cc49c8938d0ec760d22779844d450705c032b86d34f6f812a"
     },
     "projectionGenerator": {
       "id": "core.host-projection-generator",
-      "version": "2.1.0"
+      "version": "2.2.0"
     }
   },
   "effectPolicies": {
@@ -226,7 +226,7 @@
     {
       "id": "context.email-triage.preparation-fixture",
       "type": "context-snapshot",
-      "fingerprint": "sha256:15d969c3776e95c992ac5dbc5b9c1963c2b4bfa6b273c2cd8f3f958884521dbb"
+      "fingerprint": "sha256:3d2c74f58dabfd5895745fa0bea9c6a025d00f43453aa2cb142d9a5eca2b7909"
     }
   ],
   "effects": [

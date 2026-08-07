@@ -541,13 +541,26 @@ Preparation accepts only the exact prepared-work ID and recovers its private
 mailbox query from Core's selected-work review material; no query, lock, run, or
 snapshot is accepted from the caller. It emits one bounded
 `search_email_ids` request and then binds every exact returned message ID into
-`batch_read_email_threads`. Finalization requires
-complete pagination, unique identities, exact requested-message coverage, and
-the current lock/provider/authority basis. It stores normalized mail transport
-facts in a private Context snapshot and pauses before triage judgment, draft
-generation, approval, continuation, or writes. Static translation and synthetic
-response normalization do not establish connector authentication, live response
-compatibility, readiness, verification, or health.
+`batch_read_email_threads`. The batch establishes complete bounded thread and
+message content under separate per-thread and aggregate limits. Exact search
+IDs are the mailbox-window members; other returned thread messages are private
+contextual siblings and cannot silently widen the window. Deterministic
+continuation calls then use `read_email(include_raw_mime=true)` once per exact
+window message, up to 100 calls, to obtain the RFC822 `Message-ID` required for
+portable alias deduplication. Contextual siblings carry a structurally null
+RFC822 identity. Raw
+MIME is parsed only through a bounded header window and is discarded before a
+normalized page, checkpoint, snapshot, inspection, diagnostic, or fixture is
+created. Finalization requires complete pagination, unique identities, exact
+requested-message membership and RFC822 coverage, the aggregate message count,
+and the current lock/provider/authority basis. It
+stores normalized mail transport facts in a private Context snapshot and pauses
+before triage judgment, draft generation, approval, continuation, or writes.
+Static translation and synthetic response normalization do not establish
+connector authentication, live response compatibility, readiness,
+verification, or health. The current Claude adapter has no proven native
+`read_email` route, so connected Email acquisition remains explicitly
+unavailable there rather than inventing parity.
 
 After finalization, Email exposes
 `soter_inspect_email_triage_decision` and
@@ -1250,7 +1263,11 @@ but its bound checkpoint is missing, inspection returns
 `CONFIGURATION_CHECKPOINT_MISSING` as `requires-review` with no apply action.
 Checkpoint plan, request, confirmation, and consumption references must resolve
 to one exact authority chain with causal, monotonic timestamps. Sanitized
-inspection never repeats a persisted checkpoint failure summary.
+inspection never repeats a persisted checkpoint failure summary. Its observed
+active-lock fingerprint is separate from a closed observed-resolution result:
+`resolved` carries the exact current resolution fingerprint, while `unavailable`
+requires a null fingerprint. Neither observation grants apply or recovery
+authority.
 When neither private desired configuration nor active lock exists, the plan
 binds the exact consumer-root identity, governed private paths and `0700`/`0600`
 modes, absent prior state, complete candidate document, resolved lock, and
@@ -1269,6 +1286,14 @@ when its contract, self-fingerprint, configuration name/path, and
 desired-document fingerprint remain exact. This is a confirmed local lock
 refresh, not silent adoption, issuance provenance, provider authority,
 readiness, verification, or health evidence.
+The same boundary permits an explicit upgrade when that exact historical
+desired document no longer resolves under the current graph, such as after a
+host-adapter version is replaced. The historical lock remains only the exact
+reviewed rollback baseline; Core records the observed baseline resolution as
+`unavailable` with a null fingerprint, requires the candidate to resolve under
+the current graph, and
+revalidates that candidate before applying it. It never fabricates a current
+resolution from the historical lock or falls back to the tracked template.
 
 Meeting Intake starts from one exact `operator-prepare` receipt, binding its work ID to
 `operator-acquisition-prepare` with the exact Automation and work IDs, complete

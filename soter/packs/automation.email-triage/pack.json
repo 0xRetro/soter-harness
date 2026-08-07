@@ -31,7 +31,7 @@
       },
       {
         "id": "mail.threads.read",
-        "version": "^1.0.0",
+        "version": "^2.0.0",
         "optional": false,
         "reason": "Connected acquisition must expand exact message identities into bounded private transport facts before any Automation-owned triage judgment."
       },

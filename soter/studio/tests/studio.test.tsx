@@ -473,6 +473,18 @@ describe('Soter Studio canonical operator projection', () => {
     expect(validateJsonSchema(configurationChangeInspectionFixture('reserved-prepared'), configurationChangeInspectionSchema)).toEqual([]);
     expect(validateJsonSchema(configurationChangeInspectionFixture('started'), configurationChangeInspectionSchema)).toEqual([]);
     expect(validateJsonSchema(configurationChangeInspectionFixture('completed'), configurationChangeInspectionSchema)).toEqual([]);
+    const unavailableResolutionInspection = configurationChangeInspectionFixture('plan');
+    unavailableResolutionInspection.configuration.observedResolution = {
+      state: 'unavailable',
+      fingerprint: null
+    };
+    expect(validateJsonSchema(unavailableResolutionInspection, configurationChangeInspectionSchema)).toEqual([]);
+    const crossedResolutionInspection = configurationChangeInspectionFixture('plan');
+    crossedResolutionInspection.configuration.observedResolution = {
+      state: 'unavailable',
+      fingerprint: 'sha256:' + 'f'.repeat(64)
+    } as unknown as typeof crossedResolutionInspection.configuration.observedResolution;
+    expect(validateJsonSchema(crossedResolutionInspection, configurationChangeInspectionSchema).length).toBeGreaterThan(0);
     const needsAttentionInspection = configurationChangeInspectionFixture('needs-attention');
     expect(validateJsonSchema(needsAttentionInspection, configurationChangeInspectionSchema)).toEqual([]);
     expect(needsAttentionInspection.resume).toEqual({

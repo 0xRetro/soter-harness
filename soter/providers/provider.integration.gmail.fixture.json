@@ -12,7 +12,7 @@
   },
   "capabilities": [
     { "id": "mail.messages.search", "version": "1.0.0" },
-    { "id": "mail.threads.read", "version": "1.0.0" },
+    { "id": "mail.threads.read", "version": "2.0.0" },
     { "id": "mail.window.read", "version": "1.0.0" },
     { "id": "mail.labels.read", "version": "2.0.0" },
     { "id": "mail.labels.apply", "version": "2.0.0" },

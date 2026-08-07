@@ -10,8 +10,8 @@
     "id": "contact-capture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:94e6646a90129766dd533868a99b1ace234fe002e98036391f1f532eef336198",
-  "graphFingerprint": "sha256:ceadd3ef7f32cd75c34e7803c479cb23fdbe2d8577f3e110aadc5eb0b2d05cf0",
+  "configurationLockFingerprint": "sha256:4b33d6aea3515cf512da390afe7f198d8a3cf8ea50f65613920732db129e7ef7",
+  "graphFingerprint": "sha256:4276c71f3731740bb491b73780caab0be6d403aae7d17ff06887496e73b78c52",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -42,8 +42,8 @@
   "host": {
     "id": "codex",
     "adapter": "host.codex",
-    "version": "0.3.1",
-    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818"
+    "version": "0.3.2",
+    "manifestFingerprint": "sha256:cf50c9418a9af38255f994a6bcb062472a062708a3a95a89167843dd50eafa89"
   },
   "integrations": [
     {
@@ -113,11 +113,11 @@
     {
       "role": "configuration",
       "path": "soter/configurations/contact-capture.config.json",
-      "fingerprint": "sha256:2bb5354c50aa14f5d1549ca449eaf89205f4070007d3bec2da06e50e229963c6"
+      "fingerprint": "sha256:826c4e145db7b83bfe88c9120e9ee3134fa48ccf86ec7d56aaa50f70852aea68"
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:94e6646a90129766dd533868a99b1ace234fe002e98036391f1f532eef336198"
+      "fingerprint": "sha256:4b33d6aea3515cf512da390afe7f198d8a3cf8ea50f65613920732db129e7ef7"
     }
   ],
   "effects": [],

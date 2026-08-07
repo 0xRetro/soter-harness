@@ -1181,6 +1181,9 @@ export interface ConfigurationChangeInspection {
     candidateLockFingerprint: string;
     candidateGraphFingerprint: string;
     observedLockFingerprint: string | null;
+    observedResolution:
+      | { state: 'resolved'; fingerprint: string }
+      | { state: 'unavailable'; fingerprint: null };
     applicability: 'current' | 'stale' | 'applied';
   };
   scope: {

@@ -1,5 +1,9 @@
 import { fingerprintJson } from '../../core/lib/canonical-json.mjs';
 
+function compareText(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 function fieldMap(item) {
   return new Map(item.fields.map((field) => [field.id, field.reviewValue]));
 }
@@ -136,9 +140,7 @@ export function compileEmailConnectedOperations({ batch, material }) {
     const fields = fieldMap(action.proposed);
     if (selection.kind === 'label' && selection.capability === 'mail.labels.apply') {
       const labelName = exactText(fields, 'labelName');
-      const messageIds = exactStringList(fields, 'messageIds').sort((left, right) => {
-        return left.localeCompare(right, 'en');
-      });
+      const messageIds = exactStringList(fields, 'messageIds').sort(compareText);
       const input = {
         messageIds,
         addLabelNames: [labelName],
@@ -242,8 +244,8 @@ export function evaluateEmailConnectedVerification({ operation, phase = 'verific
     const messages = Array.isArray(output?.messages)
       ? output.messages.map((message) => ({
           messageId: message.messageId,
-          labelNames: [...message.labelNames].sort((left, right) => left.localeCompare(right, 'en'))
-        })).sort((left, right) => left.messageId.localeCompare(right.messageId, 'en'))
+          labelNames: [...message.labelNames].sort(compareText)
+        })).sort((left, right) => compareText(left.messageId, right.messageId))
       : [];
     observed = { messages };
   } else if (observation.expectation.kind === 'mail-draft-listed') {

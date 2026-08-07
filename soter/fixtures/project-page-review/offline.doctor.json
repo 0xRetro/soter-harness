@@ -6,7 +6,7 @@
   "level": "offline",
   "configuration": {
     "name": "project-page-review",
-    "lockFingerprint": "sha256:e96f01a5f95f3f81d179a40287d20673c49c8b328bf3491632dd3cdad326c83b"
+    "lockFingerprint": "sha256:2da78a2ef12b790fcfb02b5cfcf72dc91fe1e7b25d5c34caffc381b8b21a566a"
   },
   "states": {
     "valid": "passed",

@@ -74,6 +74,62 @@ function pageProgress(pages) {
   });
 }
 
+function assertPaginatedTransitionAt(call, at) {
+  const observedAt = typeof at === 'string' ? Date.parse(at) : Number.NaN;
+  const createdAt = Date.parse(call.createdAt);
+  if (!Number.isFinite(observedAt)
+    || new Date(observedAt).toISOString() !== at
+    || !Number.isFinite(createdAt)
+    || observedAt < createdAt) {
+    throw new Error(
+      'Paginated host call transition time must be a valid canonical ISO instant at or after the current call creation time.'
+    );
+  }
+}
+
+function deepFreeze(value) {
+  if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
+  for (const child of Object.values(value)) deepFreeze(child);
+  return Object.freeze(value);
+}
+
+function priorNormalizedPages(pages) {
+  return deepFreeze(structuredClone(pages.map((item) => ({
+    sequence: item.sequence,
+    page: item.page,
+    pageFingerprint: item.pageFingerprint
+  }))));
+}
+
+function physicalPageRequestFingerprint({
+  transport,
+  argumentsFingerprint,
+  sequence,
+  maximumPages,
+  priorPages
+}) {
+  return fingerprintJson({
+    transport,
+    argumentsFingerprint,
+    sequence,
+    maximumPages,
+    priorPageReceiptFingerprints: priorPages.map((item) => fingerprintJson(item))
+  });
+}
+
+function currentPageRequestFingerprint(call) {
+  const priorPages = call.pagination.pages.filter((item) => {
+    return item.sequence < call.pagination.currentPage;
+  });
+  return physicalPageRequestFingerprint({
+    transport: call.transport,
+    argumentsFingerprint: call.argumentsFingerprint,
+    sequence: call.pagination.currentPage,
+    maximumPages: call.pagination.maximumPages,
+    priorPages
+  });
+}
+
 function normalizedKey(value) {
   return value.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
@@ -119,6 +175,41 @@ function assertNormalizedPage(value) {
     );
   }
   return value;
+}
+
+function normalizedOutputCoverage(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const base = {
+    complete: value.complete,
+    cursorExhausted: value.cursorExhausted,
+    pagesRead: value.pagesRead,
+    observedCount: value.observedCount
+  };
+  if (Object.hasOwn(value, 'includedCount') && Object.hasOwn(value, 'excludedCount')) {
+    return {
+      ...base,
+      includedCount: value.includedCount,
+      excludedCount: value.excludedCount
+    };
+  }
+  if (Object.hasOwn(value, 'includedHumanCount')
+    && Object.hasOwn(value, 'excludedBotCount')) {
+    return {
+      ...base,
+      includedCount: value.includedHumanCount,
+      excludedCount: value.excludedBotCount
+    };
+  }
+  if (Object.hasOwn(value, 'includedCount')
+    && Number.isInteger(value.observedCount)
+    && Number.isInteger(value.includedCount)) {
+    return {
+      ...base,
+      includedCount: value.includedCount,
+      excludedCount: value.observedCount - value.includedCount
+    };
+  }
+  return null;
 }
 
 function assertContinuation(value) {
@@ -169,6 +260,22 @@ function assertPaginationSemantics(call) {
         && receipt.inputCursorFingerprint !== pagination.pages[index - 1].nextCursorFingerprint)) {
       throw new Error('Host tool page receipt does not preserve exact sequence and coverage.');
     }
+    if (receipt.requestFingerprint !== physicalPageRequestFingerprint({
+        transport: receipt.transport,
+        argumentsFingerprint: receipt.argumentsFingerprint,
+        sequence: receipt.sequence,
+        maximumPages: pagination.maximumPages,
+        priorPages: pagination.pages.slice(0, index)
+      })) {
+      throw new Error('Host tool page receipt does not match its exact physical request.');
+    }
+    if (receipt.transport.protocol !== 'mcp'
+      || receipt.transport.server !== call.transport.server
+      || !receipt.transport.operation
+      || !receipt.transport.tool
+      || !receipt.transport.responseProfile) {
+      throw new Error('Host tool page receipt does not preserve its exact provider transport.');
+    }
     for (const identity of receipt.page.observedIdentityFingerprints) {
       if (identities.has(identity)) {
         throw new Error('Host tool pagination contains a duplicate observed identity.');
@@ -183,17 +290,69 @@ function assertPaginationSemantics(call) {
     || call.id !== pageCallId(pagination.baseCallId, pagination.currentPage)) {
     throw new Error('Host tool call does not identify the exact current pagination page.');
   }
+  if (pagination.currentRequestFingerprint !== currentPageRequestFingerprint(call)) {
+    throw new Error('Host tool call does not match its exact current physical page request.');
+  }
   if (call.state === 'requested') {
-    if (pagination.pages.some((page) => page.continuationState !== 'more')) {
+    if (!call.arguments
+      || call.argumentsFingerprint !== fingerprintJson(call.arguments)
+      || pagination.failedRequestFingerprint
+      || pagination.pages.some((page) => page.continuationState !== 'more')) {
       throw new Error('Requested pagination cannot follow an exhausted page.');
     }
   } else if (call.state === 'completed') {
     if (!pagination.pages.length
       || pagination.pages.at(-1).continuationState !== 'exhausted'
-      || call.arguments !== null) {
+      || call.arguments !== null
+      || pagination.failedRequestFingerprint) {
       throw new Error('Completed pagination does not end in an exhausted minimized call.');
     }
+  } else if (call.state === 'failed') {
+    if (call.arguments !== null || !pagination.failedRequestFingerprint) {
+      throw new Error('Failed pagination did not minimize its exact physical request.');
+    }
   }
+}
+
+function collectFingerprintMatches(value, targetFingerprint, matches) {
+  if (typeof value === 'string') {
+    if (value.length <= 8192 && fingerprintJson(value) === targetFingerprint) {
+      matches.add(value);
+    }
+    return;
+  }
+  if (Array.isArray(value)) {
+    for (const child of value) collectFingerprintMatches(child, targetFingerprint, matches);
+    return;
+  }
+  if (!value || typeof value !== 'object') return;
+  for (const child of Object.values(value)) {
+    collectFingerprintMatches(child, targetFingerprint, matches);
+  }
+}
+
+function reconstructContinuation(call, input) {
+  if (call.pagination.currentPage === 1) return null;
+  const cursorFingerprint = call.pagination.pages.at(-1)?.nextCursorFingerprint;
+  if (!cursorFingerprint) {
+    throw new Error(
+      'Paginated read recovery cannot reconstruct a continuation without its sealed fingerprint.'
+    );
+  }
+  const matches = new Set();
+  collectFingerprintMatches(input, cursorFingerprint, matches);
+  for (const receipt of call.pagination.pages) {
+    collectFingerprintMatches(receipt.page.data, cursorFingerprint, matches);
+  }
+  if (matches.size !== 1) {
+    throw new Error(
+      'Paginated read recovery could not derive one exact continuation from normalized private state.'
+    );
+  }
+  return {
+    cursor: [...matches][0],
+    cursorFingerprint
+  };
 }
 
 function assertAuthority(lock, binding, provider, authority) {
@@ -250,6 +409,18 @@ function terminalCall(base, state, completedAt, error) {
   };
 }
 
+function minimizedPaginatedFailure(call) {
+  if (!call.pagination) return call;
+  return {
+    ...call,
+    arguments: null,
+    pagination: {
+      ...call.pagination,
+      failedRequestFingerprint: fingerprintJson(call)
+    }
+  };
+}
+
 async function translatedMcpRequest({
   root,
   lock,
@@ -262,7 +433,8 @@ async function translatedMcpRequest({
   mappings,
   at,
   continuation,
-  page
+  page,
+  priorPages
 }) {
   const prepare = implementation[provider.runtime.prepareExport];
   if (typeof prepare !== 'function') {
@@ -280,7 +452,8 @@ async function translatedMcpRequest({
     mappings,
     at,
     continuation,
-    page
+    page,
+    priorPages
   });
   if (!request || typeof request.tool !== 'string' || !request.arguments
     || typeof request.arguments !== 'object' || Array.isArray(request.arguments)) {
@@ -500,7 +673,8 @@ export async function prepareHostToolCall({
         sequence: 1,
         maximumPages: pagination.maximumPages,
         ...pageProgress([])
-      } : null
+      } : null,
+      priorPages: priorNormalizedPages([])
     });
     const call = {
       ...base,
@@ -523,6 +697,9 @@ export async function prepareHostToolCall({
         }
       } : {})
     };
+    if (pagination) {
+      call.pagination.currentRequestFingerprint = currentPageRequestFingerprint(call);
+    }
     assertCallContract(resolvedRoot, call);
     return { call };
   } catch (error) {
@@ -530,6 +707,108 @@ export async function prepareHostToolCall({
     assertCallContract(resolvedRoot, call);
     return { call };
   }
+}
+
+export async function repreparePaginatedHostToolCall({
+  root,
+  lock,
+  call,
+  input,
+  at,
+  translator = null
+}) {
+  const resolvedRoot = path.resolve(root);
+  assertCallContract(resolvedRoot, call);
+  if (call.state !== 'failed'
+    || !call.pagination
+    || call.arguments !== null
+    || !call.pagination.failedRequestFingerprint
+    || !['HOST_CALL_RATE_LIMITED', 'HOST_CALL_RETRYABLE_FAILURE'].includes(call.error?.code)
+    || call.declaredEffects.some((effect) => !['read', 'disclosure'].includes(effect))
+    || call.configurationLockFingerprint !== fingerprintLock(lock)
+    || call.graphFingerprint !== lock.graphFingerprint
+    || call.inputFingerprint !== fingerprintJson(input)) {
+    throw new Error(
+      'Paginated read recovery requires one exact minimized failed physical request.'
+    );
+  }
+  const { binding, provider } = selectedProvider(
+    resolvedRoot,
+    lock,
+    call.capability.id,
+    call.provider.containment,
+    call.provider.implementation
+  );
+  assertMcpRuntime(provider);
+  const paginationDeclarationValue = paginationDeclaration(provider, call.capability.id);
+  if (!paginationDeclarationValue
+    || paginationDeclarationValue.maximumPages !== call.pagination.maximumPages
+    || provider.pack !== call.provider.pack
+    || provider.version !== call.provider.version) {
+    throw new Error(
+      'Paginated read recovery no longer matches its exact provider declaration.'
+    );
+  }
+  const authorityDeclaration = assertAuthority(lock, binding, provider, call.authority);
+  const implementation = await loadProviderModule(resolvedRoot, provider, translator);
+  const continuation = reconstructContinuation(call, input);
+  const request = await translatedMcpRequest({
+    root: resolvedRoot,
+    lock,
+    provider,
+    implementation,
+    capability: call.capability.id,
+    input,
+    authority: call.authority,
+    authorityDeclaration,
+    mappings: loadProviderMappings(resolvedRoot, provider),
+    at,
+    continuation,
+    page: {
+      sequence: call.pagination.currentPage,
+      maximumPages: call.pagination.maximumPages,
+      ...pageProgress(call.pagination.pages)
+    },
+    priorPages: priorNormalizedPages(call.pagination.pages)
+  });
+  const nextPagination = structuredClone(call.pagination);
+  delete nextPagination.failedRequestFingerprint;
+  const requested = {
+    ...structuredClone(call),
+    createdAt: at,
+    completedAt: null,
+    state: 'requested',
+    transport: request.transport,
+    arguments: request.arguments,
+    argumentsFingerprint: request.argumentsFingerprint,
+    responseFingerprint: null,
+    outputFingerprint: null,
+    error: null,
+    pagination: nextPagination
+  };
+  if (fingerprintJson(requested.transport) !== fingerprintJson(call.transport)
+    || requested.argumentsFingerprint !== call.argumentsFingerprint
+    || requested.pagination.currentRequestFingerprint !== currentPageRequestFingerprint(requested)) {
+    throw new Error(
+      'Paginated read recovery did not reconstruct the exact failed physical request.'
+    );
+  }
+  const reconstructedFailed = {
+    ...structuredClone(requested),
+    createdAt: call.createdAt,
+    completedAt: call.completedAt,
+    state: 'failed',
+    responseFingerprint: call.responseFingerprint,
+    outputFingerprint: null,
+    error: structuredClone(call.error)
+  };
+  if (call.pagination.failedRequestFingerprint !== fingerprintJson(reconstructedFailed)) {
+    throw new Error(
+      'Paginated read recovery did not match the sealed failed physical request.'
+    );
+  }
+  assertCallContract(resolvedRoot, requested);
+  return requested;
 }
 
 async function completePaginatedHostToolCall({
@@ -574,6 +853,7 @@ async function completePaginatedHostToolCall({
         inputCursorFingerprint: call.pagination.pages.at(-1)?.nextCursorFingerprint || null,
         ...pageProgress(call.pagination.pages)
       },
+      priorPages: priorNormalizedPages(call.pagination.pages),
       settings: lock.settings || {},
       mappings: loadProviderMappings(root, provider),
       at
@@ -616,13 +896,15 @@ async function completePaginatedHostToolCall({
     const receipt = {
       sequence: call.pagination.currentPage,
       callId: call.id,
+      transport: structuredClone(call.transport),
       argumentsFingerprint: call.argumentsFingerprint,
       responseFingerprint,
       inputCursorFingerprint: call.pagination.pages.at(-1)?.nextCursorFingerprint || null,
       continuationState: continuation.state,
       nextCursorFingerprint,
       page: structuredClone(page),
-      pageFingerprint: fingerprintJson(page)
+      pageFingerprint: fingerprintJson(page),
+      requestFingerprint: call.pagination.currentRequestFingerprint
     };
     const pages = [...call.pagination.pages, receipt];
     if (continuation.state === 'more') {
@@ -660,7 +942,8 @@ async function completePaginatedHostToolCall({
           sequence: nextSequence,
           maximumPages: pagination.maximumPages,
           ...pageProgress(pages)
-        }
+        },
+        priorPages: priorNormalizedPages(pages)
       });
       const nextCall = {
         ...call,
@@ -680,6 +963,7 @@ async function completePaginatedHostToolCall({
           pages
         }
       };
+      nextCall.pagination.currentRequestFingerprint = currentPageRequestFingerprint(nextCall);
       assertCallContract(root, nextCall);
       return { call: nextCall, output: null, pending: true };
     }
@@ -689,22 +973,19 @@ async function completePaginatedHostToolCall({
       includedCount: value.includedCount + item.page.includedCount,
       excludedCount: value.excludedCount + item.page.excludedCount
     }), { observedCount: 0, includedCount: 0, excludedCount: 0 });
+    const exactCoverage = {
+      complete: true,
+      cursorExhausted: true,
+      pagesRead: pages.length,
+      ...totals
+    };
     const output = await finalize({
       capability: call.capability.id,
       input,
       authority: call.authority,
       responseProfile: call.transport.responseProfile,
-      pages: pages.map((item) => ({
-        sequence: item.sequence,
-        page: structuredClone(item.page),
-        pageFingerprint: item.pageFingerprint
-      })),
-      coverage: {
-        complete: true,
-        cursorExhausted: true,
-        pagesRead: pages.length,
-        ...totals
-      },
+      pages: priorNormalizedPages(pages),
+      coverage: structuredClone(exactCoverage),
       settings: lock.settings || {},
       mappings: loadProviderMappings(root, provider),
       at
@@ -716,22 +997,15 @@ async function completePaginatedHostToolCall({
         { kind: 'validation' }
       );
     }
-    if (!output.coverage || output.coverage.complete !== true
-      || output.coverage.cursorExhausted !== true
-      || output.coverage.pagesRead !== pages.length
-      || output.coverage.observedCount !== totals.observedCount
-      || ('includedCount' in output.coverage
-        && output.coverage.includedCount !== totals.includedCount)
-      || ('excludedCount' in output.coverage
-        && output.coverage.excludedCount !== totals.excludedCount)
-      || ('includedHumanCount' in output.coverage
-        && output.coverage.includedHumanCount !== totals.includedCount)
-      || ('excludedBotCount' in output.coverage
-        && output.coverage.excludedBotCount !== totals.excludedCount)) {
-      throw Object.assign(
-        new Error('Normalized capability output does not match exact paginated coverage.'),
-        { kind: 'conflict' }
-      );
+    if (output && typeof output === 'object' && Object.hasOwn(output, 'coverage')) {
+      const outputCoverage = normalizedOutputCoverage(output.coverage);
+      if (!outputCoverage
+        || fingerprintJson(outputCoverage) !== fingerprintJson(exactCoverage)) {
+        throw Object.assign(
+          new Error('Paginated normalized output changed Core-computed exact coverage.'),
+          { kind: 'validation' }
+        );
+      }
     }
     assertContextRecordOutput(root, call.capability.id, output, {
       packIds: lock.packs.filter((pack) => pack.layer === 'context').map((pack) => pack.id)
@@ -753,15 +1027,14 @@ async function completePaginatedHostToolCall({
     assertCallContract(root, finished);
     return { call: finished, output, pending: false };
   } catch (error) {
-    const failed = {
+    const failed = minimizedPaginatedFailure({
       ...call,
       completedAt: at,
       state: 'failed',
-      arguments: null,
       responseFingerprint,
       outputFingerprint: null,
       error: normalizedError(error, 'validation')
-    };
+    });
     assertCallContract(root, failed);
     return { call: failed, output: null, pending: false };
   }
@@ -781,6 +1054,7 @@ export async function completeHostToolCall({
   if (call.state !== 'requested') {
     throw new Error('Only a requested host tool call can be completed.');
   }
+  if (call.pagination) assertPaginatedTransitionAt(call, at);
   if (call.configurationLockFingerprint !== fingerprintLock(lock)
     || call.graphFingerprint !== lock.graphFingerprint
     || call.inputFingerprint !== fingerprintJson(input)) {
@@ -892,19 +1166,19 @@ export function failHostToolCall({ root, lock, call, error, at }) {
   if (call.state !== 'requested') {
     throw new Error('Only a requested host tool call can record a host failure.');
   }
+  if (call.pagination) assertPaginatedTransitionAt(call, at);
   if (call.configurationLockFingerprint !== fingerprintLock(lock)
     || call.graphFingerprint !== lock.graphFingerprint) {
     throw new Error('Host tool failure does not match the exact lock and graph request.');
   }
-  const failed = {
+  const failed = minimizedPaginatedFailure({
     ...call,
     completedAt: at,
     state: 'failed',
-    ...(call.pagination ? { arguments: null } : {}),
     responseFingerprint: null,
     outputFingerprint: null,
     error: normalizedError(error)
-  };
+  });
   assertCallContract(resolvedRoot, failed);
   return failed;
 }

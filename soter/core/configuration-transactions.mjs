@@ -479,6 +479,28 @@ function assertCandidate(root, desiredStateFile, candidate, expectedName) {
   return evaluated.lock;
 }
 
+function assertHistoricalDesiredConfiguration(root, configuration) {
+  let failures;
+  try {
+    failures = validateJsonSchema(
+      configuration,
+      readJson(path.join(root, 'soter/contracts/configuration.schema.json'))
+    );
+  } catch {
+    fail(
+      'CONFIGURATION_PRIVATE_STATE_INVALID',
+      'Private desired configuration contract is unavailable or invalid.'
+    );
+  }
+  if (failures.length) {
+    fail(
+      'CONFIGURATION_PRIVATE_STATE_INVALID',
+      'Private desired configuration does not satisfy the governed contract.'
+    );
+  }
+  return configuration;
+}
+
 function currentDesiredConfiguration(root, name, templateFile) {
   let privatePresent;
   let activePresent;
@@ -511,10 +533,9 @@ function currentDesiredConfiguration(root, name, templateFile) {
     };
   }
   const privateState = readPrivateConfigurationState(root, name);
-  let lock;
+  assertHistoricalDesiredConfiguration(root, privateState.configuration);
   let activeLock;
   try {
-    lock = resolveConfiguration({ root, configPath: privateState.file });
     activeLock = readActiveConfigurationLockState(root, name).lock;
   } catch {
     fail('CONFIGURATION_ACTIVE_LOCK_STALE', 'Private desired configuration or its active lock is invalid.');
@@ -528,7 +549,7 @@ function currentDesiredConfiguration(root, name, templateFile) {
   return {
     sourceKind: 'private-active',
     configuration: privateState.configuration,
-    lock,
+    lock: activeLock,
     priorActiveLock: { state: 'present', fingerprint: activeFingerprint, lock: activeLock }
   };
 }
@@ -544,10 +565,12 @@ function planCurrentness(root, plan) {
     && observed.activeLockFingerprint === plan.configuration.candidateLockFingerprint) {
     return { state: 'applied', reasonCode: 'CONFIGURATION_CANDIDATE_APPLIED' };
   }
-  if (observed.sourceKind !== plan.configuration.currentSourceKind
-    || observed.documentFingerprint !== plan.configuration.currentDocumentFingerprint
-    || observed.resolutionFingerprint !== plan.configuration.currentLockFingerprint
-    || observed.activeLockFingerprint !== plan.priorActiveLock.fingerprint) {
+  const baselineMatches = observed.sourceKind === plan.configuration.currentSourceKind
+    && observed.documentFingerprint === plan.configuration.currentDocumentFingerprint
+    && observed.activeLockFingerprint === plan.priorActiveLock.fingerprint
+    && (plan.configuration.currentSourceKind === 'private-active'
+      || observed.resolutionFingerprint === plan.configuration.currentLockFingerprint);
+  if (!baselineMatches) {
     return { state: 'stale', reasonCode: 'CONFIGURATION_PLAN_STALE' };
   }
   try {
@@ -629,6 +652,13 @@ function assertPlan(root, plan) {
   if ((plan.configuration.currentSourceKind === 'private-active')
     !== (plan.priorActiveLock.state === 'present')) {
     fail('CONFIGURATION_PLAN_TAMPERED', 'Configuration plan prior source and active-lock state disagree.');
+  }
+  if (plan.configuration.currentSourceKind === 'private-active'
+    && plan.configuration.currentLockFingerprint !== plan.priorActiveLock.fingerprint) {
+    fail(
+      'CONFIGURATION_PLAN_TAMPERED',
+      'Private configuration plan baseline does not equal its exact historical active lock.'
+    );
   }
   return plan;
 }
@@ -760,15 +790,6 @@ function checkpointObservation(plan, state) {
       resolutionFingerprint: plan.configuration.candidateLockFingerprint
     };
   }
-  if (state === 'prepared' || state === 'rolled-back') {
-    return {
-      sourceKind: plan.configuration.currentSourceKind,
-      templateFingerprint: plan.configuration.templateFingerprint,
-      documentFingerprint: plan.configuration.currentDocumentFingerprint,
-      activeLockFingerprint: plan.priorActiveLock.fingerprint,
-      resolutionFingerprint: plan.configuration.currentLockFingerprint
-    };
-  }
   return null;
 }
 
@@ -854,7 +875,22 @@ function checkpointAuthorityChain(root, checkpoint) {
 
 function assertCheckpointPlanState(checkpoint, plan) {
   const expectedObservation = checkpointObservation(plan, checkpoint.state);
+  const baselineObservation = checkpoint.state === 'prepared'
+    || checkpoint.state === 'rolled-back';
+  const baselineObservationMatches = !baselineObservation || (
+    checkpoint.observation?.sourceKind === plan.configuration.currentSourceKind
+    && checkpoint.observation?.templateFingerprint
+      === plan.configuration.templateFingerprint
+    && checkpoint.observation?.documentFingerprint
+      === plan.configuration.currentDocumentFingerprint
+    && checkpoint.observation?.activeLockFingerprint
+      === plan.priorActiveLock.fingerprint
+    && (plan.configuration.currentSourceKind === 'private-active'
+      || checkpoint.observation?.resolutionFingerprint
+        === plan.configuration.currentLockFingerprint)
+  );
   if (fingerprintJson(checkpoint.configuration) !== fingerprintJson(checkpointConfiguration(plan))
+    || !baselineObservationMatches
     || (expectedObservation
       && fingerprintJson(checkpoint.observation) !== fingerprintJson(expectedObservation))) {
     fail(
@@ -1079,7 +1115,10 @@ function observe(root, plan) {
     } else if (privateExists) {
       const privateState = readPrivateConfigurationState(root, plan.configuration.name);
       documentFingerprint = fingerprintJson(privateState.configuration);
-      resolutionFingerprint = fingerprintLock(resolveConfiguration({ root, configPath: privateState.file }));
+      resolutionFingerprint = fingerprintLock(resolveConfiguration({
+        root,
+        configPath: privateState.file
+      }));
     } else if (!activeExists) {
       documentFingerprint = templateFingerprint;
       resolutionFingerprint = fingerprintLock(resolveConfiguration({ root, configPath: templateFile }));
@@ -1145,7 +1184,8 @@ function restorePrior(root, checkpoint, plan, at, reasonCode, summary) {
     if (restored.sourceKind !== plan.configuration.currentSourceKind
       || restored.templateFingerprint !== plan.configuration.templateFingerprint
       || restored.documentFingerprint !== plan.configuration.currentDocumentFingerprint
-      || restored.resolutionFingerprint !== plan.configuration.currentLockFingerprint
+      || (plan.configuration.currentSourceKind === 'tracked-template'
+        && restored.resolutionFingerprint !== plan.configuration.currentLockFingerprint)
       || restored.activeLockFingerprint !== expectedActive) {
       fail('CONFIGURATION_ROLLBACK_VERIFICATION_FAILED', 'Configuration rollback could not establish the exact prior state.');
     }
@@ -1517,8 +1557,6 @@ export function executeConfigurationChange({ root = DEFAULT_ROOT, checkpointId, 
         || checkpoint.observation.templateFingerprint !== plan.configuration.templateFingerprint
         || checkpoint.observation.documentFingerprint
           !== plan.configuration.currentDocumentFingerprint
-        || checkpoint.observation.resolutionFingerprint
-          !== plan.configuration.currentLockFingerprint
         || checkpoint.observation.activeLockFingerprint
           !== plan.priorActiveLock.fingerprint) {
         fail(
@@ -1605,7 +1643,8 @@ export function recoverConfigurationChange({ root = DEFAULT_ROOT, checkpointId, 
   if (observed.sourceKind === plan.configuration.currentSourceKind
     && observed.templateFingerprint === plan.configuration.templateFingerprint
     && observed.documentFingerprint === plan.configuration.currentDocumentFingerprint
-    && observed.resolutionFingerprint === plan.configuration.currentLockFingerprint
+    && (plan.configuration.currentSourceKind === 'private-active'
+      || observed.resolutionFingerprint === plan.configuration.currentLockFingerprint)
     && observed.activeLockFingerprint === plan.priorActiveLock.fingerprint
     && checkpoint.state === 'prepared') {
     return executeConfigurationChange({ root: resolvedRoot, checkpointId, at });
@@ -1913,9 +1952,10 @@ export function inspectConfigurationChange({
         || plan.configuration.currentLockFingerprint,
       candidateLockFingerprint: plan.configuration.candidateLockFingerprint,
       candidateGraphFingerprint: plan.configuration.candidateGraphFingerprint,
-      observedLockFingerprint: observation.sourceKind === 'tracked-template'
-        ? observation.resolutionFingerprint
-        : observation.activeLockFingerprint,
+      observedLockFingerprint: observation.activeLockFingerprint,
+      observedResolution: observation.resolutionFingerprint
+        ? { state: 'resolved', fingerprint: observation.resolutionFingerprint }
+        : { state: 'unavailable', fingerprint: null },
       applicability: applicability.state
     },
     scope: { fingerprint: plan.scopeFingerprint, changes: clone(plan.changes) },

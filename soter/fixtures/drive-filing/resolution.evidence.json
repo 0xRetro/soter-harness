@@ -10,8 +10,8 @@
     "id": "drive-filing",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:d7ed3051f5547c5e76e5980acb0d54ddfd990c37b2e180c89b761e25475b6a26",
-  "graphFingerprint": "sha256:8888cbcafe7c6c8ed3b54b94623182199e09bcef297200e0df63b8b3dd70ed3d",
+  "configurationLockFingerprint": "sha256:f4b262980d8f7c0c4d37cf8c71ad1a5e85921da4e350677aba6f3e08b3069f31",
+  "graphFingerprint": "sha256:f8feac2f1eb1f33c46137bacf7f8af0f2de075c9cda5f120b3d52270016d039f",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -62,8 +62,8 @@
   "host": {
     "id": "codex",
     "adapter": "host.codex",
-    "version": "0.3.1",
-    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818"
+    "version": "0.3.2",
+    "manifestFingerprint": "sha256:cf50c9418a9af38255f994a6bcb062472a062708a3a95a89167843dd50eafa89"
   },
   "integrations": [
     {
@@ -175,11 +175,11 @@
     {
       "role": "configuration",
       "path": "soter/configurations/drive-filing.config.json",
-      "fingerprint": "sha256:dfb836cb2fe71d8a43f84c9591bd9098d1076f0ed4469c19bd1a7be8bb9634e6"
+      "fingerprint": "sha256:ba6d37c6a3d288f87a33d93d728746e5cf8c9f21d084b6c52d4735dd77babfae"
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:d7ed3051f5547c5e76e5980acb0d54ddfd990c37b2e180c89b761e25475b6a26"
+      "fingerprint": "sha256:f4b262980d8f7c0c4d37cf8c71ad1a5e85921da4e350677aba6f3e08b3069f31"
     }
   ],
   "effects": [],

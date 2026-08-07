@@ -692,7 +692,8 @@ export function configurationChangeInspectionFixture(stage: 'plan' | 'request' |
       baselineLockFingerprint: fp('2'),
       candidateLockFingerprint: fp('3'),
       candidateGraphFingerprint: fp('4'),
-      observedLockFingerprint: completed ? fp('3') : fp('2'),
+      observedLockFingerprint: completed ? fp('3') : null,
+      observedResolution: { state: 'resolved', fingerprint: completed ? fp('3') : fp('2') },
       applicability: completed ? 'applied' : 'current'
     },
     scope: {

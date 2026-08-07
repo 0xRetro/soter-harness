@@ -63,7 +63,7 @@
     "destructive": { "mode": "prohibit", "reason": "Contact Capture never deletes records or performs destructive changes." }
   },
   "secretRefs": [{ "id": "secret-ref.notion", "provider": "host", "key": "NOTION_OAUTH" }],
-  "host": { "id": "codex", "adapter": "host.codex", "version": "0.3.1", "reason": "This contained configuration exercises Codex projection while preserving provider-neutral contracts." },
+  "host": { "id": "codex", "adapter": "host.codex", "version": "0.3.2", "reason": "This contained configuration exercises Codex projection while preserving provider-neutral contracts." },
   "settings": {
     "integration.notion": {
       "targets": {

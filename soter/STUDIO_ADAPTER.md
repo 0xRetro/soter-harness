@@ -161,7 +161,9 @@ The lifecycle is:
 `configuration-transaction-checkpoint/v1`.
 
 Studio should render only `configuration-change-inspection/v1`. The projection
-provides exact plan, baseline/candidate/observed lock and candidate graph fingerprints, a stable
+provides exact plan, baseline/candidate lock, observed private active-lock, and
+candidate graph fingerprints plus a closed actual `observedResolution` branch
+(`resolved` with its fingerprint or `unavailable` with `null`), a stable
 change-scope fingerprint, closed changed subjects with identifier-only nullable
 before/after descriptors and fingerprints, request timing/state, confirmation actor/time, consumption state,
 checkpoint state/phase/reason code, the derived configuration `sourceKind`
@@ -231,6 +233,18 @@ consumer host files, and does not
 promote readiness, verification, health, or proof. Keep all apply
 controls disabled until the Studio main/preload boundary calls these exact Core
 operations and preserves their coded failure envelope.
+
+An exact historical desired document and its exactly bound active lock remain a
+valid rollback baseline when a governed pack or host-adapter version has been
+removed from the current graph. Core does not pretend that baseline resolves
+today: `observedResolution` is the closed
+`{ state: 'unavailable', fingerprint: null }` branch, while
+`observedLockFingerprint` continues to identify the observed private active-lock
+file. The candidate must resolve and be revalidated under the current graph
+before execution. Malformed or unbound
+historical state still fails closed. Studio should therefore present the exact
+prior-lock, observed active-lock, candidate-lock, and observed-resolution facts
+separately and must not relabel a historical baseline as a current resolution.
 
 ## Host realization
 
@@ -1281,7 +1295,12 @@ with exact Automation, work, and checkpoint bindings; the CLI uses only the
 matching generic `operator-acquisition-*` commands.
 The durable v2 operation plan has exactly
 two capability steps: `mail.messages.search` and a bound
-`mail.threads.read`. If Studio later projects acquisition progress, render only
+`mail.threads.read`. Search IDs define the exact mailbox window. The thread
+result distinguishes `exact-request` messages, which carry the RFC822 identity
+needed for deduplication, from `thread-context` siblings, whose RFC822 identity
+is structurally null. `returnedMessageCount` is the exact private aggregate and
+must remain within the declared total bound. If Studio later projects
+acquisition progress, render only
 the canonical operation-plan checkpoint/current-call facts already used by the
 generic runtime surface. Do not render acquired subjects or bodies from
 workspace inspection; the finalized snapshot is selected private state.
@@ -1384,9 +1403,10 @@ IDs, and RFC822 deduplication IDs; declares label application as message-scoped;
 uses configured label names; and prohibits implicit label creation. This adds
 no new Studio field or authority. Studio uses the field map above and
 must not substitute thread IDs, RFC822 IDs, or provider label IDs. The triage
-freshness rule is timestamp-free: skip only when every active inbox message
-already carries `AI/Triaged`; retain any thread with an active untriaged
-message.
+freshness rule is timestamp-free and window-scoped: skip only when every active
+exact-request inbox message already carries `AI/Triaged`; retain any thread
+with an active untriaged exact-request message. Contextual siblings inform the
+private review but do not become triage candidates.
 
 Core supports a distinct generic selection step before connected approval:
 

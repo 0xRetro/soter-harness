@@ -10,8 +10,8 @@
     "id": "task-capture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:1f8565810fee46bdff6d0d43228502cc0eac60383f19a2901753337dfd477a8b",
-  "graphFingerprint": "sha256:ae7ec1e422097c2d537078447559307f51fbc0a9d0309f5ce2629ea058982b31",
+  "configurationLockFingerprint": "sha256:f8c0d09e4bcdc436c3b9d6e1ea023894faf6daa77a7c7f4082908d28d37a4e3d",
+  "graphFingerprint": "sha256:3dcbe228f658ae56cc5a9a6e97199a21835ca538e623189eefbbb60a5cc088fc",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -47,8 +47,8 @@
   "host": {
     "id": "codex",
     "adapter": "host.codex",
-    "version": "0.3.1",
-    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818"
+    "version": "0.3.2",
+    "manifestFingerprint": "sha256:cf50c9418a9af38255f994a6bcb062472a062708a3a95a89167843dd50eafa89"
   },
   "integrations": [
     {
@@ -130,11 +130,11 @@
     {
       "role": "configuration",
       "path": "soter/configurations/task-capture.config.json",
-      "fingerprint": "sha256:093aaff453b744c0091c8d77856f1509fd3f566d6de5847665aaa41a758b5b97"
+      "fingerprint": "sha256:53c010caf0a159dd71f72c5585d4d4915079c9a7cd8b934fbf8f79eec41cb403"
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:1f8565810fee46bdff6d0d43228502cc0eac60383f19a2901753337dfd477a8b"
+      "fingerprint": "sha256:f8c0d09e4bcdc436c3b9d6e1ea023894faf6daa77a7c7f4082908d28d37a4e3d"
     }
   ],
   "effects": [],

@@ -103,21 +103,7 @@
       }
     },
     "inputFingerprint": { "$ref": "#/$defs/fingerprint" },
-    "transport": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["protocol", "server", "operation", "tool", "responseProfile"],
-      "properties": {
-        "protocol": { "const": "mcp" },
-        "server": { "type": "string", "minLength": 1 },
-        "operation": { "type": ["string", "null"], "minLength": 1 },
-        "tool": { "type": ["string", "null"], "minLength": 1 },
-        "responseProfile": {
-          "type": ["string", "null"],
-          "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"
-        }
-      }
-    },
+    "transport": { "$ref": "#/$defs/transport" },
     "arguments": { "type": ["object", "null"] },
     "argumentsFingerprint": {
       "type": ["string", "null"],
@@ -148,6 +134,7 @@
             "maximumPages",
             "currentPage",
             "pages",
+            "currentRequestFingerprint",
             "cursorValuesExcluded",
             "rawProviderResponsesExcluded"
           ],
@@ -156,13 +143,15 @@
               "type": "string",
               "pattern": "^toolcall\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
             },
-            "maximumPages": { "type": "integer", "minimum": 2, "maximum": 50 },
-            "currentPage": { "type": "integer", "minimum": 1, "maximum": 50 },
+            "maximumPages": { "type": "integer", "minimum": 2, "maximum": 101 },
+            "currentPage": { "type": "integer", "minimum": 1, "maximum": 101 },
             "pages": {
               "type": "array",
-              "maxItems": 50,
+              "maxItems": 101,
               "items": { "$ref": "#/$defs/pageReceipt" }
             },
+            "currentRequestFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "failedRequestFingerprint": { "$ref": "#/$defs/fingerprint" },
             "cursorValuesExcluded": { "const": true },
             "rawProviderResponsesExcluded": { "const": true }
           }
@@ -172,6 +161,21 @@
     "secretValuesExcluded": { "const": true }
   },
   "$defs": {
+    "transport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protocol", "server", "operation", "tool", "responseProfile"],
+      "properties": {
+        "protocol": { "const": "mcp" },
+        "server": { "type": "string", "minLength": 1 },
+        "operation": { "type": ["string", "null"], "minLength": 1 },
+        "tool": { "type": ["string", "null"], "minLength": 1 },
+        "responseProfile": {
+          "type": ["string", "null"],
+          "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        }
+      }
+    },
     "version": {
       "type": "string",
       "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
@@ -309,20 +313,23 @@
       "required": [
         "sequence",
         "callId",
+        "transport",
         "argumentsFingerprint",
         "responseFingerprint",
         "inputCursorFingerprint",
         "continuationState",
         "nextCursorFingerprint",
         "page",
-        "pageFingerprint"
+        "pageFingerprint",
+        "requestFingerprint"
       ],
       "properties": {
-        "sequence": { "type": "integer", "minimum": 1, "maximum": 50 },
+        "sequence": { "type": "integer", "minimum": 1, "maximum": 101 },
         "callId": {
           "type": "string",
           "pattern": "^toolcall\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
         },
+        "transport": { "$ref": "#/$defs/transport" },
         "argumentsFingerprint": { "$ref": "#/$defs/fingerprint" },
         "responseFingerprint": { "$ref": "#/$defs/fingerprint" },
         "inputCursorFingerprint": {
@@ -356,7 +363,8 @@
             "data": { "type": "object" }
           }
         },
-        "pageFingerprint": { "$ref": "#/$defs/fingerprint" }
+        "pageFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "requestFingerprint": { "$ref": "#/$defs/fingerprint" }
       }
     }
   }

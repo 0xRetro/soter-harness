@@ -6,7 +6,8 @@ import {
   completeHostToolCall,
   failHostToolCall,
   preflightHostToolBinding,
-  prepareHostToolCall
+  prepareHostToolCall,
+  repreparePaginatedHostToolCall
 } from './host-tools.mjs';
 import { normalizedError } from './host-runtime.mjs';
 import { fingerprintJson, readJson } from './lib/canonical-json.mjs';
@@ -18,6 +19,10 @@ const RECOVERABLE_READ_FAILURE_CODES = new Set([
   'HOST_CALL_RATE_LIMITED',
   'HOST_CALL_RETRYABLE_FAILURE'
 ]);
+
+function compareText(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
 
 function contractFailures(root, value, schemaPath, label) {
   const schema = readJson(path.join(root, schemaPath));
@@ -43,6 +48,10 @@ function logicalCallId(call) {
   return call.pagination?.baseCallId || call.id;
 }
 
+function recoveryCallId(call) {
+  return call.pagination ? call.id : logicalCallId(call);
+}
+
 function retryCallBasis(call) {
   return {
     runId: call.runId,
@@ -58,16 +67,95 @@ function retryCallBasis(call) {
     inputFingerprint: call.inputFingerprint,
     transport: call.transport,
     argumentsFingerprint: call.argumentsFingerprint,
+    ...(call.pagination ? {
+      pagination: {
+        baseCallId: call.pagination.baseCallId,
+        currentPage: call.pagination.currentPage,
+        maximumPages: call.pagination.maximumPages,
+        currentRequestFingerprint: call.pagination.currentRequestFingerprint,
+        completedPageReceiptFingerprints: call.pagination.pages.map((item) => {
+          return fingerprintJson(item);
+        })
+      }
+    } : {}),
     secretValuesExcluded: call.secretValuesExcluded
   };
 }
 
 export function operationPlanRequestedCallFingerprint(call) {
   return fingerprintJson({
-    id: logicalCallId(call),
+    id: recoveryCallId(call),
     createdAt: call.createdAt,
     basis: retryCallBasis(call)
   });
+}
+
+function paginatedRetryRecord(call) {
+  if (!call.pagination) return null;
+  return {
+    sequence: call.pagination.currentPage,
+    maximumPages: call.pagination.maximumPages,
+    requestFingerprint: call.pagination.currentRequestFingerprint,
+    completedPageReceiptsFingerprint: fingerprintJson(call.pagination.pages)
+  };
+}
+
+function reconstructedPaginatedRetryBasis(call, at) {
+  if (!call.pagination
+    || call.arguments !== null
+    || !call.pagination.failedRequestFingerprint
+    || !call.pagination.currentRequestFingerprint) {
+    throw new Error(
+      'Operation-plan paginated read recovery cannot reconstruct the exact failed physical page.'
+    );
+  }
+  const pagination = structuredClone(call.pagination);
+  delete pagination.failedRequestFingerprint;
+  return {
+    ...structuredClone(call),
+    createdAt: at,
+    completedAt: null,
+    state: 'requested',
+    responseFingerprint: null,
+    outputFingerprint: null,
+    error: null,
+    pagination
+  };
+}
+
+function assertPaginatedRecoveryDescendant(failedCall, followingCall) {
+  if (!failedCall.pagination
+    || !followingCall.pagination
+    || followingCall.pagination.baseCallId !== failedCall.pagination.baseCallId
+    || followingCall.pagination.maximumPages !== failedCall.pagination.maximumPages
+    || followingCall.pagination.currentPage < failedCall.pagination.currentPage
+    || fingerprintJson(followingCall.pagination.pages.slice(
+      0,
+      failedCall.pagination.pages.length
+    )) !== fingerprintJson(failedCall.pagination.pages)) {
+    throw new Error(
+      'Operation-plan paginated recovery did not preserve completed page receipts.'
+    );
+  }
+  if (followingCall.pagination.pages.length === failedCall.pagination.pages.length) {
+    if (followingCall.id !== failedCall.id
+      || fingerprintJson(retryCallBasis(followingCall))
+        !== fingerprintJson(retryCallBasis(failedCall))) {
+      throw new Error(
+        'Operation-plan paginated recovery changed the failed physical page request.'
+      );
+    }
+    return;
+  }
+  const completedRetry = followingCall.pagination.pages[failedCall.pagination.currentPage - 1];
+  if (!completedRetry
+    || completedRetry.callId !== failedCall.id
+    || completedRetry.argumentsFingerprint !== failedCall.argumentsFingerprint
+    || completedRetry.requestFingerprint !== failedCall.pagination.currentRequestFingerprint) {
+    throw new Error(
+      'Operation-plan paginated recovery advancement does not prove the exact retried page.'
+    );
+  }
 }
 
 function selectedCapabilityContract(root, lock, source) {
@@ -245,7 +333,7 @@ function resolveBindingValue(sourceRuntime, binding) {
   const strings = flattenStrings(selected, binding.id);
   if (binding.transform === 'unique-string-list') {
     return [...new Set(strings)]
-      .sort((left, right) => left.localeCompare(right, 'en'));
+      .sort(compareText);
   }
   if (binding.transform === 'exact-string') {
     if (strings.length !== 1) {
@@ -348,7 +436,7 @@ function assertStepCall(root, checkpoint, runtimeStep, source) {
   const expectedCallId = operationPlanCallId(
     checkpoint.plan,
     source,
-    priorCalls.length + 1
+    call.pagination ? 1 : priorCalls.length + 1
   );
   if (logicalCallId(call) !== expectedCallId || runtimeStep.state !== call.state) {
     throw new Error(
@@ -397,18 +485,27 @@ function assertStepRecoveryHistory(root, checkpoint, runtimeStep, source) {
         + ' exceeds its exact read-only retry contract.'
     );
   }
+  const paginated = Boolean(runtimeStep.call.pagination);
   let basis = null;
   for (let index = 0; index < priorCalls.length; index += 1) {
     const call = priorCalls[index];
     assertStepCallBinding(root, checkpoint, runtimeStep, source, call);
     if (call.state !== 'failed'
-      || call.pagination
+      || Boolean(call.pagination) !== paginated
       || !RECOVERABLE_READ_FAILURE_CODES.has(call.error?.code)
-      || logicalCallId(call) !== operationPlanCallId(checkpoint.plan, source, index + 1)) {
+      || logicalCallId(call) !== operationPlanCallId(
+        checkpoint.plan,
+        source,
+        paginated ? 1 : index + 1
+      )) {
       throw new Error(
         'Recovered operation plan step ' + runtimeStep.id
           + ' contains an ineligible or out-of-sequence prior call.'
       );
+    }
+    if (paginated) {
+      assertPaginatedRecoveryDescendant(call, callForAttempt(runtimeStep, index + 2));
+      continue;
     }
     const currentBasis = retryCallBasis(call);
     if (basis && fingerprintJson(currentBasis) !== fingerprintJson(basis)) {
@@ -419,8 +516,8 @@ function assertStepRecoveryHistory(root, checkpoint, runtimeStep, source) {
     }
     basis = currentBasis;
   }
-  if (runtimeStep.call.pagination
-    || fingerprintJson(retryCallBasis(runtimeStep.call)) !== fingerprintJson(basis)) {
+  if (!paginated
+    && fingerprintJson(retryCallBasis(runtimeStep.call)) !== fingerprintJson(basis)) {
     throw new Error(
       'Recovered operation plan step ' + runtimeStep.id
         + ' current call does not preserve the exact failed request basis.'
@@ -448,7 +545,7 @@ function assertRecoveryRecords(root, checkpoint) {
   const lock = checkpointLock(root, checkpoint);
   const keys = new Set();
   const ids = new Set();
-  const replacementIds = new Set();
+  const replacementRequests = new Set();
   for (let index = 0; index < recoveries.length; index += 1) {
     const recovery = recoveries[index];
     const runtimeStep = checkpoint.steps.find((step) => step.id === recovery.stepId);
@@ -466,19 +563,40 @@ function assertRecoveryRecords(root, checkpoint) {
       || recovery.sequence !== index + 1
       || recovery.id !== recoveryId(checkpoint, runtimeStep, recovery.attempt)
       || ids.has(recovery.id)
-      || replacementIds.has(recovery.replacementCallId)
-      || recovery.requestedAt !== replacementCall.createdAt
-      || recovery.failedCallId !== logicalCallId(failedCall)
+      || replacementRequests.has(recovery.replacementRequestFingerprint)
+      || recovery.failedCallId !== recoveryCallId(failedCall)
       || recovery.failedCallFingerprint !== fingerprintJson(failedCall)
       || recovery.failureCode !== failedCall.error?.code
-      || recovery.replacementCallId !== logicalCallId(replacementCall)
-      || recovery.replacementRequestFingerprint
-        !== operationPlanRequestedCallFingerprint(replacementCall)
-      || recovery.replacementArgumentsFingerprint
-        !== replacementCall.argumentsFingerprint
       || recovery.inputFingerprint !== runtimeStep.resolvedInputFingerprint) {
       throw new Error(
         'Operation plan recovery record does not match its exact failed and replacement calls.'
+      );
+    }
+    if (failedCall.pagination) {
+      const reconstructed = reconstructedPaginatedRetryBasis(
+        failedCall,
+        recovery.requestedAt
+      );
+      if (fingerprintJson(recovery.page) !== fingerprintJson(paginatedRetryRecord(failedCall))
+        || (replacementCall.pagination.pages.length === failedCall.pagination.pages.length
+          && replacementCall.createdAt !== recovery.requestedAt)
+        || recovery.replacementCallId !== recoveryCallId(reconstructed)
+        || recovery.replacementRequestFingerprint
+          !== operationPlanRequestedCallFingerprint(reconstructed)
+        || recovery.replacementArgumentsFingerprint !== reconstructed.argumentsFingerprint) {
+        throw new Error(
+          'Operation plan page recovery record does not match its exact reconstructed request.'
+        );
+      }
+      assertPaginatedRecoveryDescendant(failedCall, replacementCall);
+    } else if (recovery.page !== undefined
+      || recovery.requestedAt !== replacementCall.createdAt
+      || recovery.replacementCallId !== logicalCallId(replacementCall)
+      || recovery.replacementRequestFingerprint
+        !== operationPlanRequestedCallFingerprint(replacementCall)
+      || recovery.replacementArgumentsFingerprint !== replacementCall.argumentsFingerprint) {
+      throw new Error(
+        'Operation plan recovery record does not match its exact replacement call.'
       );
     }
     const { contract, selected } = selectedCapabilityContract(root, lock, source);
@@ -503,7 +621,7 @@ function assertRecoveryRecords(root, checkpoint) {
     }
     keys.add(key);
     ids.add(recovery.id);
-    replacementIds.add(recovery.replacementCallId);
+    replacementRequests.add(recovery.replacementRequestFingerprint);
   }
   for (const step of checkpoint.steps) {
     const priorCalls = step.priorCalls || [];
@@ -890,16 +1008,18 @@ function previousResponse(checkpoint, callId, response) {
     ...(step.priorCalls || []),
     step.call
   ].filter(Boolean));
-  const call = calls.find((item) => {
-    return item.id === callId
-      || item.pagination?.pages.some((page) => page.callId === callId);
-  });
-  if (!call) return false;
-  const responseFingerprint = call.id === callId
-    ? call.responseFingerprint
-    : call.pagination.pages.find((page) => page.callId === callId)?.responseFingerprint;
-  if (!responseFingerprint) return false;
-  if (responseFingerprint !== fingerprintJson(response)) {
+  const successfulResponseFingerprints = new Set(calls.flatMap((call) => {
+    const fingerprints = [];
+    if (call.id === callId && call.state === 'completed' && call.responseFingerprint) {
+      fingerprints.push(call.responseFingerprint);
+    }
+    for (const receipt of call.pagination?.pages || []) {
+      if (receipt.callId === callId) fingerprints.push(receipt.responseFingerprint);
+    }
+    return fingerprints;
+  }));
+  if (!successfulResponseFingerprints.size) return false;
+  if (!successfulResponseFingerprints.has(fingerprintJson(response))) {
     throw new Error('Operation plan response does not match the exact completed step call.');
   }
   return true;
@@ -998,7 +1118,7 @@ export async function recoverOperationPlanReadStep({
     const currentCall = operationPlanCurrentCall(checkpoint);
     if (!currentCall
       || currentCall.state !== 'requested'
-      || logicalCallId(currentCall) !== existingRecovery.replacementCallId
+      || recoveryCallId(currentCall) !== existingRecovery.replacementCallId
       || operationPlanRequestedCallFingerprint(currentCall)
         !== existingRecovery.replacementRequestFingerprint) {
       throw new Error(
@@ -1027,13 +1147,12 @@ export async function recoverOperationPlanReadStep({
     || runtimeStep.id !== stepId
     || runtimeStep.state !== 'failed'
     || !runtimeStep.call
-    || logicalCallId(runtimeStep.call) !== callId
+    || recoveryCallId(runtimeStep.call) !== callId
     || fingerprintJson(runtimeStep.call) !== callFingerprint
     || runtimeStep.call.state !== 'failed'
-    || runtimeStep.call.pagination
     || !RECOVERABLE_READ_FAILURE_CODES.has(runtimeStep.call.error?.code)) {
     throw new Error(
-      'Operation-plan read recovery requires the exact eligible failed non-paginated step call.'
+      'Operation-plan read recovery requires the exact eligible failed read step call.'
     );
   }
   for (const planStep of checkpoint.plan.steps) {
@@ -1065,22 +1184,29 @@ export async function recoverOperationPlanReadStep({
     );
   }
   const replacementAttempt = currentAttempt + 1;
-  const prepared = await prepareHostToolCall({
-    root,
-    lock,
-    configuration: checkpoint.configuration,
-    runId: checkpoint.plan.runId,
-    callId: operationPlanCallId(checkpoint.plan, source, replacementAttempt),
-    capability: source.capability,
-    authority: source.authority,
-    containment: 'connected',
-    providerImplementation: source.providerImplementation,
-    input: runtimeStep.resolvedInput,
-    at,
-    approvedEffects: []
-  });
+  const prepared = runtimeStep.call.pagination
+    ? { call: await repreparePaginatedHostToolCall({
+      root,
+      lock,
+      call: runtimeStep.call,
+      input: runtimeStep.resolvedInput,
+      at
+    }) }
+    : await prepareHostToolCall({
+      root,
+      lock,
+      configuration: checkpoint.configuration,
+      runId: checkpoint.plan.runId,
+      callId: operationPlanCallId(checkpoint.plan, source, replacementAttempt),
+      capability: source.capability,
+      authority: source.authority,
+      containment: 'connected',
+      providerImplementation: source.providerImplementation,
+      input: runtimeStep.resolvedInput,
+      at,
+      approvedEffects: []
+    });
   if (prepared.call.state !== 'requested'
-    || prepared.call.pagination
     || fingerprintJson(retryCallBasis(prepared.call))
       !== fingerprintJson(retryCallBasis(runtimeStep.call))) {
     throw new Error(
@@ -1089,7 +1215,8 @@ export async function recoverOperationPlanReadStep({
   }
   const next = structuredClone(checkpoint);
   const nextStep = next.steps[completedPrefix];
-  nextStep.priorCalls = [...(nextStep.priorCalls || []), nextStep.call];
+  const historicalCall = structuredClone(nextStep.call);
+  nextStep.priorCalls = [...(nextStep.priorCalls || []), historicalCall];
   nextStep.call = prepared.call;
   nextStep.state = 'requested';
   nextStep.output = null;
@@ -1109,9 +1236,10 @@ export async function recoverOperationPlanReadStep({
     failureCode: runtimeStep.call.error.code,
     failedCallId: callId,
     failedCallFingerprint: callFingerprint,
-    replacementCallId: logicalCallId(prepared.call),
+    replacementCallId: recoveryCallId(prepared.call),
     replacementRequestFingerprint: operationPlanRequestedCallFingerprint(prepared.call),
     replacementArgumentsFingerprint: prepared.call.argumentsFingerprint,
+    ...(runtimeStep.call.pagination ? { page: paginatedRetryRecord(runtimeStep.call) } : {}),
     inputFingerprint: runtimeStep.resolvedInputFingerprint,
     capability: {
       id: contract.id,

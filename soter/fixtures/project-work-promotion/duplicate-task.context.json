@@ -4,8 +4,8 @@
   "id": "context.project-work-promotion.duplicate-task-fixture",
   "runId": "run.project-work-promotion.duplicate-task-fixture",
   "createdAt": "2026-07-22T13:00:00.000Z",
-  "configurationLockFingerprint": "sha256:ab245e045a196286bc69a8873714a9766701ae73252ad7fbf8fdc5ae60f4bf09",
-  "graphFingerprint": "sha256:4348ce085998c527513d62f3c7f15353c4c715c7079808c6128e84599fbf40a5",
+  "configurationLockFingerprint": "sha256:726cf0e5f1d92397fb494d09670a60780660271d53ae8d6640c0a5795fc64c25",
+  "graphFingerprint": "sha256:c23ebea87a8251c946baf5c39953f883f2c144e0e9f9ea643eb9e47bb5bf0a10",
   "containment": "fixture",
   "entries": [
     {

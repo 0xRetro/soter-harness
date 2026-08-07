@@ -13,9 +13,9 @@
   },
   "configurationLock": {
     "path": "soter/fixtures/project-decision-resolution/project-decision-resolution.lock.json",
-    "fingerprint": "sha256:75a3fd54e16961de63d3b7e1b46ed820cc66485659f7d11267d0db79bd135276"
+    "fingerprint": "sha256:3db0f966533e93ce8ad09631e2fa393acd512eaa96b6b85bdff0a0e4a4b4aa16"
   },
-  "graphFingerprint": "sha256:cdaaebd0c0e9520a661c38f3f9f13b4aefd9b98ec98d45ea25655aa4c8bf38a7",
+  "graphFingerprint": "sha256:af368ebae144db82a4375ec1bb9a37dcc23d99c91cf723fee86971f23aa8595e",
   "context": [
     {
       "subject": "notion.workspace",
@@ -24,7 +24,7 @@
       "uri": "soter-fixture://configuration-template/notion/account/operator",
       "declarationFingerprint": "sha256:e3e11d347b7a0109668facaeb7b12311023da39949d1328bfd918c53a406c756",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:75a3fd54e16961de63d3b7e1b46ed820cc66485659f7d11267d0db79bd135276",
+      "provenance": "configuration-lock:sha256:3db0f966533e93ce8ad09631e2fa393acd512eaa96b6b85bdff0a0e4a4b4aa16",
       "freshness": "unknown"
     },
     {
@@ -54,7 +54,7 @@
       "uri": "soter-state://runs",
       "declarationFingerprint": "sha256:8afe5da5de9d67a21267be3ba143ca970bf2a316ca513dd3146f805613c7ee46",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:75a3fd54e16961de63d3b7e1b46ed820cc66485659f7d11267d0db79bd135276",
+      "provenance": "configuration-lock:sha256:3db0f966533e93ce8ad09631e2fa393acd512eaa96b6b85bdff0a0e4a4b4aa16",
       "freshness": "unknown"
     }
   ],
@@ -131,17 +131,17 @@
   "host": {
     "id": "codex",
     "adapter": "host.codex",
-    "version": "0.3.1",
-    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818",
+    "version": "0.3.2",
+    "manifestFingerprint": "sha256:cf50c9418a9af38255f994a6bcb062472a062708a3a95a89167843dd50eafa89",
     "projectionDefinition": {
       "id": "host-projection.codex",
       "version": "0.3.0",
       "path": "soter/hosts/codex/projection.json",
-      "fingerprint": "sha256:09fe78fb567ec40ac12e71e1bd5304f44246669a23fe8ac84c5eef755cb95727"
+      "fingerprint": "sha256:aca563d19908234cc49c8938d0ec760d22779844d450705c032b86d34f6f812a"
     },
     "projectionGenerator": {
       "id": "core.host-projection-generator",
-      "version": "2.1.0"
+      "version": "2.2.0"
     }
   },
   "effectPolicies": {
@@ -188,7 +188,7 @@
     {
       "id": "context.project-decision-resolution.missing-why-fixture",
       "type": "context-snapshot",
-      "fingerprint": "sha256:7c0fdcf0e950f371567d3a59c34a7678b0e8e00e2c741f82424df921dc79902a"
+      "fingerprint": "sha256:228846f05169c259834574a89b163f57bc55b6f5008b7ca1ac891267a6c4fad0"
     }
   ],
   "effects": [

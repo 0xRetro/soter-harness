@@ -402,8 +402,30 @@ export async function selftestConfigurationTransactions(root = defaultRoot) {
     assert(completedBootstrapInspection.resume.classification === 'unavailable'
       && completedBootstrapInspection.resume.reasonCode === 'CONFIGURATION_APPLY_COMPLETED'
       && completedBootstrapInspection.resume.permittedNextAction === 'none'
+      && completedBootstrapInspection.configuration.observedLockFingerprint
+        === bootstrapPlan.configuration.candidateLockFingerprint
+      && completedBootstrapInspection.configuration.observedResolution.state === 'resolved'
+      && completedBootstrapInspection.configuration.observedResolution.fingerprint
+        === bootstrapPlan.configuration.candidateLockFingerprint
       && validateJsonSchema(completedBootstrapInspection, bootstrapInspectionSchema).length === 0,
     'Completed bootstrap did not project one terminal unavailable inspection.');
+    const crossedResolvedObservation = structuredClone(completedBootstrapInspection);
+    crossedResolvedObservation.configuration.observedResolution.fingerprint = null;
+    assert(validateJsonSchema(
+      crossedResolvedObservation,
+      bootstrapInspectionSchema
+    ).length > 0,
+    'Inspection schema accepted resolved observation without a fingerprint.');
+    const crossedUnavailableObservation = structuredClone(completedBootstrapInspection);
+    crossedUnavailableObservation.configuration.observedResolution = {
+      state: 'unavailable',
+      fingerprint: bootstrapPlan.configuration.candidateLockFingerprint
+    };
+    assert(validateJsonSchema(
+      crossedUnavailableObservation,
+      bootstrapInspectionSchema
+    ).length > 0,
+    'Inspection schema accepted unavailable observation with a fingerprint.');
     const hostileCompletedInspection = structuredClone(completedBootstrapInspection);
     hostileCompletedInspection.resume = {
       classification: 'safe',
@@ -908,6 +930,10 @@ export async function selftestConfigurationTransactions(root = defaultRoot) {
       && !JSON.stringify(authority.execution.checkpoint).includes(privateMarker),
     'Request or checkpoint exposed private desired configuration values.');
     assert(beforeInspection.configuration.sourceKind === 'tracked-template'
+      && beforeInspection.configuration.observedLockFingerprint === null
+      && beforeInspection.configuration.observedResolution.state === 'resolved'
+      && beforeInspection.configuration.observedResolution.fingerprint
+        === authority.prepared.plan.configuration.currentLockFingerprint
       && !Object.hasOwn(beforeInspection.configuration, 'path')
       && !JSON.stringify(beforeInspection).includes('.soter/state')
       && !JSON.stringify(beforeInspection).includes('soter/configurations/'),
@@ -1911,6 +1937,257 @@ export async function selftestConfigurationTransactions(root = defaultRoot) {
     }
     assert(activeLockRejected, 'A stale private active lock was silently replaced by a new plan.');
 
+    const unavailableBaseline = copyRoot(root, 'soter-configuration-unavailable-baseline-');
+    roots.push(unavailableBaseline);
+    const unavailableAdapterPath = path.join(
+      unavailableBaseline,
+      'soter/hosts/codex/adapter.json'
+    );
+    const currentAdapter = readJson(unavailableAdapterPath);
+    const historicalAdapter = { ...currentAdapter, version: '0.3.1' };
+    const unavailableConfigurationsDirectory = path.join(
+      unavailableBaseline,
+      'soter/configurations'
+    );
+    const currentCodexConfigurations = fs.readdirSync(unavailableConfigurationsDirectory)
+      .filter((name) => name.endsWith('.config.json'))
+      .flatMap((name) => {
+        const file = path.join(unavailableConfigurationsDirectory, name);
+        const configuration = readJson(file);
+        return configuration.host?.id === 'codex'
+          && configuration.host?.adapter === currentAdapter.id
+          && configuration.host?.version === currentAdapter.version
+          ? [{ file, configuration }]
+          : [];
+      });
+    for (const entry of currentCodexConfigurations) {
+      writeJson(entry.file, {
+        ...entry.configuration,
+        host: { ...entry.configuration.host, version: historicalAdapter.version }
+      });
+    }
+    writeJson(unavailableAdapterPath, historicalAdapter);
+    const unavailableTemplatePath = path.join(
+      unavailableBaseline,
+      'soter/configurations/meeting-intake.config.json'
+    );
+    const historicalDesired = readJson(unavailableTemplatePath);
+    historicalDesired.host.version = historicalAdapter.version;
+    writePrivateConfigurationState(
+      unavailableBaseline,
+      'meeting-intake',
+      historicalDesired
+    );
+    const unavailableDesiredPath = privateConfigurationStatePath(
+      unavailableBaseline,
+      'meeting-intake'
+    );
+    const historicalUnavailableLock = resolveConfiguration({
+      root: unavailableBaseline,
+      configPath: unavailableDesiredPath
+    });
+    writeActiveConfigurationLockState(
+      unavailableBaseline,
+      'meeting-intake',
+      historicalUnavailableLock
+    );
+    writeJson(unavailableAdapterPath, currentAdapter);
+    for (const entry of currentCodexConfigurations) {
+      writeJson(entry.file, entry.configuration);
+    }
+    const currentUnavailableCandidate = readJson(unavailableTemplatePath);
+    const malformedHistoricalDesired = structuredClone(historicalDesired);
+    delete malformedHistoricalDesired.host.reason;
+    const malformedHistoricalLock = structuredClone(historicalUnavailableLock);
+    malformedHistoricalLock.configuration.fingerprint = fingerprintJson(
+      malformedHistoricalDesired
+    );
+    delete malformedHistoricalLock.graphFingerprint;
+    malformedHistoricalLock.graphFingerprint = fingerprintJson(malformedHistoricalLock);
+    writePrivateConfigurationState(
+      unavailableBaseline,
+      'meeting-intake',
+      malformedHistoricalDesired
+    );
+    writeActiveConfigurationLockState(
+      unavailableBaseline,
+      'meeting-intake',
+      malformedHistoricalLock
+    );
+    let malformedHistoricalDesiredRejected = false;
+    try {
+      prepareConfigurationChange({
+        root: unavailableBaseline,
+        name: 'meeting-intake',
+        candidateConfiguration: currentUnavailableCandidate,
+        id: 'configuration-change-plan.malformed-unavailable-baseline-selftest',
+        createdAt: CREATED
+      });
+    } catch (error) {
+      malformedHistoricalDesiredRejected
+        = error.code === 'CONFIGURATION_PRIVATE_STATE_INVALID';
+    }
+    assert(malformedHistoricalDesiredRejected,
+      'A malformed historical desired document was accepted as an upgrade baseline.');
+    writePrivateConfigurationState(
+      unavailableBaseline,
+      'meeting-intake',
+      historicalDesired
+    );
+    writeActiveConfigurationLockState(
+      unavailableBaseline,
+      'meeting-intake',
+      historicalUnavailableLock
+    );
+    const unavailableAuthority = prepareAuthority(
+      unavailableBaseline,
+      'unavailable-baseline-selftest',
+      currentUnavailableCandidate
+    );
+    const unavailablePlan = unavailableAuthority.prepared.plan;
+    const unavailableHostChange = unavailablePlan.changes.find(
+      (change) => change.id === 'configuration-change.host.adapter'
+    );
+    const unavailablePreparedInspection = inspectConfigurationChange({
+      root: unavailableBaseline,
+      planId: unavailableAuthority.planId,
+      checkpointId: unavailableAuthority.checkpointId,
+      at: APPLIED
+    });
+    assert(unavailablePlan.configuration.currentLockFingerprint
+        === fingerprintLock(historicalUnavailableLock)
+      && unavailablePlan.priorActiveLock.fingerprint
+        === fingerprintLock(historicalUnavailableLock)
+      && unavailableHostChange?.state === 'changed'
+      && unavailableHostChange.beforeFingerprint === fingerprintJson(historicalDesired.host)
+      && unavailableHostChange.afterFingerprint === fingerprintJson(currentUnavailableCandidate.host)
+      && unavailablePreparedInspection.configuration.applicability === 'current'
+      && unavailablePreparedInspection.configuration.observedLockFingerprint
+        === fingerprintLock(historicalUnavailableLock)
+      && unavailablePreparedInspection.configuration.observedResolution.state === 'unavailable'
+      && unavailablePreparedInspection.configuration.observedResolution.fingerprint === null,
+    'An unavailable exact historical resolution was not preserved as the reviewed rollback baseline.');
+    const completedUnavailableUpgrade = executeConfigurationChange({
+      root: unavailableBaseline,
+      checkpointId: unavailableAuthority.checkpointId,
+      at: APPLIED
+    });
+    const unavailableInspection = inspectConfigurationChange({
+      root: unavailableBaseline,
+      planId: unavailableAuthority.planId,
+      checkpointId: unavailableAuthority.checkpointId,
+      at: APPLIED
+    });
+    assert(completedUnavailableUpgrade.state === 'completed'
+      && unavailableInspection.configuration.applicability === 'applied'
+      && unavailableInspection.configuration.observedLockFingerprint
+        === unavailablePlan.configuration.candidateLockFingerprint
+      && unavailableInspection.configuration.observedResolution.state === 'resolved'
+      && unavailableInspection.configuration.observedResolution.fingerprint
+        === unavailablePlan.configuration.candidateLockFingerprint
+      && readPrivateConfigurationState(unavailableBaseline, 'meeting-intake')
+        .configuration.host.version === currentAdapter.version
+      && fingerprintLock(readJson(activeConfigurationLockStatePath(
+        unavailableBaseline,
+        'meeting-intake'
+      ))) === unavailablePlan.configuration.candidateLockFingerprint,
+    'The governed configuration upgrade did not replace an unavailable historical resolution exactly.');
+
+    const mismatchedPrivateBaseline = prepareConfigurationChange({
+      root: unavailableBaseline,
+      name: 'meeting-intake',
+      candidateConfiguration: candidate(unavailableBaseline, 'mismatched-private-baseline'),
+      id: 'configuration-change-plan.mismatched-private-baseline-selftest',
+      createdAt: CREATED
+    });
+    const mismatchedPrivateBaselinePath = configurationChangePlanStatePath(
+      unavailableBaseline,
+      mismatchedPrivateBaseline.plan.id
+    );
+    const mismatchedPrivateBaselinePlan = readJson(mismatchedPrivateBaselinePath);
+    const alternativeHistoricalLock = historicalActiveLock(
+      mismatchedPrivateBaselinePlan.currentLock
+    );
+    mismatchedPrivateBaselinePlan.priorActiveLock = {
+      state: 'present',
+      fingerprint: fingerprintLock(alternativeHistoricalLock),
+      lock: alternativeHistoricalLock
+    };
+    reseal(mismatchedPrivateBaselinePlan, 'planFingerprint');
+    writeJson(mismatchedPrivateBaselinePath, mismatchedPrivateBaselinePlan);
+    let mismatchedPrivateBaselineRejected = false;
+    try {
+      inspectConfigurationChange({
+        root: unavailableBaseline,
+        planId: mismatchedPrivateBaseline.plan.id,
+        at: APPLIED
+      });
+    } catch (error) {
+      mismatchedPrivateBaselineRejected = error.code === 'CONFIGURATION_PLAN_TAMPERED';
+    }
+    assert(mismatchedPrivateBaselineRejected,
+      'A re-sealed private plan with different current and rollback locks was accepted.');
+
+    const unavailableRecovery = copyRoot(
+      unavailableBaseline,
+      'soter-configuration-unavailable-recovery-'
+    );
+    roots.push(unavailableRecovery);
+    writePrivateConfigurationState(
+      unavailableRecovery,
+      'meeting-intake',
+      historicalDesired
+    );
+    writeActiveConfigurationLockState(
+      unavailableRecovery,
+      'meeting-intake',
+      historicalUnavailableLock
+    );
+    const unavailableRecoveryAuthority = prepareAuthority(
+      unavailableRecovery,
+      'unavailable-recovery-selftest',
+      readJson(path.join(
+        unavailableRecovery,
+        'soter/configurations/meeting-intake.config.json'
+      ))
+    );
+    const unknownUnavailableState = structuredClone(historicalDesired);
+    unknownUnavailableState.host.reason
+      = 'An ambiguous partial upgrade must restore the exact historical private baseline.';
+    writePrivateConfigurationState(
+      unavailableRecovery,
+      'meeting-intake',
+      unknownUnavailableState
+    );
+    const rolledBackUnavailable = recoverConfigurationChange({
+      root: unavailableRecovery,
+      checkpointId: unavailableRecoveryAuthority.checkpointId,
+      at: APPLIED
+    });
+    const rolledBackUnavailableInspection = inspectConfigurationChange({
+      root: unavailableRecovery,
+      planId: unavailableRecoveryAuthority.planId,
+      checkpointId: unavailableRecoveryAuthority.checkpointId,
+      at: APPLIED
+    });
+    assert(rolledBackUnavailable.state === 'rolled-back'
+      && rolledBackUnavailable.observation.resolutionFingerprint === null
+      && fingerprintJson(readPrivateConfigurationState(
+        unavailableRecovery,
+        'meeting-intake'
+      ).configuration) === fingerprintJson(historicalDesired)
+      && fingerprintLock(readJson(activeConfigurationLockStatePath(
+        unavailableRecovery,
+        'meeting-intake'
+      ))) === fingerprintLock(historicalUnavailableLock)
+      && rolledBackUnavailableInspection.checkpoint.state === 'rolled-back'
+      && rolledBackUnavailableInspection.configuration.applicability === 'current'
+      && rolledBackUnavailableInspection.configuration.observedLockFingerprint
+        === fingerprintLock(historicalUnavailableLock)
+      && rolledBackUnavailableInspection.configuration.observedResolution.state === 'unavailable'
+      && rolledBackUnavailableInspection.configuration.observedResolution.fingerprint === null,
+    'Ambiguous upgrade recovery did not restore and truthfully inspect the unavailable baseline.');
+
     const activeLockSafety = copyRoot(root, 'soter-configuration-lock-safety-');
     roots.push(activeLockSafety);
     const activeLockSafetyCandidate = candidate(activeLockSafety, 'lock-safety-current');
@@ -2087,11 +2364,14 @@ export async function selftestConfigurationTransactions(root = defaultRoot) {
       && refreshPlan.plan.priorActiveLock.fingerprint
         !== refreshPlan.plan.configuration.candidateLockFingerprint
       && refreshPlan.plan.configuration.currentLockFingerprint
-        === refreshPlan.plan.configuration.candidateLockFingerprint
+        === fingerprintLock(historicalRefreshLock)
       && preparedRefreshInspection.configuration.baselineLockFingerprint
         === fingerprintLock(historicalRefreshLock)
       && preparedRefreshInspection.configuration.observedLockFingerprint
         === fingerprintLock(historicalRefreshLock)
+      && preparedRefreshInspection.configuration.observedResolution.state === 'resolved'
+      && preparedRefreshInspection.configuration.observedResolution.fingerprint
+        === refreshPlan.plan.configuration.candidateLockFingerprint
       && preparedRefreshInspection.configuration.candidateLockFingerprint
         === refreshPlan.plan.configuration.candidateLockFingerprint,
     'Graph drift did not produce truthful exact active-lock and resolved-graph refresh scope.');
@@ -2102,7 +2382,10 @@ export async function selftestConfigurationTransactions(root = defaultRoot) {
       at: APPLIED
     });
     assert(missingActiveInspection.configuration.applicability === 'stale'
-      && missingActiveInspection.configuration.observedLockFingerprint === null,
+      && missingActiveInspection.configuration.observedLockFingerprint === null
+      && missingActiveInspection.configuration.observedResolution.state === 'resolved'
+      && missingActiveInspection.configuration.observedResolution.fingerprint
+        === refreshPlan.plan.configuration.candidateLockFingerprint,
     'Missing private active lock was misreported as the fresh computed resolution.');
     writeActiveConfigurationLockState(refreshed, 'meeting-intake', historicalRefreshLock);
     const refreshRequest = beginConfigurationChangeRequest({
@@ -2152,6 +2435,9 @@ export async function selftestConfigurationTransactions(root = defaultRoot) {
       && refreshInspection.configuration.baselineLockFingerprint
         === fingerprintLock(historicalRefreshLock)
       && refreshInspection.configuration.observedLockFingerprint
+        === refreshPlan.plan.configuration.candidateLockFingerprint
+      && refreshInspection.configuration.observedResolution.state === 'resolved'
+      && refreshInspection.configuration.observedResolution.fingerprint
         === refreshPlan.plan.configuration.candidateLockFingerprint
       && fs.readFileSync(refreshDesiredFile).equals(desiredBeforeRefresh)
       && desiredStatAfterRefresh.ino === desiredStatBeforeRefresh.ino

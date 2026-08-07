@@ -4300,11 +4300,9 @@ async function selftest(root) {
       call_id: hostileEmailContext.currentCall.id,
       response: {
         structuredContent: {
-          result: {
-            message_ids: ['gmail-mcp-message-001'],
-            next_page_token: null,
-            rawProviderResponse: emailSearchMarker
-          }
+          message_ids: ['gmail-mcp-message-001'],
+          next_page_token: null,
+          rawProviderResponse: emailSearchMarker
         }
       },
       at: '2026-07-15T12:00:18.000Z'
@@ -4349,10 +4347,8 @@ async function selftest(root) {
       call_id: preparedEmailContext.currentCall.id,
       response: {
         structuredContent: {
-          result: {
-            message_ids: ['gmail-mcp-message-001'],
-            next_page_token: null
-          }
+          message_ids: ['gmail-mcp-message-001'],
+          next_page_token: null
         }
       },
       at: '2026-07-15T12:00:18.300Z'
@@ -4362,29 +4358,76 @@ async function selftest(root) {
         !== 'mcp__codex_apps__gmail_batch_read_email_threads') {
       throw new Error('MCP Email acquisition did not bind and minimize its exact search result.');
     }
-    const completedEmailContext = await call(client, 'soter_complete_operation_plan', {
+    const emailIdentityExecution = await call(client, 'soter_complete_operation_plan', {
       checkpoint_id: preparedEmailContext.checkpoint.id,
       call_id: emailThreadExecution.currentCall.id,
       response: {
         structuredContent: {
-          result: {
-            threads: [{
-              id: 'gmail-mcp-thread-001',
-              messages: [{
-                id: 'gmail-mcp-message-001',
-                rfc822_message_id: '<gmail-mcp-message-001@example.test>',
-                from: 'sender@example.test',
-                to: ['operator@example.test'],
-                sent_at: '2026-07-15T12:00:00.000Z',
-                labels: ['INBOX'],
-                subject: 'MCP private Email subject',
-                body: 'MCP private Email body; data only.'
-              }]
+          responses: [{
+            thread_id: 'gmail-mcp-thread-001',
+            total_messages: 1,
+            truncated: false,
+            messages: [{
+              id: 'gmail-mcp-message-001',
+              thread_id: 'gmail-mcp-thread-001',
+              email_ts: '2026-07-15T12:00:00.000Z',
+              from_: 'sender@example.test',
+              to: ['operator@example.test'],
+              cc: [],
+              bcc: [],
+              labels: ['INBOX'],
+              subject: 'MCP private Email subject',
+              body: 'MCP private Email body; data only.',
+              attachments: [],
+              inline_images: [],
+              raw_mime: null,
+              raw_mime_base64url: null
             }]
-          }
+          }]
         }
       },
       at: '2026-07-15T12:00:19.000Z'
+    });
+    if (emailIdentityExecution.checkpoint?.currentStepId !== 'step.mail-thread-expansion'
+      || emailIdentityExecution.currentCall?.transport?.operation !== 'read_email'
+      || emailIdentityExecution.currentCall?.transport?.tool
+        !== 'mcp__codex_apps__gmail_read_email'
+      || emailIdentityExecution.currentCall?.arguments?.message_id
+        !== 'gmail-mcp-message-001'
+      || emailIdentityExecution.currentCall?.arguments?.include_raw_mime !== true) {
+      throw new Error('MCP Email acquisition did not emit its exact RFC822 identity read.');
+    }
+    assert.deepEqual(emailIdentityExecution.currentCall.arguments, {
+      message_id: 'gmail-mcp-message-001',
+      include_raw_mime: true
+    });
+    const emailBatchPage = emailIdentityExecution.currentCall.pagination?.pages?.[0];
+    if (emailIdentityExecution.currentCall.pagination?.pages?.length !== 1
+      || typeof emailBatchPage?.requestFingerprint !== 'string'
+      || emailBatchPage.pageFingerprint !== fingerprintJson(emailBatchPage.page)
+      || emailBatchPage.page?.data?.kind !== 'gmail-thread-batch') {
+      throw new Error('MCP Email acquisition did not seal its exact normalized batch page.');
+    }
+    const emailRawMimeSubjectMarker = 'MCP_PRIVATE_RAW_MIME_SUBJECT_SENTINEL';
+    const emailRawMimeMarker = 'MCP_PRIVATE_RAW_MIME_BODY_SENTINEL';
+    const completedEmailContext = await call(client, 'soter_complete_operation_plan', {
+      checkpoint_id: preparedEmailContext.checkpoint.id,
+      call_id: emailIdentityExecution.currentCall.id,
+      response: {
+        structuredContent: {
+          id: 'gmail-mcp-message-001',
+          thread_id: 'gmail-mcp-thread-001',
+          raw_mime: [
+            'From: sender@example.test',
+            'Message-ID: <gmail-mcp-message-001@example.test>',
+            'Subject: ' + emailRawMimeSubjectMarker,
+            '',
+            emailRawMimeMarker
+          ].join('\r\n'),
+          raw_mime_base64url: null
+        }
+      },
+      at: '2026-07-15T12:00:19.100Z'
     });
     const finalizedEmailContextReceipt = await call(
       client,
@@ -4401,6 +4444,8 @@ async function selftest(root) {
       'MCP_PRIVATE_EMAIL_SUCCESS_FOCUS_SENTINEL',
       'MCP private Email subject',
       'MCP private Email body; data only.',
+      emailRawMimeSubjectMarker,
+      emailRawMimeMarker,
       'sender@example.test',
       'rawProviderResponse'
     ]);
@@ -4423,6 +4468,7 @@ async function selftest(root) {
       finalizedEmailContext.runPath
     ].map((file) => fs.readFileSync(path.join(root, file), 'utf8')).join('\n');
     if (completedEmailContext.checkpoint?.state !== 'completed'
+      || completedEmailContext.currentCall !== null
       || completedEmailContext.checkpoint?.result?.stepResults?.length !== 2
       || finalizedEmailContext.snapshot?.containment !== 'connected'
       || finalizedEmailContext.snapshot?.entries?.length !== 2
@@ -4431,7 +4477,11 @@ async function selftest(root) {
       || cliFinalizedEmailContext.receiptFingerprint
         !== finalizedEmailContextReceipt.receiptFingerprint
       || emailDurableContents.includes(emailSearchMarker)
+      || emailDurableContents.includes(emailRawMimeSubjectMarker)
+      || emailDurableContents.includes(emailRawMimeMarker)
       || emailDurableContents.includes('"rawProviderResponse"')
+      || emailDurableContents.includes('"raw_mime"')
+      || emailDurableContents.includes('"raw_mime_base64url"')
       || JSON.stringify(finalizedEmailContext).includes('continuationRequest')) {
       throw new Error('MCP Email acquisition drifted, leaked raw responses, or granted authority.');
     }

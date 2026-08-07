@@ -17,7 +17,8 @@
     "server": "otter",
     "endpointProvisioning": {
       "target": "host-project-config",
-      "state": "required"
+      "state": "required",
+      "hosts": ["codex"]
     },
     "tools": ["fetch", "get_user_info"],
     "probeTools": ["get_user_info"]

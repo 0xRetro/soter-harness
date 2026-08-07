@@ -25,7 +25,12 @@ const THREADS_STEP_ID = 'step.mail-thread-expansion';
 const MAXIMUM_MESSAGES = 100;
 const MAXIMUM_THREADS = 50;
 const MAXIMUM_MESSAGES_PER_THREAD = 500;
+const MAXIMUM_TOTAL_MESSAGES = 500;
 const WORK_PATTERN = /^work\.email-triage\.([a-f0-9]{24})$/;
+
+function compareText(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
 
 function connectedError(code, message, cause = null) {
   const error = new Error(message, cause ? { cause } : undefined);
@@ -263,7 +268,8 @@ export function createEmailTriageConnectedAcquisitionPlan({
         providerImplementation: connectedProvider(root, lock, 'mail.threads.read'),
         input: {
           maximumThreads: MAXIMUM_THREADS,
-          maximumMessagesPerThread: MAXIMUM_MESSAGES_PER_THREAD
+          maximumMessagesPerThread: MAXIMUM_MESSAGES_PER_THREAD,
+          maximumTotalMessages: MAXIMUM_TOTAL_MESSAGES
         },
         inputBindings: [{
           id: 'binding.mail-message-identities',
@@ -299,7 +305,8 @@ export function assertEmailTriageConnectedAcquisitionPlan(plan) {
     || threads.capability !== 'mail.threads.read'
     || !sameJson(threads.input, {
       maximumThreads: MAXIMUM_THREADS,
-      maximumMessagesPerThread: MAXIMUM_MESSAGES_PER_THREAD
+      maximumMessagesPerThread: MAXIMUM_MESSAGES_PER_THREAD,
+      maximumTotalMessages: MAXIMUM_TOTAL_MESSAGES
     })
     || !sameJson(threads.inputBindings, [{
       id: 'binding.mail-message-identities',
@@ -344,6 +351,7 @@ function terminalThreadStep(checkpoint, searchedMessageIds) {
       || !sameJson(step.resolvedInput, {
         maximumThreads: MAXIMUM_THREADS,
         maximumMessagesPerThread: MAXIMUM_MESSAGES_PER_THREAD,
+        maximumTotalMessages: MAXIMUM_TOTAL_MESSAGES,
         messageIds: []
       })
       || step.bindingResolutions.length !== 1
@@ -364,7 +372,8 @@ function terminalThreadStep(checkpoint, searchedMessageIds) {
   if (!sameJson(step.resolvedInput, {
     maximumThreads: MAXIMUM_THREADS,
     maximumMessagesPerThread: MAXIMUM_MESSAGES_PER_THREAD,
-    messageIds: [...searchedMessageIds].sort((left, right) => left.localeCompare(right, 'en'))
+    maximumTotalMessages: MAXIMUM_TOTAL_MESSAGES,
+    messageIds: [...searchedMessageIds].sort(compareText)
   })) {
     throw connectedError(
       'EMAIL_CONNECTED_OUTPUT_INVALID',
@@ -390,7 +399,7 @@ function assertSearchOutput(step) {
       'Connected Email search must be complete, bounded, unique, counted, and bound to the exact private query.'
     );
   }
-  return [...ids].sort((left, right) => left.localeCompare(right, 'en'));
+  return [...ids].sort(compareText);
 }
 
 function assertThreadOutput(step, searchedMessageIds) {
@@ -412,10 +421,21 @@ function assertThreadOutput(step, searchedMessageIds) {
   const messageIds = messages.map((message) => message.id);
   if (new Set(threadIds).size !== threadIds.length
     || new Set(messageIds).size !== messageIds.length
+    || output.returnedMessageCount !== messages.length
+    || messages.length > MAXIMUM_TOTAL_MESSAGES
     || output.threads.some((thread) => {
       return !Array.isArray(thread.messages)
         || thread.messages.length < 1
         || thread.messages.length > MAXIMUM_MESSAGES_PER_THREAD;
+    })
+    || messages.some((message) => {
+      const requested = searchedMessageIds.includes(message.id);
+      return requested
+        ? message.membership !== 'exact-request'
+          || typeof message.rfc822MessageId !== 'string'
+          || !message.rfc822MessageId
+        : message.membership !== 'thread-context'
+          || message.rfc822MessageId !== null;
     })
     || searchedMessageIds.some((id) => messageIds.filter((item) => item === id).length !== 1)) {
     throw connectedError(

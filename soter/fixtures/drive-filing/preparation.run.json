@@ -13,9 +13,9 @@
   },
   "configurationLock": {
     "path": "soter/fixtures/drive-filing/drive-filing.lock.json",
-    "fingerprint": "sha256:d7ed3051f5547c5e76e5980acb0d54ddfd990c37b2e180c89b761e25475b6a26"
+    "fingerprint": "sha256:f4b262980d8f7c0c4d37cf8c71ad1a5e85921da4e350677aba6f3e08b3069f31"
   },
-  "graphFingerprint": "sha256:8888cbcafe7c6c8ed3b54b94623182199e09bcef297200e0df63b8b3dd70ed3d",
+  "graphFingerprint": "sha256:f8feac2f1eb1f33c46137bacf7f8af0f2de075c9cda5f120b3d52270016d039f",
   "context": [
     {
       "subject": "crm.records",
@@ -24,7 +24,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/policies",
       "declarationFingerprint": "sha256:5dcd7b166e69d5be3bf39ed57adf225ede8a4a2bd73d0d4800b3a38981ebce8d",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:d7ed3051f5547c5e76e5980acb0d54ddfd990c37b2e180c89b761e25475b6a26",
+      "provenance": "configuration-lock:sha256:f4b262980d8f7c0c4d37cf8c71ad1a5e85921da4e350677aba6f3e08b3069f31",
       "freshness": "unknown"
     },
     {
@@ -64,7 +64,7 @@
       "uri": "soter-fixture://configuration-template/storage/provider/google-drive",
       "declarationFingerprint": "sha256:01a83215e98a812ba14b9b0e2013835e4165a31cbde2b54c6cdef42094b4f334",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:d7ed3051f5547c5e76e5980acb0d54ddfd990c37b2e180c89b761e25475b6a26",
+      "provenance": "configuration-lock:sha256:f4b262980d8f7c0c4d37cf8c71ad1a5e85921da4e350677aba6f3e08b3069f31",
       "freshness": "unknown"
     },
     {
@@ -84,7 +84,7 @@
       "uri": "soter-state://runs",
       "declarationFingerprint": "sha256:8c419343899d33fbd2ef0b1c128c9b04b32ec716905dd04ae0934b803b0b9cad",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:d7ed3051f5547c5e76e5980acb0d54ddfd990c37b2e180c89b761e25475b6a26",
+      "provenance": "configuration-lock:sha256:f4b262980d8f7c0c4d37cf8c71ad1a5e85921da4e350677aba6f3e08b3069f31",
       "freshness": "unknown"
     },
     {
@@ -236,17 +236,17 @@
   "host": {
     "id": "codex",
     "adapter": "host.codex",
-    "version": "0.3.1",
-    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818",
+    "version": "0.3.2",
+    "manifestFingerprint": "sha256:cf50c9418a9af38255f994a6bcb062472a062708a3a95a89167843dd50eafa89",
     "projectionDefinition": {
       "id": "host-projection.codex",
       "version": "0.3.0",
       "path": "soter/hosts/codex/projection.json",
-      "fingerprint": "sha256:09fe78fb567ec40ac12e71e1bd5304f44246669a23fe8ac84c5eef755cb95727"
+      "fingerprint": "sha256:aca563d19908234cc49c8938d0ec760d22779844d450705c032b86d34f6f812a"
     },
     "projectionGenerator": {
       "id": "core.host-projection-generator",
-      "version": "2.1.0"
+      "version": "2.2.0"
     }
   },
   "effectPolicies": {
@@ -293,7 +293,7 @@
     {
       "id": "context.drive-filing.preparation-fixture",
       "type": "context-snapshot",
-      "fingerprint": "sha256:f8d794ab2650830c9970472501320e96b033b04fda3b4d2b9c11e1a7b91d7c42"
+      "fingerprint": "sha256:ed58948b31713483d1c2a8c9e3905ea64c8358f48f0c99d3f135c7684394a949"
     }
   ],
   "effects": [

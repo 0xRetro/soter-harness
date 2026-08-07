@@ -10,8 +10,8 @@
     "id": "process-red-team",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:a7a965977ec91f9b87721153c949446cac2074a0db8552798dacc36b5bafe30b",
-  "graphFingerprint": "sha256:9bd450d191e56540ac9dbb41a3564cd933fc532876076ac0c8c161bbbbf9fec0",
+  "configurationLockFingerprint": "sha256:2c249ccb608b6d5ccca7570784c031ac6df2954ab02f86f216eb534cb80f7ef9",
+  "graphFingerprint": "sha256:783fdc7ed47255df1bd4c03a2d37418a94e84c7a7a4cbcf10f91b3f853cf577e",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -42,8 +42,8 @@
   "host": {
     "id": "codex",
     "adapter": "host.codex",
-    "version": "0.3.1",
-    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818"
+    "version": "0.3.2",
+    "manifestFingerprint": "sha256:cf50c9418a9af38255f994a6bcb062472a062708a3a95a89167843dd50eafa89"
   },
   "integrations": [
     {
@@ -113,11 +113,11 @@
     {
       "role": "configuration",
       "path": "soter/configurations/process-red-team.config.json",
-      "fingerprint": "sha256:52955bea9b8b8719b3ae140208943d9ed0da96b158c1be0692252b9486e4c80f"
+      "fingerprint": "sha256:c66a27622b412235a0febeca40c978b7478a9f52d5f9f3eedc899f4e17b0a282"
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:a7a965977ec91f9b87721153c949446cac2074a0db8552798dacc36b5bafe30b"
+      "fingerprint": "sha256:2c249ccb608b6d5ccca7570784c031ac6df2954ab02f86f216eb534cb80f7ef9"
     }
   ],
   "effects": [],

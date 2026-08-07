@@ -3,6 +3,10 @@ import fs from 'node:fs';
 
 import { fingerprintJson } from '../../core/lib/canonical-json.mjs';
 
+function compareText(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 function providerError(kind, message) {
   const error = new Error(message);
   error.kind = kind;
@@ -25,10 +29,12 @@ function fixtureState(fixtures, state) {
   return state || JSON.parse(fs.readFileSync(fixtures[0], 'utf8'));
 }
 
-function transportMessage(message) {
+function transportMessage(message, requested) {
+  const exactRequest = requested.has(message.id);
   return {
     id: message.id,
-    rfc822MessageId: message.rfc822MessageId,
+    membership: exactRequest ? 'exact-request' : 'thread-context',
+    rfc822MessageId: exactRequest ? message.rfc822MessageId : null,
     from: message.from,
     to: structuredClone(message.to),
     sentAt: message.sentAt,
@@ -47,7 +53,7 @@ export async function invoke({ capability, input, authority, fixtures, state, at
     }
     const matched = fixture.data.threads.flatMap((thread) => thread.messages).filter((message) => {
       return message.labels.includes('INBOX');
-    }).map((message) => message.id).sort((left, right) => left.localeCompare(right, 'en'));
+    }).map((message) => message.id).sort(compareText);
     const messageIds = matched.slice(0, input.maximumMessages);
     return {
       queryFingerprint: fingerprintJson(input.query),
@@ -67,16 +73,23 @@ export async function invoke({ capability, input, authority, fixtures, state, at
     const threads = fixture.data.threads.filter((thread) => {
       return thread.messages.some((message) => requested.has(message.id));
     });
+    const returnedMessageCount = threads.reduce((total, thread) => {
+      return total + thread.messages.length;
+    }, 0);
     if (threads.length > input.maximumThreads
-      || threads.some((thread) => thread.messages.length > input.maximumMessagesPerThread)) {
+      || input.messageIds.length > input.maximumTotalMessages
+      || input.maximumMessagesPerThread > input.maximumTotalMessages
+      || threads.some((thread) => thread.messages.length > input.maximumMessagesPerThread)
+      || returnedMessageCount > input.maximumTotalMessages) {
       throw providerError('validation', 'Contained mail thread expansion exceeds an exact bound.');
     }
     return {
-      requestedMessageIds: [...input.messageIds].sort((left, right) => left.localeCompare(right, 'en')),
+      requestedMessageIds: [...input.messageIds].sort(compareText),
       returnedThreadCount: threads.length,
+      returnedMessageCount,
       threads: threads.map((thread) => ({
         id: thread.id,
-        messages: thread.messages.map(transportMessage)
+        messages: thread.messages.map((message) => transportMessage(message, requested))
       })),
       provenance: provenance(authority),
       observedAt
@@ -107,7 +120,7 @@ export async function invoke({ capability, input, authority, fixtures, state, at
     }).map((message) => ({
       messageId: message.id,
       labelNames: message.labels.filter((label) => input.labelNames.includes(label)).sort()
-    })).sort((left, right) => left.messageId.localeCompare(right.messageId, 'en'));
+    })).sort((left, right) => compareText(left.messageId, right.messageId));
     return { messages, provenance: provenance(authority), observedAt };
   }
   if (capability === 'mail.labels.apply') {
@@ -150,7 +163,7 @@ export async function invoke({ capability, input, authority, fixtures, state, at
       replyMessageId: draft.replyMessageId,
       idempotencyKey: draft.idempotencyKey,
       contentFingerprint: draft.contentFingerprint
-    })).sort((left, right) => left.idempotencyKey.localeCompare(right.idempotencyKey, 'en'));
+    })).sort((left, right) => compareText(left.idempotencyKey, right.idempotencyKey));
     return { drafts, provenance: provenance(authority), observedAt };
   }
   if (capability === 'mail.drafts.create') {

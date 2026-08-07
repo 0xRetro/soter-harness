@@ -58,7 +58,7 @@
     { "id": "secret-ref.google-drive", "provider": "host", "key": "GOOGLE_DRIVE_OAUTH" },
     { "id": "secret-ref.notion", "provider": "host", "key": "NOTION_OAUTH" }
   ],
-  "host": { "id": "codex", "adapter": "host.codex", "version": "0.3.1", "reason": "The contained configuration exercises Codex projection while provider behavior remains fixture-only." },
+  "host": { "id": "codex", "adapter": "host.codex", "version": "0.3.2", "reason": "The contained configuration exercises Codex projection while provider behavior remains fixture-only." },
   "settings": {
     "integration.notion": {
       "targets": {

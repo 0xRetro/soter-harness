@@ -18,6 +18,10 @@ import { reduceMailThreads } from '../../contexts/email/reduction.mjs';
 const AUTOMATION_ID = 'automation.email-triage';
 const DECISION_TYPE = 'email-triage.grounded-classification';
 
+function compareText(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
 function validate(root, value, schemaPath, label) {
   const failures = validateJsonSchema(value, readJson(path.join(root, schemaPath)));
   if (failures.length) {
@@ -99,7 +103,7 @@ function exactWindow(snapshot, lock) {
   const threadValues = threads?.value?.threads || [];
   if (threads && (!sameJson(
     threads.value.requestedMessageIds,
-    [...searchOutput.messageIds].sort((left, right) => left.localeCompare(right, 'en'))
+    [...searchOutput.messageIds].sort(compareText)
   )
     || threads.value.returnedThreadCount !== threadValues.length)) {
     throw new Error('Email decision thread Context does not match the exact searched-message set.');
@@ -108,7 +112,8 @@ function exactWindow(snapshot, lock) {
   const reduced = reduceMailThreads({
     threads: threadValues,
     selfAddresses: settings.selfAddresses,
-    triagedLabel: settings.labels.triaged
+    triagedLabel: settings.labels.triaged,
+    exactMessageIds: searchOutput.messageIds
   });
   const excludedCount = reduced.exclusions.reduce((total, item) => total + item.count, 0);
   if (threadValues.length !== reduced.included.length + excludedCount) {

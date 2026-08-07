@@ -20,6 +20,7 @@ export const HOST_PROJECTION_GENERATOR_VERSION = '2.2.0';
 const HOST_PROJECTION_GENERATOR_VERSIONS = new Set(['2.1.0', '2.2.0']);
 
 const IDENTIFIER = /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/;
+const ENDPOINT_PROVISIONING_HOSTS = new Set(['codex', 'claude']);
 const CONTEXT_KEYS = new Map([
   ['configuration-id', 'CONFIGURATION_ID'],
   ['host-id', 'HOST_ID'],
@@ -100,7 +101,13 @@ function mcpProviderInventory(root) {
     if (endpointProvisioning !== null
       && (endpointProvisioning.target !== 'host-project-config'
         || endpointProvisioning.state !== 'required'
-        || Object.keys(endpointProvisioning).length !== 2)) {
+        || !Array.isArray(endpointProvisioning.hosts)
+        || !endpointProvisioning.hosts.length
+        || new Set(endpointProvisioning.hosts).size !== endpointProvisioning.hosts.length
+        || endpointProvisioning.hosts.some((host) => {
+          return typeof host !== 'string' || !ENDPOINT_PROVISIONING_HOSTS.has(host);
+        })
+        || Object.keys(endpointProvisioning).length !== 3)) {
       fail(
         'HOST_PROJECTION_PROVIDER_ENDPOINT_DECLARATION_INVALID',
         'MCP provider endpoint provisioning must use the exact closed requirement.'
@@ -187,6 +194,12 @@ function providerEndpointBlocks({ root, adapter, blocks, selectedProviders }) {
         'Provider endpoint block has no matching provider-owned provisioning requirement.'
       );
     }
+    if (!provider.endpointProvisioning.hosts.includes(adapter.host)) {
+      fail(
+        'HOST_PROJECTION_PROVIDER_ENDPOINT_NOT_APPLICABLE',
+        'Provider endpoint block is not applicable to the selected host.'
+      );
+    }
     if (ids.has(id) || providers.has(providerId) || servers.has(server)) {
       fail(
         'HOST_PROJECTION_PROVIDER_ENDPOINT_AMBIGUOUS',
@@ -217,6 +230,7 @@ function providerEndpointBlocks({ root, adapter, blocks, selectedProviders }) {
   for (const provider of selectedProviders) {
     if (provider.endpointProvisioning?.target === 'host-project-config'
       && provider.endpointProvisioning?.state === 'required'
+      && provider.endpointProvisioning.hosts.includes(adapter.host)
       && !providers.has(provider.id)) {
       fail(
         'HOST_PROJECTION_PROVIDER_ENDPOINT_REQUIRED',

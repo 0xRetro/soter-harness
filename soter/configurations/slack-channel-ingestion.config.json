@@ -102,7 +102,7 @@
     { "id": "secret-ref.slack", "provider": "host", "key": "SLACK_OAUTH" },
     { "id": "secret-ref.notion", "provider": "host", "key": "NOTION_OAUTH" }
   ],
-  "host": { "id": "codex", "adapter": "host.codex", "version": "0.3.1", "reason": "This contained configuration exercises Codex projection while preserving provider-neutral contracts." },
+  "host": { "id": "codex", "adapter": "host.codex", "version": "0.3.2", "reason": "This contained configuration exercises Codex projection while preserving provider-neutral contracts." },
   "settings": {
     "integration.notion": {
       "targets": {

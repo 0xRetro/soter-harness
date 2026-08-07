@@ -10,8 +10,8 @@
     "id": "project-page-review",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:e96f01a5f95f3f81d179a40287d20673c49c8b328bf3491632dd3cdad326c83b",
-  "graphFingerprint": "sha256:8c0e20842349779bfa50a044789066b6f252390632338b3d622c826184b5dee3",
+  "configurationLockFingerprint": "sha256:2da78a2ef12b790fcfb02b5cfcf72dc91fe1e7b25d5c34caffc381b8b21a566a",
+  "graphFingerprint": "sha256:2470ccdddaa9088a88198ca86aeaa0f3212c5469c30e1220060c05df89d88a90",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -47,8 +47,8 @@
   "host": {
     "id": "codex",
     "adapter": "host.codex",
-    "version": "0.3.1",
-    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818"
+    "version": "0.3.2",
+    "manifestFingerprint": "sha256:cf50c9418a9af38255f994a6bcb062472a062708a3a95a89167843dd50eafa89"
   },
   "integrations": [
     {
@@ -130,11 +130,11 @@
     {
       "role": "configuration",
       "path": "soter/configurations/project-page-review.config.json",
-      "fingerprint": "sha256:ea54d5da709002508577f71a6184f51ac21f0d4585ac808898ec928878d633b9"
+      "fingerprint": "sha256:b8efb1e5b3ab0b180e24b03a42ea513a1a8b1c922f7f7a12ec50ae00f4030f81"
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:e96f01a5f95f3f81d179a40287d20673c49c8b328bf3491632dd3cdad326c83b"
+      "fingerprint": "sha256:2da78a2ef12b790fcfb02b5cfcf72dc91fe1e7b25d5c34caffc381b8b21a566a"
     }
   ],
   "effects": [],

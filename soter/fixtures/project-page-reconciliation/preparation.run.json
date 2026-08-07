@@ -13,9 +13,9 @@
   },
   "configurationLock": {
     "path": "soter/fixtures/project-page-reconciliation/project-page-reconciliation.lock.json",
-    "fingerprint": "sha256:b4693f816f60522cafffe5f3456dd6a2962672b3582a0c3832d5ab76f6dcb709"
+    "fingerprint": "sha256:6eefcae3097b68c5538bfdbfcb1e5e225ba19814fac2cb679d6339a220806460"
   },
-  "graphFingerprint": "sha256:93954948c07e3d10b5c5c86e463f676eddbd5462be8cdde255495e194eca365d",
+  "graphFingerprint": "sha256:2f41d725c1576353fea2166d46685d4bca37a2750b1265061e4323095f4c75fa",
   "context": [
     {
       "subject": "notion.workspace",
@@ -24,7 +24,7 @@
       "uri": "soter-fixture://configuration-template/notion/account/operator",
       "declarationFingerprint": "sha256:dd9994588ca27b815bae6a53f7f57b9ce426b8b1a4367b0c3fd885373957ba23",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:b4693f816f60522cafffe5f3456dd6a2962672b3582a0c3832d5ab76f6dcb709",
+      "provenance": "configuration-lock:sha256:6eefcae3097b68c5538bfdbfcb1e5e225ba19814fac2cb679d6339a220806460",
       "freshness": "unknown"
     },
     {
@@ -54,7 +54,7 @@
       "uri": "soter-state://runs",
       "declarationFingerprint": "sha256:2a437f2854d617b1dd8ed0d9f09aa372cd39d0adca0fd91704ec5c869aabe0d8",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:b4693f816f60522cafffe5f3456dd6a2962672b3582a0c3832d5ab76f6dcb709",
+      "provenance": "configuration-lock:sha256:6eefcae3097b68c5538bfdbfcb1e5e225ba19814fac2cb679d6339a220806460",
       "freshness": "unknown"
     }
   ],
@@ -118,17 +118,17 @@
   "host": {
     "id": "codex",
     "adapter": "host.codex",
-    "version": "0.3.1",
-    "manifestFingerprint": "sha256:c405770fd0229dfa34014f1a68e175f55126197db06c136c90eb9ec554a18818",
+    "version": "0.3.2",
+    "manifestFingerprint": "sha256:cf50c9418a9af38255f994a6bcb062472a062708a3a95a89167843dd50eafa89",
     "projectionDefinition": {
       "id": "host-projection.codex",
       "version": "0.3.0",
       "path": "soter/hosts/codex/projection.json",
-      "fingerprint": "sha256:09fe78fb567ec40ac12e71e1bd5304f44246669a23fe8ac84c5eef755cb95727"
+      "fingerprint": "sha256:aca563d19908234cc49c8938d0ec760d22779844d450705c032b86d34f6f812a"
     },
     "projectionGenerator": {
       "id": "core.host-projection-generator",
-      "version": "2.1.0"
+      "version": "2.2.0"
     }
   },
   "effectPolicies": {
@@ -180,7 +180,7 @@
     {
       "id": "context.project-page-reconciliation.preparation-fixture",
       "type": "context-snapshot",
-      "fingerprint": "sha256:a6adb820d77a7731b4bba45587b4aa7a62d9a8326ab2f6fdcb5fe353ae72cad1"
+      "fingerprint": "sha256:913065820de9556c804faebf5c4561ed6ec2aa191d7acbb0fe9d4eac34f56970"
     }
   ],
   "effects": [
