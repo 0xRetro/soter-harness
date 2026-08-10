@@ -63,6 +63,11 @@
       "reason": "Select the portable Sky terminology shape without enabling operational behavior."
     },
     {
+      "id": "integration.otter",
+      "source": "user",
+      "reason": "Provision the deterministic credential-free Codex Otter route only; no capability binding, connected read, or Meeting Intake workflow is selected."
+    },
+    {
       "id": "automation.auditing-a-schema-doc",
       "source": "user",
       "reason": "Select the normalized development workflow definition without enabling runtime behavior."
@@ -156,6 +161,13 @@
       "subject": "meetings.records",
       "uri": "soter-fixture://configuration-template/harness-development-catalog/meetings-instance",
       "reason": "The contained catalog supplies no real Meeting records or provider authority."
+    },
+    {
+      "id": "authority.harness-development-catalog.otter-provider",
+      "role": "provider",
+      "subject": "meeting.transcript",
+      "uri": "soter-fixture://configuration-template/harness-development-catalog/otter-provider",
+      "reason": "The contained catalog declares provider authority only for deterministic credential-free Codex route delivery; no transcript capability is bound or callable from this configuration."
     },
     {
       "id": "authority.harness-development-catalog.calendar-definition",

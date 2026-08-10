@@ -41,6 +41,10 @@ import {
 } from './connected-configuration.mjs';
 import { assertOperationPlanDocument } from './operation-plans.mjs';
 import {
+  assertProviderProbeFinalizerPrivacy,
+  assertProviderProbePlanCheckpoint
+} from './provider-probe-plans.mjs';
+import {
   commitDurableContextSnapshot,
   completeDurableProviderProbeExecution,
   completeDurableOperationPlanExecution,
@@ -66,15 +70,728 @@ import {
 import { selftestFixtureMaterialization } from './fixtures-materialization.selftest.mjs';
 
 const FIXTURE_TIME = '2026-07-15T12:00:00.000Z';
+const NOTION_PROBE_CALL_ORACLE_ERROR =
+  'Core selftest rejected a Notion probe call that did not match the independent oracle.';
+const NOTION_RECORD_CAPABILITY_RE =
+  /^([a-z0-9]+(?:[.-][a-z0-9]+)*)[.]records[.]read$/;
 
-function notionProbeStepResponse(
+function soterSyntheticCredentialFixture(value) {
+  return value;
+}
+
+function unicodeEscapeString(value) {
+  return [...value].map((character) => {
+    const codePoint = character.codePointAt(0);
+    return codePoint <= 0xffff
+      ? '\\u' + codePoint.toString(16).padStart(4, '0')
+      : '\\u{' + codePoint.toString(16) + '}';
+  }).join('');
+}
+
+function providerProbeFinalizerPrivacySelftest(root) {
+  const material = {
+    target: 'PRIVATE_FINALIZER_TARGET_SENTINEL',
+    source: 'PRIVATE_FINALIZER_NESTED_SOURCE_SENTINEL',
+    field: 'PRIVATE_FINALIZER_PROVIDER_FIELD_SENTINEL',
+    option: 'PRIVATE_FINALIZER_PROVIDER_OPTION_SENTINEL',
+    escaped: 'PRIVATE_FINALIZER_"CONTROL\n☃_SENTINEL',
+    workspace: 'PRIVATE_SLACK_WORKSPACE_ID_SENTINEL',
+    selfAddress: 'private-gmail-self-address@example.test',
+    uri: 'https://private.example.test/finalizer-target',
+    uuid: '123e4567-e89b-12d3-a456-426614174000',
+    opaque: 'Ws9AbC123Private',
+    arbitrary: 'privatearbitrarysettingvalue',
+    nestedBinding: 'private-nested-field-binding-value',
+    short: 'q7x'
+  };
+  const lock = {
+    settings: {
+      integration: {
+        targets: {
+          primary: material.target,
+          escaped: material.escaped
+        },
+        fieldBindings: [{
+          mapping: 'tasks',
+          recordType: 'task',
+          field: 'authority',
+          state: 'mapped',
+          mode: 'exact-bijection',
+          nested: { field: material.nestedBinding },
+          provider: material.field
+        }, {
+          mapping: 'tasks',
+          recordType: 'task',
+          field: 'deferredPortableField',
+          state: 'unavailable',
+          reasonCode: 'PROVIDER_PROPERTY_UNAVAILABLE'
+        }],
+        optionMappings: [{
+          mapping: 'tasks',
+          recordType: 'task',
+          field: 'status',
+          mode: 'exact-bijection',
+          entries: [{ portable: 'portable-option', provider: material.option }]
+        }],
+        slack: { workspaceId: material.workspace },
+        gmail: { selfAddresses: [material.selfAddress] },
+        privateUri: material.uri,
+        privateUuid: material.uuid,
+        privateOpaqueValue: material.opaque,
+        arbitraryPrivateValue: material.arbitrary,
+        shortPrivateValue: material.short
+      }
+    },
+    sources: [{ input: { nested: { uri: material.source } } }]
+  };
+  const fullPlan = {
+    steps: [{
+      scope: { target: material.target },
+      arguments: { id: material.source }
+    }]
+  };
+  const safe = {
+    credentials: [{ details: 'Authenticated identity metadata was observed.' }],
+    reachability: { details: 'The read-only endpoint returned a bounded response.' },
+    authorities: [{ details: 'Declared read authority was visible.' }],
+    capabilities: [{ details: 'A minimized read-only shape was observed.' }],
+    checks: [{ details: 'The exact bounded check passed.' }],
+    limitations: [
+      'This contained check does not establish live service health.'
+    ]
+  };
+  assertProviderProbeFinalizerPrivacy({ lock, fullPlan, observations: safe });
+  const realNotionFixedProse = {
+    ...structuredClone(safe),
+    capabilities: [{
+      details: 'The declared provider type matched the mapped portable property shape and locked authority scope.'
+    }],
+    checks: [{
+      details: 'The exact-bijection mapping omitted PROVIDER_PROPERTY_UNAVAILABLE fields and preserved the bounded response.'
+    }]
+  };
+  assertProviderProbeFinalizerPrivacy({
+    lock,
+    fullPlan,
+    observations: realNotionFixedProse
+  });
+  let maximumDepthEscapedMarker = unicodeEscapeString(material.target);
+  for (let layer = 1; layer < 4; layer += 1) {
+    maximumDepthEscapedMarker = maximumDepthEscapedMarker.replaceAll('\\', '\\\\');
+  }
+  const beyondMaximumDepthEscapedMarker = maximumDepthEscapedMarker.replaceAll(
+    '\\',
+    '\\\\'
+  );
+  const hostile = [
+    { ...structuredClone(safe), capabilities: [{ details: material.target }] },
+    { ...structuredClone(safe), reachability: { details: material.source } },
+    { ...structuredClone(safe), checks: [{ details: material.field }] },
+    { ...structuredClone(safe), limitations: [material.option] },
+    {
+      ...structuredClone(safe),
+      limitations: ['Observed workspace ' + material.workspace + '.']
+    },
+    {
+      ...structuredClone(safe),
+      limitations: ['Observed self address ' + material.selfAddress + '.']
+    },
+    { ...structuredClone(safe), limitations: ['Observed URI ' + material.uri + '.'] },
+    { ...structuredClone(safe), limitations: ['Observed UUID ' + material.uuid + '.'] },
+    { ...structuredClone(safe), limitations: ['Observed identity ' + material.opaque + '.'] },
+    {
+      ...structuredClone(safe),
+      limitations: ['Observed setting ' + material.arbitrary + '.']
+    },
+    {
+      ...structuredClone(safe),
+      limitations: ['Observed nested binding ' + material.nestedBinding + '.']
+    },
+    { ...structuredClone(safe), limitations: [material.short] },
+    {
+      ...structuredClone(safe),
+      limitations: ['Observed private setting ' + material.short + '.']
+    },
+    { ...structuredClone(safe), limitations: [JSON.stringify(material.escaped)] },
+    { ...structuredClone(safe), limitations: [unicodeEscapeString(material.escaped)] },
+    { ...structuredClone(safe), limitations: [maximumDepthEscapedMarker] },
+    { ...structuredClone(safe), limitations: [beyondMaximumDepthEscapedMarker] },
+    {
+      ...structuredClone(safe),
+      credentials: [{ details: { ['prefix-' + material.target]: true } }]
+    }
+  ];
+  for (const observations of hostile) {
+    let rejected = null;
+    try {
+      assertProviderProbeFinalizerPrivacy({ lock, fullPlan, observations });
+    } catch (error) {
+      rejected = error;
+    }
+    const sanitized = rejected && JSON.stringify({
+      message: rejected.message,
+      kind: rejected.kind,
+      code: rejected.code,
+      reasonCode: rejected.reasonCode
+    });
+    if (!rejected
+      || rejected.kind !== 'validation'
+      || rejected.code !== 'PROVIDER_PROBE_FINALIZER_PRIVATE_MATERIAL'
+      || rejected.reasonCode !== 'PROVIDER_PROBE_FINALIZER_PRIVATE_MATERIAL'
+      || Object.values(material).some((value) => sanitized.includes(value))) {
+      throw new Error('Core provider-probe finalizer privacy guard was not closed and sanitized.');
+    }
+  }
+  const source = fs.readFileSync(
+    path.join(root, 'soter/core/provider-probe-plans.mjs'),
+    'utf8'
+  );
+  const finalizeIndex = source.indexOf('const observations = await finalize({');
+  const privacyIndex = source.indexOf(
+    'assertProviderProbeFinalizerPrivacy({ lock, fullPlan, observations });',
+    finalizeIndex
+  );
+  const scopeIndex = source.indexOf('assertObservationScope(fullPlan.scope, observations);');
+  const persistenceIndex = source.indexOf('const probe = {', finalizeIndex);
+  const terminalLimitationVisible = source.includes(
+    'A minimized unkeyed checkpoint cannot detect a fully coherent rewrite of an'
+  ) && source.includes('already-declared capability state');
+  if (finalizeIndex < 0
+    || privacyIndex <= finalizeIndex
+    || scopeIndex <= privacyIndex
+    || persistenceIndex <= privacyIndex
+    || !terminalLimitationVisible) {
+    throw new Error('Core provider-probe finalizer privacy guard is not before persistence.');
+  }
+}
+
+function refreshProviderProbeCheckpointFingerprint(checkpoint) {
+  const unsigned = structuredClone(checkpoint);
+  delete unsigned.checkpointFingerprint;
+  checkpoint.checkpointFingerprint = fingerprintJson(unsigned);
+  return checkpoint;
+}
+
+function providerProbeTerminalSemanticMismatchRejected(root, checkpoint, mutate) {
+  const tampered = structuredClone(checkpoint);
+  mutate(tampered);
+  refreshProviderProbeCheckpointFingerprint(tampered);
+  let rejected = null;
+  try {
+    assertProviderProbePlanCheckpoint(root, tampered);
+  } catch (error) {
+    rejected = error;
+  }
+  const diagnostic = rejected && JSON.stringify({
+    message: rejected.message,
+    kind: rejected.kind || null,
+    code: rejected.code || null,
+    reasonCode: rejected.reasonCode || null
+  });
+  return Boolean(rejected)
+    && !diagnostic.includes('terminal-semantic-mismatch-sentinel');
+}
+
+function notionProbeMappingStep(stepId) {
+  const match = /^step[.]mapping[.]integration[.]notion[.]([a-z0-9]+(?:-[a-z0-9]+)*)-records[.]record[.]([a-z0-9]+(?:-[a-z0-9]+)*)[.](schema|read)$/.exec(
+    stepId
+  );
+  return match ? { mapping: match[1], recordType: match[2], kind: match[3] } : null;
+}
+
+function notionProbeOracleError() {
+  return new Error(NOTION_PROBE_CALL_ORACLE_ERROR);
+}
+
+function parseNotionRecordCapability(capability) {
+  const match = typeof capability === 'string'
+    ? NOTION_RECORD_CAPABILITY_RE.exec(capability)
+    : null;
+  return match ? { capability, namespace: match[1] } : null;
+}
+
+function notionRecordCapabilityGrammarSelftest() {
+  const digitLeading = parseNotionRecordCapability('2fa.records.read');
+  const malformed = [
+    '.records.read',
+    '-records.records.read',
+    '2fa..records.read',
+    '2fa.-records.records.read',
+    '2fa_records.records.read',
+    '2fa.records.write'
+  ];
+  if (digitLeading?.namespace !== '2fa'
+    || digitLeading.capability !== '2fa.records.read'
+    || malformed.some((capability) => parseNotionRecordCapability(capability) !== null)) {
+    throw notionProbeOracleError();
+  }
+}
+
+function exactNotionProbeTransport(operation) {
+  return {
+    protocol: 'mcp',
+    server: 'notion',
+    operation,
+    tool: operation === 'query_data_sources'
+      ? 'mcp__codex_apps__notion_query_data_sources'
+      : 'mcp__codex_apps__notion_fetch',
+    responseProfile: 'notion.codex.connector.v1'
+  };
+}
+
+function exactNotionPageId(uri) {
+  let parsed;
+  try {
+    parsed = new URL(uri);
+  } catch {
+    throw notionProbeOracleError();
+  }
+  if (parsed.protocol !== 'https:'
+    || parsed.username !== ''
+    || parsed.password !== ''
+    || parsed.port !== ''
+    || parsed.hash !== ''
+    || !['notion.so', 'www.notion.so', 'app.notion.com'].includes(parsed.hostname)) {
+    throw notionProbeOracleError();
+  }
+  const tail = parsed.pathname.split('/').filter(Boolean).at(-1) || '';
+  const match = /(?:^|-)([0-9a-fA-F]{32}|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/.exec(
+    tail
+  );
+  if (!match) throw notionProbeOracleError();
+  return match[1].replaceAll('-', '').toLowerCase();
+}
+
+function notionMappingRecordType(root, mapping, recordType) {
+  const definition = readJson(path.join(
+    root,
+    'soter/integrations/notion/' + mapping + '-records.mapping.json'
+  ));
+  const records = definition.id === 'mapping.integration.notion.' + mapping + '-records'
+    ? definition.recordTypes.filter((record) => record.id === recordType)
+    : [];
+  if (records.length !== 1) {
+    throw notionProbeOracleError();
+  }
+  return { definition, record: records[0] };
+}
+
+function notionEffectiveRecordFields(lock, definition, record) {
+  const fieldBindings = lock.settings?.['integration.notion']?.fieldBindings;
+  if (!Array.isArray(fieldBindings)) {
+    throw notionProbeOracleError();
+  }
+  const matchingBindings = fieldBindings.filter((binding) => {
+    return binding.mapping === definition.id && binding.recordType === record.id;
+  });
+  const effectiveFields = record.fields.flatMap((field) => {
+    const matches = matchingBindings.filter((binding) => binding.field === field.portable);
+    if (matches.length !== 1) {
+      throw notionProbeOracleError();
+    }
+    const binding = matches[0];
+    if (binding.state === 'unavailable') return [];
+    if (binding.state !== 'mapped'
+      || typeof binding.provider !== 'string'
+      || binding.provider.length === 0) {
+      throw notionProbeOracleError();
+    }
+    return [{ ...field, provider: binding.provider }];
+  });
+  if (matchingBindings.length !== record.fields.length) {
+    throw notionProbeOracleError();
+  }
+  return effectiveFields;
+}
+
+function notionEffectiveFieldBindingFingerprint(lock, definition, record) {
+  const fields = notionEffectiveRecordFields(lock, definition, record).map((field) => ({
+    portable: field.portable,
+    provider: field.provider,
+    providerType: field.providerType,
+    decode: field.decode,
+    writeOperations: field.writeOperations || null
+  }));
+  return fingerprintJson({
+    mapping: definition.id,
+    mappingVersion: definition.version,
+    recordType: record.id,
+    fields
+  });
+}
+
+function notionSqlIdentifier(value) {
+  return '"' + String(value).replaceAll('"', '""') + '"';
+}
+
+function notionSqlString(value) {
+  return "'" + String(value).replaceAll("'", "''") + "'";
+}
+
+function notionProviderReadColumn(field) {
+  return field.providerType === 'date'
+    ? 'date:' + field.provider + ':start'
+    : field.provider;
+}
+
+function exactNotionRecordReadCall(lock, definition, record, effectiveFields) {
+  const readCapabilities = record.capabilities.filter((capability) => {
+    return capability.endsWith('.records.read');
+  });
+  const targetUri = lock.settings?.['integration.notion']?.targets?.[record.target];
+  if (readCapabilities.length !== 1
+    || typeof targetUri !== 'string'
+    || targetUri.length === 0
+    || effectiveFields.length < 1) {
+    throw notionProbeOracleError();
+  }
+  const fieldSql = effectiveFields.flatMap((field) => {
+    return [
+      notionSqlString(field.portable),
+      notionSqlIdentifier(notionProviderReadColumn(field))
+    ];
+  }).join(', ');
+  return {
+    capability: readCapabilities[0],
+    operation: 'query_data_sources',
+    arguments: {
+      data: {
+        mode: 'sql',
+        data_source_urls: [targetUri],
+        query: 'SELECT '
+          + notionSqlString(record.id) + ' AS "__soterType", '
+          + 'url AS "__soterId", '
+          + 'json_object(' + fieldSql + ') AS "__soterFields" '
+          + 'FROM ' + notionSqlIdentifier(targetUri) + ' LIMIT 1'
+      }
+    }
+  };
+}
+
+function notionProbeDocumentSource(lock, stepId) {
+  const sources = lock.sources.filter((source) => {
+    return 'step.' + source.id + '.document' === stepId
+      && source.capability === 'documents.content.read'
+      && source.readiness?.mode === 'probe-read';
+  });
+  const authorityMatches = sources.length === 1
+    ? (lock.authorities || []).filter((authority) => {
+        return (typeof authority === 'string' ? authority : authority?.id)
+          === sources[0].authority;
+      })
+    : [];
+  if (sources.length !== 1
+    || typeof sources[0].input?.uri !== 'string'
+    || typeof sources[0].input?.expectedTitle !== 'string'
+    || sources[0].inputFingerprint !== fingerprintJson(sources[0].input)
+    || authorityMatches.length !== 1) {
+    throw notionProbeOracleError();
+  }
+  return sources[0];
+}
+
+function notionProbeCurrentSource(checkpoint, currentCall) {
+  const requested = checkpoint.steps.filter((step) => step.state === 'requested');
+  const runtime = requested[0];
+  const sources = checkpoint.plan.steps.filter((step) => {
+    return step.id === checkpoint.currentStepId;
+  });
+  const source = sources[0];
+  const runtimeCallFingerprint = runtime?.call
+    ? fingerprintJson(runtime.call)
+    : null;
+  const currentCallFingerprint = currentCall !== null && typeof currentCall === 'object'
+    ? fingerprintJson(currentCall)
+    : null;
+  const exactCurrentCall = currentCall !== null
+    && typeof currentCall === 'object'
+    && !Object.hasOwn(currentCall, 'stepId')
+    && currentCall.state === 'requested'
+    && runtime?.id === checkpoint.currentStepId
+    && runtime?.call?.id === currentCall.id
+    && runtime?.call?.state === currentCall.state
+    && runtime?.call?.argumentsFingerprint === currentCall.argumentsFingerprint
+    && runtimeCallFingerprint === currentCallFingerprint
+    && fingerprintJson(currentCall.arguments) === currentCall.argumentsFingerprint
+    && source?.id === checkpoint.currentStepId
+    && source?.argumentsFingerprint === currentCall.argumentsFingerprint
+    && fingerprintJson(source?.transport) === fingerprintJson(currentCall.transport);
+  if (requested.length !== 1 || sources.length !== 1 || !exactCurrentCall) {
+    throw notionProbeOracleError();
+  }
+  return source;
+}
+
+function notionProbePlanRecordTypes(checkpoint) {
+  return new Set(checkpoint.plan.steps.flatMap((step) => {
+    const parsed = notionProbeMappingStep(step.id);
+    return parsed ? [parsed.recordType] : [];
+  }));
+}
+
+function parsedStringLeafContainsAny(value, privateValues) {
+  if (typeof value === 'string') {
+    return privateValues.some((privateValue) => value.includes(privateValue));
+  }
+  if (Array.isArray(value)) {
+    return value.some((item) => parsedStringLeafContainsAny(item, privateValues));
+  }
+  if (value !== null && typeof value === 'object') {
+    return Object.entries(value).some(([key, item]) => {
+      return privateValues.some((privateValue) => key === privateValue)
+        || parsedStringLeafContainsAny(item, privateValues);
+    });
+  }
+  return false;
+}
+
+function collectNestedStringValues(value, output) {
+  if (typeof value === 'string') {
+    if (value.length > 0) output.add(value);
+    return;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectNestedStringValues(item, output));
+    return;
+  }
+  if (value !== null && typeof value === 'object') {
+    Object.entries(value).forEach(([key, item]) => {
+      if (key.length > 0) output.add(key);
+      collectNestedStringValues(item, output);
+    });
+  }
+}
+
+function notionPrivateStringInventory(lock) {
+  const settings = lock.settings?.['integration.notion'];
+  const categories = {
+    sources: new Set(),
+    targets: new Set(),
+    fields: new Set(),
+    options: new Set()
+  };
+  for (const source of lock.sources || []) {
+    collectNestedStringValues(source?.input, categories.sources);
+  }
+  for (const target of Object.values(settings?.targets || {})) {
+    collectNestedStringValues(target, categories.targets);
+  }
+  for (const binding of settings?.fieldBindings || []) {
+    if (typeof binding?.provider === 'string' && binding.provider.length > 0) {
+      categories.fields.add(binding.provider);
+    }
+  }
+  for (const mapping of settings?.optionMappings || []) {
+    for (const entry of mapping?.entries || []) {
+      if (typeof entry?.provider === 'string' && entry.provider.length > 0) {
+        categories.options.add(entry.provider);
+      }
+    }
+  }
+  if (Object.values(categories).some((values) => values.size === 0)) {
+    throw notionProbeOracleError();
+  }
+  return {
+    categories,
+    values: [...new Set(Object.values(categories).flatMap((values) => [...values]))]
+  };
+}
+
+function notionProbeMappingOracle({ root, lock, mappingStep }) {
+  if (!mappingStep) throw notionProbeOracleError();
+  const { definition, record } = notionMappingRecordType(
+    root,
+    mappingStep.mapping,
+    mappingStep.recordType
+  );
+  const effectiveFields = notionEffectiveRecordFields(lock, definition, record);
+  const readCapabilities = record.capabilities.flatMap((capability) => {
+    const parsed = parseNotionRecordCapability(capability);
+    return parsed ? [parsed] : [];
+  });
+  const targetUri = lock.settings?.['integration.notion']?.targets?.[record.target];
+  if (readCapabilities.length !== 1
+    || typeof targetUri !== 'string'
+    || targetUri.length === 0
+    || typeof definition.version !== 'string'
+    || effectiveFields.length < 1) {
+    throw notionProbeOracleError();
+  }
+  return {
+    definition,
+    record,
+    effectiveFields,
+    capability: readCapabilities[0].capability,
+    recordSubject: readCapabilities[0].namespace + '.records',
+    targetUri,
+    fieldBindingFingerprint: notionEffectiveFieldBindingFingerprint(
+      lock,
+      definition,
+      record
+    )
+  };
+}
+
+function notionProbeExpectedStep({ root, lock, checkpoint, source }) {
+  if (!source || typeof source !== 'object' || Array.isArray(source)) {
+    throw notionProbeOracleError();
+  }
+  if (source.id === 'step.identity') {
+    if (source.kind !== 'identity') throw notionProbeOracleError();
+    return {
+      family: 'identity',
+      subject: 'provider.identity',
+      scope: {
+        expectation: {
+          metadataType: 'self',
+          workspaceIdType: 'string',
+          userIdType: 'string'
+        }
+      },
+      transport: exactNotionProbeTransport('fetch'),
+      arguments: { id: 'self' }
+    };
+  }
+  const mappingStep = notionProbeMappingStep(source.id);
+  if (mappingStep) {
+    const mapping = notionProbeMappingOracle({ root, lock, mappingStep });
+    const commonScope = {
+      capability: mapping.capability,
+      mappingId: mapping.definition.id,
+      mappingVersion: mapping.definition.version,
+      recordType: mapping.record.id,
+      targetKey: mapping.record.target,
+      targetUri: mapping.targetUri,
+    };
+    if (mappingStep.kind === 'schema' && source.kind === 'schema') {
+      const expectedFields = mapping.effectiveFields.map((field) => ({
+        portable: field.portable,
+        provider: field.provider,
+        providerType: field.providerType,
+        decode: field.decode
+      }));
+      return {
+        family: 'schema',
+        mappingStep,
+        mapping,
+        subject: mapping.recordSubject + '.' + mapping.record.id,
+        scope: {
+          ...commonScope,
+          fieldBindingFingerprint: mapping.fieldBindingFingerprint,
+          expectedFields
+        },
+        transport: exactNotionProbeTransport('fetch'),
+        arguments: { id: mapping.targetUri }
+      };
+    }
+    if (mappingStep.kind === 'read' && source.kind === 'read') {
+      const input = {
+        recordTypes: [mapping.record.id],
+        filters: {},
+        limit: 1
+      };
+      const readCall = exactNotionRecordReadCall(
+        lock,
+        mapping.definition,
+        mapping.record,
+        mapping.effectiveFields
+      );
+      return {
+        family: 'read',
+        mappingStep,
+        mapping,
+        subject: mapping.recordSubject + '.' + mapping.record.id,
+        scope: {
+          ...commonScope,
+          input,
+          expectation: {
+            resultEnvelope: 'bounded-normalized-records',
+            maximumRows: 1
+          }
+        },
+        transport: exactNotionProbeTransport(readCall.operation),
+        arguments: readCall.arguments,
+        expectedQuery: readCall.arguments.data.query
+      };
+    }
+    throw notionProbeOracleError();
+  }
+  if (source.kind === 'document') {
+    const binding = notionProbeDocumentSource(lock, source.id);
+    return {
+      family: 'document',
+      binding,
+      subject: binding.id,
+      scope: {
+        sourceId: binding.id,
+        capability: binding.capability,
+        authority: binding.authority,
+        inputFingerprint: binding.inputFingerprint,
+        input: structuredClone(binding.input),
+        expectation: {
+          identityMatched: true,
+          format: 'markdown',
+          bodyPresent: true,
+          maximumBodyCharacters: 250000
+        }
+      },
+      transport: exactNotionProbeTransport('fetch'),
+      arguments: { id: exactNotionPageId(binding.input.uri) }
+    };
+  }
+  throw notionProbeOracleError();
+}
+
+function assertNotionProbeExpectedStep(source, currentCall, expected) {
+  if (source.subject !== fingerprintJson(expected.subject)
+    || source.scopeFingerprint !== fingerprintJson(expected.scope)
+    || fingerprintJson(source.transport) !== fingerprintJson(expected.transport)
+    || source.argumentsFingerprint !== fingerprintJson(expected.arguments)
+    || fingerprintJson(currentCall.transport) !== fingerprintJson(expected.transport)
+    || currentCall.argumentsFingerprint !== fingerprintJson(expected.arguments)
+    || fingerprintJson(currentCall.arguments) !== fingerprintJson(expected.arguments)) {
+    throw notionProbeOracleError();
+  }
+}
+
+function notionProbeOracleTamper(checkpoint, currentCall, mutate) {
+  const tamperedCheckpoint = structuredClone(checkpoint);
+  const tamperedCall = structuredClone(currentCall);
+  const runtime = tamperedCheckpoint.steps.find((step) => {
+    return step.id === tamperedCheckpoint.currentStepId;
+  });
+  const source = tamperedCheckpoint.plan.steps.find((step) => {
+    return step.id === tamperedCheckpoint.currentStepId;
+  });
+  if (!runtime || !source) {
+    throw new Error('Core selftest could not construct the bounded Notion oracle tamper.');
+  }
+  mutate(tamperedCall, source);
+  tamperedCall.argumentsFingerprint = fingerprintJson(tamperedCall.arguments);
+  runtime.call = structuredClone(tamperedCall);
+  source.argumentsFingerprint = tamperedCall.argumentsFingerprint;
+  source.transport = structuredClone(tamperedCall.transport);
+  return { checkpoint: tamperedCheckpoint, currentCall: tamperedCall };
+}
+
+function notionProbeStepResponse({
+  root,
+  lock,
   checkpoint,
+  currentCall,
   identityMarker,
   driftStepId = null,
-  optionMappings = []
-) {
-  const source = checkpoint.plan.steps.find((step) => step.id === checkpoint.currentStepId);
-  if (source.kind === 'identity') {
+  observations = null
+}) {
+  const source = notionProbeCurrentSource(checkpoint, currentCall);
+  const expected = notionProbeExpectedStep({ root, lock, checkpoint, source });
+  assertNotionProbeExpectedStep(source, currentCall, expected);
+  const mappingStep = expected.mappingStep || null;
+  if (observations) {
+    observations.stepIds.add(source.id);
+    if (mappingStep) observations.recordTypes.add(mappingStep.recordType);
+  }
+  if (expected.family === 'identity') {
     return {
       content: [{
         type: 'text',
@@ -89,20 +806,22 @@ function notionProbeStepResponse(
       isError: false
     };
   }
-  if (source.kind === 'schema') {
-    const schema = Object.fromEntries(source.scope.expectedFields.map((field) => {
+  if (expected.family === 'schema') {
+    const { definition, record, effectiveFields, targetUri } = expected.mapping;
+    const optionMappings = lock.settings?.['integration.notion']?.optionMappings;
+    if (!Array.isArray(optionMappings)) {
+      throw notionProbeOracleError();
+    }
+    const schema = Object.fromEntries(effectiveFields.map((field) => {
       const property = { name: field.provider, type: field.providerType };
       if (['status', 'select', 'multi_select'].includes(field.providerType)) {
         const declaration = optionMappings.find((item) => {
-          return item.mapping === source.scope.mappingId
-            && item.recordType === source.scope.recordType
+          return item.mapping === definition.id
+            && item.recordType === record.id
             && item.field === field.portable;
         });
         if (!declaration) {
-          throw new Error(
-            'Core selftest has no private option mapping for '
-              + source.scope.recordType + '.' + field.portable + '.'
-          );
+          throw notionProbeOracleError();
         }
         property.options = declaration.entries.map((entry) => ({
           name: entry.provider
@@ -111,7 +830,10 @@ function notionProbeStepResponse(
       return [field.provider, property];
     }));
     if (source.id === driftStepId) {
-      const field = source.scope.expectedFields[0];
+      const field = effectiveFields[0];
+      if (!field) {
+        throw notionProbeOracleError();
+      }
       schema[field.provider].type = 'unexpected-selftest-type';
     }
     return {
@@ -121,7 +843,7 @@ function notionProbeStepResponse(
           metadata: { type: 'data_source' },
           title: 'Private target title ' + identityMarker,
           url: 'https://notion.invalid/private-target',
-          text: '<data-source url="{{' + source.scope.targetUri + '}}">\n'
+          text: '<data-source url="{{' + targetUri + '}}">\n'
             + '<data-source-state>\n'
             + JSON.stringify({ schema })
             + '\n</data-source-state>\n</data-source>'
@@ -130,21 +852,35 @@ function notionProbeStepResponse(
       isError: false
     };
   }
-  if (source.kind === 'document') {
+  if (expected.family === 'read') {
+    if (observations
+      && mappingStep.mapping === 'tasks'
+      && mappingStep.recordType === 'task') {
+      observations.taskReadIncludesNextActionDate = expected.mapping.effectiveFields.some((field) => {
+        return field.portable === 'nextActionOn'
+          && expected.expectedQuery.includes(
+            notionSqlIdentifier('date:' + field.provider + ':start')
+          );
+      });
+    }
+    return {
+      structuredContent: {
+        result: { results: [], has_more: false }
+      }
+    };
+  }
+  if (expected.family === 'document') {
+    const binding = expected.binding;
     return notionPageResponse({
-      uri: source.scope.input.uri,
+      uri: binding.input.uri,
       title: source.id === driftStepId
         ? 'Drifted policy title'
-        : source.scope.input.expectedTitle,
+        : binding.input.expectedTitle,
       body: '# Synthetic policy\n\nPrivate probe body ' + identityMarker + '.',
       privateMarker: identityMarker
     });
   }
-  return {
-    structuredContent: {
-      result: { results: [], has_more: false }
-    }
-  };
+  throw notionProbeOracleError();
 }
 
 function notionTaskReadResponse(id, fields, privateMarker = null) {
@@ -503,6 +1239,16 @@ function selftestProviderProbes(lock, providers) {
 
 export async function selftest(root) {
   const failures = [];
+  try {
+    notionRecordCapabilityGrammarSelftest();
+  } catch (error) {
+    failures.push('Notion record-capability oracle grammar failed: ' + error.message);
+  }
+  try {
+    providerProbeFinalizerPrivacySelftest(root);
+  } catch (error) {
+    failures.push('provider-probe finalizer privacy boundary failed: ' + error.message);
+  }
   try {
     await selftestFixtureMaterialization();
   } catch (error) {
@@ -1245,6 +1991,11 @@ export async function selftest(root) {
     }
 
     const notionPlanMarker = 'private-notion-plan-selftest-marker';
+    const notionPlanObservations = {
+      stepIds: new Set(),
+      recordTypes: new Set(),
+      taskReadIncludesNextActionDate: false
+    };
     let notionPlan = await prepareDurableProviderProbeExecution({
       root: temp,
       lockPath,
@@ -1255,12 +2006,78 @@ export async function selftest(root) {
       validForSeconds: 300
     });
     const firstNotionPlanCall = notionPlan.currentCall;
-    const firstNotionPlanResponse = notionProbeStepResponse(
-      notionPlan.checkpoint,
-      notionPlanMarker,
-      null,
-      meetingOptionMappings
-    );
+    const notionOracleRejects = (checkpoint, currentCall, mutate) => {
+      const tampered = notionProbeOracleTamper(checkpoint, currentCall, mutate);
+      try {
+        notionProbeStepResponse({
+          root: temp,
+          lock,
+          checkpoint: tampered.checkpoint,
+          currentCall: tampered.currentCall,
+          identityMarker: notionPlanMarker
+        });
+      } catch (error) {
+        return error.message === NOTION_PROBE_CALL_ORACLE_ERROR;
+      }
+      return false;
+    };
+    const notionIdentityOracleTamperChecks = {
+      target: notionOracleRejects(notionPlan.checkpoint, firstNotionPlanCall, (call) => {
+        call.arguments.id = 'not-self';
+      }),
+      extraArgument: notionOracleRejects(
+        notionPlan.checkpoint,
+        firstNotionPlanCall,
+        (call) => {
+          call.arguments.extra = true;
+        }
+      ),
+      server: notionOracleRejects(notionPlan.checkpoint, firstNotionPlanCall, (call) => {
+        call.transport.server = 'wrong-selftest-server';
+      }),
+      operation: notionOracleRejects(
+        notionPlan.checkpoint,
+        firstNotionPlanCall,
+        (call) => {
+          call.transport.operation = 'wrong-selftest-operation';
+        }
+      ),
+      tool: notionOracleRejects(notionPlan.checkpoint, firstNotionPlanCall, (call) => {
+        call.transport.tool = 'wrong-selftest-tool';
+      }),
+      protocol: notionOracleRejects(notionPlan.checkpoint, firstNotionPlanCall, (call) => {
+        call.transport.protocol = 'wrong-selftest-protocol';
+      }),
+      responseProfile: notionOracleRejects(
+        notionPlan.checkpoint,
+        firstNotionPlanCall,
+        (call) => {
+          call.transport.responseProfile = 'wrong.selftest.profile';
+        }
+      ),
+      subject: notionOracleRejects(
+        notionPlan.checkpoint,
+        firstNotionPlanCall,
+        (_call, source) => {
+          source.subject = fingerprintJson('wrong-selftest-subject');
+        }
+      ),
+      scope: notionOracleRejects(
+        notionPlan.checkpoint,
+        firstNotionPlanCall,
+        (_call, source) => {
+          source.scopeFingerprint = fingerprintJson({ wrong: true });
+        }
+      )
+    };
+    const firstNotionPlanResponse = notionProbeStepResponse({
+      root: temp,
+      lock,
+      checkpoint: notionPlan.checkpoint,
+      currentCall: firstNotionPlanCall,
+      identityMarker: notionPlanMarker,
+      observations: notionPlanObservations
+    });
     notionPlan = await completeDurableProviderProbeExecution({
       root: temp,
       checkpointId: notionPlan.checkpoint.id,
@@ -1280,15 +2097,143 @@ export async function selftest(root) {
       || repeatedNotionPlanStep.currentCall?.id !== notionPlan.currentCall?.id) {
       failures.push('Notion probe plan did not idempotently recover a repeated completed step response');
     }
+    let crossedNotionCallRejected = false;
+    try {
+      notionProbeStepResponse({
+        root: temp,
+        lock,
+        checkpoint: notionPlan.checkpoint,
+        currentCall: firstNotionPlanCall,
+        identityMarker: notionPlanMarker
+      });
+    } catch (error) {
+      crossedNotionCallRejected = error.message === NOTION_PROBE_CALL_ORACLE_ERROR;
+    }
     let notionPlanCalls = 1;
+    let notionSchemaOracleTamperChecks = null;
+    let notionReadOracleTamperChecks = null;
+    let notionDocumentOracleTamperChecks = null;
     while (notionPlan.checkpoint.state === 'requested') {
       const currentCall = notionPlan.currentCall;
-      const response = notionProbeStepResponse(
-        notionPlan.checkpoint,
-        notionPlanMarker,
-        null,
-        meetingOptionMappings
-      );
+      const currentMappingStep = notionProbeMappingStep(notionPlan.checkpoint.currentStepId);
+      if (currentMappingStep?.kind === 'schema' && notionSchemaOracleTamperChecks === null) {
+        notionSchemaOracleTamperChecks = {
+          transport: notionOracleRejects(notionPlan.checkpoint, currentCall, (call) => {
+            call.transport.operation = 'wrong-selftest-operation';
+          }),
+          target: notionOracleRejects(notionPlan.checkpoint, currentCall, (call) => {
+            call.arguments.id = 'collection://wrong-selftest-target';
+          }),
+          extraArgument: notionOracleRejects(notionPlan.checkpoint, currentCall, (call) => {
+            call.arguments.extra = true;
+          }),
+          subject: notionOracleRejects(
+            notionPlan.checkpoint,
+            currentCall,
+            (_call, source) => {
+              source.subject = fingerprintJson('wrong-selftest-subject');
+            }
+          ),
+          scope: notionOracleRejects(
+            notionPlan.checkpoint,
+            currentCall,
+            (_call, source) => {
+              source.scopeFingerprint = fingerprintJson({ wrong: true });
+            }
+          )
+        };
+      }
+      if (currentMappingStep?.kind === 'read' && notionReadOracleTamperChecks === null) {
+        notionReadOracleTamperChecks = {
+          transport: notionOracleRejects(notionPlan.checkpoint, currentCall, (call) => {
+            call.transport.responseProfile = 'wrong.selftest.profile';
+          }),
+          target: notionOracleRejects(notionPlan.checkpoint, currentCall, (call) => {
+            call.arguments.data.data_source_urls = ['collection://wrong-selftest-target'];
+          }),
+          query: notionOracleRejects(notionPlan.checkpoint, currentCall, (call) => {
+            call.arguments.data.query = 'SELECT 1';
+          }),
+          limit: notionOracleRejects(notionPlan.checkpoint, currentCall, (call) => {
+            call.arguments.data.query = call.arguments.data.query.replace(
+              / LIMIT 1$/,
+              ' LIMIT 2'
+            );
+          }),
+          fields: notionOracleRejects(notionPlan.checkpoint, currentCall, (call) => {
+            call.arguments.data.query = call.arguments.data.query.replace(
+              'json_object(',
+              'json_object(\'wrong-selftest-field\', "wrong-selftest-column", '
+            );
+          }),
+          extraArgument: notionOracleRejects(notionPlan.checkpoint, currentCall, (call) => {
+            call.arguments.extra = true;
+          }),
+          subject: notionOracleRejects(
+            notionPlan.checkpoint,
+            currentCall,
+            (_call, source) => {
+              source.subject = fingerprintJson('wrong-selftest-subject');
+            }
+          ),
+          scope: notionOracleRejects(
+            notionPlan.checkpoint,
+            currentCall,
+            (_call, source) => {
+              source.scopeFingerprint = fingerprintJson({ wrong: true });
+            }
+          )
+        };
+      }
+      if (!currentMappingStep && notionPlan.checkpoint.currentStepId !== 'step.identity'
+        && notionDocumentOracleTamperChecks === null) {
+        const documentBinding = notionProbeDocumentSource(
+          lock,
+          notionPlan.checkpoint.currentStepId
+        );
+        const queryBearingDocumentUri = documentBinding.input.uri.includes('?')
+          ? documentBinding.input.uri
+          : documentBinding.input.uri + '?selftest=private';
+        notionDocumentOracleTamperChecks = {
+          transport: notionOracleRejects(notionPlan.checkpoint, currentCall, (call) => {
+            call.transport.tool = 'wrong-selftest-tool';
+          }),
+          rawUrl: notionOracleRejects(notionPlan.checkpoint, currentCall, (call) => {
+            call.arguments.id = documentBinding.input.uri;
+          }),
+          queryUrl: notionOracleRejects(notionPlan.checkpoint, currentCall, (call) => {
+            call.arguments.id = queryBearingDocumentUri;
+          }),
+          wrongTarget: notionOracleRejects(notionPlan.checkpoint, currentCall, (call) => {
+            call.arguments.id = '0'.repeat(32);
+          }),
+          extraArgument: notionOracleRejects(notionPlan.checkpoint, currentCall, (call) => {
+            call.arguments.extra = true;
+          }),
+          subject: notionOracleRejects(
+            notionPlan.checkpoint,
+            currentCall,
+            (_call, source) => {
+              source.subject = fingerprintJson('wrong-selftest-subject');
+            }
+          ),
+          scope: notionOracleRejects(
+            notionPlan.checkpoint,
+            currentCall,
+            (_call, source) => {
+              source.scopeFingerprint = fingerprintJson({ wrong: true });
+            }
+          )
+        };
+      }
+      const response = notionProbeStepResponse({
+        root: temp,
+        lock,
+        checkpoint: notionPlan.checkpoint,
+        currentCall,
+        identityMarker: notionPlanMarker,
+        observations: notionPlanObservations
+      });
       notionPlan = await completeDurableProviderProbeExecution({
         root: temp,
         checkpointId: notionPlan.checkpoint.id,
@@ -1298,38 +2243,315 @@ export async function selftest(root) {
       });
       notionPlanCalls += 1;
     }
+    const notionTerminalSemanticMismatchChecks = notionPlan.checkpoint.result === null
+      ? null
+      : {
+        resultId: providerProbeTerminalSemanticMismatchRejected(
+          temp,
+          notionPlan.checkpoint,
+          (value) => {
+            value.result.id = 'probe.terminal-semantic-mismatch-sentinel';
+          }
+        ),
+        configurationName: providerProbeTerminalSemanticMismatchRejected(
+        temp,
+        notionPlan.checkpoint,
+        (value) => {
+          value.result.configuration.name = 'terminal-semantic-mismatch-sentinel';
+        }
+      ),
+        configurationLock: providerProbeTerminalSemanticMismatchRejected(
+        temp,
+        notionPlan.checkpoint,
+        (value) => {
+          value.result.configuration.lockFingerprint = 'sha256:' + '0'.repeat(64);
+        }
+      ),
+        provider: providerProbeTerminalSemanticMismatchRejected(
+          temp,
+          notionPlan.checkpoint,
+          (value) => {
+            value.result.provider.version = '9.9.9';
+          }
+        ),
+        probedAt: providerProbeTerminalSemanticMismatchRejected(
+          temp,
+          notionPlan.checkpoint,
+          (value) => {
+            value.result.probedAt = '2026-07-15T12:00:01.000Z';
+          }
+        ),
+        completedAt: providerProbeTerminalSemanticMismatchRejected(
+          temp,
+          notionPlan.checkpoint,
+          (value) => {
+            value.steps.at(-1).call.completedAt = '2026-07-15T12:00:01.000Z';
+          }
+        ),
+        validUntil: providerProbeTerminalSemanticMismatchRejected(
+          temp,
+          notionPlan.checkpoint,
+          (value) => {
+            value.result.validUntil = '2026-07-15T12:15:01.000Z';
+          }
+        ),
+        changedStepId: providerProbeTerminalSemanticMismatchRejected(
+        temp,
+        notionPlan.checkpoint,
+        (value) => {
+          value.result.checks[0].stepId = 'step.terminal-semantic-mismatch-sentinel';
+        }
+      ),
+        crossedStepId: providerProbeTerminalSemanticMismatchRejected(
+        temp,
+        notionPlan.checkpoint,
+        (value) => {
+          value.result.checks[0].stepId = value.result.checks[1].stepId;
+        }
+      ),
+        subject: providerProbeTerminalSemanticMismatchRejected(temp, notionPlan.checkpoint, (value) => {
+        value.result.checks[0].subject = 'sha256:' + '0'.repeat(64);
+      }),
+        scope: providerProbeTerminalSemanticMismatchRejected(temp, notionPlan.checkpoint, (value) => {
+        value.result.checks[0].scopeFingerprint = 'sha256:' + '0'.repeat(64);
+      }),
+        missingCheck: providerProbeTerminalSemanticMismatchRejected(
+        temp,
+        notionPlan.checkpoint,
+        (value) => {
+          value.result.checks.pop();
+        }
+      ),
+        duplicateCheck: providerProbeTerminalSemanticMismatchRejected(
+        temp,
+        notionPlan.checkpoint,
+        (value) => {
+          value.result.checks[1] = structuredClone(value.result.checks[0]);
+        }
+      ),
+        reorderedCheck: providerProbeTerminalSemanticMismatchRejected(
+        temp,
+        notionPlan.checkpoint,
+        (value) => {
+          [value.result.checks[0], value.result.checks[1]] = [
+            value.result.checks[1],
+            value.result.checks[0]
+          ];
+        }
+      ),
+        expectedFingerprint: providerProbeTerminalSemanticMismatchRejected(
+        temp,
+        notionPlan.checkpoint,
+        (value) => {
+          value.result.checks[0].expectedFingerprint = 'sha256:' + '0'.repeat(64);
+        }
+      ),
+        observedFingerprint: providerProbeTerminalSemanticMismatchRejected(
+        temp,
+        notionPlan.checkpoint,
+        (value) => {
+          value.result.checks[0].observedFingerprint = 'sha256:' + '0'.repeat(64);
+        }
+      ),
+        identityMethod: providerProbeTerminalSemanticMismatchRejected(
+        temp,
+        notionPlan.checkpoint,
+        (value) => {
+          value.result.checks.find((check) => check.kind === 'identity').method = 'read-only';
+        }
+      ),
+        schemaMethod: providerProbeTerminalSemanticMismatchRejected(
+        temp,
+        notionPlan.checkpoint,
+        (value) => {
+          value.result.checks.find((check) => check.kind === 'schema').method = 'read-only';
+        }
+      ),
+        readMethod: providerProbeTerminalSemanticMismatchRejected(
+        temp,
+        notionPlan.checkpoint,
+        (value) => {
+          value.result.checks.find((check) => check.kind === 'read').method = 'metadata';
+        }
+      ),
+        documentMethod: providerProbeTerminalSemanticMismatchRejected(
+        temp,
+        notionPlan.checkpoint,
+        (value) => {
+          value.result.checks.find((check) => check.kind === 'document').method = 'metadata';
+        }
+      ),
+        authorityScope: providerProbeTerminalSemanticMismatchRejected(
+        temp,
+        notionPlan.checkpoint,
+        (value) => {
+          value.result.authorities[0].id = 'authority.terminal-semantic-mismatch-sentinel';
+        }
+      ),
+        undeclaredCapability: providerProbeTerminalSemanticMismatchRejected(
+        temp,
+        notionPlan.checkpoint,
+        (value) => {
+          value.result.capabilities.push({
+            ...structuredClone(value.result.capabilities[0]),
+            id: 'terminal-semantic-mismatch-sentinel.records.read'
+          });
+        }
+      ),
+        replacedCapability: providerProbeTerminalSemanticMismatchRejected(
+        temp,
+        notionPlan.checkpoint,
+        (value) => {
+          value.result.capabilities[0].id = 'terminal-semantic-mismatch-sentinel.records.read';
+        }
+      ),
+        duplicatedCapability: providerProbeTerminalSemanticMismatchRejected(
+        temp,
+        notionPlan.checkpoint,
+        (value) => {
+          value.result.capabilities.push(structuredClone(value.result.capabilities[0]));
+        }
+      ),
+        crossedArgumentsFingerprint: providerProbeTerminalSemanticMismatchRejected(
+        temp,
+        notionPlan.checkpoint,
+        (value) => {
+          const crossed = value.plan.steps[1].argumentsFingerprint;
+          value.plan.steps[0].argumentsFingerprint = crossed;
+          value.steps[0].call.argumentsFingerprint = crossed;
+        }
+        )
+      };
     const notionPlanState = fs.readFileSync(
       path.join(temp, notionPlan.checkpointPath),
       'utf8'
     );
+    const parsedNotionPlanState = JSON.parse(notionPlanState);
     const notionMappingStep = (mapping, recordType, kind) => {
       return 'step.mapping.integration.notion.' + mapping + '-records.record.'
         + recordType + '.' + kind;
     };
-    const taskSchemaStep = notionPlan.checkpoint.plan.steps.find((step) => {
+    const notionPlanStepIds = new Set(
+      notionPlan.checkpoint.plan.steps.map((step) => step.id)
+    );
+    const notionPlanRecordTypes = notionProbePlanRecordTypes(notionPlan.checkpoint);
+    const taskMapping = notionMappingRecordType(temp, 'tasks', 'task');
+    const taskEffectiveFields = notionEffectiveRecordFields(
+      lock,
+      taskMapping.definition,
+      taskMapping.record
+    );
+    const taskSchemaSource = notionPlan.checkpoint.plan.steps.find((step) => {
       return step.id === notionMappingStep('tasks', 'task', 'schema');
     });
-    const taskReadStep = notionPlan.checkpoint.plan.steps.find((step) => {
+    const taskReadSource = notionPlan.checkpoint.plan.steps.find((step) => {
       return step.id === notionMappingStep('tasks', 'task', 'read');
     });
-    const taskPolicyReadStep = notionPlan.checkpoint.plan.steps.find((step) => {
-      return step.id === notionMappingStep('tasks', 'task-work-policy', 'read');
+    const taskSchemaOracle = notionProbeExpectedStep({
+      root: temp,
+      lock,
+      checkpoint: notionPlan.checkpoint,
+      source: taskSchemaSource
     });
-    const organizationSchemaStep = notionPlan.checkpoint.plan.steps.find((step) => {
-      return step.id === notionMappingStep('crm', 'organization', 'schema');
+    const taskReadOracle = notionProbeExpectedStep({
+      root: temp,
+      lock,
+      checkpoint: notionPlan.checkpoint,
+      source: taskReadSource
     });
-    const organizationPolicyReadStep = notionPlan.checkpoint.plan.steps.find((step) => {
-      return step.id === notionMappingStep('crm', 'organization-capture-policy', 'read');
+    const taskExpectedFieldBindingFingerprint = fingerprintJson({
+      mapping: taskMapping.definition.id,
+      mappingVersion: taskMapping.definition.version,
+      recordType: taskMapping.record.id,
+      fields: taskEffectiveFields.map((field) => ({
+        portable: field.portable,
+        provider: field.provider,
+        providerType: field.providerType,
+        decode: field.decode,
+        writeOperations: field.writeOperations || null
+      }))
     });
-    const contactPolicyReadStep = notionPlan.checkpoint.plan.steps.find((step) => {
-      return step.id === notionMappingStep('crm', 'contact-capture-policy', 'read');
-    });
-    const personSchemaStep = notionPlan.checkpoint.plan.steps.find((step) => {
-      return step.id === notionMappingStep('crm', 'person', 'schema');
-    });
-    const notionPlanRecordTypes = new Set(notionPlan.checkpoint.plan.steps.flatMap((step) => {
-      return step.scope?.recordType ? [step.scope.recordType] : [];
+    const taskExpectedSchemaFields = taskEffectiveFields.map((field) => ({
+      portable: field.portable,
+      provider: field.provider,
+      providerType: field.providerType,
+      decode: field.decode
     }));
+    const taskOracleStructureExact = taskSchemaOracle.subject === 'tasks.records.task'
+      && taskReadOracle.subject === 'tasks.records.task'
+      && taskSchemaOracle.scope.fieldBindingFingerprint
+        === taskExpectedFieldBindingFingerprint
+      && fingerprintJson(taskSchemaOracle.scope.expectedFields)
+        === fingerprintJson(taskExpectedSchemaFields)
+      && taskSchemaOracle.scope.expectedFields.every((field) => {
+        return JSON.stringify(Object.keys(field).sort()) === JSON.stringify([
+          'decode', 'portable', 'provider', 'providerType'
+        ]);
+      })
+      && !Object.hasOwn(taskReadOracle.scope, 'fieldBindingFingerprint')
+      && fingerprintJson(taskReadOracle.scope.expectation) === fingerprintJson({
+        resultEnvelope: 'bounded-normalized-records',
+        maximumRows: 1
+      });
+    const organizationMapping = notionMappingRecordType(
+      temp,
+      'crm',
+      'organization'
+    );
+    const organizationEffectiveFields = notionEffectiveRecordFields(
+      lock,
+      organizationMapping.definition,
+      organizationMapping.record
+    );
+    const serializedNotionPlanSteps = JSON.stringify(notionPlan.checkpoint.plan.steps);
+    const notionSettings = lock.settings['integration.notion'];
+    const notionPrivateInventory = notionPrivateStringInventory(lock);
+    const notionPrivateTargetValues = notionPrivateInventory.values;
+    const notionPlanContainsPrivateTarget = parsedStringLeafContainsAny(
+      parsedNotionPlanState,
+      notionPrivateTargetValues
+    );
+    const escapedPrivateMarker = notionSettings.targets.meetings;
+    const hostileEmbeddedPrivateState = {
+      diagnostic: JSON.stringify({
+        query: 'SELECT "' + escapedPrivateMarker + '"'
+      })
+    };
+    const hostileEmbeddedPrivateStateText = JSON.stringify(hostileEmbeddedPrivateState);
+    const hostileEmbeddedPrivateValueDetected = parsedStringLeafContainsAny(
+      JSON.parse(hostileEmbeddedPrivateStateText),
+      [escapedPrivateMarker]
+    );
+    const hostilePrivateKeyDetected = parsedStringLeafContainsAny(
+      { nested: { [escapedPrivateMarker]: true } },
+      [escapedPrivateMarker]
+    );
+    const structuralResponseProfileDoesNotMatchPrivateProfile =
+      !parsedStringLeafContainsAny(
+        { responseProfile: 'notion.codex.connector.v1' },
+        ['Profile']
+      );
+    const nestedPrivateKeyMarker = 'PRIVATE_NOTION_NESTED_KEY_ONLY_SENTINEL';
+    const nestedPrivateKeyLock = structuredClone(lock);
+    nestedPrivateKeyLock.sources[0].input.nestedPrivateShape = {
+      [nestedPrivateKeyMarker]: true
+    };
+    const nestedPrivateKeyInventory = notionPrivateStringInventory(
+      nestedPrivateKeyLock
+    );
+    const nestedPrivateKeyDetected = nestedPrivateKeyInventory.categories.sources
+      .has(nestedPrivateKeyMarker)
+      && parsedStringLeafContainsAny(
+        { nested: { [nestedPrivateKeyMarker]: true } },
+        nestedPrivateKeyInventory.values
+      );
+    const obsoleteLexicalCheckMissesEmbeddedPrivateValue =
+      !hostileEmbeddedPrivateStateText.includes(JSON.stringify(escapedPrivateMarker));
+    const terminalNotionCallsContainArguments = notionPlan.checkpoint.steps.some((step) => {
+      return step.call !== null
+        && step.call !== undefined
+        && Object.hasOwn(step.call, 'arguments');
+    });
     const expectedNotionPlanSteps = notionPlan.checkpoint.plan.steps.length;
     if (notionPlanCalls !== expectedNotionPlanSteps
       || notionPlan.checkpoint.state !== 'completed'
@@ -1353,33 +2575,62 @@ export async function selftest(root) {
       || notionPlan.checkpoint.result?.capabilities.filter((item) => {
         return item.id === 'meetings.records.create' || item.id === 'tasks.records.update';
       }).some((item) => item.state !== 'unknown')
-      || taskSchemaStep?.scope.expectedFields.find((field) => {
+      || taskEffectiveFields.find((field) => {
         return field.portable === 'nextActionOn';
       })?.providerType !== 'date'
-      || !taskReadStep?.arguments?.data?.query?.includes('date:Next Action:start')
-      || taskPolicyReadStep !== undefined
-      || organizationPolicyReadStep !== undefined
-      || contactPolicyReadStep !== undefined
-      || personSchemaStep !== undefined
+      || !taskOracleStructureExact
+      || !notionPlanObservations.taskReadIncludesNextActionDate
+      || notionPlanStepIds.has(notionMappingStep('tasks', 'task-work-policy', 'read'))
+      || notionPlanStepIds.has(
+        notionMappingStep('crm', 'organization-capture-policy', 'read')
+      )
+      || notionPlanStepIds.has(notionMappingStep('crm', 'contact-capture-policy', 'read'))
+      || notionPlanStepIds.has(notionMappingStep('crm', 'person', 'schema'))
       || JSON.stringify([...notionPlanRecordTypes].sort()) !== JSON.stringify([
         'meeting',
         'organization',
         'project',
         'task'
       ])
-      || organizationSchemaStep?.scope.expectedFields.find((field) => {
+      || organizationEffectiveFields.find((field) => {
         return field.portable === 'organizationType';
       })?.providerType !== 'select'
-      || organizationSchemaStep?.scope.expectedFields.find((field) => {
+      || organizationEffectiveFields.find((field) => {
         return field.portable === 'tags';
       })?.providerType !== 'multi_select'
-      || organizationSchemaStep?.scope.expectedFields.find((field) => {
+      || organizationEffectiveFields.find((field) => {
         return field.portable === 'website';
       })?.providerType !== 'url'
-      || organizationSchemaStep?.scope.expectedFields.find((field) => {
+      || organizationEffectiveFields.find((field) => {
         return field.portable === 'twitter';
       })?.providerType !== 'url'
+      || notionPlanObservations.stepIds.size !== expectedNotionPlanSteps
+      || notionTerminalSemanticMismatchChecks === null
+      || Object.values(notionTerminalSemanticMismatchChecks)
+        .some((value) => value !== true)
+      || !crossedNotionCallRejected
+      || Object.values(notionIdentityOracleTamperChecks).some((value) => value !== true)
+      || notionSchemaOracleTamperChecks === null
+      || Object.values(notionSchemaOracleTamperChecks).some((value) => value !== true)
+      || notionReadOracleTamperChecks === null
+      || Object.values(notionReadOracleTamperChecks).some((value) => value !== true)
+      || notionDocumentOracleTamperChecks === null
+      || Object.values(notionDocumentOracleTamperChecks).some((value) => value !== true)
+      || Object.hasOwn(firstNotionPlanCall, 'stepId')
       || notionPlan.currentCall !== null
+      || !Object.hasOwn(notionPlan.checkpoint.plan, 'scope')
+      || notionPlan.checkpoint.plan.steps.some((step) => {
+        return Object.hasOwn(step, 'scope') || Object.hasOwn(step, 'arguments');
+      })
+      || serializedNotionPlanSteps.includes('"scope"')
+      || serializedNotionPlanSteps.includes('"arguments"')
+      || terminalNotionCallsContainArguments
+      || notionPlanContainsPrivateTarget
+      || !hostileEmbeddedPrivateValueDetected
+      || !hostilePrivateKeyDetected
+      || !structuralResponseProfileDoesNotMatchPrivateProfile
+      || !nestedPrivateKeyDetected
+      || !obsoleteLexicalCheckMissesEmbeddedPrivateValue
       || JSON.stringify(notionPlan).includes(notionPlanMarker)
       || notionPlanState.includes(notionPlanMarker)
       || notionPlanState.includes('automation.meeting-intake')
@@ -1391,14 +2642,37 @@ export async function selftest(root) {
             state: notionPlan.checkpoint.state,
             contract: notionPlan.checkpoint.result?.$contract || null,
             checks: notionPlan.checkpoint.result?.checks?.length || null,
-            capabilities: notionPlan.checkpoint.result?.capabilities || null,
             currentCall: notionPlan.currentCall?.id || null,
             markerInResult: JSON.stringify(notionPlan).includes(notionPlanMarker),
             markerInState: notionPlanState.includes(notionPlanMarker),
+            observedSteps: notionPlanObservations.stepIds.size,
+            terminalSemanticMismatchRejected:
+              notionTerminalSemanticMismatchChecks !== null
+              && Object.values(notionTerminalSemanticMismatchChecks).every(Boolean),
+            taskOracleStructureExact,
+            crossedCallRejected: crossedNotionCallRejected,
+            identityOracleRejected: Object.values(notionIdentityOracleTamperChecks)
+              .every(Boolean),
+            schemaOracleRejected: notionSchemaOracleTamperChecks !== null
+              && Object.values(notionSchemaOracleTamperChecks).every(Boolean),
+            readOracleRejected: notionReadOracleTamperChecks === null
+              ? false
+              : Object.values(notionReadOracleTamperChecks).every(Boolean),
+            documentOracleRejected: notionDocumentOracleTamperChecks !== null
+              && Object.values(notionDocumentOracleTamperChecks).every(Boolean),
+            currentCallHasStepId: Object.hasOwn(firstNotionPlanCall, 'stepId'),
+            durableStepMaterialAbsent: !serializedNotionPlanSteps.includes('"scope"')
+              && !serializedNotionPlanSteps.includes('"arguments"')
+              && !terminalNotionCallsContainArguments,
+            privateTargetAbsent: !notionPlanContainsPrivateTarget,
+            embeddedPrivateValueDetected: hostileEmbeddedPrivateValueDetected,
+            privateKeyDetected: hostilePrivateKeyDetected,
+            structuralResponseProfileDoesNotMatchPrivateProfile,
+            nestedPrivateKeyDetected,
+            privateInventoryComplete: Object.values(notionPrivateInventory.categories)
+              .every((values) => values.size > 0),
             consumerWiringInState: notionPlanState.includes('automation.meeting-intake')
-              || notionPlanState.includes('"consumers"'),
-            failedStep: notionPlan.checkpoint.steps.find((step) => step.state === 'failed')?.id || null,
-            error: notionPlan.checkpoint.steps.find((step) => step.state === 'failed')?.error || null
+              || notionPlanState.includes('"consumers"')
           })
       );
     }
@@ -1415,10 +2689,8 @@ export async function selftest(root) {
       at: FIXTURE_TIME,
       validForSeconds: 300
     });
-    const taskScopedRecordTypes = new Set(
-      taskScopedNotionPlan.checkpoint.plan.steps.flatMap((step) => {
-        return step.scope?.recordType ? [step.scope.recordType] : [];
-      })
+    const taskScopedRecordTypes = notionProbePlanRecordTypes(
+      taskScopedNotionPlan.checkpoint
     );
     const conversationScopedNotionPlan = await prepareDurableProviderProbeExecution({
       root: temp,
@@ -1432,10 +2704,8 @@ export async function selftest(root) {
       at: FIXTURE_TIME,
       validForSeconds: 300
     });
-    const conversationScopedRecordTypes = new Set(
-      conversationScopedNotionPlan.checkpoint.plan.steps.flatMap((step) => {
-        return step.scope?.recordType ? [step.scope.recordType] : [];
-      })
+    const conversationScopedRecordTypes = notionProbePlanRecordTypes(
+      conversationScopedNotionPlan.checkpoint
     );
     if (JSON.stringify([...taskScopedRecordTypes].sort()) !== JSON.stringify([
       'project',
@@ -1466,12 +2736,14 @@ export async function selftest(root) {
     const driftStepId = notionMappingStep('crm', 'organization', 'schema');
     while (driftedNotionPlan.checkpoint.state === 'requested') {
       const currentCall = driftedNotionPlan.currentCall;
-      const response = notionProbeStepResponse(
-        driftedNotionPlan.checkpoint,
-        notionPlanMarker,
-        driftStepId,
-        meetingOptionMappings
-      );
+      const response = notionProbeStepResponse({
+        root: temp,
+        lock,
+        checkpoint: driftedNotionPlan.checkpoint,
+        currentCall,
+        identityMarker: notionPlanMarker,
+        driftStepId
+      });
       driftedNotionPlan = await completeDurableProviderProbeExecution({
         root: temp,
         checkpointId: driftedNotionPlan.checkpoint.id,
@@ -1505,12 +2777,14 @@ export async function selftest(root) {
         root: temp,
         checkpointId: mismatchedDocumentPlan.checkpoint.id,
         callId: currentCall.id,
-        response: notionProbeStepResponse(
-          mismatchedDocumentPlan.checkpoint,
-          notionPlanMarker,
-          mismatchedDocumentStepId,
-          meetingOptionMappings
-        ),
+        response: notionProbeStepResponse({
+          root: temp,
+          lock,
+          checkpoint: mismatchedDocumentPlan.checkpoint,
+          currentCall,
+          identityMarker: notionPlanMarker,
+          driftStepId: mismatchedDocumentStepId
+        }),
         at: FIXTURE_TIME
       });
     }
@@ -3611,7 +4885,11 @@ export async function selftest(root) {
         prepareMcp() {
           return {
             tool: 'query_data_sources',
-            arguments: { authorization: 'Bearer should-never-leave-the-host' }
+            arguments: {
+              authorization: soterSyntheticCredentialFixture(
+                'Bearer test-fixture-authorization-value'
+              )
+            }
           };
         }
       }

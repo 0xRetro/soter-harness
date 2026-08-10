@@ -173,6 +173,7 @@ import {
   buildDevelopmentEvaluationInvocation,
   inspectDevelopmentRun,
   prepareDevelopmentRequest,
+  recordHostDevelopmentResult,
   recordDevelopmentResult
 } from './development-runs.mjs';
 import { materializeDevelopmentCandidateLock } from './development-candidate-locks.mjs';
@@ -240,6 +241,100 @@ function assertExactCommandArguments(args, {
     }
     throw new Error('Unexpected argument for ' + args[0] + ': ' + argument + '.');
   }
+}
+
+const DEVELOPMENT_HOST_RESULT_EFFECT_FLAGS = Object.freeze([
+  ['--local-workspace-read', 'local-workspace-read'],
+  ['--local-workspace-write', 'local-workspace-write'],
+  ['--local-command', 'local-command'],
+  ['--subagent-dispatch', 'subagent-dispatch']
+]);
+const DEVELOPMENT_REQUEST_ID_RE =
+  /^development-request[.][a-z0-9]+(?:[.-][a-z0-9]+)*$/;
+const DEVELOPMENT_INSTANT_RE =
+  /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:[.][0-9]{3})?Z$/;
+
+function invalidDevelopmentHostResultInput() {
+  throw new Error('development-host-result-record input is invalid.');
+}
+
+function parseDevelopmentHostResultArguments(args) {
+  const valueOptions = new Set([
+    '--request-id',
+    '--state',
+    '--check',
+    '--at',
+    ...DEVELOPMENT_HOST_RESULT_EFFECT_FLAGS.map(([flag]) => flag)
+  ]);
+  const singleton = new Map();
+  const checks = [];
+  let json = false;
+  for (let index = 1; index < args.length; index += 1) {
+    const argument = args[index];
+    if (argument === '--json') {
+      if (json) invalidDevelopmentHostResultInput();
+      json = true;
+      continue;
+    }
+    if (!valueOptions.has(argument)
+      || !args[index + 1]
+      || args[index + 1].startsWith('--')) {
+      invalidDevelopmentHostResultInput();
+    }
+    const value = args[index + 1];
+    index += 1;
+    if (argument === '--check') {
+      checks.push(value);
+      if (checks.length > 500) invalidDevelopmentHostResultInput();
+      continue;
+    }
+    if (singleton.has(argument)) invalidDevelopmentHostResultInput();
+    singleton.set(argument, value);
+  }
+
+  const requestId = singleton.get('--request-id');
+  const state = singleton.get('--state');
+  if (!DEVELOPMENT_REQUEST_ID_RE.test(requestId || '')
+    || !['passed', 'failed', 'blocked', 'partial'].includes(state)
+    || DEVELOPMENT_HOST_RESULT_EFFECT_FLAGS.some(([flag]) => !singleton.has(flag))) {
+    invalidDevelopmentHostResultInput();
+  }
+
+  const seenChecks = new Set();
+  const parsedChecks = checks.map((value) => {
+    const match = /^([a-z0-9]+(?:[.-][a-z0-9]+)*)=(passed|failed|blocked|unknown)$/.exec(value);
+    if (!match || seenChecks.has(match[1])) invalidDevelopmentHostResultInput();
+    seenChecks.add(match[1]);
+    return { id: match[1], state: match[2] };
+  });
+  if (state === 'passed'
+    && (parsedChecks.length === 0
+      || parsedChecks.some((check) => check.state !== 'passed'))) {
+    invalidDevelopmentHostResultInput();
+  }
+
+  const localEffects = DEVELOPMENT_HOST_RESULT_EFFECT_FLAGS.map(([flag, category]) => {
+    const value = singleton.get(flag);
+    const match = /^(observed|not-observed|blocked|unknown):([0-9]+)$/.exec(value || '');
+    if (!match) invalidDevelopmentHostResultInput();
+    const count = Number(match[2]);
+    if (!Number.isSafeInteger(count)
+      || (match[1] === 'observed' ? count < 1 : count !== 0)) {
+      invalidDevelopmentHostResultInput();
+    }
+    return { category, state: match[1], count };
+  });
+
+  const at = singleton.get('--at') || null;
+  if (at !== null) {
+    const canonical = at.includes('.') ? at : at.replace(/Z$/, '.000Z');
+    if (!DEVELOPMENT_INSTANT_RE.test(at)
+      || !Number.isFinite(Date.parse(at))
+      || new Date(at).toISOString() !== canonical) {
+      invalidDevelopmentHostResultInput();
+    }
+  }
+  return { requestId, state, checks: parsedChecks, localEffects, at, json };
 }
 
 function nowIdPart(createdAt) {
@@ -2452,6 +2547,27 @@ async function main() {
     return;
   }
 
+  if (command === 'development-host-result-record') {
+    const input = parseDevelopmentHostResultArguments(args);
+    const recorded = recordHostDevelopmentResult({
+      root,
+      requestId: input.requestId,
+      state: input.state,
+      checks: input.checks,
+      localEffects: input.localEffects,
+      completedAt: input.at
+    });
+    if (input.json) print(recorded.inspection);
+    else {
+      process.stdout.write(
+        'Recorded one path-free host development result.\n'
+          + 'State: ' + recorded.inspection.progress.state + '\n'
+          + 'Promotion authority: none\n'
+      );
+    }
+    return;
+  }
+
   if (command === 'development-host-evaluate') {
     const evaluated = runDevelopmentHostEvaluation({
       root,
@@ -2737,12 +2853,13 @@ async function main() {
   }
 
   throw new Error(
-    'Usage: node soter/core/cli.mjs <resolve|config-inspect|development-candidate-lock|development-request-create|development-result-record|development-host-evaluate|development-host-judge|development-host-finalize|development-run-inspect|configuration-change-plan|configuration-change-request|configuration-change-confirm|configuration-change-start|configuration-change-execute|configuration-change-recover|configuration-change-inspect|host-realization-plan|host-realization-request|host-realization-confirm|host-realization-start|host-realization-execute|host-realization-recover|host-realization-inspect|pack-install-plan|pack-install-request|pack-install-confirm|pack-install-start|pack-install-execute|pack-install-recover|pack-install-inspect|operator-prepare|operator-prepared-inspect|operator-prepared-review|operator-prepared-derived-review|operator-acquisition-prepare|operator-acquisition-recover|operator-acquisition-finalize|operator-acquisition-inspect|operator-acquisition-private-inspect|operator-review-only-candidate-selection-create|operator-review-only-candidate-selection|operator-review-only-candidate-preview-create|operator-review-only-candidate-preview|operator-inspect|operator-approval-review|prepare|meeting-intake-decision-inspect|meeting-intake-decision-commit|meeting-intake-proposal-inspect|meeting-intake-proposal-commit|meeting-intake-proposal-material|email-triage-decision-inspect|email-triage-decision-commit|email-triage-proposal-inspect|email-triage-proposal-commit|email-triage-proposal-material|task-capture-decision-inspect|task-capture-decision-commit|task-capture-proposal-inspect|task-capture-proposal-commit|task-capture-proposal-material|organization-capture-decision-inspect|organization-capture-decision-commit|organization-capture-proposal-inspect|organization-capture-proposal-commit|organization-capture-proposal-material|project-capture-decision-inspect|project-capture-decision-commit|project-capture-proposal-inspect|project-capture-proposal-commit|project-capture-proposal-material|project-page-reconciliation-decision-inspect|project-page-reconciliation-decision-commit|project-page-reconciliation-proposal-inspect|project-page-reconciliation-proposal-commit|project-page-reconciliation-proposal-material|contact-capture-decision-inspect|contact-capture-decision-commit|contact-capture-proposal-inspect|contact-capture-proposal-commit|contact-capture-proposal-material|project-pulse-decision-inspect|project-pulse-decision-commit|project-pulse-proposal-inspect|project-pulse-proposal-commit|project-pulse-proposal-material|proposal-connected-batch-preview|connected-approval-request|connected-approval-confirm|connected-transaction-prepare|connected-transaction-complete|connected-transaction-reconcile|doctor|probe-prepare|probe-complete|capability-complete|plan-complete|host-fail|host-get|host-list|fixtures|selftest> [options]\n'
+    'Usage: node soter/core/cli.mjs <resolve|config-inspect|development-candidate-lock|development-request-create|development-result-record|development-host-result-record|development-host-evaluate|development-host-judge|development-host-finalize|development-run-inspect|configuration-change-plan|configuration-change-request|configuration-change-confirm|configuration-change-start|configuration-change-execute|configuration-change-recover|configuration-change-inspect|host-realization-plan|host-realization-request|host-realization-confirm|host-realization-start|host-realization-execute|host-realization-recover|host-realization-inspect|pack-install-plan|pack-install-request|pack-install-confirm|pack-install-start|pack-install-execute|pack-install-recover|pack-install-inspect|operator-prepare|operator-prepared-inspect|operator-prepared-review|operator-prepared-derived-review|operator-acquisition-prepare|operator-acquisition-recover|operator-acquisition-finalize|operator-acquisition-inspect|operator-acquisition-private-inspect|operator-review-only-candidate-selection-create|operator-review-only-candidate-selection|operator-review-only-candidate-preview-create|operator-review-only-candidate-preview|operator-inspect|operator-approval-review|prepare|meeting-intake-decision-inspect|meeting-intake-decision-commit|meeting-intake-proposal-inspect|meeting-intake-proposal-commit|meeting-intake-proposal-material|email-triage-decision-inspect|email-triage-decision-commit|email-triage-proposal-inspect|email-triage-proposal-commit|email-triage-proposal-material|task-capture-decision-inspect|task-capture-decision-commit|task-capture-proposal-inspect|task-capture-proposal-commit|task-capture-proposal-material|organization-capture-decision-inspect|organization-capture-decision-commit|organization-capture-proposal-inspect|organization-capture-proposal-commit|organization-capture-proposal-material|project-capture-decision-inspect|project-capture-decision-commit|project-capture-proposal-inspect|project-capture-proposal-commit|project-capture-proposal-material|project-page-reconciliation-decision-inspect|project-page-reconciliation-decision-commit|project-page-reconciliation-proposal-inspect|project-page-reconciliation-proposal-commit|project-page-reconciliation-proposal-material|contact-capture-decision-inspect|contact-capture-decision-commit|contact-capture-proposal-inspect|contact-capture-proposal-commit|contact-capture-proposal-material|project-pulse-decision-inspect|project-pulse-decision-commit|project-pulse-proposal-inspect|project-pulse-proposal-commit|project-pulse-proposal-material|proposal-connected-batch-preview|connected-approval-request|connected-approval-confirm|connected-transaction-prepare|connected-transaction-complete|connected-transaction-reconcile|doctor|probe-prepare|probe-complete|capability-complete|plan-complete|host-fail|host-get|host-list|fixtures|selftest> [options]\n'
       + '  resolve [--config PATH] [--host ID] [--output PATH] [--json]\n'
       + '  config-inspect [--config PATH] [--host ID | --lock PATH] [--output PATH] [--json]\n'
       + '  development-candidate-lock --config PATH --workflow ID --host <codex|claude> [--json]\n'
       + '  development-request-create --lock PATH --workflow ID --request-id ID (--evaluation-suite | --invocation ABSOLUTE_PRIVATE_PATH) [--at TIME] [--json]\n'
       + '  development-result-record --lock PATH --request-id ID --outcome ABSOLUTE_PRIVATE_PATH [--at TIME] [--json]\n'
+      + '  development-host-result-record --request-id ID --state passed|failed|blocked|partial [--check ID=STATE ...] --local-workspace-read STATE:COUNT --local-workspace-write STATE:COUNT --local-command STATE:COUNT --subagent-dispatch STATE:COUNT [--at TIME] [--json]\n'
       + '  development-host-evaluate --request-id ID --executable ABSOLUTE_PRIVATE_PATH [--json]\n'
       + '  development-host-judge --request-id ID --executable ABSOLUTE_PRIVATE_PATH [--json]\n'
       + '  development-host-finalize --request-id ID [--judgment ABSOLUTE_PRIVATE_HUMAN_ATTESTATION_PATH] [--json]\n'

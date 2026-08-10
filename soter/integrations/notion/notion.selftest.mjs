@@ -2377,6 +2377,59 @@ export async function selftestNotionRecordMappings(root) {
     currentAppDocumentInput.expectedTitle,
     'A decorative provider display title must not replace the exact database title property.'
   );
+  const queryVarianceSentinel = 'notion-query-variance-sentinel';
+  const queryBearingCurrentAppDocumentProviderResult = {
+    ...currentAppDocumentProviderResult,
+    url: currentAppDocumentProviderResult.url + '?view=' + queryVarianceSentinel
+  };
+  const queryVarianceDocumentRead = completeMcp({
+    capability: 'documents.content.read',
+    authority: 'authority.documents.instance',
+    input: currentAppDocumentInput,
+    responseProfile: 'notion.codex.connector.v1',
+    response: {
+      structuredContent: {
+        result: queryBearingCurrentAppDocumentProviderResult
+      }
+    },
+    at: AT,
+    mappings: [],
+    settings: {}
+  });
+  assert.deepEqual(
+    queryVarianceDocumentRead,
+    currentAppDocumentRead,
+    'A validated payload query may be absent only from the otherwise exact observed page preamble URL.'
+  );
+  assert.equal(
+    JSON.stringify(queryVarianceDocumentRead).includes(queryVarianceSentinel),
+    false,
+    'A provider URL query must not survive normalized document output.'
+  );
+  await expectFailure(
+    'same Notion page identity at a different preamble location',
+    () => completeMcp({
+      capability: 'documents.content.read',
+      authority: 'authority.documents.instance',
+      input: currentAppDocumentInput,
+      responseProfile: 'notion.codex.connector.v1',
+      response: {
+        structuredContent: {
+          result: {
+            ...queryBearingCurrentAppDocumentProviderResult,
+            text: currentAppDocumentProviderResult.text.replace(
+              'Page with URL ' + currentAppDocumentProviderResult.url + ' as of',
+              'Page with URL ' + currentAppDocumentInput.uri + ' as of'
+            )
+          }
+        }
+      },
+      at: AT,
+      mappings: [],
+      settings: {}
+    }),
+    /exact observed page preamble/
+  );
   const nestedPageBody = 'Parent policy body.\n'
     + '<page color="blue" '
     + 'url="https://app.notion.com/p/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa">'

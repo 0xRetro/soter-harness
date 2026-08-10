@@ -6,7 +6,7 @@
   "level": "offline",
   "configuration": {
     "name": "project-work-promotion",
-    "lockFingerprint": "sha256:726cf0e5f1d92397fb494d09670a60780660271d53ae8d6640c0a5795fc64c25"
+    "lockFingerprint": "sha256:6db8a739808a5550b821f745e80beb6e7ac800171ed419f95407e46ab3716e30"
   },
   "states": {
     "valid": "passed",

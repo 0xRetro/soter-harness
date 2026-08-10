@@ -110,6 +110,15 @@ unknown restart requirement; a complete changed basis requires restart. In both 
 Soter MCP tools stop before private-state creation or provider dispatch. This
 applicability check grants no approval, continuation, provider-call, write, or
 execution authority and does not promote readiness, verification, or health.
+The same inspection carries a separate live `hostRealization` applicability
+fact. It never changes runtime currency or the universal MCP guard: `current`
+continues, `not-realized` guides realization, active-lock absence or drift guides
+configuration refresh, manifest/lock drift guides realization, and an
+unclassifiable projection reports `unavailable` with no action. The projection
+contains only the closed state, reason code, and guidance action; it contains no
+path, configuration or host name, fingerprint, error prose, or continuation
+authority. Repair configuration first, then realize the host, and restart only
+when the independent runtime branch requires it.
 The connected
 doctor also consumes failed probe checkpoints through a typed, expiring summary
 that identifies the exact lock, provider, semantic step, native route, and
@@ -338,6 +347,23 @@ response proves the adapter shape.
 Connected doctor accepts a completed durable probe through
 `--probe-checkpoint ID` and revalidates it against the current exact lock. A
 stale or incomplete checkpoint cannot contribute readiness observations.
+
+Slack has an optional private-only readiness-probe setting for one exact
+conversation, thread root, and window of at most 24 hours. When present, its
+read-only provider probe performs exactly three steps: identity, a bounded
+one-record message-shape check for the configured conversation and window, and
+a bounded one-record thread-shape check for the configured conversation, thread
+root, and window. Each content response must contain one usable record and an
+exhausted cursor. This milestone has no conversation-list readiness-probe step
+and no dynamic pagination. The private requested or in-flight checkpoint
+retains only the one exact current call's native arguments for restart recovery,
+then removes those arguments when the call completes or fails. Terminal durable
+state and sanitized inspection or result expose only counts, booleans,
+fingerprints, checks, and limitations—never IDs, content, cursors, native
+arguments, or raw pages. These observations leave every portable Slack
+capability `unknown`; Slack Conversation Review remains unavailable with
+`CLOSED_MESSAGE_THREAD_RESPONSE_UNAVAILABLE`. Tracked configuration templates
+cannot carry the private readiness identities.
 
 Inspect the Notion probe plan without calling Notion:
 
@@ -726,6 +752,18 @@ mutation, and host realization remain separate authority. Use
 current, stale, or closed state after compaction or restart; it executes no work
 and grants no new authority. Target drift closes the recoverable boundary;
 exact result closure alone may account for the declared target changes.
+
+The current development-result closure routes are
+`soter_record_development_result` while the loaded runtime is current and the
+path-free `development-host-result-record` for an already-governed ordinary
+source edit after that edit makes the loaded runtime stale. The path-free route
+accepts only the request ID, result state, repeatable `--check ID=STATE` facts,
+optional time/JSON flags, and exactly four local-effect observations. Core
+derives target changes and all six external zero-effect rows. It accepts no
+lock, outcome file, path, fingerprint, provider authority, external effect,
+evaluation request, or promotion input. `development-result-record` remains
+the separate full-outcome route and is not reinterpreted by the path-free
+route.
 
 ## Soter Studio
 
@@ -1196,10 +1234,14 @@ It also traverses the scenario proof trace from Workflow to the linked run
 evidence while keeping connected readiness and health unknown.
 
 After the exact Codex host projection has been realized into the private
-consumer root, its generated `.codex/config.toml` registers only the Soter MCP
-runtime. Native Notion, Slack, and Otter connector discovery and authentication
-remain external host requirements; the realization does not generate provider
-endpoints, install connectors, or store OAuth credentials in the repository.
+consumer root, its generated `.codex/config.toml` registers Soter and the
+credential-free Otter route endpoint exactly once. The development catalog
+declares Otter only for deterministic `meeting.transcript` route delivery: it
+adds no binding, source, secret reference, resolved capability, Meeting Intake,
+or Notion selection and preserves all seven development skills. Claude remains
+explicitly unavailable for that Otter surface. Native Notion and Slack connector
+discovery and authentication remain external host requirements; realization
+does not install connectors or store OAuth credentials in the repository.
 Restart the task after connector or authentication changes so the host reloads
 its available tools.
 

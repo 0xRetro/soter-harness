@@ -47,6 +47,7 @@ function soterSyntheticCredentialFixture(value) {
   return value;
 }
 
+const inertPrivateKeyFixture = '-----BEGIN OPENSSH PRIVATE KEY-----\nPRIVATE_MCP_KEY_BLOCK_SENTINEL\n-----END OPENSSH PRIVATE KEY-----';
 function resignInspection(inspection) {
   const resigned = structuredClone(inspection);
   delete resigned.inspectionFingerprint;
@@ -64,17 +65,21 @@ function expectCode(action, code) {
   assert.equal(observed, code, 'expected stable failure code ' + code);
 }
 
-function expectCodeAndReason(action, code, reasonCode) {
+function expectCodeAndReason(action, code, reasonCode, label = '') {
+  let observedError = null;
   let observed = null;
   let observedReason = null;
   try {
     action();
   } catch (error) {
+    observedError = error;
     observed = error?.code || null;
     observedReason = error?.reasonCode || null;
   }
-  assert.equal(observed, code, 'expected stable failure code ' + code);
-  assert.equal(observedReason, reasonCode, 'expected stable reason code ' + reasonCode);
+  const suffix = label ? ' for ' + label : '';
+  assert.equal(observed, code, 'expected stable failure code ' + code + suffix);
+  assert.equal(observedReason, reasonCode, 'expected stable reason code ' + reasonCode + suffix);
+  return observedError;
 }
 
 function mode(file) {
@@ -1083,6 +1088,136 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       targetId: 'target.none'
     }), 'DEVELOPMENT_REQUEST_EFFECT_POLICY_INVALID');
 
+    const hostCliTargetPath = 'development-host-cli-target.txt';
+    const hostCliTargetFile = path.join(temp, hostCliTargetPath);
+    fs.writeFileSync(hostCliTargetFile, 'before host CLI closure\n');
+    const hostCliRequestId = 'development-request.host-cli-wrapper';
+    prepareDevelopmentRequest({
+      root: temp,
+      lockPath,
+      workflowId: 'automation.forge',
+      requestId: hostCliRequestId,
+      invocation: {
+        kind: 'develop',
+        profile: 'exact',
+        requestedOutcome: 'Prove the path-free host result CLI derives exact target changes.',
+        requestedLocalEffects: [
+          'local-workspace-read',
+          'local-workspace-write',
+          'local-command'
+        ],
+        targets: [{ id: 'target.host-cli-wrapper', path: hostCliTargetPath }]
+      },
+      createdAt: '2026-07-22T09:06:41.000Z'
+    });
+    fs.writeFileSync(hostCliTargetFile, 'after host CLI closure\n');
+    const cliFile = path.join(temp, 'soter/core/cli.mjs');
+    const hostCliArgs = [
+      cliFile,
+      'development-host-result-record',
+      '--request-id', hostCliRequestId,
+      '--state', 'passed',
+      '--check', 'check.host-cli-wrapper=passed',
+      '--local-workspace-read', 'observed:1',
+      '--local-workspace-write', 'observed:1',
+      '--local-command', 'observed:1',
+      '--subagent-dispatch', 'not-observed:0',
+      '--at', '2026-07-22T09:06:42.000Z',
+      '--json'
+    ];
+    const runHostCli = (argumentsValue) => childProcess.spawnSync(
+      process.execPath,
+      argumentsValue,
+      { cwd: temp, encoding: 'utf8' }
+    );
+    const hostCliRecorded = runHostCli(hostCliArgs);
+    assert.equal(hostCliRecorded.status, 0, hostCliRecorded.stderr);
+    const hostCliInspection = JSON.parse(hostCliRecorded.stdout);
+    assert.equal(hostCliInspection.progress.state, 'passed');
+    assert.deepEqual(hostCliInspection.changes.map((change) => ({
+      id: change.id,
+      kind: change.kind
+    })), [{ id: 'change.target.host-cli-wrapper', kind: 'modify' }]);
+    assert.equal(hostCliInspection.effects.filter((effect) => {
+      return effect.scope === 'separate-authority'
+        && effect.state === 'not-observed'
+        && effect.count === 0;
+    }).length, 6);
+    assert.equal(hostCliRecorded.stdout.includes(hostCliTargetPath), false);
+    assert.equal(hostCliRecorded.stdout.includes(temp), false);
+    const hostCliResultId = 'development-result.host-cli-wrapper';
+    const hostCliResultFile = path.join(
+      temp,
+      '.soter/state/development-results/' + hostCliResultId + '.json'
+    );
+    const hostCliResultBytes = fs.readFileSync(hostCliResultFile, 'utf8');
+    const hostCliResult = readDevelopmentResultState(temp, hostCliResultId).result;
+    assert.deepEqual(hostCliResult.promotion, {
+      state: 'held',
+      artifactFingerprint: null,
+      reasonCode: 'PROMOTION_AUTHORITY_NOT_GRANTED'
+    });
+    assert.equal(hostCliResult.effects.filter((effect) => {
+      return effect.scope === 'separate-authority'
+        && effect.state === 'not-observed'
+        && effect.count === 0;
+    }).length, 6);
+
+    const hostCliReentry = runHostCli(hostCliArgs);
+    assert.equal(hostCliReentry.status, 0, hostCliReentry.stderr);
+    assert.equal(
+      JSON.parse(hostCliReentry.stdout).inspectionFingerprint,
+      hostCliInspection.inspectionFingerprint
+    );
+    assert.equal(fs.readFileSync(hostCliResultFile, 'utf8'), hostCliResultBytes);
+
+    const changedHostCliFact = [...hostCliArgs];
+    changedHostCliFact[changedHostCliFact.indexOf('check.host-cli-wrapper=passed')]
+      = 'check.changed-host-cli-wrapper=passed';
+    const changedHostCliResult = runHostCli(changedHostCliFact);
+    assert.notEqual(changedHostCliResult.status, 0);
+    assert.equal(fs.readFileSync(hostCliResultFile, 'utf8'), hostCliResultBytes);
+
+    const hostileCliSentinel = '/private/HOSTILE_HOST_CLI_SENTINEL';
+    const invalidHostCliArguments = [
+      hostCliArgs.filter((item, index) => {
+        const checkIndex = hostCliArgs.indexOf('--check');
+        return index !== checkIndex && index !== checkIndex + 1;
+      }),
+      [...hostCliArgs.slice(0, -1), '--check', 'check.host-cli-wrapper=passed'],
+      hostCliArgs.map((item) => item === 'observed:1'
+        ? 'observed:9007199254740992'
+        : item),
+      [...hostCliArgs.slice(0, -1), '--local-command', 'observed:1'],
+      [...hostCliArgs.slice(0, -1), '--outcome', hostileCliSentinel],
+      [...hostCliArgs.slice(0, -1), '--root', hostileCliSentinel],
+      [...hostCliArgs.slice(0, -1), '--provider', 'provider.hostile']
+    ];
+    for (const invalidArgs of invalidHostCliArguments) {
+      const rejected = runHostCli(invalidArgs);
+      assert.notEqual(rejected.status, 0);
+      assert.equal((rejected.stderr + rejected.stdout).includes(hostileCliSentinel), false);
+      assert.equal(fs.readFileSync(hostCliResultFile, 'utf8'), hostCliResultBytes);
+    }
+
+    const evaluationHostCli = runHostCli([
+      cliFile,
+      'development-host-result-record',
+      '--request-id', evaluationRequest.request.id,
+      '--state', 'blocked',
+      '--local-workspace-read', 'not-observed:0',
+      '--local-workspace-write', 'not-observed:0',
+      '--local-command', 'not-observed:0',
+      '--subagent-dispatch', 'not-observed:0',
+      '--at', '2026-07-22T09:06:42.500Z',
+      '--json'
+    ]);
+    assert.notEqual(evaluationHostCli.status, 0);
+    assert.equal(fs.existsSync(path.join(
+      temp,
+      '.soter/state/development-results/development-result.target-read-evaluation.json'
+    )), false);
+
     const unavailableTargetCases = [
       ['missing', 'development-missing.txt'],
       ['private-name', '.env'],
@@ -1126,13 +1261,22 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
         },
         createdAt: '2026-07-22T09:06:50.000Z'
       });
-      expectCode(() => readDevelopmentTargetMaterial({
+      const readUnavailableTarget = () => readDevelopmentTargetMaterial({
         root: temp,
         host: 'codex',
         requestId: request.request.id,
         requestFingerprint: request.request.requestFingerprint,
         targetId: 'target.' + id
-      }), 'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE');
+      });
+      if (id === 'credential-pattern') {
+        expectCodeAndReason(
+          readUnavailableTarget,
+          'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE',
+          'DEVELOPMENT_TARGET_MATERIAL_CREDENTIAL_PATTERN'
+        );
+      } else {
+        expectCode(readUnavailableTarget, 'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE');
+      }
     }
 
     const safeCredentialVocabularyRequest = prepareDevelopmentRequest({
@@ -1169,8 +1313,146 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       'const token = soterSyntheticCredentialFixture("test-fixture-token-value");',
       ''
     ].join('\n');
+    const multilineMarkedSource = [
+      'function soterSyntheticCredentialFixture(value) { return value; }',
+      'const token = soterSyntheticCredentialFixture',
+      '  (',
+      '    "test-fixture-token-value"',
+      '  );',
+      ''
+    ].join('\n');
+    const multilineDiagnosticSentinel = 'multiline-marker-private-diagnostic-sentinel';
+    const multilineMarkedPath = 'development-multiline-marked/selftest.mjs';
+    const multilineMarkedOrdinaryPath = 'development-multiline-marked-ordinary.mjs';
+    const multilineMarkedOrdinaryCrlfPath = 'development-multiline-marked-ordinary-crlf.mjs';
+    const multilineMarkedOrdinaryCrlfSource = multilineMarkedSource.replaceAll('\n', '\r\n');
+    const multilineRejectedSources = [
+      {
+        id: 'multiline-comment',
+        relative: 'development-multiline-comment.selftest.mjs',
+        source: 'const token = soterSyntheticCredentialFixture /* '
+          + multilineDiagnosticSentinel
+          + ' */ ("test-fixture-token-value");\n'
+      },
+      {
+        id: 'multiline-line-comment',
+        relative: 'development-multiline-line-comment.selftest.mjs',
+        source: 'const token = soterSyntheticCredentialFixture // '
+          + multilineDiagnosticSentinel
+          + '\r\n  ("test-fixture-token-value");\r\n'
+      },
+      {
+        id: 'multiline-optional-call',
+        relative: 'development-multiline-optional-call.selftest.mjs',
+        source: 'const token = soterSyntheticCredentialFixture\n'
+          + '  ?.("test-fixture-token-value");\n'
+      },
+      {
+        id: 'multiline-concatenated',
+        relative: 'development-multiline-concatenated.selftest.mjs',
+        source: 'const token = soterSyntheticCredentialFixture("test-fixture-token-value"'
+          + ' + "-' + multilineDiagnosticSentinel + '");\n'
+      },
+      {
+        id: 'multiline-nested',
+        relative: 'development-multiline-nested.selftest.mjs',
+        source: 'const token = soterSyntheticCredentialFixture(String("test-fixture-'
+          + multilineDiagnosticSentinel + '"));\n'
+      },
+      {
+        id: 'multiline-extra-argument',
+        relative: 'development-multiline-extra-argument.selftest.mjs',
+        source: 'const token = soterSyntheticCredentialFixture("test-fixture-token-value", "'
+          + multilineDiagnosticSentinel + '");\n'
+      }
+    ];
+    const standaloneMarkedPath = 'development-standalone-marked/selftest.mjs';
+    const standaloneUnmarkedPath = 'development-standalone-unmarked/selftest.cjs';
+    const standaloneNearMissPath = 'development-standalone-near-miss/selftest.ts';
+    const standaloneDiagnosticSentinel = 'standalone-selftest-private-diagnostic-sentinel';
+    const standaloneUnmarkedSource =
+      'const token = "test-fixture-' + standaloneDiagnosticSentinel + '";\n';
+    const standaloneNearMissSource =
+      'const token = notSoterSyntheticCredentialFixture("test-fixture-'
+        + standaloneDiagnosticSentinel + '");\n';
+    const singleQuotedSourceToken = (value) => {
+      return "'" + value
+        .replaceAll('\\\\', '\\\\')
+        .replaceAll("'", "\\'")
+        .replaceAll('\n', '\\n') + "'";
+    };
+    const inertFixtureSourceLiteral = singleQuotedSourceToken(inertPrivateKeyFixture);
+    const inertPrivateKeySource = 'const material = ' + inertFixtureSourceLiteral + ';\n';
+    const privateKeyPathSentinel = 'target-reader-hostile-path-sentinel';
+    const privateKeyBoundaryCases = [
+      {
+        id: 'inert-private-key-ordinary',
+        relative: 'development-inert-private-key-ordinary.mjs',
+        source: inertPrivateKeySource,
+        reasonCode: 'DEVELOPMENT_TARGET_MATERIAL_PRIVATE_KEY_BLOCK'
+      },
+      {
+        id: 'inert-private-key-near-miss',
+        relative: 'development-' + privateKeyPathSentinel + '.selftest.mjs',
+        source: 'const material = ' + singleQuotedSourceToken(inertPrivateKeyFixture.replace(
+          'PRIVATE_MCP_KEY_BLOCK_SENTINEL',
+          'PRIVATE_MCP_KEY_BLOCK_SENTINEL_EXTRA'
+        )) + ';\n',
+        reasonCode: 'DEVELOPMENT_TARGET_MATERIAL_PRIVATE_KEY_BLOCK'
+      },
+      {
+        id: 'inert-private-key-extra-line',
+        relative: 'development-inert-private-key-extra-line.selftest.mjs',
+        source: 'const material = ' + singleQuotedSourceToken(inertPrivateKeyFixture.replace(
+          '\n-----END',
+          '\nQUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVo=\n-----END'
+        )) + ';\n',
+        reasonCode: 'DEVELOPMENT_TARGET_MATERIAL_PRIVATE_KEY_BLOCK'
+      },
+      {
+        id: 'inert-private-key-rsa',
+        relative: 'development-inert-private-key-rsa.selftest.mjs',
+        source: 'const material = ' + singleQuotedSourceToken(
+          inertPrivateKeyFixture.replace('OPENSSH', 'RSA')
+        ) + ';\n',
+        reasonCode: 'DEVELOPMENT_TARGET_MATERIAL_PRIVATE_KEY_BLOCK'
+      },
+      {
+        id: 'inert-private-key-generic',
+        relative: 'development-inert-private-key-generic.selftest.mjs',
+        source: 'const material = ' + singleQuotedSourceToken(
+          inertPrivateKeyFixture.replace('OPENSSH ', '')
+        ) + ';\n',
+        reasonCode: 'DEVELOPMENT_TARGET_MATERIAL_PRIVATE_KEY_BLOCK'
+      },
+      {
+        id: 'inert-private-key-second-block',
+        relative: 'development-inert-private-key-second-block.selftest.mjs',
+        source: inertPrivateKeySource + 'const second = ' + singleQuotedSourceToken(
+          inertPrivateKeyFixture
+            .replace('OPENSSH', 'RSA')
+            .replace('PRIVATE_MCP_KEY_BLOCK_SENTINEL', 'QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVo=')
+        ) + ';\n',
+        reasonCode: 'DEVELOPMENT_TARGET_MATERIAL_PRIVATE_KEY_BLOCK'
+      },
+      {
+        id: 'inert-private-key-assignment',
+        relative: 'development-inert-private-key-assignment.selftest.mjs',
+        source: inertPrivateKeySource + 'const privateKey = "live-private-key-value";\n',
+        reasonCode: 'DEVELOPMENT_TARGET_MATERIAL_CREDENTIAL_ASSIGNMENT'
+      }
+    ];
     const targetReaderFixtureFiles = [
       ['development-marked-safe.selftest.mjs', markedSyntheticSource],
+      [multilineMarkedPath, multilineMarkedSource],
+      [multilineMarkedOrdinaryPath, multilineMarkedSource],
+      [multilineMarkedOrdinaryCrlfPath, multilineMarkedOrdinaryCrlfSource],
+      ...multilineRejectedSources.map(({ relative, source }) => [relative, source]),
+      [standaloneMarkedPath, markedSyntheticSource],
+      [standaloneUnmarkedPath, standaloneUnmarkedSource],
+      [standaloneNearMissPath, standaloneNearMissSource],
+      ['development-inert-private-key.selftest.mjs', inertPrivateKeySource],
+      ...privateKeyBoundaryCases.map(({ relative, source }) => [relative, source]),
       [
         'development-unmarked-safe.selftest.mjs',
         'const token = "test-fixture-token-value";\n'
@@ -1190,8 +1472,17 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       [
         'development-source-reference.selftest.mjs',
         'const authorization = metadata.authorization;\n'
+          + 'const token = metadata.token /* harmless trailing comment */ ;\n'
       ]
     ];
+    for (const relative of [
+      multilineMarkedPath,
+      standaloneMarkedPath,
+      standaloneUnmarkedPath,
+      standaloneNearMissPath
+    ]) {
+      fs.mkdirSync(path.dirname(path.join(temp, relative)), { recursive: true });
+    }
     for (const [relative, source] of targetReaderFixtureFiles) {
       fs.writeFileSync(path.join(temp, relative), source);
     }
@@ -1222,6 +1513,143 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       targetId: 'target.marked-safe'
     });
     assert.equal(markedSafeMaterial.content.text, markedSyntheticSource);
+    const multilineMarkedRequest = prepareFixtureRead(
+      'multiline-marked',
+      multilineMarkedPath,
+      '2026-07-22T09:06:53.001Z'
+    );
+    assert.equal(readDevelopmentTargetMaterial({
+      root: temp,
+      host: 'codex',
+      requestId: multilineMarkedRequest.request.id,
+      requestFingerprint: multilineMarkedRequest.request.requestFingerprint,
+      targetId: 'target.multiline-marked'
+    }).content.text, multilineMarkedSource);
+    const multilineMarkedOrdinaryRequest = prepareFixtureRead(
+      'multiline-marked-ordinary',
+      multilineMarkedOrdinaryPath,
+      '2026-07-22T09:06:53.002Z'
+    );
+    const multilineMarkedOrdinaryError = expectCodeAndReason(
+      () => readDevelopmentTargetMaterial({
+        root: temp,
+        host: 'codex',
+        requestId: multilineMarkedOrdinaryRequest.request.id,
+        requestFingerprint: multilineMarkedOrdinaryRequest.request.requestFingerprint,
+        targetId: 'target.multiline-marked-ordinary'
+      }),
+      'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE',
+      'DEVELOPMENT_TARGET_MATERIAL_CREDENTIAL_ASSIGNMENT',
+      'multiline-marked-ordinary'
+    );
+    assert.equal(multilineMarkedOrdinaryError.message.includes(multilineMarkedOrdinaryPath), false);
+    assert.equal(multilineMarkedOrdinaryError.message.includes(multilineMarkedSource), false);
+    const multilineMarkedOrdinaryCrlfRequest = prepareFixtureRead(
+      'multiline-marked-ordinary-crlf',
+      multilineMarkedOrdinaryCrlfPath,
+      '2026-07-22T09:06:53.003Z'
+    );
+    const multilineMarkedOrdinaryCrlfError = expectCodeAndReason(
+      () => readDevelopmentTargetMaterial({
+        root: temp,
+        host: 'codex',
+        requestId: multilineMarkedOrdinaryCrlfRequest.request.id,
+        requestFingerprint: multilineMarkedOrdinaryCrlfRequest.request.requestFingerprint,
+        targetId: 'target.multiline-marked-ordinary-crlf'
+      }),
+      'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE',
+      'DEVELOPMENT_TARGET_MATERIAL_CREDENTIAL_ASSIGNMENT',
+      'multiline-marked-ordinary-crlf'
+    );
+    assert.equal(multilineMarkedOrdinaryCrlfError.message.includes(multilineMarkedOrdinaryCrlfPath), false);
+    assert.equal(multilineMarkedOrdinaryCrlfError.message.includes(multilineMarkedOrdinaryCrlfSource), false);
+    for (const [index, item] of multilineRejectedSources.entries()) {
+      const request = prepareFixtureRead(
+        item.id,
+        item.relative,
+        '2026-07-22T09:06:53.' + String(index + 3).padStart(3, '0') + 'Z'
+      );
+      const error = expectCodeAndReason(() => readDevelopmentTargetMaterial({
+        root: temp,
+        host: 'codex',
+        requestId: request.request.id,
+        requestFingerprint: request.request.requestFingerprint,
+        targetId: 'target.' + item.id
+      }), 'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE',
+      'DEVELOPMENT_TARGET_MATERIAL_CREDENTIAL_ASSIGNMENT', item.id);
+      assert.equal(error.message.includes(item.relative), false);
+      assert.equal(error.message.includes(item.source), false);
+      assert.equal(error.message.includes(multilineDiagnosticSentinel), false);
+    }
+    const standaloneMarkedRequest = prepareFixtureRead(
+      'standalone-marked',
+      standaloneMarkedPath,
+      '2026-07-22T09:06:53.005Z'
+    );
+    assert.equal(readDevelopmentTargetMaterial({
+      root: temp,
+      host: 'codex',
+      requestId: standaloneMarkedRequest.request.id,
+      requestFingerprint: standaloneMarkedRequest.request.requestFingerprint,
+      targetId: 'target.standalone-marked'
+    }).content.text, markedSyntheticSource);
+    for (const [id, relative, source, createdAt] of [
+      [
+        'standalone-unmarked',
+        standaloneUnmarkedPath,
+        standaloneUnmarkedSource,
+        '2026-07-22T09:06:53.006Z'
+      ],
+      [
+        'standalone-near-miss',
+        standaloneNearMissPath,
+        standaloneNearMissSource,
+        '2026-07-22T09:06:53.007Z'
+      ]
+    ]) {
+      const request = prepareFixtureRead(id, relative, createdAt);
+      const error = expectCodeAndReason(() => readDevelopmentTargetMaterial({
+        root: temp,
+        host: 'codex',
+        requestId: request.request.id,
+        requestFingerprint: request.request.requestFingerprint,
+        targetId: 'target.' + id
+      }), 'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE',
+      'DEVELOPMENT_TARGET_MATERIAL_CREDENTIAL_ASSIGNMENT', id);
+      assert.equal(error.message.includes(relative), false);
+      assert.equal(error.message.includes(source), false);
+      assert.equal(error.message.includes(standaloneDiagnosticSentinel), false);
+    }
+    const inertPrivateKeyRequest = prepareFixtureRead(
+      'inert-private-key',
+      'development-inert-private-key.selftest.mjs',
+      '2026-07-22T09:06:53.010Z'
+    );
+    const inertPrivateKeyMaterial = readDevelopmentTargetMaterial({
+      root: temp,
+      host: 'codex',
+      requestId: inertPrivateKeyRequest.request.id,
+      requestFingerprint: inertPrivateKeyRequest.request.requestFingerprint,
+      targetId: 'target.inert-private-key'
+    });
+    assert.equal(inertPrivateKeyMaterial.content.text, inertPrivateKeySource);
+    for (const [index, item] of privateKeyBoundaryCases.entries()) {
+      const request = prepareFixtureRead(
+        item.id,
+        item.relative,
+        '2026-07-22T09:06:53.' + String(20 + index).padStart(3, '0') + 'Z'
+      );
+      const error = expectCodeAndReason(() => readDevelopmentTargetMaterial({
+        root: temp,
+        host: 'codex',
+        requestId: request.request.id,
+        requestFingerprint: request.request.requestFingerprint,
+        targetId: 'target.' + item.id
+      }), 'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE', item.reasonCode, item.id);
+      assert.equal(error.message.includes(item.relative), false);
+      assert.equal(error.message.includes('PRIVATE_MCP_KEY_BLOCK_SENTINEL'), false);
+      assert.equal(error.message.includes(privateKeyPathSentinel), false);
+    }
     for (const [id, relative, reasonCode, createdAt] of [
       [
         'unmarked-safe',
@@ -1280,12 +1708,16 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       requestId: sourceReferenceRequest.request.id,
       requestFingerprint: sourceReferenceRequest.request.requestFingerprint,
       targetId: 'target.source-reference'
-    }).content.text, 'const authorization = metadata.authorization;\n');
+    }).content.text, 'const authorization = metadata.authorization;\n'
+      + 'const token = metadata.token /* harmless trailing comment */ ;\n');
 
     const exactSelftestPaths = [
+      'soter/kernel/configuration-template-portability.selftest.mjs',
       'soter/core/development-runs.selftest.mjs',
+      'soter/core/mcp/selftest.mjs',
       'soter/core/host-realizations.selftest.mjs',
-      'soter/automations/email-triage/connected-context.selftest.mjs'
+      'soter/automations/email-triage/connected-context.selftest.mjs',
+      'soter/core/selftest.mjs'
     ];
     const exactSelftestRequest = prepareDevelopmentRequest({
       root: temp,
@@ -1309,22 +1741,51 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       let chunkIndex = 0;
       let previousMaterialFingerprint = null;
       while (chunkIndex !== null) {
-        const material = readDevelopmentTargetMaterial({
-          root: temp,
-          host: 'codex',
-          requestId: exactSelftestRequest.request.id,
-          requestFingerprint: exactSelftestRequest.request.requestFingerprint,
-          targetId: 'target.exact-selftest-' + index,
-          chunkIndex,
-          previousMaterialFingerprint
-        });
+        let material;
+        try {
+          material = readDevelopmentTargetMaterial({
+            root: temp,
+            host: 'codex',
+            requestId: exactSelftestRequest.request.id,
+            requestFingerprint: exactSelftestRequest.request.requestFingerprint,
+            targetId: 'target.exact-selftest-' + index,
+            chunkIndex,
+            previousMaterialFingerprint
+          });
+        } catch (error) {
+          assert.fail(
+            'expected exact governed selftest target to remain readable: '
+              + relative + ' [' + (error?.reasonCode || error?.code || 'unknown') + ']'
+          );
+        }
         chunks.push(material.content.text);
         chunkIndex = material.content.nextChunkIndex;
         previousMaterialFingerprint = material.materialFingerprint;
       }
-      assert.equal(chunks.join(''), fs.readFileSync(path.join(temp, relative), 'utf8'));
+      assert.equal(
+        Buffer.from(chunks.join(''), 'utf8').equals(fs.readFileSync(path.join(temp, relative))),
+        true,
+        'governed selftest chunks must reassemble to the exact original bytes'
+      );
     }
 
+    expectCode(() => prepareDevelopmentRequest({
+      root: temp,
+      lockPath: reviewLockPath,
+      workflowId: 'automation.reviewing-forge-output',
+      requestId: 'development-request.target-read-path-spelling-variant',
+      invocation: {
+        kind: 'develop',
+        profile: 'exact',
+        requestedOutcome: 'Prove target-reader path spelling variants fail closed.',
+        requestedLocalEffects: ['local-workspace-read'],
+        targets: [{
+          id: 'target.path-spelling-variant',
+          path: 'soter/kernel/./configuration-template-portability.selftest.mjs'
+        }]
+      },
+      createdAt: '2026-07-22T09:06:53.710Z'
+    }), 'DEVELOPMENT_REQUEST_TARGET_INVALID');
     const unicodeChunkRequest = prepareDevelopmentRequest({
       root: temp,
       lockPath: reviewLockPath,

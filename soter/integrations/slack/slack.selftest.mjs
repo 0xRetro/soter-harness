@@ -31,10 +31,19 @@ const AUTHORITY = 'authority.communications.workspace';
 const FIXTURE_WORKSPACE_ID =
   'soter-fixture://configuration-template/slack/workspace/contained';
 const CONNECTED_WORKSPACE_ID = 'T000000001';
+const READINESS_PROBE = Object.freeze({
+  conversationId: 'C000000001',
+  threadRootMessageId: '1784653200.000001',
+  oldestInclusive: '2026-07-21T16:00:00.000Z',
+  latestExclusive: '2026-07-21T20:00:00.000Z'
+});
 
-function workspaceSettings(workspaceId) {
+function workspaceSettings(workspaceId, readinessProbe = null) {
   return {
-    'integration.slack': { workspaceId }
+    'integration.slack': {
+      workspaceId,
+      ...(readinessProbe ? { readinessProbe } : {})
+    }
   };
 }
 
@@ -140,7 +149,7 @@ function selftestLock(root) {
       capability,
       capabilityVersion: '1.0.0',
       providerPack: 'integration.slack',
-      providerVersion: '0.1.0',
+      providerVersion: '0.2.0',
       authorities: ['authority.slack.instance'],
       effects: ['read', 'disclosure'],
       reason: 'Selftest binds one exact connected Slack read capability.'
@@ -594,6 +603,135 @@ export async function selftestSlackIntegration(root) {
   assert.equal(finalizedProbe.authorities[0].state, 'passed');
   assert.equal(finalizedProbe.capabilities[0].state, 'unknown');
   assert.equal(JSON.stringify({ probeResult, finalizedProbe }).includes(privateWorkspaceMarker), false);
+
+  const readinessSettings = workspaceSettings(CONNECTED_WORKSPACE_ID, READINESS_PROBE);
+  const readinessPlan = prepareProbePlanMcpRaw({ settings: readinessSettings });
+  assert.deepEqual(readinessPlan.steps.map((step) => step.id), [
+    'step.identity',
+    'step.messages-profile',
+    'step.thread-profile'
+  ]);
+  assert.deepEqual(readinessPlan.steps.map((step) => step.tool), [
+    'list_workspaces',
+    'read_channel',
+    'read_thread'
+  ]);
+  assert.equal(readinessPlan.steps[1].arguments.limit, 1);
+  assert.equal(readinessPlan.steps[2].arguments.limit, 1);
+  assert.equal(readinessPlan.steps[1].arguments.channel_id, READINESS_PROBE.conversationId);
+  assert.equal(readinessPlan.steps[2].arguments.message_ts, READINESS_PROBE.threadRootMessageId);
+
+  const readinessResponses = [
+    {
+      structuredContent: {
+        teams: [{ id: CONNECTED_WORKSPACE_ID }],
+        response_metadata: { next_cursor: '' }
+      }
+    },
+    structured({
+      team_id: CONNECTED_WORKSPACE_ID,
+      channel_id: READINESS_PROBE.conversationId,
+      messages: [{
+        ts: '1784656800.000002',
+        user: 'U000000001',
+        text: 'private-message-shape-sentinel',
+        reply_count: 0
+      }],
+      pagination_info: { has_more: false, next_cursor: '' }
+    }),
+    structured({
+      team_id: CONNECTED_WORKSPACE_ID,
+      channel_id: READINESS_PROBE.conversationId,
+      messages: [{
+        ts: READINESS_PROBE.threadRootMessageId,
+        user: 'U000000001',
+        text: 'private-thread-shape-sentinel'
+      }],
+      pagination_info: { has_more: false, next_cursor: '' }
+    })
+  ];
+  const readinessSteps = readinessPlan.steps.map((step) => ({
+    ...step,
+    scopeFingerprint: fingerprintJson(step.scope)
+  }));
+  const readinessResults = readinessSteps.map((step, index) => ({
+    stepId: step.id,
+    result: completeProbePlanStepMcpRaw({
+      step,
+      settings: readinessSettings,
+      responseProfile: 'slack.codex.connector.v1',
+      response: readinessResponses[index]
+    })
+  }));
+  const readinessFinal = finalizeProbePlanMcpRaw({
+    plan: {
+      credentialRefs: ['secret-ref.slack'],
+      authorities: [AUTHORITY],
+      capabilities: [
+        'communications.conversations.list',
+        'communications.messages.read',
+        'communications.thread.read'
+      ]
+    },
+    steps: readinessSteps,
+    results: readinessResults,
+    settings: readinessSettings
+  });
+  assert.equal(readinessFinal.checks.length, 3);
+  assert(readinessFinal.checks.every((check) => check.state === 'passed'));
+  assert(readinessFinal.capabilities.every((capability) => capability.state === 'unknown'));
+  const serializedReadiness = JSON.stringify({ readinessResults, readinessFinal });
+  for (const privateValue of [
+    CONNECTED_WORKSPACE_ID,
+    READINESS_PROBE.conversationId,
+    READINESS_PROBE.threadRootMessageId,
+    'private-message-shape-sentinel',
+    'private-thread-shape-sentinel',
+    'next_cursor'
+  ]) {
+    assert.equal(serializedReadiness.includes(privateValue), false);
+  }
+
+  for (const [label, readinessProbe] of [
+    ['reversed readiness window', {
+      ...READINESS_PROBE,
+      oldestInclusive: READINESS_PROBE.latestExclusive,
+      latestExclusive: READINESS_PROBE.oldestInclusive
+    }],
+    ['oversized readiness window', {
+      ...READINESS_PROBE,
+      oldestInclusive: '2026-07-20T16:00:00.000Z'
+    }],
+    ['malformed readiness subject', {
+      ...READINESS_PROBE,
+      conversationId: 'not-a-conversation'
+    }]
+  ]) {
+    await expectFailure(
+      label,
+      () => prepareProbePlanMcpRaw({
+        settings: workspaceSettings(CONNECTED_WORKSPACE_ID, readinessProbe)
+      }),
+      /readiness probe/
+    );
+  }
+  await expectFailure(
+    'readiness thread missing exact root',
+    () => completeProbePlanStepMcpRaw({
+      step: readinessSteps[2],
+      settings: readinessSettings,
+      responseProfile: 'slack.codex.connector.v1',
+      response: structured({
+        messages: [{
+          ts: '1784656800.000002',
+          thread_ts: READINESS_PROBE.threadRootMessageId,
+          text: 'private-wrong-thread-shape-sentinel'
+        }],
+        pagination_info: { has_more: false, next_cursor: '' }
+      })
+    }),
+    /exact root subject/
+  );
   await expectFailure(
     'provider probe omitted configured workspace',
     () => completeProbePlanStepMcp({
@@ -1403,6 +1541,12 @@ export async function selftestSlackIntegration(root) {
   const slackProvider = readJson(
     path.join(root, 'soter/providers/provider.integration.slack.mcp.json')
   );
+  const slackPack = readJson(path.join(root, 'soter/packs/integration.slack/pack.json'));
+  const slackSettings = readJson(path.join(root, 'soter/integrations/slack/settings.json'));
+  assert.equal(slackProvider.version, '0.2.0');
+  assert.equal(slackPack.version, slackProvider.version);
+  assert.equal(slackSettings.version, slackProvider.version);
+  assert(slackProvider.capabilities.every((capability) => capability.version === '1.0.0'));
   assert.deepEqual(slackProvider.runtime.responseProfiles, ['slack.codex.connector.v1']);
   assert(claudeSlack.toolMappings.every((mapping) => {
     return !slackProvider.runtime.responseProfiles.includes(mapping.responseProfile);

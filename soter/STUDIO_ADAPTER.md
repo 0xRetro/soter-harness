@@ -652,6 +652,23 @@ continuation request. No private state, provider response, credential value,
 provider action, readiness, verification, or health claim is representable in
 this inspection.
 
+`hostRealization` is a second required top-level family, observed live on every
+inspection and never folded into `runtime` or the universal MCP guard:
+
+| Realization state | Reason code | Guidance only |
+|---|---|---|
+| `current` | `HOST_REALIZATION_CURRENT` | `continue` |
+| `not-realized` | `HOST_REALIZATION_NOT_REALIZED` | `realize-host-runtime` |
+| `stale` | `HOST_REALIZATION_ACTIVE_LOCK_MISSING` | `refresh-active-configuration` |
+| `stale` | `HOST_REALIZATION_ACTIVE_LOCK_STALE` | `refresh-active-configuration` |
+| `stale` | `HOST_REALIZATION_MANIFEST_LOCK_STALE` | `realize-host-runtime` |
+| `unavailable` | `HOST_REALIZATION_APPLICABILITY_UNAVAILABLE` | `none` |
+
+This family contains no paths, names, fingerprints, thrown prose, or executable
+continuation. Runtime and realization may truthfully differ. Studio presents the
+repair order as configuration refresh, then host realization, then host restart
+only when the separate runtime branch says restart is required.
+
 ## Lifecycle projection
 
 Studio lifecycle labels are presentation states assembled from distinct
@@ -1766,6 +1783,16 @@ host can inspect or use the pack's remaining contained behavior.
 The retained policy, workspace, conversation, message-window, explicit-thread,
 coverage, and private-review contracts describe the bounded shape required by a
 future structured provider route. They are inert while the mode is unavailable.
+An optional private Slack readiness probe performs exactly three read-only
+steps: identity, a bounded one-record message-shape check for the configured
+conversation and window, and a bounded one-record thread-shape check for the
+configured conversation, thread root, and window. Each content response must
+contain one usable record and an exhausted cursor. This milestone has no
+conversation-list readiness-probe step and no dynamic pagination. Its sanitized
+result exposes only shape counts, booleans, fingerprints, checks, and
+limitations; it exposes no IDs, content, cursors, native arguments, or raw
+pages, leaves all portable capabilities `unknown`, and does not make the mode
+available.
 Message bodies and private identifiers remain structurally absent from
 workspace inspection. No Slack write, persistence proposal, approval,
 continuation, retry, provider call, readiness, verification, or health follows

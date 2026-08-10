@@ -10,8 +10,8 @@
     "id": "harness-development-catalog",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:57ffd45d8fa9fadac06a23f32524d67c214b4057c3113a89509daf3adecf8676",
-  "graphFingerprint": "sha256:417602357dc2943564fadd81d809152f02b186e80cbda79abd1d130c22a76e36",
+  "configurationLockFingerprint": "sha256:f50ddf7e8f358bb2d9c4f825cb4843d7dc43b65411eb1a2643dd06302dae9a7a",
+  "graphFingerprint": "sha256:7e17282ec446bffb17f7d3c7b716c4b6a9403f0f5bcbf5a5d1b2f836fcdbe867",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -112,6 +112,11 @@
       "id": "automation.validating-resources",
       "version": "0.1.0",
       "fingerprint": "sha256:938dd0a07ec573f773072b98c467b95974acd0043392fc8f32494f5b1710a04a"
+    },
+    {
+      "id": "integration.otter",
+      "version": "0.1.0",
+      "fingerprint": "sha256:2b026b4426d72cab08f667f36e219be74664913634b175ab79b0f040f192e07b"
     }
   ],
   "host": {
@@ -120,7 +125,14 @@
     "version": "0.3.2",
     "manifestFingerprint": "sha256:cf50c9418a9af38255f994a6bcb062472a062708a3a95a89167843dd50eafa89"
   },
-  "integrations": [],
+  "integrations": [
+    {
+      "id": "integration.otter",
+      "version": "0.1.0",
+      "manifestFingerprint": "sha256:2b026b4426d72cab08f667f36e219be74664913634b175ab79b0f040f192e07b",
+      "evidenceMaturity": "declared"
+    }
+  ],
   "authorities": [
     {
       "id": "authority.harness-development-catalog.calendar-definition",
@@ -187,6 +199,12 @@
       "role": "instance",
       "subject": "onchain.records",
       "declarationFingerprint": "sha256:a2e499d4e2e3a6a2b65a135e7a4712e9dec492331cb3af943b5289db23322332"
+    },
+    {
+      "id": "authority.harness-development-catalog.otter-provider",
+      "role": "provider",
+      "subject": "meeting.transcript",
+      "declarationFingerprint": "sha256:0861369c95fb582f39d5e5f20472797b98063a3caf8dbeb15d106f66049d9616"
     },
     {
       "id": "authority.harness-development-catalog.policy-definition",
@@ -289,11 +307,11 @@
     {
       "role": "configuration",
       "path": "soter/configurations/harness-development-catalog.config.json",
-      "fingerprint": "sha256:2e1f44fcab520facf9edaa9336ddb9755d44cc6a211d4c2f6d5db56ddd718464"
+      "fingerprint": "sha256:21f3579f1eba1cbadb8dfadf530c363cf3c7a39b4680f20e441017e1b10324fc"
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:57ffd45d8fa9fadac06a23f32524d67c214b4057c3113a89509daf3adecf8676"
+      "fingerprint": "sha256:f50ddf7e8f358bb2d9c4f825cb4843d7dc43b65411eb1a2643dd06302dae9a7a"
     }
   ],
   "effects": [],

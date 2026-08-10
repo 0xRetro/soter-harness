@@ -209,9 +209,48 @@ export async function selftestHostRealizations(sourceRoot) {
       'mcp__codex_apps__notion_query_data_sources',
       'Current Codex adapter did not select the corrected native Notion query tool.'
     );
+    const catalogTemplate = readJson(path.join(
+      codexNotionTool,
+      'soter/configurations/harness-development-catalog.config.json'
+    ));
+    const catalogWithoutOtter = structuredClone(catalogTemplate);
+    catalogWithoutOtter.packs = catalogWithoutOtter.packs.filter((pack) => {
+      return pack.id !== 'integration.otter';
+    });
+    catalogWithoutOtter.authorities = catalogWithoutOtter.authorities.filter((authority) => {
+      return authority.id !== 'authority.harness-development-catalog.otter-provider';
+    });
+    writePrivateConfigurationState(
+      codexNotionTool,
+      catalogWithoutOtter.name,
+      catalogWithoutOtter
+    );
+    const catalogWithoutOtterLock = resolveConfiguration({
+      root: codexNotionTool,
+      configPath: privateConfigurationStatePath(
+        codexNotionTool,
+        catalogWithoutOtter.name
+      )
+    });
+    const catalogWithoutOtterRendered = renderHostProjectionCandidates({
+      root: codexNotionTool,
+      adapter: currentCodexAdapter,
+      configurationId: catalogWithoutOtterLock.configuration.name,
+      packIds: catalogWithoutOtterLock.packs.map((pack) => pack.id),
+      capabilityIds: catalogWithoutOtterLock.capabilities.map((capability) => capability.id),
+      effectPolicies: catalogWithoutOtterLock.effectPolicies
+    });
     const codexLock = activate(codexNotionTool, 'harness-development-catalog');
     assert.equal(codexLock.host.version, '0.3.2');
-    const codexUnselectedRendered = renderHostProjectionCandidates({
+    assert.deepEqual(codexLock.bindings, []);
+    assert.deepEqual(codexLock.capabilities, []);
+    assert.deepEqual(codexLock.sources, []);
+    assert.deepEqual(codexLock.secretRefs ?? [], []);
+    assert(codexLock.packs.some((pack) => pack.id === 'integration.otter'));
+    assert(!codexLock.packs.some((pack) => {
+      return pack.id === 'integration.notion' || pack.id === 'automation.meeting-intake';
+    }));
+    const codexCatalogRendered = renderHostProjectionCandidates({
       root: codexNotionTool,
       adapter: currentCodexAdapter,
       configurationId: codexLock.configuration.name,
@@ -219,19 +258,40 @@ export async function selftestHostRealizations(sourceRoot) {
       capabilityIds: codexLock.capabilities.map((capability) => capability.id),
       effectPolicies: codexLock.effectPolicies
     });
-    const codexUnselectedTools = codexUnselectedRendered.outputs.find((output) => {
+    const codexCatalogTools = codexCatalogRendered.outputs.find((output) => {
       return output.id === 'output.codex.tools';
     });
-    assert.equal(codexUnselectedTools.content, [
+    assert.equal(codexCatalogTools.content, [
       '[mcp_servers.soter]',
       'command = "node"',
       'args = ["soter/core/mcp/server.mjs", "--host", "codex"]',
+      '',
+      '[mcp_servers.otter]',
+      'url = "https://mcp.otter.ai/mcp"',
+      'auth = "oauth"',
       ''
-    ].join('\n'), 'An unselected provider changed the byte-exact base Codex MCP projection.');
-    assert(!codexUnselectedTools.content.includes('mcp_servers.otter')
-      && !codexUnselectedTools.content.includes('mcp.otter.ai')
-      && !codexUnselectedTools.content.includes('auth = "oauth"'),
-    'An unselected Otter provider leaked into the Codex MCP projection.');
+    ].join('\n'), 'The development catalog did not provision exact Soter and Otter endpoints.');
+    assert.equal(codexCatalogTools.content.split('[mcp_servers.soter]').length - 1, 1);
+    assert.equal(codexCatalogTools.content.split('[mcp_servers.otter]').length - 1, 1);
+    assert(!/(?:token|secret|api[_-]?key)\s*=/iu.test(codexCatalogTools.content),
+      'The deterministic Otter endpoint projection contained credential material.');
+    const skillRows = (rendered) => rendered.outputs
+      .filter((output) => output.role === 'skills')
+      .map((output) => ({
+        id: output.id,
+        path: output.path,
+        contentFingerprint: output.contentFingerprint,
+        fingerprint: output.fingerprint
+      }))
+      .sort((left, right) => left.id.localeCompare(right.id, 'en'));
+    assert.equal(skillRows(codexCatalogRendered).filter((output) => {
+      return output.path.endsWith('/SKILL.md');
+    }).length, 7);
+    assert.deepEqual(
+      skillRows(codexCatalogRendered),
+      skillRows(catalogWithoutOtterRendered),
+      'Provisioning Otter changed one or more of the seven governed development skills.'
+    );
     const capabilityProviderSchema = readJson(path.join(
       codexNotionTool,
       'soter/contracts/capability-provider.schema.json'
@@ -1319,8 +1379,8 @@ export async function selftestHostRealizations(sourceRoot) {
     ].join('\n'), 'Selected Otter provider did not render one exact Codex MCP endpoint block.');
     assert.equal(tools.content.split('[mcp_servers.otter]').length - 1, 1,
       'Selected Otter provider rendered a duplicate Codex MCP endpoint block.');
-    assert.notEqual(tools.contentFingerprint, codexUnselectedTools.contentFingerprint,
-      'Provider selection did not change the deterministic Codex tools candidate fingerprint.');
+    assert.equal(tools.contentFingerprint, codexCatalogTools.contentFingerprint,
+      'Equivalent selected Otter endpoint routes produced different Codex tools bytes.');
     assert(instructions.content.includes('`integration.notion` requires `notion`')
       && instructions.content.includes('`integration.otter` requires `otter`')
       && !instructions.content.includes('`integration.slack` requires `slack`')

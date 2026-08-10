@@ -3,7 +3,7 @@
   "contractVersion": "1.0.0",
   "id": "settings.integration.slack",
   "pack": "integration.slack",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "required": true,
   "schema": {
     "type": "object",
@@ -20,8 +20,36 @@
             "pattern": "^soter-fixture://configuration-template/slack/workspace/[a-z0-9]+(?:-[a-z0-9]+)*$"
           }
         ]
+      },
+      "readinessProbe": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "conversationId",
+          "threadRootMessageId",
+          "oldestInclusive",
+          "latestExclusive"
+        ],
+        "properties": {
+          "conversationId": {
+            "type": "string",
+            "pattern": "^[CDG][A-Z0-9]{8,63}$"
+          },
+          "threadRootMessageId": {
+            "type": "string",
+            "pattern": "^[0-9]{1,16}\\.[0-9]{6}$"
+          },
+          "oldestInclusive": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$"
+          },
+          "latestExclusive": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$"
+          }
+        }
       }
     }
   },
-  "reason": "The exact Slack workspace identity is private user configuration and must bind every operator-selected workspace before connected provider planning."
+  "reason": "The exact Slack workspace identity and optional bounded response-shape readiness probe are private user configuration; neither belongs in tracked templates or establishes portable capability availability."
 }

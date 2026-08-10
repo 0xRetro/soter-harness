@@ -15,6 +15,10 @@ import {
 const scriptFile = fileURLToPath(import.meta.url);
 const root = path.resolve(path.dirname(scriptFile), '..', '..');
 
+function soterSyntheticCredentialFixture(value) {
+  return value;
+}
+
 function safeTemplate() {
   return {
     $contract: 'soter://contracts/configuration/v1',
@@ -147,7 +151,7 @@ withRoot((temporary) => {
         state: 'mapped',
         provider: 'Workspace-only task title'
       }],
-      token: 'xoxb-private-runtime-value'
+      token: soterSyntheticCredentialFixture('test-fixture-private-state-token-sentinel')
     })
   );
   const inspection = assertTrackedConfigurationTemplatesPortable(temporary);
@@ -212,7 +216,19 @@ expectViolation((document) => {
 }, 'TRACKED_CONFIGURATION_PROVIDER_IDENTIFIER');
 
 expectViolation((document) => {
-  document.settings['integration.slack'] = { token: 'xoxb-1234567890-private' };
+  document.settings['integration.slack'] = {
+    workspaceId: CONFIGURATION_TEMPLATE_FIXTURE_PREFIX + 'slack/workspace/contained',
+    readinessProbe: {
+      conversationId: 'C123456789',
+      threadRootMessageId: '1784653200.000001',
+      oldestInclusive: '2026-07-21T16:00:00.000Z',
+      latestExclusive: '2026-07-21T17:00:00.000Z'
+    }
+  };
+}, 'TRACKED_CONFIGURATION_PRIVATE_SLACK_READINESS_PROBE');
+
+expectViolation((document) => {
+  document.settings['integration.slack'] = { token: soterSyntheticCredentialFixture('test-fixture-tracked-private-token-sentinel') };
 }, 'TRACKED_CONFIGURATION_PRIVATE_VALUE_FIELD');
 
 expectViolation((document) => {

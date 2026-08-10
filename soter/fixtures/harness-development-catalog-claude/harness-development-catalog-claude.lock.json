@@ -294,7 +294,7 @@
         {
           "path": "soter/contracts/host-runtime-inspection.schema.json",
           "role": "definition",
-          "fingerprint": "sha256:5a8d2930a3ba8b38bc2afb03b6c89ae35999d6a3275e39b67e8d4539fb94cf06"
+          "fingerprint": "sha256:3267abf8a56c63c4b80e89545df78ff964e791066e1f700d269e268e6a32ec6d"
         },
         {
           "path": "soter/contracts/host-tool-call.schema.json",
@@ -429,7 +429,7 @@
         {
           "path": "soter/contracts/provider-probe-plan-checkpoint.schema.json",
           "role": "definition",
-          "fingerprint": "sha256:a8328aaa4752a17962f0ba108693354eaeb06be9bdcbe3b666ba1307ae6e2371"
+          "fingerprint": "sha256:4b0be1403b1c3996b987685232f1b30a91cbc281461fbebeb88b0fbb95176ba7"
         },
         {
           "path": "soter/contracts/provider-probe-v2.schema.json",
@@ -494,12 +494,12 @@
         {
           "path": "soter/kernel/configuration-template-portability.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:f71a49d83600329894bbea0515e3b1c9412072759d2a4171b01405ee4799a0ca"
+          "fingerprint": "sha256:f530d0f82b6b53febad1304c805d6eaf6921bb0d1f3cfb7c64214ebaf5ff42ff"
         },
         {
           "path": "soter/kernel/configuration-template-portability.selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:7d51ec7d36465a703517248bdf97f595f89137ee3799a223088f36985494c2cd"
+          "fingerprint": "sha256:9bd9f6dd45b74c64883e355ee35434842ddf042c9b1946064fb23ad5fe9d38ae"
         },
         {
           "path": "soter/kernel/development-catalog.selftest.mjs",
@@ -601,7 +601,7 @@
         {
           "path": "soter/core/cli.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:cf2cd7869e29c94bdc692bfdcae3671ff8877042f02c69d59f364dfdab0d94fa"
+          "fingerprint": "sha256:651b5e0e02ac68e7439943c389b89de8f5435ec27a58c755bc951c1ba534bbe9"
         },
         {
           "path": "soter/core/configuration-preview.mjs",
@@ -706,12 +706,12 @@
         {
           "path": "soter/core/development-runs.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:8395c9112b03051824d57e20e1f567e409478d517101eb78f785a06e6b8a4c2b"
+          "fingerprint": "sha256:231b25bb5d775fa355516a12a8326fd50057000fa71200ed5c9b37853d5d206d"
         },
         {
           "path": "soter/core/development-runs.selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:512964be7b7eb6d675264a179d06f40b233811b44f987214a1e009d4c7f7e1b4"
+          "fingerprint": "sha256:6a4a644a89b0749e652f5691685b0f4e48da7815f58b8f6cc82f3b93c26cd931"
         },
         {
           "path": "soter/core/doctor.mjs",
@@ -741,17 +741,17 @@
         {
           "path": "soter/core/host-realizations.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:e6dcc7ea38c40c29a7c7272649238deba0c147fe0c7ce648dd01bab78ce9338d"
+          "fingerprint": "sha256:ee486f071bcec29bc14b5263893f5aeabc29b992074a85534d5c62f88198f28e"
         },
         {
           "path": "soter/core/host-realizations.selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:9095aabc84bff0cf06a8294101baccbfab6d77bec60085d9caa9a17c78a1f62f"
+          "fingerprint": "sha256:d347e9b906ac731a69b5b52a66c190c20eb4bd185c33314d78922154a5e63b2e"
         },
         {
           "path": "soter/core/host-runtime-inspection.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:0ce33619fe7e8606c8c39a87cc774d4d6f02d9b835fc752ddeed78657b873412"
+          "fingerprint": "sha256:63924f1e2d47f0240d5e04bad36e67280f97fbd703d1a6d1837fed376c197330"
         },
         {
           "path": "soter/core/host-runtime.mjs",
@@ -791,7 +791,7 @@
         {
           "path": "soter/core/mcp/selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:34b1433bbd3db5e58185b07bd07f5695671c5bdbfde134bbb149bf2708fa7ff4"
+          "fingerprint": "sha256:cccc91377c627c93188c50e90868266084d0ce4477d1763f8b73e72aecaaec2b"
         },
         {
           "path": "soter/core/mcp/server.mjs",
@@ -856,7 +856,7 @@
         {
           "path": "soter/core/provider-probe-plans.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:bb3523251f3f2771db692dbfb0526a6141e6a9759f994aa1ca0002772b8af522"
+          "fingerprint": "sha256:462fdae022ffaa8cfb186f5178c7d99bee3d05a0de5590759addaea48e470287"
         },
         {
           "path": "soter/core/provider-probes.mjs",
@@ -906,7 +906,7 @@
         {
           "path": "soter/core/selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:06a361ffc7e9e54695a427dea1e59739058e89e52941d677f6a79729954188be"
+          "fingerprint": "sha256:be6a277dcc988d2ab8656511bb76ca5e157c7272f8f0aa7ce2be1a62434841cc"
         },
         {
           "path": "soter/core/service.mjs",
@@ -1805,5 +1805,5 @@
       "fingerprint": "sha256:dec53147c5b5ed79f5586fbcaf44a696e517e8055ead09978ac44f898b8ba6f0"
     }
   ],
-  "graphFingerprint": "sha256:2db39a97038ca5cca5457c4e169e3867de0bd90f9eb5f8ac756c1a84947d1d14"
+  "graphFingerprint": "sha256:d79a3fe736d61d7bf69177bc523750dddf1bf7d2366c6ae88eb76a79b0a59466"
 }

@@ -23,6 +23,10 @@ import {
   renderHostProjectionCandidates
 } from '../host-projections.mjs';
 import { assertHostRuntimeInspection } from '../host-runtime-inspection.mjs';
+import {
+  completeProviderProbePlanStep,
+  failProviderProbePlanStep
+} from '../provider-probe-plans.mjs';
 import { materializeContainedPrivateConfiguration } from '../contained-private-configurations.mjs';
 import {
   assertDeclaredAutomationAcquisitionFinalization
@@ -54,13 +58,53 @@ import {
 
 const codeRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 let lockPath;
+let slackProbeLockPath;
 let runPath;
 let taskPolicyId;
+let notionProbePolicyFixtures = new Map();
 const fixtureTime = '2026-07-15T12:00:00.000Z';
 const PRIVATE_TASK_STATUS_OPTION = 'PRIVATE_PROVIDER_TASK_STATUS_MCP_SENTINEL';
 const PRIVATE_TASK_CONTEXT_OPTION = 'PRIVATE_PROVIDER_TASK_CONTEXT_MCP_SENTINEL';
 const PRIVATE_PROJECT_TYPE_OPTION = 'PRIVATE_PROVIDER_PROJECT_TYPE_MCP_SENTINEL';
 const PRIVATE_PROJECT_STATUS_OPTION = 'PRIVATE_PROVIDER_PROJECT_STATUS_MCP_SENTINEL';
+const PRIVATE_SLACK_WORKSPACE_ID = 'T000000001';
+const PRIVATE_SLACK_CONVERSATION_ID = 'C000000001';
+const PRIVATE_SLACK_THREAD_ROOT_ID = '1784653200.000001';
+const NOTION_PROBE_SCHEMA_FIELDS = Object.freeze({
+  'step.mapping.integration.notion.crm-records.record.organization.schema': [
+    ['name', 'Name', 'title'],
+    ['organizationType', 'Type', 'select'],
+    ['tags', 'Tags', 'multi_select'],
+    ['website', 'Website', 'url'],
+    ['twitter', 'Twitter', 'url'],
+    ['projectUris', 'Projects', 'relation'],
+    ['contactUris', '🫂 Contacts', 'relation']
+  ],
+  'step.mapping.integration.notion.meetings-records.record.meeting.schema': [
+    ['title', 'Meeting Name', 'title'],
+    ['meetingType', 'Type', 'select'],
+    ['occurredOn', 'Date', 'date'],
+    ['recordingUri', 'Recording', 'url'],
+    ['organizationUris', 'Org', 'relation']
+  ],
+  'step.mapping.integration.notion.projects-records.record.project.schema': [
+    ['name', 'Name', 'title'],
+    ['projectType', 'Type', 'select'],
+    ['status', 'Status', 'status'],
+    ['startDate', 'Start Date', 'date'],
+    ['targetEndDate', 'Target End Date', 'date'],
+    ['organizationUris', 'Organization', 'relation'],
+    ['taskUris', 'Tasks', 'relation']
+  ],
+  'step.mapping.integration.notion.tasks-records.record.task.schema': [
+    ['title', 'Name', 'title'],
+    ['status', 'Status', 'status'],
+    ['context', 'Context', 'select'],
+    ['projectUris', 'Project', 'relation'],
+    ['assigneeIds', 'Assigned To', 'person'],
+    ['nextActionOn', 'Next Action', 'date']
+  ]
+});
 
 function compareText(left, right) {
   return left < right ? -1 : left > right ? 1 : 0;
@@ -497,8 +541,30 @@ function notionMappingStep(mapping, recordType, kind) {
 }
 
 function notionProbeResponse(checkpoint, marker, driftStepId = null) {
-  const source = checkpoint.plan.steps.find((step) => step.id === checkpoint.currentStepId);
-  if (source.kind === 'identity') {
+  const requestedSteps = checkpoint.steps.filter((step) => step.state === 'requested');
+  const runtimeStep = requestedSteps[0];
+  const currentCall = runtimeStep?.call;
+  if (requestedSteps.length !== 1
+    || runtimeStep.id !== checkpoint.currentStepId
+    || !currentCall || currentCall.state !== 'requested'
+    || !currentCall.arguments || typeof currentCall.arguments !== 'object'
+    || Array.isArray(currentCall.arguments)
+    || currentCall.argumentsFingerprint !== fingerprintJson(currentCall.arguments)) {
+    throw new Error('MCP selftest could not bind the exact current Notion probe call.');
+  }
+  const fetchCall = currentCall.transport?.protocol === 'mcp'
+    && currentCall.transport?.operation === 'fetch'
+    && currentCall.transport?.tool === 'mcp__codex_apps__notion_fetch';
+  const queryCall = currentCall.transport?.protocol === 'mcp'
+    && currentCall.transport?.operation === 'query_data_sources'
+    && currentCall.transport?.tool === 'mcp__codex_apps__notion_query_data_sources';
+  const exactFetchId = Object.keys(currentCall.arguments).length === 1
+    && typeof currentCall.arguments.id === 'string'
+    && currentCall.arguments.id.length > 0;
+  if (runtimeStep.id === 'step.identity') {
+    if (!fetchCall || !exactFetchId || currentCall.arguments.id !== 'self') {
+      throw new Error('MCP selftest rejected an inexact Notion identity call.');
+    }
     return {
       content: [{
         type: 'text',
@@ -513,20 +579,37 @@ function notionProbeResponse(checkpoint, marker, driftStepId = null) {
       isError: false
     };
   }
-  if (source.kind === 'schema') {
+  const expectedFieldRows = NOTION_PROBE_SCHEMA_FIELDS[runtimeStep.id];
+  if (expectedFieldRows) {
+    if (!fetchCall || !exactFetchId) {
+      throw new Error('MCP selftest rejected an inexact Notion schema call.');
+    }
     const optionMappings = meetingNotionOptionMappings();
-    const schema = Object.fromEntries(source.scope.expectedFields.map((field) => {
+    const match = runtimeStep.id.match(
+      /^step\.mapping\.integration\.notion\.([a-z]+)-records\.record\.([a-z-]+)\.schema$/
+    );
+    const expectedFields = expectedFieldRows.map((field) => ({
+      portable: field[0],
+      provider: field[1],
+      providerType: field[2]
+    }));
+    if (!match) {
+      throw new Error('MCP selftest has no exact synthetic Notion schema fixture.');
+    }
+    const mappingId = 'mapping.integration.notion.' + match[1] + '-records';
+    const recordType = match[2];
+    const schema = Object.fromEntries(expectedFields.map((field) => {
       const property = { name: field.provider, type: field.providerType };
       if (['status', 'select', 'multi_select'].includes(field.providerType)) {
         const declaration = optionMappings.find((item) => {
-          return item.mapping === source.scope.mappingId
-            && item.recordType === source.scope.recordType
+          return item.mapping === mappingId
+            && item.recordType === recordType
             && item.field === field.portable;
         });
         if (!declaration) {
           throw new Error(
             'MCP selftest has no private option mapping for '
-              + source.scope.recordType + '.' + field.portable + '.'
+              + recordType + '.' + field.portable + '.'
           );
         }
         property.options = declaration.entries.map((entry) => ({
@@ -535,8 +618,8 @@ function notionProbeResponse(checkpoint, marker, driftStepId = null) {
       }
       return [field.provider, property];
     }));
-    if (source.id === driftStepId) {
-      const first = source.scope.expectedFields[0];
+    if (runtimeStep.id === driftStepId) {
+      const first = expectedFields[0];
       schema[first.provider].type = 'unexpected-mcp-selftest-type';
     }
     return {
@@ -546,7 +629,7 @@ function notionProbeResponse(checkpoint, marker, driftStepId = null) {
           metadata: { type: 'data_source' },
           title: 'Private target ' + marker,
           url: 'https://notion.invalid/private-target',
-          text: '<data-source url="{{' + source.scope.targetUri + '}}">\n'
+          text: '<data-source url="{{' + currentCall.arguments.id + '}}">\n'
             + '<data-source-state>\n' + JSON.stringify({ schema })
             + '\n</data-source-state>\n</data-source>'
         })
@@ -554,19 +637,95 @@ function notionProbeResponse(checkpoint, marker, driftStepId = null) {
       isError: false
     };
   }
-  if (source.kind === 'document') {
+  const documentFixture = notionProbePolicyFixtures.get(runtimeStep.id);
+  if (documentFixture) {
+    if (!fetchCall || !exactFetchId) {
+      throw new Error('MCP selftest could not bind the exact synthetic Notion document fixture.');
+    }
     return notionPageResponse({
-      uri: source.scope.input.uri,
-      title: source.id === driftStepId
+      uri: currentCall.arguments.id,
+      title: runtimeStep.id === driftStepId
         ? 'Drifted policy title'
-        : source.scope.input.expectedTitle,
+        : documentFixture.title,
       body: '# Synthetic policy\n\nPrivate probe body ' + marker + '.',
       marker
     });
   }
-  return {
-    structuredContent: { result: { results: [], has_more: false } }
-  };
+  const readStep = runtimeStep.id.endsWith('.read')
+    && Object.hasOwn(
+      NOTION_PROBE_SCHEMA_FIELDS,
+      runtimeStep.id.slice(0, -'.read'.length) + '.schema'
+    );
+  if (readStep && queryCall) {
+    return {
+      structuredContent: { result: { results: [], has_more: false } }
+    };
+  }
+  throw new Error('MCP selftest has no exact synthetic Notion response fixture.');
+}
+
+function closedProviderProbeResultValue(value, depth = 0) {
+  if (depth > 5) return false;
+  if (value === null || typeof value === 'boolean') return true;
+  if (typeof value === 'number') return Number.isInteger(value) && value >= 0;
+  if (typeof value === 'string') return /^sha256:[a-f0-9]{64}$/.test(value);
+  if (Array.isArray(value)) {
+    return value.length <= 50
+      && value.every((item) => closedProviderProbeResultValue(item, depth + 1));
+  }
+  if (!value || typeof value !== 'object'
+    || Object.keys(value).join(',') !== 'fields'
+    || !Array.isArray(value.fields) || value.fields.length > 50) return false;
+  let prior = null;
+  return value.fields.every((field) => {
+    if (!field || typeof field !== 'object' || Array.isArray(field)
+      || Object.keys(field).sort().join(',') !== 'identityFingerprint,value'
+      || !/^sha256:[a-f0-9]{64}$/.test(field.identityFingerprint)
+      || (prior !== null && field.identityFingerprint <= prior)
+      || !closedProviderProbeResultValue(field.value, depth + 1)) return false;
+    prior = field.identityFingerprint;
+    return true;
+  });
+}
+
+function assertProviderProbeArgumentBoundary(checkpoint) {
+  const unsafePlanStep = checkpoint.plan?.steps?.find((step) => {
+    return Object.hasOwn(step, 'subjectFingerprint')
+      || Object.hasOwn(step, 'scope')
+      || Object.hasOwn(step, 'arguments')
+      || !/^sha256:[a-f0-9]{64}$/.test(step.subject || '');
+  });
+  const callsWithArguments = checkpoint.steps.filter((step) => {
+    return step.call && Object.hasOwn(step.call, 'arguments');
+  });
+  const requestedSteps = checkpoint.steps.filter((step) => step.state === 'requested');
+  const invalidCompletedResult = checkpoint.steps.find((step) => {
+    return step.state === 'completed' && !closedProviderProbeResultValue(step.result);
+  });
+  const invalidTerminalSubject = checkpoint.state === 'completed'
+    && checkpoint.result?.checks?.find((check) => {
+      return !/^sha256:[a-f0-9]{64}$/.test(check.subject || '');
+    });
+  const expectedArgumentCalls = checkpoint.state === 'requested' ? 1 : 0;
+  if (unsafePlanStep
+    || invalidCompletedResult
+    || invalidTerminalSubject
+    || callsWithArguments.length !== expectedArgumentCalls
+    || requestedSteps.length !== expectedArgumentCalls
+    || callsWithArguments.some((step) => step.state !== 'requested')
+    || requestedSteps.some((step) => step.id !== checkpoint.currentStepId)) {
+    throw new Error('Provider probe checkpoint crossed its durable argument boundary.');
+  }
+}
+
+function assertProviderProbeSchemaRejects(root, checkpoint, label) {
+  const schema = readJson(path.join(
+    root,
+    'soter/contracts/provider-probe-plan-checkpoint.schema.json'
+  ));
+  if (validateJsonSchema(checkpoint, schema).length === 0) {
+    throw new Error('Provider probe checkpoint schema accepted a crossed ' + label + ' branch.');
+  }
 }
 
 function notionTaskResponse(id, fields, marker = null) {
@@ -712,6 +871,10 @@ function createFixtureRoot() {
   if (!/^https:\/\/www\.notion\.so\/[a-f0-9]{32}$/.test(taskPolicyId || '')) {
     throw new Error('Contained Task configuration did not materialize its exact private policy identity.');
   }
+  notionProbePolicyFixtures = new Map(applicablePolicySources(meeting.lock).map((source) => [
+    'step.source.' + source.id + '.document',
+    { title: source.title }
+  ]));
   const emailConfiguration = readJson(path.join(
     root,
     'soter/configurations/email-triage.config.json'
@@ -723,6 +886,33 @@ function createFixtureRoot() {
     host: 'codex'
   });
   writeActiveConfigurationLockState(root, emailConfiguration.name, emailLock);
+  const slackConfiguration = readJson(path.join(
+    root,
+    'soter/configurations/slack-channel-ingestion.config.json'
+  ));
+  slackConfiguration.settings = {
+    ...(slackConfiguration.settings || {}),
+    'integration.slack': {
+      workspaceId: PRIVATE_SLACK_WORKSPACE_ID,
+      readinessProbe: {
+        conversationId: PRIVATE_SLACK_CONVERSATION_ID,
+        threadRootMessageId: PRIVATE_SLACK_THREAD_ROOT_ID,
+        oldestInclusive: '2026-07-21T16:00:00.000Z',
+        latestExclusive: '2026-07-21T20:00:00.000Z'
+      }
+    }
+  };
+  writePrivateConfigurationState(root, slackConfiguration.name, slackConfiguration);
+  const slackLock = resolveConfiguration({
+    root,
+    configPath: privateConfigurationStatePath(root, slackConfiguration.name),
+    host: 'codex'
+  });
+  writeActiveConfigurationLockState(root, slackConfiguration.name, slackLock);
+  slackProbeLockPath = path.relative(
+    root,
+    activeConfigurationLockStatePath(root, slackConfiguration.name)
+  ).split(path.sep).join('/');
   materializeExactHostProjections(root);
   lockPath = path.relative(
     root,
@@ -820,6 +1010,9 @@ async function assertUnrealizedHostRuntimes() {
           || inspection.runtime.reasonCode !== 'SOTER_HOST_RUNTIME_NOT_REALIZED'
           || !inspection.runtime.restartRequired
           || inspection.runtime.permittedNextAction !== 'realize-host-runtime'
+          || inspection.hostRealization.state !== 'not-realized'
+          || inspection.hostRealization.reasonCode !== 'HOST_REALIZATION_NOT_REALIZED'
+          || inspection.hostRealization.permittedNextAction !== 'realize-host-runtime'
           || inspection.authority.grants !== 'none'
           || inspection.authority.providerCallsPermitted
           || inspection.authority.writesPermitted) {
@@ -938,7 +1131,10 @@ async function assertUnrealizedHostRuntimes() {
             || unsafeAbsence.runtime.startupFingerprint !== null
             || unsafeAbsence.runtime.currentFingerprint !== null
             || unsafeAbsence.runtime.reasonCode !== 'SOTER_HOST_RUNTIME_STALE'
-            || unsafeAbsence.runtime.permittedNextAction !== 'none') {
+            || unsafeAbsence.runtime.permittedNextAction !== 'none'
+            || unsafeAbsence.hostRealization.state !== 'unavailable'
+            || unsafeAbsence.hostRealization.reasonCode
+              !== 'HOST_REALIZATION_APPLICABILITY_UNAVAILABLE') {
             throw new Error(
               host + ' treated an unsafe unmanaged output as clean non-realization.'
             );
@@ -976,10 +1172,45 @@ async function assertUnrealizedHostRuntimes() {
           || realizedAfterStartup.runtime.currentFingerprint === null
           || realizedAfterStartup.runtime.reasonCode !== 'SOTER_HOST_RUNTIME_STALE'
           || !realizedAfterStartup.runtime.restartRequired
-          || realizedAfterStartup.runtime.permittedNextAction !== 'restart-host-runtime') {
+          || realizedAfterStartup.runtime.permittedNextAction !== 'restart-host-runtime'
+          || realizedAfterStartup.hostRealization.state !== 'stale'
+          || realizedAfterStartup.hostRealization.reasonCode
+            !== 'HOST_REALIZATION_ACTIVE_LOCK_MISSING'
+          || realizedAfterStartup.hostRealization.permittedNextAction
+            !== 'refresh-active-configuration') {
           throw new Error(
             host + ' blessed a realization that appeared after its null startup basis: '
-              + JSON.stringify(realizedAfterStartup.runtime)
+              + JSON.stringify({
+                runtime: realizedAfterStartup.runtime,
+                hostRealization: realizedAfterStartup.hostRealization
+              })
+          );
+        }
+        const activeRealizationLock = resolveConfiguration({
+          root,
+          configPath: privateConfigurationStatePath(root, realizationConfiguration),
+          host
+        });
+        writeActiveConfigurationLockState(
+          root,
+          realizationConfiguration,
+          activeRealizationLock
+        );
+        const realizationCurrentAfterLock = await call(
+          client,
+          'soter_inspect_host_runtime',
+          {}
+        );
+        if (realizationCurrentAfterLock.runtime.state !== 'stale'
+          || realizationCurrentAfterLock.runtime.permittedNextAction
+            !== 'restart-host-runtime'
+          || realizationCurrentAfterLock.hostRealization.state !== 'current'
+          || realizationCurrentAfterLock.hostRealization.reasonCode
+            !== 'HOST_REALIZATION_CURRENT'
+          || realizationCurrentAfterLock.hostRealization.permittedNextAction
+            !== 'continue') {
+          throw new Error(
+            host + ' did not observe current realization after the active-lock repair.'
           );
         }
       } finally {
@@ -994,7 +1225,10 @@ async function assertUnrealizedHostRuntimes() {
           || current.runtime.currentFingerprint !== current.runtime.startupFingerprint
           || current.runtime.reasonCode !== 'SOTER_HOST_RUNTIME_CURRENT'
           || current.runtime.restartRequired
-          || current.runtime.permittedNextAction !== 'continue') {
+          || current.runtime.permittedNextAction !== 'continue'
+          || current.hostRealization.state !== 'current'
+          || current.hostRealization.reasonCode !== 'HOST_REALIZATION_CURRENT'
+          || current.hostRealization.permittedNextAction !== 'continue') {
           throw new Error(
             host + ' did not accept the exact managed realization after restart.'
           );
@@ -2590,6 +2824,9 @@ async function selftest(root) {
       || currentRuntime.runtime.reasonCode !== 'SOTER_HOST_RUNTIME_CURRENT'
       || currentRuntime.runtime.restartRequired
       || currentRuntime.runtime.permittedNextAction !== 'continue'
+      || currentRuntime.hostRealization.state !== 'current'
+      || currentRuntime.hostRealization.reasonCode !== 'HOST_REALIZATION_CURRENT'
+      || currentRuntime.hostRealization.permittedNextAction !== 'continue'
       || currentRuntime.authority.grants !== 'none'
       || currentRuntime.authority.providerCallsPermitted
       || currentRuntime.authority.writesPermitted) {
@@ -2620,6 +2857,83 @@ async function selftest(root) {
       () => assertHostRuntimeInspection(mismatchedCurrentRuntime, runtimeInspectionSchema),
       /state facts are contradictory/
     );
+    const crossedHostRealization = signRuntimeInspection({
+      ...structuredClone(currentRuntime),
+      hostRealization: {
+        state: 'current',
+        reasonCode: 'HOST_REALIZATION_ACTIVE_LOCK_STALE',
+        permittedNextAction: 'refresh-active-configuration'
+      }
+    });
+    assert(validateJsonSchema(crossedHostRealization, runtimeInspectionSchema).length > 0);
+    assert.throws(
+      () => assertHostRuntimeInspection(crossedHostRealization, runtimeInspectionSchema),
+      /does not satisfy its contract|applicability facts are contradictory/
+    );
+    const serializedHostRealization = JSON.stringify(currentRuntime.hostRealization);
+    if (/sha256:|[.]soter|configurations|host-projections|\/Users\//u.test(
+      serializedHostRealization
+    )) {
+      throw new Error('Host realization applicability exposed private names, paths, or fingerprints.');
+    }
+
+    const activeDevelopmentLock = activeConfigurationLockStatePath(
+      root,
+      'harness-development-catalog'
+    );
+    const heldActiveDevelopmentLock = activeDevelopmentLock + '.mcp-applicability-held';
+    fs.renameSync(activeDevelopmentLock, heldActiveDevelopmentLock);
+    try {
+      const missingActiveLock = await call(client, 'soter_inspect_host_runtime', {});
+      if (missingActiveLock.runtime.state !== 'current'
+        || missingActiveLock.hostRealization.state !== 'stale'
+        || missingActiveLock.hostRealization.reasonCode
+          !== 'HOST_REALIZATION_ACTIVE_LOCK_MISSING'
+        || missingActiveLock.hostRealization.permittedNextAction
+          !== 'refresh-active-configuration') {
+        throw new Error(
+          'Live host applicability did not separate a missing active lock from runtime currency.'
+        );
+      }
+    } finally {
+      fs.renameSync(heldActiveDevelopmentLock, activeDevelopmentLock);
+    }
+    const restoredActiveLock = await call(client, 'soter_inspect_host_runtime', {});
+    if (restoredActiveLock.hostRealization.state !== 'current') {
+      throw new Error('Host realization applicability did not recover after active-lock restoration.');
+    }
+
+    const exactManagedManifestPath = path.join(
+      root,
+      '.soter/state/host-projections/codex.json'
+    );
+    const exactManagedManifestBytes = fs.readFileSync(exactManagedManifestPath, 'utf8');
+    const staleManagedManifest = JSON.parse(exactManagedManifestBytes);
+    staleManagedManifest.configuration.lockFingerprint = fingerprintJson({
+      hostile: 'manifest-lock-stale'
+    });
+    staleManagedManifest.manifestFingerprint = null;
+    const unsignedStaleManagedManifest = { ...staleManagedManifest };
+    delete unsignedStaleManagedManifest.manifestFingerprint;
+    staleManagedManifest.manifestFingerprint = fingerprintJson(unsignedStaleManagedManifest);
+    writeHostManagedManifestState(root, staleManagedManifest);
+    try {
+      const manifestLockStale = await call(client, 'soter_inspect_host_runtime', {});
+      if (manifestLockStale.hostRealization.state !== 'stale'
+        || manifestLockStale.hostRealization.reasonCode
+          !== 'HOST_REALIZATION_MANIFEST_LOCK_STALE'
+        || manifestLockStale.hostRealization.permittedNextAction
+          !== 'realize-host-runtime') {
+        throw new Error('Live host applicability did not classify exact manifest-lock drift.');
+      }
+    } finally {
+      fs.writeFileSync(exactManagedManifestPath, exactManagedManifestBytes);
+      if (process.platform !== 'win32') fs.chmodSync(exactManagedManifestPath, 0o600);
+    }
+    const restoredManagedManifest = await call(client, 'soter_inspect_host_runtime', {});
+    if (restoredManagedManifest.hostRealization.state !== 'current') {
+      throw new Error('Host realization applicability did not recover after manifest restoration.');
+    }
     const impossibleRuntimeDate = signRuntimeInspection({
       ...structuredClone(currentRuntime),
       inspectedAt: '2026-02-30T12:00:00.000Z'
@@ -2738,7 +3052,12 @@ async function selftest(root) {
       if (privateConfigurationDrift.runtime.state !== 'stale'
         || privateConfigurationDrift.runtime.reasonCode !== 'SOTER_HOST_RUNTIME_STALE'
         || privateConfigurationDrift.runtime.currentFingerprint !== null
-        || privateConfigurationDrift.runtime.permittedNextAction !== 'none') {
+        || privateConfigurationDrift.runtime.permittedNextAction !== 'none'
+        || privateConfigurationDrift.hostRealization.state !== 'stale'
+        || privateConfigurationDrift.hostRealization.reasonCode
+          !== 'HOST_REALIZATION_ACTIVE_LOCK_STALE'
+        || privateConfigurationDrift.hostRealization.permittedNextAction
+          !== 'refresh-active-configuration') {
         throw new Error(
           'MCP host runtime inspection accepted private configuration drift.'
         );
@@ -3150,6 +3469,16 @@ async function selftest(root) {
       || JSON.stringify(preparedProbe.currentCall?.arguments) !== '{}') {
       throw new Error('Provider probe preparation did not persist the exact Otter request.');
     }
+    assertProviderProbeArgumentBoundary(preparedProbe.checkpoint);
+    const requestedProbeWithoutArguments = structuredClone(preparedProbe.checkpoint);
+    delete requestedProbeWithoutArguments.steps.find((step) => {
+      return step.state === 'requested';
+    }).call.arguments;
+    assertProviderProbeSchemaRejects(
+      root,
+      requestedProbeWithoutArguments,
+      'requested-without-arguments'
+    );
     assertPrivateFile(checkpointFile(root, preparedProbe));
 
     const privateIdentity = 'private-identity-mcp-selftest-marker';
@@ -3171,6 +3500,41 @@ async function selftest(root) {
       || fs.readFileSync(checkpointFile(root, completedProbe), 'utf8').includes(privateIdentity)) {
       throw new Error('Provider probe completion did not minimize durable identity evidence.');
     }
+    assertProviderProbeArgumentBoundary(completedProbe.checkpoint);
+    const completedProbeWithArguments = structuredClone(completedProbe.checkpoint);
+    completedProbeWithArguments.steps.find((step) => {
+      return step.state === 'completed';
+    }).call.arguments = {};
+    assertProviderProbeSchemaRejects(
+      root,
+      completedProbeWithArguments,
+      'completed-with-arguments'
+    );
+    const completedProbeWithSubject = structuredClone(completedProbe.checkpoint);
+    completedProbeWithSubject.plan.steps[0].subject = privateIdentity;
+    assertProviderProbeSchemaRejects(
+      root,
+      completedProbeWithSubject,
+      'durable-subject-text'
+    );
+    const completedProbeWithRawResultKey = structuredClone(completedProbe.checkpoint);
+    completedProbeWithRawResultKey.steps.find((step) => {
+      return step.state === 'completed';
+    }).result.privateIdentity = true;
+    assertProviderProbeSchemaRejects(
+      root,
+      completedProbeWithRawResultKey,
+      'durable-result-property-name'
+    );
+    const completedProbeWithRawResultValue = structuredClone(completedProbe.checkpoint);
+    completedProbeWithRawResultValue.steps.find((step) => {
+      return step.state === 'completed';
+    }).result.fields[0].value = privateIdentity;
+    assertProviderProbeSchemaRejects(
+      root,
+      completedProbeWithRawResultValue,
+      'durable-result-private-value'
+    );
     const repeatedProbe = await call(client, 'soter_complete_provider_probe', {
       checkpoint_id: preparedProbe.checkpoint.id,
       call_id: preparedProbe.currentCall.id,
@@ -3181,6 +3545,319 @@ async function selftest(root) {
       !== completedProbe.checkpoint.checkpointFingerprint) {
       throw new Error('Repeating an identical provider result was not idempotent.');
     }
+    const staleReplayLock = structuredClone(readJson(path.join(root, lockPath)));
+    staleReplayLock.graphFingerprint = fingerprintJson({
+      test: 'provider-probe-stale-replay',
+      version: 1
+    });
+    const staleCompletedReplayMarker = 'PRIVATE_STALE_COMPLETED_REPLAY_SENTINEL';
+    const completedProbeBeforeStaleReplay = JSON.stringify(completedProbe.checkpoint);
+    let staleCompletedReplayError = null;
+    try {
+      await completeProviderProbePlanStep({
+        root,
+        lock: staleReplayLock,
+        checkpoint: structuredClone(completedProbe.checkpoint),
+        callId: preparedProbe.currentCall.id,
+        response: {
+          structuredContent: { result: staleCompletedReplayMarker }
+        },
+        at: fixtureTime
+      });
+    } catch (error) {
+      staleCompletedReplayError = error;
+    }
+    if (!staleCompletedReplayError
+      || staleCompletedReplayError.message
+        !== 'Provider probe response does not match the exact lock and graph request.'
+      || staleCompletedReplayError.message.includes(staleCompletedReplayMarker)
+      || JSON.stringify(completedProbe.checkpoint) !== completedProbeBeforeStaleReplay) {
+      throw new Error('Stale provider response replay did not fail before idempotent disclosure.');
+    }
+
+    const reconstructionProbe = await call(client, 'soter_prepare_provider_probe', {
+      configuration_basis: 'private-active',
+      lock_path: lockPath,
+      provider_implementation: 'provider.integration.otter.mcp',
+      probe_id: 'probe.mcp-selftest.reconstruction-drift',
+      at: fixtureTime
+    });
+    const reconstructionFile = checkpointFile(root, reconstructionProbe);
+    const reconstructionSource = fs.readFileSync(reconstructionFile, 'utf8');
+    const assertReconstructionMismatch = async (mutate) => {
+      const changed = JSON.parse(reconstructionSource);
+      mutate(changed);
+      const unsigned = structuredClone(changed);
+      delete unsigned.checkpointFingerprint;
+      changed.checkpointFingerprint = fingerprintJson(unsigned);
+      fs.writeFileSync(reconstructionFile, JSON.stringify(changed, null, 2) + '\n', {
+        mode: 0o600
+      });
+      await expectToolError(client, 'soter_complete_provider_probe', {
+        checkpoint_id: reconstructionProbe.checkpoint.id,
+        call_id: reconstructionProbe.currentCall.id,
+        response: { structuredContent: { result: 'private-reconstruction-marker' } },
+        at: fixtureTime
+      }, 'current exact provider plan');
+      fs.writeFileSync(reconstructionFile, reconstructionSource, { mode: 0o600 });
+    };
+    await assertReconstructionMismatch((changed) => {
+      changed.planFingerprint = 'sha256:' + '0'.repeat(64);
+    });
+    await assertReconstructionMismatch((changed) => {
+      changed.plan.steps[0].scopeFingerprint = 'sha256:' + '0'.repeat(64);
+    });
+    await call(client, 'soter_fail_host_call', {
+      checkpoint_id: reconstructionProbe.checkpoint.id,
+      call_id: reconstructionProbe.currentCall.id,
+      error_kind: 'unavailable',
+      at: fixtureTime
+    });
+
+    const slackPrivateMarkers = [
+      PRIVATE_SLACK_WORKSPACE_ID,
+      PRIVATE_SLACK_CONVERSATION_ID,
+      PRIVATE_SLACK_THREAD_ROOT_ID,
+      'private-slack-message-shape',
+      'private-slack-thread-shape',
+      'private-slack-cursor',
+      'private-slack-raw-payload'
+    ];
+    const preparedSlackProbe = await call(client, 'soter_prepare_provider_probe', {
+      configuration_basis: 'private-active',
+      lock_path: slackProbeLockPath,
+      provider_implementation: 'provider.integration.slack.mcp',
+      probe_id: 'probe.mcp-selftest.slack-shapes',
+      at: fixtureTime,
+      valid_for_seconds: 300
+    });
+    if (preparedSlackProbe.checkpoint?.state !== 'requested'
+      || preparedSlackProbe.checkpoint?.plan?.steps?.length !== 3
+      || preparedSlackProbe.currentCall?.transport?.operation !== 'list_workspaces') {
+      throw new Error('Slack response-shape probe did not prepare its exact bounded plan.');
+    }
+    assertProviderProbeArgumentBoundary(preparedSlackProbe.checkpoint);
+    const slackIdentityResponse = {
+      structuredContent: {
+        teams: [{ id: PRIVATE_SLACK_WORKSPACE_ID }],
+        response_metadata: { next_cursor: '' }
+      },
+      rawProviderMaterial: {
+        cursor: 'private-slack-cursor',
+        payload: 'private-slack-raw-payload'
+      }
+    };
+    let pendingSlackProbe = await call(client, 'soter_complete_provider_probe', {
+      checkpoint_id: preparedSlackProbe.checkpoint.id,
+      call_id: preparedSlackProbe.currentCall.id,
+      response: slackIdentityResponse,
+      at: fixtureTime
+    });
+    assertProviderProbeArgumentBoundary(pendingSlackProbe.checkpoint);
+    const replayedSlackIdentity = await call(client, 'soter_complete_provider_probe', {
+      checkpoint_id: preparedSlackProbe.checkpoint.id,
+      call_id: preparedSlackProbe.currentCall.id,
+      response: slackIdentityResponse,
+      at: fixtureTime
+    });
+    if (replayedSlackIdentity.checkpoint.checkpointFingerprint
+      !== pendingSlackProbe.checkpoint.checkpointFingerprint
+      || replayedSlackIdentity.currentCall?.id !== pendingSlackProbe.currentCall?.id) {
+      throw new Error('Slack response-shape probe did not replay its completed prefix exactly.');
+    }
+    await expectToolError(client, 'soter_complete_provider_probe', {
+      checkpoint_id: preparedSlackProbe.checkpoint.id,
+      call_id: preparedSlackProbe.currentCall.id,
+      response: {
+        ...slackIdentityResponse,
+        rawProviderMaterial: {
+          ...slackIdentityResponse.rawProviderMaterial,
+          changed: true
+        }
+      },
+      at: fixtureTime
+    }, 'does not match the exact completed step call');
+    if (pendingSlackProbe.currentCall?.transport?.operation !== 'read_channel') {
+      throw new Error('Slack response-shape probe did not emit its exact message profile call.');
+    }
+    pendingSlackProbe = await call(client, 'soter_complete_provider_probe', {
+      checkpoint_id: pendingSlackProbe.checkpoint.id,
+      call_id: pendingSlackProbe.currentCall.id,
+      response: {
+        structuredContent: {
+          team_id: PRIVATE_SLACK_WORKSPACE_ID,
+          channel_id: PRIVATE_SLACK_CONVERSATION_ID,
+          messages: [{
+            ts: '1784656800.000002',
+            user: 'U000000001',
+            text: 'private-slack-message-shape',
+            reply_count: 0
+          }],
+          pagination_info: { has_more: false, next_cursor: '' }
+        }
+      },
+      at: fixtureTime
+    });
+    assertProviderProbeArgumentBoundary(pendingSlackProbe.checkpoint);
+    if (pendingSlackProbe.currentCall?.transport?.operation !== 'read_thread') {
+      throw new Error('Slack response-shape probe did not emit its exact thread profile call.');
+    }
+    await client.close();
+    client = await connectClient(root);
+    const recoveredSlackProbe = await call(client, 'soter_get_host_call', {
+      checkpoint_id: preparedSlackProbe.checkpoint.id
+    });
+    if (recoveredSlackProbe.currentCall?.id !== pendingSlackProbe.currentCall.id
+      || recoveredSlackProbe.currentCall?.transport?.operation !== 'read_thread'
+      || fingerprintJson(recoveredSlackProbe.currentCall?.transport)
+        !== fingerprintJson(pendingSlackProbe.currentCall.transport)
+      || fingerprintJson(recoveredSlackProbe.currentCall?.arguments)
+        !== fingerprintJson(pendingSlackProbe.currentCall.arguments)
+      || recoveredSlackProbe.currentCall?.argumentsFingerprint
+        !== pendingSlackProbe.currentCall.argumentsFingerprint) {
+      throw new Error('Restarted MCP server did not recover the exact Slack profile call.');
+    }
+    const completedSlackProbe = await call(client, 'soter_complete_provider_probe', {
+      checkpoint_id: recoveredSlackProbe.checkpoint.id,
+      call_id: recoveredSlackProbe.currentCall.id,
+      response: {
+        structuredContent: {
+          team_id: PRIVATE_SLACK_WORKSPACE_ID,
+          channel_id: PRIVATE_SLACK_CONVERSATION_ID,
+          messages: [{
+            ts: PRIVATE_SLACK_THREAD_ROOT_ID,
+            user: 'U000000001',
+            text: 'private-slack-thread-shape'
+          }],
+          pagination_info: { has_more: false, next_cursor: '' }
+        }
+      },
+      at: fixtureTime
+    });
+    assertProviderProbeArgumentBoundary(completedSlackProbe.checkpoint);
+    const recoveredCompletedSlackProbe = await call(client, 'soter_get_host_call', {
+      checkpoint_id: preparedSlackProbe.checkpoint.id
+    });
+    const listedCompletedSlackProbes = await call(client, 'soter_list_host_calls', {
+      state: 'completed'
+    });
+    assertProviderProbeArgumentBoundary(recoveredCompletedSlackProbe.checkpoint);
+    const serializedSlackProbe = JSON.stringify(completedSlackProbe);
+    const slackProbeContents = fs.readFileSync(
+      checkpointFile(root, completedSlackProbe),
+      'utf8'
+    );
+    const slackProbeCheckpoint = JSON.parse(slackProbeContents);
+    const slackMarkerLabels = [
+      'workspace',
+      'conversation',
+      'thread-root',
+      'message-content',
+      'thread-content',
+      'cursor',
+      'raw-payload'
+    ];
+    const privateValuePaths = (value, marker, prefix = '$') => {
+      if (value === marker) return [prefix];
+      if (!value || typeof value !== 'object') return [];
+      return Object.entries(value).flatMap(([key, item]) => {
+        return privateValuePaths(item, marker, prefix + '.' + key);
+      });
+    };
+    const slackPrivateProjectionFindings = slackPrivateMarkers.flatMap((marker, index) => {
+      return [
+        ...privateValuePaths(completedSlackProbe, marker).map((valuePath) => {
+          return 'returned-' + slackMarkerLabels[index] + ':' + valuePath;
+        }),
+        ...privateValuePaths(slackProbeCheckpoint, marker).map((valuePath) => {
+          return 'checkpoint-' + slackMarkerLabels[index] + ':' + valuePath;
+        }),
+        ...privateValuePaths(recoveredCompletedSlackProbe, marker).map((valuePath) => {
+          return 'recovered-' + slackMarkerLabels[index] + ':' + valuePath;
+        }),
+        ...privateValuePaths(listedCompletedSlackProbes, marker).map((valuePath) => {
+          return 'listed-' + slackMarkerLabels[index] + ':' + valuePath;
+        }),
+        ...(serializedSlackProbe.includes(marker)
+          ? ['serialized-' + slackMarkerLabels[index]]
+          : []),
+        ...(slackProbeContents.includes(marker)
+          ? ['persisted-' + slackMarkerLabels[index]]
+          : [])
+      ];
+    });
+    const completedSlackArgumentsPersisted = [
+      completedSlackProbe.checkpoint,
+      recoveredCompletedSlackProbe.checkpoint,
+      slackProbeCheckpoint
+    ].some((checkpoint) => {
+      return checkpoint.steps.some((step) => {
+        return step.call && Object.hasOwn(step.call, 'arguments');
+      }) || checkpoint.plan.steps.some((step) => {
+        return Object.hasOwn(step, 'scope') || Object.hasOwn(step, 'arguments');
+      });
+    });
+    const slackProbeFacts = {
+      completed: completedSlackProbe.checkpoint?.state === 'completed',
+      threeChecks: completedSlackProbe.checkpoint?.result?.checks?.length === 3,
+      checksPassed: !completedSlackProbe.checkpoint?.result?.checks?.some((check) => {
+        return check.state !== 'passed';
+      }),
+      capabilitiesUnknown: !completedSlackProbe.checkpoint?.result?.capabilities?.some((capability) => {
+        return capability.state !== 'unknown';
+      }),
+      argumentMaterialExcluded: !completedSlackArgumentsPersisted,
+      privateValueExcluded: slackPrivateProjectionFindings.length === 0
+    };
+    if (Object.values(slackProbeFacts).some((value) => value !== true)) {
+      throw new Error(
+        'Slack response-shape probe did not minimize its completed private state: '
+          + JSON.stringify({ ...slackProbeFacts, slackPrivateProjectionFindings })
+      );
+    }
+
+    const staleSlackProbe = await call(client, 'soter_prepare_provider_probe', {
+      configuration_basis: 'private-active',
+      lock_path: slackProbeLockPath,
+      provider_implementation: 'provider.integration.slack.mcp',
+      probe_id: 'probe.mcp-selftest.slack-stale-lock',
+      at: fixtureTime,
+      valid_for_seconds: 300
+    });
+    const slackConfigurationPath = privateConfigurationStatePath(
+      root,
+      'slack-channel-ingestion'
+    );
+    const slackConfigurationSource = fs.readFileSync(slackConfigurationPath, 'utf8');
+    try {
+      const driftedSlackConfiguration = JSON.parse(slackConfigurationSource);
+      driftedSlackConfiguration.reason =
+        'Private Slack response-shape stale-lock selftest drift.';
+      fs.writeFileSync(
+        slackConfigurationPath,
+        JSON.stringify(driftedSlackConfiguration, null, 2) + '\n',
+        { mode: 0o600 }
+      );
+      await expectToolError(client, 'soter_complete_provider_probe', {
+        checkpoint_id: staleSlackProbe.checkpoint.id,
+        call_id: staleSlackProbe.currentCall.id,
+        response: {
+          structuredContent: {
+            teams: [{ id: PRIVATE_SLACK_WORKSPACE_ID }],
+            response_metadata: { next_cursor: '' }
+          }
+        },
+        at: fixtureTime
+      }, 'Private-active configuration lock cannot be reproduced from the current governed graph.');
+    } finally {
+      fs.writeFileSync(slackConfigurationPath, slackConfigurationSource, { mode: 0o600 });
+    }
+    await call(client, 'soter_fail_host_call', {
+      checkpoint_id: staleSlackProbe.checkpoint.id,
+      call_id: staleSlackProbe.currentCall.id,
+      error_kind: 'unavailable',
+      at: fixtureTime
+    });
 
     const notionMarker = 'private-notion-probe-mcp-selftest-marker';
     const preparedNotionProbe = await call(client, 'soter_prepare_provider_probe', {
@@ -3193,12 +3870,13 @@ async function selftest(root) {
     });
     expectedNotionProbeSteps = preparedNotionProbe.checkpoint?.plan?.steps?.length || 0;
     if (preparedNotionProbe.checkpoint?.state !== 'requested'
-      || expectedNotionProbeSteps < 1
+      || expectedNotionProbeSteps !== 12
       || preparedNotionProbe.checkpoint?.steps?.length !== expectedNotionProbeSteps
       || preparedNotionProbe.currentCall?.transport?.operation !== 'fetch'
       || preparedNotionProbe.currentCall?.arguments?.id !== 'self') {
       throw new Error('MCP provider probe plan did not expose one exact first Notion call.');
     }
+    assertProviderProbeArgumentBoundary(preparedNotionProbe.checkpoint);
     pendingNotionProbe = await call(client, 'soter_complete_provider_probe', {
       checkpoint_id: preparedNotionProbe.checkpoint.id,
       call_id: preparedNotionProbe.currentCall.id,
@@ -3211,10 +3889,11 @@ async function selftest(root) {
       || pendingNotionProbe.checkpoint.currentStepId
         !== notionMappingStep('crm', 'organization', 'schema')
       || pendingNotionProbe.checkpoint.plan.steps.some((step) => {
-        return step.scope?.recordType === 'organization-capture-policy';
+        return Object.hasOwn(step, 'scope') || Object.hasOwn(step, 'arguments');
       })) {
       throw new Error('MCP provider probe plan did not minimize identity and emit its next exact call.');
     }
+    assertProviderProbeArgumentBoundary(pendingNotionProbe.checkpoint);
     assertPrivateFile(checkpointFile(root, pendingNotionProbe));
     if (fs.readFileSync(checkpointFile(root, pendingNotionProbe), 'utf8').includes(notionMarker)) {
       throw new Error('Notion identity content reached durable provider probe plan state.');
@@ -3371,6 +4050,34 @@ async function selftest(root) {
       ].some((sentinel) => projection.includes(sentinel)))) {
       throw new Error('Host failure recording did not close the durable provider request.');
     }
+    assertProviderProbeArgumentBoundary(failedProbe.checkpoint);
+    const failedProbeWithArguments = structuredClone(failedProbe.checkpoint);
+    failedProbeWithArguments.steps.find((step) => {
+      return step.state === 'failed';
+    }).call.arguments = {};
+    assertProviderProbeSchemaRejects(
+      root,
+      failedProbeWithArguments,
+      'failed-with-arguments'
+    );
+    const crossedFailedProbe = structuredClone(failedProbe.checkpoint);
+    crossedFailedProbe.steps.find((step) => {
+      return step.state === 'failed';
+    }).call.state = 'completed';
+    assertProviderProbeSchemaRejects(root, crossedFailedProbe, 'failed-call-state');
+    const mismatchedFailedProbe = structuredClone(failedProbe.checkpoint);
+    mismatchedFailedProbe.steps.find((step) => {
+      return step.state === 'failed';
+    }).error = {
+      kind: 'authorization',
+      code: 'HOST_CALL_AUTHORIZATION_FAILED',
+      message: 'The exact host operation was not authorized.'
+    };
+    assertProviderProbeSchemaRejects(
+      root,
+      mismatchedFailedProbe,
+      'mismatched-duplicate-error'
+    );
     const repeatedFailedProbe = await call(client, 'soter_fail_host_call', {
       checkpoint_id: failedProbeRequest.checkpoint.id,
       call_id: failedProbeRequest.currentCall.id,
@@ -3380,6 +4087,31 @@ async function selftest(root) {
     if (repeatedFailedProbe.checkpoint.checkpointFingerprint
       !== failedProbe.checkpoint.checkpointFingerprint) {
       throw new Error('Repeating an exact provider probe failure was not idempotent.');
+    }
+    const staleFailureReplayMarker = 'PRIVATE_STALE_FAILURE_REPLAY_SENTINEL';
+    const failedProbeBeforeStaleReplay = JSON.stringify(failedProbe.checkpoint);
+    let staleFailureReplayError = null;
+    try {
+      failProviderProbePlanStep({
+        root,
+        lock: staleReplayLock,
+        checkpoint: structuredClone(failedProbe.checkpoint),
+        callId: failedProbeRequest.currentCall.id,
+        error: {
+          kind: 'authentication',
+          message: staleFailureReplayMarker
+        },
+        at: fixtureTime
+      });
+    } catch (error) {
+      staleFailureReplayError = error;
+    }
+    if (!staleFailureReplayError
+      || staleFailureReplayError.message
+        !== 'Provider probe failure does not match the exact lock and graph request.'
+      || staleFailureReplayError.message.includes(staleFailureReplayMarker)
+      || JSON.stringify(failedProbe.checkpoint) !== failedProbeBeforeStaleReplay) {
+      throw new Error('Stale provider failure replay did not fail before idempotent disclosure.');
     }
 
     const staleProbe = await call(client, 'soter_prepare_provider_probe', {
@@ -3391,22 +4123,36 @@ async function selftest(root) {
     });
     const providerModule = path.join(root, 'soter/integrations/otter/mcp.mjs');
     const providerSource = fs.readFileSync(providerModule, 'utf8');
+    const staleProbeCheckpointPath = checkpointFile(root, staleProbe);
+    const staleProbeCheckpointSource = fs.readFileSync(staleProbeCheckpointPath, 'utf8');
+    const staleProbeResponseMarker = 'private-stale-identity';
     try {
       fs.writeFileSync(providerModule, providerSource + '\n// planted stale-state change\n');
       await expectToolError(client, 'soter_complete_provider_probe', {
         checkpoint_id: staleProbe.checkpoint.id,
         call_id: staleProbe.currentCall.id,
-        response: { structuredContent: { result: 'private-stale-identity' } },
+        response: { structuredContent: { result: staleProbeResponseMarker } },
         at: fixtureTime
       }, 'SOTER_HOST_RUNTIME_STALE');
+      if (fs.readFileSync(staleProbeCheckpointPath, 'utf8') !== staleProbeCheckpointSource) {
+        throw new Error('Stale runtime completion advanced provider probe state.');
+      }
       await client.close();
       client = await connectClient(root);
       await expectToolError(client, 'soter_complete_provider_probe', {
         checkpoint_id: staleProbe.checkpoint.id,
         call_id: staleProbe.currentCall.id,
-        response: { structuredContent: { result: 'private-stale-identity' } },
+        response: { structuredContent: { result: staleProbeResponseMarker } },
         at: fixtureTime
-      }, 'Private-active configuration lock is stale');
+      }, 'SOTER_HOST_RUNTIME_STALE');
+      const staleProbeCheckpointAfterRestart = fs.readFileSync(
+        staleProbeCheckpointPath,
+        'utf8'
+      );
+      if (staleProbeCheckpointAfterRestart !== staleProbeCheckpointSource
+        || staleProbeCheckpointAfterRestart.includes(staleProbeResponseMarker)) {
+        throw new Error('Restarted stale runtime completion advanced or disclosed probe state.');
+      }
       await client.close();
     } finally {
       fs.writeFileSync(providerModule, providerSource);
@@ -3487,6 +4233,7 @@ async function selftest(root) {
       || recoveredNotionProbe.currentCall?.id !== pendingNotionProbe.currentCall.id) {
       throw new Error('Restarted MCP server did not recover the exact provider probe step.');
     }
+    assertProviderProbeArgumentBoundary(recoveredNotionProbe.checkpoint);
     const notionMarker = 'private-notion-probe-mcp-selftest-marker';
     while (recoveredNotionProbe.checkpoint.state === 'requested') {
       recoveredNotionProbe = await call(client, 'soter_complete_provider_probe', {
@@ -3495,12 +4242,16 @@ async function selftest(root) {
         response: notionProbeResponse(recoveredNotionProbe.checkpoint, notionMarker),
         at: fixtureTime
       });
+      assertProviderProbeArgumentBoundary(recoveredNotionProbe.checkpoint);
     }
     if (recoveredNotionProbe.checkpoint.state !== 'completed'
       || recoveredNotionProbe.checkpoint.result?.$contract
         !== 'soter://contracts/provider-probe/v2'
       || recoveredNotionProbe.checkpoint.result?.checks?.length
-        !== expectedNotionProbeSteps
+        !== 12
+      || recoveredNotionProbe.checkpoint.result?.checks?.some((check) => {
+        return check.state !== 'passed';
+      })
       || recoveredNotionProbe.checkpoint.result?.checks?.filter((check) => {
         return check.kind === 'document' && check.method === 'read-only';
       }).length !== 3
@@ -3519,6 +4270,7 @@ async function selftest(root) {
         return item.id === 'meetings.records.create' || item.id === 'tasks.records.update';
       }).some((item) => item.state !== 'unknown')
       || JSON.stringify(recoveredNotionProbe).includes(notionMarker)
+      || JSON.stringify(recoveredNotionProbe).includes('automation.meeting-intake')
       || fs.readFileSync(checkpointFile(root, recoveredNotionProbe), 'utf8')
         .includes(notionMarker)
       || fs.readFileSync(checkpointFile(root, recoveredNotionProbe), 'utf8')

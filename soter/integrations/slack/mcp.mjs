@@ -12,10 +12,14 @@ function providerError(kind, message, code = null) {
   return error;
 }
 
-function configuredWorkspaceId(settings) {
+function configuredSlackSettings(settings) {
   const configured = settings?.['integration.slack'];
   if (!configured
-    || Object.keys(configured).length !== 1
+    || typeof configured !== 'object'
+    || Array.isArray(configured)
+    || Object.keys(configured).some((key) => {
+      return !['workspaceId', 'readinessProbe'].includes(key);
+    })
     || typeof configured.workspaceId !== 'string'
     || !configured.workspaceId) {
     throw providerError(
@@ -23,7 +27,60 @@ function configuredWorkspaceId(settings) {
       'Slack MCP requires one exact integration.slack workspace setting.'
     );
   }
-  return configured.workspaceId;
+  if (!Object.hasOwn(configured, 'readinessProbe')) {
+    return { workspaceId: configured.workspaceId, readinessProbe: null };
+  }
+  const probe = configured.readinessProbe;
+  const keys = [
+    'conversationId',
+    'threadRootMessageId',
+    'oldestInclusive',
+    'latestExclusive'
+  ];
+  if (!probe
+    || typeof probe !== 'object'
+    || Array.isArray(probe)
+    || Object.keys(probe).length !== keys.length
+    || keys.some((key) => !Object.hasOwn(probe, key))
+    || !/^[CDG][A-Z0-9]{8,63}$/.test(probe.conversationId || '')
+    || !/^[0-9]{1,16}[.][0-9]{6}$/.test(probe.threadRootMessageId || '')) {
+    throw providerError(
+      'validation',
+      'Slack MCP readiness probe settings are malformed.'
+    );
+  }
+  const oldestInclusive = exactInstant(
+    probe.oldestInclusive,
+    'Slack readiness oldestInclusive'
+  );
+  const latestExclusive = exactInstant(
+    probe.latestExclusive,
+    'Slack readiness latestExclusive'
+  );
+  const oldestMillis = Date.parse(oldestInclusive);
+  const latestMillis = Date.parse(latestExclusive);
+  if (probe.oldestInclusive !== oldestInclusive
+    || probe.latestExclusive !== latestExclusive
+    || oldestMillis >= latestMillis
+    || latestMillis - oldestMillis > 24 * 60 * 60 * 1000) {
+    throw providerError(
+      'validation',
+      'Slack MCP readiness probe requires one canonical positive window of at most 24 hours.'
+    );
+  }
+  return {
+    workspaceId: configured.workspaceId,
+    readinessProbe: {
+      conversationId: probe.conversationId,
+      threadRootMessageId: probe.threadRootMessageId,
+      oldestInclusive,
+      latestExclusive
+    }
+  };
+}
+
+function configuredWorkspaceId(settings) {
+  return configuredSlackSettings(settings).workspaceId;
 }
 
 function assertConfiguredWorkspace(settings, input) {
@@ -1122,28 +1179,145 @@ export function finalizeMcpPages({
 }
 
 export function prepareProbePlanMcp({ settings }) {
-  const workspaceId = configuredWorkspaceId(settings);
-  return {
-    steps: [{
-      id: 'step.identity',
-      kind: 'identity',
-      subject: 'provider.identity',
+  const configured = configuredSlackSettings(settings);
+  const workspaceId = configured.workspaceId;
+  const steps = [{
+    id: 'step.identity',
+    kind: 'identity',
+    subject: 'provider.identity',
+    scope: {
+      expectation: {
+        cursorExhausted: true,
+        minimumWorkspaceCount: 1,
+        uniqueWorkspaceIdentities: true,
+        configuredWorkspaceObserved: true,
+        configuredWorkspaceFingerprint: fingerprintJson(workspaceId)
+      }
+    },
+    tool: 'list_workspaces',
+    arguments: {
+      include_icon: false,
+      limit: 50
+    }
+  }];
+  if (!configured.readinessProbe) return { steps };
+
+  const readiness = configured.readinessProbe;
+  const definitions = [
+    {
+      id: 'step.messages-profile',
+      capability: 'communications.messages.read',
+      subject: 'communications.messages.read',
+      input: {
+        workspaceId,
+        conversationId: readiness.conversationId,
+        oldestInclusive: readiness.oldestInclusive,
+        latestExclusive: readiness.latestExclusive,
+        maximumMessages: 1,
+        includeThreadReplies: false
+      }
+    },
+    {
+      id: 'step.thread-profile',
+      capability: 'communications.thread.read',
+      subject: 'communications.thread.read',
+      input: {
+        selectionMode: 'explicit-root',
+        workspaceId,
+        conversationId: readiness.conversationId,
+        rootMessageId: readiness.threadRootMessageId,
+        maximumMessages: 1
+      }
+    }
+  ];
+  for (const definition of definitions) {
+    const prepared = prepareMcp({
+      capability: definition.capability,
+      input: definition.input,
+      settings
+    });
+    steps.push({
+      id: definition.id,
+      kind: 'schema',
+      subject: definition.subject,
       scope: {
         expectation: {
           cursorExhausted: true,
-          minimumWorkspaceCount: 1,
-          uniqueWorkspaceIdentities: true,
-          configuredWorkspaceObserved: true,
-          configuredWorkspaceFingerprint: fingerprintJson(workspaceId)
+          usableRecordCount: 1,
+          subjectFingerprint: fingerprintJson({
+            capability: definition.capability,
+            input: definition.input
+          })
         }
       },
-      tool: 'list_workspaces',
-      arguments: {
-        include_icon: false,
-        limit: 50
-      }
-    }]
+      tool: prepared.tool,
+      arguments: prepared.arguments
+    });
+  }
+  return {
+    steps
   };
+}
+
+function readinessStepDefinition(stepId, settings) {
+  const configured = configuredSlackSettings(settings);
+  const readiness = configured.readinessProbe;
+  if (!readiness) return null;
+  if (stepId === 'step.messages-profile') {
+    return {
+      capability: 'communications.messages.read',
+      input: {
+        workspaceId: configured.workspaceId,
+        conversationId: readiness.conversationId,
+        oldestInclusive: readiness.oldestInclusive,
+        latestExclusive: readiness.latestExclusive,
+        maximumMessages: 1,
+        includeThreadReplies: false
+      },
+      records(page) {
+        const records = page.page.data.messages;
+        if (records.length !== 1) {
+          throw providerError(
+            'not-found',
+            'Slack readiness message profile did not return one usable record.'
+          );
+        }
+        return [{
+          authorPresent: records[0].authorParticipantId !== null,
+          replyCountPresent: records[0].replyCount !== null,
+          threadRootPresent: records[0].threadRootMessageId !== null,
+          contentPresent: typeof records[0].content === 'string'
+        }];
+      }
+    };
+  }
+  if (stepId === 'step.thread-profile') {
+    return {
+      capability: 'communications.thread.read',
+      input: {
+        selectionMode: 'explicit-root',
+        workspaceId: configured.workspaceId,
+        conversationId: readiness.conversationId,
+        rootMessageId: readiness.threadRootMessageId,
+        maximumMessages: 1
+      },
+      records(page) {
+        const records = page.page.data.messages;
+        if (records.length !== 1 || records[0].isRoot !== true) {
+          throw providerError(
+            'not-found',
+            'Slack readiness thread profile did not return its exact root subject.'
+          );
+        }
+        return [{
+          isRoot: true,
+          authorPresent: records[0].authorParticipantId !== null,
+          contentPresent: typeof records[0].content === 'string'
+        }];
+      }
+    };
+  }
+  return null;
 }
 
 export function completeProbePlanStepMcp({
@@ -1152,7 +1326,61 @@ export function completeProbePlanStepMcp({
   responseProfile,
   response
 }) {
-  if (step?.id !== 'step.identity' || step.kind !== 'identity') {
+  if (step?.id !== 'step.identity') {
+    const definition = readinessStepDefinition(step?.id, settings);
+    if (!definition
+      || step.kind !== 'schema'
+      || step.subject !== definition.capability
+      || step.scope?.expectation?.subjectFingerprint !== fingerprintJson({
+        capability: definition.capability,
+        input: definition.input
+      })) {
+      throw providerError('validation', 'Slack provider probe received an unsupported step.');
+    }
+    const page = completeMcpPage({
+      capability: definition.capability,
+      input: definition.input,
+      settings,
+      responseProfile,
+      response
+    });
+    if (page.continuation.state !== 'exhausted') {
+      throw providerError(
+        'validation',
+        'Slack readiness response profile pagination is incomplete.'
+      );
+    }
+    const records = definition.records(page);
+    if (page.page.observedCount !== 1
+      || page.page.includedCount !== 1
+      || page.page.excludedCount !== 0
+      || records.length !== 1) {
+      throw providerError(
+        'validation',
+        'Slack readiness response profile requires one exact usable record.'
+      );
+    }
+    const shapeFingerprint = fingerprintJson({
+      capability: definition.capability,
+      records
+    });
+    const expectedFingerprint = fingerprintJson(step.scope.expectation);
+    return {
+      cursorExhausted: true,
+      recordCount: 1,
+      usableRecordCount: 1,
+      shapeFingerprint,
+      expectedFingerprint,
+      observedFingerprint: fingerprintJson({
+        cursorExhausted: true,
+        recordCount: 1,
+        usableRecordCount: 1,
+        shapeFingerprint,
+        subjectFingerprint: step.scope.expectation.subjectFingerprint
+      })
+    };
+  }
+  if (step.kind !== 'identity' || step.subject !== 'provider.identity') {
     throw providerError('validation', 'Slack provider probe received an unsupported step.');
   }
   const payload = responsePayload({
@@ -1196,14 +1424,26 @@ export function completeProbePlanStepMcp({
 }
 
 export function finalizeProbePlanMcp({ plan, steps, results, settings }) {
-  const step = steps?.[0];
-  const observed = results?.[0];
   const workspaceId = configuredWorkspaceId(settings);
-  if (steps?.length !== 1
-    || results?.length !== 1
-    || step?.id !== 'step.identity'
-    || observed?.stepId !== step.id
-    || !observed.result?.cursorExhausted
+  const expectedSteps = prepareProbePlanMcp({ settings }).steps;
+  if (!Array.isArray(steps)
+    || !Array.isArray(results)
+    || steps.length !== expectedSteps.length
+    || results.length !== expectedSteps.length
+    || steps.some((step, index) => {
+      const expected = expectedSteps[index];
+      return step.id !== expected.id
+        || step.kind !== expected.kind
+        || step.subject !== expected.subject
+        || fingerprintJson(step.scope?.expectation)
+          !== fingerprintJson(expected.scope.expectation)
+        || results[index]?.stepId !== step.id;
+    })) {
+    throw providerError('validation', 'Slack provider probe is missing its exact minimized identity result.');
+  }
+  const step = steps[0];
+  const observed = results[0];
+  if (!observed.result?.cursorExhausted
     || !observed.result?.uniqueWorkspaceIdentities
     || observed.result?.configuredWorkspaceObserved !== true
     || observed.result?.configuredWorkspaceFingerprint !== fingerprintJson(workspaceId)
@@ -1212,6 +1452,20 @@ export function finalizeProbePlanMcp({ plan, steps, results, settings }) {
     || observed.result.expectedFingerprint !== fingerprintJson(step.scope.expectation)
     || typeof observed.result.observedFingerprint !== 'string') {
     throw providerError('validation', 'Slack provider probe is missing its exact minimized identity result.');
+  }
+  for (let index = 1; index < steps.length; index += 1) {
+    const item = results[index].result;
+    if (item?.cursorExhausted !== true
+      || item.recordCount !== 1
+      || item.usableRecordCount !== 1
+      || typeof item.shapeFingerprint !== 'string'
+      || item.expectedFingerprint !== fingerprintJson(steps[index].scope.expectation)
+      || typeof item.observedFingerprint !== 'string') {
+      throw providerError(
+        'validation',
+        'Slack provider probe is missing one exact minimized response-shape result.'
+      );
+    }
   }
   return {
     credentials: plan.credentialRefs.map((secretRefId) => ({
@@ -1232,23 +1486,26 @@ export function finalizeProbePlanMcp({ plan, steps, results, settings }) {
       id,
       state: 'unknown',
       method: 'metadata',
-      details: 'Workspace metadata does not establish conversation, participant, message, or thread response compatibility.'
+      details: 'Private bounded response-shape observations do not establish portable capability compatibility.'
     })),
-    checks: [{
-      id: 'check.identity',
-      stepId: step.id,
-      kind: step.kind,
-      subject: step.subject,
-      scopeFingerprint: step.scopeFingerprint,
+    checks: steps.map((item, index) => ({
+      id: index === 0 ? 'check.identity' : 'check.' + item.id.slice('step.'.length),
+      stepId: item.id,
+      kind: item.kind,
+      subject: item.subject,
+      scopeFingerprint: item.scopeFingerprint,
       state: 'passed',
       method: 'metadata',
-      expectedFingerprint: observed.result.expectedFingerprint,
-      observedFingerprint: observed.result.observedFingerprint,
-      details: 'The host-authenticated Slack workspace-list response matched the minimized cursor-exhausted identity contract.'
-    }],
+      expectedFingerprint: results[index].result.expectedFingerprint,
+      observedFingerprint: results[index].result.observedFingerprint,
+      details: index === 0
+        ? 'The host-authenticated Slack workspace-list response matched the minimized cursor-exhausted identity contract.'
+        : 'One exact bounded Slack response matched its minimized cursor-exhausted shape contract.'
+    })),
     limitations: [
-      'This probe establishes authentication and endpoint reachability only; exact workspace access and capability compatibility remain unknown.',
-      'Workspace identities and the native response are excluded; only the response fingerprint and typed observations may persist.'
+      'This probe establishes authentication, endpoint reachability, and optional bounded response shapes only; every portable capability remains unknown.',
+      'Slack Conversation Review remains unavailable with CLOSED_MESSAGE_THREAD_RESPONSE_UNAVAILABLE.',
+      'Workspace, conversation, message, thread, content, cursor, native argument, and raw response values are excluded from the finalized probe.'
     ]
   };
 }

@@ -6,7 +6,7 @@
   "level": "offline",
   "configuration": {
     "name": "slack-conversation-review",
-    "lockFingerprint": "sha256:9cc49309a05be86f39b995e17b536b0ec5d2e9c419ab0ee5511868e5bcc0af4b"
+    "lockFingerprint": "sha256:38f84a7751ac3af4a19f4fe5f96826a46d19838a814de853731fa5f657538959"
   },
   "states": {
     "valid": "passed",

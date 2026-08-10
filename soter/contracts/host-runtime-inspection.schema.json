@@ -11,6 +11,7 @@
     "host",
     "server",
     "runtime",
+    "hostRealization",
     "authority",
     "privacy",
     "inspectionFingerprint"
@@ -104,6 +105,76 @@
             "reasonCode": { "const": "SOTER_HOST_RUNTIME_STALE" },
             "restartRequired": { "const": true },
             "permittedNextAction": { "const": "restart-host-runtime" }
+          }
+        }
+      ]
+    },
+    "hostRealization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "reasonCode", "permittedNextAction"],
+      "properties": {
+        "state": { "enum": ["current", "not-realized", "stale", "unavailable"] },
+        "reasonCode": {
+          "enum": [
+            "HOST_REALIZATION_CURRENT",
+            "HOST_REALIZATION_NOT_REALIZED",
+            "HOST_REALIZATION_ACTIVE_LOCK_MISSING",
+            "HOST_REALIZATION_ACTIVE_LOCK_STALE",
+            "HOST_REALIZATION_MANIFEST_LOCK_STALE",
+            "HOST_REALIZATION_APPLICABILITY_UNAVAILABLE"
+          ]
+        },
+        "permittedNextAction": {
+          "enum": [
+            "continue",
+            "realize-host-runtime",
+            "refresh-active-configuration",
+            "none"
+          ]
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "state": { "const": "current" },
+            "reasonCode": { "const": "HOST_REALIZATION_CURRENT" },
+            "permittedNextAction": { "const": "continue" }
+          }
+        },
+        {
+          "properties": {
+            "state": { "const": "not-realized" },
+            "reasonCode": { "const": "HOST_REALIZATION_NOT_REALIZED" },
+            "permittedNextAction": { "const": "realize-host-runtime" }
+          }
+        },
+        {
+          "properties": {
+            "state": { "const": "stale" },
+            "reasonCode": { "const": "HOST_REALIZATION_ACTIVE_LOCK_MISSING" },
+            "permittedNextAction": { "const": "refresh-active-configuration" }
+          }
+        },
+        {
+          "properties": {
+            "state": { "const": "stale" },
+            "reasonCode": { "const": "HOST_REALIZATION_ACTIVE_LOCK_STALE" },
+            "permittedNextAction": { "const": "refresh-active-configuration" }
+          }
+        },
+        {
+          "properties": {
+            "state": { "const": "stale" },
+            "reasonCode": { "const": "HOST_REALIZATION_MANIFEST_LOCK_STALE" },
+            "permittedNextAction": { "const": "realize-host-runtime" }
+          }
+        },
+        {
+          "properties": {
+            "state": { "const": "unavailable" },
+            "reasonCode": { "const": "HOST_REALIZATION_APPLICABILITY_UNAVAILABLE" },
+            "permittedNextAction": { "const": "none" }
           }
         }
       ]

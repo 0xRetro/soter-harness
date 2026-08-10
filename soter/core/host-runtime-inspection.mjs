@@ -8,7 +8,10 @@ import {
   readGovernedFile,
   readGovernedJson
 } from './lib/canonical-json.mjs';
-import { inspectManagedHostRuntimeProjection } from './host-realizations.mjs';
+import {
+  inspectManagedHostRealizationApplicability,
+  inspectManagedHostRuntimeProjection
+} from './host-realizations.mjs';
 
 export const HOST_RUNTIME_REASON_CODES = Object.freeze({
   CURRENT: 'SOTER_HOST_RUNTIME_CURRENT',
@@ -196,6 +199,22 @@ export function assertHostRuntimeInspection(inspection, schema) {
           && runtime.currentFingerprint === runtime.startupFingerprint)))) {
     throw new Error('Host runtime inspection state facts are contradictory.');
   }
+  const hostRealization = inspection.hostRealization;
+  const exactHostRealizationFacts = new Set([
+    'current\0HOST_REALIZATION_CURRENT\0continue',
+    'not-realized\0HOST_REALIZATION_NOT_REALIZED\0realize-host-runtime',
+    'stale\0HOST_REALIZATION_ACTIVE_LOCK_MISSING\0refresh-active-configuration',
+    'stale\0HOST_REALIZATION_ACTIVE_LOCK_STALE\0refresh-active-configuration',
+    'stale\0HOST_REALIZATION_MANIFEST_LOCK_STALE\0realize-host-runtime',
+    'unavailable\0HOST_REALIZATION_APPLICABILITY_UNAVAILABLE\0none'
+  ]);
+  if (!exactHostRealizationFacts.has([
+    hostRealization.state,
+    hostRealization.reasonCode,
+    hostRealization.permittedNextAction
+  ].join('\0'))) {
+    throw new Error('Host realization applicability facts are contradictory.');
+  }
   return inspection;
 }
 
@@ -259,6 +278,10 @@ export function inspectHostRuntime({ root, basis, inspectedAt = new Date().toISO
           ? 'continue'
           : automaticRecoveryUnavailable ? 'none' : 'restart-host-runtime'
     },
+    hostRealization: inspectManagedHostRealizationApplicability({
+      root: resolvedRoot,
+      host: basis.host
+    }),
     authority: {
       grants: 'none',
       providerCallsPermitted: false,

@@ -13,9 +13,9 @@
   },
   "configurationLock": {
     "path": "soter/fixtures/slack-conversation-review/slack-conversation-review.lock.json",
-    "fingerprint": "sha256:9cc49309a05be86f39b995e17b536b0ec5d2e9c419ab0ee5511868e5bcc0af4b"
+    "fingerprint": "sha256:38f84a7751ac3af4a19f4fe5f96826a46d19838a814de853731fa5f657538959"
   },
-  "graphFingerprint": "sha256:a1883ef39f6547e7fc72e2330e9b67d9e56fc6d3ab78efc9cd4ebc7255051100",
+  "graphFingerprint": "sha256:49076e036260822d71b886dfe9b9e57cb03d410f584c40a0588c6af7c24ac341",
   "context": [
     {
       "subject": "communications.records",
@@ -34,7 +34,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/communications",
       "declarationFingerprint": "sha256:11e6f05cb0e3debfcd7f043de3f7f70c55616d6efd81a05a49900d996208ad76",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:9cc49309a05be86f39b995e17b536b0ec5d2e9c419ab0ee5511868e5bcc0af4b",
+      "provenance": "configuration-lock:sha256:38f84a7751ac3af4a19f4fe5f96826a46d19838a814de853731fa5f657538959",
       "freshness": "unknown"
     },
     {
@@ -44,7 +44,7 @@
       "uri": "soter://context/communications",
       "declarationFingerprint": "sha256:0b465d80100b2ccb7a4a6486fe2b4a6844b1f43eb18dad379d82b8af79ac93c9",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:9cc49309a05be86f39b995e17b536b0ec5d2e9c419ab0ee5511868e5bcc0af4b",
+      "provenance": "configuration-lock:sha256:38f84a7751ac3af4a19f4fe5f96826a46d19838a814de853731fa5f657538959",
       "freshness": "unknown"
     },
     {
@@ -54,7 +54,7 @@
       "uri": "soter-fixture://configuration-template/notion/account/operator",
       "declarationFingerprint": "sha256:7dc2f544234b3f1c01c86c491b64741ebb4df68ddfa02a09ff89a9692ae79a17",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:9cc49309a05be86f39b995e17b536b0ec5d2e9c419ab0ee5511868e5bcc0af4b",
+      "provenance": "configuration-lock:sha256:38f84a7751ac3af4a19f4fe5f96826a46d19838a814de853731fa5f657538959",
       "freshness": "unknown"
     },
     {
@@ -64,7 +64,7 @@
       "uri": "soter-state://runs",
       "declarationFingerprint": "sha256:cd092453fbab618301f19b9544cadd79c1ad81420bbcf053a634cbfb65b6dc9f",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:9cc49309a05be86f39b995e17b536b0ec5d2e9c419ab0ee5511868e5bcc0af4b",
+      "provenance": "configuration-lock:sha256:38f84a7751ac3af4a19f4fe5f96826a46d19838a814de853731fa5f657538959",
       "freshness": "unknown"
     },
     {
@@ -84,7 +84,7 @@
       "uri": "soter-fixture://configuration-template/slack/account/operator",
       "declarationFingerprint": "sha256:f024c773c305c94443990ed2c13c58c6fa10182c61dd9595f5934722aa7acb1b",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:9cc49309a05be86f39b995e17b536b0ec5d2e9c419ab0ee5511868e5bcc0af4b",
+      "provenance": "configuration-lock:sha256:38f84a7751ac3af4a19f4fe5f96826a46d19838a814de853731fa5f657538959",
       "freshness": "unknown"
     }
   ],
@@ -93,7 +93,7 @@
       "capability": "communications.conversations.list",
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.slack",
-      "providerVersion": "0.1.0",
+      "providerVersion": "0.2.0",
       "authorities": [
         "authority.slack.instance"
       ],
@@ -107,7 +107,7 @@
       "capability": "communications.messages.read",
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.slack",
-      "providerVersion": "0.1.0",
+      "providerVersion": "0.2.0",
       "authorities": [
         "authority.slack.instance"
       ],
@@ -136,7 +136,7 @@
       "capability": "communications.thread.read",
       "capabilityVersion": "1.0.0",
       "providerPack": "integration.slack",
-      "providerVersion": "0.1.0",
+      "providerVersion": "0.2.0",
       "authorities": [
         "authority.slack.instance"
       ],
@@ -217,7 +217,7 @@
     {
       "id": "context.slack-conversation-review.preparation-fixture",
       "type": "context-snapshot",
-      "fingerprint": "sha256:de9eeb09ebb116814f52d33af5e97667bb30f3d3d8c43e7aed70957a5691b5c4"
+      "fingerprint": "sha256:fa35212f363018621024625190c4f1239062255cb2792cdcc2b7999f6a401155"
     }
   ],
   "effects": [

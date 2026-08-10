@@ -10,8 +10,8 @@
     "id": "run.feature-definition.preparation-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:6e3f107a5b09da57dd0334fada884d6a7868264b75097d9945f8f95b90533da3",
-  "graphFingerprint": "sha256:92cb079bfb40878099d40f058e1d6b1d6b6e4e40b4379222bf7103ece59961ff",
+  "configurationLockFingerprint": "sha256:41aa2e1be6d8e341217cb833e6ec85a221522b302089d2347e60f8481724a65e",
+  "graphFingerprint": "sha256:e12d37c7f26a87d2a8334d79b0720b70b02fd9b1cf777eb8b4013f6069ef20dd",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -229,7 +229,7 @@
     {
       "role": "context-snapshot",
       "id": "context.feature-definition.preparation-fixture",
-      "fingerprint": "sha256:6992cd7ed14d8c744d105c9106867092cce204b6707658ff257d5cfd769ef0d4"
+      "fingerprint": "sha256:b173536754a78e1ac0b63974420a92d0d032b96933cb6d73e87614f6dfcd1762"
     },
     {
       "role": "feature-definition-preview",

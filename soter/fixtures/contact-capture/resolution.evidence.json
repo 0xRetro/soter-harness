@@ -10,8 +10,8 @@
     "id": "contact-capture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:4b33d6aea3515cf512da390afe7f198d8a3cf8ea50f65613920732db129e7ef7",
-  "graphFingerprint": "sha256:4276c71f3731740bb491b73780caab0be6d403aae7d17ff06887496e73b78c52",
+  "configurationLockFingerprint": "sha256:dee880dd3ae9a4e3e4d907f88cd24028bee5dfda916d74b9ba8c54fa544df8d5",
+  "graphFingerprint": "sha256:25e2695d211622eece0cf76ca68915483f9290affb9fdbc1fbb9ca25ab725a79",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -117,7 +117,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:4b33d6aea3515cf512da390afe7f198d8a3cf8ea50f65613920732db129e7ef7"
+      "fingerprint": "sha256:dee880dd3ae9a4e3e4d907f88cd24028bee5dfda916d74b9ba8c54fa544df8d5"
     }
   ],
   "effects": [],

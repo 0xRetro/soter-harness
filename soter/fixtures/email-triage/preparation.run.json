@@ -13,9 +13,9 @@
   },
   "configurationLock": {
     "path": "soter/fixtures/email-triage/email-triage.lock.json",
-    "fingerprint": "sha256:4521896eaf0ede378bc72b6f7b6d1c46b06550032ef41c9d79bb5ef2ea4f1645"
+    "fingerprint": "sha256:167db0191cbd8b89c02d6657f54d6690f56b0402688a9333f0117215164b6747"
   },
-  "graphFingerprint": "sha256:6d37be273b33d84cf181fa383f4dbcca5d31556765bf623aaee910fc7b79ce85",
+  "graphFingerprint": "sha256:8fec70654523e181163535f5ec651cf954e9ee75b4812d8db0b109896efa7590",
   "context": [
     {
       "subject": "communications.semantics.records",
@@ -24,7 +24,7 @@
       "uri": "soter://context/communications",
       "declarationFingerprint": "sha256:0b465d80100b2ccb7a4a6486fe2b4a6844b1f43eb18dad379d82b8af79ac93c9",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:4521896eaf0ede378bc72b6f7b6d1c46b06550032ef41c9d79bb5ef2ea4f1645",
+      "provenance": "configuration-lock:sha256:167db0191cbd8b89c02d6657f54d6690f56b0402688a9333f0117215164b6747",
       "freshness": "unknown"
     },
     {
@@ -34,7 +34,7 @@
       "uri": "soter-fixture://configuration-template/gmail/account/operator",
       "declarationFingerprint": "sha256:b786e80d1e624e4e70559562497b367e3855d508fcdffc50832ee40f55fa68c9",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:4521896eaf0ede378bc72b6f7b6d1c46b06550032ef41c9d79bb5ef2ea4f1645",
+      "provenance": "configuration-lock:sha256:167db0191cbd8b89c02d6657f54d6690f56b0402688a9333f0117215164b6747",
       "freshness": "unknown"
     },
     {
@@ -44,7 +44,7 @@
       "uri": "soter-pack://context.email/processing",
       "declarationFingerprint": "sha256:6ad65b455c19f6c64fb13d12d0b7d9fbae4de3a1f09661696acd4f8c8c411273",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:4521896eaf0ede378bc72b6f7b6d1c46b06550032ef41c9d79bb5ef2ea4f1645",
+      "provenance": "configuration-lock:sha256:167db0191cbd8b89c02d6657f54d6690f56b0402688a9333f0117215164b6747",
       "freshness": "unknown"
     },
     {
@@ -64,7 +64,7 @@
       "uri": "soter-state://runs",
       "declarationFingerprint": "sha256:dedfa34444ef6f06fdf8796e903f8c085009564339efce087f663abdd91d299b",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:4521896eaf0ede378bc72b6f7b6d1c46b06550032ef41c9d79bb5ef2ea4f1645",
+      "provenance": "configuration-lock:sha256:167db0191cbd8b89c02d6657f54d6690f56b0402688a9333f0117215164b6747",
       "freshness": "unknown"
     }
   ],
@@ -226,7 +226,7 @@
     {
       "id": "context.email-triage.preparation-fixture",
       "type": "context-snapshot",
-      "fingerprint": "sha256:3d2c74f58dabfd5895745fa0bea9c6a025d00f43453aa2cb142d9a5eca2b7909"
+      "fingerprint": "sha256:3beec6df6155c9bc579ff510a920e524c40a9b21cb5eae9168975d30ca58db91"
     }
   ],
   "effects": [

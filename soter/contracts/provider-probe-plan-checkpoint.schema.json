@@ -306,10 +306,8 @@
         "id",
         "kind",
         "subject",
-        "scope",
         "scopeFingerprint",
         "transport",
-        "arguments",
         "argumentsFingerprint"
       ],
       "properties": {
@@ -318,15 +316,13 @@
           "pattern": "^step\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
         },
         "kind": { "enum": ["identity", "schema", "read", "document"] },
-        "subject": { "type": "string", "minLength": 3 },
-        "scope": { "type": "object" },
+        "subject": { "$ref": "#/$defs/fingerprint" },
         "scopeFingerprint": { "$ref": "#/$defs/fingerprint" },
         "transport": { "$ref": "#/$defs/transport" },
-        "arguments": { "type": "object" },
         "argumentsFingerprint": { "$ref": "#/$defs/fingerprint" }
       }
     },
-    "call": {
+    "requestedCall": {
       "type": "object",
       "additionalProperties": false,
       "required": [
@@ -346,34 +342,226 @@
           "pattern": "^probecall\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
         },
         "createdAt": { "type": "string", "minLength": 20 },
-        "completedAt": { "type": ["string", "null"], "minLength": 20 },
-        "state": { "enum": ["requested", "completed", "failed"] },
+        "completedAt": { "type": "null" },
+        "state": { "const": "requested" },
         "transport": { "$ref": "#/$defs/transport" },
         "arguments": { "type": "object" },
+        "argumentsFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "responseFingerprint": { "type": "null" },
+        "error": { "type": "null" }
+      }
+    },
+    "completedCall": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "createdAt",
+        "completedAt",
+        "state",
+        "transport",
+        "argumentsFingerprint",
+        "responseFingerprint",
+        "error"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^probecall\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "createdAt": { "type": "string", "minLength": 20 },
+        "completedAt": { "type": "string", "minLength": 20 },
+        "state": { "const": "completed" },
+        "transport": { "$ref": "#/$defs/transport" },
+        "argumentsFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "responseFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "error": { "type": "null" }
+      }
+    },
+    "failedCall": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "createdAt",
+        "completedAt",
+        "state",
+        "transport",
+        "argumentsFingerprint",
+        "responseFingerprint",
+        "error"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^probecall\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+        },
+        "createdAt": { "type": "string", "minLength": 20 },
+        "completedAt": { "type": "string", "minLength": 20 },
+        "state": { "const": "failed" },
+        "transport": { "$ref": "#/$defs/transport" },
         "argumentsFingerprint": { "$ref": "#/$defs/fingerprint" },
         "responseFingerprint": {
           "type": ["string", "null"],
           "pattern": "^sha256:[a-f0-9]{64}$"
         },
-        "error": {
-          "oneOf": [
-            { "type": "null" },
-            { "$ref": "#/$defs/failure" }
+        "error": { "$ref": "#/$defs/failure" }
+      }
+    },
+    "failureSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "code", "message"],
+      "properties": {
+        "kind": {
+          "enum": [
+            "authentication", "authorization", "validation", "conflict",
+            "rate-limit", "unavailable", "retryable", "not-found", "unknown"
           ]
+        },
+        "code": {
+          "enum": [
+            "HOST_CALL_AUTHENTICATION_FAILED",
+            "HOST_CALL_AUTHORIZATION_FAILED",
+            "HOST_CALL_VALIDATION_FAILED",
+            "HOST_CALL_SCHEMA_INVALID",
+            "HOST_CALL_CONFLICT",
+            "HOST_CALL_RATE_LIMITED",
+            "HOST_CALL_UNAVAILABLE",
+            "HOST_CALL_RETRYABLE_FAILURE",
+            "HOST_CALL_NOT_FOUND",
+            "HOST_CALL_FAILED"
+          ]
+        },
+        "message": {
+          "enum": [
+            "The exact host operation could not authenticate.",
+            "The exact host operation was not authorized.",
+            "The exact host operation failed governed validation.",
+            "The exact host operation data did not satisfy its governed schema.",
+            "The exact host operation encountered a conflict.",
+            "The exact host operation was rate limited.",
+            "The exact host operation was unavailable.",
+            "The exact host operation reported a retryable failure.",
+            "The exact host operation did not find its governed subject.",
+            "The exact host operation failed."
+          ]
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "kind": { "const": "authentication" },
+            "code": { "const": "HOST_CALL_AUTHENTICATION_FAILED" },
+            "message": { "const": "The exact host operation could not authenticate." }
+          }
+        },
+        {
+          "properties": {
+            "kind": { "const": "authorization" },
+            "code": { "const": "HOST_CALL_AUTHORIZATION_FAILED" },
+            "message": { "const": "The exact host operation was not authorized." }
+          }
+        },
+        {
+          "properties": {
+            "kind": { "const": "validation" },
+            "code": { "const": "HOST_CALL_VALIDATION_FAILED" },
+            "message": { "const": "The exact host operation failed governed validation." }
+          }
+        },
+        {
+          "properties": {
+            "kind": { "const": "validation" },
+            "code": { "const": "HOST_CALL_SCHEMA_INVALID" },
+            "message": { "const": "The exact host operation data did not satisfy its governed schema." }
+          }
+        },
+        {
+          "properties": {
+            "kind": { "const": "conflict" },
+            "code": { "const": "HOST_CALL_CONFLICT" },
+            "message": { "const": "The exact host operation encountered a conflict." }
+          }
+        },
+        {
+          "properties": {
+            "kind": { "const": "rate-limit" },
+            "code": { "const": "HOST_CALL_RATE_LIMITED" },
+            "message": { "const": "The exact host operation was rate limited." }
+          }
+        },
+        {
+          "properties": {
+            "kind": { "const": "unavailable" },
+            "code": { "const": "HOST_CALL_UNAVAILABLE" },
+            "message": { "const": "The exact host operation was unavailable." }
+          }
+        },
+        {
+          "properties": {
+            "kind": { "const": "retryable" },
+            "code": { "const": "HOST_CALL_RETRYABLE_FAILURE" },
+            "message": { "const": "The exact host operation reported a retryable failure." }
+          }
+        },
+        {
+          "properties": {
+            "kind": { "const": "not-found" },
+            "code": { "const": "HOST_CALL_NOT_FOUND" },
+            "message": { "const": "The exact host operation did not find its governed subject." }
+          }
+        },
+        {
+          "properties": {
+            "kind": { "const": "unknown" },
+            "code": { "const": "HOST_CALL_FAILED" },
+            "message": { "const": "The exact host operation failed." }
+          }
+        }
+      ]
+    },
+    "minimizedResultValue": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "boolean" },
+        { "type": "integer", "minimum": 0 },
+        { "$ref": "#/$defs/fingerprint" },
+        {
+          "type": "array",
+          "maxItems": 50,
+          "items": { "$ref": "#/$defs/minimizedResultValue" }
+        },
+        { "$ref": "#/$defs/minimizedResultObject" }
+      ]
+    },
+    "minimizedResultField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identityFingerprint", "value"],
+      "properties": {
+        "identityFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "value": { "$ref": "#/$defs/minimizedResultValue" }
+      }
+    },
+    "minimizedResultObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fields"],
+      "properties": {
+        "fields": {
+          "type": "array",
+          "maxItems": 50,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/minimizedResultField" }
         }
       }
     },
-    "runtimeStep": {
+    "failedRuntimeStep": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "id",
-        "sequence",
-        "state",
-        "call",
-        "result",
-        "resultFingerprint",
-        "error"
+        "id", "sequence", "state", "call", "result", "resultFingerprint", "error"
       ],
       "properties": {
         "id": {
@@ -381,20 +569,136 @@
           "pattern": "^step\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
         },
         "sequence": { "type": "integer", "minimum": 1 },
-        "state": { "enum": ["pending", "requested", "completed", "failed"] },
-        "call": { "type": ["object", "null"] },
-        "result": { "type": ["object", "null"] },
-        "resultFingerprint": {
-          "type": ["string", "null"],
-          "pattern": "^sha256:[a-f0-9]{64}$"
+        "state": { "const": "failed" },
+        "call": { "$ref": "#/$defs/failedCall" },
+        "result": { "type": "null" },
+        "resultFingerprint": { "type": "null" },
+        "error": { "$ref": "#/$defs/failureSummary" }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "call": { "properties": { "error": { "properties": { "code": { "const": "HOST_CALL_AUTHENTICATION_FAILED" } } } } },
+            "error": { "properties": { "code": { "const": "HOST_CALL_AUTHENTICATION_FAILED" } } }
+          }
         },
-        "error": {
-          "oneOf": [
-            { "type": "null" },
-            { "$ref": "#/$defs/failure" }
-          ]
+        {
+          "properties": {
+            "call": { "properties": { "error": { "properties": { "code": { "const": "HOST_CALL_AUTHORIZATION_FAILED" } } } } },
+            "error": { "properties": { "code": { "const": "HOST_CALL_AUTHORIZATION_FAILED" } } }
+          }
+        },
+        {
+          "properties": {
+            "call": { "properties": { "error": { "properties": { "code": { "const": "HOST_CALL_VALIDATION_FAILED" } } } } },
+            "error": { "properties": { "code": { "const": "HOST_CALL_VALIDATION_FAILED" } } }
+          }
+        },
+        {
+          "properties": {
+            "call": { "properties": { "error": { "properties": { "code": { "const": "HOST_CALL_SCHEMA_INVALID" } } } } },
+            "error": { "properties": { "code": { "const": "HOST_CALL_SCHEMA_INVALID" } } }
+          }
+        },
+        {
+          "properties": {
+            "call": { "properties": { "error": { "properties": { "code": { "const": "HOST_CALL_CONFLICT" } } } } },
+            "error": { "properties": { "code": { "const": "HOST_CALL_CONFLICT" } } }
+          }
+        },
+        {
+          "properties": {
+            "call": { "properties": { "error": { "properties": { "code": { "const": "HOST_CALL_RATE_LIMITED" } } } } },
+            "error": { "properties": { "code": { "const": "HOST_CALL_RATE_LIMITED" } } }
+          }
+        },
+        {
+          "properties": {
+            "call": { "properties": { "error": { "properties": { "code": { "const": "HOST_CALL_UNAVAILABLE" } } } } },
+            "error": { "properties": { "code": { "const": "HOST_CALL_UNAVAILABLE" } } }
+          }
+        },
+        {
+          "properties": {
+            "call": { "properties": { "error": { "properties": { "code": { "const": "HOST_CALL_RETRYABLE_FAILURE" } } } } },
+            "error": { "properties": { "code": { "const": "HOST_CALL_RETRYABLE_FAILURE" } } }
+          }
+        },
+        {
+          "properties": {
+            "call": { "properties": { "error": { "properties": { "code": { "const": "HOST_CALL_NOT_FOUND" } } } } },
+            "error": { "properties": { "code": { "const": "HOST_CALL_NOT_FOUND" } } }
+          }
+        },
+        {
+          "properties": {
+            "call": { "properties": { "error": { "properties": { "code": { "const": "HOST_CALL_FAILED" } } } } },
+            "error": { "properties": { "code": { "const": "HOST_CALL_FAILED" } } }
+          }
         }
-      }
+      ]
+    },
+    "runtimeStep": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id", "sequence", "state", "call", "result", "resultFingerprint", "error"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^step\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+            },
+            "sequence": { "type": "integer", "minimum": 1 },
+            "state": { "const": "pending" },
+            "call": { "type": "null" },
+            "result": { "type": "null" },
+            "resultFingerprint": { "type": "null" },
+            "error": { "type": "null" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id", "sequence", "state", "call", "result", "resultFingerprint", "error"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^step\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+            },
+            "sequence": { "type": "integer", "minimum": 1 },
+            "state": { "const": "requested" },
+            "call": { "$ref": "#/$defs/requestedCall" },
+            "result": { "type": "null" },
+            "resultFingerprint": { "type": "null" },
+            "error": { "type": "null" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id", "sequence", "state", "call", "result", "resultFingerprint", "error"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^step\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$"
+            },
+            "sequence": { "type": "integer", "minimum": 1 },
+            "state": { "const": "completed" },
+            "call": { "$ref": "#/$defs/completedCall" },
+            "result": { "$ref": "#/$defs/minimizedResultObject" },
+            "resultFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "error": { "type": "null" }
+          }
+        },
+        { "$ref": "#/$defs/failedRuntimeStep" }
+      ]
     }
   }
 }

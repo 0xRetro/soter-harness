@@ -100,8 +100,12 @@ const CREDENTIAL_CONNECTION_KEY_RE = /(?:database|db|connection|postgres|postgre
 const PRIVATE_KEY_BLOCK_RE = /-----BEGIN(?: [A-Z0-9]+)* PRIVATE KEY(?: BLOCK)?-----/i;
 const SOURCE_CODE_TARGET_EXTENSION_RE = /[.](?:[cm]?[jt]s|[jt]sx)$/i;
 const SOURCE_REFERENCE_VALUE_RE = /^[A-Za-z_$][A-Za-z0-9_$]*(?:(?:[.?][A-Za-z_$][A-Za-z0-9_$]*)|\[[^\]\r\n]+\])*$/;
-const SELFTEST_SOURCE_TARGET_RE = /(?:^|\/)[^/]+[.]selftest[.](?:[cm]?[jt]s|[jt]sx)$/i;
+const SELFTEST_SOURCE_TARGET_RE = /(?:^|\/)(?:(?:[^/]+[.]selftest)|selftest)[.](?:[cm]?[jt]s|[jt]sx)$/i;
 const SYNTHETIC_CREDENTIAL_FIXTURE_MARKER = 'soterSyntheticCredentialFixture';
+const SOURCE_ASCII_WHITESPACE_RE = /[ \t\r\n]/;
+const INERT_PRIVATE_KEY_FIXTURE_SOURCE_TOKEN = "'-----BEGIN OPENSSH "
+  + "PRIVATE KEY-----\\nPRIVATE_MCP_KEY_BLOCK_SENTINEL\\n-----END OPENSSH "
+  + "PRIVATE KEY-----'";
 const SYNTHETIC_CREDENTIAL_TERM_RE = /(?:^|[^A-Za-z0-9])(?:test|fixture|sentinel|example|redacted|dummy|fake|not-a)(?=$|[^A-Za-z0-9])/ig;
 const SYNTHETIC_CREDENTIAL_TOKEN_CHARACTER_RE = /[A-Za-z0-9._~:+/@-]/;
 const TARGET_MATERIAL_LIMITATIONS = Object.freeze([
@@ -222,6 +226,27 @@ function chunkUtf8Text(content) {
   return chunks;
 }
 
+function nextExecutableSourceTokenOffset(content, executable, offset) {
+  let cursor = offset;
+  while (cursor < content.length
+    && (SOURCE_ASCII_WHITESPACE_RE.test(content[cursor]) || executable[cursor] === 0)) {
+    cursor += 1;
+  }
+  return cursor;
+}
+
+function sourceReferenceHasCallContinuation(content, match, executable) {
+  let cursor = nextExecutableSourceTokenOffset(
+    content,
+    executable,
+    match.index + match[0].length
+  );
+  if (content[cursor] === '(') return true;
+  if (content[cursor] !== '?' || content[cursor + 1] !== '.') return false;
+  cursor = nextExecutableSourceTokenOffset(content, executable, cursor + 2);
+  return content[cursor] === '(';
+}
+
 function containsCredentialAssignment(content, { sourceCode = false } = {}) {
   const executable = sourceCode ? sourceExecutableOffsets(content) : null;
   for (const match of content.matchAll(CREDENTIAL_ASSIGNMENT_RE)) {
@@ -233,7 +258,10 @@ function containsCredentialAssignment(content, { sourceCode = false } = {}) {
       || CREDENTIAL_CONNECTION_KEY_RE.test(normalizedKey)) {
       const quoted = match[2] !== undefined;
       const value = match[3] ?? match[4];
-      if (sourceCode && !quoted && SOURCE_REFERENCE_VALUE_RE.test(value)) {
+      if (sourceCode
+        && !quoted
+        && SOURCE_REFERENCE_VALUE_RE.test(value)
+        && !sourceReferenceHasCallContinuation(content, match, executable)) {
         continue;
       }
       return true;
@@ -277,10 +305,36 @@ function syntheticCredentialFixtureLiteralIsSafe(rawLiteral) {
     && !PRIVATE_KEY_BLOCK_RE.test(remainder);
 }
 
+function maskExactInertPrivateKeyFixtureToken(content, executable, masked) {
+  let tokenStart = 0;
+  while ((tokenStart = content.indexOf(
+    INERT_PRIVATE_KEY_FIXTURE_SOURCE_TOKEN,
+    tokenStart
+  )) !== -1) {
+    const tokenEnd = tokenStart + INERT_PRIVATE_KEY_FIXTURE_SOURCE_TOKEN.length;
+    const completeExecutableStringToken = executable[tokenStart] === 1
+      && INERT_PRIVATE_KEY_FIXTURE_SOURCE_TOKEN[0] === "'"
+      && INERT_PRIVATE_KEY_FIXTURE_SOURCE_TOKEN.at(-1) === "'"
+      && executable.slice(tokenStart + 1, tokenEnd).every((value) => value === 0);
+    if (completeExecutableStringToken) masked.fill(' ', tokenStart, tokenEnd);
+    tokenStart = tokenEnd;
+  }
+}
+
+function selftestSourceTargetIsEligible(targetPath) {
+  return typeof targetPath === 'string'
+    && !path.posix.isAbsolute(targetPath)
+    && path.posix.normalize(targetPath) === targetPath
+    && !targetPath.split('/').some((part) => part === '' || part === '.' || part === '..')
+    && SELFTEST_SOURCE_TARGET_RE.test(targetPath);
+}
+
 function credentialInspectionContent(content, { targetPath, sourceCode }) {
-  if (!sourceCode || !SELFTEST_SOURCE_TARGET_RE.test(targetPath)) return content;
+  const selftestSource = selftestSourceTargetIsEligible(targetPath);
+  if (!sourceCode || !selftestSource) return content;
   const executable = sourceExecutableOffsets(content);
   const masked = content.split('');
+  maskExactInertPrivateKeyFixtureToken(content, executable, masked);
   let offset = 0;
   while ((offset = content.indexOf(SYNTHETIC_CREDENTIAL_FIXTURE_MARKER, offset)) !== -1) {
     const markerStart = offset;
@@ -291,10 +345,12 @@ function credentialInspectionContent(content, { targetPath, sourceCode }) {
       continue;
     }
     let cursor = offset;
-    while (cursor < content.length && /[ \t]/.test(content[cursor])) cursor += 1;
+    while (cursor < content.length
+      && SOURCE_ASCII_WHITESPACE_RE.test(content[cursor])) cursor += 1;
     if (content[cursor] !== '(') continue;
     cursor += 1;
-    while (cursor < content.length && /[ \t]/.test(content[cursor])) cursor += 1;
+    while (cursor < content.length
+      && SOURCE_ASCII_WHITESPACE_RE.test(content[cursor])) cursor += 1;
     const quote = content[cursor];
     if (quote !== "'" && quote !== '"') continue;
     const literalStart = cursor + 1;
@@ -311,7 +367,8 @@ function credentialInspectionContent(content, { targetPath, sourceCode }) {
     if (content[cursor] !== quote) continue;
     const literalEnd = cursor;
     cursor += 1;
-    while (cursor < content.length && /[ \t]/.test(content[cursor])) cursor += 1;
+    while (cursor < content.length
+      && SOURCE_ASCII_WHITESPACE_RE.test(content[cursor])) cursor += 1;
     if (content[cursor] !== ')') continue;
     const callEnd = cursor + 1;
     if (!syntheticCredentialFixtureLiteralIsSafe(
@@ -1542,7 +1599,7 @@ export function readDevelopmentTargetMaterial({
       'The selected request target contains prohibited private or binary material.'
     );
   }
-  if (PRIVATE_KEY_BLOCK_RE.test(content)) {
+  if (PRIVATE_KEY_BLOCK_RE.test(credentialContent)) {
     throw reasonedCodedError(
       'DEVELOPMENT_REQUEST_TARGET_READ_UNAVAILABLE',
       'DEVELOPMENT_TARGET_MATERIAL_PRIVATE_KEY_BLOCK',

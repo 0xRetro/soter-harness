@@ -1211,6 +1211,32 @@ function exactPagePropertyTitle(properties, expectedTitle) {
   return expectedTitle;
 }
 
+function exactNotionPagePreambleUrl(preambleUrl, payloadUrl) {
+  let preambleIdentity;
+  let payloadIdentity;
+  try {
+    preambleIdentity = exactNotionPageId(preambleUrl);
+    payloadIdentity = exactNotionPageId(payloadUrl);
+  } catch {
+    return false;
+  }
+  if (!preambleIdentity || !payloadIdentity || preambleIdentity !== payloadIdentity) return false;
+  if (preambleUrl === payloadUrl) return true;
+
+  const parsedPreambleUrl = parsedUrl(preambleUrl);
+  const parsedPayloadUrl = parsedUrl(payloadUrl);
+  return Boolean(
+    parsedPreambleUrl
+    && parsedPayloadUrl
+    && !parsedPreambleUrl.search
+    && parsedPayloadUrl.search
+    && !parsedPreambleUrl.hash
+    && !parsedPayloadUrl.hash
+    && parsedPreambleUrl.origin === parsedPayloadUrl.origin
+    && parsedPreambleUrl.pathname === parsedPayloadUrl.pathname
+  );
+}
+
 function exactNotionPagePreamble(preamble, payloadUrl) {
   if (!preamble) return;
   if (preamble.length > 10000 || /[<>]/u.test(preamble)) {
@@ -1224,7 +1250,7 @@ function exactNotionPagePreamble(preamble, payloadUrl) {
   const observedAt = match?.[2];
   const observedTime = Date.parse(observedAt || '');
   if (!match
-    || match[1] !== payloadUrl
+    || !exactNotionPagePreambleUrl(match[1], payloadUrl)
     || !Number.isFinite(observedTime)
     || new Date(observedTime).toISOString() !== observedAt) {
     throw providerError(

@@ -542,7 +542,7 @@ function assertManagedProjectionCandidateCurrent({
   if (fingerprintLock(lock) !== manifest.configuration.lockFingerprint
     || lock.graphFingerprint !== manifest.configuration.graphFingerprint) {
     fail(
-      'HOST_REALIZATION_ACTIVE_LOCK_STALE',
+      'HOST_REALIZATION_MANIFEST_LOCK_STALE',
       'Managed host manifest no longer matches its exact private configuration lock.'
     );
   }
@@ -555,6 +555,88 @@ function assertManagedProjectionCandidateCurrent({
     );
   }
   return lock;
+}
+
+/**
+ * Return one minimized, live host-realization applicability fact. This is an
+ * inspection-only classifier: it grants no continuation or realization
+ * authority and deliberately omits configuration, path, fingerprint, and
+ * caught-error detail.
+ */
+export function inspectManagedHostRealizationApplicability({ root, host }) {
+  try {
+    const resolvedRoot = path.resolve(root);
+    const exact = inspectCurrentManagedHostProjection({
+      root: resolvedRoot,
+      host,
+      verifyCandidate: false
+    });
+    if (exact.state === 'not-realized') {
+      return Object.freeze({
+        state: 'not-realized',
+        reasonCode: 'HOST_REALIZATION_NOT_REALIZED',
+        permittedNextAction: 'realize-host-runtime'
+      });
+    }
+
+    const lock = activeLock(resolvedRoot, exact.manifest.configuration.name);
+    if (fingerprintLock(lock) !== exact.manifest.configuration.lockFingerprint
+      || lock.graphFingerprint !== exact.manifest.configuration.graphFingerprint) {
+      fail(
+        'HOST_REALIZATION_MANIFEST_LOCK_STALE',
+        'Managed host manifest no longer matches the exact active lock.'
+      );
+    }
+    const rendered = renderedForLock(resolvedRoot, lock);
+    if (fingerprintJson(manifestMetadata({ target: exact.target, lock, rendered }))
+      !== fingerprintJson(priorManifestMetadata(exact.manifest))) {
+      fail(
+        'HOST_REALIZATION_MANIFEST_LOCK_STALE',
+        'Managed host manifest no longer matches the exact active lock projection.'
+      );
+    }
+    const rows = manifests(resolvedRoot, exact.target);
+    const selected = rows.filter((row) => row.manifest.host === host);
+    if (selected.length !== 1
+      || selected[0].manifest.manifestFingerprint !== exact.manifest.manifestFingerprint) {
+      fail(
+        'HOST_REALIZATION_CROSS_HOST_COLLISION',
+        'Managed host realization ownership is unavailable.'
+      );
+    }
+    return Object.freeze({
+      state: 'current',
+      reasonCode: 'HOST_REALIZATION_CURRENT',
+      permittedNextAction: 'continue'
+    });
+  } catch (error) {
+    if (error?.code === 'HOST_REALIZATION_ACTIVE_LOCK_MISSING') {
+      return Object.freeze({
+        state: 'stale',
+        reasonCode: 'HOST_REALIZATION_ACTIVE_LOCK_MISSING',
+        permittedNextAction: 'refresh-active-configuration'
+      });
+    }
+    if (error?.code === 'HOST_REALIZATION_ACTIVE_LOCK_STALE') {
+      return Object.freeze({
+        state: 'stale',
+        reasonCode: 'HOST_REALIZATION_ACTIVE_LOCK_STALE',
+        permittedNextAction: 'refresh-active-configuration'
+      });
+    }
+    if (error?.code === 'HOST_REALIZATION_MANIFEST_LOCK_STALE') {
+      return Object.freeze({
+        state: 'stale',
+        reasonCode: 'HOST_REALIZATION_MANIFEST_LOCK_STALE',
+        permittedNextAction: 'realize-host-runtime'
+      });
+    }
+    return Object.freeze({
+      state: 'unavailable',
+      reasonCode: 'HOST_REALIZATION_APPLICABILITY_UNAVAILABLE',
+      permittedNextAction: 'none'
+    });
+  }
 }
 
 function inspectCurrentManagedHostProjection({ root, host, verifyCandidate = true }) {

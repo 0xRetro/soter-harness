@@ -3,7 +3,7 @@
   "contractVersion": "1.0.0",
   "id": "provider.integration.slack.mcp",
   "pack": "integration.slack",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "containment": "connected",
   "runtime": {
     "engine": "mcp",
@@ -35,7 +35,11 @@
       "read_channel",
       "read_thread"
     ],
-    "probeTools": ["list_workspaces"]
+    "probeTools": [
+      "list_workspaces",
+      "read_channel",
+      "read_thread"
+    ]
   },
   "capabilities": [
     { "id": "communications.conversations.list", "version": "1.0.0" },
@@ -53,6 +57,7 @@
   "limitations": [
     "The closed Codex response profile accepts only an MCP structuredContent object. Text content, JSON-looking prose, top-level result wrappers, and string-valued structured results fail with STRUCTURED_RESPONSE_PROFILE_UNAVAILABLE and are never parsed.",
     "The Codex response profile is a normalization contract, not a current live-route claim. Current Codex and Claude Slack message and thread routes expose formatted prose, so Slack Conversation Review connected acquisition is unavailable.",
+    "An optional private readiness probe observes only bounded response-shape facts for the exact configured channel message window and thread root after identity discovery. The registered Codex Slack surface has no exact conversation-identity lookup, so the probe makes no conversation-list readiness claim and does not promote any portable capability or open Slack Conversation Review.",
     "Slack Channel Ingestion uses separate conversation-identity and participant capabilities. Those live routes remain declared but unverified; this correction neither promotes nor disables them.",
     "Connected reads use a Core-checkpointed bounded cursor sequence. Only cursor-exhausted aggregates become portable capability output; page cursors remain private current-call arguments.",
     "Direct messages are modeled by the portable conversation contract but excluded by the first Slack Conversation Review Automation policy.",

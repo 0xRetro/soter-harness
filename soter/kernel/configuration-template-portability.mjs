@@ -291,6 +291,17 @@ export function inspectTrackedConfigurationTemplates(root = defaultRoot) {
         'Exact provider property names and unavailable-property declarations belong only in private configuration state.'
       ));
     }
+    if (Object.hasOwn(
+      document?.settings?.['integration.slack'] || {},
+      'readinessProbe'
+    )) {
+      violations.push(violation(
+        file.relative,
+        '/settings/integration.slack/readinessProbe',
+        'TRACKED_CONFIGURATION_PRIVATE_SLACK_READINESS_PROBE',
+        'Exact Slack conversation, thread, and time-window probe identities belong only in private configuration state.'
+      ));
+    }
   }
   violations.sort((left, right) => {
     return compareCodepoint(

@@ -2,7 +2,7 @@
   "$contract": "soter://contracts/pack/v1",
   "contractVersion": "1.0.0",
   "id": "integration.slack",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "layer": "integration",
   "releaseStage": "experimental",
   "evidenceMaturity": "declared",
