@@ -2,13 +2,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { validateJsonSchema } from '../kernel/verify.mjs';
+import {
+  resolveProviderMappingOnboardingRequirements,
+  validateJsonSchema
+} from '../kernel/verify.mjs';
 import {
   fingerprintJson,
   readJson,
   repoRelativePath,
   resolveRepoPath
 } from './lib/canonical-json.mjs';
+import { containsCredentialMaterial } from './host-runtime.mjs';
 import {
   evaluateConfigurationDocument,
   findConfigurationTemplate,
@@ -56,6 +60,14 @@ import {
 const DEFAULT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const VERSION = '1.0.0';
 const CONTRACTS = {
+  onboardingDescription: [
+    'soter://contracts/configuration-onboarding-description/v1',
+    'soter/contracts/configuration-onboarding-description.schema.json'
+  ],
+  onboardingInput: [
+    'soter://contracts/configuration-onboarding-input/v1',
+    'soter/contracts/configuration-onboarding-input.schema.json'
+  ],
   plan: ['soter://contracts/configuration-change-plan/v1', 'soter/contracts/configuration-change-plan.schema.json'],
   request: ['soter://contracts/configuration-change-request/v1', 'soter/contracts/configuration-change-request.schema.json'],
   confirmation: ['soter://contracts/configuration-change-confirmation/v1', 'soter/contracts/configuration-change-confirmation.schema.json'],
@@ -552,6 +564,1139 @@ function currentDesiredConfiguration(root, name, templateFile) {
     lock: activeLock,
     priorActiveLock: { state: 'present', fingerprint: activeFingerprint, lock: activeLock }
   };
+}
+
+const ONBOARDING_IDENTIFIER_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+const ONBOARDING_FIXTURE_TEXT_RE = /(?:soter-fixture|sentinel|\.example(?:\b|$))/i;
+const ONBOARDING_PATH_TEXT_RE = /(?:^|[\s"'])(?:\.{0,2}[\\/]|~[\\/]|[A-Za-z]:[\\/]|\/Users\/|\/home\/|\/private\/|\.soter[\\/])/;
+const ONBOARDING_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ONBOARDING_DATE_TIME_RE = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-](\d{2}):(\d{2}))$/;
+const ONBOARDING_PUBLIC_CONTROL_RE = /^[A-Za-z0-9][A-Za-z0-9 ._:+/-]{0,199}$/;
+const ONBOARDING_MAX_STRING_LENGTH = 4096;
+const ONBOARDING_MAX_COLLECTION_ITEMS = 100;
+const ONBOARDING_MAX_INPUT_BYTES = 256 * 1024;
+
+function failOnboardingUnavailable() {
+  fail(
+    'CONFIGURATION_ONBOARDING_UNAVAILABLE',
+    'The selected configuration cannot be represented by the closed onboarding contract.'
+  );
+}
+
+function failOnboardingInput() {
+  fail(
+    'CONFIGURATION_ONBOARDING_INPUT_INVALID',
+    'Private onboarding input does not exactly bind the current closed description.'
+  );
+}
+
+function assertOnboardingIdentifier(value) {
+  if (typeof value !== 'string'
+    || value.length < 1
+    || value.length > 160
+    || !ONBOARDING_IDENTIFIER_RE.test(value)
+    || ONBOARDING_FIXTURE_TEXT_RE.test(value)
+    || ONBOARDING_PATH_TEXT_RE.test(value)
+    || containsCredentialMaterial(value)
+    || value.includes('://')
+    || value.includes('@')) {
+    failOnboardingUnavailable();
+  }
+  return value;
+}
+
+function assertPublicControlValue(value) {
+  if (typeof value !== 'string'
+    || !ONBOARDING_PUBLIC_CONTROL_RE.test(value)
+    || value.includes('://')
+    || value.includes('@')
+    || ONBOARDING_FIXTURE_TEXT_RE.test(value)
+    || ONBOARDING_PATH_TEXT_RE.test(value)
+    || containsCredentialMaterial(value)) {
+    failOnboardingUnavailable();
+  }
+  return value;
+}
+
+function assertProjectedOnboardingStrings(description) {
+  assertOnboardingIdentifier(description.configuration.name);
+  for (const slot of description.slots) {
+    for (const value of [slot.id, slot.family, slot.subject, slot.field, slot.type]) {
+      assertOnboardingIdentifier(value);
+    }
+    if (slot.itemType) assertOnboardingIdentifier(slot.itemType);
+    for (const option of slot.options || []) assertPublicControlValue(option);
+    for (const field of slot.fields || []) {
+      for (const value of [field.id, field.field, field.type]) assertOnboardingIdentifier(value);
+      if (field.itemType) assertOnboardingIdentifier(field.itemType);
+      for (const option of field.options || []) assertPublicControlValue(option);
+    }
+    for (const scope of slot.scopes || []) {
+      for (const value of [
+        scope.id,
+        scope.activation.subject,
+        scope.activation.target,
+        scope.record.subject,
+        scope.record.type,
+        scope.field.id
+      ]) assertOnboardingIdentifier(value);
+    }
+  }
+}
+
+function validateOnboardingContract(root, value, kind, label) {
+  const [contract, schemaPath] = CONTRACTS[kind];
+  const code = kind === 'onboardingDescription'
+    ? 'CONFIGURATION_ONBOARDING_DESCRIPTION_MALFORMED'
+    : 'CONFIGURATION_ONBOARDING_INPUT_INVALID';
+  if (value?.$contract !== contract || value?.contractVersion !== VERSION) {
+    fail(code, label + ' contract identity is invalid.');
+  }
+  const failures = validateJsonSchema(value, readJson(path.join(root, schemaPath)));
+  if (failures.length) fail(code, label + ' does not satisfy its closed contract.');
+}
+
+function assertOnboardingBounds(constraints) {
+  for (const [minimum, maximum] of [
+    ['minLength', 'maxLength'],
+    ['minimum', 'maximum'],
+    ['minItems', 'maxItems']
+  ]) {
+    if (Object.hasOwn(constraints, minimum)
+      && Object.hasOwn(constraints, maximum)
+      && constraints[minimum] > constraints[maximum]) {
+      failOnboardingUnavailable();
+    }
+  }
+  return constraints;
+}
+
+function stringConstraints(schema) {
+  if ((Object.hasOwn(schema, 'minLength')
+      && (!Number.isSafeInteger(schema.minLength) || schema.minLength < 0))
+    || (Object.hasOwn(schema, 'maxLength')
+      && (!Number.isSafeInteger(schema.maxLength) || schema.maxLength < 1))) {
+    failOnboardingUnavailable();
+  }
+  const constraints = {};
+  if (Number.isSafeInteger(schema.minLength) && schema.minLength >= 0) {
+    constraints.minLength = schema.minLength;
+  }
+  constraints.maxLength = Number.isSafeInteger(schema.maxLength) && schema.maxLength >= 1
+    ? Math.min(schema.maxLength, ONBOARDING_MAX_STRING_LENGTH)
+    : ONBOARDING_MAX_STRING_LENGTH;
+  return assertOnboardingBounds(constraints);
+}
+
+function integerConstraints(schema) {
+  if ((Object.hasOwn(schema, 'minimum') && !Number.isSafeInteger(schema.minimum))
+    || (Object.hasOwn(schema, 'maximum') && !Number.isSafeInteger(schema.maximum))) {
+    failOnboardingUnavailable();
+  }
+  const constraints = {
+    minimum: Object.hasOwn(schema, 'minimum') ? schema.minimum : Number.MIN_SAFE_INTEGER,
+    maximum: Object.hasOwn(schema, 'maximum') ? schema.maximum : Number.MAX_SAFE_INTEGER
+  };
+  return assertOnboardingBounds(constraints);
+}
+
+function listConstraints(schema) {
+  if ((Object.hasOwn(schema, 'minItems')
+      && (!Number.isSafeInteger(schema.minItems) || schema.minItems < 0))
+    || (Object.hasOwn(schema, 'maxItems')
+      && (!Number.isSafeInteger(schema.maxItems) || schema.maxItems < 1))) {
+    failOnboardingUnavailable();
+  }
+  const constraints = {};
+  if (Number.isSafeInteger(schema.minItems) && schema.minItems >= 0) {
+    constraints.minItems = schema.minItems;
+  }
+  constraints.maxItems = Number.isSafeInteger(schema.maxItems) && schema.maxItems >= 1
+    ? Math.min(schema.maxItems, ONBOARDING_MAX_COLLECTION_ITEMS)
+    : ONBOARDING_MAX_COLLECTION_ITEMS;
+  if (typeof schema.uniqueItems === 'boolean') constraints.uniqueItems = schema.uniqueItems;
+  return assertOnboardingBounds(constraints);
+}
+
+function recordConstraints(schema) {
+  const constraints = listConstraints(schema);
+  delete constraints.uniqueItems;
+  return constraints;
+}
+
+function selectedDefinitionDocuments(root, lock) {
+  const documents = [];
+  const observedPaths = new Set();
+  for (const pack of lock.packs) {
+    for (const artifact of pack.artifacts) {
+      if (artifact.role !== 'definition' || observedPaths.has(artifact.path)) continue;
+      observedPaths.add(artifact.path);
+      let absolute;
+      let stat;
+      let document;
+      try {
+        absolute = resolveRepoPath(root, artifact.path);
+        stat = fs.lstatSync(absolute);
+        if (!stat.isFile() || stat.isSymbolicLink()) failOnboardingUnavailable();
+        document = readJson(absolute);
+      } catch (error) {
+        if (error instanceof ConfigurationTransactionError) throw error;
+        failOnboardingUnavailable();
+      }
+      documents.push({ pack: pack.id, artifact, document });
+    }
+  }
+  return documents;
+}
+
+function selectedPackDocuments(root, lock, selectedIds) {
+  const lockPacks = new Map(lock.packs.map((pack) => [pack.id, pack]));
+  if (new Set(selectedIds).size !== selectedIds.length) failOnboardingUnavailable();
+  return selectedIds.map((id) => {
+    const selected = lockPacks.get(id);
+    if (!selected) failOnboardingUnavailable();
+    let document;
+    try {
+      const absolute = resolveRepoPath(root, 'soter/packs/' + selected.id + '/pack.json');
+      const stat = fs.lstatSync(absolute);
+      if (!stat.isFile() || stat.isSymbolicLink()) failOnboardingUnavailable();
+      document = readJson(absolute);
+    } catch (error) {
+      if (error instanceof ConfigurationTransactionError) throw error;
+      failOnboardingUnavailable();
+    }
+    if (document?.id !== selected.id
+      || fingerprintJson(document) !== selected.manifestFingerprint) {
+      failOnboardingUnavailable();
+    }
+    return document;
+  });
+}
+
+function exactDefinition(documents, predicate) {
+  const matches = documents.filter(({ document }) => predicate(document));
+  if (matches.length !== 1) failOnboardingUnavailable();
+  return matches[0];
+}
+
+function closedObjectSchema(schema) {
+  if (!schema
+    || typeof schema !== 'object'
+    || Array.isArray(schema)
+    || schema.type !== 'object'
+    || schema.additionalProperties !== false
+    || !schema.properties
+    || typeof schema.properties !== 'object'
+    || Array.isArray(schema.properties)
+    || !Array.isArray(schema.required || [])) {
+    failOnboardingUnavailable();
+  }
+  for (const required of schema.required || []) {
+    if (!Object.hasOwn(schema.properties, required)) failOnboardingUnavailable();
+  }
+  return schema;
+}
+
+function schemaStringType(schema, semanticField) {
+  if (schema.format === 'uri'
+    || /(?:uri|url|target)$/i.test(semanticField)
+    || (typeof schema.pattern === 'string' && schema.pattern.includes('://'))) return 'uri';
+  if (schema.format === 'email' || /(?:emails?|addresses?)$/i.test(semanticField)) return 'email';
+  if (schema.format === 'date') return 'date';
+  if (schema.format === 'date-time') return 'date-time';
+  return 'string';
+}
+
+function publicEnumOptions(schema) {
+  if (!Array.isArray(schema.enum)
+    || schema.enum.length < 1
+    || schema.enum.length > 100
+    || new Set(schema.enum).size !== schema.enum.length) {
+    failOnboardingUnavailable();
+  }
+  return schema.enum.map(assertPublicControlValue);
+}
+
+function projectedField({ id, field, required, schema }) {
+  assertOnboardingIdentifier(id);
+  assertOnboardingIdentifier(field);
+  if (Object.hasOwn(schema, 'const')) return null;
+  if (Array.isArray(schema.enum)) {
+    return { id, field, required, type: 'enum', options: publicEnumOptions(schema) };
+  }
+  if (schema.type === 'string') {
+    return {
+      id,
+      field,
+      required,
+      type: schemaStringType(schema, field),
+      constraints: stringConstraints(schema)
+    };
+  }
+  if (schema.type === 'integer') {
+    return { id, field, required, type: 'integer', constraints: integerConstraints(schema) };
+  }
+  if (schema.type === 'boolean') return { id, field, required, type: 'boolean' };
+  if (schema.type === 'array' && schema.items?.type === 'string' && !schema.items.enum) {
+    return {
+      id,
+      field,
+      required,
+      type: 'string-list',
+      itemType: schemaStringType(schema.items, field),
+      constraints: listConstraints(schema),
+      itemConstraints: stringConstraints(schema.items)
+    };
+  }
+  failOnboardingUnavailable();
+}
+
+function projectedRecordSlot({ id, family, subject, field, required, schema }) {
+  if (family !== 'setting'
+    || schema.type !== 'array'
+    || schema.items?.type !== 'object') {
+    failOnboardingUnavailable();
+  }
+  const itemSchema = closedObjectSchema(schema.items);
+  const fields = Object.keys(itemSchema.properties).sort(compareText).flatMap((property) => {
+    const projected = projectedField({
+      id: property,
+      field: property,
+      required: (itemSchema.required || []).includes(property),
+      schema: itemSchema.properties[property]
+    });
+    return projected ? [projected] : [];
+  });
+  if (!fields.length) failOnboardingUnavailable();
+  return {
+    id,
+    family,
+    subject,
+    field,
+    required,
+    type: 'records',
+    constraints: recordConstraints(schema),
+    fields
+  };
+}
+
+function projectedGroupSlot({ id, family, subject, field, schema }) {
+  if (family !== 'setting' || schema.type !== 'object') failOnboardingUnavailable();
+  const groupSchema = closedObjectSchema(schema);
+  const fields = Object.keys(groupSchema.properties).sort(compareText).flatMap((property) => {
+    const projected = projectedField({
+      id: property,
+      field: property,
+      required: (groupSchema.required || []).includes(property),
+      schema: groupSchema.properties[property]
+    });
+    return projected ? [projected] : [];
+  });
+  if (!fields.length) failOnboardingUnavailable();
+  return {
+    id,
+    family,
+    subject,
+    field,
+    required: false,
+    type: 'group',
+    fields
+  };
+}
+
+function containsTemplateIdentity(value) {
+  if (typeof value === 'string') {
+    return /(?:soter-fixture|sentinel|\.example(?:\b|$))/i.test(value);
+  }
+  if (Array.isArray(value)) return value.some(containsTemplateIdentity);
+  if (value && typeof value === 'object') {
+    return Object.values(value).some(containsTemplateIdentity);
+  }
+  return false;
+}
+
+function sourcePropertyNeedsSlot(property, schema, value) {
+  if (Object.hasOwn(schema, 'const') || Array.isArray(schema.enum) || Array.isArray(schema.items?.enum)) {
+    return false;
+  }
+  if (schema.format === 'uri' || schema.format === 'email'
+    || /(?:ids?|uris?|urls?|addresses?|targets?|workspaceId)$/i.test(property)) {
+    return true;
+  }
+  return containsTemplateIdentity(value);
+}
+
+function onboardingSlot({ family, subject, propertyPath, required, schema }) {
+  const field = propertyPath.at(-1);
+  const id = [
+    family === 'instance-authority-uri' ? 'authority' : family === 'source-input' ? 'source' : 'setting',
+    subject,
+    ...propertyPath
+  ].join('.');
+  assertOnboardingIdentifier(id);
+  assertOnboardingIdentifier(subject);
+  assertOnboardingIdentifier(field);
+  if (family === 'instance-authority-uri') {
+    return {
+      id,
+      family,
+      subject,
+      field: 'uri',
+      required: true,
+      type: 'uri',
+      constraints: stringConstraints(schema)
+    };
+  }
+  if (schema.type === 'array' && schema.items?.type === 'object') {
+    return projectedRecordSlot({ id, family, subject, field, required, schema });
+  }
+  const projected = projectedField({ id, field, required, schema });
+  if (!projected) failOnboardingUnavailable();
+  return { ...projected, family, subject };
+}
+
+function settingPropertyNeedsSlot(property, schema, value, present, ancestorAbsent, required) {
+  if (Object.hasOwn(schema, 'const')) return false;
+  if (Array.isArray(schema.enum)
+    || (schema.type === 'array' && schema.items?.type === 'object')) return true;
+  if (!present) return required || ancestorAbsent;
+  if (schema.format === 'uri' || schema.format === 'email'
+    || /(?:ids?|uris?|urls?|addresses?|targets?|workspaceId)$/i.test(property)
+    || (typeof schema.pattern === 'string' && schema.pattern.includes('://'))) {
+    return true;
+  }
+  return containsTemplateIdentity(value);
+}
+
+function walkSettingSchema({
+  subject,
+  schema,
+  value,
+  propertyPath = [],
+  parentRequired = true,
+  ancestorAbsent = false,
+  slots,
+  bindings
+}) {
+  const objectSchema = closedObjectSchema(schema);
+  for (const property of Object.keys(objectSchema.properties).sort(compareText)) {
+    const propertySchema = objectSchema.properties[property];
+    const nextPath = [...propertyPath, property];
+    const present = value !== undefined && value !== null && Object.hasOwn(value, property);
+    const required = parentRequired && (objectSchema.required || []).includes(property);
+    if (Object.hasOwn(propertySchema, 'const')) continue;
+    if (propertySchema.type === 'object') {
+      if (present && (!value[property] || typeof value[property] !== 'object' || Array.isArray(value[property]))) {
+        failOnboardingUnavailable();
+      }
+      if (!required) {
+        const slot = projectedGroupSlot({
+          id: ['setting', subject, ...nextPath].join('.'),
+          family: 'setting',
+          subject,
+          field: property,
+          schema: propertySchema
+        });
+        slots.push(slot);
+        bindings.push({ slot, path: ['settings', subject, ...nextPath], schema: propertySchema });
+        continue;
+      }
+      walkSettingSchema({
+        subject,
+        schema: propertySchema,
+        value: present ? value[property] : undefined,
+        propertyPath: nextPath,
+        parentRequired: required,
+        ancestorAbsent: ancestorAbsent || !present,
+        slots,
+        bindings
+      });
+      continue;
+    }
+    if (propertySchema.type === 'array' && propertySchema.items?.type === 'object' && !present && !required) {
+      try {
+        projectedRecordSlot({
+          id: ['setting', subject, ...nextPath].join('.'),
+          family: 'setting',
+          subject,
+          field: property,
+          required,
+          schema: propertySchema
+        });
+      } catch (error) {
+        if (error?.code === 'CONFIGURATION_ONBOARDING_UNAVAILABLE') continue;
+        throw error;
+      }
+    }
+    const supported = Object.hasOwn(propertySchema, 'const')
+      || Array.isArray(propertySchema.enum)
+      || propertySchema.type === 'string'
+      || propertySchema.type === 'integer'
+      || propertySchema.type === 'boolean'
+      || (propertySchema.type === 'array' && propertySchema.items?.type === 'string')
+      || (propertySchema.type === 'array' && propertySchema.items?.type === 'object');
+    if (!supported && !present && !required) continue;
+    if (!supported) failOnboardingUnavailable();
+    if (!settingPropertyNeedsSlot(
+      property,
+      propertySchema,
+      present ? value[property] : undefined,
+      present,
+      ancestorAbsent,
+      required
+    )) continue;
+    const slot = onboardingSlot({
+      family: 'setting',
+      subject,
+      propertyPath: nextPath,
+      required,
+      schema: propertySchema
+    });
+    slots.push(slot);
+    bindings.push({ slot, path: ['settings', subject, ...nextPath], schema: propertySchema });
+  }
+}
+
+function assertUniqueOnboardingDescription(description) {
+  const slotIds = new Set();
+  for (const slot of description.slots) {
+    if (slotIds.has(slot.id)) failOnboardingUnavailable();
+    slotIds.add(slot.id);
+    const fieldIds = new Set();
+    for (const field of slot.fields || []) {
+      if (fieldIds.has(field.id)) failOnboardingUnavailable();
+      fieldIds.add(field.id);
+    }
+    const scopeIds = new Set();
+    const scopeFingerprints = new Set();
+    for (const scope of slot.scopes || []) {
+      if (scopeIds.has(scope.id) || scopeFingerprints.has(scope.scopeFingerprint)) {
+        failOnboardingUnavailable();
+      }
+      scopeIds.add(scope.id);
+      scopeFingerprints.add(scope.scopeFingerprint);
+    }
+  }
+}
+
+function applyResolvedOnboardingRequiredness(root, templateFile, template, bindings) {
+  let minimalCandidate = clone(template);
+  for (const binding of bindings) {
+    if (binding.slot.required) continue;
+    const candidate = clone(minimalCandidate);
+    deletePath(candidate, binding.path);
+    let evaluated;
+    try {
+      evaluated = evaluateConfigurationDocument({
+        root,
+        configPath: templateFile,
+        configuration: candidate
+      });
+    } catch {
+      failOnboardingUnavailable();
+    }
+    if (evaluated.verification.health.valid !== 'passed' || !evaluated.lock) {
+      binding.slot.required = true;
+    } else {
+      minimalCandidate = candidate;
+    }
+  }
+}
+
+function providerMappingOnboardingBinding(root, current, template, documents, bindings) {
+  const selectedPackIds = template.packs.map((pack) => pack.id);
+  const requirements = resolveProviderMappingOnboardingRequirements({
+    configuration: template,
+    selectedPackIds,
+    packs: selectedPackDocuments(root, current.lock, selectedPackIds),
+    providerMappings: documents.filter(({ document }) => (
+      document?.$contract === 'soter://contracts/provider-mapping/v1'
+    )).map(({ document }) => document),
+    contextModels: documents.filter(({ document }) => (
+      document?.$contract === 'soter://contracts/context-record-model/v1'
+    )).map(({ document }) => document),
+    settingsDefinitions: documents.filter(({ document }) => (
+      document?.$contract === 'soter://contracts/pack-settings/v1'
+    )).map(({ document }) => document)
+  });
+  if (requirements.state !== 'current') failOnboardingUnavailable();
+  if (!requirements.scopes.length) return null;
+
+  const requiredTargets = new Set(requirements.scopes.map((scope) => (
+    scope.activationSubject + '\u0000' + scope.activationTarget
+  )));
+  for (const target of requiredTargets) {
+    const [subject, field] = target.split('\u0000');
+    const matches = bindings.filter((binding) => (
+      binding.slot.family === 'setting'
+        && binding.slot.subject === subject
+        && binding.slot.field === field
+        && binding.path.at(-2) === 'targets'
+        && binding.path.at(-1) === field
+    ));
+    if (matches.length !== 1 || matches[0].slot.type !== 'uri') failOnboardingUnavailable();
+    matches[0].slot.required = true;
+  }
+
+  const slot = {
+    id: 'provider-mapping.scopes',
+    family: 'provider-mapping-set',
+    subject: 'provider-mappings',
+    field: 'scopes',
+    required: true,
+    type: 'provider-mapping-set',
+    mappingSetFingerprint: requirements.mappingSetFingerprint,
+    scopes: requirements.scopes.map((scope) => ({
+      id: scope.id,
+      scopeFingerprint: scope.scopeFingerprint,
+      activation: {
+        subject: scope.activationSubject,
+        target: scope.activationTarget
+      },
+      record: {
+        subject: scope.recordSubject,
+        type: scope.recordType
+      },
+      field: {
+        id: scope.field,
+        required: scope.required,
+        optionMappingRequired: scope.optionMappingRequired
+      }
+    }))
+  };
+  return { kind: 'provider-mapping-set', slot, requirements };
+}
+
+function onboardingModel(root, name) {
+  const templateFile = findConfiguration(root, name);
+  let current;
+  try {
+    current = currentDesiredConfiguration(root, name, templateFile);
+  } catch {
+    failOnboardingUnavailable();
+  }
+  if (current.sourceKind !== 'tracked-template' || current.priorActiveLock.state !== 'absent') {
+    failOnboardingUnavailable();
+  }
+  const template = clone(current.configuration);
+  const documents = selectedDefinitionDocuments(root, current.lock);
+  const slots = [];
+  const bindings = [];
+  for (const authority of [...template.authorities].sort((left, right) => compareText(left.id, right.id))) {
+    if (authority.role !== 'instance') continue;
+    const slot = onboardingSlot({
+      family: 'instance-authority-uri',
+      subject: authority.id,
+      propertyPath: ['uri'],
+      required: true,
+      schema: { type: 'string', format: 'uri' }
+    });
+    slots.push(slot);
+    bindings.push({
+      slot,
+      path: ['authorities', template.authorities.findIndex((item) => item.id === authority.id), 'uri'],
+      schema: { type: 'string', format: 'uri' }
+    });
+  }
+  for (const source of [...template.sources].sort((left, right) => compareText(left.id, right.id))) {
+    const capability = exactDefinition(
+      documents,
+      (document) => document?.$contract === 'soter://contracts/capability/v1'
+        && document.id === source.capability
+    ).document;
+    const inputSchema = closedObjectSchema(capability.inputSchema);
+    for (const property of Object.keys(inputSchema.properties).sort(compareText)) {
+      const propertySchema = inputSchema.properties[property];
+      const present = Object.hasOwn(source.input, property);
+      if (!sourcePropertyNeedsSlot(property, propertySchema, present ? source.input[property] : undefined)) continue;
+      if (propertySchema.type === 'object'
+        || (propertySchema.type === 'array' && propertySchema.items?.type === 'object')) {
+        failOnboardingUnavailable();
+      }
+      const slot = onboardingSlot({
+        family: 'source-input',
+        subject: source.id,
+        propertyPath: [property],
+        required: (inputSchema.required || []).includes(property),
+        schema: propertySchema
+      });
+      slots.push(slot);
+      bindings.push({
+        slot,
+        path: ['sources', template.sources.findIndex((item) => item.id === source.id), 'input', property],
+        schema: propertySchema
+      });
+    }
+  }
+  for (const subject of Object.keys(template.settings || {}).sort(compareText)) {
+    const definition = exactDefinition(
+      documents,
+      (document) => document?.$contract === 'soter://contracts/pack-settings/v1'
+        && document.pack === subject
+    ).document;
+    walkSettingSchema({
+      subject,
+      schema: definition.schema,
+      value: template.settings[subject],
+      slots,
+      bindings
+    });
+  }
+  applyResolvedOnboardingRequiredness(root, templateFile, template, bindings);
+  const mappingBinding = providerMappingOnboardingBinding(
+    root,
+    current,
+    template,
+    documents,
+    bindings
+  );
+  if (mappingBinding) {
+    slots.push(mappingBinding.slot);
+    bindings.push(mappingBinding);
+  }
+  if (!slots.length || slots.length > 500) failOnboardingUnavailable();
+  const schemaFingerprint = fingerprintJson(documents.filter(({ document }) => (
+    document?.$contract === 'soter://contracts/pack-settings/v1'
+      && Object.hasOwn(template.settings || {}, document.pack)
+  ) || (
+    document?.$contract === 'soter://contracts/capability/v1'
+      && template.sources.some((source) => source.capability === document.id)
+  )).map(({ document }) => ({
+    contract: document.$contract,
+    id: document.id,
+    version: document.version,
+    schema: document.schema || document.inputSchema
+  })).sort((left, right) => compareText(left.id, right.id)));
+  const description = seal({
+    $contract: CONTRACTS.onboardingDescription[0],
+    contractVersion: VERSION,
+    configuration: {
+      name,
+      templateFingerprint: fingerprintJson(template),
+      configurationFingerprint: fingerprintJson(current.configuration),
+      graphFingerprint: current.lock.graphFingerprint,
+      schemaFingerprint
+    },
+    slots: clone(slots),
+    descriptionFingerprint: null,
+    authority: {
+      kind: 'description-only',
+      grantsExecution: false,
+      grantsProviderRead: false,
+      grantsProviderWrite: false
+    }
+  }, 'descriptionFingerprint');
+  validateOnboardingContract(root, description, 'onboardingDescription', 'Configuration onboarding description');
+  assertUniqueOnboardingDescription(description);
+  assertProjectedOnboardingStrings(description);
+  return { description, bindings, template };
+}
+
+function readPath(value, segments) {
+  let current = value;
+  for (const segment of segments) current = current?.[segment];
+  return current;
+}
+
+function writePath(value, segments, nextValue) {
+  let current = value;
+  for (let index = 0; index < segments.length - 1; index += 1) {
+    const segment = segments[index];
+    if (current[segment] === undefined) {
+      current[segment] = typeof segments[index + 1] === 'number' ? [] : {};
+    }
+    current = current[segment];
+  }
+  current[segments.at(-1)] = nextValue;
+}
+
+function deletePath(value, segments) {
+  const parent = readPath(value, segments.slice(0, -1));
+  if (parent && typeof parent === 'object') delete parent[segments.at(-1)];
+}
+
+function assertBoundedOnboardingValue(value) {
+  if (typeof value === 'string') {
+    if (value.length > ONBOARDING_MAX_STRING_LENGTH) failOnboardingInput();
+    return;
+  }
+  if (typeof value === 'number') {
+    if (!Number.isSafeInteger(value)) failOnboardingInput();
+    return;
+  }
+  if (Array.isArray(value)) {
+    if (value.length > ONBOARDING_MAX_COLLECTION_ITEMS) failOnboardingInput();
+    value.forEach(assertBoundedOnboardingValue);
+    return;
+  }
+  if (value && typeof value === 'object') {
+    Object.values(value).forEach(assertBoundedOnboardingValue);
+  }
+}
+
+function assertNotFixtureOrCredential(slot, value) {
+  const strings = [];
+  const visit = (current) => {
+    if (typeof current === 'string') strings.push(current);
+    else if (Array.isArray(current)) current.forEach(visit);
+    else if (current && typeof current === 'object') Object.values(current).forEach(visit);
+  };
+  visit(value);
+  if (containsCredentialMaterial({ [slot.field]: value })
+    || strings.some((text) => ONBOARDING_FIXTURE_TEXT_RE.test(text)
+      || ONBOARDING_PATH_TEXT_RE.test(text)
+      || /^file:/i.test(text))) {
+    failOnboardingInput();
+  }
+}
+
+function isValidOnboardingDate(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return false;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (month < 1 || month > 12 || day < 1) return false;
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return day <= days[month - 1];
+}
+
+function assertOnboardingStringSemantic(type, value) {
+  if (typeof value !== 'string') failOnboardingInput();
+  if (type === 'uri') {
+    try {
+      const parsed = new URL(value);
+      if (!parsed.protocol
+        || parsed.protocol.toLowerCase() === 'file:'
+        || parsed.username
+        || parsed.password) {
+        failOnboardingInput();
+      }
+    } catch {
+      failOnboardingInput();
+    }
+    return;
+  }
+  if (type === 'email') {
+    if (!ONBOARDING_EMAIL_RE.test(value)) failOnboardingInput();
+    return;
+  }
+  if (type === 'date') {
+    if (!isValidOnboardingDate(value)) failOnboardingInput();
+    return;
+  }
+  if (type === 'date-time') {
+    const match = ONBOARDING_DATE_TIME_RE.exec(value);
+    if (!match
+      || !isValidOnboardingDate(match[1])
+      || Number(match[2]) > 23
+      || Number(match[3]) > 59
+      || Number(match[4]) > 59
+      || (match[5] !== undefined && Number(match[5]) > 23)
+      || (match[6] !== undefined && Number(match[6]) > 59)
+      || !Number.isFinite(Date.parse(value))) {
+      failOnboardingInput();
+    }
+  }
+}
+
+function assertTypedOnboardingValue(slot, inputSlot, schema) {
+  if (inputSlot.state === 'omitted') {
+    if (slot.required) failOnboardingInput();
+    return undefined;
+  }
+  if (inputSlot.type !== slot.type) failOnboardingInput();
+  const value = clone(inputSlot.value);
+  assertBoundedOnboardingValue(value);
+  assertNotFixtureOrCredential(slot, value);
+  if (['uri', 'email', 'date', 'date-time'].includes(slot.type)) {
+    assertOnboardingStringSemantic(slot.type, value);
+  } else if (slot.type === 'string-list') {
+    if (!Array.isArray(value)
+      || !['string', 'uri', 'email', 'date', 'date-time'].includes(slot.itemType)) {
+      failOnboardingInput();
+    }
+    for (const item of value) assertOnboardingStringSemantic(slot.itemType, item);
+  } else if (slot.type === 'enum' && !slot.options.includes(value)) {
+    failOnboardingInput();
+  }
+  if (slot.type !== 'records') {
+    const failures = validateJsonSchema(value, schema);
+    if (failures.length) failOnboardingInput();
+  }
+  return value;
+}
+
+function materializeRecordSlot(slot, inputSlot, schema) {
+  if (inputSlot.state === 'omitted') {
+    if (slot.required) failOnboardingInput();
+    return undefined;
+  }
+  if (inputSlot.type !== 'records'
+    || !Array.isArray(inputSlot.value)
+    || inputSlot.value.length < (slot.constraints.minItems || 0)
+    || (slot.constraints.maxItems !== undefined
+      && inputSlot.value.length > slot.constraints.maxItems)) {
+    failOnboardingInput();
+  }
+  const itemSchema = closedObjectSchema(schema.items);
+  const projectedById = new Map(slot.fields.map((field) => [field.id, field]));
+  return inputSlot.value.map((record) => {
+    if (record.fields.length !== slot.fields.length) failOnboardingInput();
+    const value = {};
+    for (const [property, fieldSchema] of Object.entries(itemSchema.properties)) {
+      if (Object.hasOwn(fieldSchema, 'const')) value[property] = clone(fieldSchema.const);
+    }
+    const observed = new Set();
+    for (let index = 0; index < slot.fields.length; index += 1) {
+      const expected = slot.fields[index];
+      const supplied = record.fields[index];
+      if (!supplied || supplied.id !== expected.id || observed.has(supplied.id)) failOnboardingInput();
+      observed.add(supplied.id);
+      const field = projectedById.get(supplied.id);
+      const fieldSchema = itemSchema.properties[field.field];
+      const next = assertTypedOnboardingValue(field, supplied, fieldSchema);
+      if (next !== undefined) value[field.field] = next;
+    }
+    if (validateJsonSchema(value, itemSchema).length) failOnboardingInput();
+    return value;
+  });
+}
+
+function materializeGroupSlot(slot, inputSlot, schema) {
+  if (inputSlot.state === 'omitted') {
+    if (slot.required) failOnboardingInput();
+    return undefined;
+  }
+  if (inputSlot.type !== 'group'
+    || !inputSlot.value
+    || typeof inputSlot.value !== 'object'
+    || Array.isArray(inputSlot.value)
+    || !Array.isArray(inputSlot.value.fields)
+    || inputSlot.value.fields.length !== slot.fields.length) {
+    failOnboardingInput();
+  }
+  const groupSchema = closedObjectSchema(schema);
+  const value = {};
+  for (const [property, fieldSchema] of Object.entries(groupSchema.properties)) {
+    if (Object.hasOwn(fieldSchema, 'const')) value[property] = clone(fieldSchema.const);
+  }
+  const observed = new Set();
+  for (let index = 0; index < slot.fields.length; index += 1) {
+    const expected = slot.fields[index];
+    const supplied = inputSlot.value.fields[index];
+    if (!supplied || supplied.id !== expected.id || observed.has(supplied.id)) {
+      failOnboardingInput();
+    }
+    observed.add(supplied.id);
+    const fieldSchema = groupSchema.properties[expected.field];
+    const next = assertTypedOnboardingValue(expected, supplied, fieldSchema);
+    if (next !== undefined) value[expected.field] = next;
+  }
+  if (validateJsonSchema(value, groupSchema).length) failOnboardingInput();
+  return value;
+}
+
+function assertPrivateMappingText(slot, value) {
+  if (typeof value !== 'string'
+    || value.length < 1
+    || value.length > 200
+    || value !== value.trim()
+    || /[\u0000-\u001F\u007F]/.test(value)) {
+    failOnboardingInput();
+  }
+  assertNotFixtureOrCredential(slot, value);
+  return value;
+}
+
+function materializeProviderMappingSetSlot(slot, inputSlot, candidate, binding) {
+  if (inputSlot.state !== 'provided'
+    || inputSlot.type !== 'provider-mapping-set'
+    || !inputSlot.value
+    || typeof inputSlot.value !== 'object'
+    || Array.isArray(inputSlot.value)
+    || inputSlot.value.mappingSetFingerprint !== slot.mappingSetFingerprint
+    || !Array.isArray(inputSlot.value.scopes)) {
+    failOnboardingInput();
+  }
+  assertBoundedOnboardingValue(inputSlot.value);
+  assertNotFixtureOrCredential(slot, inputSlot.value);
+
+  const activeScopes = binding.requirements.scopes.filter((scope) => {
+    const targets = candidate.settings?.[scope.activationSubject]?.targets;
+    return targets && Object.hasOwn(targets, scope.activationTarget);
+  });
+  if (inputSlot.value.scopes.length !== activeScopes.length) failOnboardingInput();
+
+  const subjects = new Set(binding.requirements.scopes.map((scope) => scope.activationSubject));
+  for (const subject of subjects) {
+    if (!candidate.settings?.[subject]) failOnboardingInput();
+    delete candidate.settings[subject].fieldBindings;
+    delete candidate.settings[subject].optionMappings;
+  }
+
+  const fieldBindingsBySubject = new Map();
+  const optionMappingsBySubject = new Map();
+  const observedScopeIds = new Set();
+  const providerProperties = new Map();
+  for (let index = 0; index < activeScopes.length; index += 1) {
+    const expected = activeScopes[index];
+    const supplied = inputSlot.value.scopes[index];
+    if (!supplied
+      || supplied.id !== expected.id
+      || supplied.scopeFingerprint !== expected.scopeFingerprint
+      || observedScopeIds.has(supplied.id)) {
+      failOnboardingInput();
+    }
+    observedScopeIds.add(supplied.id);
+    const subject = expected.activationSubject;
+    if (!fieldBindingsBySubject.has(subject)) fieldBindingsBySubject.set(subject, []);
+    if (!optionMappingsBySubject.has(subject)) optionMappingsBySubject.set(subject, []);
+
+    if (supplied.state === 'unavailable') {
+      if (expected.required || Object.hasOwn(supplied, 'providerProperty') || Object.hasOwn(supplied, 'options')) {
+        failOnboardingInput();
+      }
+      fieldBindingsBySubject.get(subject).push({
+        mapping: expected.mappingId,
+        recordType: expected.recordType,
+        field: expected.field,
+        state: 'unavailable',
+        reasonCode: 'PROVIDER_PROPERTY_UNAVAILABLE'
+      });
+      continue;
+    }
+    if (supplied.state !== 'mapped' || !Object.hasOwn(supplied, 'providerProperty')) {
+      failOnboardingInput();
+    }
+    const providerProperty = assertPrivateMappingText(
+      { field: expected.field },
+      supplied.providerProperty
+    );
+    const recordKey = expected.mappingId + '\u0000' + expected.recordType;
+    if (!providerProperties.has(recordKey)) providerProperties.set(recordKey, new Set());
+    if (providerProperties.get(recordKey).has(providerProperty)) failOnboardingInput();
+    providerProperties.get(recordKey).add(providerProperty);
+    fieldBindingsBySubject.get(subject).push({
+      mapping: expected.mappingId,
+      recordType: expected.recordType,
+      field: expected.field,
+      state: 'mapped',
+      provider: providerProperty
+    });
+
+    if (!expected.optionMappingRequired) {
+      if (Object.hasOwn(supplied, 'options')) failOnboardingInput();
+      continue;
+    }
+    if (!Array.isArray(supplied.options)
+      || supplied.options.length < 1
+      || supplied.options.length > 200) {
+      failOnboardingInput();
+    }
+    const portableValues = new Set();
+    const providerValues = new Set();
+    const entries = supplied.options.map((entry) => {
+      if (!entry || typeof entry !== 'object' || Array.isArray(entry)) failOnboardingInput();
+      const portable = assertPrivateMappingText({ field: expected.field }, entry.portable);
+      const provider = assertPrivateMappingText({ field: expected.field }, entry.provider);
+      if (portableValues.has(portable) || providerValues.has(provider)) failOnboardingInput();
+      portableValues.add(portable);
+      providerValues.add(provider);
+      return { portable, provider };
+    });
+    optionMappingsBySubject.get(subject).push({
+      mapping: expected.mappingId,
+      recordType: expected.recordType,
+      field: expected.field,
+      mode: 'exact-bijection',
+      entries
+    });
+  }
+
+  for (const subject of subjects) {
+    const fieldBindings = fieldBindingsBySubject.get(subject) || [];
+    const optionMappings = optionMappingsBySubject.get(subject) || [];
+    if (fieldBindings.length) candidate.settings[subject].fieldBindings = fieldBindings;
+    if (optionMappings.length) candidate.settings[subject].optionMappings = optionMappings;
+  }
+}
+
+function candidateFromOnboardingInput(root, model, input) {
+  let serializedInput;
+  try {
+    serializedInput = JSON.stringify(input);
+  } catch {
+    failOnboardingInput();
+  }
+  if (Buffer.byteLength(serializedInput, 'utf8') > ONBOARDING_MAX_INPUT_BYTES) {
+    failOnboardingInput();
+  }
+  validateOnboardingContract(root, input, 'onboardingInput', 'Private configuration onboarding input');
+  const unsigned = clone(input);
+  delete unsigned.inputFingerprint;
+  if (input.inputFingerprint !== fingerprintJson(unsigned)
+    || input.configuration.name !== model.description.configuration.name
+    || input.configuration.descriptionFingerprint !== model.description.descriptionFingerprint
+    || input.slots.length !== model.description.slots.length
+    || input.slots.length !== model.bindings.length) {
+    failOnboardingInput();
+  }
+  const candidate = clone(model.template);
+  const observed = new Set();
+  for (let index = 0; index < model.bindings.length; index += 1) {
+    const binding = model.bindings[index];
+    const expected = model.description.slots[index];
+    const supplied = input.slots[index];
+    if (!supplied
+      || supplied.id !== expected.id
+      || supplied.id !== binding.slot.id
+      || observed.has(supplied.id)) {
+      failOnboardingInput();
+    }
+    observed.add(supplied.id);
+    if (expected.type === 'provider-mapping-set') {
+      materializeProviderMappingSetSlot(expected, supplied, candidate, binding);
+      continue;
+    }
+    const value = expected.type === 'records'
+      ? materializeRecordSlot(expected, supplied, binding.schema)
+      : expected.type === 'group'
+        ? materializeGroupSlot(expected, supplied, binding.schema)
+        : assertTypedOnboardingValue(expected, supplied, binding.schema);
+    if (value === undefined) deletePath(candidate, binding.path);
+    else writePath(candidate, binding.path, value);
+  }
+  return candidate;
+}
+
+export function describeConfigurationOnboarding({
+  root = DEFAULT_ROOT,
+  name
+} = {}) {
+  return clone(onboardingModel(path.resolve(root), name).description);
+}
+
+export function prepareConfigurationOnboarding({
+  root = DEFAULT_ROOT,
+  name,
+  input,
+  id,
+  createdAt
+} = {}) {
+  const resolvedRoot = path.resolve(root);
+  iso(createdAt, 'createdAt');
+  const model = onboardingModel(resolvedRoot, name);
+  const candidateConfiguration = candidateFromOnboardingInput(resolvedRoot, model, clone(input));
+  prepareConfigurationChange({
+    root: resolvedRoot,
+    name,
+    candidateConfiguration,
+    id,
+    createdAt
+  });
+  return inspectConfigurationChange({ root: resolvedRoot, planId: id, at: createdAt });
 }
 
 function planCurrentness(root, plan) {

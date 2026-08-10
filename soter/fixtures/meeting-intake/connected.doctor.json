@@ -6,7 +6,7 @@
   "level": "connected",
   "configuration": {
     "name": "meeting-intake",
-    "lockFingerprint": "sha256:0475c07b9ff8d6a238544ccb084de4b2f578c671c58e394f701ac0a74ab6858b"
+    "lockFingerprint": "sha256:3be67d7007699b19c126e94f1f85280818ff0dcc47a8822bcaab955119e7cfe8"
   },
   "states": {
     "valid": "passed",
@@ -105,7 +105,7 @@
         "providerProbes",
         "provider.integration.notion.mcp"
       ],
-      "expected": "One current probe bound to sha256:0475c07b9ff8d6a238544ccb084de4b2f578c671c58e394f701ac0a74ab6858b.",
+      "expected": "One current probe bound to sha256:3be67d7007699b19c126e94f1f85280818ff0dcc47a8822bcaab955119e7cfe8.",
       "observed": "Found no completed probe or failed attempt.",
       "evidenceIds": [],
       "remediation": "Run the provider adapter read-only probe and pass its durable checkpoint to the connected doctor."
@@ -119,7 +119,7 @@
         "providerProbes",
         "provider.integration.notion.mcp"
       ],
-      "expected": "One current probe bound to sha256:0475c07b9ff8d6a238544ccb084de4b2f578c671c58e394f701ac0a74ab6858b.",
+      "expected": "One current probe bound to sha256:3be67d7007699b19c126e94f1f85280818ff0dcc47a8822bcaab955119e7cfe8.",
       "observed": "Found no completed probe or failed attempt.",
       "evidenceIds": [],
       "remediation": "Run the provider adapter read-only probe and pass its durable checkpoint to the connected doctor."
@@ -133,7 +133,7 @@
         "providerProbes",
         "provider.integration.otter.mcp"
       ],
-      "expected": "One current probe bound to sha256:0475c07b9ff8d6a238544ccb084de4b2f578c671c58e394f701ac0a74ab6858b.",
+      "expected": "One current probe bound to sha256:3be67d7007699b19c126e94f1f85280818ff0dcc47a8822bcaab955119e7cfe8.",
       "observed": "Found no completed probe or failed attempt.",
       "evidenceIds": [],
       "remediation": "Run the provider adapter read-only probe and pass its durable checkpoint to the connected doctor."
@@ -147,7 +147,7 @@
         "providerProbes",
         "provider.integration.notion.mcp"
       ],
-      "expected": "One current probe bound to sha256:0475c07b9ff8d6a238544ccb084de4b2f578c671c58e394f701ac0a74ab6858b.",
+      "expected": "One current probe bound to sha256:3be67d7007699b19c126e94f1f85280818ff0dcc47a8822bcaab955119e7cfe8.",
       "observed": "Found no completed probe or failed attempt.",
       "evidenceIds": [],
       "remediation": "Run the provider adapter read-only probe and pass its durable checkpoint to the connected doctor."
@@ -161,7 +161,7 @@
         "providerProbes",
         "provider.integration.notion.mcp"
       ],
-      "expected": "One current probe bound to sha256:0475c07b9ff8d6a238544ccb084de4b2f578c671c58e394f701ac0a74ab6858b.",
+      "expected": "One current probe bound to sha256:3be67d7007699b19c126e94f1f85280818ff0dcc47a8822bcaab955119e7cfe8.",
       "observed": "Found no completed probe or failed attempt.",
       "evidenceIds": [],
       "remediation": "Run the provider adapter read-only probe and pass its durable checkpoint to the connected doctor."
@@ -175,7 +175,7 @@
         "providerProbes",
         "provider.integration.notion.mcp"
       ],
-      "expected": "One current probe bound to sha256:0475c07b9ff8d6a238544ccb084de4b2f578c671c58e394f701ac0a74ab6858b.",
+      "expected": "One current probe bound to sha256:3be67d7007699b19c126e94f1f85280818ff0dcc47a8822bcaab955119e7cfe8.",
       "observed": "Found no completed probe or failed attempt.",
       "evidenceIds": [],
       "remediation": "Run the provider adapter read-only probe and pass its durable checkpoint to the connected doctor."

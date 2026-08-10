@@ -1123,13 +1123,31 @@ same lock constructor. It does not hand-edit the current lock or write the
 candidate configuration. An unresolved setting, binding, authority, source,
 scenario, or host constraint produces a stable diagnostic and no
 candidate fingerprint.
-Applying a complete private candidate uses a separate configuration transaction:
-private exact plan, expiring request, exact local confirmation, one-time start
-consumption, durable checkpoint, atomic desired-configuration and private
-active-lock file replacement with a checkpoint between them, exact
-re-resolution, and verified completion or rollback.
-It never edits checked-in fixture locks, makes provider calls, or promotes
-readiness, verification, health, or proof state.
+First-use private configuration in Studio is a selected local typed form, not a
+JSON editor. Studio asks Core for one value-free onboarding description, keeps
+the entered source-input values only in that selected form, and sends the exact
+ordered typed input once through sender-validated local IPC. A successful
+response unmounts and clears the values; the renderer never copies them into
+the URL, browser storage, workspace snapshot, diagnostics, or DOM after sealing.
+Core intentionally retains the complete candidate inside the exact private plan
+state, while the returned sanitized plan and later inspection contain only
+identifiers, counts, constraints, transaction facts, and fingerprints.
+`CONFIGURATION_ONBOARDING_INPUT_INVALID`,
+`CONFIGURATION_ONBOARDING_UNAVAILABLE`, or a rejected describe/prepare call
+clears the mounted draft without rebinding its values; Studio refetches the
+selected value-free description when preparation can safely restart.
+The form grants no execution authority and cannot represent provider calls,
+authentication, readiness, verification, health, or proof promotion. Advanced
+updates from a complete private \`configuration/v1\` candidate remain available
+through the separate local CLI route and are outside the first-use Studio form.
+
+Both routes feed the same separate configuration transaction: private exact
+plan, expiring request, exact local confirmation, one-time start consumption,
+durable checkpoint, atomic desired-configuration and private active-lock file
+replacement with a checkpoint between them, exact re-resolution, and verified
+completion or rollback. The transaction never edits checked-in fixture locks,
+makes provider calls, or promotes readiness, verification, health, or proof
+state.
 
 Host realization remains a separate explicit ceremony. Core prepares a private
 exact-root plan with its own `validUntil`, an expiring request, exact local

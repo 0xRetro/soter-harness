@@ -168,7 +168,7 @@ change-scope fingerprint, closed changed subjects with identifier-only nullable
 before/after descriptors and fingerprints, request timing/state, confirmation actor/time, consumption state,
 checkpoint state/phase/reason code, the derived configuration `sourceKind`
 (`tracked-template` or `private-active`), and one derived `resume` object. It cannot
-represent the candidate configuration, source inputs, settings, authority URIs,
+represent the candidate configuration, source-input values, settings, authority URIs,
 secret references, raw before/after values, active-lock contents, or tracked/private
 configuration paths.
 
@@ -186,10 +186,34 @@ checkpoint, apply, verification, and recovery lifecycle. Studio must not treat
 graph drift, the structurally valid prior lock, or the displayed rows as
 issuance provenance, reusable authority, or readiness/health proof.
 
+For first use, Studio calls `describeConfigurationOnboarding({ name })` only
+for the selected configuration. The description is value-free and carries the
+exact ordered scalar, enum, boolean, list, record, atomic-group, and portable
+provider-mapping scopes plus constraints and fingerprints. It cannot represent
+examples, defaults, target values, provider property values, source-input values, or
+execution authority. Renderer labels derive only from its public
+family/subject/field and portable record/field vocabulary.
+
+The renderer keeps private values in the mounted transaction desk only. It
+preserves the description order, represents every explicit optional omission
+as `{ state: 'omitted' }` without a value property, and submits the exact typed
+input once through sender-validated local
+`prepareConfigurationOnboarding` IPC. Main bounds the slot count before
+fingerprinting. Core constructs the complete candidate privately; a successful
+sanitized plan immediately clears and unmounts the values. Selection drift,
+unmount, route changes, `CONFIGURATION_ONBOARDING_INPUT_INVALID`,
+`CONFIGURATION_ONBOARDING_UNAVAILABLE`, and rejected describe or prepare calls
+discard them rather than rebinding them; the selected value-free description is
+refetched where preparation can safely restart. The renderer never writes values
+to the workspace snapshot, URL, browser storage, diagnostics, inspection,
+evidence, fixtures, or documentation. Core intentionally retains the complete
+private candidate only inside its exact private plan state after successful
+preparation; the returned sanitized plan and every inspection remain value-free.
+
 Map actions to Core without retaining authority in the renderer:
 
-- plan: submit one complete private `configuration/v1` candidate through a
-  sender-validated local operation; the controlled `configuration-preview/v1`
+- first-use plan: submit one exact typed private onboarding input through the
+  selected local IPC operation; the controlled `configuration-preview/v1`
   draft remains read-only and cannot be promoted into apply authority;
 - request: `beginConfigurationChangeRequest` with the exact plan ID and expiry;
 - confirm: `confirmConfigurationChangeRequest` with exact request ID and local
@@ -202,6 +226,11 @@ Map actions to Core without retaining authority in the renderer:
 - execute: `executeConfigurationChange` accepts only that checkpoint ID; and
 - recovery: `recoverConfigurationChange` reconciles only that durable
   checkpoint.
+
+The advanced complete-candidate update route remains a local CLI operation and
+is intentionally outside the first-use Studio form. Neither route performs
+provider discovery, authentication, readiness checks, verification, health
+evaluation, host realization, or provider writes.
 
 `resume.permittedNextAction` is display guidance, never a continuation token.
 An exact confirmation whose request expired before start is unavailable and

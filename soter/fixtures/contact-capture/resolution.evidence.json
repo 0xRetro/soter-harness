@@ -10,13 +10,13 @@
     "id": "contact-capture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:dee880dd3ae9a4e3e4d907f88cd24028bee5dfda916d74b9ba8c54fa544df8d5",
-  "graphFingerprint": "sha256:25e2695d211622eece0cf76ca68915483f9290affb9fdbc1fbb9ca25ab725a79",
+  "configurationLockFingerprint": "sha256:046d2e40fa3143aa82be28fceb9028c52be44445e55147b14d04bf55f4a7f0be",
+  "graphFingerprint": "sha256:e4a2912254724b55ea6e8f86dd575e3ddfb01982553ffeeef9c05e880bcaca89",
   "dependencies": [
     {
       "id": "kernel.soter",
       "version": "0.1.0",
-      "fingerprint": "sha256:88abbc2dd21e627c5e4359cd113e403af8f5b3db630194929a8a2757e7b04ea6"
+      "fingerprint": "sha256:26cb9a0078259594ac3a7e3e32eb631457677074acac091d2e91a8cbcf2ff267"
     },
     {
       "id": "core.runtime",
@@ -117,7 +117,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:dee880dd3ae9a4e3e4d907f88cd24028bee5dfda916d74b9ba8c54fa544df8d5"
+      "fingerprint": "sha256:046d2e40fa3143aa82be28fceb9028c52be44445e55147b14d04bf55f4a7f0be"
     }
   ],
   "effects": [],

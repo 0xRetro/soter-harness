@@ -217,7 +217,10 @@ export function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
-export function readPrivateJsonInput(root, requestedPath) {
+export function readPrivateJsonInput(root, requestedPath, { maxBytes = null } = {}) {
+  if (maxBytes !== null && (!Number.isSafeInteger(maxBytes) || maxBytes < 1)) {
+    throw new Error('Private input byte bound is invalid.');
+  }
   if (!path.isAbsolute(requestedPath)) {
     throw new Error('Private input path must be absolute and outside the repository: ' + requestedPath);
   }
@@ -257,10 +260,32 @@ export function readPrivateJsonInput(root, requestedPath) {
       || (process.platform !== 'win32' && (before.mode & 0o7777) !== 0o600)) {
       throw new Error('Private input path changed before its exact read: ' + requestedPath);
     }
-    const bytes = fs.readFileSync(descriptor);
+    if (maxBytes !== null && before.size > maxBytes) {
+      throw new Error('Private input exceeds its exact byte bound: ' + requestedPath);
+    }
+    let bytes;
+    if (maxBytes === null) {
+      bytes = fs.readFileSync(descriptor);
+    } else {
+      const chunks = [];
+      let total = 0;
+      while (total <= maxBytes) {
+        const chunk = Buffer.allocUnsafe(Math.min(64 * 1024, maxBytes + 1 - total));
+        const count = fs.readSync(descriptor, chunk, 0, chunk.length, null);
+        if (count === 0) break;
+        chunks.push(chunk.subarray(0, count));
+        total += count;
+      }
+      if (total > maxBytes) {
+        throw new Error('Private input exceeds its exact byte bound: ' + requestedPath);
+      }
+      bytes = Buffer.concat(chunks, total);
+    }
     const after = fs.fstatSync(descriptor);
     if (before.dev !== after.dev || before.ino !== after.ino
       || before.size !== after.size || before.mtimeMs !== after.mtimeMs
+      || bytes.length !== after.size
+      || (maxBytes !== null && after.size > maxBytes)
       || after.nlink !== 1 || fs.realpathSync(resolvedInput) !== realInput
       || (process.platform !== 'win32' && (after.mode & 0o7777) !== 0o600)) {
       throw new Error('Private input path changed during its exact read: ' + requestedPath);

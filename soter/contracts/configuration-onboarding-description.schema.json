@@ -1,0 +1,401 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/configuration-onboarding-description/v1",
+  "title": "Configuration onboarding description",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$contract",
+    "contractVersion",
+    "configuration",
+    "slots",
+    "descriptionFingerprint",
+    "authority"
+  ],
+  "properties": {
+    "$contract": { "const": "soter://contracts/configuration-onboarding-description/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "templateFingerprint",
+        "configurationFingerprint",
+        "graphFingerprint",
+        "schemaFingerprint"
+      ],
+      "properties": {
+        "name": { "$ref": "#/$defs/configurationName" },
+        "templateFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "configurationFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "graphFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "schemaFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "slots": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 500,
+      "items": { "$ref": "#/$defs/slot" }
+    },
+    "descriptionFingerprint": { "$ref": "#/$defs/fingerprint" },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "grantsExecution", "grantsProviderRead", "grantsProviderWrite"],
+      "properties": {
+        "kind": { "const": "description-only" },
+        "grantsExecution": { "const": false },
+        "grantsProviderRead": { "const": false },
+        "grantsProviderWrite": { "const": false }
+      }
+    }
+  },
+  "$defs": {
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "configurationName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "stringConstraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maxLength"],
+      "properties": {
+        "minLength": { "type": "integer", "minimum": 0, "maximum": 4096 },
+        "maxLength": { "type": "integer", "minimum": 1, "maximum": 4096 }
+      }
+    },
+    "integerConstraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minimum", "maximum"],
+      "properties": {
+        "minimum": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+        "maximum": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 }
+      }
+    },
+    "listConstraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maxItems"],
+      "properties": {
+        "minItems": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "maxItems": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "uniqueItems": { "type": "boolean" }
+      }
+    },
+    "recordConstraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maxItems"],
+      "properties": {
+        "minItems": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "maxItems": { "type": "integer", "minimum": 1, "maximum": 100 }
+      }
+    },
+    "recordField": {
+      "oneOf": [
+        { "$ref": "#/$defs/recordStringField" },
+        { "$ref": "#/$defs/recordIntegerField" },
+        { "$ref": "#/$defs/recordBooleanField" },
+        { "$ref": "#/$defs/recordEnumField" },
+        { "$ref": "#/$defs/recordStringListField" }
+      ]
+    },
+    "recordStringField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "field", "required", "type", "constraints"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "field": { "$ref": "#/$defs/identifier" },
+        "required": { "type": "boolean" },
+        "type": { "enum": ["string", "uri", "email", "date", "date-time"] },
+        "constraints": { "$ref": "#/$defs/stringConstraints" }
+      }
+    },
+    "recordIntegerField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "field", "required", "type", "constraints"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "field": { "$ref": "#/$defs/identifier" },
+        "required": { "type": "boolean" },
+        "type": { "const": "integer" },
+        "constraints": { "$ref": "#/$defs/integerConstraints" }
+      }
+    },
+    "recordBooleanField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "field", "required", "type"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "field": { "$ref": "#/$defs/identifier" },
+        "required": { "type": "boolean" },
+        "type": { "const": "boolean" }
+      }
+    },
+    "recordEnumField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "field", "required", "type", "options"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "field": { "$ref": "#/$defs/identifier" },
+        "required": { "type": "boolean" },
+        "type": { "const": "enum" },
+        "options": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+        }
+      }
+    },
+    "recordStringListField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "field", "required", "type", "itemType", "constraints", "itemConstraints"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "field": { "$ref": "#/$defs/identifier" },
+        "required": { "type": "boolean" },
+        "type": { "const": "string-list" },
+        "itemType": { "enum": ["string", "uri", "email", "date", "date-time"] },
+        "constraints": { "$ref": "#/$defs/listConstraints" },
+        "itemConstraints": { "$ref": "#/$defs/stringConstraints" }
+      }
+    },
+    "slot": {
+      "oneOf": [
+        { "$ref": "#/$defs/authorityUriSlot" },
+        { "$ref": "#/$defs/stringSlot" },
+        { "$ref": "#/$defs/integerSlot" },
+        { "$ref": "#/$defs/booleanSlot" },
+        { "$ref": "#/$defs/enumSlot" },
+        { "$ref": "#/$defs/stringListSlot" },
+        { "$ref": "#/$defs/groupSlot" },
+        { "$ref": "#/$defs/recordsSlot" },
+        { "$ref": "#/$defs/providerMappingSetSlot" }
+      ]
+    },
+    "authorityUriSlot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "family", "subject", "field", "required", "type", "constraints"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "family": { "const": "instance-authority-uri" },
+        "subject": { "$ref": "#/$defs/identifier" },
+        "field": { "const": "uri" },
+        "required": { "const": true },
+        "type": { "const": "uri" },
+        "constraints": { "$ref": "#/$defs/stringConstraints" }
+      }
+    },
+    "stringSlot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "family", "subject", "field", "required", "type", "constraints"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "family": { "enum": ["source-input", "setting"] },
+        "subject": { "$ref": "#/$defs/identifier" },
+        "field": { "$ref": "#/$defs/identifier" },
+        "required": { "type": "boolean" },
+        "type": { "enum": ["string", "uri", "email", "date", "date-time"] },
+        "constraints": { "$ref": "#/$defs/stringConstraints" }
+      }
+    },
+    "integerSlot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "family", "subject", "field", "required", "type", "constraints"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "family": { "enum": ["source-input", "setting"] },
+        "subject": { "$ref": "#/$defs/identifier" },
+        "field": { "$ref": "#/$defs/identifier" },
+        "required": { "type": "boolean" },
+        "type": { "const": "integer" },
+        "constraints": { "$ref": "#/$defs/integerConstraints" }
+      }
+    },
+    "booleanSlot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "family", "subject", "field", "required", "type"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "family": { "enum": ["source-input", "setting"] },
+        "subject": { "$ref": "#/$defs/identifier" },
+        "field": { "$ref": "#/$defs/identifier" },
+        "required": { "type": "boolean" },
+        "type": { "const": "boolean" }
+      }
+    },
+    "enumSlot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "family", "subject", "field", "required", "type", "options"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "family": { "enum": ["source-input", "setting"] },
+        "subject": { "$ref": "#/$defs/identifier" },
+        "field": { "$ref": "#/$defs/identifier" },
+        "required": { "type": "boolean" },
+        "type": { "const": "enum" },
+        "options": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+        }
+      }
+    },
+    "stringListSlot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "family", "subject", "field", "required", "type", "itemType", "constraints", "itemConstraints"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "family": { "enum": ["source-input", "setting"] },
+        "subject": { "$ref": "#/$defs/identifier" },
+        "field": { "$ref": "#/$defs/identifier" },
+        "required": { "type": "boolean" },
+        "type": { "const": "string-list" },
+        "itemType": { "enum": ["string", "uri", "email", "date", "date-time"] },
+        "constraints": { "$ref": "#/$defs/listConstraints" },
+        "itemConstraints": { "$ref": "#/$defs/stringConstraints" }
+      }
+    },
+    "recordsSlot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "family", "subject", "field", "required", "type", "constraints", "fields"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "family": { "const": "setting" },
+        "subject": { "$ref": "#/$defs/identifier" },
+        "field": { "$ref": "#/$defs/identifier" },
+        "required": { "type": "boolean" },
+        "type": { "const": "records" },
+        "constraints": { "$ref": "#/$defs/recordConstraints" },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": { "$ref": "#/$defs/recordField" }
+        }
+      }
+    },
+    "groupSlot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "family", "subject", "field", "required", "type", "fields"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "family": { "const": "setting" },
+        "subject": { "$ref": "#/$defs/identifier" },
+        "field": { "$ref": "#/$defs/identifier" },
+        "required": { "const": false },
+        "type": { "const": "group" },
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": { "$ref": "#/$defs/recordField" }
+        }
+      }
+    },
+    "providerMappingScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "scopeFingerprint",
+        "activation",
+        "record",
+        "field"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "scopeFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "activation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["subject", "target"],
+          "properties": {
+            "subject": { "$ref": "#/$defs/identifier" },
+            "target": { "$ref": "#/$defs/identifier" }
+          }
+        },
+        "record": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["subject", "type"],
+          "properties": {
+            "subject": { "$ref": "#/$defs/identifier" },
+            "type": { "$ref": "#/$defs/identifier" }
+          }
+        },
+        "field": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "required", "optionMappingRequired"],
+          "properties": {
+            "id": { "$ref": "#/$defs/identifier" },
+            "required": { "type": "boolean" },
+            "optionMappingRequired": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "providerMappingSetSlot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "family",
+        "subject",
+        "field",
+        "required",
+        "type",
+        "mappingSetFingerprint",
+        "scopes"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "family": { "const": "provider-mapping-set" },
+        "subject": { "const": "provider-mappings" },
+        "field": { "const": "scopes" },
+        "required": { "const": true },
+        "type": { "const": "provider-mapping-set" },
+        "mappingSetFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "scopes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 500,
+          "items": { "$ref": "#/$defs/providerMappingScope" }
+        }
+      }
+    }
+  }
+}

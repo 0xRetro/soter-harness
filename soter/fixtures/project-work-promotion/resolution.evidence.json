@@ -10,13 +10,13 @@
     "id": "project-work-promotion",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:6db8a739808a5550b821f745e80beb6e7ac800171ed419f95407e46ab3716e30",
-  "graphFingerprint": "sha256:9bf72cb30b3fd8bc931ac7489d44915e33a24fd484a5a5eef4870c70837ff98a",
+  "configurationLockFingerprint": "sha256:138dc6bec6fc3ca8a0c1887db15672aedd7bc7d0e771ebd9a2c2627f31e86cb2",
+  "graphFingerprint": "sha256:284db289ccb8429460f10577ec8672fd8ef7be040c6eb7a13abb5c20a27f0d5c",
   "dependencies": [
     {
       "id": "kernel.soter",
       "version": "0.1.0",
-      "fingerprint": "sha256:88abbc2dd21e627c5e4359cd113e403af8f5b3db630194929a8a2757e7b04ea6"
+      "fingerprint": "sha256:26cb9a0078259594ac3a7e3e32eb631457677074acac091d2e91a8cbcf2ff267"
     },
     {
       "id": "core.runtime",
@@ -134,7 +134,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:6db8a739808a5550b821f745e80beb6e7ac800171ed419f95407e46ab3716e30"
+      "fingerprint": "sha256:138dc6bec6fc3ca8a0c1887db15672aedd7bc7d0e771ebd9a2c2627f31e86cb2"
     }
   ],
   "effects": [],

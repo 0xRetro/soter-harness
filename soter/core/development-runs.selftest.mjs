@@ -1444,6 +1444,7 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
     ];
     const targetReaderFixtureFiles = [
       ['development-marked-safe.selftest.mjs', markedSyntheticSource],
+      ['development-marked-safe.test.tsx', markedSyntheticSource],
       [multilineMarkedPath, multilineMarkedSource],
       [multilineMarkedOrdinaryPath, multilineMarkedSource],
       [multilineMarkedOrdinaryCrlfPath, multilineMarkedOrdinaryCrlfSource],
@@ -1456,6 +1457,16 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       [
         'development-unmarked-safe.selftest.mjs',
         'const token = "test-fixture-token-value";\n'
+      ],
+      [
+        'development-unmarked-duplicate.test.tsx',
+        'const token = "test-fixture-token-value";\n'
+          + 'const accessToken = "test-fixture-second-token-value";\n'
+      ],
+      [
+        'development-marked-extra-credential.test.tsx',
+        markedSyntheticSource
+          + 'const accessToken = "test-fixture-second-token-value";\n'
       ],
       [
         'development-marked-nonsynthetic.selftest.mjs',
@@ -1513,6 +1524,18 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
       targetId: 'target.marked-safe'
     });
     assert.equal(markedSafeMaterial.content.text, markedSyntheticSource);
+    const markedTestRequest = prepareFixtureRead(
+      'marked-test',
+      'development-marked-safe.test.tsx',
+      '2026-07-22T09:06:53.000Z'
+    );
+    assert.equal(readDevelopmentTargetMaterial({
+      root: temp,
+      host: 'codex',
+      requestId: markedTestRequest.request.id,
+      requestFingerprint: markedTestRequest.request.requestFingerprint,
+      targetId: 'target.marked-test'
+    }).content.text, markedSyntheticSource);
     const multilineMarkedRequest = prepareFixtureRead(
       'multiline-marked',
       multilineMarkedPath,
@@ -1658,6 +1681,18 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
         '2026-07-22T09:06:53.100Z'
       ],
       [
+        'unmarked-duplicate',
+        'development-unmarked-duplicate.test.tsx',
+        'DEVELOPMENT_TARGET_MATERIAL_CREDENTIAL_ASSIGNMENT',
+        '2026-07-22T09:06:53.110Z'
+      ],
+      [
+        'marked-extra-credential',
+        'development-marked-extra-credential.test.tsx',
+        'DEVELOPMENT_TARGET_MATERIAL_CREDENTIAL_ASSIGNMENT',
+        '2026-07-22T09:06:53.120Z'
+      ],
+      [
         'marked-nonsynthetic',
         'development-marked-nonsynthetic.selftest.mjs',
         'DEVELOPMENT_TARGET_MATERIAL_CREDENTIAL_ASSIGNMENT',
@@ -1714,10 +1749,13 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
     const exactSelftestPaths = [
       'soter/kernel/configuration-template-portability.selftest.mjs',
       'soter/core/development-runs.selftest.mjs',
+      'soter/core/configuration-transactions.selftest.mjs',
       'soter/core/mcp/selftest.mjs',
       'soter/core/host-realizations.selftest.mjs',
+      'soter/core/host-runtime.mjs',
       'soter/automations/email-triage/connected-context.selftest.mjs',
-      'soter/core/selftest.mjs'
+      'soter/core/selftest.mjs',
+      'soter/studio/tests/studio.test.tsx'
     ];
     const exactSelftestRequest = prepareDevelopmentRequest({
       root: temp,
@@ -1767,6 +1805,16 @@ export async function selftestDevelopmentRuns(root = scriptRoot) {
         true,
         'governed selftest chunks must reassemble to the exact original bytes'
       );
+    }
+    const finalScannerSource = fs.readFileSync(
+      path.join(temp, 'soter/core/development-runs.mjs'),
+      'utf8'
+    );
+    for (const temporaryMarker of [
+      'TEMPORARY_' + 'STUDIO_UNIT_READER_',
+      'temporaryStudioUnit' + 'ReaderTokenRange'
+    ]) {
+      assert.equal(finalScannerSource.includes(temporaryMarker), false);
     }
 
     expectCode(() => prepareDevelopmentRequest({

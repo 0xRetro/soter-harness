@@ -226,7 +226,7 @@ test('launches with a sandboxed canonical adapter and performs zero workspace wr
     }));
     expect(boundary).toEqual({
       require: 'undefined', process: 'undefined', ipcRenderer: 'undefined',
-      api: ['beginConfigurationChangeRequest', 'beginHostRealizationRequest', 'beginPackInstallRequest', 'beginProposalConnectedApproval', 'confirmConfigurationChangeRequest', 'confirmConnectedApproval', 'confirmHostRealizationRequest', 'confirmPackInstallRequest', 'createReviewOnlyCandidatePreview', 'createReviewOnlyCandidateSelection', 'executeConfigurationChange', 'executeHostRealization', 'executePackInstall', 'getAutomationProposal', 'getAutomationProposalMaterial', 'getConnectedApprovalReview', 'getOperatorActivity', 'getPreparedWork', 'getPreparedWorkDerivedReview', 'getPreparedWorkReview', 'getReviewOnlyCandidatePreview', 'getReviewOnlyCandidateSelectionMaterial', 'getWorkspaceSnapshot', 'inspectConfigurationChange', 'inspectHostRealization', 'inspectLocalBundle', 'inspectLocalPackRelease', 'inspectPackInstall', 'onWorkspaceInvalidated', 'prepareAutomationRun', 'prepareConfigurationChange', 'prepareConnectedReconciliation', 'prepareHostRealization', 'preparePackInstall', 'previewConfiguration', 'previewProposalConnectedBatch', 'recoverConfigurationChange', 'recoverHostRealization', 'recoverPackInstall', 'refreshWorkspaceSnapshot', 'startConfigurationChange', 'startConnectedTransaction', 'startHostRealization', 'startPackInstall']
+      api: ['beginConfigurationChangeRequest', 'beginHostRealizationRequest', 'beginPackInstallRequest', 'beginProposalConnectedApproval', 'confirmConfigurationChangeRequest', 'confirmConnectedApproval', 'confirmHostRealizationRequest', 'confirmPackInstallRequest', 'createReviewOnlyCandidatePreview', 'createReviewOnlyCandidateSelection', 'describeConfigurationOnboarding', 'executeConfigurationChange', 'executeHostRealization', 'executePackInstall', 'getAutomationProposal', 'getAutomationProposalMaterial', 'getConnectedApprovalReview', 'getOperatorActivity', 'getPreparedWork', 'getPreparedWorkDerivedReview', 'getPreparedWorkReview', 'getReviewOnlyCandidatePreview', 'getReviewOnlyCandidateSelectionMaterial', 'getWorkspaceSnapshot', 'inspectConfigurationChange', 'inspectHostRealization', 'inspectLocalBundle', 'inspectLocalPackRelease', 'inspectPackInstall', 'onWorkspaceInvalidated', 'prepareAutomationRun', 'prepareConfigurationOnboarding', 'prepareConnectedReconciliation', 'prepareHostRealization', 'preparePackInstall', 'previewConfiguration', 'previewProposalConnectedBatch', 'recoverConfigurationChange', 'recoverHostRealization', 'recoverPackInstall', 'refreshWorkspaceSnapshot', 'startConfigurationChange', 'startConnectedTransaction', 'startHostRealization', 'startPackInstall']
     });
     const productionCsp = await page.evaluate(async () => {
       const response = await fetch(window.location.href);
@@ -717,27 +717,66 @@ test('renders the canonical lifecycle coverage without enabling fixture authorit
   }
 });
 
-test('configuration ceremony generates a checkpoint and resumes its exact reservation without applying it', async () => {
+test('first-use typed onboarding seals, resumes, and applies only the exact private configuration transaction', async () => {
   const root = containedWorkspace();
-  const source = path.join(root, 'soter/configurations/meeting-intake.config.json');
-  const fixtureLock = path.join(root, 'soter/fixtures/meeting-intake/meeting-intake.lock.json');
+  const configurationName = 'slack-conversation-review';
+  const source = path.join(root, 'soter/configurations', configurationName + '.config.json');
+  const fixtureLock = path.join(root, 'soter/fixtures/slack-conversation-review/slack-conversation-review.lock.json');
   const sourceBefore = fs.readFileSync(source, 'utf8');
   const fixtureLockBefore = fs.readFileSync(fixtureLock, 'utf8');
   const workspaceBefore = workspaceFingerprint(root);
-  const candidate = JSON.parse(sourceBefore);
-  candidate.host = {
-    id: 'claude',
-    adapter: 'host.claude',
-    version: '0.3.1',
-    reason: 'Use the declared Claude projection for this exact local configuration transaction.'
-  };
   const { app, page } = await launch(root);
   try {
-    await page.evaluate(() => { window.location.hash = '#/config/meeting-intake'; });
+    await page.evaluate((name) => { window.location.hash = '#/config/' + name; }, configurationName);
     await expect(page.getByText('Exact lock transfer')).toBeVisible();
-    await page.getByLabel('Complete private candidate').fill(JSON.stringify(candidate));
-    await page.getByRole('button', { name: 'Seal exact private plan' }).click();
+    await expect(page.getByText('Blank private setup')).toBeVisible();
+
+    const oversized = await page.evaluate(async (name) => window.soterStudio.prepareConfigurationOnboarding({
+      name,
+      descriptionFingerprint: 'sha256:' + '0'.repeat(64),
+      slots: Array.from({ length: 501 }, (_value, index) => ({ id: 'oversized-' + index, state: 'omitted' as const }))
+    }), configurationName);
+    expect(oversized).toEqual({
+      ok: false,
+      error: {
+        code: 'CONFIGURATION_ADAPTER_UNAVAILABLE',
+        message: 'The exact private onboarding plan is unavailable.'
+      }
+    });
+    expect(fs.existsSync(path.join(root, '.soter/state/configuration-change-plans'))).toBe(false);
+
+    const privateValues = {
+      communications: 'soter://authority/communications-e2e',
+      slack: 'soter://authority/slack-e2e',
+      policies: 'collection://0123456789abcdef0123456789abcdef',
+      workspace: 'TSTUDIOE2E',
+      property: 'Policy name'
+    };
+    await page.getByLabel('URI — Authority communications instance').fill(privateValues.communications);
+    await page.getByLabel('URI — Authority slack instance').fill(privateValues.slack);
+    await page.getByLabel('Policies — Integration notion').fill(privateValues.policies);
+    await page.getByLabel('Workspace id — Integration slack').fill(privateValues.workspace);
+    await page.getByLabel('Provider property — Conversation review policy · Name').fill(privateValues.property);
+    await page.getByRole('button', { name: 'Seal first-use plan' }).click();
     await expect(page.getByText('Fingerprint-only scope')).toBeVisible();
+    for (const value of Object.values(privateValues)) {
+      await expect(page.getByText(value, { exact: false })).toHaveCount(0);
+    }
+    const assertBrowserPrivacy = async () => {
+      const state = await page.evaluate(async () => ({
+        href: window.location.href,
+        localStorage: { ...window.localStorage },
+        sessionStorage: { ...window.sessionStorage },
+        text: document.body.textContent,
+        attributes: Array.from(document.querySelectorAll('*')).flatMap((element) => (
+          Array.from(element.attributes).map((attribute) => attribute.value)
+        )),
+        snapshot: await window.soterStudio.getWorkspaceSnapshot()
+      }));
+      const serialized = JSON.stringify(state);
+      for (const value of Object.values(privateValues)) expect(serialized).not.toContain(value);
+    };
+    await assertBrowserPrivacy();
     await page.getByRole('button', { name: 'Request confirmation' }).click();
     await page.getByLabel('I reviewed this exact fingerprint-only scope.').check();
     await page.getByRole('button', { name: 'Confirm exact request' }).click();
@@ -834,11 +873,36 @@ test('configuration ceremony generates a checkpoint and resumes its exact reserv
     expect(resumedConsumption.checkpointId).toBe(startedConsumption.checkpointId);
     expect(fs.existsSync(checkpointPath)).toBe(true);
 
+    const applyAfterResume = page.getByRole('button', { name: 'Apply exact checkpoint' });
+    await page.getByLabel('I understand this changes the local desired configuration.').check();
+    await expect(applyAfterResume).toBeEnabled();
+    await applyAfterResume.click();
+    await expect(page.getByText('completed', { exact: true }).first()).toBeVisible();
+
+    const desiredPath = path.join(root, '.soter/state/configurations', configurationName + '.json');
+    const lockPath = path.join(root, '.soter/state/configuration-locks', configurationName + '.json');
+    expect(fs.existsSync(desiredPath)).toBe(true);
+    expect(fs.existsSync(lockPath)).toBe(true);
+    expect(fs.statSync(desiredPath).mode & 0o777).toBe(0o600);
+    expect(fs.statSync(lockPath).mode & 0o777).toBe(0o600);
+    expect(fs.statSync(path.dirname(desiredPath)).mode & 0o777).toBe(0o700);
+    expect(fs.statSync(path.dirname(lockPath)).mode & 0o777).toBe(0o700);
     expect(fs.readFileSync(source, 'utf8')).toBe(sourceBefore);
     expect(fs.readFileSync(fixtureLock, 'utf8')).toBe(fixtureLockBefore);
     expect(workspaceFingerprint(root)).toBe(workspaceBefore);
-    expect(fs.existsSync(path.join(root, '.soter/state/configuration-change-plans'))).toBe(true);
-    expect(fs.existsSync(path.join(root, '.soter/state/configuration-locks/meeting-intake.json'))).toBe(false);
+    for (const forbiddenState of [
+      'host-calls',
+      'provider-probes',
+      'connected-transactions',
+      'host-realization-plans',
+      'host-realizations'
+    ]) {
+      expect(fs.existsSync(path.join(root, '.soter/state', forbiddenState))).toBe(false);
+    }
+    await page.evaluate(() => { window.location.hash = '#/config/meeting-intake'; });
+    await expect(page).toHaveURL(/#\/config\/meeting-intake$/);
+    await assertBrowserPrivacy();
+    await expect(page.getByText('Blank private setup')).toBeVisible({ timeout: 45_000 });
     await app.evaluate(async ({ BrowserWindow }, source) => BrowserWindow.getAllWindows()[0].webContents.executeJavaScript(source), axeSource);
     await expectAccessible(page);
   } finally {

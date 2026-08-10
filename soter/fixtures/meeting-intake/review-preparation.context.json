@@ -4,8 +4,8 @@
   "id": "context.meeting-intake.review-preparation-fixture",
   "runId": "run.meeting-intake.review-preparation-fixture",
   "createdAt": "2026-07-15T12:00:00.000Z",
-  "configurationLockFingerprint": "sha256:0475c07b9ff8d6a238544ccb084de4b2f578c671c58e394f701ac0a74ab6858b",
-  "graphFingerprint": "sha256:e9933044dba72f6499a7cbd00bb0022e46445d107f92548735c10846852a2d26",
+  "configurationLockFingerprint": "sha256:3be67d7007699b19c126e94f1f85280818ff0dcc47a8822bcaab955119e7cfe8",
+  "graphFingerprint": "sha256:32f2a51c20dd22a87661d129cd72e09d8829a5abd8e0c6feafa860205774065f",
   "containment": "fixture",
   "entries": [
     {

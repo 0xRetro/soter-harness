@@ -21,9 +21,10 @@ import { previewConfiguration } from '../../core/configuration-preview.mjs';
 import {
   beginConfigurationChangeRequest,
   confirmConfigurationChangeRequest,
+  describeConfigurationOnboarding,
   executeConfigurationChange,
   inspectConfigurationChange,
-  prepareConfigurationChange,
+  prepareConfigurationOnboarding,
   prepareConfigurationChangeExecution,
   recoverConfigurationChange,
   resumeConfigurationChangeExecution
@@ -46,7 +47,7 @@ import {
   preparePackInstallExecution,
   recoverPackInstall
 } from '../../core/pack-installs.mjs';
-import { readJson, repoRelativePath } from '../../core/lib/canonical-json.mjs';
+import { fingerprintJson, readJson, repoRelativePath } from '../../core/lib/canonical-json.mjs';
 import {
   beginProposalConnectedApprovalRequest,
   confirmProposalConnectedApprovalRequest
@@ -192,6 +193,7 @@ const connectedActionMessages = new Map([
   ]
 ]);
 const configurationChangeCode = /^CONFIGURATION_[A-Z0-9_]+$/;
+const maximumConfigurationOnboardingSlots = 500;
 const hostRealizationCode = /^HOST_REALIZATION_[A-Z0-9_]+$/;
 const distributionCode = /^(PACK_RELEASE|BUNDLE|DISTRIBUTION)_[A-Z0-9_]+$/;
 const packInstallCode = /^PACK_INSTALL_[A-Z0-9_]+$/;
@@ -819,31 +821,54 @@ async function createWindow() {
       draft: request.draft
     });
   });
-  ipcMain.handle('configuration:change-plan', async (event, request) => {
+  ipcMain.handle('configuration:onboarding-describe', async (event, request) => {
     assertSender(event);
     try {
-      if (!exactObject(request, ['name', 'candidateConfiguration'])
-        || typeof request.name !== 'string'
-        || !request.candidateConfiguration
-        || typeof request.candidateConfiguration !== 'object'
-        || Array.isArray(request.candidateConfiguration)) {
-        throw new TypeError('Configuration planning requires one named complete candidate document.');
+      if (!exactObject(request, ['name']) || typeof request.name !== 'string') {
+        throw new TypeError('Configuration onboarding description requires one configuration name.');
       }
+      return {
+        ok: true,
+        description: describeConfigurationOnboarding({ root, name: request.name })
+      };
+    } catch (error) {
+      return configurationChangeFailure(
+        error,
+        'The blank typed private onboarding description is unavailable.'
+      );
+    }
+  });
+  ipcMain.handle('configuration:onboarding-plan', async (event, request) => {
+    assertSender(event);
+    try {
+      if (!exactObject(request, ['name', 'descriptionFingerprint', 'slots'])
+        || typeof request.name !== 'string'
+        || typeof request.descriptionFingerprint !== 'string'
+        || !Array.isArray(request.slots)
+        || request.slots.length > maximumConfigurationOnboardingSlots) {
+        throw new TypeError('Configuration onboarding requires one exact typed private input.');
+      }
+      const unsignedInput = {
+        $contract: 'soter://contracts/configuration-onboarding-input/v1',
+        contractVersion: '1.0.0',
+        configuration: {
+          name: request.name,
+          descriptionFingerprint: request.descriptionFingerprint
+        },
+        slots: request.slots
+      };
       const at = new Date().toISOString();
-      const result = prepareConfigurationChange({
+      const inspection = prepareConfigurationOnboarding({
         root,
         name: request.name,
-        candidateConfiguration: request.candidateConfiguration,
+        input: { ...unsignedInput, inputFingerprint: fingerprintJson(unsignedInput) },
         id: `configuration-change-plan.${request.name}.${randomUUID()}`,
         createdAt: at
       });
       workspaceWatcher.invalidate();
-      return {
-        ok: true,
-        inspection: inspectConfigurationChange({ root, planId: result.plan.id, at })
-      };
+      return { ok: true, inspection };
     } catch (error) {
-      return configurationChangeFailure(error, 'The exact private configuration plan is unavailable.');
+      return configurationChangeFailure(error, 'The exact private onboarding plan is unavailable.');
     }
   });
   ipcMain.handle('configuration:change-request', async (event, request) => {

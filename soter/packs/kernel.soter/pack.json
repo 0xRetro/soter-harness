@@ -30,6 +30,8 @@
     { "path": "soter/contracts/capability.schema.json", "role": "definition" },
     { "path": "soter/contracts/configuration.schema.json", "role": "definition" },
     { "path": "soter/contracts/configuration-view.schema.json", "role": "definition" },
+    { "path": "soter/contracts/configuration-onboarding-description.schema.json", "role": "definition" },
+    { "path": "soter/contracts/configuration-onboarding-input.schema.json", "role": "definition" },
     { "path": "soter/contracts/configuration-change-plan.schema.json", "role": "definition" },
     { "path": "soter/contracts/configuration-change-request.schema.json", "role": "definition" },
     { "path": "soter/contracts/configuration-change-confirmation.schema.json", "role": "definition" },

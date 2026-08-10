@@ -10,13 +10,13 @@
     "id": "project-capture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:3f705acf1c403f404ea636607219960898699be9792043f5484877a058269afc",
-  "graphFingerprint": "sha256:689c07c96ea24907916dfc4238f98e9a4636b2f90fc174108e62551a343a1cbc",
+  "configurationLockFingerprint": "sha256:c7683c529554fafb9e3d4ce7a0196610ccb813339966f9dc0747f75d7eb2e9df",
+  "graphFingerprint": "sha256:5cd85e74e684834e6f0356c6218848e1e1905c71cfeee7b3e67e8416e558dbac",
   "dependencies": [
     {
       "id": "kernel.soter",
       "version": "0.1.0",
-      "fingerprint": "sha256:88abbc2dd21e627c5e4359cd113e403af8f5b3db630194929a8a2757e7b04ea6"
+      "fingerprint": "sha256:26cb9a0078259594ac3a7e3e32eb631457677074acac091d2e91a8cbcf2ff267"
     },
     {
       "id": "core.runtime",
@@ -134,7 +134,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:3f705acf1c403f404ea636607219960898699be9792043f5484877a058269afc"
+      "fingerprint": "sha256:c7683c529554fafb9e3d4ce7a0196610ccb813339966f9dc0747f75d7eb2e9df"
     }
   ],
   "effects": [],

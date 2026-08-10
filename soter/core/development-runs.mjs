@@ -100,7 +100,7 @@ const CREDENTIAL_CONNECTION_KEY_RE = /(?:database|db|connection|postgres|postgre
 const PRIVATE_KEY_BLOCK_RE = /-----BEGIN(?: [A-Z0-9]+)* PRIVATE KEY(?: BLOCK)?-----/i;
 const SOURCE_CODE_TARGET_EXTENSION_RE = /[.](?:[cm]?[jt]s|[jt]sx)$/i;
 const SOURCE_REFERENCE_VALUE_RE = /^[A-Za-z_$][A-Za-z0-9_$]*(?:(?:[.?][A-Za-z_$][A-Za-z0-9_$]*)|\[[^\]\r\n]+\])*$/;
-const SELFTEST_SOURCE_TARGET_RE = /(?:^|\/)(?:(?:[^/]+[.]selftest)|selftest)[.](?:[cm]?[jt]s|[jt]sx)$/i;
+const SELFTEST_SOURCE_TARGET_RE = /(?:^|\/)(?:(?:[^/]+[.](?:selftest|test))|selftest)[.](?:[cm]?[jt]s|[jt]sx)$/i;
 const SYNTHETIC_CREDENTIAL_FIXTURE_MARKER = 'soterSyntheticCredentialFixture';
 const SOURCE_ASCII_WHITESPACE_RE = /[ \t\r\n]/;
 const INERT_PRIVATE_KEY_FIXTURE_SOURCE_TOKEN = "'-----BEGIN OPENSSH "
@@ -329,7 +329,10 @@ function selftestSourceTargetIsEligible(targetPath) {
     && SELFTEST_SOURCE_TARGET_RE.test(targetPath);
 }
 
-function credentialInspectionContent(content, { targetPath, sourceCode }) {
+function credentialInspectionContent(content, {
+  targetPath,
+  sourceCode
+}) {
   const selftestSource = selftestSourceTargetIsEligible(targetPath);
   if (!sourceCode || !selftestSource) return content;
   const executable = sourceExecutableOffsets(content);

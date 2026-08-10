@@ -1235,6 +1235,202 @@ export interface ConfigurationChangeInspection {
   authority: { kind: 'inspection-only'; grantsExecution: false; grantsProviderWrite: false };
 }
 
+export interface ConfigurationOnboardingStringConstraints {
+  minLength?: number;
+  maxLength: number;
+}
+
+export interface ConfigurationOnboardingIntegerConstraints {
+  minimum: number;
+  maximum: number;
+}
+
+export interface ConfigurationOnboardingListConstraints {
+  minItems?: number;
+  maxItems: number;
+  uniqueItems?: boolean;
+}
+
+export interface ConfigurationOnboardingRecordConstraints {
+  minItems?: number;
+  maxItems: number;
+}
+
+export type ConfigurationOnboardingRecordField =
+  | {
+    id: string;
+    field: string;
+    required: boolean;
+    type: 'string' | 'uri' | 'email' | 'date' | 'date-time';
+    constraints: ConfigurationOnboardingStringConstraints;
+  }
+  | {
+    id: string;
+    field: string;
+    required: boolean;
+    type: 'integer';
+    constraints: ConfigurationOnboardingIntegerConstraints;
+  }
+  | { id: string; field: string; required: boolean; type: 'boolean' }
+  | { id: string; field: string; required: boolean; type: 'enum'; options: string[] }
+  | {
+    id: string;
+    field: string;
+    required: boolean;
+    type: 'string-list';
+    itemType: 'string' | 'uri' | 'email' | 'date' | 'date-time';
+    constraints: ConfigurationOnboardingListConstraints;
+    itemConstraints: ConfigurationOnboardingStringConstraints;
+  };
+
+type ConfigurationOnboardingSlotBase = {
+  id: string;
+  subject: string;
+  field: string;
+  required: boolean;
+};
+
+export type ConfigurationOnboardingSlot =
+  | (ConfigurationOnboardingSlotBase & {
+    family: 'instance-authority-uri';
+    field: 'uri';
+    required: true;
+    type: 'uri';
+    constraints: ConfigurationOnboardingStringConstraints;
+  })
+  | (ConfigurationOnboardingSlotBase & {
+    family: 'source-input' | 'setting';
+    type: 'string' | 'uri' | 'email' | 'date' | 'date-time';
+    constraints: ConfigurationOnboardingStringConstraints;
+  })
+  | (ConfigurationOnboardingSlotBase & {
+    family: 'source-input' | 'setting';
+    type: 'integer';
+    constraints: ConfigurationOnboardingIntegerConstraints;
+  })
+  | (ConfigurationOnboardingSlotBase & {
+    family: 'source-input' | 'setting';
+    type: 'boolean';
+  })
+  | (ConfigurationOnboardingSlotBase & {
+    family: 'source-input' | 'setting';
+    type: 'enum';
+    options: string[];
+  })
+  | (ConfigurationOnboardingSlotBase & {
+    family: 'source-input' | 'setting';
+    type: 'string-list';
+    itemType: 'string' | 'uri' | 'email' | 'date' | 'date-time';
+    constraints: ConfigurationOnboardingListConstraints;
+    itemConstraints: ConfigurationOnboardingStringConstraints;
+  })
+  | (ConfigurationOnboardingSlotBase & {
+    family: 'setting';
+    type: 'records';
+    constraints: ConfigurationOnboardingRecordConstraints;
+    fields: ConfigurationOnboardingRecordField[];
+  })
+  | (ConfigurationOnboardingSlotBase & {
+    family: 'setting';
+    required: false;
+    type: 'group';
+    fields: ConfigurationOnboardingRecordField[];
+  })
+  | {
+    id: string;
+    family: 'provider-mapping-set';
+    subject: 'provider-mappings';
+    field: 'scopes';
+    required: true;
+    type: 'provider-mapping-set';
+    mappingSetFingerprint: string;
+    scopes: ConfigurationOnboardingProviderMappingScope[];
+  };
+
+export interface ConfigurationOnboardingProviderMappingScope {
+  id: string;
+  scopeFingerprint: string;
+  activation: { subject: string; target: string };
+  record: { subject: string; type: string };
+  field: { id: string; required: boolean; optionMappingRequired: boolean };
+}
+
+export interface ConfigurationOnboardingDescription {
+  $contract: 'soter://contracts/configuration-onboarding-description/v1';
+  contractVersion: '1.0.0';
+  configuration: {
+    name: string;
+    templateFingerprint: string;
+    configurationFingerprint: string;
+    graphFingerprint: string;
+    schemaFingerprint: string;
+  };
+  slots: ConfigurationOnboardingSlot[];
+  descriptionFingerprint: string;
+  authority: {
+    kind: 'description-only';
+    grantsExecution: false;
+    grantsProviderRead: false;
+    grantsProviderWrite: false;
+  };
+}
+
+export type ConfigurationOnboardingInputField =
+  | { id: string; state: 'omitted' }
+  | {
+    id: string;
+    state: 'provided';
+    type: 'string' | 'uri' | 'email' | 'date' | 'date-time' | 'enum';
+    value: string;
+  }
+  | { id: string; state: 'provided'; type: 'integer'; value: number }
+  | { id: string; state: 'provided'; type: 'boolean'; value: boolean }
+  | { id: string; state: 'provided'; type: 'string-list'; value: string[] };
+
+export type ConfigurationOnboardingProviderMappingScopeInput =
+  | { id: string; scopeFingerprint: string; state: 'unavailable' }
+  | {
+    id: string;
+    scopeFingerprint: string;
+    state: 'mapped';
+    providerProperty: string;
+  }
+  | {
+    id: string;
+    scopeFingerprint: string;
+    state: 'mapped';
+    providerProperty: string;
+    options: Array<{ portable: string; provider: string }>;
+  };
+
+export type ConfigurationOnboardingInputSlot =
+  | ConfigurationOnboardingInputField
+  | {
+    id: string;
+    state: 'provided';
+    type: 'records';
+    value: Array<{ fields: ConfigurationOnboardingInputField[] }>;
+  }
+  | {
+    id: string;
+    state: 'provided';
+    type: 'group';
+    value: { fields: ConfigurationOnboardingInputField[] };
+  }
+  | {
+    id: string;
+    state: 'provided';
+    type: 'provider-mapping-set';
+    value: {
+      mappingSetFingerprint: string;
+      scopes: ConfigurationOnboardingProviderMappingScopeInput[];
+    };
+  };
+
+export type ConfigurationOnboardingDescriptionResult =
+  | { ok: true; description: ConfigurationOnboardingDescription }
+  | { ok: false; error: ConfigurationChangeError };
+
 export interface ConfigurationChangeError {
   code: string;
   message: string;
@@ -1778,7 +1974,12 @@ declare global {
       recoverPackInstall(request: { checkpointId: string; confirmed: true }): Promise<PackInstallResult>;
       inspectPackInstall(request: PackInstallReferences): Promise<PackInstallResult>;
       previewConfiguration(request: ConfigurationPreviewRequest): Promise<ConfigurationPreview>;
-      prepareConfigurationChange(request: { name: string; candidateConfiguration: Record<string, unknown> }): Promise<ConfigurationChangeResult>;
+      describeConfigurationOnboarding(request: { name: string }): Promise<ConfigurationOnboardingDescriptionResult>;
+      prepareConfigurationOnboarding(request: {
+        name: string;
+        descriptionFingerprint: string;
+        slots: ConfigurationOnboardingInputSlot[];
+      }): Promise<ConfigurationChangeResult>;
       beginConfigurationChangeRequest(request: { planId: string; reason: string }): Promise<ConfigurationChangeResult>;
       confirmConfigurationChangeRequest(request: { requestId: string; confirmed: true }): Promise<ConfigurationChangeResult>;
       startConfigurationChange(request: { confirmationId: string; checkpointId?: string }): Promise<ConfigurationChangeResult>;

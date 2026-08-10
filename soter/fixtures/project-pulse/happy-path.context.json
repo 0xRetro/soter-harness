@@ -4,8 +4,8 @@
   "id": "context.project-pulse.happy-path-fixture",
   "runId": "run.project-pulse.happy-path-fixture",
   "createdAt": "2026-07-16T12:00:00.000Z",
-  "configurationLockFingerprint": "sha256:ecdc570161409531d23709b615c2a5537b27aa073f9accc48364a02d666d73ea",
-  "graphFingerprint": "sha256:8d76478fe393471f33fa0f7413c513e468f75e5618a4d85c9f2daf13a85a1218",
+  "configurationLockFingerprint": "sha256:6624715832c6cc7e21e61fa937a1e60bd410e156a424cae9ae7cb257f5a81d74",
+  "graphFingerprint": "sha256:74f2b98dbbbde0a5dd8a9a1a91754ccc518c12b0f871d1b4e334e22ac5188507",
   "containment": "fixture",
   "entries": [
     {

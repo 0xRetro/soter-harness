@@ -10,13 +10,13 @@
     "id": "run.drive-filing.preparation-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:7da2b7c2d201f036016d6b34a19bab049c1443bd591cc94b3de42e342be3443e",
-  "graphFingerprint": "sha256:f35c26ee298735f4a56180cc6ac8ce03366d662302f68241d8a9a9cc60023a06",
+  "configurationLockFingerprint": "sha256:1af1db4b708bb4e4868ec7fdb434cbc9adf8904d9b4be5d05c743f6c180fdc2f",
+  "graphFingerprint": "sha256:d909e3c84c6094d63fb1994f1b1e282d2febe4e87df7d2e1478b33e48a5d2366",
   "dependencies": [
     {
       "id": "kernel.soter",
       "version": "0.1.0",
-      "fingerprint": "sha256:88abbc2dd21e627c5e4359cd113e403af8f5b3db630194929a8a2757e7b04ea6"
+      "fingerprint": "sha256:26cb9a0078259594ac3a7e3e32eb631457677074acac091d2e91a8cbcf2ff267"
     },
     {
       "id": "core.runtime",
@@ -315,7 +315,7 @@
     {
       "role": "context-snapshot",
       "id": "context.drive-filing.preparation-fixture",
-      "fingerprint": "sha256:3ac8ef63619cc6d144195e9025f855dea038bc17a4afd173f855175447b44ab3"
+      "fingerprint": "sha256:fbc365408e3f80ee4c62f3741698ae93575073b68d16817912034ab617db648d"
     },
     {
       "role": "drive-filing-preview",

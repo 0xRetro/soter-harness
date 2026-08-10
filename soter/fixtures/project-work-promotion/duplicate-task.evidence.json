@@ -10,13 +10,13 @@
     "id": "run.project-work-promotion.duplicate-task-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:6db8a739808a5550b821f745e80beb6e7ac800171ed419f95407e46ab3716e30",
-  "graphFingerprint": "sha256:9bf72cb30b3fd8bc931ac7489d44915e33a24fd484a5a5eef4870c70837ff98a",
+  "configurationLockFingerprint": "sha256:138dc6bec6fc3ca8a0c1887db15672aedd7bc7d0e771ebd9a2c2627f31e86cb2",
+  "graphFingerprint": "sha256:284db289ccb8429460f10577ec8672fd8ef7be040c6eb7a13abb5c20a27f0d5c",
   "dependencies": [
     {
       "id": "kernel.soter",
       "version": "0.1.0",
-      "fingerprint": "sha256:88abbc2dd21e627c5e4359cd113e403af8f5b3db630194929a8a2757e7b04ea6"
+      "fingerprint": "sha256:26cb9a0078259594ac3a7e3e32eb631457677074acac091d2e91a8cbcf2ff267"
     },
     {
       "id": "core.runtime",
@@ -238,7 +238,7 @@
     {
       "role": "context-snapshot",
       "id": "context.project-work-promotion.duplicate-task-fixture",
-      "fingerprint": "sha256:7284c165a0a7b73950f11f91693ee66d81f950287e7a7e3231b6ddb87278ee44"
+      "fingerprint": "sha256:491ab0ac6bf8603ab20e3bf6b156b3cd8723e7d2cb71c254066cde31e743b7cb"
     },
     {
       "role": "project-work-promotion-preview",

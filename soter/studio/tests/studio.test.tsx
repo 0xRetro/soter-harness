@@ -41,8 +41,189 @@ import { OperatorView } from '../renderer/src/components/OperatorView';
 import { previewTitle } from '../renderer/src/components/PreparedWorkDossier';
 import { RunsView } from '../renderer/src/components/RunsView';
 import { WorkflowView } from '../renderer/src/components/WorkflowView';
-import type { Activity, ConnectedApprovalReviewMaterial, OperatorInputField, OperatorInspection } from '../renderer/src/types';
+import type { Activity, ConfigurationChangeResult, ConfigurationOnboardingDescription, ConnectedApprovalReviewMaterial, OperatorInputField, OperatorInspection } from '../renderer/src/types';
 import { bundleInspectionFixture, configurationChangeInspectionFixture, configurationPreviewFixture, connectedAcquisitionPreparedWorkFixture, connectedAcquisitionReviewFixture, connectedActivityFixture, emailConnectedAcquisitionActivityFixture, emailTriageAutomationProposalFixture, emailTriageAutomationProposalMaterialFixture, emailTriageCandidatePreviewFixture, emailTriageCandidateSelectionFixture, emailTriageCandidateSelectionMaterialFixture, emailTriageConfigurationFixture, emailTriageDerivedReviewFixture, emailTriagePreparedWorkFixture, emailTriageProposalConnectedPreviewFixture, emailTriageReviewFixture, emailTriageWorkflowFixture, hostRealizationInspectionFixture, meetingIntakeHeldAutomationProposalFixture, meetingIntakePreparedWorkFixture, operatorInspectionFixture, operatorRecoveryInspectionFixture, packInstallInspectionFixture, packReleaseInspectionFixture, preparedWorkFixture, preparedWorkReviewFixture, projectCaptureAutomationProposalFixture, projectCaptureAutomationProposalMaterialFixture, projectCaptureConfigurationFixture, projectCaptureWorkflowFixture, projectPageReconciliationAutomationProposalFixture, projectPageReconciliationAutomationProposalMaterialFixture, projectPageReconciliationConfigurationFixture, projectPageReconciliationWorkflowFixture, projectPulseDerivedReviewFixture, studioFixture, taskCaptureConfigurationFixture, taskCapturePreparedWorkFixture, taskCaptureReviewFixture, taskCaptureWorkflowFixture } from './fixture';
+
+function soterSyntheticCredentialFixture<T>(value: T): T {
+  return value;
+}
+
+function onboardingDescriptionFixture(name = 'meeting-intake'): ConfigurationOnboardingDescription {
+  const fingerprint = (value: string) => 'sha256:' + value.repeat(64);
+  return {
+    $contract: 'soter://contracts/configuration-onboarding-description/v1',
+    contractVersion: '1.0.0',
+    configuration: {
+      name,
+      templateFingerprint: fingerprint('1'),
+      configurationFingerprint: fingerprint('2'),
+      graphFingerprint: fingerprint('3'),
+      schemaFingerprint: fingerprint('4')
+    },
+    slots: [
+      {
+        id: 'authority.authority.tasks.instance.uri',
+        family: 'instance-authority-uri',
+        subject: 'authority.tasks.instance',
+        field: 'uri',
+        required: true,
+        type: 'uri',
+        constraints: { maxLength: 4096 }
+      },
+      {
+        id: 'setting.integration.notion.targets.tasks',
+        family: 'setting',
+        subject: 'integration.notion',
+        field: 'tasks',
+        required: true,
+        type: 'uri',
+        constraints: { maxLength: 4096 }
+      },
+      {
+        id: 'setting.application.displayName',
+        family: 'setting',
+        subject: 'application',
+        field: 'displayName',
+        required: false,
+        type: 'string',
+        constraints: { minLength: 1, maxLength: 4096 }
+      },
+      {
+        id: 'setting.application.contactEmail',
+        family: 'setting',
+        subject: 'application',
+        field: 'contactEmail',
+        required: false,
+        type: 'email',
+        constraints: { maxLength: 4096 }
+      },
+      {
+        id: 'setting.application.startDate',
+        family: 'setting',
+        subject: 'application',
+        field: 'startDate',
+        required: false,
+        type: 'date',
+        constraints: { maxLength: 4096 }
+      },
+      {
+        id: 'setting.application.dueAt',
+        family: 'setting',
+        subject: 'application',
+        field: 'dueAt',
+        required: false,
+        type: 'date-time',
+        constraints: { maxLength: 4096 }
+      },
+      {
+        id: 'setting.application.mode',
+        family: 'setting',
+        subject: 'application',
+        field: 'mode',
+        required: false,
+        type: 'enum',
+        options: ['quiet', 'guided']
+      },
+      {
+        id: 'setting.application.enabled',
+        family: 'setting',
+        subject: 'application',
+        field: 'enabled',
+        required: false,
+        type: 'boolean'
+      },
+      {
+        id: 'setting.application.retries',
+        family: 'setting',
+        subject: 'application',
+        field: 'retries',
+        required: false,
+        type: 'integer',
+        constraints: { minimum: 0, maximum: 4 }
+      },
+      {
+        id: 'setting.application.selfAddresses',
+        family: 'setting',
+        subject: 'application',
+        field: 'selfAddresses',
+        required: false,
+        type: 'string-list',
+        itemType: 'email',
+        constraints: { minItems: 0, maxItems: 3, uniqueItems: true },
+        itemConstraints: { minLength: 0, maxLength: 4096 }
+      },
+      {
+        id: 'setting.application.contacts',
+        family: 'setting',
+        subject: 'application',
+        field: 'contacts',
+        required: false,
+        type: 'records',
+        constraints: { minItems: 0, maxItems: 3 },
+        fields: [
+          { id: 'name', field: 'name', required: true, type: 'string', constraints: { maxLength: 4096 } },
+          { id: 'primary', field: 'primary', required: false, type: 'boolean' }
+        ]
+      },
+      {
+        id: 'setting.application.readinessProbe',
+        family: 'setting',
+        subject: 'application',
+        field: 'readinessProbe',
+        required: false,
+        type: 'group',
+        fields: [
+          { id: 'conversationId', field: 'conversationId', required: true, type: 'string', constraints: { maxLength: 4096 } },
+          { id: 'includeThreads', field: 'includeThreads', required: true, type: 'boolean' }
+        ]
+      },
+      {
+        id: 'provider-mapping.scopes',
+        family: 'provider-mapping-set',
+        subject: 'provider-mappings',
+        field: 'scopes',
+        required: true,
+        type: 'provider-mapping-set',
+        mappingSetFingerprint: fingerprint('5'),
+        scopes: [
+          {
+            id: 'provider-mapping.tasks.records.task.title',
+            scopeFingerprint: fingerprint('6'),
+            activation: { subject: 'integration.notion', target: 'tasks' },
+            record: { subject: 'tasks.records', type: 'task' },
+            field: { id: 'title', required: true, optionMappingRequired: false }
+          },
+          {
+            id: 'provider-mapping.tasks.records.task.status',
+            scopeFingerprint: fingerprint('7'),
+            activation: { subject: 'integration.notion', target: 'tasks' },
+            record: { subject: 'tasks.records', type: 'task' },
+            field: { id: 'status', required: false, optionMappingRequired: true }
+          }
+        ]
+      }
+    ],
+    descriptionFingerprint: fingerprint('8'),
+    authority: {
+      kind: 'description-only',
+      grantsExecution: false,
+      grantsProviderRead: false,
+      grantsProviderWrite: false
+    }
+  };
+}
+
+async function completeRequiredOnboardingFields() {
+  fireEvent.change(await screen.findByLabelText('URI — Authority tasks instance'), {
+    target: { value: 'notion://private/tasks' }
+  });
+  fireEvent.change(screen.getByLabelText('Tasks — Integration notion'), {
+    target: { value: 'notion://private/task-database' }
+  });
+  fireEvent.change(screen.getByLabelText('Provider property — Task · Title'), {
+    target: { value: 'Task title' }
+  });
+}
 
 beforeEach(() => {
   const snapshot = studioFixture();
@@ -60,7 +241,11 @@ beforeEach(() => {
     recoverPackInstall: vi.fn().mockResolvedValue({ ok: true as const, inspection: packInstallInspectionFixture('completed') }),
     inspectPackInstall: vi.fn().mockResolvedValue({ ok: true as const, inspection: packInstallInspectionFixture('recoverable') }),
     previewConfiguration: vi.fn().mockImplementation((request) => Promise.resolve(configurationPreviewFixture(request))),
-    prepareConfigurationChange: vi.fn().mockResolvedValue({ ok: true as const, inspection: configurationChangeInspectionFixture('plan') }),
+    describeConfigurationOnboarding: vi.fn().mockImplementation(({ name }: { name: string }) => Promise.resolve({
+      ok: true as const,
+      description: onboardingDescriptionFixture(name)
+    })),
+    prepareConfigurationOnboarding: vi.fn().mockResolvedValue({ ok: true as const, inspection: configurationChangeInspectionFixture('plan') }),
     beginConfigurationChangeRequest: vi.fn().mockResolvedValue({ ok: true as const, inspection: configurationChangeInspectionFixture('request') }),
     confirmConfigurationChangeRequest: vi.fn().mockResolvedValue({ ok: true as const, inspection: configurationChangeInspectionFixture('confirmed') }),
     startConfigurationChange: vi.fn().mockResolvedValue({ ok: true as const, inspection: configurationChangeInspectionFixture('started') }),
@@ -464,71 +649,226 @@ describe('Soter Studio canonical operator projection', () => {
     expect(screen.getByRole('complementary', { name: 'Workspace proof' })).toBeVisible();
   });
 
-  it('keeps configuration preview separate from the exact local transaction ceremony', async () => {
+  it('renders every typed onboarding family, preserves exact order, and clears private values after plan sealing', async () => {
     const user = userEvent.setup();
     const snapshot = studioFixture();
     const configuration = snapshot.configurations.find((item) => item.name === 'meeting-intake')!;
+    const description = onboardingDescriptionFixture(configuration.name);
     expect(validateJsonSchema(configurationChangeInspectionFixture('plan'), configurationChangeInspectionSchema)).toEqual([]);
-    expect(validateJsonSchema(configurationChangeInspectionFixture('reserved'), configurationChangeInspectionSchema)).toEqual([]);
-    expect(validateJsonSchema(configurationChangeInspectionFixture('reserved-prepared'), configurationChangeInspectionSchema)).toEqual([]);
-    expect(validateJsonSchema(configurationChangeInspectionFixture('started'), configurationChangeInspectionSchema)).toEqual([]);
-    expect(validateJsonSchema(configurationChangeInspectionFixture('completed'), configurationChangeInspectionSchema)).toEqual([]);
-    const unavailableResolutionInspection = configurationChangeInspectionFixture('plan');
-    unavailableResolutionInspection.configuration.observedResolution = {
-      state: 'unavailable',
-      fingerprint: null
-    };
-    expect(validateJsonSchema(unavailableResolutionInspection, configurationChangeInspectionSchema)).toEqual([]);
-    const crossedResolutionInspection = configurationChangeInspectionFixture('plan');
-    crossedResolutionInspection.configuration.observedResolution = {
-      state: 'unavailable',
-      fingerprint: 'sha256:' + 'f'.repeat(64)
-    } as unknown as typeof crossedResolutionInspection.configuration.observedResolution;
-    expect(validateJsonSchema(crossedResolutionInspection, configurationChangeInspectionSchema).length).toBeGreaterThan(0);
-    const needsAttentionInspection = configurationChangeInspectionFixture('needs-attention');
-    expect(validateJsonSchema(needsAttentionInspection, configurationChangeInspectionSchema)).toEqual([]);
-    expect(needsAttentionInspection.resume).toEqual({
-      classification: 'requires-review',
-      reasonCode: 'CONFIGURATION_CHECKPOINT_REQUIRES_REVIEW',
-      reason: 'The exact durable configuration checkpoint requires local operator review.',
-      permittedNextAction: 'inspect-checkpoint'
-    });
     const { container } = render(<ConfigView snapshot={snapshot} configuration={configuration} />);
 
-    expect(await screen.findByText('Exact lock transfer')).toBeVisible();
-    expect(screen.getByText('Separate transaction')).toBeVisible();
-    const candidate = screen.getByLabelText('Complete private candidate');
-    fireEvent.change(candidate, { target: { value: JSON.stringify({
-      $contract: 'soter://contracts/configuration/v1',
-      contractVersion: '1.0.0',
-      name: 'meeting-intake',
-      privateSentinel: 'PRIVATE_CONFIGURATION_CANDIDATE_SENTINEL'
-    }) } });
-    await user.click(screen.getByRole('button', { name: 'Seal exact private plan' }));
+    expect(await screen.findByText('Blank private setup')).toBeVisible();
+    expect(window.soterStudio.describeConfigurationOnboarding).toHaveBeenCalledWith({ name: configuration.name });
+    await completeRequiredOnboardingFields();
+    const privateSentinel = soterSyntheticCredentialFixture(
+      'in:inbox PRIVATE_URI_TOKEN_PATH_SENTINEL xoxb-test-private /private/operator/input'
+    );
+    await user.click(screen.getByLabelText('Include Display name — Application'));
+    await user.type(screen.getByLabelText('Display name — Application'), privateSentinel);
+    await user.click(screen.getByLabelText('Include Contact email — Application'));
+    await user.type(screen.getByLabelText('Contact email — Application'), 'private@example.test');
+    await user.click(screen.getByLabelText('Include Start date — Application'));
+    fireEvent.change(screen.getByLabelText('Start date — Application'), { target: { value: '2026-08-10' } });
+    await user.click(screen.getByLabelText('Include Due at — Application'));
+    await user.type(screen.getByLabelText('Due at — Application'), '2026-08-10T12:00:00Z');
+    await user.click(screen.getByLabelText('Include Mode — Application'));
+    await user.selectOptions(screen.getByLabelText('Mode — Application'), 'guided');
+    await user.click(screen.getByLabelText('Include Enabled — Application'));
+    expect(screen.getByLabelText('Enabled — Application')).not.toBeChecked();
+    await user.click(screen.getByLabelText('Include Retries — Application'));
+    fireEvent.change(screen.getByLabelText('Retries — Application'), { target: { value: '2' } });
+    await user.click(screen.getByLabelText('Include Self addresses — Application'));
+    expect(screen.getByRole('button', { name: 'Remove item 1' })).toBeDisabled();
+    await user.type(screen.getByLabelText('Item 1'), 'one@example.test');
+    await user.click(screen.getByRole('button', { name: 'Add list item' }));
+    await user.type(screen.getByLabelText('Item 2'), 'remove@example.test');
+    await user.click(screen.getByRole('button', { name: 'Remove item 2' }));
+    await user.click(screen.getByLabelText('Include Contacts — Application'));
+    expect(screen.getByRole('button', { name: 'Remove record 1' })).toBeDisabled();
+    await user.type(screen.getByLabelText('Name — Contacts record 1'), 'Private contact');
+    await user.click(screen.getByRole('button', { name: 'Add record' }));
+    await user.click(screen.getByRole('button', { name: 'Remove record 2' }));
+    await user.click(screen.getByLabelText('Include Readiness probe — Application'));
+    await user.type(screen.getByLabelText('Conversation id — Readiness probe'), 'conversation-private');
+    expect(screen.getByLabelText('Include threads — Readiness probe')).not.toBeChecked();
+    await user.selectOptions(screen.getByLabelText('Mapping mode — Task · Status'), 'mapped');
+    await user.type(screen.getByLabelText('Provider property — Task · Status'), 'Status property');
+    await user.type(screen.getByLabelText('Portable option'), 'open');
+    await user.type(screen.getByLabelText('Provider option'), 'Open');
+    await user.click(screen.getByRole('button', { name: 'Add option pair' }));
+    await user.click(screen.getByRole('button', { name: 'Remove option pair 2' }));
 
+    const onboardingForm = container.querySelector('.configuration-onboarding-form')!;
+    expect(onboardingForm).toHaveAttribute('autocomplete', 'off');
+    expect(Array.from(onboardingForm.querySelectorAll('input, select, textarea'))).not.toHaveLength(0);
+    for (const control of onboardingForm.querySelectorAll('input, select, textarea')) {
+      expect(control).toHaveAttribute('autocomplete', 'off');
+    }
+
+    const seal = screen.getByRole('button', { name: 'Seal first-use plan' });
+    expect(seal).toBeEnabled();
+    await user.click(seal);
     expect(await screen.findByText('Fingerprint-only scope')).toBeVisible();
-    expect(screen.queryByText('PRIVATE_CONFIGURATION_CANDIDATE_SENTINEL')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('Complete private candidate')).not.toBeInTheDocument();
-    expect(window.soterStudio.prepareConfigurationChange).toHaveBeenCalledWith(expect.objectContaining({ name: 'meeting-intake' }));
+
+    const request = vi.mocked(window.soterStudio.prepareConfigurationOnboarding).mock.calls[0][0];
+    expect(request.name).toBe(configuration.name);
+    expect(request.descriptionFingerprint).toBe(description.descriptionFingerprint);
+    expect(request.slots.map((slot) => slot.id)).toEqual(description.slots.map((slot) => slot.id));
+    expect(request.slots.find((slot) => slot.id === 'setting.application.enabled')).toEqual({
+      id: 'setting.application.enabled',
+      state: 'provided',
+      type: 'boolean',
+      value: false
+    });
+    expect(request.slots.find((slot) => slot.id === 'setting.application.contacts')).toEqual({
+      id: 'setting.application.contacts',
+      state: 'provided',
+      type: 'records',
+      value: [{ fields: [
+        { id: 'name', state: 'provided', type: 'string', value: 'Private contact' },
+        { id: 'primary', state: 'omitted' }
+      ] }]
+    });
+    const mappingSlot = description.slots.at(-1)!;
+    expect(mappingSlot.type).toBe('provider-mapping-set');
+    expect(request.slots.at(-1)).toMatchObject({
+      id: 'provider-mapping.scopes',
+      state: 'provided',
+      type: 'provider-mapping-set',
+      value: {
+        mappingSetFingerprint: mappingSlot.type === 'provider-mapping-set' ? mappingSlot.mappingSetFingerprint : '',
+        scopes: [
+          { id: 'provider-mapping.tasks.records.task.title', state: 'mapped', providerProperty: 'Task title' },
+          {
+            id: 'provider-mapping.tasks.records.task.status',
+            state: 'mapped',
+            providerProperty: 'Status property',
+            options: [{ portable: 'open', provider: 'Open' }]
+          }
+        ]
+      }
+    });
+    expect(JSON.stringify(request)).toContain(privateSentinel);
+    const privateValues = [
+      privateSentinel,
+      'notion://private/tasks',
+      'notion://private/task-database',
+      'private@example.test',
+      'Status property'
+    ];
+    for (const value of privateValues) expect(document.body).not.toHaveTextContent(value);
+    expect(Array.from(document.querySelectorAll<HTMLElement>('input, select, textarea')).some((element) => {
+      const liveValue = element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement
+        ? element.value
+        : '';
+      return liveValue.includes(privateSentinel)
+        || Array.from(element.attributes).some((attribute) => attribute.value.includes(privateSentinel));
+    })).toBe(false);
+    const allAttributeValues = Array.from(document.querySelectorAll('*'))
+      .flatMap((element) => Array.from(element.attributes).map((attribute) => attribute.value));
+    const browserState = JSON.stringify({
+      href: window.location.href,
+      local: { ...localStorage },
+      session: { ...sessionStorage },
+      snapshot
+    });
+    for (const value of privateValues) {
+      expect(allAttributeValues.some((attribute) => attribute.includes(value))).toBe(false);
+      expect(browserState).not.toContain(value);
+      expect(JSON.stringify(configurationChangeInspectionFixture('plan'))).not.toContain(value);
+    }
 
     await user.click(screen.getByRole('button', { name: 'Request confirmation' }));
-    expect(window.soterStudio.beginConfigurationChangeRequest).toHaveBeenCalledWith({
-      planId: 'configuration-change-plan.meeting-intake.ui-test',
-      reason: 'Review this exact private configuration activation or update and its fingerprint-only scope.'
-    });
-    expect(await screen.findByText('Confirmation records the local actor decision. It does not start or write.')).toBeVisible();
-    expect(window.soterStudio.confirmConfigurationChangeRequest).not.toHaveBeenCalled();
     await user.click(screen.getByLabelText('I reviewed this exact fingerprint-only scope.'));
     await user.click(screen.getByRole('button', { name: 'Confirm exact request' }));
-    expect(await screen.findByText('Reserve this confirmation once into one deterministic checkpoint. No desired file is changed yet.')).toBeVisible();
-    expect(window.soterStudio.startConfigurationChange).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Reserve one-time start' }));
     expect(await screen.findByRole('button', { name: 'Apply exact checkpoint' })).toBeDisabled();
-    expect(screen.getByText('Execution creates or replaces the desired configuration and its private active lock, then resolves and verifies both.')).toBeVisible();
-    expect(window.soterStudio.executeConfigurationChange).not.toHaveBeenCalled();
-    expect(screen.getByText('Core-derived guidance · not authority')).toBeVisible();
     expect(screen.getAllByText('No provider calls').length).toBeGreaterThan(0);
     expect((await axe.run(container, { rules: { 'color-contrast': { enabled: false } } })).violations).toEqual([]);
+  });
+
+  it('treats an optional group atomically and distinguishes omitted from a complete false-valued group', async () => {
+    const user = userEvent.setup();
+    const snapshot = studioFixture();
+    render(<ConfigView snapshot={snapshot} configuration={snapshot.configurations[0]} />);
+    await completeRequiredOnboardingFields();
+    const seal = screen.getByRole('button', { name: 'Seal first-use plan' });
+    expect(seal).toBeEnabled();
+    await user.click(screen.getByLabelText('Include Readiness probe — Application'));
+    expect(seal).toBeDisabled();
+    await user.type(screen.getByLabelText('Conversation id — Readiness probe'), 'conversation-exact');
+    expect(screen.getByLabelText('Include threads — Readiness probe')).not.toBeChecked();
+    expect(seal).toBeEnabled();
+    await user.click(seal);
+    expect(vi.mocked(window.soterStudio.prepareConfigurationOnboarding).mock.calls[0][0].slots).toContainEqual({
+      id: 'setting.application.readinessProbe',
+      state: 'provided',
+      type: 'group',
+      value: { fields: [
+        { id: 'conversationId', state: 'provided', type: 'string', value: 'conversation-exact' },
+        { id: 'includeThreads', state: 'provided', type: 'boolean', value: false }
+      ] }
+    });
+  });
+
+  it('serializes omitted top-level values without a value property and preserves unavailable mapping scope', async () => {
+    const user = userEvent.setup();
+    const snapshot = studioFixture();
+    const description = onboardingDescriptionFixture(snapshot.configurations[0].name);
+    render(<ConfigView snapshot={snapshot} configuration={snapshot.configurations[0]} />);
+    await completeRequiredOnboardingFields();
+    await user.click(screen.getByRole('button', { name: 'Seal first-use plan' }));
+
+    const request = vi.mocked(window.soterStudio.prepareConfigurationOnboarding).mock.calls[0][0];
+    expect(request.slots.find((slot) => slot.id === 'setting.application.displayName')).toEqual({
+      id: 'setting.application.displayName',
+      state: 'omitted'
+    });
+    const mappingDescription = description.slots.at(-1);
+    if (!mappingDescription || mappingDescription.type !== 'provider-mapping-set') throw new Error('onboarding mapping fixture is invalid');
+    const mapping = request.slots.find((slot) => slot.id === 'provider-mapping.scopes');
+    expect(mapping).toEqual({
+      id: 'provider-mapping.scopes',
+      state: 'provided',
+      type: 'provider-mapping-set',
+      value: {
+        mappingSetFingerprint: mappingDescription.mappingSetFingerprint,
+        scopes: [
+          {
+            id: 'provider-mapping.tasks.records.task.title',
+            scopeFingerprint: mappingDescription.scopes[0].scopeFingerprint,
+            state: 'mapped',
+            providerProperty: 'Task title'
+          },
+          {
+            id: 'provider-mapping.tasks.records.task.status',
+            scopeFingerprint: mappingDescription.scopes[1].scopeFingerprint,
+            state: 'unavailable'
+          }
+        ]
+      }
+    });
+  });
+
+  it('initializes and retains the effective minimum for required collections', async () => {
+    const description = onboardingDescriptionFixture();
+    const list = description.slots.find((slot) => slot.id === 'setting.application.selfAddresses');
+    const records = description.slots.find((slot) => slot.id === 'setting.application.contacts');
+    if (!list || list.type !== 'string-list' || !records || records.type !== 'records') throw new Error('onboarding collection fixture is invalid');
+    list.required = true;
+    list.constraints.minItems = 2;
+    records.required = true;
+    records.constraints.minItems = 2;
+    window.soterStudio.describeConfigurationOnboarding = vi.fn().mockResolvedValue({ ok: true as const, description });
+
+    const snapshot = studioFixture();
+    render(<ConfigView snapshot={snapshot} configuration={snapshot.configurations[0]} />);
+    expect(await screen.findByLabelText('Item 1')).toBeVisible();
+    expect(screen.getByLabelText('Item 2')).toBeVisible();
+    expect(screen.getByText('Contacts record 1')).toBeVisible();
+    expect(screen.getByText('Contacts record 2')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Remove item 1' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Remove record 1' })).toBeDisabled();
   });
 
   it.each(['reserved', 'reserved-prepared'] as const)('resumes the exact %s configuration start without reconstructing authority', async (stage) => {
@@ -536,58 +876,111 @@ describe('Soter Studio canonical operator projection', () => {
     const snapshot = studioFixture();
     const configuration = snapshot.configurations.find((item) => item.name === 'meeting-intake')!;
     const reservedInspection = configurationChangeInspectionFixture(stage);
-    window.soterStudio.prepareConfigurationChange = vi.fn().mockResolvedValue({ ok: true as const, inspection: reservedInspection });
+    window.soterStudio.prepareConfigurationOnboarding = vi.fn().mockResolvedValue({ ok: true as const, inspection: reservedInspection });
     render(<ConfigView snapshot={snapshot} configuration={configuration} />);
-
-    fireEvent.change(await screen.findByLabelText('Complete private candidate'), { target: { value: JSON.stringify({
-      $contract: 'soter://contracts/configuration/v1',
-      name: configuration.name
-    }) } });
-    await user.click(screen.getByRole('button', { name: 'Seal exact private plan' }));
-
+    await completeRequiredOnboardingFields();
+    await user.click(screen.getByRole('button', { name: 'Seal first-use plan' }));
     const resume = await screen.findByRole('button', { name: 'Resume exact reserved start' });
     expect(resume).toBeEnabled();
-    expect(screen.queryByRole('button', { name: 'Reserve one-time start' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Apply exact checkpoint' })).not.toBeInTheDocument();
     expect(document.body).not.toHaveTextContent('/private/target/root');
     await user.click(resume);
-
     expect(window.soterStudio.startConfigurationChange).toHaveBeenCalledWith({
       confirmationId: reservedInspection.confirmation!.id,
       checkpointId: reservedInspection.consumption!.checkpointId
     });
   });
 
-  it('discards hostile configuration adapter rejection prose', async () => {
+  it.each([
+    'CONFIGURATION_ONBOARDING_INPUT_INVALID',
+    'CONFIGURATION_ONBOARDING_UNAVAILABLE',
+    'CONFIGURATION_ONBOARDING_DESCRIPTION_MALFORMED',
+    'CONFIGURATION_ADAPTER_UNAVAILABLE'
+  ] as const)('discards hostile onboarding rejection prose, clears fields, and refetches on %s', async (code) => {
     const user = userEvent.setup();
     const snapshot = studioFixture();
-    window.soterStudio.prepareConfigurationChange = vi.fn().mockRejectedValue(new Error('PRIVATE_CONFIG_PATH_SENTINEL /private/operator/candidate.json'));
+    window.soterStudio.prepareConfigurationOnboarding = vi.fn().mockResolvedValue({
+      ok: false as const,
+      error: {
+        code,
+        message: 'PRIVATE_CONFIG_PATH_SENTINEL /private/operator/candidate.json'
+      }
+    });
     render(<ConfigView snapshot={snapshot} configuration={snapshot.configurations[0]} />);
-    fireEvent.change(await screen.findByLabelText('Complete private candidate'), { target: { value: JSON.stringify({
-      $contract: 'soter://contracts/configuration/v1', name: snapshot.configurations[0].name
-    }) } });
-    await user.click(screen.getByRole('button', { name: 'Seal exact private plan' }));
-    expect(await screen.findByText('CONFIGURATION_ADAPTER_UNAVAILABLE')).toBeVisible();
-    expect(screen.getByText('The local configuration transaction adapter is unavailable.')).toBeVisible();
-    expect(document.body).not.toHaveTextContent('PRIVATE_CONFIG_PATH_SENTINEL');
+    await completeRequiredOnboardingFields();
+    await user.click(screen.getByLabelText('Include Display name — Application'));
+    await user.type(screen.getByLabelText('Display name — Application'), 'PRIVATE_CONFIG_PATH_SENTINEL');
+    await user.click(screen.getByRole('button', { name: 'Seal first-use plan' }));
+    expect(await screen.findByText(code)).toBeVisible();
+    expect(screen.getByText('The exact private onboarding plan is unavailable.')).toBeVisible();
+    expect(screen.queryByText('PRIVATE_CONFIG_PATH_SENTINEL')).not.toBeInTheDocument();
+    await waitFor(() => expect(window.soterStudio.describeConfigurationOnboarding).toHaveBeenCalledTimes(2));
+    expect(await screen.findByLabelText('Include Display name — Application')).not.toBeChecked();
     expect(document.body).not.toHaveTextContent('/private/operator/candidate.json');
   });
 
-  it('drops private candidate state when configuration selection changes', async () => {
+  it('discards hostile rejected describe and prepare prose without retaining draft values', async () => {
+    const snapshot = studioFixture();
+    window.soterStudio.describeConfigurationOnboarding = vi.fn().mockRejectedValueOnce(new Error('PRIVATE_DESCRIBE_SENTINEL /private/describe'));
+    let view = render(<ConfigView snapshot={snapshot} configuration={snapshot.configurations[0]} />);
+    expect(await screen.findByText('CONFIGURATION_ADAPTER_UNAVAILABLE')).toBeVisible();
+    expect(screen.getByText('The blank typed private onboarding description is unavailable.')).toBeVisible();
+    expect(document.body).not.toHaveTextContent('PRIVATE_DESCRIBE_SENTINEL');
+    expect(document.body).not.toHaveTextContent('/private/describe');
+    view.unmount();
+
+    const user = userEvent.setup();
+    window.soterStudio.describeConfigurationOnboarding = vi.fn().mockResolvedValue({
+      ok: true as const,
+      description: onboardingDescriptionFixture(snapshot.configurations[0].name)
+    });
+    window.soterStudio.prepareConfigurationOnboarding = vi.fn().mockRejectedValueOnce(new Error('PRIVATE_PREPARE_SENTINEL /private/prepare'));
+    view = render(<ConfigView snapshot={snapshot} configuration={snapshot.configurations[0]} />);
+    await completeRequiredOnboardingFields();
+    await user.click(screen.getByLabelText('Include Display name — Application'));
+    await user.type(screen.getByLabelText('Display name — Application'), 'PRIVATE_PREPARE_SENTINEL');
+    await user.click(screen.getByRole('button', { name: 'Seal first-use plan' }));
+    expect(await screen.findByText('CONFIGURATION_ADAPTER_UNAVAILABLE')).toBeVisible();
+    expect(screen.getByText('The exact private onboarding plan is unavailable.')).toBeVisible();
+    await waitFor(() => expect(window.soterStudio.describeConfigurationOnboarding).toHaveBeenCalledTimes(2));
+    expect(await screen.findByLabelText('Include Display name — Application')).not.toBeChecked();
+    expect(document.body).not.toHaveTextContent('PRIVATE_PREPARE_SENTINEL');
+    expect(document.body).not.toHaveTextContent('/private/prepare');
+    expect(window.location.href).not.toContain('PRIVATE_PREPARE_SENTINEL');
+    expect(JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage }, snapshot })).not.toContain('PRIVATE_PREPARE_SENTINEL');
+    view.unmount();
+  });
+
+  it('prevents duplicate onboarding submission while one exact plan is pending', async () => {
+    const snapshot = studioFixture();
+    let settlePlan: ((value: ConfigurationChangeResult) => void) | null = null;
+    window.soterStudio.prepareConfigurationOnboarding = vi.fn().mockImplementation(() => new Promise((resolve) => {
+      settlePlan = resolve;
+    }));
+    render(<ConfigView snapshot={snapshot} configuration={snapshot.configurations[0]} />);
+    await completeRequiredOnboardingFields();
+    const seal = screen.getByRole('button', { name: 'Seal first-use plan' });
+    fireEvent.click(seal);
+    fireEvent.click(seal);
+    expect(window.soterStudio.prepareConfigurationOnboarding).toHaveBeenCalledTimes(1);
+    settlePlan!({ ok: true, inspection: configurationChangeInspectionFixture('plan') });
+    expect(await screen.findByText('Fingerprint-only scope')).toBeVisible();
+  });
+
+  it('drops desk-local onboarding values when configuration selection changes', async () => {
     const user = userEvent.setup();
     window.location.hash = '#/config/meeting-intake';
     render(<App />);
-    const candidate = await screen.findByLabelText('Complete private candidate');
-    fireEvent.change(candidate, { target: { value: JSON.stringify({
-      $contract: 'soter://contracts/configuration/v1',
-      name: 'meeting-intake',
-      privateSentinel: 'PRIVATE_CROSS_CONFIGURATION_SENTINEL'
-    }) } });
-    expect((candidate as HTMLTextAreaElement).value).toContain('PRIVATE_CROSS_CONFIGURATION_SENTINEL');
-
+    await screen.findByLabelText('Include Display name — Application');
+    await user.click(screen.getByLabelText('Include Display name — Application'));
+    await user.type(screen.getByLabelText('Display name — Application'), 'PRIVATE_CROSS_CONFIGURATION_SENTINEL');
+    expect(screen.getByLabelText('Display name — Application')).toHaveValue('PRIVATE_CROSS_CONFIGURATION_SENTINEL');
     await user.click(screen.getByRole('button', { name: /project-pulse/i }));
-    expect(await screen.findByLabelText('Complete private candidate')).toHaveValue('');
+    expect(await screen.findByText('Blank private setup')).toBeVisible();
+    expect(screen.queryByDisplayValue('PRIVATE_CROSS_CONFIGURATION_SENTINEL')).not.toBeInTheDocument();
     expect(document.body).not.toHaveTextContent('PRIVATE_CROSS_CONFIGURATION_SENTINEL');
+    expect(Array.from(document.querySelectorAll('*')).flatMap((element) => Array.from(element.attributes).map((attribute) => attribute.value))).not.toContain('PRIVATE_CROSS_CONFIGURATION_SENTINEL');
+    expect(window.location.href).not.toContain('PRIVATE_CROSS_CONFIGURATION_SENTINEL');
+    expect(JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage }, snapshot: studioFixture() })).not.toContain('PRIVATE_CROSS_CONFIGURATION_SENTINEL');
   });
 
   it('renders host realization as a separate manifest-last exact-scope ceremony', async () => {

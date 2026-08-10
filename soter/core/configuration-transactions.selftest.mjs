@@ -1,20 +1,24 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 import { validateJsonSchema } from '../kernel/verify.mjs';
 import {
   beginConfigurationChangeRequest,
   confirmConfigurationChangeRequest,
+  describeConfigurationOnboarding,
   executeConfigurationChange,
   inspectConfigurationChange,
   prepareConfigurationChange,
+  prepareConfigurationOnboarding,
   prepareConfigurationChangeExecution,
   recoverConfigurationChange,
   resumeConfigurationChangeExecution
 } from './configuration-transactions.mjs';
 import { fingerprintJson, readJson, writeJson } from './lib/canonical-json.mjs';
+import { containsCredentialMaterial } from './host-runtime.mjs';
 import { fingerprintLock, resolveConfiguration } from './resolve.mjs';
 import {
   privateConfigurationStatePath,
@@ -40,6 +44,9 @@ const CREATED = '2026-07-16T15:00:00.000Z';
 const CONFIRMED = '2026-07-16T15:01:00.000Z';
 const EXPIRES = '2026-07-16T15:10:00.000Z';
 const APPLIED = '2026-07-16T15:02:00.000Z';
+const ONBOARDING_MAX_STRING_LENGTH_FOR_SELFTEST = 4096;
+const ONBOARDING_MAX_COLLECTION_ITEMS_FOR_SELFTEST = 100;
+const ONBOARDING_MAX_INPUT_BYTES_FOR_SELFTEST = 256 * 1024;
 const TASK_GROUNDING_FIELDS = [
   'sourceMeetingUris',
   'sourceQuotes',
@@ -56,6 +63,129 @@ const TASK_NOTION_FIELDS = [
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+function soterSyntheticCredentialFixture(value) {
+  return value;
+}
+
+function sealOnboardingInput(description, valueForSlot = null) {
+  const defaultValue = (slot, index) => {
+    if (slot.field === 'conversationId') return 'C0123456789';
+    if (slot.field === 'workspaceId') return 'T0123456789';
+    if (slot.field === 'threadRootMessageId') return '1720000000.000001';
+    if (slot.field === 'oldestInclusive') return '2026-08-10T11:00:00.000Z';
+    if (slot.field === 'latestExclusive') return '2026-08-10T12:00:00.000Z';
+    if (slot.type === 'uri') {
+      if (slot.family === 'setting'
+        && slot.subject === 'integration.notion'
+        && slot.id.includes('.targets.')) {
+        return 'collection://' + String(index + 1).padStart(32, '0');
+      }
+      return slot.subject === 'integration.notion'
+        ? 'notion://onboarding-selftest-' + index
+        : 'gmail://onboarding-selftest-' + index;
+    }
+    if (slot.type === 'string') return 'onboarding-selftest-' + index;
+    if (slot.type === 'email') return 'operator' + index + '@soter.test';
+    if (slot.type === 'date') return '2026-08-10';
+    if (slot.type === 'date-time') return '2026-08-10T12:00:00.000Z';
+    if (slot.type === 'integer') return slot.constraints.minimum || 1;
+    if (slot.type === 'boolean') return true;
+    if (slot.type === 'enum') return slot.options[0];
+    if (slot.type === 'string-list') {
+      return slot.itemType === 'email'
+        ? ['operator' + index + '@soter.test']
+        : slot.itemType === 'uri'
+          ? ['gmail://onboarding-selftest-list-' + index]
+          : slot.itemType === 'date'
+            ? ['2026-08-10']
+            : slot.itemType === 'date-time'
+              ? ['2026-08-10T12:00:00.000Z']
+          : ['onboarding-selftest-' + index];
+    }
+    if (slot.type === 'records') {
+      return [{
+        fields: slot.fields.map((field, fieldIndex) => ({
+          id: field.id,
+          state: field.required ? 'provided' : 'omitted',
+          ...(field.required ? {
+            type: field.type,
+            value: defaultValue(field, index * 100 + fieldIndex)
+          } : {})
+        }))
+      }];
+    }
+    if (slot.type === 'group') {
+      return {
+        fields: slot.fields.map((field, fieldIndex) => ({
+          id: field.id,
+          state: field.required ? 'provided' : 'omitted',
+          ...(field.required ? {
+            type: field.type,
+            value: defaultValue(field, index * 100 + fieldIndex)
+          } : {})
+        }))
+      };
+    }
+    if (slot.type === 'provider-mapping-set') {
+      return {
+        mappingSetFingerprint: slot.mappingSetFingerprint,
+        scopes: slot.scopes.map((scope, scopeIndex) => ({
+          id: scope.id,
+          scopeFingerprint: scope.scopeFingerprint,
+          state: 'mapped',
+          providerProperty: 'Provider Property ' + scopeIndex,
+          ...(scope.field.optionMappingRequired ? {
+            options: [{
+              portable: 'portable-option-' + scopeIndex,
+              provider: 'Provider Option ' + scopeIndex
+            }]
+          } : {})
+        }))
+      };
+    }
+    throw new Error('Unsupported onboarding selftest slot type.');
+  };
+  const slots = description.slots.map((slot, index) => {
+    const suppliedValue = valueForSlot ? valueForSlot(slot, index, defaultValue) : undefined;
+    if (!slot.required && suppliedValue === undefined) return { id: slot.id, state: 'omitted' };
+    return {
+      id: slot.id,
+      state: 'provided',
+      type: slot.type,
+      value: suppliedValue === undefined ? defaultValue(slot, index) : suppliedValue
+    };
+  });
+  const unsigned = {
+    $contract: 'soter://contracts/configuration-onboarding-input/v1',
+    contractVersion: '1.0.0',
+    configuration: {
+      name: description.configuration.name,
+      descriptionFingerprint: description.descriptionFingerprint
+    },
+    slots
+  };
+  return { ...unsigned, inputFingerprint: fingerprintJson(unsigned) };
+}
+
+function resealOnboardingInput(input) {
+  const unsigned = structuredClone(input);
+  delete unsigned.inputFingerprint;
+  input.inputFingerprint = fingerprintJson(unsigned);
+  return input;
+}
+
+function expectOnboardingError(run, expectedCode, message) {
+  let observed = null;
+  try {
+    run();
+  } catch (error) {
+    observed = error.code;
+    assert(!/Users|soter-fixture|sentinel|@soter\.test/i.test(error.message),
+      'Onboarding rejection diagnostics exposed private or fixture material.');
+  }
+  assert(observed === expectedCode, message);
 }
 
 function copyRoot(root, prefix) {
@@ -312,6 +442,1158 @@ export async function selftestConfigurationTransactions(root = defaultRoot) {
       && portableSelfAddresses.every((address) => address.endsWith('.example'))
       && !JSON.stringify(portableEmailTemplate).includes('@soterlabs.com'),
     'Tracked configuration template retained user-specific mailbox identities.');
+
+    const onboarding = copyRoot(root, 'soter-configuration-onboarding-');
+    roots.push(onboarding);
+    const descriptionSchema = readJson(path.join(
+      onboarding,
+      'soter/contracts/configuration-onboarding-description.schema.json'
+    ));
+    const inputSchema = readJson(path.join(
+      onboarding,
+      'soter/contracts/configuration-onboarding-input.schema.json'
+    ));
+    const taskOnboarding = describeConfigurationOnboarding({
+      root: onboarding,
+      name: 'task-capture'
+    });
+    const slackOnboarding = describeConfigurationOnboarding({
+      root: onboarding,
+      name: 'slack-conversation-review'
+    });
+    const emailOnboarding = describeConfigurationOnboarding({
+      root: onboarding,
+      name: 'email-triage'
+    });
+    for (const description of [taskOnboarding, slackOnboarding, emailOnboarding]) {
+      const serialized = JSON.stringify(description);
+      assert(validateJsonSchema(description, descriptionSchema).length === 0
+        && description.descriptionFingerprint === fingerprintJson((() => {
+          const unsigned = structuredClone(description);
+          delete unsigned.descriptionFingerprint;
+          return unsigned;
+        })())
+        && new Set(description.slots.map((slot) => slot.id)).size === description.slots.length
+        && !/(?:soter-fixture|\.example|\/Users\/|\.soter\/|"pattern"|"default"|"examples?"|"value")/i.test(serialized),
+      'Onboarding description was not closed, unique, fingerprinted, and sanitized.');
+      for (const slot of description.slots) {
+        assert(new Set((slot.fields || []).map((field) => field.id)).size
+          === (slot.fields || []).length,
+        'Onboarding description retained duplicate repeatable-record field IDs.');
+      }
+    }
+    assert(taskOnboarding.slots.some((slot) => slot.family === 'instance-authority-uri'
+      && slot.type === 'uri'
+      && slot.required === true)
+      && taskOnboarding.slots.some((slot) => slot.family === 'source-input')
+      && slackOnboarding.slots.some((slot) => slot.field === 'readinessProbe'
+        && slot.type === 'group'
+        && slot.required === false
+        && slot.fields.map((field) => field.id).join(',')
+          === 'conversationId,latestExclusive,oldestInclusive,threadRootMessageId'
+        && slot.fields.every((field) => field.required === true))
+      && emailOnboarding.slots.some((slot) => slot.type === 'string-list'),
+    'Onboarding description did not derive exact authority, source, and setting slot families.');
+
+    const taskRequiredTargets = taskOnboarding.slots.filter((slot) => (
+      slot.family === 'setting'
+        && slot.subject === 'integration.notion'
+        && slot.id.includes('.targets.')
+        && slot.required
+    ));
+    const slackRequiredTargets = slackOnboarding.slots.filter((slot) => (
+      slot.family === 'setting'
+        && slot.subject === 'integration.notion'
+        && slot.id.includes('.targets.')
+        && slot.required
+    ));
+    assert(taskRequiredTargets.map((slot) => slot.field).join(',') === 'policies,projects,tasks'
+      && slackRequiredTargets.map((slot) => slot.field).join(',') === 'policies',
+      'Selected resolution did not promote the exact template-required target identities.');
+    const taskMappingSlot = taskOnboarding.slots.find((slot) => (
+      slot.type === 'provider-mapping-set'
+    ));
+    const slackMappingSlot = slackOnboarding.slots.find((slot) => (
+      slot.type === 'provider-mapping-set'
+    ));
+    assert(taskMappingSlot
+      && taskMappingSlot.scopes.length === 14
+      && taskMappingSlot.scopes.filter((scope) => scope.field.optionMappingRequired).length === 4
+      && new Set(taskMappingSlot.scopes.map((scope) => scope.id)).size === 14
+      && taskMappingSlot.scopes.every((scope) => [
+        scope.id,
+        scope.activation.subject,
+        scope.activation.target,
+        scope.record.subject,
+        scope.record.type,
+        scope.field.id
+      ].every((identifier) => !containsCredentialMaterial(identifier)))
+      && slackMappingSlot
+      && slackMappingSlot.scopes.length === 1
+      && slackMappingSlot.scopes[0].record.type === 'conversation-review-policy'
+      && slackMappingSlot.scopes[0].field.id === 'name'
+      && slackMappingSlot.scopes.every((scope) => !scope.field.optionMappingRequired)
+      && slackMappingSlot.scopes.every((scope) => scope.record.type !== 'channel'),
+    'Provider mapping onboarding did not derive the exact selected Automation record scopes.');
+    const taskMinimalInput = sealOnboardingInput(taskOnboarding);
+    const slackMinimalInput = sealOnboardingInput(slackOnboarding);
+    const taskMinimalPlanId = 'configuration-change-plan.onboarding-task-minimal-selftest';
+    const slackMinimalPlanId = 'configuration-change-plan.onboarding-slack-minimal-selftest';
+    const taskMinimalInspection = prepareConfigurationOnboarding({
+      root: onboarding,
+      name: 'task-capture',
+      input: taskMinimalInput,
+      id: taskMinimalPlanId,
+      createdAt: CREATED
+    });
+    const slackMinimalInspection = prepareConfigurationOnboarding({
+      root: onboarding,
+      name: 'slack-conversation-review',
+      input: slackMinimalInput,
+      id: slackMinimalPlanId,
+      createdAt: CREATED
+    });
+    assert(taskMinimalInspection.resume.reasonCode === 'CONFIGURATION_PLAN_CURRENT'
+      && slackMinimalInspection.resume.reasonCode === 'CONFIGURATION_PLAN_CURRENT',
+    'A minimal complete input did not materialize a valid selected configuration plan.');
+    const taskMinimalPlan = readJson(configurationChangePlanStatePath(onboarding, taskMinimalPlanId));
+    const slackMinimalPlan = readJson(configurationChangePlanStatePath(onboarding, slackMinimalPlanId));
+    const taskNotion = taskMinimalPlan.candidateConfiguration.settings['integration.notion'];
+    const slackNotion = slackMinimalPlan.candidateConfiguration.settings['integration.notion'];
+    const taskPrivateMappingValues = taskMinimalInput.slots.find((slot) => (
+      slot.type === 'provider-mapping-set'
+    )).value.scopes.flatMap((scope) => [
+      scope.providerProperty,
+      ...(scope.options || []).flatMap((entry) => [entry.portable, entry.provider])
+    ]).filter(Boolean);
+    const sanitizedMinimalInspections = JSON.stringify([
+      taskMinimalInspection,
+      slackMinimalInspection
+    ]);
+    assert(taskNotion.fieldBindings.length === 14
+      && taskNotion.optionMappings.length === 4
+      && slackNotion.fieldBindings.length === 1
+      && !Object.hasOwn(slackNotion, 'optionMappings')
+      && slackNotion.fieldBindings[0].recordType === 'conversation-review-policy'
+      && taskPrivateMappingValues.every((value) => !sanitizedMinimalInspections.includes(value))
+      && !sanitizedMinimalInspections.includes('collection://')
+      && !sanitizedMinimalInspections.includes('providerProperty')
+      && !sanitizedMinimalInspections.includes('fieldBindings'),
+    'Private provider mappings were not reconstructed exactly or escaped sanitized inspection.');
+
+    const taskMappingSlotIndex = taskMinimalInput.slots.findIndex((slot) => (
+      slot.type === 'provider-mapping-set'
+    ));
+    const taskMappingInputValue = (input) => input.slots[taskMappingSlotIndex].value;
+    const assertTaskMappingRejected = (suffix, mutate, message) => {
+      const input = structuredClone(taskMinimalInput);
+      mutate(taskMappingInputValue(input));
+      resealOnboardingInput(input);
+      const planId = 'configuration-change-plan.onboarding-mapping-' + suffix + '-selftest';
+      expectOnboardingError(() => prepareConfigurationOnboarding({
+        root: onboarding,
+        name: 'task-capture',
+        input,
+        id: planId,
+        createdAt: CREATED
+      }), 'CONFIGURATION_ONBOARDING_INPUT_INVALID', message);
+      assert(!fs.existsSync(configurationChangePlanStatePath(onboarding, planId)),
+        'Invalid provider mapping input created plan state.');
+    };
+    assertTaskMappingRejected('missing', (value) => value.scopes.pop(),
+      'A missing provider mapping scope was accepted.');
+    assertTaskMappingRejected('duplicate', (value) => {
+      value.scopes[1] = structuredClone(value.scopes[0]);
+    }, 'A duplicate provider mapping scope was accepted.');
+    assertTaskMappingRejected('reordered', (value) => {
+      [value.scopes[0], value.scopes[1]] = [value.scopes[1], value.scopes[0]];
+    }, 'Reordered provider mapping scopes were accepted.');
+    assertTaskMappingRejected('unknown', (value) => {
+      value.scopes[0].id = 'provider-mapping.unknown.record.field';
+    }, 'An unknown provider mapping scope was accepted.');
+    assertTaskMappingRejected('mapping-drift', (value) => {
+      value.mappingSetFingerprint = 'sha256:' + '1'.repeat(64);
+    }, 'A stale provider mapping set fingerprint was accepted.');
+    assertTaskMappingRejected('context-drift', (value) => {
+      value.scopes[0].scopeFingerprint = 'sha256:' + '2'.repeat(64);
+    }, 'A stale mapping or Context scope fingerprint was accepted.');
+    const slackMappingValue = slackMinimalInput.slots.find((slot) => (
+      slot.type === 'provider-mapping-set'
+    )).value;
+    assertTaskMappingRejected('cross-substitution', (value) => {
+      value.scopes[0] = structuredClone(slackMappingValue.scopes[0]);
+    }, 'A cross-mapping provider scope substitution was accepted.');
+    const requiredMappingIndex = taskMappingSlot.scopes.findIndex((scope) => scope.field.required);
+    const optionMappingIndex = taskMappingSlot.scopes.findIndex((scope) => (
+      scope.field.optionMappingRequired
+    ));
+    const plainMappingIndex = taskMappingSlot.scopes.findIndex((scope) => (
+      !scope.field.optionMappingRequired
+    ));
+    assertTaskMappingRejected('mapped-without-property', (value) => {
+      delete value.scopes[plainMappingIndex].providerProperty;
+    }, 'A mapped provider scope without a property was accepted.');
+    assertTaskMappingRejected('unavailable-with-value', (value) => {
+      value.scopes[plainMappingIndex].state = 'unavailable';
+    }, 'An unavailable provider scope with a property was accepted.');
+    assertTaskMappingRejected('required-unavailable', (value) => {
+      value.scopes[requiredMappingIndex].state = 'unavailable';
+      delete value.scopes[requiredMappingIndex].providerProperty;
+      delete value.scopes[requiredMappingIndex].options;
+    }, 'A required provider mapping field was marked unavailable.');
+    assertTaskMappingRejected('missing-options', (value) => {
+      delete value.scopes[optionMappingIndex].options;
+    }, 'A configured-bijection scope without options was accepted.');
+    assertTaskMappingRejected('non-bijective-options', (value) => {
+      const first = value.scopes[optionMappingIndex].options[0];
+      value.scopes[optionMappingIndex].options.push({
+        portable: first.portable,
+        provider: first.provider + ' Changed'
+      });
+    }, 'A non-bijective provider option map was accepted.');
+    assertTaskMappingRejected('wrong-option-scope', (value) => {
+      value.scopes[plainMappingIndex].options = [{
+        portable: 'portable-wrong-scope',
+        provider: 'Provider Wrong Scope'
+      }];
+    }, 'Provider options were accepted on a non-option field.');
+    for (const [suffix, privateValue] of [
+      ['credential', soterSyntheticCredentialFixture(
+        'xoxb-test-fixture-onboarding-mapping-sentinel'
+      )],
+      ['file-uri', 'file:///Users/private/onboarding-mapping'],
+      ['fixture', 'soter-fixture://private/onboarding-mapping']
+    ]) {
+      assertTaskMappingRejected(suffix, (value) => {
+        value.scopes[plainMappingIndex].providerProperty = privateValue;
+      }, 'Hostile private provider mapping material was accepted: ' + suffix + '.');
+    }
+
+    const repeatedTaskInspection = prepareConfigurationOnboarding({
+      root: onboarding,
+      name: 'task-capture',
+      input: taskMinimalInput,
+      id: taskMinimalPlanId,
+      createdAt: CREATED
+    });
+    assert(repeatedTaskInspection.plan.fingerprint === taskMinimalInspection.plan.fingerprint,
+      'Exact provider mapping onboarding re-entry was not idempotent.');
+    const changedTaskMappingInput = structuredClone(taskMinimalInput);
+    taskMappingInputValue(changedTaskMappingInput).scopes[plainMappingIndex].providerProperty
+      = 'Changed Provider Property';
+    resealOnboardingInput(changedTaskMappingInput);
+    expectOnboardingError(() => prepareConfigurationOnboarding({
+      root: onboarding,
+      name: 'task-capture',
+      input: changedTaskMappingInput,
+      id: taskMinimalPlanId,
+      createdAt: CREATED
+    }), 'CONFIGURATION_PLAN_CONFLICT',
+    'Changed provider mapping input re-entered an existing exact plan.');
+
+    const emailInput = sealOnboardingInput(emailOnboarding);
+    assert(validateJsonSchema(emailInput, inputSchema).length === 0,
+      'Closed private onboarding input did not satisfy its registered contract.');
+    const emailInspection = prepareConfigurationOnboarding({
+      root: onboarding,
+      name: 'email-triage',
+      input: emailInput,
+      id: 'configuration-change-plan.onboarding-email-selftest',
+      createdAt: CREATED
+    });
+    const repeatedEmailInspection = prepareConfigurationOnboarding({
+      root: onboarding,
+      name: 'email-triage',
+      input: emailInput,
+      id: 'configuration-change-plan.onboarding-email-selftest',
+      createdAt: CREATED
+    });
+    assert(emailInspection.configuration.applicability === 'current'
+      && emailInspection.resume.reasonCode === 'CONFIGURATION_PLAN_CURRENT'
+      && emailInspection.resume.permittedNextAction === 'request-confirmation'
+      && repeatedEmailInspection.plan.fingerprint === emailInspection.plan.fingerprint
+      && !JSON.stringify(emailInspection).includes('@soter.test')
+      && !Object.hasOwn(emailInspection, 'candidateConfiguration'),
+    'Private onboarding did not seal one sanitized current configuration transaction plan.');
+
+    const forgedInputFingerprint = structuredClone(emailInput);
+    forgedInputFingerprint.inputFingerprint = 'sha256:' + '0'.repeat(64);
+    expectOnboardingError(
+      () => prepareConfigurationOnboarding({
+        root: onboarding,
+        name: 'email-triage',
+        input: forgedInputFingerprint,
+        id: 'configuration-change-plan.onboarding-forged-input-selftest',
+        createdAt: CREATED
+      }),
+      'CONFIGURATION_ONBOARDING_INPUT_INVALID',
+      'Forged onboarding input fingerprint was accepted.'
+    );
+    const duplicateInput = structuredClone(emailInput);
+    duplicateInput.slots[1] = {
+      ...duplicateInput.slots[1],
+      id: duplicateInput.slots[0].id,
+      value: duplicateInput.slots[1].value
+    };
+    resealOnboardingInput(duplicateInput);
+    expectOnboardingError(
+      () => prepareConfigurationOnboarding({
+        root: onboarding,
+        name: 'email-triage',
+        input: duplicateInput,
+        id: 'configuration-change-plan.onboarding-duplicate-input-selftest',
+        createdAt: CREATED
+      }),
+      'CONFIGURATION_ONBOARDING_INPUT_INVALID',
+      'Duplicate onboarding slot ID with distinct typed content was accepted.'
+    );
+    const reorderedInput = structuredClone(emailInput);
+    reorderedInput.slots.reverse();
+    resealOnboardingInput(reorderedInput);
+    expectOnboardingError(
+      () => prepareConfigurationOnboarding({
+        root: onboarding,
+        name: 'email-triage',
+        input: reorderedInput,
+        id: 'configuration-change-plan.onboarding-reordered-input-selftest',
+        createdAt: CREATED
+      }),
+      'CONFIGURATION_ONBOARDING_INPUT_INVALID',
+      'Reordered onboarding input was accepted.'
+    );
+    const substitutedTypeInput = structuredClone(emailInput);
+    substitutedTypeInput.slots[0] = {
+      id: substitutedTypeInput.slots[0].id,
+      state: 'provided',
+      type: 'string',
+      value: 'not-an-authority-uri'
+    };
+    resealOnboardingInput(substitutedTypeInput);
+    expectOnboardingError(
+      () => prepareConfigurationOnboarding({
+        root: onboarding,
+        name: 'email-triage',
+        input: substitutedTypeInput,
+        id: 'configuration-change-plan.onboarding-type-substitution-selftest',
+        createdAt: CREATED
+      }),
+      'CONFIGURATION_ONBOARDING_INPUT_INVALID',
+      'Onboarding slot type substitution was accepted.'
+    );
+    const omittedRequiredInput = structuredClone(emailInput);
+    omittedRequiredInput.slots[0] = { id: omittedRequiredInput.slots[0].id, state: 'omitted' };
+    resealOnboardingInput(omittedRequiredInput);
+    expectOnboardingError(
+      () => prepareConfigurationOnboarding({
+        root: onboarding,
+        name: 'email-triage',
+        input: omittedRequiredInput,
+        id: 'configuration-change-plan.onboarding-required-omission-selftest',
+        createdAt: CREATED
+      }),
+      'CONFIGURATION_ONBOARDING_INPUT_INVALID',
+      'Required onboarding slot omission was accepted.'
+    );
+    const crossedConfigurationInput = structuredClone(emailInput);
+    crossedConfigurationInput.configuration.name = 'task-capture';
+    resealOnboardingInput(crossedConfigurationInput);
+    expectOnboardingError(
+      () => prepareConfigurationOnboarding({
+        root: onboarding,
+        name: 'email-triage',
+        input: crossedConfigurationInput,
+        id: 'configuration-change-plan.onboarding-crossed-configuration-selftest',
+        createdAt: CREATED
+      }),
+      'CONFIGURATION_ONBOARDING_INPUT_INVALID',
+      'Cross-configuration onboarding input was accepted.'
+    );
+    const changedReentryInput = structuredClone(emailInput);
+    changedReentryInput.slots[1].value = ['changed-operator@soter.test'];
+    resealOnboardingInput(changedReentryInput);
+    expectOnboardingError(
+      () => prepareConfigurationOnboarding({
+        root: onboarding,
+        name: 'email-triage',
+        input: changedReentryInput,
+        id: 'configuration-change-plan.onboarding-email-selftest',
+        createdAt: CREATED
+      }),
+      'CONFIGURATION_PLAN_CONFLICT',
+      'Changed exact onboarding input re-entered an existing plan ID.'
+    );
+
+    const rawSlackCredential = soterSyntheticCredentialFixture(
+      'xoxb-test-fixture-abcdefghijklmnop'
+    );
+    const percentSlackCredential = [...rawSlackCredential]
+      .map((character) => '%' + character.charCodeAt(0).toString(16).padStart(2, '0'))
+      .join('');
+    const unicodeSlackCredential = '\\u0078\\u006f\\u0078\\u0062'
+      + rawSlackCredential.slice(4);
+    let deeplyEncodedSlackCredential = percentSlackCredential;
+    for (let depth = 0; depth < 4; depth += 1) {
+      deeplyEncodedSlackCredential = encodeURIComponent(deeplyEncodedSlackCredential);
+    }
+    assert(containsCredentialMaterial(rawSlackCredential)
+      && containsCredentialMaterial(percentSlackCredential)
+      && containsCredentialMaterial(unicodeSlackCredential)
+      && containsCredentialMaterial(deeplyEncodedSlackCredential)
+      && !containsCredentialMaterial('xoxb-mode'),
+    'Canonical credential detection did not cover bounded Slack token encodings exactly.');
+
+    const slackGroup = slackOnboarding.slots.find((slot) => slot.type === 'group');
+    assert(slackGroup?.field === 'readinessProbe'
+      && slackGroup.fields.length === 4,
+    'Slack readinessProbe was not represented as one closed optional group.');
+
+    const authoritySlotIndex = emailInput.slots.findIndex(
+      (slot) => slot.state === 'provided' && slot.type === 'uri'
+    );
+    const addressSlotIndex = emailInput.slots.findIndex(
+      (slot) => slot.state === 'provided' && slot.type === 'string-list'
+    );
+    const assertEmailInputRejected = (input, suffix, message) => {
+      resealOnboardingInput(input);
+      const planId = 'configuration-change-plan.onboarding-email-' + suffix + '-selftest';
+      expectOnboardingError(
+        () => prepareConfigurationOnboarding({
+          root: onboarding,
+          name: 'email-triage',
+          input,
+          id: planId,
+          createdAt: CREATED
+        }),
+        'CONFIGURATION_ONBOARDING_INPUT_INVALID',
+        message
+      );
+      assert(!fs.existsSync(configurationChangePlanStatePath(onboarding, planId)),
+        'Invalid bounded onboarding input created plan state.');
+    };
+    const rawCredentialInput = structuredClone(emailInput);
+    rawCredentialInput.slots[authoritySlotIndex].value = 'gmail://private.invalid/'
+      + rawSlackCredential;
+    assertEmailInputRejected(
+      rawCredentialInput,
+      'raw-credential',
+      'Raw credential-shaped private authority input was accepted.'
+    );
+    const encodedCredentialInput = structuredClone(emailInput);
+    encodedCredentialInput.slots[authoritySlotIndex].value = 'gmail://private.invalid/'
+      + percentSlackCredential;
+    assertEmailInputRejected(
+      encodedCredentialInput,
+      'encoded-credential',
+      'Encoded credential-shaped private authority input was accepted.'
+    );
+    const pathInput = structuredClone(emailInput);
+    pathInput.slots[addressSlotIndex].value = ['/Users/private/onboarding-address'];
+    assertEmailInputRejected(pathInput, 'private-path', 'Private path input was accepted.');
+    const invalidEmailListInput = structuredClone(emailInput);
+    invalidEmailListInput.slots[addressSlotIndex].value = ['not-an-email'];
+    assertEmailInputRejected(
+      invalidEmailListInput,
+      'invalid-email-list',
+      'A syntactically invalid Gmail selfAddresses item was accepted.'
+    );
+    for (const [kind, localFileUri] of [
+      ['file-users', 'file:///Users/private/onboarding-value'],
+      ['file-tmp', 'file:/tmp/onboarding-value'],
+      ['file-localhost', 'file://localhost/etc/onboarding-value']
+    ]) {
+      const localFileInput = structuredClone(emailInput);
+      localFileInput.slots[authoritySlotIndex].value = localFileUri;
+      assertEmailInputRejected(
+        localFileInput,
+        kind,
+        'A URI-wrapped local file path was accepted as private onboarding input.'
+      );
+    }
+    const providerUriInput = structuredClone(emailInput);
+    providerUriInput.slots[authoritySlotIndex].value = 'https://provider.invalid/resource';
+    resealOnboardingInput(providerUriInput);
+    assert(prepareConfigurationOnboarding({
+      root: onboarding,
+      name: 'email-triage',
+      input: providerUriInput,
+      id: 'configuration-change-plan.onboarding-provider-uri-selftest',
+      createdAt: CREATED
+    }).resume.reasonCode === 'CONFIGURATION_PLAN_CURRENT',
+    'A legitimate non-file provider URI was rejected.');
+    const oversizedStringInput = structuredClone(emailInput);
+    oversizedStringInput.slots[authoritySlotIndex].value = 'gmail://'
+      + 'a'.repeat(ONBOARDING_MAX_STRING_LENGTH_FOR_SELFTEST + 1);
+    assertEmailInputRejected(
+      oversizedStringInput,
+      'oversized-string',
+      'A 4097-character onboarding string was accepted.'
+    );
+    const oversizedListInput = structuredClone(emailInput);
+    oversizedListInput.slots[addressSlotIndex].value = Array.from(
+      { length: ONBOARDING_MAX_COLLECTION_ITEMS_FOR_SELFTEST + 1 },
+      (_value, index) => 'operator' + index + '@soter.test'
+    );
+    assertEmailInputRejected(
+      oversizedListInput,
+      'oversized-list',
+      'A 101-item onboarding list was accepted.'
+    );
+    const oversizedAggregateInput = structuredClone(emailInput);
+    oversizedAggregateInput.slots[addressSlotIndex].value = Array.from(
+      { length: ONBOARDING_MAX_COLLECTION_ITEMS_FOR_SELFTEST },
+      (_value, index) => 'a'.repeat(3000) + index + '@soter.test'
+    );
+    assertEmailInputRejected(
+      oversizedAggregateInput,
+      'oversized-aggregate',
+      'An onboarding input exceeding the aggregate byte bound was accepted.'
+    );
+
+    const optionalOnboarding = copyRoot(root, 'soter-configuration-onboarding-optional-');
+    roots.push(optionalOnboarding);
+    const gmailSettingsPath = path.join(
+      optionalOnboarding,
+      'soter/integrations/gmail/settings.json'
+    );
+    const optionalSettings = readJson(gmailSettingsPath);
+    optionalSettings.schema.properties.onboardingMode = {
+      type: 'string',
+      enum: ['bounded', 'manual']
+    };
+    optionalSettings.schema.properties.integerGroup = {
+      type: 'object',
+      additionalProperties: false,
+      required: ['value'],
+      properties: {
+        value: { type: 'integer' }
+      }
+    };
+    optionalSettings.schema.properties.readinessProbe = {
+      type: 'object',
+      additionalProperties: false,
+      required: [
+        'conversationId',
+        'latestExclusive',
+        'oldestInclusive',
+        'threadRootMessageId'
+      ],
+      properties: {
+        conversationId: { type: 'string', minLength: 1 },
+        latestExclusive: { type: 'string', minLength: 1 },
+        oldestInclusive: { type: 'string', minLength: 1 },
+        threadRootMessageId: { type: 'string', minLength: 1 }
+      }
+    };
+    optionalSettings.schema.properties.listValidationGroup = {
+      type: 'object',
+      additionalProperties: false,
+      required: ['calendarDates', 'contactEmails', 'moments', 'resourceUris'],
+      properties: {
+        calendarDates: {
+          type: 'array',
+          minItems: 1,
+          items: { type: 'string', format: 'date' }
+        },
+        contactEmails: {
+          type: 'array',
+          minItems: 1,
+          items: { type: 'string', format: 'email' }
+        },
+        moments: {
+          type: 'array',
+          minItems: 1,
+          items: { type: 'string', format: 'date-time' }
+        },
+        resourceUris: {
+          type: 'array',
+          minItems: 1,
+          items: { type: 'string', format: 'uri' }
+        }
+      }
+    };
+    optionalSettings.schema.properties.onboardingReviewers = {
+      type: 'array',
+      minItems: 1,
+      maxItems: 3,
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['aliases', 'email'],
+        properties: {
+          aliases: {
+            type: 'array',
+            minItems: 1,
+            items: { type: 'string', format: 'email' }
+          },
+          email: { type: 'string', format: 'email' },
+          active: { type: 'boolean' }
+        }
+      }
+    };
+    writeJson(gmailSettingsPath, optionalSettings);
+    const optionalDescription = describeConfigurationOnboarding({
+      root: optionalOnboarding,
+      name: 'email-triage'
+    });
+    const optionalEnum = optionalDescription.slots.find((slot) => slot.field === 'onboardingMode');
+    const optionalIntegerGroup = optionalDescription.slots.find(
+      (slot) => slot.field === 'integerGroup'
+    );
+    const optionalRecords = optionalDescription.slots.find(
+      (slot) => slot.field === 'onboardingReviewers'
+    );
+    const optionalGroup = optionalDescription.slots.find(
+      (slot) => slot.field === 'readinessProbe'
+    );
+    const optionalListGroup = optionalDescription.slots.find(
+      (slot) => slot.field === 'listValidationGroup'
+    );
+    assert(optionalEnum?.required === false
+      && optionalEnum.type === 'enum'
+      && optionalIntegerGroup?.required === false
+      && optionalIntegerGroup.type === 'group'
+      && optionalIntegerGroup.fields[0].type === 'integer'
+      && optionalIntegerGroup.fields[0].constraints.minimum === Number.MIN_SAFE_INTEGER
+      && optionalIntegerGroup.fields[0].constraints.maximum === Number.MAX_SAFE_INTEGER
+      && optionalRecords?.required === false
+      && optionalRecords.type === 'records'
+      && optionalRecords.fields.map((field) => field.id).join(',') === 'active,aliases,email'
+      && optionalGroup?.required === false
+      && optionalGroup.type === 'group'
+      && optionalGroup.fields.length === 4
+      && optionalGroup.fields.every((field) => field.required === true)
+      && optionalListGroup?.required === false
+      && optionalListGroup.type === 'group'
+      && optionalListGroup.fields.every((field) => field.type === 'string-list'),
+    'Closed optional enum and repeatable-record schemas were not projected deterministically.');
+    const optionalInput = sealOnboardingInput(optionalDescription);
+    const optionalInspection = prepareConfigurationOnboarding({
+      root: optionalOnboarding,
+      name: 'email-triage',
+      input: optionalInput,
+      id: 'configuration-change-plan.onboarding-optional-selftest',
+      createdAt: CREATED
+    });
+    assert(optionalInspection.resume.reasonCode === 'CONFIGURATION_PLAN_CURRENT',
+      'Declared optional onboarding slots could not be omitted exactly.');
+    const completeGroupInput = sealOnboardingInput(
+      optionalDescription,
+      (slot, index, defaultValue) => slot.type === 'group'
+        ? defaultValue(slot, index)
+        : undefined
+    );
+    const completeGroupInspection = prepareConfigurationOnboarding({
+      root: optionalOnboarding,
+      name: 'email-triage',
+      input: completeGroupInput,
+      id: 'configuration-change-plan.onboarding-group-complete-selftest',
+      createdAt: CREATED
+    });
+    assert(completeGroupInspection.resume.reasonCode === 'CONFIGURATION_PLAN_CURRENT',
+      'A complete atomic optional onboarding group was not accepted.');
+    const groupSlotIndex = completeGroupInput.slots.findIndex(
+      (slot) => slot.id === optionalGroup.id
+    );
+    const assertGroupRejected = (input, suffix, message) => {
+      resealOnboardingInput(input);
+      const planId = 'configuration-change-plan.onboarding-group-' + suffix + '-selftest';
+      expectOnboardingError(
+        () => prepareConfigurationOnboarding({
+          root: optionalOnboarding,
+          name: 'email-triage',
+          input,
+          id: planId,
+          createdAt: CREATED
+        }),
+        'CONFIGURATION_ONBOARDING_INPUT_INVALID',
+        message
+      );
+      assert(!fs.existsSync(configurationChangePlanStatePath(optionalOnboarding, planId)),
+        'Invalid atomic group created onboarding plan state.');
+    };
+    const partialGroupInput = structuredClone(completeGroupInput);
+    partialGroupInput.slots[groupSlotIndex].value.fields.pop();
+    assertGroupRejected(partialGroupInput, 'partial', 'Partial onboarding group was accepted.');
+    const duplicateGroupInput = structuredClone(completeGroupInput);
+    duplicateGroupInput.slots[groupSlotIndex].value.fields[1] = structuredClone(
+      duplicateGroupInput.slots[groupSlotIndex].value.fields[0]
+    );
+    assertGroupRejected(duplicateGroupInput, 'duplicate', 'Duplicate onboarding group field was accepted.');
+    const reorderedGroupInput = structuredClone(completeGroupInput);
+    reorderedGroupInput.slots[groupSlotIndex].value.fields.reverse();
+    assertGroupRejected(reorderedGroupInput, 'reordered', 'Reordered onboarding group fields were accepted.');
+    const completeListGroupInput = sealOnboardingInput(
+      optionalDescription,
+      (slot, index, defaultValue) => slot.field === 'listValidationGroup'
+        ? defaultValue(slot, index)
+        : undefined
+    );
+    assert(prepareConfigurationOnboarding({
+      root: optionalOnboarding,
+      name: 'email-triage',
+      input: completeListGroupInput,
+      id: 'configuration-change-plan.onboarding-group-list-valid-selftest',
+      createdAt: CREATED
+    }).resume.reasonCode === 'CONFIGURATION_PLAN_CURRENT',
+    'Valid formatted string lists in an atomic group were rejected.');
+    const listGroupSlotIndex = completeListGroupInput.slots.findIndex(
+      (slot) => slot.id === optionalListGroup.id
+    );
+    for (const [fieldId, invalidValue, suffix] of [
+      ['calendarDates', ['2026-02-30'], 'date'],
+      ['contactEmails', ['not-an-email'], 'email'],
+      ['moments', ['2026-02-30T12:00:00.000Z'], 'date-time'],
+      ['resourceUris', ['file://localhost/tmp/private'], 'uri']
+    ]) {
+      const invalidListGroupInput = structuredClone(completeListGroupInput);
+      invalidListGroupInput.slots[listGroupSlotIndex].value.fields.find(
+        (field) => field.id === fieldId
+      ).value = invalidValue;
+      assertGroupRejected(
+        invalidListGroupInput,
+        'list-' + suffix,
+        'An invalid formatted string-list item in a group was accepted.'
+      );
+    }
+    const optionalIntegerInput = sealOnboardingInput(
+      optionalDescription,
+      (slot, index, defaultValue) => slot.field === 'integerGroup'
+        ? defaultValue(slot, index)
+        : undefined
+    );
+    const optionalIntegerInspection = prepareConfigurationOnboarding({
+      root: optionalOnboarding,
+      name: 'email-triage',
+      input: optionalIntegerInput,
+      id: 'configuration-change-plan.onboarding-safe-integer-selftest',
+      createdAt: CREATED
+    });
+    assert(optionalIntegerInspection.resume.reasonCode === 'CONFIGURATION_PLAN_CURRENT',
+      'A safe bounded onboarding integer was not accepted.');
+    const unsafeIntegerInput = structuredClone(optionalIntegerInput);
+    const integerSlotIndex = unsafeIntegerInput.slots.findIndex(
+      (slot) => slot.id === optionalIntegerGroup.id
+    );
+    unsafeIntegerInput.slots[integerSlotIndex].value.fields[0].value = Number.MAX_SAFE_INTEGER + 1;
+    resealOnboardingInput(unsafeIntegerInput);
+    const unsafeIntegerPlanId = 'configuration-change-plan.onboarding-unsafe-integer-selftest';
+    expectOnboardingError(
+      () => prepareConfigurationOnboarding({
+        root: optionalOnboarding,
+        name: 'email-triage',
+        input: unsafeIntegerInput,
+        id: unsafeIntegerPlanId,
+        createdAt: CREATED
+      }),
+      'CONFIGURATION_ONBOARDING_INPUT_INVALID',
+      'An unsafe onboarding integer was accepted.'
+    );
+    assert(!fs.existsSync(configurationChangePlanStatePath(optionalOnboarding, unsafeIntegerPlanId)),
+      'Unsafe onboarding integer created plan state.');
+    const oversizedRecordsInput = sealOnboardingInput(
+      optionalDescription,
+      (slot, index, defaultValue) => slot.type === 'records'
+        ? defaultValue(slot, index)
+        : undefined
+    );
+    const recordsSlotIndex = oversizedRecordsInput.slots.findIndex(
+      (slot) => slot.id === optionalRecords.id
+    );
+    oversizedRecordsInput.slots[recordsSlotIndex].value = Array.from(
+      { length: ONBOARDING_MAX_COLLECTION_ITEMS_FOR_SELFTEST + 1 },
+      () => structuredClone(oversizedRecordsInput.slots[recordsSlotIndex].value[0])
+    );
+    resealOnboardingInput(oversizedRecordsInput);
+    const oversizedRecordsPlanId = 'configuration-change-plan.onboarding-oversized-records-selftest';
+    expectOnboardingError(
+      () => prepareConfigurationOnboarding({
+        root: optionalOnboarding,
+        name: 'email-triage',
+        input: oversizedRecordsInput,
+        id: oversizedRecordsPlanId,
+        createdAt: CREATED
+      }),
+      'CONFIGURATION_ONBOARDING_INPUT_INVALID',
+      'A 101-record onboarding value was accepted.'
+    );
+    assert(!fs.existsSync(configurationChangePlanStatePath(optionalOnboarding, oversizedRecordsPlanId)),
+      'Oversized onboarding records created plan state.');
+    const completeRecordsInput = sealOnboardingInput(
+      optionalDescription,
+      (slot, index, defaultValue) => slot.field === 'onboardingReviewers'
+        ? defaultValue(slot, index)
+        : undefined
+    );
+    assert(prepareConfigurationOnboarding({
+      root: optionalOnboarding,
+      name: 'email-triage',
+      input: completeRecordsInput,
+      id: 'configuration-change-plan.onboarding-record-list-valid-selftest',
+      createdAt: CREATED
+    }).resume.reasonCode === 'CONFIGURATION_PLAN_CURRENT',
+    'A valid formatted string list in a repeatable record was rejected.');
+    const completeRecordsSlot = completeRecordsInput.slots.find(
+      (slot) => slot.id === optionalRecords.id
+    );
+    completeRecordsSlot.value[0].fields.find((field) => field.id === 'aliases').value
+      = ['not-an-email'];
+    resealOnboardingInput(completeRecordsInput);
+    expectOnboardingError(
+      () => prepareConfigurationOnboarding({
+        root: optionalOnboarding,
+        name: 'email-triage',
+        input: completeRecordsInput,
+        id: 'configuration-change-plan.onboarding-record-list-invalid-selftest',
+        createdAt: CREATED
+      }),
+      'CONFIGURATION_ONBOARDING_INPUT_INVALID',
+      'An invalid formatted string-list item in a repeatable record was accepted.'
+    );
+
+    const cliOnboarding = copyRoot(root, 'soter-configuration-onboarding-cli-');
+    roots.push(cliOnboarding);
+    const cliDescription = describeConfigurationOnboarding({
+      root: cliOnboarding,
+      name: 'email-triage'
+    });
+    const cliInput = sealOnboardingInput(cliDescription);
+    const externalInputDirectory = fs.mkdtempSync(path.join(
+      fs.realpathSync(os.tmpdir()),
+      'soter-configuration-onboarding-input-'
+    ));
+    roots.push(externalInputDirectory);
+    const externalInputPath = path.join(externalInputDirectory, 'onboarding-input.json');
+    writeJson(externalInputPath, cliInput);
+    if (process.platform !== 'win32') fs.chmodSync(externalInputPath, 0o600);
+    const cliPath = path.join(cliOnboarding, 'soter/core/cli.mjs');
+    const describedByCli = spawnSync(process.execPath, [
+      cliPath,
+      'configuration-onboarding-describe',
+      '--root', cliOnboarding,
+      '--configuration', 'email-triage',
+      '--json'
+    ], { cwd: cliOnboarding, encoding: 'utf8' });
+    assert(describedByCli.status === 0
+      && describedByCli.stderr === ''
+      && JSON.parse(describedByCli.stdout).descriptionFingerprint
+        === cliDescription.descriptionFingerprint,
+    'CLI did not return the exact sanitized onboarding description.');
+    const plannedByCli = spawnSync(process.execPath, [
+      cliPath,
+      'configuration-onboarding-plan',
+      '--root', cliOnboarding,
+      '--configuration', 'email-triage',
+      '--input', externalInputPath,
+      '--plan-id', 'configuration-change-plan.onboarding-cli-selftest',
+      '--at', CREATED,
+      '--json'
+    ], { cwd: cliOnboarding, encoding: 'utf8' });
+    const cliInspection = plannedByCli.status === 0 ? JSON.parse(plannedByCli.stdout) : null;
+    assert(plannedByCli.status === 0
+      && plannedByCli.stderr === ''
+      && cliInspection?.resume.reasonCode === 'CONFIGURATION_PLAN_CURRENT'
+      && !plannedByCli.stdout.includes('@soter.test')
+      && !plannedByCli.stdout.includes(externalInputPath),
+    'CLI did not privately construct one exact sanitized onboarding plan.');
+    const relativeInputRejected = spawnSync(process.execPath, [
+      cliPath,
+      'configuration-onboarding-plan',
+      '--root', cliOnboarding,
+      '--configuration', 'email-triage',
+      '--input', 'onboarding-input.json',
+      '--at', CREATED,
+      '--json'
+    ], { cwd: cliOnboarding, encoding: 'utf8' });
+    const repositoryInputRejected = spawnSync(process.execPath, [
+      cliPath,
+      'configuration-onboarding-plan',
+      '--root', cliOnboarding,
+      '--configuration', 'email-triage',
+      '--input', path.join(cliOnboarding, 'soter/configurations/email-triage.config.json'),
+      '--at', CREATED,
+      '--json'
+    ], { cwd: cliOnboarding, encoding: 'utf8' });
+    assert(relativeInputRejected.status === 1
+      && repositoryInputRejected.status === 1
+      && /configuration-onboarding-plan input is invalid/.test(relativeInputRejected.stderr)
+      && /configuration-onboarding-plan input is invalid/.test(repositoryInputRejected.stderr)
+      && !relativeInputRejected.stderr.includes('onboarding-input.json')
+      && !repositoryInputRejected.stderr.includes('email-triage.config.json'),
+    'CLI accepted a relative/repository onboarding input or exposed its path.');
+    if (process.platform !== 'win32') {
+      const hostileInputs = [];
+      const wrongModePath = path.join(
+        externalInputDirectory,
+        'PRIVATE_ONBOARDING_WRONG_MODE_SENTINEL.json'
+      );
+      writeJson(wrongModePath, cliInput);
+      fs.chmodSync(wrongModePath, 0o644);
+      hostileInputs.push(['wrong-mode', wrongModePath]);
+
+      const symlinkPath = path.join(
+        externalInputDirectory,
+        'PRIVATE_ONBOARDING_SYMLINK_SENTINEL.json'
+      );
+      fs.symlinkSync(externalInputPath, symlinkPath);
+      hostileInputs.push(['symlink', symlinkPath]);
+
+      const hardlinkSource = path.join(externalInputDirectory, 'hardlink-source.json');
+      const hardlinkPath = path.join(
+        externalInputDirectory,
+        'PRIVATE_ONBOARDING_HARDLINK_SENTINEL.json'
+      );
+      writeJson(hardlinkSource, cliInput);
+      fs.chmodSync(hardlinkSource, 0o600);
+      fs.linkSync(hardlinkSource, hardlinkPath);
+      hostileInputs.push(['hardlink', hardlinkPath]);
+
+      const oversizedWhitespacePath = path.join(
+        externalInputDirectory,
+        'PRIVATE_ONBOARDING_OVERSIZED_WHITESPACE_SENTINEL.json'
+      );
+      fs.writeFileSync(
+        oversizedWhitespacePath,
+        ' '.repeat(ONBOARDING_MAX_INPUT_BYTES_FOR_SELFTEST) + JSON.stringify(cliInput)
+      );
+      fs.chmodSync(oversizedWhitespacePath, 0o600);
+      hostileInputs.push(['oversized-whitespace', oversizedWhitespacePath]);
+
+      const oversizedDuplicatePath = path.join(
+        externalInputDirectory,
+        'PRIVATE_ONBOARDING_OVERSIZED_DUPLICATE_SENTINEL.json'
+      );
+      const serializedCliInput = JSON.stringify(cliInput);
+      fs.writeFileSync(
+        oversizedDuplicatePath,
+        '{"$contract":"'
+          + 'x'.repeat(ONBOARDING_MAX_INPUT_BYTES_FOR_SELFTEST)
+          + '",'
+          + serializedCliInput.slice(1)
+      );
+      fs.chmodSync(oversizedDuplicatePath, 0o600);
+      hostileInputs.push(['oversized-duplicate', oversizedDuplicatePath]);
+
+      for (const [kind, hostilePath] of hostileInputs) {
+        const planId = 'configuration-change-plan.onboarding-cli-' + kind + '-selftest';
+        const rejected = spawnSync(process.execPath, [
+          cliPath,
+          'configuration-onboarding-plan',
+          '--root', cliOnboarding,
+          '--configuration', 'email-triage',
+          '--input', hostilePath,
+          '--plan-id', planId,
+          '--at', CREATED,
+          '--json'
+        ], { cwd: cliOnboarding, encoding: 'utf8' });
+        assert(rejected.status === 1
+          && /configuration-onboarding-plan input is invalid/.test(rejected.stderr)
+          && !/PRIVATE_ONBOARDING|WRONG_MODE|SYMLINK|HARDLINK/i.test(rejected.stderr)
+          && !fs.existsSync(configurationChangePlanStatePath(cliOnboarding, planId)),
+        'CLI ' + kind + ' onboarding input did not fail closed before plan state.');
+      }
+    }
+
+    const contradictoryOnboarding = copyRoot(root, 'soter-configuration-onboarding-bounds-');
+    roots.push(contradictoryOnboarding);
+    const contradictorySettingsPath = path.join(
+      contradictoryOnboarding,
+      'soter/integrations/gmail/settings.json'
+    );
+    const contradictorySettings = readJson(contradictorySettingsPath);
+    contradictorySettings.schema.properties.selfAddresses.minItems = 2;
+    contradictorySettings.schema.properties.selfAddresses.maxItems = 1;
+    writeJson(contradictorySettingsPath, contradictorySettings);
+    expectOnboardingError(
+      () => describeConfigurationOnboarding({
+        root: contradictoryOnboarding,
+        name: 'email-triage'
+      }),
+      'CONFIGURATION_ONBOARDING_UNAVAILABLE',
+      'Contradictory onboarding constraint bounds were projected.'
+    );
+
+    const hostileEnumOnboarding = copyRoot(root, 'soter-configuration-onboarding-enum-');
+    roots.push(hostileEnumOnboarding);
+    const hostileSettingsPath = path.join(
+      hostileEnumOnboarding,
+      'soter/integrations/gmail/settings.json'
+    );
+    const hostileSettings = readJson(hostileSettingsPath);
+    hostileSettings.schema.properties.onboardingMode = {
+      type: 'string',
+      enum: ['/Users/private/onboarding-value']
+    };
+    writeJson(hostileSettingsPath, hostileSettings);
+    expectOnboardingError(
+      () => describeConfigurationOnboarding({
+        root: hostileEnumOnboarding,
+        name: 'email-triage'
+      }),
+      'CONFIGURATION_ONBOARDING_UNAVAILABLE',
+      'Private/path-like enum option was projected in a sanitized description.'
+    );
+    for (const [kind, credentialValue] of [
+      ['raw', rawSlackCredential],
+      ['percent', percentSlackCredential],
+      ['unicode', unicodeSlackCredential]
+    ]) {
+      hostileSettings.schema.properties.onboardingMode.enum = [credentialValue];
+      writeJson(hostileSettingsPath, hostileSettings);
+      expectOnboardingError(
+        () => describeConfigurationOnboarding({
+          root: hostileEnumOnboarding,
+          name: 'email-triage'
+        }),
+        'CONFIGURATION_ONBOARDING_UNAVAILABLE',
+        'A ' + kind + ' credential-shaped public enum option was projected.'
+      );
+    }
+    hostileSettings.schema.properties.onboardingMode.enum = ['bounded-control'];
+    writeJson(hostileSettingsPath, hostileSettings);
+    assert(describeConfigurationOnboarding({
+      root: hostileEnumOnboarding,
+      name: 'email-triage'
+    }).slots.some((slot) => slot.options?.includes('bounded-control')),
+    'A benign public onboarding control was rejected as credential material.');
+
+    const hostilePublicIdentifier = soterSyntheticCredentialFixture(
+      'xoxb-test-fixture-public-identifier-sentinel'
+    );
+    assert(containsCredentialMaterial(hostilePublicIdentifier),
+      'The hostile public identifier fixture was not credential-shaped.');
+    const hostileSettingsIdentifierOnboarding = copyRoot(
+      root,
+      'soter-configuration-onboarding-settings-identifier-'
+    );
+    roots.push(hostileSettingsIdentifierOnboarding);
+    const hostileIdentifierSettingsPath = path.join(
+      hostileSettingsIdentifierOnboarding,
+      'soter/integrations/gmail/settings.json'
+    );
+    const hostileIdentifierSettings = readJson(hostileIdentifierSettingsPath);
+    hostileIdentifierSettings.schema.properties[hostilePublicIdentifier] = {
+      type: 'string',
+      minLength: 1,
+      maxLength: 64
+    };
+    writeJson(hostileIdentifierSettingsPath, hostileIdentifierSettings);
+    const hostileIdentifierConfigurationPath = path.join(
+      hostileSettingsIdentifierOnboarding,
+      'soter/configurations/email-triage.config.json'
+    );
+    const hostileIdentifierConfiguration = readJson(hostileIdentifierConfigurationPath);
+    hostileIdentifierConfiguration.settings['integration.gmail'][hostilePublicIdentifier]
+      = 'soter-fixture-public-identifier.example';
+    writeJson(hostileIdentifierConfigurationPath, hostileIdentifierConfiguration);
+    const hostileSettingsIdentifierPlanId =
+      'configuration-change-plan.onboarding-hostile-settings-identifier-selftest';
+    expectOnboardingError(
+      () => describeConfigurationOnboarding({
+        root: hostileSettingsIdentifierOnboarding,
+        name: 'email-triage'
+      }),
+      'CONFIGURATION_ONBOARDING_UNAVAILABLE',
+      'A credential-shaped governed settings property entered a public description.'
+    );
+    assert(!fs.existsSync(configurationChangePlanStatePath(
+      hostileSettingsIdentifierOnboarding,
+      hostileSettingsIdentifierPlanId
+    )), 'A rejected governed settings identifier created plan state.');
+
+    const benignSettingsIdentifierOnboarding = copyRoot(
+      root,
+      'soter-configuration-onboarding-benign-settings-identifier-'
+    );
+    roots.push(benignSettingsIdentifierOnboarding);
+    const benignIdentifierSettingsPath = path.join(
+      benignSettingsIdentifierOnboarding,
+      'soter/integrations/gmail/settings.json'
+    );
+    const benignIdentifierSettings = readJson(benignIdentifierSettingsPath);
+    const benignPublicIdentifier = 'publicOnboardingField';
+    benignIdentifierSettings.schema.properties[benignPublicIdentifier] = {
+      type: 'string',
+      minLength: 1,
+      maxLength: 64
+    };
+    writeJson(benignIdentifierSettingsPath, benignIdentifierSettings);
+    const benignIdentifierConfigurationPath = path.join(
+      benignSettingsIdentifierOnboarding,
+      'soter/configurations/email-triage.config.json'
+    );
+    const benignIdentifierConfiguration = readJson(benignIdentifierConfigurationPath);
+    benignIdentifierConfiguration.settings['integration.gmail'][benignPublicIdentifier]
+      = 'soter-fixture-public-identifier.example';
+    writeJson(benignIdentifierConfigurationPath, benignIdentifierConfiguration);
+    assert(describeConfigurationOnboarding({
+      root: benignSettingsIdentifierOnboarding,
+      name: 'email-triage'
+    }).slots.some((slot) => slot.field === benignPublicIdentifier),
+    'A benign governed settings property identifier was rejected.');
+
+    const replaceExactStringValue = (value, before, after) => {
+      if (value === before) return after;
+      if (Array.isArray(value)) {
+        return value.map((item) => replaceExactStringValue(item, before, after));
+      }
+      if (value && typeof value === 'object') {
+        return Object.fromEntries(Object.entries(value).map(([key, item]) => [
+          key,
+          replaceExactStringValue(item, before, after)
+        ]));
+      }
+      return value;
+    };
+    const rewriteTaskPortableFieldIdentifier = (testRoot, nextIdentifier) => {
+      for (const relative of [
+        'soter/integrations/notion/tasks-records.mapping.json',
+        'soter/contexts/tasks/records.model.json',
+        'soter/packs/automation.task-capture/pack.json',
+        'soter/configurations/task-capture.config.json'
+      ]) {
+        const file = path.join(testRoot, relative);
+        writeJson(file, replaceExactStringValue(readJson(file), 'title', nextIdentifier));
+      }
+    };
+    const hostileMappingIdentifierOnboarding = copyRoot(
+      root,
+      'soter-configuration-onboarding-hostile-mapping-identifier-'
+    );
+    roots.push(hostileMappingIdentifierOnboarding);
+    rewriteTaskPortableFieldIdentifier(
+      hostileMappingIdentifierOnboarding,
+      hostilePublicIdentifier
+    );
+    const hostileMappingIdentifierPlanId =
+      'configuration-change-plan.onboarding-hostile-mapping-identifier-selftest';
+    expectOnboardingError(
+      () => describeConfigurationOnboarding({
+        root: hostileMappingIdentifierOnboarding,
+        name: 'task-capture'
+      }),
+      'CONFIGURATION_ONBOARDING_UNAVAILABLE',
+      'A credential-shaped provider/Context field identifier entered a public description.'
+    );
+    assert(!fs.existsSync(configurationChangePlanStatePath(
+      hostileMappingIdentifierOnboarding,
+      hostileMappingIdentifierPlanId
+    )), 'A rejected provider/Context field identifier created plan state.');
+
+    const crossedBooleanDescription = structuredClone(emailOnboarding);
+    crossedBooleanDescription.slots[0] = {
+      ...crossedBooleanDescription.slots[0],
+      family: 'setting',
+      type: 'boolean',
+      constraints: { pattern: 'unsafe' }
+    };
+    const crossedRecordDescription = structuredClone(optionalDescription);
+    const recordIndex = crossedRecordDescription.slots.findIndex(
+      (slot) => slot.type === 'records'
+    );
+    crossedRecordDescription.slots[recordIndex].constraints.minLength = 1;
+    assert(validateJsonSchema(crossedBooleanDescription, descriptionSchema).length > 0
+      && validateJsonSchema(crossedRecordDescription, descriptionSchema).length > 0,
+    'Onboarding description schema accepted incompatible kind constraints.');
 
     const bootstrap = copyRoot(root, 'soter-configuration-bootstrap-');
     roots.push(bootstrap);

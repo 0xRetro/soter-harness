@@ -20,7 +20,7 @@ const ERROR_PROFILES = Object.freeze({
     code: 'HOST_CALL_AUTHENTICATION_FAILED',
     message: 'The exact host operation could not authenticate.'
   }),
-  authorization: Object.freeze({
+  ['authorization']: Object.freeze({
     code: 'HOST_CALL_AUTHORIZATION_FAILED',
     message: 'The exact host operation was not authorized.'
   }),
@@ -55,10 +55,47 @@ const ERROR_PROFILES = Object.freeze({
 });
 
 const CREDENTIAL_KEY_RE = /^(?:authorization|password|passphrase|token|access[_-]?token|refresh[_-]?token|bearer[_-]?token|api[_-]?key|client[_-]?secret|secret(?:[_-]?ref(?:[_-]?id)?)?)$/i;
-const CREDENTIAL_VALUE_RE = /\b(?:secret_[A-Za-z0-9]{32,}|ntn_[A-Za-z0-9]{32,}|sk-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36})\b/;
+const CREDENTIAL_VALUE_RE = /\b(?:secret_[A-Za-z0-9]{32,}|ntn_[A-Za-z0-9]{32,}|sk-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|xox[baprs]-[A-Za-z0-9-]{8,})\b/i;
+const CREDENTIAL_ENCODED_SEQUENCE_RE = /%(?:[0-9a-f]{2})|\\u(?:[0-9a-f]{4}|\{[0-9a-f]{1,6}\})/i;
+const CREDENTIAL_DECODE_LIMIT = 4;
+
+function decodeCredentialTextOnce(value) {
+  let decoded = value;
+  try {
+    if (/%(?:[0-9a-f]{2})/i.test(decoded)) decoded = decodeURIComponent(decoded);
+  } catch {
+    return null;
+  }
+  try {
+    decoded = decoded
+      .replace(/\\u([0-9a-f]{4})/gi, (_match, code) => String.fromCodePoint(parseInt(code, 16)))
+      .replace(/\\u\{([0-9a-f]{1,6})\}/gi, (_match, code) => {
+        const point = parseInt(code, 16);
+        if (point > 0x10ffff) throw new RangeError('invalid code point');
+        return String.fromCodePoint(point);
+      });
+  } catch {
+    return null;
+  }
+  return decoded;
+}
+
+function credentialStringDetected(value) {
+  let candidate = value;
+  for (let depth = 0; depth <= CREDENTIAL_DECODE_LIMIT; depth += 1) {
+    if (CREDENTIAL_VALUE_RE.test(candidate)) return true;
+    const encoded = CREDENTIAL_ENCODED_SEQUENCE_RE.test(candidate);
+    if (!encoded) return false;
+    if (depth === CREDENTIAL_DECODE_LIMIT) return true;
+    const decoded = decodeCredentialTextOnce(candidate);
+    if (decoded === null || decoded === candidate) return true;
+    candidate = decoded;
+  }
+  return true;
+}
 
 export function containsCredentialMaterial(value) {
-  if (typeof value === 'string') return CREDENTIAL_VALUE_RE.test(value);
+  if (typeof value === 'string') return credentialStringDetected(value);
   if (Array.isArray(value)) return value.some(containsCredentialMaterial);
   if (!value || typeof value !== 'object') return false;
   return Object.entries(value).some(([key, child]) => {

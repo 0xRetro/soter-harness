@@ -1,0 +1,266 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "soter://contracts/configuration-onboarding-input/v1",
+  "title": "Private configuration onboarding input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$contract", "contractVersion", "configuration", "slots", "inputFingerprint"],
+  "properties": {
+    "$contract": { "const": "soter://contracts/configuration-onboarding-input/v1" },
+    "contractVersion": { "const": "1.0.0" },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "descriptionFingerprint"],
+      "properties": {
+        "name": { "$ref": "#/$defs/configurationName" },
+        "descriptionFingerprint": { "$ref": "#/$defs/fingerprint" }
+      }
+    },
+    "slots": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 500,
+      "items": { "$ref": "#/$defs/inputSlot" }
+    },
+    "inputFingerprint": { "$ref": "#/$defs/fingerprint" }
+  },
+  "$defs": {
+    "fingerprint": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "configurationName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "omitted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "state"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "state": { "const": "omitted" }
+      }
+    },
+    "stringValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "state", "type", "value"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "state": { "const": "provided" },
+        "type": { "enum": ["string", "uri", "email", "date", "date-time", "enum"] },
+        "value": { "type": "string", "minLength": 1, "maxLength": 4096 }
+      }
+    },
+    "integerValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "state", "type", "value"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "state": { "const": "provided" },
+        "type": { "const": "integer" },
+        "value": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "booleanValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "state", "type", "value"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "state": { "const": "provided" },
+        "type": { "const": "boolean" },
+        "value": { "type": "boolean" }
+      }
+    },
+    "stringListValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "state", "type", "value"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "state": { "const": "provided" },
+        "type": { "const": "string-list" },
+        "value": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": { "type": "string", "minLength": 1, "maxLength": 4096 }
+        }
+      }
+    },
+    "recordField": {
+      "oneOf": [
+        { "$ref": "#/$defs/omitted" },
+        { "$ref": "#/$defs/stringValue" },
+        { "$ref": "#/$defs/integerValue" },
+        { "$ref": "#/$defs/booleanValue" },
+        { "$ref": "#/$defs/stringListValue" }
+      ]
+    },
+    "recordsValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "state", "type", "value"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "state": { "const": "provided" },
+        "type": { "const": "records" },
+        "value": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["fields"],
+            "properties": {
+              "fields": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 100,
+                "items": { "$ref": "#/$defs/recordField" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "inputSlot": {
+      "oneOf": [
+        { "$ref": "#/$defs/omitted" },
+        { "$ref": "#/$defs/stringValue" },
+        { "$ref": "#/$defs/integerValue" },
+        { "$ref": "#/$defs/booleanValue" },
+        { "$ref": "#/$defs/stringListValue" },
+        { "$ref": "#/$defs/groupValue" },
+        { "$ref": "#/$defs/recordsValue" },
+        { "$ref": "#/$defs/providerMappingSetValue" }
+      ]
+    },
+    "groupValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "state", "type", "value"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "state": { "const": "provided" },
+        "type": { "const": "group" },
+        "value": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["fields"],
+          "properties": {
+            "fields": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 100,
+              "items": { "$ref": "#/$defs/recordField" }
+            }
+          }
+        }
+      }
+    },
+    "providerMappingText": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^(?!\\s)[^\\u0000-\\u001F\\u007F]*[^\\s\\u0000-\\u001F\\u007F]$"
+    },
+    "providerOptionPair": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["portable", "provider"],
+      "properties": {
+        "portable": { "$ref": "#/$defs/providerMappingText" },
+        "provider": { "$ref": "#/$defs/providerMappingText" }
+      }
+    },
+    "providerMappingUnavailable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "scopeFingerprint", "state"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "scopeFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "state": { "const": "unavailable" }
+      }
+    },
+    "providerMappingMapped": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "scopeFingerprint", "state", "providerProperty"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "scopeFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "state": { "const": "mapped" },
+        "providerProperty": { "$ref": "#/$defs/providerMappingText" }
+      }
+    },
+    "providerMappingMappedWithOptions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "scopeFingerprint",
+        "state",
+        "providerProperty",
+        "options"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "scopeFingerprint": { "$ref": "#/$defs/fingerprint" },
+        "state": { "const": "mapped" },
+        "providerProperty": { "$ref": "#/$defs/providerMappingText" },
+        "options": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 200,
+          "items": { "$ref": "#/$defs/providerOptionPair" }
+        }
+      }
+    },
+    "providerMappingScopeValue": {
+      "oneOf": [
+        { "$ref": "#/$defs/providerMappingUnavailable" },
+        { "$ref": "#/$defs/providerMappingMapped" },
+        { "$ref": "#/$defs/providerMappingMappedWithOptions" }
+      ]
+    },
+    "providerMappingSetValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "state", "type", "value"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "state": { "const": "provided" },
+        "type": { "const": "provider-mapping-set" },
+        "value": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mappingSetFingerprint", "scopes"],
+          "properties": {
+            "mappingSetFingerprint": { "$ref": "#/$defs/fingerprint" },
+            "scopes": {
+              "type": "array",
+              "maxItems": 500,
+              "items": { "$ref": "#/$defs/providerMappingScopeValue" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -3772,15 +3772,249 @@ function checkRuntimeArtifacts(
   }
 }
 
+function uniqueDocumentsById(documents) {
+  const byId = new Map();
+  for (const document of documents || []) {
+    if (!document || typeof document.id !== 'string' || byId.has(document.id)) return null;
+    byId.set(document.id, document);
+  }
+  return byId;
+}
+
+export function resolveProviderMappingOnboardingRequirements({
+  configuration,
+  selectedPackIds,
+  packs,
+  providerMappings,
+  contextModels,
+  settingsDefinitions,
+  providerPack = null
+} = {}) {
+  const unavailable = () => ({
+    state: 'unavailable',
+    reasonCode: 'PROVIDER_MAPPING_REQUIREMENTS_UNAVAILABLE',
+    mappingSetFingerprint: null,
+    scopes: []
+  });
+  if (!configuration || typeof configuration !== 'object' || Array.isArray(configuration)
+    || !Array.isArray(configuration.bindings)
+    || !Array.isArray(selectedPackIds)
+    || new Set(selectedPackIds).size !== selectedPackIds.length) {
+    return unavailable();
+  }
+  const packsById = uniqueDocumentsById(packs);
+  const mappingsById = uniqueDocumentsById(providerMappings);
+  const modelsById = uniqueDocumentsById(contextModels);
+  const settingsById = uniqueDocumentsById(settingsDefinitions);
+  if (!packsById || !mappingsById || !modelsById || !settingsById) return unavailable();
+  const selected = new Set(selectedPackIds);
+  const scopes = new Map();
+  const publicIds = new Map();
+
+  for (const packId of selectedPackIds) {
+    const automation = packsById.get(packId);
+    if (!automation || automation.layer !== 'automation') continue;
+    const phases = [
+      automation.operator?.acquisition?.recordRequirements || [],
+      automation.operator?.connection?.recordRequirements || []
+    ];
+    for (const requirements of phases) {
+      for (const requirement of requirements) {
+        if (!requirement || typeof requirement.capability !== 'string'
+          || !Array.isArray(requirement.recordTypes)
+          || new Set(requirement.recordTypes).size !== requirement.recordTypes.length) {
+          return unavailable();
+        }
+        const bindingMatches = configuration.bindings.filter((binding) => {
+          return binding?.capability === requirement.capability;
+        });
+        if (bindingMatches.length !== 1) return unavailable();
+        const binding = bindingMatches[0];
+        if (providerPack !== null && binding.providerPack !== providerPack) continue;
+        const descriptor = parseRecordCapability(requirement.capability);
+        if (!descriptor) return unavailable();
+        const mappingMatches = [...mappingsById.values()].filter((mapping) => {
+          return mapping?.$contract === 'soter://contracts/provider-mapping/v1'
+            && mapping.pack === binding.providerPack
+            && mapping.capabilities?.includes(requirement.capability);
+        });
+        for (const recordType of requirement.recordTypes) {
+          const records = mappingMatches.flatMap((mapping) => {
+            return (mapping.recordTypes || []).filter((record) => {
+              return record?.id === recordType
+                && record.capabilities?.includes(requirement.capability);
+            }).map((record) => ({ mapping, record }));
+          });
+          if (records.length !== 1) return unavailable();
+          const { mapping, record } = records[0];
+          const settings = settingsById.get(mapping.settingsDefinition);
+          const context = modelsById.get(mapping.contextModel);
+          const contextRecords = context?.recordTypes?.filter((item) => item.id === record.id) || [];
+          if (!settings
+            || settings.$contract !== 'soter://contracts/pack-settings/v1'
+            || settings.pack !== binding.providerPack
+            || !settings.semanticInvariants?.includes('provider-field-bindings-explicit')
+            || !context
+            || context.$contract !== 'soter://contracts/context-record-model/v1'
+            || !selected.has(context.pack)
+            || context.subject !== descriptor.subject
+            || contextRecords.length !== 1
+            || !Array.isArray(record.fields)
+            || record.fields.length < 1) {
+            return unavailable();
+          }
+          const bindingFingerprint = fingerprintJson(binding);
+          const mappingFingerprint = fingerprintJson(mapping);
+          const contextFingerprint = fingerprintJson(context);
+          const settingsFingerprint = fingerprintJson(settings);
+          for (const field of record.fields) {
+            const contextFields = contextRecords[0].fields?.filter((item) => {
+              return item.id === field.portable;
+            }) || [];
+            if (contextFields.length !== 1) return unavailable();
+            const contextField = contextFields[0];
+            const key = [mapping.id, record.id, field.portable].join('|');
+            const id = [
+              'provider-mapping',
+              descriptor.subject,
+              record.id,
+              field.portable
+            ].join('.');
+            const basis = {
+              configuration: configuration.name,
+              providerPack: binding.providerPack,
+              settingsDefinition: {
+                id: settings.id,
+                fingerprint: settingsFingerprint
+              },
+              mapping: {
+                id: mapping.id,
+                version: mapping.version,
+                fingerprint: mappingFingerprint
+              },
+              context: {
+                id: context.id,
+                version: context.version,
+                fingerprint: contextFingerprint
+              },
+              activation: { subject: binding.providerPack, target: record.target },
+              record: { subject: descriptor.subject, type: record.id },
+              field: {
+                id: field.portable,
+                providerType: field.providerType,
+                decode: field.decode,
+                writeOperations: field.writeOperations || null,
+                valueMapping: field.valueMapping || null,
+                nullable: contextField.nullable,
+                requiredOnCreate: contextField.requiredOnCreate
+              }
+            };
+            const existing = scopes.get(key);
+            if (existing) {
+              if (fingerprintJson(existing.basis) !== fingerprintJson(basis)) return unavailable();
+              existing.capabilities.add(requirement.capability);
+              existing.bindingFingerprints.add(bindingFingerprint);
+            } else {
+              const priorPublicKey = publicIds.get(id);
+              if (priorPublicKey && priorPublicKey !== key) return unavailable();
+              publicIds.set(id, key);
+              scopes.set(key, {
+                key,
+                id,
+                basis,
+                mappingId: mapping.id,
+                recordType: record.id,
+                field: field.portable,
+                activationSubject: binding.providerPack,
+                activationTarget: record.target,
+                recordSubject: descriptor.subject,
+                optionMappingRequired: field.valueMapping === 'configured-bijection',
+                contextNullable: contextField.nullable,
+                contextRequiredOnCreate: contextField.requiredOnCreate,
+                capabilities: new Set([requirement.capability]),
+                bindingFingerprints: new Set([bindingFingerprint])
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const resolvedScopes = [...scopes.values()].map((scope) => {
+    const capabilities = [...scope.capabilities];
+    const createBound = capabilities.some((capability) => {
+      return parseRecordCapability(capability)?.operation === 'create';
+    });
+    const required = scope.contextNullable === false
+      || (scope.contextRequiredOnCreate === true && createBound);
+    const scopeFingerprint = fingerprintJson({
+      ...scope.basis,
+      bindingFingerprints: [...scope.bindingFingerprints].sort(),
+      capabilities,
+      required
+    });
+    return {
+      id: scope.id,
+      scopeFingerprint,
+      activationSubject: scope.activationSubject,
+      activationTarget: scope.activationTarget,
+      recordSubject: scope.recordSubject,
+      recordType: scope.recordType,
+      field: scope.field,
+      required,
+      optionMappingRequired: scope.optionMappingRequired,
+      mappingId: scope.mappingId,
+      capabilities
+    };
+  });
+  return {
+    state: 'current',
+    reasonCode: 'PROVIDER_MAPPING_REQUIREMENTS_CURRENT',
+    mappingSetFingerprint: fingerprintJson(resolvedScopes.map((scope) => ({
+      id: scope.id,
+      scopeFingerprint: scope.scopeFingerprint
+    }))),
+    scopes: resolvedScopes
+  };
+}
+
+function kernelProviderMappingOnboardingRequirements(
+  configurationEntry,
+  settingsDefinition,
+  selected,
+  packs,
+  contextModels,
+  providerMappings
+) {
+  return resolveProviderMappingOnboardingRequirements({
+    configuration: configurationEntry.doc,
+    selectedPackIds: [...selected],
+    packs: [...packs.values()].map((entry) => entry.doc),
+    providerMappings: [...providerMappings.values()].map((entry) => entry.doc),
+    contextModels: [...contextModels.values()].map((entry) => entry.doc),
+    settingsDefinitions: [settingsDefinition.doc],
+    providerPack: settingsDefinition.doc.pack
+  });
+}
+
 function configuredOptionMappingRequirementScopes(
   configurationEntry,
   settingsDefinition,
   configured,
   selected,
   packs,
+  contextModels,
   providerMappings
 ) {
-  const requiredScopes = new Set();
+  const requirements = kernelProviderMappingOnboardingRequirements(
+    configurationEntry,
+    settingsDefinition,
+    selected,
+    packs,
+    contextModels,
+    providerMappings
+  );
   const unavailableFields = new Set((configured?.fieldBindings || [])
     .filter((binding) => binding?.state === 'unavailable')
     .map((binding) => [
@@ -3788,46 +4022,12 @@ function configuredOptionMappingRequirementScopes(
       binding.recordType,
       binding.field
     ].join('|')));
-  for (const packId of selected) {
-    const automation = packs.get(packId)?.doc;
-    if (automation?.layer !== 'automation') continue;
-    const requirements = [
-      ...(automation.operator?.acquisition?.recordRequirements || []),
-      ...(automation.operator?.connection?.recordRequirements || [])
-    ];
-    for (const requirement of requirements) {
-      const bindings = configurationEntry.doc.bindings.filter((binding) => {
-        return binding.capability === requirement.capability;
-      });
-      if (bindings.length !== 1) continue;
-      const matches = [...providerMappings.values()].filter((mapping) => {
-        return mapping.doc.pack === bindings[0].providerPack
-          && mapping.doc.settingsDefinition === settingsDefinition.doc.id
-          && mapping.doc.capabilities.includes(requirement.capability);
-      });
-      for (const recordType of requirement.recordTypes) {
-        const records = matches.flatMap((mapping) => {
-          return mapping.doc.recordTypes
-            .filter((record) => {
-              return record.id === recordType
-                && record.capabilities.includes(requirement.capability);
-            })
-            .map((record) => ({ mapping: mapping.doc, record }));
-        });
-        if (records.length !== 1) continue;
-        for (const field of records[0].record.fields) {
-          if (field.valueMapping !== 'configured-bijection') continue;
-          const scope = [
-            records[0].mapping.id,
-            records[0].record.id,
-            field.portable
-          ].join('|');
-          if (!unavailableFields.has(scope)) requiredScopes.add(scope);
-        }
-      }
-    }
-  }
-  return requiredScopes;
+  if (requirements.state !== 'current') return new Set();
+  return new Set(requirements.scopes.filter((scope) => {
+    const key = [scope.mappingId, scope.recordType, scope.field].join('|');
+    return scope.optionMappingRequired
+      && !unavailableFields.has(key);
+  }).map((scope) => [scope.mappingId, scope.recordType, scope.field].join('|')));
 }
 
 function configuredFieldBindingRequirementScopes(
@@ -3836,59 +4036,32 @@ function configuredFieldBindingRequirementScopes(
   configured,
   selected,
   packs,
+  contextModels,
   providerMappings
 ) {
-  const requiredScopes = new Map();
-  for (const packId of selected) {
-    const automation = packs.get(packId)?.doc;
-    if (automation?.layer !== 'automation') continue;
-    const requirements = [
-      ...(automation.operator?.acquisition?.recordRequirements || []),
-      ...(automation.operator?.connection?.recordRequirements || [])
-    ];
-    for (const requirement of requirements) {
-      const bindings = configurationEntry.doc.bindings.filter((binding) => {
-        return binding.capability === requirement.capability;
-      });
-      if (bindings.length !== 1) continue;
-      const matches = [...providerMappings.values()].filter((mapping) => {
-        return mapping.doc.pack === bindings[0].providerPack
-          && mapping.doc.settingsDefinition === settingsDefinition.doc.id
-          && mapping.doc.capabilities.includes(requirement.capability);
-      });
-      for (const recordType of requirement.recordTypes) {
-        const records = matches.flatMap((mapping) => {
-          return mapping.doc.recordTypes
-            .filter((record) => {
-              return record.id === recordType
-                && record.capabilities.includes(requirement.capability);
-            })
-            .map((record) => ({ mapping, record }));
-        });
-        if (records.length !== 1) continue;
-        const target = configured?.targets?.[records[0].record.target];
-        if (typeof target !== 'string' || !target.startsWith('collection://')) {
-          continue;
-        }
-        for (const field of records[0].record.fields) {
-          const scope = [
-            records[0].mapping.doc.id,
-            records[0].record.id,
-            field.portable
-          ].join('|');
-          const existing = requiredScopes.get(scope) || {
-            mapping: records[0].mapping,
-            record: records[0].record,
-            field,
-            capabilities: new Set()
-          };
-          existing.capabilities.add(requirement.capability);
-          requiredScopes.set(scope, existing);
-        }
-      }
-    }
-  }
-  return requiredScopes;
+  const requirements = kernelProviderMappingOnboardingRequirements(
+    configurationEntry,
+    settingsDefinition,
+    selected,
+    packs,
+    contextModels,
+    providerMappings
+  );
+  if (requirements.state !== 'current') return new Map();
+  return new Map(requirements.scopes.filter((scope) => {
+    const target = configured?.targets?.[scope.activationTarget];
+    return typeof target === 'string' && target.startsWith('collection://');
+  }).map((scope) => {
+    const mapping = providerMappings.get(scope.mappingId);
+    const record = mapping?.doc.recordTypes.find((item) => item.id === scope.recordType);
+    const field = record?.fields.find((item) => item.portable === scope.field);
+    return [[scope.mappingId, scope.recordType, scope.field].join('|'), {
+      mapping,
+      record,
+      field,
+      capabilities: new Set(scope.capabilities)
+    }];
+  }));
 }
 
 function checkConfiguredFieldBindings(
@@ -3907,6 +4080,7 @@ function checkConfiguredFieldBindings(
     configured,
     selected,
     packs,
+    contextModels,
     providerMappings
   );
   const declarations = configured?.fieldBindings;
@@ -4082,6 +4256,7 @@ function checkPackSettingSemanticInvariants(
       configured,
       selected,
       packs,
+      contextModels,
       providerMappings
     );
     const declarations = configured?.optionMappings;

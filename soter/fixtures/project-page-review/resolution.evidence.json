@@ -10,13 +10,13 @@
     "id": "project-page-review",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:94664e730e760a6bc5479f2e322d037ad66066464a14af1ed8de33a731512910",
-  "graphFingerprint": "sha256:8003f47dd0edcf5ba0a04a1d25a0ce08d5dfd6e74467bce19101378464481da5",
+  "configurationLockFingerprint": "sha256:7f7f10380efc23acba6346805b8cfd395373ddabe064261f1101d2cfec2b1504",
+  "graphFingerprint": "sha256:efc8f087267616066401bf4b8d7ec536c1a5e40d6f382e3fadcd56e6184ca238",
   "dependencies": [
     {
       "id": "kernel.soter",
       "version": "0.1.0",
-      "fingerprint": "sha256:88abbc2dd21e627c5e4359cd113e403af8f5b3db630194929a8a2757e7b04ea6"
+      "fingerprint": "sha256:26cb9a0078259594ac3a7e3e32eb631457677074acac091d2e91a8cbcf2ff267"
     },
     {
       "id": "core.runtime",
@@ -134,7 +134,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:94664e730e760a6bc5479f2e322d037ad66066464a14af1ed8de33a731512910"
+      "fingerprint": "sha256:7f7f10380efc23acba6346805b8cfd395373ddabe064261f1101d2cfec2b1504"
     }
   ],
   "effects": [],

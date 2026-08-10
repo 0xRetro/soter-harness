@@ -145,9 +145,11 @@ import {
 import {
   beginConfigurationChangeRequest,
   confirmConfigurationChangeRequest,
+  describeConfigurationOnboarding,
   executeConfigurationChange,
   inspectConfigurationChange,
   prepareConfigurationChange,
+  prepareConfigurationOnboarding,
   prepareConfigurationChangeExecution,
   recoverConfigurationChange
 } from './configuration-transactions.mjs';
@@ -438,6 +440,62 @@ async function main() {
     } else {
       process.stdout.write(
         'Prepared exact private configuration plan ' + planId + '.\n'
+          + 'Candidate lock: ' + inspection.configuration.candidateLockFingerprint + '\n'
+          + 'Changed subjects: ' + inspection.scope.changes.length + '\n'
+          + 'Execution authority created: no\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'configuration-onboarding-describe') {
+    assertExactCommandArguments(args, { valueOptions: ['--configuration'] });
+    const name = requiredOption(args, '--configuration');
+    const description = describeConfigurationOnboarding({ root, name });
+    if (json) {
+      print(description);
+    } else {
+      process.stdout.write(
+        'Described blank private onboarding for ' + description.configuration.name + '.\n'
+          + 'Typed slots: ' + description.slots.length + '\n'
+          + 'Description: ' + description.descriptionFingerprint + '\n'
+          + 'Execution authority created: no\n'
+      );
+    }
+    return;
+  }
+
+  if (command === 'configuration-onboarding-plan') {
+    assertExactCommandArguments(args, {
+      valueOptions: ['--configuration', '--input', '--plan-id', '--at']
+    });
+    const name = requiredOption(args, '--configuration');
+    const planId = option(args, '--plan-id', 'configuration-change-plan.' + name + '.' + idPart);
+    const requestedInputPath = requiredOption(args, '--input');
+    const resolvedInputPath = path.resolve(requestedInputPath);
+    const relativeInputPath = path.relative(root, resolvedInputPath);
+    if (!path.isAbsolute(requestedInputPath)
+      || (!relativeInputPath.startsWith('..' + path.sep) && relativeInputPath !== '..')) {
+      throw new Error('configuration-onboarding-plan input is invalid.');
+    }
+    let input;
+    try {
+      input = readPrivateJsonInput(root, requestedInputPath, { maxBytes: 256 * 1024 });
+    } catch {
+      throw new Error('configuration-onboarding-plan input is invalid.');
+    }
+    const inspection = prepareConfigurationOnboarding({
+      root,
+      name,
+      input,
+      id: planId,
+      createdAt
+    });
+    if (json) {
+      print(inspection);
+    } else {
+      process.stdout.write(
+        'Prepared exact private onboarding plan ' + planId + '.\n'
           + 'Candidate lock: ' + inspection.configuration.candidateLockFingerprint + '\n'
           + 'Changed subjects: ' + inspection.scope.changes.length + '\n'
           + 'Execution authority created: no\n'
@@ -2853,7 +2911,7 @@ async function main() {
   }
 
   throw new Error(
-    'Usage: node soter/core/cli.mjs <resolve|config-inspect|development-candidate-lock|development-request-create|development-result-record|development-host-result-record|development-host-evaluate|development-host-judge|development-host-finalize|development-run-inspect|configuration-change-plan|configuration-change-request|configuration-change-confirm|configuration-change-start|configuration-change-execute|configuration-change-recover|configuration-change-inspect|host-realization-plan|host-realization-request|host-realization-confirm|host-realization-start|host-realization-execute|host-realization-recover|host-realization-inspect|pack-install-plan|pack-install-request|pack-install-confirm|pack-install-start|pack-install-execute|pack-install-recover|pack-install-inspect|operator-prepare|operator-prepared-inspect|operator-prepared-review|operator-prepared-derived-review|operator-acquisition-prepare|operator-acquisition-recover|operator-acquisition-finalize|operator-acquisition-inspect|operator-acquisition-private-inspect|operator-review-only-candidate-selection-create|operator-review-only-candidate-selection|operator-review-only-candidate-preview-create|operator-review-only-candidate-preview|operator-inspect|operator-approval-review|prepare|meeting-intake-decision-inspect|meeting-intake-decision-commit|meeting-intake-proposal-inspect|meeting-intake-proposal-commit|meeting-intake-proposal-material|email-triage-decision-inspect|email-triage-decision-commit|email-triage-proposal-inspect|email-triage-proposal-commit|email-triage-proposal-material|task-capture-decision-inspect|task-capture-decision-commit|task-capture-proposal-inspect|task-capture-proposal-commit|task-capture-proposal-material|organization-capture-decision-inspect|organization-capture-decision-commit|organization-capture-proposal-inspect|organization-capture-proposal-commit|organization-capture-proposal-material|project-capture-decision-inspect|project-capture-decision-commit|project-capture-proposal-inspect|project-capture-proposal-commit|project-capture-proposal-material|project-page-reconciliation-decision-inspect|project-page-reconciliation-decision-commit|project-page-reconciliation-proposal-inspect|project-page-reconciliation-proposal-commit|project-page-reconciliation-proposal-material|contact-capture-decision-inspect|contact-capture-decision-commit|contact-capture-proposal-inspect|contact-capture-proposal-commit|contact-capture-proposal-material|project-pulse-decision-inspect|project-pulse-decision-commit|project-pulse-proposal-inspect|project-pulse-proposal-commit|project-pulse-proposal-material|proposal-connected-batch-preview|connected-approval-request|connected-approval-confirm|connected-transaction-prepare|connected-transaction-complete|connected-transaction-reconcile|doctor|probe-prepare|probe-complete|capability-complete|plan-complete|host-fail|host-get|host-list|fixtures|selftest> [options]\n'
+    'Usage: node soter/core/cli.mjs <resolve|config-inspect|development-candidate-lock|development-request-create|development-result-record|development-host-result-record|development-host-evaluate|development-host-judge|development-host-finalize|development-run-inspect|configuration-onboarding-describe|configuration-onboarding-plan|configuration-change-plan|configuration-change-request|configuration-change-confirm|configuration-change-start|configuration-change-execute|configuration-change-recover|configuration-change-inspect|host-realization-plan|host-realization-request|host-realization-confirm|host-realization-start|host-realization-execute|host-realization-recover|host-realization-inspect|pack-install-plan|pack-install-request|pack-install-confirm|pack-install-start|pack-install-execute|pack-install-recover|pack-install-inspect|operator-prepare|operator-prepared-inspect|operator-prepared-review|operator-prepared-derived-review|operator-acquisition-prepare|operator-acquisition-recover|operator-acquisition-finalize|operator-acquisition-inspect|operator-acquisition-private-inspect|operator-review-only-candidate-selection-create|operator-review-only-candidate-selection|operator-review-only-candidate-preview-create|operator-review-only-candidate-preview|operator-inspect|operator-approval-review|prepare|meeting-intake-decision-inspect|meeting-intake-decision-commit|meeting-intake-proposal-inspect|meeting-intake-proposal-commit|meeting-intake-proposal-material|email-triage-decision-inspect|email-triage-decision-commit|email-triage-proposal-inspect|email-triage-proposal-commit|email-triage-proposal-material|task-capture-decision-inspect|task-capture-decision-commit|task-capture-proposal-inspect|task-capture-proposal-commit|task-capture-proposal-material|organization-capture-decision-inspect|organization-capture-decision-commit|organization-capture-proposal-inspect|organization-capture-proposal-commit|organization-capture-proposal-material|project-capture-decision-inspect|project-capture-decision-commit|project-capture-proposal-inspect|project-capture-proposal-commit|project-capture-proposal-material|project-page-reconciliation-decision-inspect|project-page-reconciliation-decision-commit|project-page-reconciliation-proposal-inspect|project-page-reconciliation-proposal-commit|project-page-reconciliation-proposal-material|contact-capture-decision-inspect|contact-capture-decision-commit|contact-capture-proposal-inspect|contact-capture-proposal-commit|contact-capture-proposal-material|project-pulse-decision-inspect|project-pulse-decision-commit|project-pulse-proposal-inspect|project-pulse-proposal-commit|project-pulse-proposal-material|proposal-connected-batch-preview|connected-approval-request|connected-approval-confirm|connected-transaction-prepare|connected-transaction-complete|connected-transaction-reconcile|doctor|probe-prepare|probe-complete|capability-complete|plan-complete|host-fail|host-get|host-list|fixtures|selftest> [options]\n'
       + '  resolve [--config PATH] [--host ID] [--output PATH] [--json]\n'
       + '  config-inspect [--config PATH] [--host ID | --lock PATH] [--output PATH] [--json]\n'
       + '  development-candidate-lock --config PATH --workflow ID --host <codex|claude> [--json]\n'
@@ -2864,6 +2922,8 @@ async function main() {
       + '  development-host-judge --request-id ID --executable ABSOLUTE_PRIVATE_PATH [--json]\n'
       + '  development-host-finalize --request-id ID [--judgment ABSOLUTE_PRIVATE_HUMAN_ATTESTATION_PATH] [--json]\n'
       + '  development-run-inspect --request-id ID [--json]\n'
+      + '  configuration-onboarding-describe --configuration NAME [--json]\n'
+      + '  configuration-onboarding-plan --configuration NAME --input ABSOLUTE_EXTERNAL_PRIVATE_0600_JSON [--plan-id ID] [--at TIME] [--json]\n'
       + '  configuration-change-plan --configuration NAME --candidate ABSOLUTE_PRIVATE_PATH [--plan-id ID] [--at TIME] [--json]\n'
       + '  configuration-change-request --plan-id ID --reason TEXT --expires-at TIME [--request-id ID] [--at TIME] [--json]\n'
       + '  configuration-change-confirm --request-id ID --actor ID --reason TEXT [--confirmation-id ID] [--at TIME] [--json]\n'

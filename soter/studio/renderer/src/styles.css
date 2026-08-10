@@ -1103,6 +1103,33 @@ h1, h2, h3, p { margin-top: 0; }
 .configuration-candidate-editor > label { display: flex; align-items: baseline; justify-content: space-between; gap: 15px; }
 .configuration-candidate-editor > label span { font-size: 10px; font-weight: 500; }
 .configuration-candidate-editor > label small { color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 6px; text-align: right; }
+.configuration-onboarding-heading { min-height: 36px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.configuration-onboarding-heading > div { display: grid; gap: 3px; }
+.configuration-onboarding-heading span { font-size: 10px; font-weight: 500; }
+.configuration-onboarding-heading small { color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 6px; }
+.configuration-onboarding-heading code { padding: 4px 7px; border: 1px solid var(--soft-line); border-radius: 999px; color: var(--signal); background: var(--frost); font-size: 6px; text-transform: uppercase; }
+.configuration-onboarding-form { margin-top: 10px; display: grid; gap: 9px; }
+.configuration-onboarding-empty { min-height: 112px; margin-top: 10px; padding: 20px; display: grid; place-items: center; border: 1px dashed var(--line); border-radius: 4px; color: var(--muted); background: var(--frost); font-size: 8px; text-align: center; }
+.configuration-onboarding-slot { min-width: 0; margin: 0; padding: 11px; border: 1px solid var(--soft-line); border-radius: 4px; background: #f8fafa; }
+.configuration-onboarding-slot > legend { max-width: 90%; padding: 0 5px; color: var(--signal); font-family: 'IBM Plex Mono', monospace; font-size: 7px; text-transform: uppercase; }
+.configuration-onboarding-field { display: grid; gap: 7px; }
+.configuration-onboarding-field > label:not(.configuration-onboarding-inclusion):not(.configuration-onboarding-boolean), .configuration-onboarding-mapping > label { display: grid; gap: 5px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 6px; text-transform: uppercase; }
+.configuration-onboarding-field input:not([type='checkbox']), .configuration-onboarding-field select, .configuration-onboarding-mapping input, .configuration-onboarding-mapping select { width: 100%; min-height: 34px; padding: 7px 8px; border: 1px solid var(--line); border-radius: 3px; outline: 0; background: var(--paper); color: var(--ink); font-family: 'IBM Plex Sans', sans-serif; font-size: 8px; text-transform: none; }
+.configuration-onboarding-field input:focus, .configuration-onboarding-field select:focus, .configuration-onboarding-mapping input:focus, .configuration-onboarding-mapping select:focus { border-color: var(--signal); box-shadow: 0 0 0 2px rgba(45, 101, 116, .13); }
+.configuration-onboarding-required { color: var(--copper-aa); font-family: 'IBM Plex Mono', monospace; font-size: 6px; text-transform: uppercase; }
+.configuration-onboarding-inclusion, .configuration-onboarding-boolean { display: grid; grid-template-columns: 17px minmax(0, 1fr); align-items: center; gap: 7px; color: var(--ink); font-size: 8px; }
+.configuration-onboarding-inclusion input, .configuration-onboarding-boolean input { margin: 0; accent-color: var(--signal); }
+.configuration-onboarding-list, .configuration-onboarding-records > fieldset, .configuration-onboarding-mapping, .configuration-onboarding-options > fieldset { min-width: 0; margin: 0; padding: 9px; display: grid; gap: 8px; border: 1px solid var(--line); border-radius: 3px; background: var(--paper); }
+.configuration-onboarding-list legend, .configuration-onboarding-records legend, .configuration-onboarding-mapping legend, .configuration-onboarding-options legend { padding: 0 4px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 6px; text-transform: uppercase; }
+.configuration-onboarding-list > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 7px; }
+.configuration-onboarding-list label, .configuration-onboarding-options label { display: grid; gap: 4px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 6px; text-transform: uppercase; }
+.configuration-onboarding-list button, .configuration-onboarding-records button, .configuration-onboarding-mapping button { min-height: 30px; padding: 0 9px; border: 1px solid var(--line); border-radius: 3px; background: var(--paper); color: var(--signal); font-family: 'IBM Plex Mono', monospace; font-size: 6px; text-transform: uppercase; cursor: pointer; }
+.configuration-onboarding-list button:disabled, .configuration-onboarding-records button:disabled { color: var(--muted); background: var(--frost); cursor: not-allowed; }
+.configuration-onboarding-group, .configuration-onboarding-records, .configuration-onboarding-options { display: grid; gap: 9px; }
+.configuration-onboarding-mappings > p, .configuration-onboarding-mapping > p { margin: 0 0 8px; color: var(--muted); font-size: 7px; line-height: 1.45; }
+.configuration-onboarding-mapping { margin-top: 9px; background: #f3f7f7; }
+.configuration-onboarding-options { margin-top: 2px; padding-top: 8px; border-top: 1px solid var(--soft-line); }
+.configuration-onboarding-options > fieldset { grid-template-columns: repeat(2, minmax(0, 1fr)) auto; align-items: end; }
 .configuration-candidate-editor textarea { width: 100%; min-height: 214px; margin-top: 10px; padding: 12px 13px; resize: vertical; border: 1px solid var(--line); border-radius: 4px; outline: 0; background: #f8fafa; color: var(--ink); font-family: 'IBM Plex Mono', monospace; font-size: 8px; line-height: 1.55; tab-size: 2; }
 .configuration-candidate-editor textarea:focus { border-color: var(--signal); box-shadow: 0 0 0 2px rgba(45, 101, 116, .13); }
 .configuration-candidate-status { min-height: 36px; padding: 7px 9px; display: grid; grid-template-columns: 16px minmax(0, 1fr); align-items: center; gap: 5px; border: 1px solid var(--soft-line); border-top: 0; color: var(--muted); background: var(--paper); }
@@ -2086,6 +2113,7 @@ h1, h2, h3, p { margin-top: 0; }
   .configuration-candidate-workbench, .configuration-transaction-ledger { grid-template-columns: 1fr; }
   .configuration-candidate-editor, .configuration-scope-ledger { border-right: 0; border-bottom: 1px solid var(--line); }
   .configuration-candidate-boundary { min-height: 230px; }
+  .configuration-onboarding-options > fieldset { grid-template-columns: 1fr; }
   .configuration-lock-transfer { grid-template-columns: minmax(0, 1fr) 18px minmax(0, 1fr); }
   .configuration-lock-transfer > div:nth-of-type(3) { grid-column: 1 / 2; }
   .configuration-lock-transfer > i:nth-of-type(2) { display: none; }
