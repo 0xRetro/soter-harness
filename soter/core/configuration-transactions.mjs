@@ -915,7 +915,8 @@ function containsTemplateIdentity(value) {
   return false;
 }
 
-function sourcePropertyNeedsSlot(property, schema, value) {
+function sourcePropertyNeedsSlot(property, schema, value, present) {
+  if (!present) return false;
   if (Object.hasOwn(schema, 'const') || Array.isArray(schema.enum) || Array.isArray(schema.items?.enum)) {
     return false;
   }
@@ -924,6 +925,20 @@ function sourcePropertyNeedsSlot(property, schema, value) {
     return true;
   }
   return containsTemplateIdentity(value);
+}
+
+function sourceReplacementSchema(schema, value) {
+  const projected = clone(schema);
+  if (schema.type === 'array' && schema.items?.type === 'string') {
+    if (!Array.isArray(value)
+      || value.length < 1
+      || value.length > ONBOARDING_MAX_COLLECTION_ITEMS) {
+      failOnboardingUnavailable();
+    }
+    projected.minItems = value.length;
+    projected.maxItems = value.length;
+  }
+  return projected;
 }
 
 function onboardingSlot({ family, subject, propertyPath, required, schema }) {
@@ -1208,23 +1223,29 @@ function onboardingModel(root, name) {
     for (const property of Object.keys(inputSchema.properties).sort(compareText)) {
       const propertySchema = inputSchema.properties[property];
       const present = Object.hasOwn(source.input, property);
-      if (!sourcePropertyNeedsSlot(property, propertySchema, present ? source.input[property] : undefined)) continue;
+      if (!sourcePropertyNeedsSlot(
+        property,
+        propertySchema,
+        present ? source.input[property] : undefined,
+        present
+      )) continue;
       if (propertySchema.type === 'object'
         || (propertySchema.type === 'array' && propertySchema.items?.type === 'object')) {
         failOnboardingUnavailable();
       }
+      const replacementSchema = sourceReplacementSchema(propertySchema, source.input[property]);
       const slot = onboardingSlot({
         family: 'source-input',
         subject: source.id,
         propertyPath: [property],
-        required: (inputSchema.required || []).includes(property),
-        schema: propertySchema
+        required: true,
+        schema: replacementSchema
       });
       slots.push(slot);
       bindings.push({
         slot,
         path: ['sources', template.sources.findIndex((item) => item.id === source.id), 'input', property],
-        schema: propertySchema
+        schema: replacementSchema
       });
     }
   }

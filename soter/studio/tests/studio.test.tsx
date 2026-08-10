@@ -871,6 +871,49 @@ describe('Soter Studio canonical operator projection', () => {
     expect(screen.getByRole('button', { name: 'Remove record 1' })).toBeDisabled();
   });
 
+  it('keeps an exact-cardinality source replacement fixed and submits every required item', async () => {
+    const user = userEvent.setup();
+    const snapshot = studioFixture();
+    const configuration = snapshot.configurations[0];
+    const description = onboardingDescriptionFixture(configuration.name);
+    const mappingIndex = description.slots.findIndex((slot) => slot.type === 'provider-mapping-set');
+    description.slots.splice(mappingIndex, 0, {
+      id: 'source.source.profile.project-capture.ids',
+      family: 'source-input',
+      subject: 'source.profile.project-capture',
+      field: 'ids',
+      required: true,
+      type: 'string-list',
+      itemType: 'string',
+      constraints: { minItems: 2, maxItems: 2, uniqueItems: true },
+      itemConstraints: { minLength: 1, maxLength: 4096 }
+    });
+    window.soterStudio.describeConfigurationOnboarding = vi.fn().mockResolvedValue({
+      ok: true as const,
+      description
+    });
+
+    render(<ConfigView snapshot={snapshot} configuration={configuration} />);
+    await completeRequiredOnboardingFields();
+    expect(await screen.findByLabelText('Item 1')).toBeVisible();
+    expect(screen.getByLabelText('Item 2')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Add list item' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Remove item 1' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Remove item 2' })).toBeDisabled();
+
+    await user.type(screen.getByLabelText('Item 1'), 'profile.project-capture.project');
+    await user.type(screen.getByLabelText('Item 2'), 'profile.project-capture.deal');
+    await user.click(screen.getByRole('button', { name: 'Seal first-use plan' }));
+
+    const request = vi.mocked(window.soterStudio.prepareConfigurationOnboarding).mock.calls[0][0];
+    expect(request.slots.find((slot) => slot.id === 'source.source.profile.project-capture.ids')).toEqual({
+      id: 'source.source.profile.project-capture.ids',
+      state: 'provided',
+      type: 'string-list',
+      value: ['profile.project-capture.project', 'profile.project-capture.deal']
+    });
+  });
+
   it.each(['reserved', 'reserved-prepared'] as const)('resumes the exact %s configuration start without reconstructing authority', async (stage) => {
     const user = userEvent.setup();
     const snapshot = studioFixture();

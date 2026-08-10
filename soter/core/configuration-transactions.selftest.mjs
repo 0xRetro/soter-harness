@@ -94,15 +94,18 @@ function sealOnboardingInput(description, valueForSlot = null) {
     if (slot.type === 'boolean') return true;
     if (slot.type === 'enum') return slot.options[0];
     if (slot.type === 'string-list') {
-      return slot.itemType === 'email'
-        ? ['operator' + index + '@soter.test']
-        : slot.itemType === 'uri'
-          ? ['gmail://onboarding-selftest-list-' + index]
-          : slot.itemType === 'date'
-            ? ['2026-08-10']
-            : slot.itemType === 'date-time'
-              ? ['2026-08-10T12:00:00.000Z']
-          : ['onboarding-selftest-' + index];
+      const count = Math.max(1, slot.constraints.minItems || 0);
+      return Array.from({ length: count }, (_item, itemIndex) => (
+        slot.itemType === 'email'
+          ? 'operator' + index + '-' + itemIndex + '@soter.test'
+          : slot.itemType === 'uri'
+            ? 'gmail://onboarding-selftest-list-' + index + '-' + itemIndex
+            : slot.itemType === 'date'
+              ? '2026-08-' + String(10 + itemIndex).padStart(2, '0')
+              : slot.itemType === 'date-time'
+                ? '2026-08-10T' + String(12 + itemIndex).padStart(2, '0') + ':00:00.000Z'
+                : 'onboarding-selftest-' + index + '-' + itemIndex
+      ));
     }
     if (slot.type === 'records') {
       return [{
@@ -457,6 +460,10 @@ export async function selftestConfigurationTransactions(root = defaultRoot) {
       root: onboarding,
       name: 'task-capture'
     });
+    const projectOnboarding = describeConfigurationOnboarding({
+      root: onboarding,
+      name: 'project-capture'
+    });
     const slackOnboarding = describeConfigurationOnboarding({
       root: onboarding,
       name: 'slack-conversation-review'
@@ -465,7 +472,7 @@ export async function selftestConfigurationTransactions(root = defaultRoot) {
       root: onboarding,
       name: 'email-triage'
     });
-    for (const description of [taskOnboarding, slackOnboarding, emailOnboarding]) {
+    for (const description of [taskOnboarding, projectOnboarding, slackOnboarding, emailOnboarding]) {
       const serialized = JSON.stringify(description);
       assert(validateJsonSchema(description, descriptionSchema).length === 0
         && description.descriptionFingerprint === fingerprintJson((() => {
@@ -494,6 +501,49 @@ export async function selftestConfigurationTransactions(root = defaultRoot) {
         && slot.fields.every((field) => field.required === true))
       && emailOnboarding.slots.some((slot) => slot.type === 'string-list'),
     'Onboarding description did not derive exact authority, source, and setting slot families.');
+    const taskPolicyIdsSlot = taskOnboarding.slots.find((slot) => (
+      slot.family === 'source-input'
+        && slot.subject === 'source.policy.task-capture'
+        && slot.field === 'ids'
+    ));
+    const projectProfileIdsSlot = projectOnboarding.slots.find((slot) => (
+      slot.family === 'source-input'
+        && slot.subject === 'source.profile.project-capture'
+        && slot.field === 'ids'
+    ));
+    assert(taskPolicyIdsSlot?.type === 'string-list'
+      && taskPolicyIdsSlot.required === true
+      && taskPolicyIdsSlot.constraints.minItems === 1
+      && taskPolicyIdsSlot.constraints.maxItems === 1
+      && projectProfileIdsSlot?.type === 'string-list'
+      && projectProfileIdsSlot.required === true
+      && projectProfileIdsSlot.constraints.minItems === 2
+      && projectProfileIdsSlot.constraints.maxItems === 2,
+    'Tracked source replacements did not project as required exact-cardinality lists.');
+    const absentOptionalSource = copyRoot(root, 'soter-configuration-onboarding-absent-source-');
+    roots.push(absentOptionalSource);
+    const taskReadCapabilityPath = path.join(
+      absentOptionalSource,
+      'soter/capabilities/tasks.records.read.json'
+    );
+    const taskReadCapability = readJson(taskReadCapabilityPath);
+    taskReadCapability.inputSchema.properties.relatedIds = {
+      type: 'array',
+      minItems: 1,
+      maxItems: 8,
+      uniqueItems: true,
+      items: { type: 'string' }
+    };
+    writeJson(taskReadCapabilityPath, taskReadCapability);
+    const absentOptionalDescription = describeConfigurationOnboarding({
+      root: absentOptionalSource,
+      name: 'task-capture'
+    });
+    assert(!absentOptionalDescription.slots.some((slot) => (
+      slot.family === 'source-input'
+        && slot.subject === 'source.policy.task-capture'
+        && slot.field === 'relatedIds'
+    )), 'An absent optional capability property was exposed as private onboarding input.');
 
     const taskRequiredTargets = taskOnboarding.slots.filter((slot) => (
       slot.family === 'setting'
@@ -536,14 +586,100 @@ export async function selftestConfigurationTransactions(root = defaultRoot) {
       && slackMappingSlot.scopes.every((scope) => scope.record.type !== 'channel'),
     'Provider mapping onboarding did not derive the exact selected Automation record scopes.');
     const taskMinimalInput = sealOnboardingInput(taskOnboarding);
+    const projectMinimalInput = sealOnboardingInput(projectOnboarding);
     const slackMinimalInput = sealOnboardingInput(slackOnboarding);
+    const assertSourceInputRejected = ({
+      description,
+      input,
+      name,
+      subject,
+      suffix,
+      mutate,
+      message
+    }) => {
+      const hostile = structuredClone(input);
+      const sourceSlot = hostile.slots.find((slot) => (
+        slot.id === description.slots.find((candidateSlot) => (
+          candidateSlot.family === 'source-input'
+            && candidateSlot.subject === subject
+            && candidateSlot.field === 'ids'
+        ))?.id
+      ));
+      assert(sourceSlot, 'Expected exact source-input slot is missing from the selftest description.');
+      mutate(sourceSlot);
+      resealOnboardingInput(hostile);
+      const planId = 'configuration-change-plan.onboarding-source-' + suffix + '-selftest';
+      expectOnboardingError(() => prepareConfigurationOnboarding({
+        root: onboarding,
+        name,
+        input: hostile,
+        id: planId,
+        createdAt: CREATED
+      }), 'CONFIGURATION_ONBOARDING_INPUT_INVALID', message);
+      assert(!fs.existsSync(configurationChangePlanStatePath(onboarding, planId)),
+        'Invalid source replacement input created plan state.');
+    };
+    assertSourceInputRejected({
+      description: taskOnboarding,
+      input: taskMinimalInput,
+      name: 'task-capture',
+      subject: 'source.policy.task-capture',
+      suffix: 'task-omitted',
+      mutate(slot) {
+        delete slot.type;
+        delete slot.value;
+        slot.state = 'omitted';
+      },
+      message: 'An omitted tracked Task policy replacement was accepted.'
+    });
+    assertSourceInputRejected({
+      description: taskOnboarding,
+      input: taskMinimalInput,
+      name: 'task-capture',
+      subject: 'source.policy.task-capture',
+      suffix: 'task-two',
+      mutate(slot) {
+        slot.value.push('policy.tasks.additional');
+      },
+      message: 'A two-item Task policy replacement escaped its exact 1..1 cardinality.'
+    });
+    assertSourceInputRejected({
+      description: projectOnboarding,
+      input: projectMinimalInput,
+      name: 'project-capture',
+      subject: 'source.profile.project-capture',
+      suffix: 'project-one',
+      mutate(slot) {
+        slot.value = slot.value.slice(0, 1);
+      },
+      message: 'A one-item Project Capture profile replacement escaped its exact 2..2 cardinality.'
+    });
+    assertSourceInputRejected({
+      description: projectOnboarding,
+      input: projectMinimalInput,
+      name: 'project-capture',
+      subject: 'source.profile.project-capture',
+      suffix: 'project-three',
+      mutate(slot) {
+        slot.value.push('profile.project-capture.additional');
+      },
+      message: 'A three-item Project Capture profile replacement escaped its exact 2..2 cardinality.'
+    });
     const taskMinimalPlanId = 'configuration-change-plan.onboarding-task-minimal-selftest';
+    const projectMinimalPlanId = 'configuration-change-plan.onboarding-project-minimal-selftest';
     const slackMinimalPlanId = 'configuration-change-plan.onboarding-slack-minimal-selftest';
     const taskMinimalInspection = prepareConfigurationOnboarding({
       root: onboarding,
       name: 'task-capture',
       input: taskMinimalInput,
       id: taskMinimalPlanId,
+      createdAt: CREATED
+    });
+    const projectMinimalInspection = prepareConfigurationOnboarding({
+      root: onboarding,
+      name: 'project-capture',
+      input: projectMinimalInput,
+      id: projectMinimalPlanId,
       createdAt: CREATED
     });
     const slackMinimalInspection = prepareConfigurationOnboarding({
@@ -554,6 +690,7 @@ export async function selftestConfigurationTransactions(root = defaultRoot) {
       createdAt: CREATED
     });
     assert(taskMinimalInspection.resume.reasonCode === 'CONFIGURATION_PLAN_CURRENT'
+      && projectMinimalInspection.resume.reasonCode === 'CONFIGURATION_PLAN_CURRENT'
       && slackMinimalInspection.resume.reasonCode === 'CONFIGURATION_PLAN_CURRENT',
     'A minimal complete input did not materialize a valid selected configuration plan.');
     const taskMinimalPlan = readJson(configurationChangePlanStatePath(onboarding, taskMinimalPlanId));

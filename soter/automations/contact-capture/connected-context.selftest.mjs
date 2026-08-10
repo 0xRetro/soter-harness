@@ -658,6 +658,20 @@ export async function runContainedContactCaptureConnectedWorkflow(
         }]
       }
     }).state, 'failed');
+    assert.equal(evaluateContactCaptureConnectedVerification({
+      operation: compiled.batch.operations[0],
+      resolvedInput: exactVerificationInput,
+      output: {
+        records: [{
+          type: 'person',
+          id: createdRecordId,
+          fields: {
+            ...structuredClone(exactContactFields),
+            discordId: 'UNREVIEWED_CONTACT_FIELD_SENTINEL'
+          }
+        }]
+      }
+    }).reasonCode, 'READ_AFTER_WRITE_MISMATCH');
     const verified = await completeDurableConnectedTransactionExecution({
       root: temporaryRoot,
       checkpointId: written.checkpoint.id,

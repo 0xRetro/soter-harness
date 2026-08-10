@@ -10,8 +10,8 @@
     "id": "process-red-team",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:1e5a8489f14f647d1811cb2f240240735cc25fba66530c788c3749f9423767fb",
-  "graphFingerprint": "sha256:e5f6a9c1b83ca897a87f1c8830d75ef96fcea85785ccaa875c1d28b770ea1d77",
+  "configurationLockFingerprint": "sha256:630cd4bea6288cc00098452f6b00142229c71a468ef885dc4d4636a1b9493d5a",
+  "graphFingerprint": "sha256:c253808db49ff6eb910c6eda3911ef88255beb34dadc33ab31595acca1b0ed23",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -117,7 +117,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:1e5a8489f14f647d1811cb2f240240735cc25fba66530c788c3749f9423767fb"
+      "fingerprint": "sha256:630cd4bea6288cc00098452f6b00142229c71a468ef885dc4d4636a1b9493d5a"
     }
   ],
   "effects": [],

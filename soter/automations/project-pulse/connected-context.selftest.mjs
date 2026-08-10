@@ -665,6 +665,20 @@ export async function runContainedProjectPulseConnectedWorkflow(
         }]
       }
     }).state, 'failed');
+    assert.equal(evaluateProjectPulseConnectedVerification({
+      operation: compiled.batch.operations[1],
+      resolvedInput: exactVerificationInput,
+      output: {
+        records: [{
+          type: 'project-feed-entry',
+          id: createdRecordId,
+          fields: {
+            ...structuredClone(exactStatusFields),
+            sourceUri: 'https://example.test/unreviewed-project-status-source'
+          }
+        }]
+      }
+    }).reasonCode, 'READ_AFTER_WRITE_MISMATCH');
     const verified = await completeDurableConnectedTransactionExecution({
       root: temporaryRoot,
       checkpointId: transaction.checkpoint.id,

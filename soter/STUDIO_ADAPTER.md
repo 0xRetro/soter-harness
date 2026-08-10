@@ -193,6 +193,12 @@ provider-mapping scopes plus constraints and fingerprints. It cannot represent
 examples, defaults, target values, provider property values, source-input values, or
 execution authority. Renderer labels derive only from its public
 family/subject/field and portable record/field vocabulary.
+Source-input slots are replacement fields, not capability explorers: Core projects
+only properties already present in the tracked template, marks every projected
+replacement required, and preserves an existing string-list's exact item count as
+equal minimum and maximum constraints. Optional capability properties absent from
+the template remain unexposed. Studio must keep a fixed-cardinality list's add and
+remove controls disabled and submit exactly that many private values.
 
 The renderer keeps private values in the mounted transaction desk only. It
 preserves the description order, represents every explicit optional omission

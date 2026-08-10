@@ -10,8 +10,8 @@
     "id": "task-capture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:0b980d456723a200b1ba1fb42d3d59d99ff172ba1095800ff364c4d0ef392bf1",
-  "graphFingerprint": "sha256:2f3f7e41f6abdcb9d13b26ffd99cf82eb8fcedf8e419410fddeeba68da631938",
+  "configurationLockFingerprint": "sha256:5c9572c56a899089e221c69bc6183ed0b5f3e1b10063e810310c3cf2087ec7f5",
+  "graphFingerprint": "sha256:29009e75670ef7bc76dd238cc6838023989b3b5f45841973133f2707d25467c7",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -134,7 +134,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:0b980d456723a200b1ba1fb42d3d59d99ff172ba1095800ff364c4d0ef392bf1"
+      "fingerprint": "sha256:5c9572c56a899089e221c69bc6183ed0b5f3e1b10063e810310c3cf2087ec7f5"
     }
   ],
   "effects": [],

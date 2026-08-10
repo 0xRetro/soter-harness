@@ -626,12 +626,12 @@
         {
           "path": "soter/core/configuration-transactions.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:20162aafc131f17edd18b4cecb955cf1cac36b3caa557db7026e7bd89412c34a"
+          "fingerprint": "sha256:437869f8bd998492b3a0f037309b16f8dfbba6876b974ae8e357b6ea1da69ded"
         },
         {
           "path": "soter/core/configuration-transactions.selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:de509a1fda3b05681733d987a589892b2b9e89bc52c0e34e1d7c1e7f0d02e5c6"
+          "fingerprint": "sha256:707cc5632df49744de7cfa05df8cc6af6f94ffdfd52e9dc6302d4a51897332f8"
         },
         {
           "path": "soter/core/configuration-view.mjs",
@@ -995,12 +995,12 @@
         {
           "path": "soter/automations/contact-capture/connected-context.selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:eea8ca38c64af4a392e329b7e72a5ea84f82c9ae0191377c97d025ec8ecf3b8a"
+          "fingerprint": "sha256:ade65a5634c1c11bc3d96585539ef8527b5b3c831ff374020365148629f0e22a"
         },
         {
           "path": "soter/automations/contact-capture/connected.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:a183b57e11b2492d0c02ba16aa0d5ad5dd10f2ee7bd2c09fcfc544bfeb315fc3"
+          "fingerprint": "sha256:1133e8381b6312b76336b7e3956c608745e3737f703b26fb0870b0223ee9e485"
         },
         {
           "path": "soter/automations/contact-capture/contact-capture.selftest.mjs",
@@ -1564,5 +1564,5 @@
       "fingerprint": "sha256:87b5873be41f805231fafc2847ca86797d7217071116d35e5b9a9a5be4804e05"
     }
   ],
-  "graphFingerprint": "sha256:e4a2912254724b55ea6e8f86dd575e3ddfb01982553ffeeef9c05e880bcaca89"
+  "graphFingerprint": "sha256:9d65adb82bdfc554c485ce4588dd31e5de5b49acebfbbb59048dcc2eb60f2dbe"
 }

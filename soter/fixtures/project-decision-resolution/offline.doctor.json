@@ -6,7 +6,7 @@
   "level": "offline",
   "configuration": {
     "name": "project-decision-resolution",
-    "lockFingerprint": "sha256:3e4cc367a2499c9662dd8323b9afbd59cdd8eedd0569e469787d1fde4e15a5ad"
+    "lockFingerprint": "sha256:8b50dc1f679847009b75cc266fbc8fc83a4752b33dda6593c19418354a46beb3"
   },
   "states": {
     "valid": "passed",

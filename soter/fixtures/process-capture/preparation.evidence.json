@@ -10,8 +10,8 @@
     "id": "run.process-capture.preparation-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:5bbf2b5fecc46e19f9cb08d7995bc355a28f575921907c5c3d0795babfe2900d",
-  "graphFingerprint": "sha256:ba6e28dc6841cfb5f70978518790dfe43325b94c2e620767016d8cf833efc717",
+  "configurationLockFingerprint": "sha256:e1a1c2d43588cf3c973e7ef445db3dd93137bfd78c8244ea7c7eff6763e9dce9",
+  "graphFingerprint": "sha256:bd2c63e8b365a52220b642b60c5af547ece2db49e8a460585ba38c064522bcba",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -236,7 +236,7 @@
     {
       "role": "context-snapshot",
       "id": "context.process-capture.preparation-fixture",
-      "fingerprint": "sha256:b5eacd1f5e432f2fedbf63f6bb48e8a253978bd216f35953bfb17ccd0608a602"
+      "fingerprint": "sha256:b5aa451bf556bb63d333eacd116b9ea1b87cbce6614c2fb120fa32cdec8fd6fe"
     },
     {
       "role": "process-capture-preview",

@@ -750,13 +750,20 @@ test('first-use typed onboarding seals, resumes, and applies only the exact priv
       slack: 'soter://authority/slack-e2e',
       policies: 'collection://0123456789abcdef0123456789abcdef',
       workspace: 'TSTUDIOE2E',
-      property: 'Policy name'
+      property: 'Policy name',
+      policyId: 'PRIVATE_CONVERSATION_REVIEW_POLICY_E2E_ID'
     };
     await page.getByLabel('URI — Authority communications instance').fill(privateValues.communications);
     await page.getByLabel('URI — Authority slack instance').fill(privateValues.slack);
     await page.getByLabel('Policies — Integration notion').fill(privateValues.policies);
     await page.getByLabel('Workspace id — Integration slack').fill(privateValues.workspace);
     await page.getByLabel('Provider property — Conversation review policy · Name').fill(privateValues.property);
+    const policyId = page.getByLabel('Item 1');
+    await expect(policyId).toHaveCount(1);
+    await expect(policyId).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Add list item' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Remove item 1' })).toBeDisabled();
+    await policyId.fill(privateValues.policyId);
     await page.getByRole('button', { name: 'Seal first-use plan' }).click();
     await expect(page.getByText('Fingerprint-only scope')).toBeVisible();
     for (const value of Object.values(privateValues)) {
@@ -883,6 +890,12 @@ test('first-use typed onboarding seals, resumes, and applies only the exact priv
     const lockPath = path.join(root, '.soter/state/configuration-locks', configurationName + '.json');
     expect(fs.existsSync(desiredPath)).toBe(true);
     expect(fs.existsSync(lockPath)).toBe(true);
+    const desiredConfiguration = JSON.parse(fs.readFileSync(desiredPath, 'utf8')) as {
+      sources: Array<{ id: string; input: { ids?: string[] } }>;
+    };
+    const policySources = desiredConfiguration.sources.filter(({ id }) => id === 'source.policy.conversation-review');
+    expect(policySources).toHaveLength(1);
+    expect(policySources[0].input.ids).toEqual([privateValues.policyId]);
     expect(fs.statSync(desiredPath).mode & 0o777).toBe(0o600);
     expect(fs.statSync(lockPath).mode & 0o777).toBe(0o600);
     expect(fs.statSync(path.dirname(desiredPath)).mode & 0o777).toBe(0o700);

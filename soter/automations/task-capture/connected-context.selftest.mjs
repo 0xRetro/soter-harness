@@ -1057,6 +1057,50 @@ export async function runContainedTaskCaptureConnectedWorkflow(
         }]
       }
     }).state, 'failed');
+    const unsetTaskOperation = structuredClone(compiled.batch.operations[0]);
+    const unsetTaskFields = structuredClone(exactTaskFields);
+    delete unsetTaskFields.assigneeIds;
+    delete unsetTaskFields.nextActionOn;
+    unsetTaskOperation.review.after.reviewValue.fields = structuredClone(unsetTaskFields);
+    unsetTaskOperation.review.after.fingerprint = fingerprintJson(
+      unsetTaskOperation.review.after.reviewValue
+    );
+    unsetTaskOperation.verification.expectation.expectedFingerprint = fingerprintJson({
+      records: [{
+        type: 'task',
+        fields: unsetTaskFields,
+        recordIdState: 'write-output-bound'
+      }]
+    });
+    assert.equal(evaluateTaskCaptureConnectedVerification({
+      operation: unsetTaskOperation,
+      resolvedInput: exactVerificationInput,
+      output: {
+        records: [{
+          type: 'task',
+          id: createdRecordId,
+          fields: {
+            ...structuredClone(unsetTaskFields),
+            assigneeIds: [],
+            nextActionOn: null
+          }
+        }]
+      }
+    }).reasonCode, 'VERIFICATION_PASSED');
+    assert.equal(evaluateTaskCaptureConnectedVerification({
+      operation: unsetTaskOperation,
+      resolvedInput: exactVerificationInput,
+      output: {
+        records: [{
+          type: 'task',
+          id: createdRecordId,
+          fields: {
+            ...structuredClone(unsetTaskFields),
+            assigneeIds: ['https://www.notion.so/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee']
+          }
+        }]
+      }
+    }).reasonCode, 'READ_AFTER_WRITE_MISMATCH');
     const verified = await completeDurableConnectedTransactionExecution({
       root: temporaryRoot,
       checkpointId: written.checkpoint.id,

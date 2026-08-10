@@ -355,6 +355,12 @@ function expectedStatusFields(operation) {
   return after.fields;
 }
 
+function normalizedVerificationFields(fields) {
+  return Object.fromEntries(Object.entries(fields).filter(([, value]) => {
+    return value !== null && !(Array.isArray(value) && value.length === 0);
+  }));
+}
+
 function matchingStatusRecord(records, expectedFields, resolvedInput) {
   if (records.length !== 1 || records[0]?.type !== 'project-feed-entry') return false;
   const record = records[0];
@@ -366,9 +372,8 @@ function matchingStatusRecord(records, expectedFields, resolvedInput) {
     && resolvedInput.ids[0] === record.id
     && typeof record.id === 'string' && Boolean(record.id)
     && observed && typeof observed === 'object' && !Array.isArray(observed)
-    && Object.entries(expectedFields).every(([key, value]) => {
-      return fingerprintJson(observed[key]) === fingerprintJson(value);
-    });
+    && fingerprintJson(normalizedVerificationFields(observed))
+      === fingerprintJson(normalizedVerificationFields(expectedFields));
 }
 
 function documentObservation(output) {

@@ -626,12 +626,12 @@
         {
           "path": "soter/core/configuration-transactions.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:20162aafc131f17edd18b4cecb955cf1cac36b3caa557db7026e7bd89412c34a"
+          "fingerprint": "sha256:437869f8bd998492b3a0f037309b16f8dfbba6876b974ae8e357b6ea1da69ded"
         },
         {
           "path": "soter/core/configuration-transactions.selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:de509a1fda3b05681733d987a589892b2b9e89bc52c0e34e1d7c1e7f0d02e5c6"
+          "fingerprint": "sha256:707cc5632df49744de7cfa05df8cc6af6f94ffdfd52e9dc6302d4a51897332f8"
         },
         {
           "path": "soter/core/configuration-view.mjs",
@@ -1529,5 +1529,5 @@
       "fingerprint": "sha256:2d62ef9fc67347542116ec0c2ff3af7ebd95a67fd55964d34dd4a619587b09fa"
     }
   ],
-  "graphFingerprint": "sha256:32a815cb5d6a0b49a88aa2a868e51ed5a143cf4b56f1e0fe0d49326836753dd4"
+  "graphFingerprint": "sha256:f71d3e044f171a4d72cfce59bb36016e82efba83dacb6bb2911115ca6fe8b61c"
 }

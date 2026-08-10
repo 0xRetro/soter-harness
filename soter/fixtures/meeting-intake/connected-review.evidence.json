@@ -7,11 +7,11 @@
   "claim": "One fixture-contained connected acquisition produced a grounded private review whose incomplete write-verification boundary remained mechanically held without creating execution authority.",
   "subject": {
     "type": "run",
-    "id": "run.meeting-intake.connected-acquisition.8daec09ac4f6c6f9036a2a1e",
+    "id": "run.meeting-intake.connected-acquisition.1953dc31f0701bc00e7fb503",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:d328166f076acfb7b3e8541353181cfd58b1dc1aa522ef600f08c186b5ba29be",
-  "graphFingerprint": "sha256:4fe4080488b5bf23f319b269a88e213531325337fe9af92d77fa7a0ec86eb8ae",
+  "configurationLockFingerprint": "sha256:f5662c7ee40c9f479dd1c9ed63db7719e0754ff3a6c31440db2ff268eb58747c",
+  "graphFingerprint": "sha256:fee14c4c90c71388bf02b15f15c31553e325dcd2742fc368266a3a0af0d06e2e",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -194,18 +194,18 @@
   "artifacts": [
     {
       "role": "prepared-work",
-      "id": "work.meeting-intake.8daec09ac4f6c6f9036a2a1e",
-      "fingerprint": "sha256:25c5fe66c7ca28483bc15d88238d6f37bb7ddc519da57699ab77b997f7b2858b"
+      "id": "work.meeting-intake.1953dc31f0701bc00e7fb503",
+      "fingerprint": "sha256:3e47a400f57dfe33c807f172f26007a26f8352b460b308082853013e4e23d449"
     },
     {
       "role": "automation-decision",
       "id": "decision.meeting-intake.connected-selftest",
-      "fingerprint": "sha256:60e7ecaa69aa746e381addadf2d54e7fc686708b0949cb52c2931c5474ec2615"
+      "fingerprint": "sha256:9670918aa124a7256b07b2746e471d659c4efe83a407febd01caab5747ac8ed8"
     },
     {
       "role": "automation-proposal",
       "id": "proposal.meeting-intake.connected-selftest",
-      "fingerprint": "sha256:98b6da733d47615baefae1d5fd19388294f69156f88edf3c38a5f79eeedd5f69"
+      "fingerprint": "sha256:5f29a9224049e18e07d60926479b2772b0afc9804aa2c43c48f16b83eef95e78"
     }
   ],
   "effects": [],
@@ -236,10 +236,10 @@
     "version": "1.2.0",
     "configurationName": "meeting-intake",
     "privateConfigurationFingerprint": "sha256:0d435e9ac2c5e8cdfa432be85802444ebb3abaa52e4f08a381c70bfa8ac9e784",
-    "privateLockFingerprint": "sha256:d328166f076acfb7b3e8541353181cfd58b1dc1aa522ef600f08c186b5ba29be",
-    "privateGraphFingerprint": "sha256:4fe4080488b5bf23f319b269a88e213531325337fe9af92d77fa7a0ec86eb8ae",
-    "trackedTemplateLockFingerprint": "sha256:3be67d7007699b19c126e94f1f85280818ff0dcc47a8822bcaab955119e7cfe8",
-    "trackedTemplateGraphFingerprint": "sha256:32f2a51c20dd22a87661d129cd72e09d8829a5abd8e0c6feafa860205774065f",
+    "privateLockFingerprint": "sha256:f5662c7ee40c9f479dd1c9ed63db7719e0754ff3a6c31440db2ff268eb58747c",
+    "privateGraphFingerprint": "sha256:fee14c4c90c71388bf02b15f15c31553e325dcd2742fc368266a3a0af0d06e2e",
+    "trackedTemplateLockFingerprint": "sha256:8e49ec74573f39d24d75ce1be3dcefcb1b4298c4e093c752c9f4a2b3494b0df5",
+    "trackedTemplateGraphFingerprint": "sha256:30ff70029a0fd1f06bf1026c58310cbc4ddd8ecaa967ff5e5b0bd2b0f5160e4d",
     "applicabilityProjectionFingerprint": "sha256:80d5e017a62d99185110dfe2d8ed73592c67c21f2bf96901a6293f2e3d757fe3",
     "substitutions": {
       "notionTargetCount": 8,
@@ -261,6 +261,6 @@
       "rawProviderResponsesIncluded": false,
       "privateInputsIncluded": false
     },
-    "basisFingerprint": "sha256:a685715e97e3e9c1ee26c16e1520d2670645aacdd10763bc7376b0a90a601d74"
+    "basisFingerprint": "sha256:eb1ca9a96f55209a9f1e5d47c65ef4823183adaf935bb83f78e76106e43a515a"
   }
 }

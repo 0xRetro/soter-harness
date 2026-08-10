@@ -10,8 +10,8 @@
     "id": "run.project-work-promotion.duplicate-task-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:138dc6bec6fc3ca8a0c1887db15672aedd7bc7d0e771ebd9a2c2627f31e86cb2",
-  "graphFingerprint": "sha256:284db289ccb8429460f10577ec8672fd8ef7be040c6eb7a13abb5c20a27f0d5c",
+  "configurationLockFingerprint": "sha256:a7f4cd7f30eb3f64c8f3843450647933aeca97a7095ad631393b89038c98a38e",
+  "graphFingerprint": "sha256:905b7367bd6b553fb4bb01e9066eb8fe4fe1a1f9efd9942b772efcfeb4f4ea90",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -238,7 +238,7 @@
     {
       "role": "context-snapshot",
       "id": "context.project-work-promotion.duplicate-task-fixture",
-      "fingerprint": "sha256:491ab0ac6bf8603ab20e3bf6b156b3cd8723e7d2cb71c254066cde31e743b7cb"
+      "fingerprint": "sha256:98ec1c4c0ba1ee687e3283d258892dcee2fa50fbf5a4f620d8be02ae23b154c8"
     },
     {
       "role": "project-work-promotion-preview",

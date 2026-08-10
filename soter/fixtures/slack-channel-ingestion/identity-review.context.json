@@ -4,8 +4,8 @@
   "id": "context.slack-channel-ingestion.preparation-fixture.identity",
   "runId": "run.slack-channel-ingestion.preparation-fixture.identity",
   "createdAt": "2026-07-21T21:00:00.000Z",
-  "configurationLockFingerprint": "sha256:406fd8fff5d5ea0c72080b4f2097c831f58fc05910e40b8fe6cddad4c7a7d76e",
-  "graphFingerprint": "sha256:e2e3c0f5265f4e8b14e35092dd2ee05cc0fa8b0a839e725363fdd410eac14184",
+  "configurationLockFingerprint": "sha256:25eab405180af947dc90e3bb5508d6212aa0e4b4a162bb5fb1e51a54e7d30ae7",
+  "graphFingerprint": "sha256:37278fb5754ed2bc111359429cc8e79207c8157173dafa05bbc1908ea2efff44",
   "containment": "fixture",
   "entries": [
     {

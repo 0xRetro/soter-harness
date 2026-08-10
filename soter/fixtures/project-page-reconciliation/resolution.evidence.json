@@ -10,8 +10,8 @@
     "id": "project-page-reconciliation",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:3bc12848770806256d27fcfdd4cc93eb5211bfef9b112778d9d5ce020ce9b621",
-  "graphFingerprint": "sha256:03a8861ee746499d056e8d90305b6704e80db7aa7f917ee28408337702424486",
+  "configurationLockFingerprint": "sha256:025f0942efa6fe04370bd1ed06bb47f6b5aa8b7021c6c0592d8f684c85a3aace",
+  "graphFingerprint": "sha256:69c942e86450cbae57de6476f6acd26e3a71e4f576ae67bb6ceb0401f3a5e65f",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -117,7 +117,7 @@
     },
     {
       "role": "configuration-lock",
-      "fingerprint": "sha256:3bc12848770806256d27fcfdd4cc93eb5211bfef9b112778d9d5ce020ce9b621"
+      "fingerprint": "sha256:025f0942efa6fe04370bd1ed06bb47f6b5aa8b7021c6c0592d8f684c85a3aace"
     }
   ],
   "effects": [],

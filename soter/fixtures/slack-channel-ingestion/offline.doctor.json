@@ -6,7 +6,7 @@
   "level": "offline",
   "configuration": {
     "name": "slack-channel-ingestion",
-    "lockFingerprint": "sha256:406fd8fff5d5ea0c72080b4f2097c831f58fc05910e40b8fe6cddad4c7a7d76e"
+    "lockFingerprint": "sha256:25eab405180af947dc90e3bb5508d6212aa0e4b4a162bb5fb1e51a54e7d30ae7"
   },
   "states": {
     "valid": "passed",

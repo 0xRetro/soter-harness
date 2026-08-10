@@ -1129,6 +1129,10 @@ the entered source-input values only in that selected form, and sends the exact
 ordered typed input once through sender-validated local IPC. A successful
 response unmounts and clears the values; the renderer never copies them into
 the URL, browser storage, workspace snapshot, diagnostics, or DOM after sealing.
+Tracked source inputs are replaced rather than extended: only source properties
+already present in the selected template are exposed, every exposed replacement is
+required, and existing string lists retain their exact item count. Optional
+capability properties absent from the template do not become onboarding fields.
 Core intentionally retains the complete candidate inside the exact private plan
 state, while the returned sanitized plan and later inspection contain only
 identifiers, counts, constraints, transaction facts, and fingerprints.

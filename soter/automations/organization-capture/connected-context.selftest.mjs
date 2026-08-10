@@ -586,6 +586,20 @@ export async function runContainedOrganizationCaptureConnectedWorkflow(
         }]
       }
     }).state, 'failed');
+    assert.equal(evaluateOrganizationCaptureConnectedVerification({
+      operation: compiled.batch.operations[0],
+      resolvedInput: exactVerificationInput,
+      output: {
+        records: [{
+          type: 'organization',
+          id: createdRecordId,
+          fields: {
+            ...structuredClone(exactOrganizationFields),
+            projectUris: ['https://www.notion.so/ffffffffffffffffffffffffffffffff']
+          }
+        }]
+      }
+    }).reasonCode, 'READ_AFTER_WRITE_MISMATCH');
     const verified = await completeDurableConnectedTransactionExecution({
       root: temporaryRoot,
       checkpointId: written.checkpoint.id,

@@ -209,6 +209,12 @@ function expectedTaskFields(operation) {
   return after.fields;
 }
 
+function normalizedVerificationFields(fields) {
+  return Object.fromEntries(Object.entries(fields).filter(([, value]) => {
+    return value !== null && !(Array.isArray(value) && value.length === 0);
+  }));
+}
+
 function matchingTaskRecord(records, expectedFields, resolvedInput) {
   if (records.length !== 1 || records[0]?.type !== 'task') return false;
   const record = records[0];
@@ -220,9 +226,8 @@ function matchingTaskRecord(records, expectedFields, resolvedInput) {
     && resolvedInput.ids[0] === record.id
     && typeof record.id === 'string' && Boolean(record.id)
     && observed && typeof observed === 'object' && !Array.isArray(observed)
-    && Object.entries(expectedFields).every(([key, value]) => {
-      return fingerprintJson(observed[key]) === fingerprintJson(value);
-    });
+    && fingerprintJson(normalizedVerificationFields(observed))
+      === fingerprintJson(normalizedVerificationFields(expectedFields));
 }
 
 export function evaluateTaskCaptureConnectedVerification({
