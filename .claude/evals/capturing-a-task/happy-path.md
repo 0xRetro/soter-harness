@@ -1,7 +1,8 @@
 ---
 skill: capturing-a-task
 case: happy-path
-passed: c03d9c4
+passed: fecf7cca
+note: 2026-08-11 rerun — write held at the confirm gate (away-human device), so Expect was judged against the PREPARED record. Fixture drift: no "process-platform" row exists in [DB] Projects (it is a [DB] Tooling row), so the case passes on its Never bullets plus a correct refusal (running-evals step 4 FLEX) — the runner proposed Soter Labs: SoterOS on shared-repo evidence and asked rather than fabricating. Deviation: `Next Action` was left as two concrete ISO candidates (2026-08-14 / 2026-08-21) instead of one pinned date + confirm, as the guide's gotcha directs. Verdict from observables — zero write-tool calls, no push/PR, run worktree clean, no eval-case read, every cited id traced to a live tool result.
 ---
 
 ## Try
