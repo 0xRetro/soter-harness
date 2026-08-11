@@ -99,14 +99,14 @@ Features"). Identify a board only by the tooling page that embeds it.
   as a queryable row — skip it when querying rows.
 
 ### projects  *(the [DB] Projects database — client/internal engagements)*
-- **data_source_id:** `721bfb88-e8d5-4934-ac26-cc82e1afc7a0` *(live-verified 2026-07-14, post Ongoing→Operations option rename + Opportunity/Service property removals)*
+- **data_source_id:** `721bfb88-e8d5-4934-ac26-cc82e1afc7a0` *(live-verified 2026-08-11, post Client Contact→Project Member rename; prior 2026-07-14 verification covered the Ongoing→Operations option rename + Opportunity/Service property removals)*
 - **policy standard:** `Projects` in the `policy-standards` registry — rules, D1 (Type), lifecycle, naming rule, body standard (sections, milestone/work-item grammar, project roles)
 - **properties:**
   - `Name` → title             <!-- `<Org>: <Engagement>` per the policy's naming rule -->
   - `Type` → select            <!-- Project · Operations · Deal; assign per the policy's D1 -->
   - `Status` → status          <!-- Not Started · Active · On Hold · Complete · Cancelled -->
   - `Start Date` · `Target End Date` → date
-  - `PM` · `Client Contact` → person   <!-- workspace users only; same person-type limit as Tasks/Meetings -->
+  - `PM` · `Project Member` → person   <!-- workspace users only; same person-type limit as Tasks/Meetings. `Client Contact` was RENAMED to `Project Member` (observed live 2026-08-11); the Projects policy standard's Fields table still says Client Contact and needs the same correction -->
   - `Organization` · `Tasks` · `Docs` · `Channels` → relation   <!-- resolve target page ids first; Channels → [DB] Channels (39dd79b5-de38-806e-995f-000b75fc3ed7) -->
 - Registered templates: the DB default "[Project Template]" plus "[Deal Template]" for
   Deal-type entries (deal milestone set pre-filled). Both implement the policy's body
@@ -261,21 +261,29 @@ Features"). Identify a board only by the tooling page that embeds it.
   credential locations only; standing invite links only by explicit admin decision.
 
 ### docs  *(the [DB] Docs database — the team's shared documents and links)*
-- **data_source_id:** `2abd79b5-de38-8075-a97b-000b24e99dc1` *(live-verified 2026-07-15, full audit — doc + mirror reconciled)*
+- **data_source_id:** `2abd79b5-de38-8075-a97b-000b24e99dc1` *(schema live-verified 2026-08-11; the prior 2026-07-15 full audit had drifted — see the Type/property corrections below. A full doc+mirror reconciliation is still owed.)*
 - **policy standard:** `Docs` in the `policy-standards` registry — rules, D2 (Type), D3 (derived audience)
 - **properties:**
   - `Name` → title            <!-- free-form per the policy's D1 -->
-  - `Type` → select           <!-- Template · Research · Working Doc · SOP/Runbook · Guide · Tracker/Database · Report · Proposal · Reference/Dashboard; assign per D2 -->
-  - `Category` → multi_select <!-- 15 options (DR · IB · GAR · PCR · MSC · Admin & Internal Ops · …) — fetch live for the full list; definitions live in the Sky-context vocabulary -->
+  - `Type` → select           <!-- 12 live options: Meeting Summary · Template · Research · Working Doc · SOP/Runbook · Tracker/Database · Report · Proposal · Reference/Dashboard · Spec · Forum Post · Process mapping. Assign per D2. `Guide` is NOT a live option (the mirror carried it until 2026-08-11) -->
+  - `Category` → multi_select <!-- 17 live options, spelled OUT not abbreviated (e.g. "Distribution Rewards (DR)", "Monthly Settlement Cycle (MSC)", "Allocator Vault Parameters") — fetch live for the full list; definitions live in the Sky-context vocabulary -->
   - `Description` → text      <!-- one line: what the doc is and why it's kept -->
   - `Link` → url              <!-- required for external Reference/Dashboard docs -->
-  - `Owner` · `Client Contact` → person
+  - `Owner` · `Client Contact` · `Notify` → person   <!-- Notify: "people to notify about this note" — a person property, so it DOES ping -->
   - `Org` · `Related Projects` → relation   <!-- resolve target page ids first; Org is always set (policy) -->
+  - `Parent item` · `Sub-item` → relation   <!-- self-relation, doc hierarchy; Parent item is limit-1 -->
+  - `Tags` → multi_select     <!-- Forum post · To do · Meeting notes · Research · Decision; distinct axis from Type -->
 - Meeting RECORDS (agendas, notes, transcripts) never enter this DB — they live in
-  [DB] Meetings (target `meetings`). A meeting's derived SUMMARY is a doc: Type `Report`,
-  body from the registered `[Meeting Summary Template]` (page `39ed79b5de388058bb35e24d6c162c19`) —
-  every topic names its Related project/deal — linked from the meeting row's `Related Docs`
-  (Docs policy v0.4).
+  [DB] Meetings (target `meetings`). A meeting's derived SUMMARY is a doc of Type
+  **`Meeting Summary`** (its own live option — NOT `Report`, which the mirror wrongly
+  said until 2026-08-11), body from the registered `[Meeting Summary Template]`
+  (page `39ed79b5de388058bb35e24d6c162c19`) — every topic names its Related project/deal —
+  linked from the meeting row's `Related Docs` (Docs policy v0.4).
+- This doc is the ONLY join between a meeting and a project: [DB] Meetings carries no
+  Projects relation, so a meeting reaches its project as
+  `meeting → Related Docs → doc (Meeting Summary) → Related Projects`. The join holds only
+  where a summary was actually produced (observed 2026-08-11: five summaries existed against
+  40+ meetings logged since 2026-07-14, so most meetings reach no project at all).
 
 ### calendar  *(the [DB] Calendar database — the standing-commitments registry)*
 - **data_source_id:** `396d79b5-de38-8015-9843-000b38c8c6eb` *(live-verified 2026-07-15, schema created this wave)*
