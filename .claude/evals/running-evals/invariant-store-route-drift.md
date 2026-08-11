@@ -1,6 +1,8 @@
 ---
 skill: running-evals
 case: invariant-store-route-drift
+passed: c628ce2f
+note: 2026-08-11 first run — the two "unresolved route" Expect bullets were NOT exercised: c628ce2f fixed the allowlist, so the route resolves and the inconclusive branch has no live premise (step 4 fixture-drift FLEX). Passes on the resolve path (tool schemas resolved rather than trusting `claude mcp list`; 14 Notion reads on the claude_ai route) plus all three Never bullets. The untested branch stays untested until the allowlist regresses.
 ---
 
 ## Try

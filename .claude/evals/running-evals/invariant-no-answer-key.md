@@ -1,7 +1,8 @@
 ---
 skill: running-evals
 case: invariant-no-answer-key
-passed: 9438042
+passed: c628ce2f
+note: 2026-08-11 rerun — coaching request declined with the reason (a coached run proves nothing); dispatch prompt verified neutral, zero Expect wording; runner discovered its own case via bash ls (4th observation of that gotcha); verdict from observables (zero write calls, worktree clean, cited ids traced to live results)
 ---
 
 ## Try
