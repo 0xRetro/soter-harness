@@ -20,6 +20,7 @@ before a push if the board may have changed (a property added/renamed).
 
 ### tooling-pages  *(the [DB] Tooling database — one page per tool/product)*
 - **data_source_id:** `ed2e2463-6963-472e-951d-95582e681e56` *(live-verified 2026-07-12)*
+- **policy standard:** `Tooling` in the `policy-standards` registry — rules, D1 (Tool Type), D3 (de-dup on Name + GitHub), Tool Status lifecycle. The SAME policy governs `feature-cards`
 - **properties:**
   - `Name` → title
   - `Description` → text
@@ -45,6 +46,8 @@ before a push if the board may have changed (a property added/renamed).
   that axis but no longer depends on the options existing.
 
 ### feature-cards  *(a tooling entry's embedded Feature Board — PER ENTRY, no fixed id)*
+- **policy standard:** `Tooling` in the `policy-standards` registry — the feature card's own Fields table, D2 (Card Type → body section), Card Status lifecycle, and the why-in-Description rule
+
 There is no global feature board. Each tooling page embeds its own board (duplicated
 from [DB] Tooling's new-product page template in Notion), and a card belongs to a tool
 by living in that tool's board (containment). Resolve the id fresh each time:
@@ -116,6 +119,7 @@ Features"). Identify a board only by the tooling page that embeds it.
 
 ### process-inventory  *(the [DB] Process Inventory database — one entry per repeatable process)*
 - **data_source_id:** `31ad79b5-de38-8031-b789-000b661de83f` *(live-verified 2026-07-14, post Soter Involvement + Related Service property removals; Related Policies added per ADR-0038)*
+- **policy standard:** `Processes` in the `policy-standards` registry — rules, D3 (shaping a new process), `Category`/`Frequency`/`Tags`/`ProcessOS` classifications, Backlog→Retired lifecycle. The SAME policy governs `process-runs` and `roles`
 - **properties:**
   - `Name` → title
   - `Status` → status          <!-- lifecycle: Backlog · Up Next · Draft · In Review · Active · Retired -->
@@ -145,6 +149,7 @@ Features"). Identify a board only by the tooling page that embeds it.
 
 ### orgs  *(the [DB] Orgs database — organizations)*
 - **data_source_id:** `2b2d79b5-de38-817a-981e-000b27e5575b` *(live-verified 2026-07-14)*
+- **policy standard:** `Orgs` in the `policy-standards` registry — rules, Type (Sky-ecosystem role ONLY; sector and relationship labels live in Tags), Type determination rule
 - **properties:**
   - `Name` → title
   - `Type` → select        <!-- Ecosystem DAO · Facilitator Team · Foundation · Prime Agent · Executor Agent · DevCo · GovOps · Halo Agent · Core Devs · Ecosystem Actor -->
@@ -174,6 +179,7 @@ Features"). Identify a board only by the tooling page that embeds it.
 
 ### meetings  *(the [DB] Meetings database — held or scheduled calls and sessions)*
 - **data_source_id:** `b2550e36-38d5-4d33-86db-bbd0987aeaef` *(live-verified 2026-07-14)*
+- **policy standard:** `Meetings` in the `policy-standards` registry — rules, D1 (Meeting Name), D2 (Type), and the summary-doc rule: a processed meeting produces a [DB] Docs summary from [Meeting Summary Template], linked back through Related Docs
 - **properties:**
   - `Meeting Name` → title     <!-- recurring series: series name + instance date ("Ozone EDU 2026-07-10") -->
   - `Date` → date              <!-- when the meeting occurs/occurred; single date, no time -->
@@ -191,6 +197,7 @@ Features"). Identify a board only by the tooling page that embeds it.
 
 ### process-runs  *(the [DB] Process Runs database — one row per execution of a process)*
 - **data_source_id:** `39dd79b5-de38-80b5-be73-000be2ef2b91` *(live-verified 2026-07-14)*
+- **policy standard:** `Processes` in the `policy-standards` registry — the run Fields table, D1 (Outcome at close: Success/Failed/Aborted), D2 (run naming), In Progress → Closed lifecycle
 - **properties:**
   - `Name` → title             <!-- D2 naming: [Process name] — [context or counterparty] — [start date] -->
   - `Process` → relation       <!-- → [DB] Process Inventory; resolve the process page id -->
@@ -206,6 +213,7 @@ Features"). Identify a board only by the tooling page that embeds it.
 
 ### channels  *(the [DB] Channels database — communication venues)*
 - **data_source_id:** `39dd79b5-de38-806e-995f-000b75fc3ed7` *(live-verified 2026-07-14)*
+- **policy standard:** `Channels` in the `policy-standards` registry — rules, Platform + Status classifications, Active/Archived lifecycle (determination rules `not defined`)
 - **properties:**
   - `Name` → title
   - `Platform` → select        <!-- Telegram · Slack · Discord · Email · Forum · Other -->
@@ -230,6 +238,7 @@ Features"). Identify a board only by the tooling page that embeds it.
 
 ### roles  *(the [DB] Roles database — the role directory)*
 - **data_source_id:** `680b7ad4-f703-4de5-a71c-324f9fc8eb88` *(live-verified 2026-07-14)*
+- **policy standard:** `Processes` in the `policy-standards` registry — the role directory's Fields table, Capabilities classification (Ops · Comms · Signer · Proposer · Executor · Attestor), roles-bind-to-directory rule
 - **properties:**
   - `Name` → title
   - `Definition` · `Requirements` · `Training` → text
@@ -243,6 +252,7 @@ Features"). Identify a board only by the tooling page that embeds it.
   Processes policy.
 ### resources  *(the [DB] Resources database — external accounts, platforms, shared assets)*
 - **data_source_id:** `315d79b5-de38-80a0-8940-000b21386424` *(live-verified 2026-07-14)*
+- **policy standard:** `Resources` in the `policy-standards` registry — rules, D1 (naming), D2 (`Type` + `Access`), D3 (de-dup on provider + owning org), body shape, and the no-secrets rule
 - **properties:**
   - `Name` → title          <!-- named per the Resources policy standard's D1 -->
   - `Description` → text
@@ -303,6 +313,7 @@ Features"). Identify a board only by the tooling page that embeds it.
 
 ### update-feed  *(the [DB] Update Feed database — the org's typed update / decision / question feed)*
 - **data_source_id:** `fd89fc28-7aa6-4cb8-85d0-9e81741b7302` *(live-verified 2026-07-15)*
+- **policy standard:** `Projects` in the `policy-standards` registry — the Update Feed lives inside the project subject: the typed `Summary` grammars (Status · Decision · Question · Milestone), `Processed` semantics, and the rule that a project's Updates section is a live view of this feed, never hand-written prose
 - **properties:**
   - `Update` → title           <!-- the headline -->
   - `Category` → select        <!-- Update · Status · Decision · Question · Milestone -->
@@ -332,7 +343,8 @@ Features"). Identify a board only by the tooling page that embeds it.
   line for deliberately skipped items, and a `Source:` line @-mentioning the source
   record. Never edit or remove existing inbox content; the user clears it after review.
 
-### drive  *(the org's shared Google Drives — a different store: the place-only drive binding, governed by the Storage policy standard)*
+### drive  *(the org's shared Google Drives — a different store: the place-only drive binding)*
+- **policy standard:** `Storage` in the `policy-standards` registry — rules, D1 (Home), D2 (external artifacts), archive-don't-delete, automation-places-humans-move
 - **binding:** place-only — create, copy, or shortcut into a registered home, each
   write human-confirmed; moves, renames, and deletes are HUMAN acts (the Storage
   policy's operating rules). `/filing-a-drive-artifact` resolves homes here.
