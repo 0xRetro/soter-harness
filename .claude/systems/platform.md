@@ -43,6 +43,14 @@ are mechanisms OF the systems that use them.
   (`mcp__plugin_<plugin>_<server>__<tool>`) may appear ONLY in agent allowlists
   (eval-runner) and permission rules — never in guide or standard prose — and must be
   re-derived if a server's delivery route changes (allowlists fail closed).
+  One server may arrive by MORE THAN ONE route depending on the host embedding
+  claude-code: a plugin dependency delivers `mcp__plugin_<plugin>_<server>__*`, a
+  claude.ai connector delivers `mcp__claude_ai_<Server>__*`. An allowlist therefore
+  enumerates EVERY route it must work under, not the route of the host that authored
+  it (observed 2026-08-11: eval-runner listed the plugin route only and was silently
+  store-blind under a host delivering the connector route — `claude mcp list` showed
+  the server "Connected", which is about the SERVER, not about the tool name an
+  allowlist has to match).
 - `.claude/rules/parallel-sessions.md` — the multi-session operating rule: one
   session = one worktree = one branch; root checkout parked on main (ADR-0027)
 - per-primitive usage standards — authored via the forge ONLY on an observed RED

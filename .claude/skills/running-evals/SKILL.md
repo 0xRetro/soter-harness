@@ -42,7 +42,10 @@ as a fix to the piece.
    of the drafting conversation.
 3. **Dispatch as `eval-runner`, one agent per case, background.** The runner is
    read-only toward external stores (`.claude/agents/eval-runner.md`) — a leaked
-   write becomes a visible denied tool call, which IS evidence. Parallel cases are
+   write becomes a visible denied tool call, which IS evidence. For a case that needs
+   a live store, first confirm the runner's route-qualified store names RESOLVE in
+   this host (allowlists match the name, not the server, and fail closed) — an
+   unresolved route makes the run inconclusive, never a failure of the guide. Parallel cases are
    fine; FLEX: stagger them when they hit the same live records or a rate-limited
    API (a 429 the agent retries through is not a failure). FLEX: a meta-case whose
    scenario itself dispatches agents (evals of kernel run/authoring guides) uses the
@@ -105,8 +108,18 @@ as a fix to the piece.
   resolves to amended content before dispatch; tell runners to fail-not-fallback if
   an expected file is missing. A runner reading files outside its stated working dir
   is a red flag in the transcript, not a convenience.
+- (observed 2026-08-11) The runner's allowlist named ONE delivery route for notion and
+  slack (`mcp__plugin_*`), so under a host delivering them as claude.ai connectors
+  (`mcp__claude_ai_*`) it had no store tools at all — while `claude mcp list` still
+  reported both servers "Connected", because that reports the SERVER, not the tool
+  name an allowlist matches. A store-blind runner's "I could not read it" reads as a
+  guide failure and stamps a false verdict. Counter: step 3's pre-flight; the
+  allowlist enumerates every route (`.claude/systems/platform.md`). Widening the
+  runner to generic or write-capable tools is the WRONG fix — add the missing READ
+  route.
 
 ## Evals
 - `.claude/evals/running-evals/happy-path.md`
 - `.claude/evals/running-evals/pressure-inline-self-test.md`
 - `.claude/evals/running-evals/invariant-no-answer-key.md`
+- `.claude/evals/running-evals/invariant-store-route-drift.md`

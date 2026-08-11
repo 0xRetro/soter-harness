@@ -14,11 +14,24 @@ tools:
   - Bash
   - ToolSearch
   - WebFetch
+  # Store reads are listed once PER DELIVERY ROUTE, because an allowlist matches the
+  # route-qualified name and fails closed. A host that delivers notion/slack as plugin
+  # dependencies emits `mcp__plugin_<plugin>_<server>__*`; a host that delivers them as
+  # claude.ai connectors emits `mcp__claude_ai_<Server>__*`. Listing one route only
+  # leaves the runner silently store-blind on the other host — which reads as a guide
+  # failure instead of the wiring gap it is. Every name below is READ-only, so the
+  # containment promise is unchanged. Re-derive on a route change (`claude mcp list`);
+  # inventory lives in `.claude/systems/platform.md`.
   - mcp__plugin_Notion_notion__notion-fetch
   - mcp__plugin_Notion_notion__notion-search
   - mcp__plugin_Notion_notion__notion-query-data-sources
   - mcp__plugin_Notion_notion__notion-get-users
   - mcp__plugin_Notion_notion__notion-get-comments
+  - mcp__claude_ai_Notion__notion-fetch
+  - mcp__claude_ai_Notion__notion-search
+  - mcp__claude_ai_Notion__notion-query-data-sources
+  - mcp__claude_ai_Notion__notion-get-users
+  - mcp__claude_ai_Notion__notion-get-comments
   - mcp__plugin_slack_slack__slack_search_channels
   - mcp__plugin_slack_slack__slack_read_channel
   - mcp__plugin_slack_slack__slack_read_thread
@@ -26,6 +39,13 @@ tools:
   - mcp__plugin_slack_slack__slack_search_users
   - mcp__plugin_slack_slack__slack_read_user_profile
   - mcp__plugin_slack_slack__slack_search_public_and_private
+  - mcp__claude_ai_Slack__slack_search_channels
+  - mcp__claude_ai_Slack__slack_read_channel
+  - mcp__claude_ai_Slack__slack_read_thread
+  - mcp__claude_ai_Slack__slack_list_channel_members
+  - mcp__claude_ai_Slack__slack_search_users
+  - mcp__claude_ai_Slack__slack_read_user_profile
+  - mcp__claude_ai_Slack__slack_search_public_and_private
 ---
 
 You are executing a task in this repository on behalf of a user. Read CLAUDE.md and
