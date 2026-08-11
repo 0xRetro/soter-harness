@@ -81,7 +81,7 @@ Features"). Identify a board only by the tooling page that embeds it.
   real values.
 
 ### tasks  *(the [DB] Tasks database — actionable items)*
-- **data_source_id:** `2abd79b5-de38-80f8-9470-000b7181b18d` *(live-verified 2026-07-15, full audit — doc + mirror diffed, no drift)*
+- **data_source_id:** `2abd79b5-de38-80f8-9470-000b7181b18d` *(live-verified 2026-08-11)*
 - **policy standard:** `Tasks` in the `policy-standards` registry — rules, D1 (Context), lifecycle
 - **properties:**
   - `Name` → title
@@ -93,6 +93,8 @@ Features"). Identify a board only by the tooling page that embeds it.
   - `Next Action` → date
   - `Project` · `Related Docs` → relation   <!-- resolve the TARGET page id first -->
   - `Related Org` → rollup     <!-- READ-ONLY: derived via Project; never written -->
+  - `Project Access` → person  <!-- semantics `not defined` -->
+  - `Public Mirror` → relation <!-- limit 1 → Technical Risk Assessment Pipeline - Mirror DB; a linked task GETS A PUBLIC-FACING RECORD -->
   <!-- No Priority/Tag/Summary/Due — the March Standards page listed those; the live DB doesn't have them. -->
 - Registered templates: the DB default ("[Task Template]", page `36fd79b5de3880758f2fecd73df8e83b`,
   renamed from "[Task Template - DO NOT CHANGE]" 2026-07-15) + the legal template (page
