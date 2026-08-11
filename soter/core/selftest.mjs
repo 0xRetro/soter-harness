@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { spawn, spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 import {
   createFixtureRuntimeState,
@@ -45,14 +47,20 @@ import {
   assertProviderProbePlanCheckpoint
 } from './provider-probe-plans.mjs';
 import {
+  assertNativeResponseEnvelope,
   commitDurableContextSnapshot,
   completeDurableProviderProbeExecution,
   completeDurableOperationPlanExecution,
   failDurableHostExecution,
   getDurableHostExecution,
   listDurableHostExecutions,
+  nativeResponseEnvelopeByteLength,
   prepareDurableProviderProbeExecution,
-  prepareDurableOperationPlanExecution
+  prepareDurableOperationPlanExecution,
+  SOTER_NATIVE_RESPONSE_ENVELOPE_EXCEEDED,
+  SOTER_NATIVE_RESPONSE_ENVELOPE_MESSAGE,
+  SOTER_NATIVE_RESPONSE_MAX_BYTES,
+  SOTER_SDK_STDIO_TRANSPORT_MAX_BYTES
 } from './service.mjs';
 import {
   completeHostToolCall,
@@ -74,6 +82,13 @@ const NOTION_PROBE_CALL_ORACLE_ERROR =
   'Core selftest rejected a Notion probe call that did not match the independent oracle.';
 const NOTION_RECORD_CAPABILITY_RE =
   /^([a-z0-9]+(?:[.-][a-z0-9]+)*)[.]records[.]read$/;
+const CORE_SELFTEST_DEFAULT_JOBS = 8;
+const CORE_SELFTEST_PASS_SENTINEL = 'CORE SELFTEST SUMMARY: all 1 suites passed.';
+const CORE_SELFTEST_SUITE_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const CORE_SELFTEST_SIGNAL_EXIT_CODES = Object.freeze({
+  SIGINT: 130,
+  SIGTERM: 143
+});
 
 function soterSyntheticCredentialFixture(value) {
   return value;
@@ -86,6 +101,49 @@ function unicodeEscapeString(value) {
       ? '\\u' + codePoint.toString(16).padStart(4, '0')
       : '\\u{' + codePoint.toString(16) + '}';
   }).join('');
+}
+
+function nativeResponseAtByteLength(byteLength, marker = '') {
+  const response = { value: marker };
+  const remaining = byteLength - nativeResponseEnvelopeByteLength(response);
+  if (remaining < 0) throw new Error('Synthetic native-response marker exceeds its byte target.');
+  response.value += 'x'.repeat(remaining);
+  return response;
+}
+
+function nativeResponseEnvelopeSelftest() {
+  const lexicalCases = [
+    [{ value: 'a' }, 13, 'ASCII'],
+    [{ value: '用户' }, 18, 'Unicode'],
+    [{ value: '"\\\n' }, 18, 'JSON escape']
+  ];
+  for (const [response, expectedBytes, label] of lexicalCases) {
+    if (nativeResponseEnvelopeByteLength(response) !== expectedBytes) {
+      throw new Error(label + ' native-response byte accounting drifted.');
+    }
+  }
+  if (SOTER_NATIVE_RESPONSE_MAX_BYTES !== 6 * 1024 * 1024
+    || SOTER_SDK_STDIO_TRANSPORT_MAX_BYTES !== 8 * 1024 * 1024) {
+    throw new Error('Native-response and SDK stdio envelope constants drifted.');
+  }
+  const privateMarker = 'PRIVATE_OVERSIZED_NATIVE_RESPONSE_SENTINEL';
+  const atLimit = nativeResponseAtByteLength(
+    SOTER_NATIVE_RESPONSE_MAX_BYTES,
+    privateMarker
+  );
+  assertNativeResponseEnvelope(atLimit);
+  atLimit.value += 'x';
+  let observed;
+  try {
+    assertNativeResponseEnvelope(atLimit);
+  } catch (error) {
+    observed = error;
+  }
+  if (observed?.code !== SOTER_NATIVE_RESPONSE_ENVELOPE_EXCEEDED
+    || observed?.message !== SOTER_NATIVE_RESPONSE_ENVELOPE_MESSAGE
+    || String(observed?.stack || observed).includes(privateMarker)) {
+    throw new Error('Oversized native response did not fail with one fixed sanitized error.');
+  }
 }
 
 function providerProbeFinalizerPrivacySelftest(root) {
@@ -1239,6 +1297,11 @@ function selftestProviderProbes(lock, providers) {
 
 export async function selftest(root) {
   const failures = [];
+  try {
+    nativeResponseEnvelopeSelftest();
+  } catch (error) {
+    failures.push('Native response envelope failed: ' + error.message);
+  }
   try {
     notionRecordCapabilityGrammarSelftest();
   } catch (error) {
@@ -5181,4 +5244,313 @@ export async function selftest(root) {
     'CORE SELFTEST PASS: deterministic source-bound and host-selectable locks, fingerprinted explainable configuration views, portable Codex and Claude request/result projection, typed fixture reads/writes, grounded Automation decisions with explicit ambiguity and abstention, exact-scope approval with selected-activity private review, compiler-exact request batches, deduplication, compare-before-write preconditions, read-after-write verification, resumable fixed and bound sequential operation plans, approval-bound connected update transactions and terminal creates with exact record/content verification, no automatic write retry or invented compensation, and read-only ambiguity reconciliation, bounded connected context finalization with exact applicable policy bodies, resumable MCP host dispatch, exact-lock single and multi-step provider probes including minimized document reads, schema and identity drift rejection, exact subject-scoped maturity applicability, connected readiness, expiry, honest states, and stale-lock detection.\n'
   );
   return true;
+}
+
+function parallelSelftestUsageError() {
+  return new Error(
+    'Usage: npm run soter:selftest -- [--jobs 2|3|4|5|6|7|8].'
+  );
+}
+
+export function parseParallelSelftestJobs(args) {
+  if (args.length === 0) return CORE_SELFTEST_DEFAULT_JOBS;
+  if (args.length !== 2 || args[0] !== '--jobs' || !/^[2-8]$/.test(args[1])) {
+    throw parallelSelftestUsageError();
+  }
+  return Number(args[1]);
+}
+
+function listedCoreSelftestSuites({ root, cliPath }) {
+  const listed = spawnSync(
+    process.execPath,
+    [cliPath, 'selftest', '--list-suites'],
+    {
+      cwd: root,
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024,
+      shell: false,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true
+    }
+  );
+  if (listed.error || listed.status !== 0 || listed.signal) {
+    throw new Error('The canonical Core selftest suite list is unavailable.');
+  }
+  const suites = listed.stdout.split(/\r?\n/).filter(Boolean);
+  if (suites.length === 0
+    || suites.some((suite) => !CORE_SELFTEST_SUITE_RE.test(suite))
+    || new Set(suites).size !== suites.length) {
+    throw new Error('The canonical Core selftest suite list is invalid.');
+  }
+  return suites;
+}
+
+function logHasPassingSentinel(logPath) {
+  const descriptor = fs.openSync(logPath, 'r');
+  try {
+    const size = fs.fstatSync(descriptor).size;
+    const length = Math.min(size, 8192);
+    const bytes = Buffer.alloc(length);
+    if (length > 0) fs.readSync(descriptor, bytes, 0, length, size - length);
+    return bytes.toString('utf8').includes(CORE_SELFTEST_PASS_SENTINEL);
+  } finally {
+    fs.closeSync(descriptor);
+  }
+}
+
+async function writeRunnerOutput(value) {
+  if (process.stdout.write(value)) return;
+  await new Promise((resolve) => process.stdout.once('drain', resolve));
+}
+
+async function writeFailureLog(logPath) {
+  for await (const chunk of fs.createReadStream(logPath)) {
+    await writeRunnerOutput(chunk);
+  }
+}
+
+function terminateSuiteProcessTree(child, signal) {
+  if (!child?.pid) return;
+  if (process.platform === 'win32') {
+    spawnSync(
+      'taskkill.exe',
+      ['/PID', String(child.pid), '/T', '/F'],
+      {
+        stdio: 'ignore',
+        windowsHide: true,
+        shell: false,
+        timeout: 2000
+      }
+    );
+    return;
+  }
+  try {
+    process.kill(-child.pid, signal);
+  } catch (error) {
+    if (error?.code !== 'ESRCH') {
+      try {
+        child.kill(signal);
+      } catch {
+        // The bounded force pass below remains responsible for termination.
+      }
+    }
+  }
+}
+
+function suiteResultDetail(result) {
+  if (result.spawnError) {
+    return 'spawn failed' + (result.spawnError.code ? ' (' + result.spawnError.code + ')' : '');
+  }
+  if (result.signal) return 'terminated by ' + result.signal;
+  if (result.code !== 0) return 'exit ' + String(result.code);
+  return 'missing the exact single-suite pass sentinel';
+}
+
+function pathIsWithin(parent, candidate) {
+  const relative = path.relative(parent, candidate);
+  return relative === ''
+    || (!relative.startsWith('..' + path.sep)
+      && relative !== '..'
+      && !path.isAbsolute(relative));
+}
+
+function externalSelftestLogBase(root) {
+  const exactRoot = fs.realpathSync(root);
+  const systemTemporary = fs.realpathSync(os.tmpdir());
+  if (!pathIsWithin(exactRoot, systemTemporary)) return systemTemporary;
+  const rootParent = fs.realpathSync(path.dirname(exactRoot));
+  if (!pathIsWithin(exactRoot, rootParent)) return rootParent;
+  throw new Error('An external Core selftest log directory is unavailable.');
+}
+
+export async function runParallelCoreSelftests({
+  args = process.argv.slice(2),
+  root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
+} = {}) {
+  const jobs = parseParallelSelftestJobs(args);
+  const cliPath = path.join(root, 'soter/core/cli.mjs');
+  const suites = listedCoreSelftestSuites({ root, cliPath });
+  let logRoot = null;
+  try {
+    const logBase = externalSelftestLogBase(root);
+    logRoot = fs.mkdtempSync(path.join(logBase, '.soter-core-selftest-'));
+    fs.chmodSync(logRoot, 0o700);
+  } catch (error) {
+    if (logRoot) {
+      fs.rmSync(logRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    }
+    throw error;
+  }
+
+  const active = new Map();
+  const results = new Map();
+  let nextSuiteIndex = 0;
+  let interruptedSignal = null;
+  let interruptedChildren = [];
+  let interruptionCleanupComplete = false;
+  let forceTimer = null;
+  let resolveCompletion;
+  const completion = new Promise((resolve) => {
+    resolveCompletion = resolve;
+  });
+
+  const maybeComplete = () => {
+    if (active.size === 0
+      && ((interruptedSignal !== null && interruptionCleanupComplete)
+        || (interruptedSignal === null && nextSuiteIndex === suites.length))) {
+      resolveCompletion();
+    }
+  };
+
+  const launch = () => {
+    while (interruptedSignal === null
+      && active.size < jobs
+      && nextSuiteIndex < suites.length) {
+      const suite = suites[nextSuiteIndex];
+      nextSuiteIndex += 1;
+      const logPath = path.join(logRoot, suite + '.log');
+      let descriptor = null;
+      try {
+        descriptor = fs.openSync(logPath, 'wx', 0o600);
+        const child = spawn(
+          process.execPath,
+          [cliPath, 'selftest', '--suite', suite],
+          {
+            cwd: root,
+            detached: process.platform !== 'win32',
+            env: process.env,
+            shell: false,
+            stdio: ['ignore', descriptor, descriptor],
+            windowsHide: true
+          }
+        );
+        const entry = { child, logPath, spawnError: null };
+        active.set(suite, entry);
+        child.once('error', (error) => {
+          entry.spawnError = error;
+        });
+        child.once('close', (code, signal) => {
+          active.delete(suite);
+          results.set(suite, {
+            code,
+            signal,
+            spawnError: entry.spawnError,
+            logPath
+          });
+          launch();
+          maybeComplete();
+        });
+      } catch (error) {
+        results.set(suite, {
+          code: null,
+          signal: null,
+          spawnError: error,
+          logPath
+        });
+      } finally {
+        if (descriptor !== null) fs.closeSync(descriptor);
+      }
+    }
+    maybeComplete();
+  };
+
+  const interrupt = (signal) => {
+    if (interruptedSignal !== null) {
+      for (const child of interruptedChildren) terminateSuiteProcessTree(child, 'SIGKILL');
+      if (forceTimer) clearTimeout(forceTimer);
+      interruptionCleanupComplete = true;
+      maybeComplete();
+      return;
+    }
+    interruptedSignal = signal;
+    interruptedChildren = [...active.values()].map(({ child }) => child);
+    for (const child of interruptedChildren) terminateSuiteProcessTree(child, 'SIGTERM');
+    if (interruptedChildren.length === 0) {
+      interruptionCleanupComplete = true;
+      maybeComplete();
+      return;
+    }
+    forceTimer = setTimeout(() => {
+      for (const child of interruptedChildren) terminateSuiteProcessTree(child, 'SIGKILL');
+      interruptionCleanupComplete = true;
+      maybeComplete();
+    }, 2000);
+    maybeComplete();
+  };
+  const interruptHandlers = new Map([
+    ['SIGINT', () => interrupt('SIGINT')],
+    ['SIGTERM', () => interrupt('SIGTERM')]
+  ]);
+  for (const [signal, handler] of interruptHandlers) process.on(signal, handler);
+
+  let failed = 0;
+  let cleanupFailed = false;
+  try {
+    launch();
+    await completion;
+    if (forceTimer) clearTimeout(forceTimer);
+
+    if (interruptedSignal === null) {
+      for (const suite of suites) {
+        const result = results.get(suite);
+        const passed = result
+          && result.spawnError === null
+          && result.code === 0
+          && result.signal === null
+          && logHasPassingSentinel(result.logPath);
+        if (passed) {
+          await writeRunnerOutput('PASS ' + suite + '\n');
+          continue;
+        }
+        failed += 1;
+        await writeRunnerOutput(
+          'FAIL ' + suite + ': '
+            + (result ? suiteResultDetail(result) : 'suite did not run') + '\n'
+        );
+        if (result?.logPath && fs.existsSync(result.logPath)) {
+          await writeRunnerOutput('----- ' + suite + ' log -----\n');
+          await writeFailureLog(result.logPath);
+          await writeRunnerOutput('\n----- end ' + suite + ' log -----\n');
+        }
+      }
+      if (failed > 0) {
+        await writeRunnerOutput(
+          'CORE PARALLEL SELFTEST SUMMARY: ' + failed + ' of ' + suites.length
+            + ' suites failed.\n'
+        );
+      } else {
+        await writeRunnerOutput(
+          'CORE PARALLEL SELFTEST SUMMARY: all ' + suites.length + ' suites passed.\n'
+        );
+      }
+    }
+  } finally {
+    if (forceTimer) clearTimeout(forceTimer);
+    for (const [signal, handler] of interruptHandlers) process.removeListener(signal, handler);
+    try {
+      fs.rmSync(logRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    } catch {
+      cleanupFailed = true;
+    }
+  }
+
+  if (cleanupFailed) {
+    process.stderr.write('Core parallel selftest could not remove its temporary logs.\n');
+    return 1;
+  }
+  if (interruptedSignal !== null) {
+    process.stderr.write('Core parallel selftest interrupted by ' + interruptedSignal + '.\n');
+    return CORE_SELFTEST_SIGNAL_EXIT_CODES[interruptedSignal] || 1;
+  }
+  return failed > 0 ? 1 : 0;
+}
+
+if (process.argv[1]
+  && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
+  runParallelCoreSelftests().then((exitCode) => {
+    process.exitCode = exitCode;
+  }).catch((error) => {
+    process.stderr.write((error?.message || String(error)) + '\n');
+    process.exitCode = 1;
+  });
 }

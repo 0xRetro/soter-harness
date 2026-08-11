@@ -77,7 +77,10 @@ import {
   getDurableHostExecution,
   listDurableHostExecutions,
   prepareDurableConnectedTransactionReconciliation,
-  prepareDurableProviderProbeExecution
+  prepareDurableProviderProbeExecution,
+  SOTER_NATIVE_RESPONSE_ENVELOPE_EXCEEDED,
+  SOTER_NATIVE_RESPONSE_ENVELOPE_MESSAGE,
+  SOTER_PROVIDER_PROBE_ID_MAX_LENGTH
 } from '../service.mjs';
 import {
   createHostRuntimeBasis,
@@ -131,6 +134,13 @@ const developmentInstantPattern = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}
 const developmentInstant = z.string()
   .datetime({ offset: false })
   .regex(developmentInstantPattern);
+const durableCompletionId = z.string()
+  .min(1)
+  .regex(/^[a-z0-9]+(?:[.-][a-z0-9]+)*$/);
+const providerProbeId = z.string()
+  .min(1)
+  .max(SOTER_PROVIDER_PROBE_ID_MAX_LENGTH)
+  .regex(/^probe\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/);
 const developmentTargetPath = z.string()
   .min(1)
   .max(300)
@@ -358,13 +368,198 @@ const developmentTargetMaterialResultSchema = {
   ])
 };
 
-function result(value, summary) {
-  const structuredContent = { result: value };
+export const SOTER_MCP_RESULT_MAX_BYTES = 1024 * 1024;
+export const SOTER_MCP_RESULT_SOURCE_MAX_BYTES = 128 * 1024;
+export const SOTER_MCP_RESULT_ENVELOPE_EXCEEDED =
+  'SOTER_MCP_RESULT_ENVELOPE_EXCEEDED';
+export const SOTER_MCP_RESULT_ENVELOPE_MESSAGE =
+  'The Soter MCP result exceeds the supported result envelope.';
+
+function fixedMcpFailure(code, message) {
+  const value = { code, message };
   return {
+    isError: true,
+    content: [{ type: 'text', text: code + ': ' + message }],
+    structuredContent: { result: value }
+  };
+}
+
+const JSON_MATERIAL_MAX_DEPTH = 64;
+const JSON_MATERIAL_EXCEEDED = Symbol('json-material-exceeded');
+
+function boundedAdd(total, amount, maximum) {
+  const next = total + amount;
+  if (!Number.isSafeInteger(next) || next > maximum) throw JSON_MATERIAL_EXCEEDED;
+  return next;
+}
+
+function boundedJsonStringByteLength(value, maximum) {
+  let bytes = boundedAdd(0, 2, maximum);
+  for (let index = 0; index < value.length; index += 1) {
+    const unit = value.charCodeAt(index);
+    let addition;
+    if (unit === 0x22 || unit === 0x5c
+      || unit === 0x08 || unit === 0x09 || unit === 0x0a
+      || unit === 0x0c || unit === 0x0d) {
+      addition = 2;
+    } else if (unit <= 0x1f) {
+      addition = 6;
+    } else if (unit >= 0xd800 && unit <= 0xdbff
+      && index + 1 < value.length
+      && value.charCodeAt(index + 1) >= 0xdc00
+      && value.charCodeAt(index + 1) <= 0xdfff) {
+      addition = 4;
+      index += 1;
+    } else if (unit >= 0xd800 && unit <= 0xdfff) {
+      addition = 6;
+    } else if (unit <= 0x7f) {
+      addition = 1;
+    } else if (unit <= 0x7ff) {
+      addition = 2;
+    } else {
+      addition = 3;
+    }
+    bytes = boundedAdd(bytes, addition, maximum);
+  }
+  return bytes;
+}
+
+function boundedJsonValueByteLength(value, {
+  maximum,
+  pretty,
+  depth,
+  ancestors
+}) {
+  if (depth > JSON_MATERIAL_MAX_DEPTH) throw JSON_MATERIAL_EXCEEDED;
+  if (value === null) return boundedAdd(0, 4, maximum);
+  if (typeof value === 'string') return boundedJsonStringByteLength(value, maximum);
+  if (typeof value === 'boolean') return boundedAdd(0, value ? 4 : 5, maximum);
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) throw JSON_MATERIAL_EXCEEDED;
+    return boundedAdd(
+      0,
+      Buffer.byteLength(String(Object.is(value, -0) ? 0 : value), 'utf8'),
+      maximum
+    );
+  }
+  if (typeof value !== 'object') throw JSON_MATERIAL_EXCEEDED;
+  const isArray = Array.isArray(value);
+  const prototype = Object.getPrototypeOf(value);
+  if ((isArray && prototype !== Array.prototype)
+    || (!isArray && prototype !== Object.prototype && prototype !== null)
+    || ancestors.has(value)
+    || Object.hasOwn(value, 'toJSON')) {
+    throw JSON_MATERIAL_EXCEEDED;
+  }
+  ancestors.add(value);
+  try {
+    if (isArray) {
+      if (value.length > Math.floor((maximum - 1) / 2)) {
+        throw JSON_MATERIAL_EXCEEDED;
+      }
+      for (const key in value) {
+        if (Object.hasOwn(value, key)
+          && (!/^(?:0|[1-9][0-9]*)$/.test(key) || Number(key) >= value.length)) {
+          throw JSON_MATERIAL_EXCEEDED;
+        }
+      }
+      if (value.length === 0) return boundedAdd(0, 2, maximum);
+      let bytes = 1;
+      if (pretty) bytes = boundedAdd(bytes, 1, maximum);
+      for (let index = 0; index < value.length; index += 1) {
+        const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+        if (!descriptor || !('value' in descriptor)) throw JSON_MATERIAL_EXCEEDED;
+        if (pretty) bytes = boundedAdd(bytes, (depth + 1) * 2, maximum);
+        bytes = boundedAdd(bytes, boundedJsonValueByteLength(descriptor.value, {
+          maximum: maximum - bytes,
+          pretty,
+          depth: depth + 1,
+          ancestors
+        }), maximum);
+        if (index < value.length - 1) bytes = boundedAdd(bytes, 1, maximum);
+        if (pretty) bytes = boundedAdd(bytes, 1, maximum);
+      }
+      if (pretty) bytes = boundedAdd(bytes, depth * 2, maximum);
+      return boundedAdd(bytes, 1, maximum);
+    }
+    let bytes = 1;
+    let count = 0;
+    for (const key in value) {
+      if (!Object.hasOwn(value, key)) continue;
+      const descriptor = Object.getOwnPropertyDescriptor(value, key);
+      if (!descriptor || !('value' in descriptor)) throw JSON_MATERIAL_EXCEEDED;
+      if (count === 0 && pretty) bytes = boundedAdd(bytes, 1, maximum);
+      if (count > 0) bytes = boundedAdd(bytes, 1, maximum);
+      if (pretty) bytes = boundedAdd(bytes, (depth + 1) * 2, maximum);
+      bytes = boundedAdd(
+        bytes,
+        boundedJsonStringByteLength(key, maximum - bytes),
+        maximum
+      );
+      bytes = boundedAdd(bytes, pretty ? 2 : 1, maximum);
+      bytes = boundedAdd(bytes, boundedJsonValueByteLength(descriptor.value, {
+        maximum: maximum - bytes,
+        pretty,
+        depth: depth + 1,
+        ancestors
+      }), maximum);
+      if (pretty) bytes = boundedAdd(bytes, 1, maximum);
+      count += 1;
+    }
+    if (count === 0) return boundedAdd(0, 2, maximum);
+    if (pretty) bytes = boundedAdd(bytes, depth * 2, maximum);
+    return boundedAdd(bytes, 1, maximum);
+  } finally {
+    ancestors.delete(value);
+  }
+}
+
+export function boundedJsonMaterialByteLengths(
+  value,
+  maximum = SOTER_MCP_RESULT_SOURCE_MAX_BYTES
+) {
+  if (!Number.isSafeInteger(maximum) || maximum < 1) throw JSON_MATERIAL_EXCEEDED;
+  return {
+    compact: boundedJsonValueByteLength(value, {
+      maximum,
+      pretty: false,
+      depth: 0,
+      ancestors: new Set()
+    }),
+    pretty: boundedJsonValueByteLength(value, {
+      maximum,
+      pretty: true,
+      depth: 0,
+      ancestors: new Set()
+    })
+  };
+}
+
+export function formatOrdinaryMcpResult(value, summary) {
+  try {
+    boundedJsonMaterialByteLengths(value);
+    boundedJsonStringByteLength(summary, SOTER_MCP_RESULT_SOURCE_MAX_BYTES);
+  } catch {
+    return fixedMcpFailure(
+      SOTER_MCP_RESULT_ENVELOPE_EXCEEDED,
+      SOTER_MCP_RESULT_ENVELOPE_MESSAGE
+    );
+  }
+  const structuredContent = { result: value };
+  const candidate = {
     content: [{ type: 'text', text: summary + '\n' + JSON.stringify(value, null, 2) }],
     structuredContent
   };
+  if (Buffer.byteLength(JSON.stringify(candidate), 'utf8') > SOTER_MCP_RESULT_MAX_BYTES) {
+    return fixedMcpFailure(
+      SOTER_MCP_RESULT_ENVELOPE_EXCEEDED,
+      SOTER_MCP_RESULT_ENVELOPE_MESSAGE
+    );
+  }
+  return candidate;
 }
+
+const result = formatOrdinaryMcpResult;
 
 function privateDevelopmentTargetResult(value) {
   const nextCursor = value.content.complete
@@ -430,6 +625,22 @@ function developmentFailure(code, message, reasonCode = null) {
     isError: true,
     content: [{ type: 'text', text: code + ': ' + message }],
     structuredContent: { result: value }
+  };
+}
+
+function responseCompletion(handler) {
+  return async (input) => {
+    try {
+      return await handler(input);
+    } catch (error) {
+      if (error?.code === SOTER_NATIVE_RESPONSE_ENVELOPE_EXCEEDED) {
+        return fixedMcpFailure(
+          SOTER_NATIVE_RESPONSE_ENVELOPE_EXCEEDED,
+          SOTER_NATIVE_RESPONSE_ENVELOPE_MESSAGE
+        );
+      }
+      throw error;
+    }
   };
 }
 
@@ -870,7 +1081,7 @@ export function createSoterMcpServer({ root, host }) {
       configuration_basis: z.literal('private-active'),
       lock_path: z.string().min(1),
       provider_implementation: z.string().min(1),
-      probe_id: z.string().min(1).optional(),
+      probe_id: providerProbeId.optional(),
       at: z.string().min(20).optional(),
       valid_for_seconds: z.number().int().min(60).max(900).optional()
     },
@@ -894,14 +1105,14 @@ export function createSoterMcpServer({ root, host }) {
     title: 'Complete Soter provider probe',
     description: 'Resume the exact provider probe call, validate and minimize the native result, and atomically emit the next explicit call or close the checkpoint without persisting the raw response.',
     inputSchema: {
-      checkpoint_id: z.string().min(1),
-      call_id: z.string().min(1),
+      checkpoint_id: durableCompletionId,
+      call_id: durableCompletionId,
       response: jsonObject,
-      at: z.string().min(20).optional()
+      at: developmentInstant.optional()
     },
     outputSchema: resultSchema,
     annotations: completionAnnotations
-  }, async (input) => {
+  }, responseCompletion(async (input) => {
     const completed = await completeDurableProviderProbeExecution({
       root,
       checkpointId: input.checkpoint_id,
@@ -911,20 +1122,20 @@ export function createSoterMcpServer({ root, host }) {
       expectedHost: host
     });
     return result(completed, 'Advanced the exact provider probe without persisting the native response.');
-  });
+  }));
 
   registerGuardedTool('soter_complete_capability_call', {
     title: 'Complete Soter capability call',
     description: 'Resume the exact current call of a durable capability checkpoint, validate one native result, and either emit the next checkpoint-bound page call or finalize normalized portable output without persisting the raw response or continuation cursor.',
     inputSchema: {
-      checkpoint_id: z.string().min(1),
-      call_id: z.string().min(1).optional(),
+      checkpoint_id: durableCompletionId,
+      call_id: durableCompletionId.optional(),
       response: jsonObject,
-      at: z.string().min(20).optional()
+      at: developmentInstant.optional()
     },
     outputSchema: resultSchema,
     annotations: completionAnnotations
-  }, async (input) => {
+  }, responseCompletion(async (input) => {
     const completed = await completeDurableCapabilityExecution({
       root,
       checkpointId: input.checkpoint_id,
@@ -934,20 +1145,20 @@ export function createSoterMcpServer({ root, host }) {
       expectedHost: host
     });
     return result(completed, 'Advanced the exact provider capability call without persisting the native response or exposing its continuation cursor.');
-  });
+  }));
 
   registerGuardedTool('soter_complete_operation_plan', {
     title: 'Advance Soter operation plan',
     description: 'Complete the exact current plan call, persist only normalized output, and atomically emit the next policy-bound call or close the plan.',
     inputSchema: {
-      checkpoint_id: z.string().min(1),
-      call_id: z.string().min(1),
+      checkpoint_id: durableCompletionId,
+      call_id: durableCompletionId,
       response: jsonObject,
-      at: z.string().min(20).optional()
+      at: developmentInstant.optional()
     },
     outputSchema: resultSchema,
     annotations: completionAnnotations
-  }, async (input) => {
+  }, responseCompletion(async (input) => {
     const completed = await completeDurableOperationPlanExecution({
       root,
       checkpointId: input.checkpoint_id,
@@ -957,20 +1168,20 @@ export function createSoterMcpServer({ root, host }) {
       expectedHost: host
     });
     return result(completed, 'Advanced the exact operation plan without persisting the native provider response.');
-  });
+  }));
 
   registerGuardedTool('soter_advance_connected_transaction', {
     title: 'Advance Soter connected transaction',
     description: 'Resume the exact current call of an already authorized private connected-transaction checkpoint, persist only normalized output, and emit the next precondition, write, verification, or read-only reconciliation call. This interface cannot accept, create, or modify approval.',
     inputSchema: {
-      checkpoint_id: z.string().min(1),
-      call_id: z.string().min(1),
+      checkpoint_id: durableCompletionId,
+      call_id: durableCompletionId,
       response: jsonObject,
-      at: z.string().min(20).optional()
+      at: developmentInstant.optional()
     },
     outputSchema: resultSchema,
     annotations: completionAnnotations
-  }, async (input) => {
+  }, responseCompletion(async (input) => {
     const completed = await completeDurableConnectedTransactionExecution({
       root,
       checkpointId: input.checkpoint_id,
@@ -983,7 +1194,7 @@ export function createSoterMcpServer({ root, host }) {
       completed,
       'Advanced the exact approval-bound connected transaction without persisting the native provider response.'
     );
-  });
+  }));
 
   registerGuardedTool('soter_reconcile_connected_transaction', {
     title: 'Reconcile Soter connected transaction',

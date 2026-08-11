@@ -119,6 +119,38 @@ contains only the closed state, reason code, and guidance action; it contains no
 path, configuration or host name, fingerprint, error prose, or continuation
 authority. Repair configuration first, then realize the host, and restart only
 when the independent runtime branch requires it.
+
+The stdio projection configures an 8 MiB complete inbound JSON-RPC frame bound.
+The four response-bearing completion tools additionally accept at most 6 MiB of
+serialized native response data and use canonical bounded checkpoint/call IDs
+and exact UTC instants, leaving frame overhead closed. Caller-selected provider
+probe IDs are additionally capped at 200 characters so their derived private
+checkpoint filenames remain portable. Ordinary tool results
+retain the compatibility text projection plus `structuredContent`, but the
+source value must first pass a 128 KiB conservative bounded JSON material
+walk and the complete `CallToolResult` is capped at 1 MiB. Cyclic, over-depth,
+non-JSON, or oversized material becomes only
+`SOTER_MCP_RESULT_ENVELOPE_EXCEEDED`, with no size, value, path, or fingerprint.
+The dedicated development-target material route remains a separate bounded
+8 KiB text chunk.
+
+An oversized response that reaches an exact completion handler is recorded as
+one validation failure before the fixed
+`SOTER_NATIVE_RESPONSE_ENVELOPE_EXCEEDED` result is returned. Probe, capability,
+and operation-plan calls fail closed. A connected write becomes
+`needs-attention`; the write is never re-emitted. Read-only reconciliation is
+available only when the already-bound transaction contains an exact observable
+target. A terminal create whose rejected response was the only possible source
+of its new record identity remains manual `needs-attention` and must not invent
+a reconciliation read. A complete request above the 8 MiB transport bound
+closes before Core can observe the call outcome. After reconnect, the unchanged
+checkpoint is a locator only: inspect it, record the exact current call through
+`soter_fail_host_call`, and never resend the provider request. CLI native-response
+files are byte-bounded, but strict malformed-UTF-8 rejection is not yet proven
+on that file route; non-UTF-8 or encoding-ambiguous files are explicitly
+unsupported and those four CLI completion commands must not be described as an
+exact byte-preserving ingestion boundary until that closure lands.
+
 The connected
 doctor also consumes failed probe checkpoints through a typed, expiring summary
 that identifies the exact lock, provider, semantic step, native route, and
@@ -313,10 +345,16 @@ Prove the verifier catches planted failures:
 
 Prove Core output contracts, stale-lock detection, and honest offline states:
 
-    node soter/core/cli.mjs selftest
+    npm run soter:selftest
     npm run soter:mcp:selftest
     node soter/core/cli.mjs fixtures --check
     node soter/core/cli.mjs doctor --lock soter/fixtures/meeting-intake/meeting-intake.lock.json
+
+The complete Core command runs every registered suite exactly once in isolated
+processes, with eight workers by default. `npm run soter:selftest -- --jobs N`
+accepts only `N=2..8`. The CLI retains
+`selftest --list-suites` and `selftest --suite NAME` for deterministic listing
+and one-suite diagnosis; its serial aggregate path is intentionally absent.
 
 Inspect the expected missing-write-implementation and missing-probe diagnostics:
 

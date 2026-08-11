@@ -112,7 +112,10 @@ import {
   listDurableHostExecutions,
   prepareDurableConnectedTransactionExecution,
   prepareDurableConnectedTransactionReconciliation,
-  prepareDurableProviderProbeExecution
+  prepareDurableProviderProbeExecution,
+  SOTER_NATIVE_RESPONSE_ENVELOPE_EXCEEDED,
+  SOTER_NATIVE_RESPONSE_ENVELOPE_MESSAGE,
+  SOTER_NATIVE_RESPONSE_MAX_BYTES
 } from './service.mjs';
 import {
   beginProposalConnectedApprovalRequest,
@@ -138,6 +141,27 @@ import {
   createReviewOnlyCandidateSelection,
   inspectReviewOnlyCandidateSelectionMaterial
 } from './review-only-candidate-selections.mjs';
+
+function readNativeResponseInput(root, requestedPath) {
+  try {
+    return readPrivateJsonInput(root, requestedPath, {
+      maxBytes: SOTER_NATIVE_RESPONSE_MAX_BYTES
+    });
+  } catch (error) {
+    if (String(error?.message || error).startsWith(
+      'Private input exceeds its exact byte bound:'
+    )) {
+      const bounded = new Error(
+        SOTER_NATIVE_RESPONSE_ENVELOPE_EXCEEDED
+          + ': '
+          + SOTER_NATIVE_RESPONSE_ENVELOPE_MESSAGE
+      );
+      bounded.code = SOTER_NATIVE_RESPONSE_ENVELOPE_EXCEEDED;
+      throw bounded;
+    }
+    throw error;
+  }
+}
 import {
   createReviewOnlyCandidatePreview,
   inspectReviewOnlyCandidatePreview
@@ -1038,7 +1062,7 @@ async function main() {
         'Provider probe checkpoints and results are private runtime state and cannot be exported.'
       );
     }
-    const response = readPrivateJsonInput(root, requiredOption(args, '--response'));
+    const response = readNativeResponseInput(root, requiredOption(args, '--response'));
     const completed = await completeDurableProviderProbeExecution({
       root,
       checkpointId: requiredOption(args, '--checkpoint'),
@@ -1080,7 +1104,7 @@ async function main() {
       root,
       checkpointId: requiredOption(args, '--checkpoint'),
       callId: option(args, '--call'),
-      response: readPrivateJsonInput(root, requiredOption(args, '--response')),
+      response: readNativeResponseInput(root, requiredOption(args, '--response')),
       at: createdAt
     });
     if (json) {
@@ -1111,7 +1135,7 @@ async function main() {
       root,
       checkpointId: requiredOption(args, '--checkpoint'),
       callId: requiredOption(args, '--call'),
-      response: readPrivateJsonInput(root, requiredOption(args, '--response')),
+      response: readNativeResponseInput(root, requiredOption(args, '--response')),
       at: createdAt
     });
     if (json) {
@@ -1505,7 +1529,7 @@ async function main() {
       root,
       checkpointId: requiredOption(args, '--checkpoint'),
       callId: requiredOption(args, '--call'),
-      response: readPrivateJsonInput(root, requiredOption(args, '--response')),
+      response: readNativeResponseInput(root, requiredOption(args, '--response')),
       at: createdAt
     });
     if (json) {
@@ -2702,7 +2726,29 @@ async function main() {
   }
 
   if (command === 'selftest') {
+    if (args.includes('--json')) {
+      throw new Error('Unexpected argument for selftest: --json.');
+    }
+    assertExactCommandArguments(args, {
+      valueOptions: ['--suite'],
+      flagOptions: ['--list-suites']
+    });
+    const listSuites = args.includes('--list-suites');
+    const selectedSuite = option(args, '--suite');
+    if (listSuites && selectedSuite !== null) {
+      throw new Error('selftest requires exactly one of --suite or --list-suites.');
+    }
+    if (!listSuites && selectedSuite === null) {
+      throw new Error(
+        'The serial Core selftest aggregate is unavailable. '
+          + 'Run npm run soter:selftest for the canonical parallel acceptance run, '
+          + 'or use selftest --suite NAME or selftest --list-suites.'
+      );
+    }
     const { selftest } = await import('./selftest.mjs');
+    const { selftestParallelSelftestRunner } = await import(
+      './parallel-selftest-runner.selftest.mjs'
+    );
     const { selftestPrivateJsonInput } = await import('./lib/canonical-json.selftest.mjs');
     const { selftestPreparedWork } = await import('./prepared-work.selftest.mjs');
     const { selftestReviewOnlyCandidateSelections } = await import(
@@ -2793,6 +2839,7 @@ async function main() {
     );
     const suites = [
       ['core', () => selftest(root)],
+      ['parallel-selftest-runner', () => selftestParallelSelftestRunner()],
       ['private-json-input', () => selftestPrivateJsonInput()],
       ['prepared-work', () => selftestPreparedWork(root)],
       ['review-only-candidate-selections', () => selftestReviewOnlyCandidateSelections(root)],
@@ -2837,47 +2884,38 @@ async function main() {
       ['project-work-promotion', () => selftestProjectWorkPromotion(root)],
       ['notion-record-mappings', () => selftestNotionRecordMappings(root)]
     ];
-    if (args.includes('--list-suites')) {
+    if (listSuites) {
       process.stdout.write(suites.map(([name]) => name).join('\n') + '\n');
       return;
     }
-    const selectedSuite = option(args, '--suite');
-    if (selectedSuite !== null && !suites.some(([name]) => name === selectedSuite)) {
+    const selected = suites.find(([name]) => name === selectedSuite);
+    if (!selected) {
       throw new Error(
         'Unknown selftest suite ' + selectedSuite
           + '. Use --list-suites for the exact names.'
       );
     }
-    const selected = selectedSuite === null
-      ? suites
-      : suites.filter(([name]) => name === selectedSuite);
-    const failedSuites = [];
-    for (const [name, run] of selected) {
-      try {
-        const result = await run();
-        if (!result) {
-          failedSuites.push(name);
-          process.stderr.write('CORE SELFTEST SUITE FAIL: ' + name + ' returned no passing result.\n');
-        }
-      } catch (error) {
-        failedSuites.push(name);
-        process.stderr.write(
-          'CORE SELFTEST SUITE FAIL: ' + name + ': '
-            + (error?.stack || error?.message || String(error)) + '\n'
-        );
+    const [name, run] = selected;
+    let passed = false;
+    try {
+      passed = Boolean(await run());
+      if (!passed) {
+        process.stderr.write('CORE SELFTEST SUITE FAIL: ' + name + ' returned no passing result.\n');
       }
-    }
-    if (failedSuites.length) {
+    } catch (error) {
       process.stderr.write(
-        'CORE SELFTEST SUMMARY: ' + failedSuites.length + ' of ' + selected.length
-          + ' suites failed: ' + failedSuites.join(', ') + '.\n'
+        'CORE SELFTEST SUITE FAIL: ' + name + ': '
+          + (error?.stack || error?.message || String(error)) + '\n'
+      );
+    }
+    if (!passed) {
+      process.stderr.write(
+        'CORE SELFTEST SUMMARY: 1 of 1 suites failed: ' + name + '.\n'
       );
     } else {
-      process.stdout.write(
-        'CORE SELFTEST SUMMARY: all ' + selected.length + ' suites passed.\n'
-      );
+      process.stdout.write('CORE SELFTEST SUMMARY: all 1 suites passed.\n');
     }
-    process.exitCode = failedSuites.length ? 1 : 0;
+    process.exitCode = passed ? 0 : 1;
     return;
   }
 
@@ -3015,7 +3053,8 @@ async function main() {
       + '  host-fail --checkpoint ID [--call ID] --kind KIND [--at TIME] [--json]\n'
       + '  host-get --checkpoint ID\n'
       + '  host-list [--state requested|completed|failed|needs-attention|blocked]\n'
-      + '  selftest [--suite NAME | --list-suites]\n'
+      + '  selftest (--suite NAME | --list-suites)\n'
+      + '  Complete Core acceptance: npm run soter:selftest [-- --jobs 2..8]\n'
       + '  fixtures <--check|--update> [--json]'
   );
 }

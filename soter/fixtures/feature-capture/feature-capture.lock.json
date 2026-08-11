@@ -576,17 +576,17 @@
       "evidenceMaturity": "declared",
       "source": "base",
       "reason": "Required core foundation: Provides configuration resolution, context assembly, capability binding, effect policy, durable host execution services, evidence, and health.",
-      "manifestFingerprint": "sha256:b922eb238bd0cd0c3a77bc63d68f92ceab0a78d60a13bea430a9ed48f8be4c1c",
+      "manifestFingerprint": "sha256:d4e1837bfe5e35be6d2f694bb2de6fdf166534d84130e93bc9b1b75837e8464f",
       "artifacts": [
         {
           "path": "package-lock.json",
           "role": "implementation",
-          "fingerprint": "sha256:3a9bba8d922526c69315dc36fc83baa5ea2477fcb474c12753fd1e5eebb6f518"
+          "fingerprint": "sha256:47b3a44673c6f89831f35de6ee525e9ddddc8e60cb1cceaf57ff7e17e43beca0"
         },
         {
           "path": "package.json",
           "role": "implementation",
-          "fingerprint": "sha256:5fe7013c569f60b6c39da105e66a94c19b60b3ae3ab3321e3034201f87cd5ed9"
+          "fingerprint": "sha256:b4ca21d53ebb828a97bbbc78f63afb4f69ed30d6f44e582910cd6bc8767b0ea6"
         },
         {
           "path": "soter/core/automation-input.selftest.mjs",
@@ -611,7 +611,7 @@
         {
           "path": "soter/core/cli.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:760ada3053fafa29cf35a9e7d75af5c59b9dfc6e232eb7d0205779104c77b53e"
+          "fingerprint": "sha256:ba6960bf55f37790ea9e3d820272ab01041ec98c568e4dc3c7082160f3fa6ee1"
         },
         {
           "path": "soter/core/configuration-preview.mjs",
@@ -801,17 +801,17 @@
         {
           "path": "soter/core/mcp/selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:cccc91377c627c93188c50e90868266084d0ce4477d1763f8b73e72aecaaec2b"
+          "fingerprint": "sha256:5f769a7273136abe081005a7b199408ff432a02911bde1ad5cb50337188b45cb"
         },
         {
           "path": "soter/core/mcp/server.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:6819cfb708f4d0c65f48d755b11323f25619b15610c6d0cb39f1903bb59f3443"
+          "fingerprint": "sha256:079f279c086b95fffea10fd217dd4d96528c452075144b01912c22737d05f32a"
         },
         {
           "path": "soter/core/mcp/tools.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:d7166bafc74da1e9a8c5c95c8ed8bf7e70e38d297078d9d4b8024d99c12e1874"
+          "fingerprint": "sha256:d2c9852143d7e19d240e8cc729cc13ac985188df1f1aa59466088e4ca57daf7e"
         },
         {
           "path": "soter/core/operation-plans.mjs",
@@ -842,6 +842,11 @@
           "path": "soter/core/pack-installs.selftest.mjs",
           "role": "evaluation",
           "fingerprint": "sha256:808160c4f64e9947ba074d66b37012611b553e04a0d7002c93c1ed758e020d5a"
+        },
+        {
+          "path": "soter/core/parallel-selftest-runner.selftest.mjs",
+          "role": "evaluation",
+          "fingerprint": "sha256:5439277fff7810477b1e118ab914538e0cb475ea1060d059152217c25c781bfc"
         },
         {
           "path": "soter/core/prepared-work.mjs",
@@ -916,12 +921,12 @@
         {
           "path": "soter/core/selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:be6a277dcc988d2ab8656511bb76ca5e157c7272f8f0aa7ce2be1a62434841cc"
+          "fingerprint": "sha256:f32829411a5f192a13c6e4b3f2b20675163280c512f8844cd18bf3af4ec4a851"
         },
         {
           "path": "soter/core/service.mjs",
           "role": "implementation",
-          "fingerprint": "sha256:e9297e53837c2dd4aaec6ede2b16b24e3bfa4cd56d5eba67089cd0f5adc914cc"
+          "fingerprint": "sha256:e10d6e8695af67e88fabd9b77a66e18dc5af3d96fd442ea05e67dfc9542dc553"
         },
         {
           "path": "soter/core/verified-connected-transaction-runtime.mjs",
@@ -1505,10 +1510,10 @@
       "role": "instructions",
       "mode": "0644",
       "templatePath": "soter/hosts/codex/templates/AGENTS.md.tmpl",
-      "templateFingerprint": "sha256:ea286020ae95f47aa40574fbf09d7f9d7c701010c721b63431b35b865b04f6d8",
-      "contentFingerprint": "sha256:a11dfe5cbfb3d05d04f987ac65a5386538355b1b2718a644975b547e3a007b6e",
-      "fingerprint": "sha256:6f0c961e7cc2dff6e468fb9454ab7496366fc1c678f338cbb79b14f7af04fcd7"
+      "templateFingerprint": "sha256:b3afa993e15db80d4da6080975bc5b41057d6596f647c2779ce851d1a343b80e",
+      "contentFingerprint": "sha256:f93b835dc8e0f00e2b59cad7759d464c3d0e6a3522e6f8ca6e42d10e10d71f51",
+      "fingerprint": "sha256:c99c464da583edcf480f0c7554435408c261428eed6042af691e6b65819c7019"
     }
   ],
-  "graphFingerprint": "sha256:a9c510d38aa71e7c9f7f43237628125545f72c5aa5764b4b3e29a4e57e143560"
+  "graphFingerprint": "sha256:87f0d8346bccfa52cf6526d19a86da3c7fabbba9259b8dc27f547b8e219798ca"
 }

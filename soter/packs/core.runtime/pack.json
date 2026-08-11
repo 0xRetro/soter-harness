@@ -94,6 +94,7 @@
     { "path": "soter/core/fixtures-materialization.selftest.mjs", "role": "evaluation" },
     { "path": "soter/core/cli.mjs", "role": "implementation" },
     { "path": "soter/core/selftest.mjs", "role": "evaluation" },
+    { "path": "soter/core/parallel-selftest-runner.selftest.mjs", "role": "evaluation" },
     { "path": "soter/fixtures/operator-inspection/connected-transaction.lifecycle.json", "role": "evaluation" },
     { "path": "soter/fixtures/operator-inspection/input-summary.json", "role": "evaluation" }
   ],

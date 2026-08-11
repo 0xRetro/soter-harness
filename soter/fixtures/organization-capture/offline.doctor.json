@@ -6,7 +6,7 @@
   "level": "offline",
   "configuration": {
     "name": "organization-capture",
-    "lockFingerprint": "sha256:a6c8d947a94dfc1fb4e6cc7399330128c9118f86394d0e3dbdaad55ddd9b938e"
+    "lockFingerprint": "sha256:9f872b43cdc2d9b8702a9906378f01659a31966baf88907bd241595666e8740a"
   },
   "states": {
     "valid": "passed",

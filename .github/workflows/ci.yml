@@ -44,40 +44,9 @@ jobs:
       - run: node soter/kernel/verify.mjs
       - run: npm run soter:distribution:selftest
       # Prove Core generates contract-valid, effect-free state and that checked-in evidence is current.
-      # Each suite runs as its own process so a failure names the exact suite
-      # instead of one line after the whole aggregate. The suites share no
-      # state, so they also run concurrently.
-      - name: Run every Core selftest suite
-        shell: bash
-        run: |
-          set -uo pipefail
-          # Logs live outside the checkout. Several suites assert that the
-          # repository is clean, so the run must not write into it.
-          logs="$(mktemp -d)"
-          failed=()
-          while IFS= read -r suite; do
-            (
-              node soter/core/cli.mjs selftest --suite "$suite" \
-                > "$logs/$suite.log" 2>&1
-              echo "$?" > "$logs/$suite.exit"
-            ) &
-            while [ "$(jobs -r | wc -l)" -ge 8 ]; do wait -n; done
-          done < <(node soter/core/cli.mjs selftest --list-suites)
-          wait
-          for exit_file in "$logs"/*.exit; do
-            suite="$(basename "$exit_file" .exit)"
-            if [ "$(cat "$exit_file")" = "0" ]; then
-              echo "ok   $suite"
-            else
-              failed+=("$suite")
-              echo "FAIL $suite"
-              sed 's/^/       /' "$logs/$suite.log"
-            fi
-          done
-          if [ "${#failed[@]}" -ne 0 ]; then
-            echo "Failed suites: ${failed[*]}"
-            exit 1
-          fi
+      # The canonical cross-platform runner owns isolated processes, bounded
+      # concurrency, deterministic reporting, temporary logs, and cleanup.
+      - run: npm run soter:selftest
       # Keep standalone domain and projection evaluations that are not part of
       # the Core aggregate visible in CI.
       - run: node soter/automations/email-triage/email-triage.selftest.mjs

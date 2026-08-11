@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 
 import { validateJsonSchema } from '../../kernel/verify.mjs';
 import {
@@ -43,8 +44,20 @@ import {
   getExactDurableContextSnapshot,
   getExactDurableHostExecution,
   prepareDurableCapabilityExecution,
-  prepareDurableOperationPlanExecution
+  prepareDurableOperationPlanExecution,
+  prepareDurableProviderProbeExecution,
+  SOTER_NATIVE_RESPONSE_ENVELOPE_EXCEEDED,
+  SOTER_NATIVE_RESPONSE_MAX_BYTES,
+  SOTER_PROVIDER_PROBE_ID_MAX_LENGTH,
+  SOTER_SDK_STDIO_TRANSPORT_MAX_BYTES
 } from '../service.mjs';
+import {
+  boundedJsonMaterialByteLengths,
+  formatOrdinaryMcpResult,
+  SOTER_MCP_RESULT_ENVELOPE_EXCEEDED,
+  SOTER_MCP_RESULT_MAX_BYTES,
+  SOTER_MCP_RESULT_SOURCE_MAX_BYTES
+} from './tools.mjs';
 import {
   activeConfigurationLockStatePath,
   developmentRequestStatePath,
@@ -70,6 +83,7 @@ const PRIVATE_PROJECT_STATUS_OPTION = 'PRIVATE_PROVIDER_PROJECT_STATUS_MCP_SENTI
 const PRIVATE_SLACK_WORKSPACE_ID = 'T000000001';
 const PRIVATE_SLACK_CONVERSATION_ID = 'C000000001';
 const PRIVATE_SLACK_THREAD_ROOT_ID = '1784653200.000001';
+const SDK_CLIENT_STDIO_MAX_BYTES = 10 * 1024 * 1024;
 const NOTION_PROBE_SCHEMA_FIELDS = Object.freeze({
   'step.mapping.integration.notion.crm-records.record.organization.schema': [
     ['name', 'Name', 'title'],
@@ -985,7 +999,8 @@ async function connectClient(root, host = 'codex') {
       host
     ],
     cwd: root,
-    stderr: 'pipe'
+    stderr: 'pipe',
+    maxBufferSize: SDK_CLIENT_STDIO_MAX_BYTES
   });
   await client.connect(transport);
   return client;
@@ -1353,6 +1368,117 @@ function assertSafeMcpFailure(response, code, privateSentinels = []) {
   }
 }
 
+function nativeResponseAtByteLength(byteLength, marker = '') {
+  const response = { value: marker };
+  const base = Buffer.byteLength(JSON.stringify(response), 'utf8');
+  if (base > byteLength) throw new Error('Synthetic native response exceeds its byte target.');
+  response.value += 'x'.repeat(byteLength - base);
+  return response;
+}
+
+function largestOrdinaryResultValue(summary, marker) {
+  let low = 0;
+  let high = SOTER_MCP_RESULT_SOURCE_MAX_BYTES;
+  while (low < high) {
+    const middle = Math.ceil((low + high) / 2);
+    const value = { value: marker + 'x'.repeat(middle) };
+    const candidate = formatOrdinaryMcpResult(value, summary);
+    if (!candidate.isError) low = middle;
+    else high = middle - 1;
+  }
+  return { value: marker + 'x'.repeat(low) };
+}
+
+function assertSdkAndMcpEnvelopeBasis() {
+  const packageManifest = readJson(path.join(codeRoot, 'package.json'));
+  const packageLock = readJson(path.join(codeRoot, 'package-lock.json'));
+  const installedSdk = readJson(path.join(
+    codeRoot,
+    'node_modules/@modelcontextprotocol/sdk/package.json'
+  ));
+  const serverSource = fs.readFileSync(path.join(codeRoot, 'soter/core/mcp/server.mjs'), 'utf8');
+  const toolsSource = fs.readFileSync(path.join(codeRoot, 'soter/core/mcp/tools.mjs'), 'utf8');
+  const selftestSource = fs.readFileSync(path.join(codeRoot, 'soter/core/mcp/selftest.mjs'), 'utf8');
+  if (packageManifest.dependencies['@modelcontextprotocol/sdk'] !== '1.30.0'
+    || packageManifest.devDependencies.concurrently !== '10.0.4'
+    || packageLock.packages['node_modules/@modelcontextprotocol/sdk']?.version !== '1.30.0'
+    || installedSdk.version !== '1.30.0'
+    || SOTER_NATIVE_RESPONSE_MAX_BYTES !== 6 * 1024 * 1024
+    || SOTER_SDK_STDIO_TRANSPORT_MAX_BYTES !== 8 * 1024 * 1024
+    || SDK_CLIENT_STDIO_MAX_BYTES !== 10 * 1024 * 1024
+    || !serverSource.includes(
+      "import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';"
+    )
+    || !toolsSource.includes(
+      "import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';"
+    )
+    || !selftestSource.includes(
+      "import { Client } from '@modelcontextprotocol/sdk/client/index.js';"
+    )
+    || !selftestSource.includes(
+      "import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';"
+    )
+    || !serverSource.includes(
+      'maxBufferSize: SOTER_SDK_STDIO_TRANSPORT_MAX_BYTES'
+    )) {
+    throw new Error('Exact SDK dependency, import, or stdio envelope basis drifted.');
+  }
+
+  for (const sample of [
+    { ascii: 'plain text', number: -0, boolean: true, none: null },
+    { unicode: '用户 😀', escaped: 'quote" slash\\ line\n control\u0001' },
+    { loneSurrogates: '\ud800\udc00\ud800', array: [1, 'two', false] },
+    Object.assign(Object.create(null), { key: 'value' })
+  ]) {
+    const measured = boundedJsonMaterialByteLengths(sample);
+    if (measured.compact !== Buffer.byteLength(JSON.stringify(sample), 'utf8')
+      || measured.pretty !== Buffer.byteLength(JSON.stringify(sample, null, 2), 'utf8')) {
+      throw new Error('Bounded JSON material estimator drifted for Unicode or escapes.');
+    }
+  }
+
+  const summary = 'Returned one bounded ordinary Soter result.';
+  const marker = 'PRIVATE_OVERSIZED_MCP_RESULT_SENTINEL';
+  const belowValue = largestOrdinaryResultValue(summary, marker);
+  const below = formatOrdinaryMcpResult(belowValue, summary);
+  const belowBytes = Buffer.byteLength(JSON.stringify(below), 'utf8');
+  const aboveValue = { value: belowValue.value + 'x' };
+  const above = formatOrdinaryMcpResult(aboveValue, summary);
+  const hugeMarker = 'PRIVATE_HUGE_PRESTRINGIFY_RESULT_SENTINEL';
+  const huge = formatOrdinaryMcpResult({
+    nested: [{ material: hugeMarker + 'x'.repeat(4 * 1024 * 1024) }]
+  }, summary);
+  const cycle = {};
+  cycle.self = cycle;
+  const nonJson = formatOrdinaryMcpResult(cycle, summary);
+  const unsupported = formatOrdinaryMcpResult({ value: undefined }, summary);
+  const deep = {};
+  let deepCursor = deep;
+  for (let index = 0; index < 66; index += 1) {
+    deepCursor.next = {};
+    deepCursor = deepCursor.next;
+  }
+  const overDepth = formatOrdinaryMcpResult(deep, summary);
+  const sparse = formatOrdinaryMcpResult(new Array(10_000_000), summary);
+  if (below.isError
+    || belowBytes > SOTER_MCP_RESULT_MAX_BYTES
+    || boundedJsonMaterialByteLengths(belowValue).pretty
+      > SOTER_MCP_RESULT_SOURCE_MAX_BYTES
+    || below.content?.[0]?.text !== summary + '\n' + JSON.stringify(belowValue, null, 2)
+    || above.isError !== true
+    || above.structuredContent?.result?.code !== SOTER_MCP_RESULT_ENVELOPE_EXCEEDED
+    || JSON.stringify(above).includes(marker)
+    || huge.structuredContent?.result?.code !== SOTER_MCP_RESULT_ENVELOPE_EXCEEDED
+    || JSON.stringify(huge).includes(hugeMarker)
+    || Buffer.byteLength(JSON.stringify(huge), 'utf8') > 1024
+    || nonJson.structuredContent?.result?.code !== SOTER_MCP_RESULT_ENVELOPE_EXCEEDED
+    || unsupported.structuredContent?.result?.code !== SOTER_MCP_RESULT_ENVELOPE_EXCEEDED
+    || overDepth.structuredContent?.result?.code !== SOTER_MCP_RESULT_ENVELOPE_EXCEEDED
+    || sparse.structuredContent?.result?.code !== SOTER_MCP_RESULT_ENVELOPE_EXCEEDED) {
+    throw new Error('Full ordinary CallToolResult budget or fixed private-safe failure drifted.');
+  }
+}
+
 async function expectError(action, message) {
   let observed;
   try {
@@ -1366,6 +1492,66 @@ async function expectError(action, message) {
         + String(observed?.stack || observed || 'no failure')
     );
   }
+}
+
+function createEnvelopeRun(root, runId) {
+  const lock = readJson(path.join(root, lockPath));
+  const run = prepareRunEnvelope({
+    root,
+    lock,
+    lockPath,
+    automationId: 'automation.meeting-intake',
+    runId,
+    createdAt: fixtureTime,
+    requestedOutcome: 'Exercise one exact MCP envelope failure without provider retry.'
+  });
+  return writeRunState(root, run).path;
+}
+
+async function assertReachedEnvelopeFailure(client, root, {
+  tool,
+  checkpointId,
+  callId,
+  checkpointPath,
+  expectedState,
+  at,
+  responseByteLength = SOTER_NATIVE_RESPONSE_MAX_BYTES + 1
+}) {
+  const privateMarker = 'PRIVATE_REACHED_ENVELOPE_RESPONSE_SENTINEL';
+  const checkpointFilePath = path.join(root, checkpointPath);
+  const before = fs.readFileSync(checkpointFilePath, 'utf8');
+  const rejected = await client.callTool({
+    name: tool,
+    arguments: {
+      checkpoint_id: checkpointId,
+      call_id: callId,
+      response: nativeResponseAtByteLength(
+        responseByteLength,
+        privateMarker
+      ),
+      at
+    }
+  });
+  assertSafeMcpFailure(
+    rejected,
+    SOTER_NATIVE_RESPONSE_ENVELOPE_EXCEEDED,
+    [privateMarker, root, checkpointFilePath]
+  );
+  const after = fs.readFileSync(checkpointFilePath, 'utf8');
+  const observed = await call(client, 'soter_get_host_call', {
+    checkpoint_id: checkpointId
+  });
+  const runtime = await call(client, 'soter_inspect_host_runtime', {});
+  if (before === after
+    || after.includes(privateMarker)
+    || observed.checkpoint?.state !== expectedState
+    || observed.currentCall != null
+    || runtime.runtime.state !== 'current') {
+    throw new Error(
+      tool + ' did not record one private-safe terminal envelope failure while preserving the connection.'
+    );
+  }
+  return observed;
 }
 
 function checkpointFile(root, prepared) {
@@ -1385,6 +1571,35 @@ function invokeCli(root, args) {
     [path.join(codeRoot, 'soter/core/cli.mjs'), ...args, '--root', root, '--json'],
     { cwd: root, encoding: 'utf8' }
   );
+}
+
+function assertCliNativeResponseEnvelopeRejected(root, {
+  command,
+  checkpointId,
+  callId,
+  checkpointPath,
+  responsePath,
+  privateMarker,
+  at
+}) {
+  const checkpointFilePath = path.join(root, checkpointPath);
+  const before = fs.readFileSync(checkpointFilePath, 'utf8');
+  const rejected = invokeCli(root, [
+    command,
+    '--checkpoint', checkpointId,
+    ...(callId ? ['--call', callId] : []),
+    '--response', responsePath,
+    '--at', at
+  ]);
+  if (rejected.status === 0
+    || !rejected.stderr.includes(SOTER_NATIVE_RESPONSE_ENVELOPE_EXCEEDED)
+    || rejected.stderr.includes(privateMarker)
+    || rejected.stderr.includes(responsePath)
+    || fs.readFileSync(checkpointFilePath, 'utf8') !== before) {
+    throw new Error(
+      command + ' did not reject one oversized 0600 private response without mutation or disclosure.'
+    );
+  }
 }
 
 function runCli(root, args) {
@@ -1912,6 +2127,7 @@ async function assertClaudeHostProjection(root) {
 }
 
 async function selftest(root) {
+  assertSdkAndMcpEnvelopeBasis();
   assertPrivateCliExportsRejected(root);
   let client = await connectClient(root);
   let preparedCapability;
@@ -1924,8 +2140,23 @@ async function selftest(root) {
   const privateInputRoot = fs.realpathSync(
     fs.mkdtempSync(path.join(os.tmpdir(), 'soter-mcp-response-'))
   );
+  const cliEnvelopeMarker = 'PRIVATE_CLI_ENVELOPE_RESPONSE_SENTINEL';
+  const cliEnvelopeResponsePath = path.join(privateInputRoot, 'cli-envelope-response.json');
+  fs.writeFileSync(
+    cliEnvelopeResponsePath,
+    JSON.stringify(nativeResponseAtByteLength(
+      SOTER_NATIVE_RESPONSE_MAX_BYTES + 1,
+      cliEnvelopeMarker
+    )),
+    { mode: 0o600 }
+  );
+  assertPrivateFile(cliEnvelopeResponsePath);
   try {
     const listed = await client.listTools();
+    if (Buffer.byteLength(JSON.stringify(listed), 'utf8')
+      > SOTER_MCP_RESULT_MAX_BYTES) {
+      throw new Error('MCP tool listing exceeds the bounded transport result budget.');
+    }
     for (const tool of listed.tools) {
       assertPortableMcpInputSchema(tool.inputSchema, [tool.name, 'inputSchema']);
     }
@@ -2265,11 +2496,15 @@ async function selftest(root) {
       target_id: 'target.development-material-contract',
       cursor: { index: 0, previous_material_fingerprint: null }
     };
-    const developmentMaterial = await call(
-      client,
-      'soter_read_development_target',
-      developmentMaterialArguments
-    );
+    const developmentMaterialResponse = await client.callTool({
+      name: 'soter_read_development_target',
+      arguments: developmentMaterialArguments
+    });
+    if (Buffer.byteLength(JSON.stringify(developmentMaterialResponse), 'utf8')
+      > SOTER_MCP_RESULT_MAX_BYTES) {
+      throw new Error('Bounded development-target chunk exceeds the MCP result budget.');
+    }
+    const developmentMaterial = toolResult(developmentMaterialResponse);
     const expectedDevelopmentContent = fs.readFileSync(
       path.join(root, developmentTarget),
       'utf8'
@@ -3481,6 +3716,190 @@ async function selftest(root) {
     );
     assertPrivateFile(checkpointFile(root, preparedProbe));
 
+    const maximumProbeId = 'probe.' + 'a'.repeat(
+      SOTER_PROVIDER_PROBE_ID_MAX_LENGTH - 'probe.'.length
+    );
+    const maximumProbe = await call(client, 'soter_prepare_provider_probe', {
+      configuration_basis: 'private-active',
+      lock_path: lockPath,
+      provider_implementation: 'provider.integration.otter.mcp',
+      probe_id: maximumProbeId,
+      at: '2026-07-15T12:00:00.010Z',
+      valid_for_seconds: 300
+    });
+    if (maximumProbe.checkpoint?.plan?.probeId !== maximumProbeId
+      || maximumProbe.checkpoint.id.length <= SOTER_PROVIDER_PROBE_ID_MAX_LENGTH
+      || maximumProbe.currentCall.id.length <= SOTER_PROVIDER_PROBE_ID_MAX_LENGTH) {
+      throw new Error('At-bound provider probe did not preserve its canonical derived IDs.');
+    }
+    const completedMaximumProbe = await call(client, 'soter_complete_provider_probe', {
+      checkpoint_id: maximumProbe.checkpoint.id,
+      call_id: maximumProbe.currentCall.id,
+      response: { structuredContent: { result: 'bounded-provider-identity' } },
+      at: '2026-07-15T12:00:00.020Z'
+    });
+    if (completedMaximumProbe.checkpoint?.state !== 'completed') {
+      throw new Error('At-bound provider probe could not complete through its derived IDs.');
+    }
+    const overMaximumProbeId = maximumProbeId + 'a';
+    const beforeOverMaximumProbe = privateStateTreeFingerprint(path.join(root, '.soter'));
+    const rejectedOverMaximumProbe = await client.callTool({
+      name: 'soter_prepare_provider_probe',
+      arguments: {
+        configuration_basis: 'private-active',
+        lock_path: lockPath,
+        provider_implementation: 'provider.integration.otter.mcp',
+        probe_id: overMaximumProbeId,
+        at: '2026-07-15T12:00:00.030Z',
+        valid_for_seconds: 300
+      }
+    });
+    if (!rejectedOverMaximumProbe.isError
+      || privateStateTreeFingerprint(path.join(root, '.soter')) !== beforeOverMaximumProbe) {
+      throw new Error('Over-bound provider probe ID reached the creation handler.');
+    }
+    await expectError(() => prepareDurableProviderProbeExecution({
+      root,
+      configurationBasis: 'private-active',
+      lockPath,
+      providerImplementation: 'provider.integration.otter.mcp',
+      probeId: overMaximumProbeId,
+      at: '2026-07-15T12:00:00.040Z',
+      validForSeconds: 300,
+      expectedHost: 'codex'
+    }), 'no longer than ' + SOTER_PROVIDER_PROBE_ID_MAX_LENGTH);
+
+    const envelopeProbe = await call(client, 'soter_prepare_provider_probe', {
+      configuration_basis: 'private-active',
+      lock_path: lockPath,
+      provider_implementation: 'provider.integration.otter.mcp',
+      probe_id: 'probe.mcp-selftest.response-envelope',
+      at: '2026-07-15T12:00:00.100Z',
+      valid_for_seconds: 300
+    });
+    const envelopeProbeFile = checkpointFile(root, envelopeProbe);
+    const beforeInvalidEnvelopeInput = fs.readFileSync(envelopeProbeFile, 'utf8');
+    const invalidEnvelopeInput = await client.callTool({
+      name: 'soter_complete_provider_probe',
+      arguments: {
+        checkpoint_id: envelopeProbe.checkpoint.id,
+        call_id: envelopeProbe.currentCall.id,
+        response: 'not-one-native-response-object',
+        at: '2026-07-15T12:00:00.150Z'
+      }
+    });
+    if (!invalidEnvelopeInput.isError
+      || fs.readFileSync(envelopeProbeFile, 'utf8') !== beforeInvalidEnvelopeInput) {
+      throw new Error('Zod-invalid completion input reached the provider-probe handler.');
+    }
+    assertCliNativeResponseEnvelopeRejected(root, {
+      command: 'probe-complete',
+      checkpointId: envelopeProbe.checkpoint.id,
+      callId: envelopeProbe.currentCall.id,
+      checkpointPath: envelopeProbe.checkpointPath,
+      responsePath: cliEnvelopeResponsePath,
+      privateMarker: cliEnvelopeMarker,
+      at: '2026-07-15T12:00:00.160Z'
+    });
+    const crossRouteEnvelope = await client.callTool({
+      name: 'soter_complete_operation_plan',
+      arguments: {
+        checkpoint_id: envelopeProbe.checkpoint.id,
+        call_id: envelopeProbe.currentCall.id,
+        response: nativeResponseAtByteLength(
+          SOTER_NATIVE_RESPONSE_MAX_BYTES + 1,
+          'PRIVATE_CROSS_ROUTE_ENVELOPE_SENTINEL'
+        ),
+        at: '2026-07-15T12:00:00.175Z'
+      }
+    });
+    if (!crossRouteEnvelope.isError
+      || !JSON.stringify(crossRouteEnvelope.content).includes('not an operation plan')
+      || fs.readFileSync(envelopeProbeFile, 'utf8') !== beforeInvalidEnvelopeInput) {
+      throw new Error('Cross-route oversized completion mutated an unrelated checkpoint.');
+    }
+    await assertReachedEnvelopeFailure(client, root, {
+      tool: 'soter_complete_provider_probe',
+      checkpointId: envelopeProbe.checkpoint.id,
+      callId: envelopeProbe.currentCall.id,
+      checkpointPath: envelopeProbe.checkpointPath,
+      expectedState: 'failed',
+      at: '2026-07-15T12:00:00.200Z',
+      responseByteLength: SOTER_SDK_STDIO_TRANSPORT_MAX_BYTES - (16 * 1024)
+    });
+
+    const hardCloseProbe = await call(client, 'soter_prepare_provider_probe', {
+      configuration_basis: 'private-active',
+      lock_path: lockPath,
+      provider_implementation: 'provider.integration.otter.mcp',
+      probe_id: 'probe.mcp-selftest.transport-envelope',
+      at: '2026-07-15T12:00:00.300Z',
+      valid_for_seconds: 300
+    });
+    const hardCloseProbeFile = checkpointFile(root, hardCloseProbe);
+    const beforeHardClose = fs.readFileSync(hardCloseProbeFile, 'utf8');
+    const hardCloseMarker = 'PRIVATE_HARD_CLOSE_RESPONSE_SENTINEL';
+    let hardCloseObserved = false;
+    const priorClientOnclose = client.onclose;
+    client.onclose = () => {
+      hardCloseObserved = true;
+      priorClientOnclose?.();
+    };
+    let hardCloseError;
+    let hardCloseTimer;
+    try {
+      await Promise.race([
+        client.callTool({
+          name: 'soter_complete_provider_probe',
+          arguments: {
+            checkpoint_id: hardCloseProbe.checkpoint.id,
+            call_id: hardCloseProbe.currentCall.id,
+            response: nativeResponseAtByteLength(
+              SOTER_SDK_STDIO_TRANSPORT_MAX_BYTES + 1,
+              hardCloseMarker
+            ),
+            at: '2026-07-15T12:00:00.350Z'
+          }
+        }),
+        new Promise((_, reject) => {
+          hardCloseTimer = setTimeout(() => reject(new Error(
+            'Timed out waiting for the bounded stdio transport to close.'
+          )), 15_000);
+        })
+      ]);
+    } catch (error) {
+      hardCloseError = error;
+    } finally {
+      clearTimeout(hardCloseTimer);
+    }
+    if (!hardCloseObserved
+      || !hardCloseError
+      || hardCloseError.code !== ErrorCode.ConnectionClosed
+      || String(hardCloseError.message || hardCloseError).includes('Timed out')
+      || String(hardCloseError.stack || hardCloseError).includes(hardCloseMarker)) {
+      throw new Error('An over-8MiB MCP request did not close the bounded server transport safely.');
+    }
+    await client.close().catch(() => {});
+    client = await connectClient(root);
+    const recoveredHardCloseProbe = await call(client, 'soter_get_host_call', {
+      checkpoint_id: hardCloseProbe.checkpoint.id
+    });
+    if (fs.readFileSync(hardCloseProbeFile, 'utf8') !== beforeHardClose
+      || recoveredHardCloseProbe.checkpoint?.state !== 'requested'
+      || recoveredHardCloseProbe.currentCall?.id !== hardCloseProbe.currentCall.id) {
+      throw new Error('Hard-close reconnect did not recover the exact unchanged provider call.');
+    }
+    const explicitlyFailedHardCloseProbe = await call(client, 'soter_fail_host_call', {
+      checkpoint_id: hardCloseProbe.checkpoint.id,
+      call_id: hardCloseProbe.currentCall.id,
+      error_kind: 'validation',
+      at: '2026-07-15T12:00:00.400Z'
+    });
+    if (explicitlyFailedHardCloseProbe.checkpoint?.state !== 'failed'
+      || explicitlyFailedHardCloseProbe.currentCall != null) {
+      throw new Error('Hard-close recovery left the unseen provider call re-emittable.');
+    }
+
     const privateIdentity = 'private-identity-mcp-selftest-marker';
     await expectToolError(client, 'soter_complete_provider_probe', {
       checkpoint_id: preparedProbe.checkpoint.id,
@@ -4190,6 +4609,43 @@ async function selftest(root) {
       || preparedCapability.run?.lifecycleState !== 'executing') {
       throw new Error('Capability preparation did not durably stage the exact Otter request.');
     }
+    const envelopeCapabilityRunPath = createEnvelopeRun(
+      root,
+      'run.meeting-intake.mcp-envelope-capability'
+    );
+    const envelopeCapability = await prepareDurableCapabilityExecution({
+      root,
+      configurationBasis: 'private-active',
+      lockPath,
+      runPath: envelopeCapabilityRunPath,
+      capability: 'meeting.transcript.read',
+      authority: 'authority.otter.provider',
+      providerImplementation: 'provider.integration.otter.mcp',
+      input: {
+        meetingId: 'meeting.mcp-envelope-capability',
+        recordingUri: 'https://otter.ai/u/conversation_mcp_envelope_capability'
+      },
+      callId: 'toolcall.mcp-selftest.envelope-capability',
+      at: '2026-07-15T12:00:00.500Z',
+      expectedHost: 'codex'
+    });
+    assertCliNativeResponseEnvelopeRejected(root, {
+      command: 'capability-complete',
+      checkpointId: envelopeCapability.checkpoint.id,
+      callId: envelopeCapability.checkpoint.call.id,
+      checkpointPath: envelopeCapability.checkpointPath,
+      responsePath: cliEnvelopeResponsePath,
+      privateMarker: cliEnvelopeMarker,
+      at: '2026-07-15T12:00:00.550Z'
+    });
+    await assertReachedEnvelopeFailure(client, root, {
+      tool: 'soter_complete_capability_call',
+      checkpointId: envelopeCapability.checkpoint.id,
+      callId: envelopeCapability.checkpoint.call.id,
+      checkpointPath: envelopeCapability.checkpointPath,
+      expectedState: 'failed',
+      at: '2026-07-15T12:00:00.600Z'
+    });
     assertPrivateFile(checkpointFile(root, preparedCapability));
     assertPrivateFile(path.join(root, preparedCapability.runPath));
     requestedRunContents = fs.readFileSync(path.join(root, preparedCapability.runPath), 'utf8');
@@ -4407,6 +4863,51 @@ async function selftest(root) {
         !== 'mcp__codex_apps__notion_query_data_sources') {
       throw new Error('MCP operation plan did not emit the exact first native host call.');
     }
+    const envelopePlanRunId = 'run.meeting-intake.mcp-envelope-plan';
+    const envelopePlan = await prepareDurableOperationPlanExecution({
+      root,
+      configurationBasis: 'private-active',
+      lockPath,
+      runPath: createEnvelopeRun(root, envelopePlanRunId),
+      plan: {
+        $contract: 'soter://contracts/operation-plan/v2',
+        contractVersion: '2.0.0',
+        id: 'plan.mcp-selftest.response-envelope',
+        runId: envelopePlanRunId,
+        createdAt: '2026-07-15T12:00:04.100Z',
+        mode: 'sequential',
+        failurePolicy: 'stop',
+        reason: 'Prove that an oversized exact read response becomes one terminal validation failure.',
+        steps: [{
+          id: 'step.read-meeting',
+          capability: 'meetings.records.read',
+          authority: 'authority.meetings.instance',
+          providerImplementation: 'provider.integration.notion.mcp',
+          input: { recordTypes: ['meeting'], limit: 1 },
+          inputBindings: [],
+          reason: 'Read one mapped meeting target through the bounded provider response route.'
+        }]
+      },
+      at: '2026-07-15T12:00:04.100Z',
+      expectedHost: 'codex'
+    });
+    assertCliNativeResponseEnvelopeRejected(root, {
+      command: 'plan-complete',
+      checkpointId: envelopePlan.checkpoint.id,
+      callId: envelopePlan.currentCall.id,
+      checkpointPath: envelopePlan.checkpointPath,
+      responsePath: cliEnvelopeResponsePath,
+      privateMarker: cliEnvelopeMarker,
+      at: '2026-07-15T12:00:04.150Z'
+    });
+    await assertReachedEnvelopeFailure(client, root, {
+      tool: 'soter_complete_operation_plan',
+      checkpointId: envelopePlan.checkpoint.id,
+      callId: envelopePlan.currentCall.id,
+      checkpointPath: envelopePlan.checkpointPath,
+      expectedState: 'failed',
+      at: '2026-07-15T12:00:04.200Z'
+    });
     const firstPlanMarker = 'private-first-plan-response-marker';
     const firstPlanResponse = {
       content: [{
@@ -5779,6 +6280,41 @@ async function selftest(root) {
       || JSON.stringify(taskWorkspaceInspection).includes(PRIVATE_TASK_CONTEXT_OPTION)) {
       throw new Error(
         'Connected Task start did not translate portable choices only at the exact private host-call boundary.'
+      );
+    }
+    assertCliNativeResponseEnvelopeRejected(root, {
+      command: 'connected-transaction-complete',
+      checkpointId: advancedTaskTransaction.checkpoint.id,
+      callId: advancedTaskTransaction.currentCall.id,
+      checkpointPath: advancedTaskTransaction.checkpointPath,
+      responsePath: cliEnvelopeResponsePath,
+      privateMarker: cliEnvelopeMarker,
+      at: '2026-07-15T12:00:38.050Z'
+    });
+    const oversizedConnectedWrite = await assertReachedEnvelopeFailure(client, root, {
+      tool: 'soter_advance_connected_transaction',
+      checkpointId: advancedTaskTransaction.checkpoint.id,
+      callId: advancedTaskTransaction.currentCall.id,
+      checkpointPath: advancedTaskTransaction.checkpointPath,
+      expectedState: 'needs-attention',
+      at: '2026-07-15T12:00:38.100Z'
+    });
+    await expectToolError(
+      client,
+      'soter_reconcile_connected_transaction',
+      {
+        checkpoint_id: oversizedConnectedWrite.checkpoint.id,
+        at: '2026-07-15T12:00:38.200Z'
+      },
+      'cannot resolve before exact write output exists'
+    );
+    const unreconciledOversizedWrite = await call(client, 'soter_get_host_call', {
+      checkpoint_id: oversizedConnectedWrite.checkpoint.id
+    });
+    if (unreconciledOversizedWrite.checkpoint?.state !== 'needs-attention'
+      || unreconciledOversizedWrite.currentCall != null) {
+      throw new Error(
+        'Oversized connected create became re-emittable or invented an ungrounded reconciliation read.'
       );
     }
     const inspectedDecisionContext = await call(

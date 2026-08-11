@@ -221,6 +221,13 @@ npm run soter:selftest
 npm run soter:studio:dev
 ```
 
+`npm run soter:selftest` is the only complete Core acceptance command. It runs
+every registered suite once in isolated processes with eight workers by
+default; use `npm run soter:selftest -- --jobs N` with `N` from 2 through 8 to
+lower concurrency. Use `node soter/core/cli.mjs selftest --list-suites` to list
+the canonical order and `--suite NAME` to rerun one failure. The bare CLI
+aggregate is intentionally unavailable.
+
 The Studio command launches an unbundled developer app against the current
 repository. It is not a packaged installer.
 
@@ -276,7 +283,7 @@ Run the target checks before treating a change as proven:
 node soter/kernel/verify.mjs --selftest
 node soter/kernel/verify.mjs
 npm run soter:development-governance:selftest
-node soter/core/cli.mjs selftest
+npm run soter:selftest
 node soter/core/cli.mjs fixtures --check
 node soter/core/cli.mjs doctor \
   --lock soter/fixtures/meeting-intake/meeting-intake.lock.json

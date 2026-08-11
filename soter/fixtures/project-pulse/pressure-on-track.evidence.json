@@ -10,8 +10,8 @@
     "id": "run.project-pulse.pressure-on-track-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:43cb7141933418ec86e416351765270b54a1fb39b0c30375c4c75e5560d71a0b",
-  "graphFingerprint": "sha256:92e6b4e53843f0d78f1ce43b5edff7bc407c06678ea472410475ebe29b724dfa",
+  "configurationLockFingerprint": "sha256:88351a53b495efa02de135ee91c1943d8532bc8bd36fca6846a96f9867b4c36d",
+  "graphFingerprint": "sha256:6b476975036a12d799546214c9461d8dfc522f813ba19c0f8c535829480d6701",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -21,7 +21,7 @@
     {
       "id": "core.runtime",
       "version": "0.1.0",
-      "fingerprint": "sha256:b922eb238bd0cd0c3a77bc63d68f92ceab0a78d60a13bea430a9ed48f8be4c1c"
+      "fingerprint": "sha256:d4e1837bfe5e35be6d2f694bb2de6fdf166534d84130e93bc9b1b75837e8464f"
     },
     {
       "id": "context.projects",
@@ -221,7 +221,7 @@
     {
       "role": "context-snapshot",
       "id": "context.project-pulse.pressure-on-track-fixture",
-      "fingerprint": "sha256:ceeabd6e2145b9124cf9d4a4e35fed8651fc6abf3d4be280e211c721d388af8a"
+      "fingerprint": "sha256:1f8ed913bbd4573ca2fb81da321220a0cfc97e6d9bc6cfea4590fbb78268fe43"
     },
     {
       "role": "project-pulse-preview",

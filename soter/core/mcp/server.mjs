@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
 import { createSoterMcpServer } from './tools.mjs';
+import { SOTER_SDK_STDIO_TRANSPORT_MAX_BYTES } from '../service.mjs';
 
 const defaultRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
@@ -44,7 +45,21 @@ process.once('SIGTERM', () => {
   close().finally(() => process.exit(0));
 });
 
-server.connect(new StdioServerTransport()).catch((error) => {
+const transport = new StdioServerTransport(
+  process.stdin,
+  process.stdout,
+  { maxBufferSize: SOTER_SDK_STDIO_TRANSPORT_MAX_BYTES }
+);
+
+server.connect(transport).then(() => {
+  const reportTransportError = transport.onerror;
+  transport.onerror = (error) => {
+    reportTransportError?.(error);
+    process.stderr.write('Soter MCP server transport closed before request handling.\n');
+    process.exitCode = 1;
+    transport.close().finally(() => process.exit(1));
+  };
+}).catch((error) => {
   process.stderr.write('Soter MCP server: ' + error.message + '\n');
   process.exitCode = 1;
 });

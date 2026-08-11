@@ -13,9 +13,9 @@
   },
   "configurationLock": {
     "path": "soter/fixtures/repository-review/repository-review.lock.json",
-    "fingerprint": "sha256:9651671048676d1cbd8f2b53c51a88058d0fdb993de9d0d8d7e061ee2e8e7f22"
+    "fingerprint": "sha256:be2507148b3705f83f19fe86ab2916eabdb01412e6db7001904b88cf4cbfeb19"
   },
-  "graphFingerprint": "sha256:ce250271efd096af288af17d3bcfe908dd5dfe01331f2864a31f2a113457b4b9",
+  "graphFingerprint": "sha256:90d239cc5eb4918e51b51f088313b40dec821ba1f1a0ea5da539bfcb55d79e5d",
   "context": [
     {
       "subject": "notion.workspace",
@@ -24,7 +24,7 @@
       "uri": "soter-fixture://configuration-template/notion/account/operator",
       "declarationFingerprint": "sha256:98fd45b601c22716464315cbbc969b87e603026880645bd7695fcc90029d1d44",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:9651671048676d1cbd8f2b53c51a88058d0fdb993de9d0d8d7e061ee2e8e7f22",
+      "provenance": "configuration-lock:sha256:be2507148b3705f83f19fe86ab2916eabdb01412e6db7001904b88cf4cbfeb19",
       "freshness": "unknown"
     },
     {
@@ -34,7 +34,7 @@
       "uri": "soter-fixture://configuration-template/notion/authority/product-policies",
       "declarationFingerprint": "sha256:b684b06cd81025f9200595cb311a091e023a5dc0226e888c51c92ef47f26fabc",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:9651671048676d1cbd8f2b53c51a88058d0fdb993de9d0d8d7e061ee2e8e7f22",
+      "provenance": "configuration-lock:sha256:be2507148b3705f83f19fe86ab2916eabdb01412e6db7001904b88cf4cbfeb19",
       "freshness": "unknown"
     },
     {
@@ -64,7 +64,7 @@
       "uri": "soter-state://runs",
       "declarationFingerprint": "sha256:74c8fdd14e981038f959c469d6709fe66186b5f854f5f337f65bc67a6e7926c0",
       "status": "declared",
-      "provenance": "configuration-lock:sha256:9651671048676d1cbd8f2b53c51a88058d0fdb993de9d0d8d7e061ee2e8e7f22",
+      "provenance": "configuration-lock:sha256:be2507148b3705f83f19fe86ab2916eabdb01412e6db7001904b88cf4cbfeb19",
       "freshness": "unknown"
     }
   ],
@@ -158,7 +158,7 @@
     {
       "id": "context.repository-review.preparation-fixture",
       "type": "context-snapshot",
-      "fingerprint": "sha256:86e563e06bd4b23d6741873c41340b223ce20570809e243bf716e81ad0adcf37"
+      "fingerprint": "sha256:70047e43585451bc9f0d56e1294744e0d75ef6ca051dd32539e5e350c72e1b0e"
     }
   ],
   "effects": [

@@ -80,6 +80,83 @@ const READ_ONLY_FOLLOWUP_RUN_STATES = new Set([
 ]);
 const READ_ONLY_PLAN_EFFECTS = new Set(['read', 'disclosure']);
 
+export const SOTER_NATIVE_RESPONSE_MAX_BYTES = 6 * 1024 * 1024;
+export const SOTER_SDK_STDIO_TRANSPORT_MAX_BYTES = 8 * 1024 * 1024;
+export const SOTER_PROVIDER_PROBE_ID_MAX_LENGTH = 200;
+export const SOTER_NATIVE_RESPONSE_ENVELOPE_EXCEEDED =
+  'SOTER_NATIVE_RESPONSE_ENVELOPE_EXCEEDED';
+export const SOTER_NATIVE_RESPONSE_ENVELOPE_MESSAGE =
+  'The native provider response exceeds the supported Soter ingress envelope. Do not retry the provider call. Inspect the exact checkpoint; if it remains requested, record the exact call through soter_fail_host_call before continuing.';
+
+export function nativeResponseEnvelopeByteLength(response) {
+  const serialized = JSON.stringify(response);
+  if (typeof serialized !== 'string') {
+    throw new Error('Native provider response must be one JSON value.');
+  }
+  return Buffer.byteLength(serialized, 'utf8');
+}
+
+export function assertNativeResponseEnvelope(response) {
+  if (nativeResponseEnvelopeByteLength(response) <= SOTER_NATIVE_RESPONSE_MAX_BYTES) {
+    return;
+  }
+  const error = new Error(SOTER_NATIVE_RESPONSE_ENVELOPE_MESSAGE);
+  error.code = SOTER_NATIVE_RESPONSE_ENVELOPE_EXCEEDED;
+  throw error;
+}
+
+async function assertDurableNativeResponseEnvelope({
+  root,
+  checkpointId,
+  callId,
+  response,
+  at,
+  expectedHost,
+  recordFailure
+}) {
+  try {
+    assertNativeResponseEnvelope(response);
+  } catch (error) {
+    if (error?.code === SOTER_NATIVE_RESPONSE_ENVELOPE_EXCEEDED && recordFailure) {
+      try {
+        await failDurableHostExecution({
+          root,
+          checkpointId,
+          callId,
+          errorKind: 'validation',
+          at,
+          expectedHost
+        });
+      } catch {
+        // Preserve one fixed, payload-independent boundary error. The caller must inspect
+        // the exact checkpoint and explicitly fail any still-requested call before recovery.
+      }
+    }
+    throw error;
+  }
+}
+
+function hostCallContainsId(call, callId) {
+  return call?.id === callId
+    || Boolean(call?.pagination?.pages?.some((page) => page.callId === callId));
+}
+
+function planCheckpointContainsCallId(checkpoint, callId) {
+  return checkpoint.steps.some((step) => hostCallContainsId(step.call, callId));
+}
+
+function connectedCheckpointContainsCallId(checkpoint, callId) {
+  return checkpoint.operations.some((operation) => {
+    const records = [
+      operation.precondition,
+      operation.write,
+      operation.verification,
+      ...operation.reconciliations.map((item) => item.phase)
+    ];
+    return records.some((record) => hostCallContainsId(record?.call, callId));
+  });
+}
+
 function assertExactServiceArguments(value, allowedKeys, label) {
   if (!value || typeof value !== 'object' || Array.isArray(value)
     || Object.keys(value).some((key) => !allowedKeys.has(key))) {
@@ -1401,6 +1478,15 @@ export async function prepareDurableConnectedTransactionReconciliation({
 }
 
 export async function prepareDurableProviderProbeExecution(options) {
+  if (options.probeId !== undefined
+    && (typeof options.probeId !== 'string'
+      || options.probeId.length > SOTER_PROVIDER_PROBE_ID_MAX_LENGTH
+      || !/^probe\.[a-z0-9]+(?:[.-][a-z0-9]+)*$/.test(options.probeId))) {
+    throw new Error(
+      'Provider probe ID must be one canonical probe.* identifier no longer than '
+        + SOTER_PROVIDER_PROBE_ID_MAX_LENGTH + ' characters.'
+    );
+  }
   const selected = selectExactConnectedConfiguration({
     root: options.root,
     configurationBasis: options.configurationBasis,
@@ -1535,6 +1621,19 @@ export async function completeDurableOperationPlanExecution({
   if (checkpoint.kind !== 'operation-plan') {
     throw new Error('Checkpoint ' + checkpointId + ' is not an operation plan.');
   }
+  const currentCall = operationPlanCurrentCall(checkpoint);
+  if (!planCheckpointContainsCallId(checkpoint, callId)) {
+    throw new Error('Operation plan response does not match the exact current step call.');
+  }
+  await assertDurableNativeResponseEnvelope({
+    root,
+    checkpointId,
+    callId,
+    response,
+    at,
+    expectedHost,
+    recordFailure: Boolean(currentCall && currentCall.id === callId)
+  });
   const run = durableRunForCheckpoint(root, state.lockFile, state.lock, checkpoint);
   const completed = await completeOperationPlanStep({
     root,
@@ -1623,6 +1722,19 @@ export async function completeDurableConnectedTransactionExecution({
     throw new Error('Checkpoint ' + checkpointId + ' is not a connected transaction.');
   }
   if (!callId) throw new Error('Connected transaction completion requires the exact current call ID.');
+  const currentCall = verifiedConnectedTransactionCurrentCall(checkpoint);
+  if (!connectedCheckpointContainsCallId(checkpoint, callId)) {
+    throw new Error('Connected transaction response does not match the exact current call ID.');
+  }
+  await assertDurableNativeResponseEnvelope({
+    root,
+    checkpointId,
+    callId,
+    response,
+    at,
+    expectedHost,
+    recordFailure: Boolean(currentCall && currentCall.id === callId)
+  });
   const run = durableRunForCheckpoint(root, state.lockFile, state.lock, checkpoint);
   const completed = await completeVerifiedConnectedTransactionCall({
     root, lock: state.lock, checkpoint, callId, response, at: atOrNow(at)
@@ -1648,6 +1760,19 @@ export async function completeDurableProviderProbeExecution({
     throw new Error('Provider probe checkpoint does not use the required plan contract.');
   }
   if (!callId) throw new Error('Provider probe plans require the exact current call ID.');
+  const currentCall = providerProbePlanCurrentCall(checkpoint);
+  if (!planCheckpointContainsCallId(checkpoint, callId)) {
+    throw new Error('Provider probe response does not match the exact current call ID.');
+  }
+  await assertDurableNativeResponseEnvelope({
+    root,
+    checkpointId,
+    callId,
+    response,
+    at,
+    expectedHost,
+    recordFailure: Boolean(currentCall && currentCall.id === callId)
+  });
   const completed = await completeProviderProbePlanStep({
     root,
     lock: state.lock,
@@ -1673,19 +1798,29 @@ export async function completeDurableCapabilityExecution({
   if (checkpoint.kind !== 'capability') {
     throw new Error('Checkpoint ' + checkpointId + ' is not a capability call.');
   }
-  const responseFingerprint = fingerprintJson(response);
   const priorPage = checkpoint.call.pagination?.pages.find((page) => page.callId === callId);
+  if (checkpoint.call.pagination && !callId) {
+    throw new Error('Paginated capability completion requires the exact current call ID.');
+  }
+  if (!priorPage && callId && checkpoint.call.id !== callId) {
+    throw new Error('Capability response does not match the exact current call ID.');
+  }
+  await assertDurableNativeResponseEnvelope({
+    root,
+    checkpointId,
+    callId,
+    response,
+    at,
+    expectedHost,
+    recordFailure: checkpoint.state === 'requested'
+      && (!callId || checkpoint.call.id === callId)
+  });
+  const responseFingerprint = fingerprintJson(response);
   if (priorPage) {
     if (priorPage.responseFingerprint !== responseFingerprint) {
       throw new Error('Capability response does not match the exact completed page call.');
     }
     return durableResult(root, state);
-  }
-  if (checkpoint.call.pagination && !callId) {
-    throw new Error('Paginated capability completion requires the exact current call ID.');
-  }
-  if (callId && checkpoint.call.id !== callId) {
-    throw new Error('Capability response does not match the exact current call ID.');
   }
   if (checkpoint.state !== 'requested') {
     if (checkpoint.call.responseFingerprint === responseFingerprint) {

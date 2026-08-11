@@ -116,6 +116,32 @@ or ask Core to adopt a repository run document. The resulting host request
 remains a checkpoint-bound transport fact and grants no approval, write, retry,
 readiness, verification, or health authority.
 
+MCP stdio accepts at most one 8 MiB complete request frame. Native responses on
+the four completion tools are separately limited to 6 MiB with bounded canonical
+checkpoint/call IDs and exact UTC instants. Caller-selected provider probe IDs
+are capped at 200 characters before Core derives their private checkpoint and
+call IDs. Ordinary compatibility results keep
+both text and `structuredContent`, but the full `CallToolResult` is capped at
+1 MiB after a conservative 128 KiB source-material preflight; cyclic, over-depth,
+non-JSON, or oversized values fail before compatibility text is constructed.
+Studio must render `SOTER_MCP_RESULT_ENVELOPE_EXCEEDED` without size,
+payload, path, or fingerprint inference. Development-target reads retain their
+separate 8 KiB private-untrusted chunk contract.
+
+If `SOTER_NATIVE_RESPONSE_ENVELOPE_EXCEEDED` reaches Studio, Core has attempted
+to record the exact current call as a validation failure. Refresh and inspect the
+checkpoint; never resend the provider request. Probe, capability, and plan calls
+remain failed. A connected write must be `needs-attention`, and Studio must never
+expose the prior write. It may expose the existing read-only reconciliation route
+only when Core can derive an exact observation target without the rejected
+response. A terminal create with no known new record identity remains manual
+`needs-attention`; Studio must not invent a target. If the 8 MiB transport closes first, Core has not observed the response: reconnect,
+recover the unchanged call as a locator, and require the exact
+`soter_fail_host_call` operation before any further recovery. A transport close
+is never retry authority. The CLI response-file route is size-bounded but does
+not yet prove fatal malformed-UTF-8 rejection; Studio must not route provider
+responses through it or call it an exact byte-preserving completion boundary.
+
 Connected-acquisition read recovery is a distinct Core family, not transaction
 `checkpoint.resume`, `continuationRequest`, or a generic retry flag. The
 canonical callable surfaces are `operator-acquisition-recover` and
@@ -1931,9 +1957,14 @@ After a governed contract or Core projection changes:
 2. Regenerate Studio adapter fixtures from the canonical lifecycle fixture
    and real `operator-inspect` output with private values replaced by stable
    synthetic identifiers and fingerprints.
-3. Run `node soter/kernel/verify.mjs`, `node soter/core/cli.mjs selftest`,
+3. Run `node soter/kernel/verify.mjs`, `npm run soter:selftest`,
    `node soter/core/cli.mjs fixtures --check`, the doctor gate, the MCP
    selftest, and Studio's renderer/build/Electron gates.
+
+The complete Core acceptance uses the cross-platform parallel runner with
+eight workers by default and an explicit `--jobs 2..8` override. The Core CLI
+keeps only the exact `selftest --suite NAME` diagnostic and
+`selftest --list-suites` discovery paths; it has no serial aggregate fallback.
 
 No fixture, renderer, or contained test establishes connected credentials,
 reachability, live provider writes, or host-started end-to-end behavior.
