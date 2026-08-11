@@ -18,6 +18,15 @@
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/check.mjs\" --guard-write"
           }
         ]
+      },
+      {
+        "matcher": "mcp__.*Notion.*__notion-(create|update|move|duplicate|convert).*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bb soter gate --event \"$(cat)\""
+          }
+        ]
       }
     ],
     "PostToolUse": [
