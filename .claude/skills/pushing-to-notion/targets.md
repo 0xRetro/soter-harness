@@ -19,7 +19,7 @@ before a push if the board may have changed (a property added/renamed).
 ## Targets
 
 ### tooling-pages  *(the [DB] Tooling database — one page per tool/product)*
-- **data_source_id:** `ed2e2463-6963-472e-951d-95582e681e56` *(live-verified 2026-07-12)*
+- **data_source_id:** `ed2e2463-6963-472e-951d-95582e681e56` *(live-verified 2026-08-11)*
 - **policy standard:** `Tooling` in the `policy-standards` registry — rules, D1 (Tool Type), D3 (de-dup on Name + GitHub), Tool Status lifecycle. The SAME policy governs `feature-cards`
 - **properties:**
   - `Name` → title
@@ -33,8 +33,8 @@ before a push if the board may have changed (a property added/renamed).
   is resolved through this database, never stored as a fixed id.
 - **page template:** `[New Product Template]` (page `316d79b5de38801cbbeacdb847136f96`,
   the DB's registered default). A new tooling page's body STARTS from it — the embedded
-  🔧 Feature Board plus Vision / Use Cases / How it works / Team / Related Resources /
-  Capabilities by area sections (Capabilities LAST: a hand-authored `<details>` toggle
+  🔧 Feature Board plus `Product Vision` · `Use Cases / Scope` · `How it works` · `Team` ·
+  `Related Resources` · `Capabilities by area` (Capabilities LAST: a hand-authored `<details>` toggle
   per area — the tool's own 4–7 axis — with ✅ built / ⬜ planned bullets, each linking
   its feature card where one exists, updated by hand as statuses change; replaced the
   earlier self-syncing linked-view config per ADR-0058, template updated live
