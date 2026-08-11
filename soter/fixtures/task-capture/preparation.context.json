@@ -4,8 +4,8 @@
   "id": "context.task-capture.preparation-fixture",
   "runId": "run.task-capture.preparation-fixture",
   "createdAt": "2026-07-16T15:00:00.000Z",
-  "configurationLockFingerprint": "sha256:3527036449ddd514478fe7768d8af10befa266abd379027cd9dbbbe1e744d3f3",
-  "graphFingerprint": "sha256:4a394505b371fe0527eb1d02eb2e39909b9cac093cb3fb1af40b88a00082a611",
+  "configurationLockFingerprint": "sha256:cf8695b44dd8d5a6b7f10cc605310e2489734976d8f3ace5a634cd2fba374fed",
+  "graphFingerprint": "sha256:97e887421711872f6a63fa5f0fb38e3bc018c3115a86940200bcabe7d531cf60",
   "containment": "fixture",
   "entries": [
     {

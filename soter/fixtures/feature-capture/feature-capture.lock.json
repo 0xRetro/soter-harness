@@ -499,7 +499,7 @@
         {
           "path": "soter/kernel/architecture-foundations.selftest.mjs",
           "role": "evaluation",
-          "fingerprint": "sha256:7506e26f829615a8dae8b1ab110ca1c7dfa340554bc1881f3e969a42b3e3c5f5"
+          "fingerprint": "sha256:99f192ef25036c7f9afc00d313459494a2906f03d16934dcae9216a4666c56c8"
         },
         {
           "path": "soter/kernel/configuration-template-portability.mjs",
@@ -581,12 +581,12 @@
         {
           "path": "package-lock.json",
           "role": "implementation",
-          "fingerprint": "sha256:47b3a44673c6f89831f35de6ee525e9ddddc8e60cb1cceaf57ff7e17e43beca0"
+          "fingerprint": "sha256:23b0676010669863b3bf068fa6234a60445ed1ff3293e697023c3463f36f244f"
         },
         {
           "path": "package.json",
           "role": "implementation",
-          "fingerprint": "sha256:b4ca21d53ebb828a97bbbc78f63afb4f69ed30d6f44e582910cd6bc8767b0ea6"
+          "fingerprint": "sha256:7731b965d79afad83e23830579909e3adaebcb4780120323942ddb7fba64c1b6"
         },
         {
           "path": "soter/core/automation-input.selftest.mjs",
@@ -1515,5 +1515,5 @@
       "fingerprint": "sha256:c99c464da583edcf480f0c7554435408c261428eed6042af691e6b65819c7019"
     }
   ],
-  "graphFingerprint": "sha256:87f0d8346bccfa52cf6526d19a86da3c7fabbba9259b8dc27f547b8e219798ca"
+  "graphFingerprint": "sha256:c55be8e0c31708ebd25b25036999bb1a4666777753012154824d5fe4780aaba9"
 }

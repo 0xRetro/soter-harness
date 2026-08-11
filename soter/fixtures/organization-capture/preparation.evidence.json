@@ -10,8 +10,8 @@
     "id": "run.organization-capture.preparation-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:9f872b43cdc2d9b8702a9906378f01659a31966baf88907bd241595666e8740a",
-  "graphFingerprint": "sha256:5a9a0a46b2d818eddd06a3cbd1f9eee91cd136df7024af598e1767560b88603f",
+  "configurationLockFingerprint": "sha256:e5ec32e995db8c48ae7cdff136e4a4f3a317f22e7656140f39a6afb97bcfde5d",
+  "graphFingerprint": "sha256:eb8ecb6d54ca590fcf798da7751e496450a9827c32d733e2820af1ea7fa7b1a9",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -236,7 +236,7 @@
     {
       "role": "context-snapshot",
       "id": "context.organization-capture.preparation-fixture",
-      "fingerprint": "sha256:6675d7db16bf8137d68a9bb5528f8436a423702bfd193f0c187ea13c4a944e4b"
+      "fingerprint": "sha256:e00345efe829e01a3336c68b4b5175b29137ffec60442f80ffa9cc008c35bc4c"
     },
     {
       "role": "organization-create-preview",

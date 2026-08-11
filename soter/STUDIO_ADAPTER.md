@@ -1951,6 +1951,13 @@ The sanitized canonical lifecycle fixture is
 has `authority=none-example-only` and may seed renderer adapters without
 establishing provider behavior.
 
+After a clean `npm ci`, Core and MCP checks require no Electron binary. Before
+Studio launch or an Electron gate, run
+`npm run soter:studio:install-electron`. This installs only Studio's local
+Electron runtime dependency; it is not the governed Pack installation
+transaction and does not apply configuration, realize a host, grant provider
+authority, or establish connected readiness, verification, or health.
+
 After a governed contract or Core projection changes:
 
 1. Regenerate target fixtures with `node soter/core/cli.mjs fixtures --update`.

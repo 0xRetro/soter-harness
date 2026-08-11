@@ -22,6 +22,26 @@ function fieldIds(model) {
   });
 }
 
+const rootPackage = load('package.json');
+const rootPackageLock = load('package-lock.json');
+const lockedElectron = rootPackageLock.packages['node_modules/electron'];
+const rootReadme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
+const studioAdapter = fs.readFileSync(path.join(root, 'soter/STUDIO_ADAPTER.md'), 'utf8');
+assert.equal(rootPackage.engines.node, '>=22.12.0');
+assert.equal(rootPackageLock.packages[''].engines.node, rootPackage.engines.node);
+assert.equal(rootPackage.scripts['soter:studio:install-electron'], 'install-electron');
+assert.equal(Object.hasOwn(rootPackage.scripts, 'postinstall'), false,
+  'Studio runtime acquisition must remain an explicit optional step');
+assert.equal(lockedElectron.engines.node, '>= 22.12.0');
+assert.equal(lockedElectron.bin['install-electron'], 'install.js');
+for (const [documentName, document] of [
+  ['README.md', rootReadme],
+  ['soter/STUDIO_ADAPTER.md', studioAdapter]
+]) {
+  assert(document.includes('npm run soter:studio:install-electron'),
+    `${documentName} must expose the canonical explicit Electron installation command`);
+}
+
 const policy = load('soter/contexts/policy/standard.model.json');
 assert.deepEqual(policy.sectionOrder, [
   'definition',
@@ -399,4 +419,4 @@ assert.equal(
 );
 
 
-process.stdout.write('Architecture foundations selftest passed: exact policy structure, bounded Context ownership, credential exclusions, governed Context vocabularies, request-scoped development effects, effect-free static host projection, and selected-guide-only Claude projection remain enforced.\n');
+process.stdout.write('Architecture foundations selftest passed: exact Node and optional Studio-install boundaries, policy structure, bounded Context ownership, credential exclusions, governed Context vocabularies, request-scoped development effects, effect-free static host projection, and selected-guide-only Claude projection remain enforced.\n');

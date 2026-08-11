@@ -4,8 +4,8 @@
   "id": "context.project-decision-resolution.missing-why-fixture",
   "runId": "run.project-decision-resolution.missing-why-fixture",
   "createdAt": "2026-07-22T12:00:00.000Z",
-  "configurationLockFingerprint": "sha256:c7e890bf60b99debd693f4e6635f562c8254b38a9f7f8aab2977f2ab3ec90591",
-  "graphFingerprint": "sha256:2bde177e42eec263509ac1e11d1022f92858d73ec2114ed3681b0a41165c662b",
+  "configurationLockFingerprint": "sha256:9ee22e90bfde41c1bda6e9fa61da9e30e1984dd30ef3933ac389fc3cd8519b0e",
+  "graphFingerprint": "sha256:813528f3ccc035824cc16615d4db60dba6a0c25fb8762ec13ac93134f5861427",
   "containment": "fixture",
   "entries": [
     {

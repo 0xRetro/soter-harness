@@ -211,14 +211,12 @@ conformance, automation maturity, or live health.
 
 ## Quick start
 
-Requirements: Node.js 20 or newer. Soter Studio's current toolchain requires
-Node.js 20.19 or newer.
+Requirements: Node.js 22.12 or newer.
 
 ```bash
 npm ci
 npm run soter:verify
 npm run soter:selftest
-npm run soter:studio:dev
 ```
 
 `npm run soter:selftest` is the only complete Core acceptance command. It runs
@@ -228,8 +226,20 @@ lower concurrency. Use `node soter/core/cli.mjs selftest --list-suites` to list
 the canonical order and `--suite NAME` to rerun one failure. The bare CLI
 aggregate is intentionally unavailable.
 
-The Studio command launches an unbundled developer app against the current
-repository. It is not a packaged installer.
+After a clean `npm ci`, Core and MCP commands can run without the Electron
+runtime binary. Install that binary explicitly before launching Studio or
+running Electron gates:
+
+```bash
+npm run soter:studio:install-electron
+npm run soter:studio:dev
+```
+
+The Studio development command launches an unbundled app against the current
+repository; it is not a packaged installer. These dependency-installation
+steps are local tooling setup only. They do not select or apply a Soter
+configuration, realize a host, discover or authenticate a provider, permit
+provider calls or writes, or establish readiness, verification, or health.
 
 Use the [connected developer-acceptance runbook](soter/acceptance/CONNECTED.md)
 for exact private configuration, host realization, transient provider-call,

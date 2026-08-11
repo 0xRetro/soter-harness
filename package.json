@@ -5,7 +5,7 @@
   "type": "module",
   "main": "soter/studio/electron/main.mjs",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.12.0"
   },
   "scripts": {
     "soter:verify": "node soter/kernel/verify.mjs",
@@ -23,6 +23,7 @@
     "soter:mcp:codex": "node soter/core/mcp/server.mjs --host codex",
     "soter:mcp:claude": "node soter/core/mcp/server.mjs --host claude",
     "soter:mcp:selftest": "node soter/core/mcp/selftest.mjs",
+    "soter:studio:install-electron": "install-electron",
     "soter:studio:dev": "concurrently -k -s first \"vite --config soter/studio/vite.config.ts\" \"wait-on http://127.0.0.1:5173 && cross-env SOTER_STUDIO_DEV_URL=http://127.0.0.1:5173 electron .\"",
     "soter:studio:build": "vite build --config soter/studio/vite.config.ts",
     "soter:studio:test": "vitest run --config soter/studio/vitest.config.ts",

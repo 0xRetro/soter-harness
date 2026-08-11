@@ -10,8 +10,8 @@
     "id": "run.project-pulse.happy-path-fixture",
     "version": null
   },
-  "configurationLockFingerprint": "sha256:88351a53b495efa02de135ee91c1943d8532bc8bd36fca6846a96f9867b4c36d",
-  "graphFingerprint": "sha256:6b476975036a12d799546214c9461d8dfc522f813ba19c0f8c535829480d6701",
+  "configurationLockFingerprint": "sha256:26cb72d42c433ecbd1e9cb5e308e6aa9f795f491f003a5f3300716ad10ebb8ad",
+  "graphFingerprint": "sha256:c1abe179cbb889e1539d7beb418dfbeebaf2ec5e1c7cccdb776acf57c8ddca7d",
   "dependencies": [
     {
       "id": "kernel.soter",
@@ -241,7 +241,7 @@
     {
       "role": "context-snapshot",
       "id": "context.project-pulse.happy-path-fixture",
-      "fingerprint": "sha256:aec2a4c27524e806b977ee6b30afa04ee130c17179e00f0c4749b7636d1482dd"
+      "fingerprint": "sha256:a087ff14608044abed144e5f03412b10f7e97ce612c61110d92afaf1a2ea00db"
     },
     {
       "role": "project-pulse-preview",
