@@ -55,7 +55,7 @@ table below is the banned list.
 | check rule | enforcement | one mechanical validation the checker runs; declared as data |
 | green carries evidence | enforcement | a pass must prove work happened — an empty scan is an error, never a pass |
 | turn gate | enforcement | the end-of-turn check that holds a turn open once while checker errors stand; warnings and non-harness projects never block (ADR-0035) |
-| gate | governance | a checkpoint a change must pass; the human gate is merge approval |
+| gate | governance | a checkpoint a change must pass; the human gate is merge approval for a repo change, an approved proposal for an irreversible external write (ADR-0060) |
 | ADR | governance | an append-only decision record in `decisions/`; immutable once Accepted — supersede, never edit |
 | staged | governance | merged but user-invoke-only, not in the guide index — every new piece starts here |
 | promoted | governance | earned a guide-index entry through real use. Read-only guides also gain auto-invocation; side-effecting guides (they write, commit, dispatch, send) keep `disable-model-invocation` forever — indexed but never auto-firing (`/forge` is the exemplar) |

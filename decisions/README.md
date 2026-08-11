@@ -63,3 +63,5 @@ supersede, never edit. Written via `/writing-adrs` from `.claude/templates/adr.m
 | [ADR-0056](ADR-0056-promote-promoting-pieces.md) | Promote promoting-pieces to the guide index | Accepted |
 | [ADR-0057](ADR-0057-calendar-context-system.md) | The calendar context system — the commitments registry, never a mirror | Accepted |
 | [ADR-0058](ADR-0058-capabilities-details-config.md) | Capabilities by area is a hand-authored details list, not a linked view | Proposed |
+| [ADR-0059](ADR-0059-instruction-homes.md) | Where a durable instruction lives — four homes, one job each | Proposed |
+| [ADR-0060](ADR-0060-gate-scoped-by-irreversibility.md) | The hard gate is scoped by irreversibility | Accepted |
