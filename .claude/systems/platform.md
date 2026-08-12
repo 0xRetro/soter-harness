@@ -78,3 +78,12 @@ session · guide
 - no other system's content references claude-code specifics beyond the type names —
   enforcer: checker `PLATFORM_COUPLING` (token scan of every non-platform piece;
   exemption by declared `system: platform`, never by folder)
+- no session mutates git in the ROOT checkout — no commit, staging, or branch switch —
+  whatever branch it holds; it stays parked on `main` — enforcer: checker root guard
+  (`--guard-bash`). Declared HERE end to end: platform owns the invariant and the rule
+  that states it, enforcement realizes it, governance consumes it (an unreviewed commit
+  at root is work escaping the gate). Unconditional by construction — the guard once
+  bailed when root was off main, standing down exactly when the rule was broken
+- a dispatched run never publishes — enforcer: checker publish guard, on the worktree
+  PATH (`.claude/worktrees/`) as well as the branch name, since naming alone let four
+  eval runs out of the net (ADR-0027; bb environments are human sessions and publish)
