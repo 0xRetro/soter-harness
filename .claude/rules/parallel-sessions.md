@@ -22,8 +22,11 @@ may touch this repo or the live stores it writes to.
   worktree`); NEVER `project-default`, which drops the agent into the shared
   project checkout on whatever branch it holds (observed: both presets carried it,
   so every dispatched agent worked there).
-- ALWAYS leave the root checkout parked on `main`, treated as read-only — no
-  session commits there, checks out a branch there, or stages from there.
+- NEVER commit, stage, or switch branches in the root checkout — whatever branch it
+  currently holds. It stays parked on `main`, but the ban does not depend on that:
+  the guard used to bail when root was off main, so breaking the rule switched off
+  its own enforcement and a kept rule looked identical to a broken one (observed:
+  root sat on an unrelated topic branch, guard inert for the duration).
 - ALWAYS fork from up-to-date `origin/main`, and land finished work back on main
   through the human gate promptly — long-lived branches are where drift lives.
 - ALWAYS land with a merge commit; NEVER squash-merge — squashing rewrites the

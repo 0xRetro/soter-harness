@@ -644,8 +644,11 @@ function sessionStartContext(root, cwd) {
       const top = git(['rev-parse', '--show-toplevel']);
       const gitDir = path.resolve(top, git(['rev-parse', '--git-dir']));
       const common = path.resolve(top, git(['rev-parse', '--git-common-dir']));
+      // An off-main root is named, not just reported: the rule parks it on main, so drift there
+      // is a finding a re-grounded session should act on rather than read past.
       where = gitDir === common
         ? `the ROOT checkout on "${branch}" — parked and read-only; do repo work from a session worktree (.claude/rules/parallel-sessions.md)`
+          + (branch === 'main' ? '' : ` — and it is OFF MAIN, which the rule forbids: park it back on main`)
         : `a session worktree on branch "${branch}"`;
     } catch { /* not a git checkout — say nothing about location */ }
     const vs = checkAll(root);
@@ -824,19 +827,34 @@ function guardBashVerdict(cwd, command) {
     const git = (args) => execFileSync('git', ['-C', dir, ...args],
       { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
     const branch = git(['branch', '--show-current']);
-    if (GUARD_PUBLISH.test(command) && /^worktree-agent-/.test(branch))
+    const top = git(['rev-parse', '--show-toplevel']);
+    // A dispatched agent's worktree never publishes. TWO signals, because the branch name
+    // alone proved unreliable: the run that found this named itself worktree-agent-* and
+    // confirmed the guard fired, then reported four sibling eval worktrees on eval/* branches
+    // that were outside the pattern entirely (observed 2026-08-11). Containment had held by
+    // naming luck. The PATH is the signal that does not depend on what a run calls its branch
+    // — every dispatched run is created under .claude/worktrees/ — and the name stays as the
+    // net for a worktree created elsewhere. bb environments live outside the repo and are
+    // human sessions: they publish normally, per parallel-sessions.
+    if (GUARD_PUBLISH.test(command)
+        && (/^(?:worktree-agent-|eval\/)/.test(branch)
+            || /[/\\]\.claude[/\\]worktrees[/\\]/.test(top + path.sep)))
       return 'BLOCKED: agent worktrees never push or open PRs — agent work stays local; '
         + 'commit on your branch and REPORT (the human publishes). '
         + '(.claude/agents/eval-runner.md; running-evals stand-down protocol)';
     if (!GUARD_GIT_MUTATING.test(command)) return null;
-    const top = git(['rev-parse', '--show-toplevel']);
     const gitDir = path.resolve(top, git(['rev-parse', '--git-dir']));
     const common = path.resolve(top, git(['rev-parse', '--git-common-dir']));
     if (gitDir !== common) return null;               // a worktree — sessions belong there
-    if (branch !== 'main') return null;
-    return 'BLOCKED: this git command targets the ROOT checkout on main, which stays '
-      + 'parked and read-only (.claude/rules/parallel-sessions.md, ADR-0027). Run it from '
-      + 'your session worktree instead — or create one: '
+    // NOT `if (branch !== 'main') return null`. That clause made the guard conditional on the
+    // rule already being obeyed: an off-main root switched its own enforcement off, so a
+    // violated invariant and a satisfied one were indistinguishable from outside (observed
+    // 2026-08-11: the root checkout sat on an unrelated topic branch, guard silently inert
+    // for the duration). The invariant is "no session mutates git in the root checkout",
+    // which is checkable whatever branch it holds — so it is checked that way.
+    return `BLOCKED: this git command targets the ROOT checkout (on "${branch}"), which stays `
+      + 'parked and read-only whatever branch it holds (.claude/rules/parallel-sessions.md, '
+      + 'ADR-0027). Run it from your session worktree instead — or create one: '
       + 'git worktree add .claude/worktrees/<topic> -b <branch> origin/main';
   } catch { return null; } // fail-open: not a repo / no git — the prose rule still governs
 }
@@ -1515,6 +1533,35 @@ function selftest() {
       fails.push('guard: an agent-worktree gh pr create was not blocked');
     if (guardBashVerdict(wtA, 'git commit -m "y"'))
       fails.push('guard: an agent-worktree local commit was wrongly blocked');
+    // An eval-named worktree publishes no more freely than a worktree-agent-named one: four
+    // ran on eval/* branches outside the old pattern, contained only by naming luck (SHV-43).
+    const wtE = path.join(groot, 'wte');
+    gg(['worktree', 'add', '-q', wtE, '-b', 'eval/happy-path-selftest']);
+    if (!guardBashVerdict(wtE, 'git push -u origin HEAD'))
+      fails.push('guard: an eval/*-branch worktree push was not blocked (SHV-43 branch-pattern gap)');
+    if (!guardBashVerdict(wtE, 'gh pr create --title x --body y'))
+      fails.push('guard: an eval/*-branch gh pr create was not blocked');
+    if (guardBashVerdict(wtE, 'git commit -m "y"'))
+      fails.push('guard: an eval-worktree local commit was wrongly blocked');
+    // Path signal, independent of the branch name: a worktree under .claude/worktrees/ is a
+    // dispatched run whatever it calls its branch — this is the half that does not need a list.
+    const wtP = path.join(groot, '.claude', 'worktrees', 'unnamed');
+    gg(['worktree', 'add', '-q', wtP, '-b', 'nothing-matching-the-pattern']);
+    if (!guardBashVerdict(wtP, 'git push -u origin HEAD'))
+      fails.push('guard: a .claude/worktrees/ run with an unmatched branch name was not blocked');
+    // Root-off-main: the invariant is "no session mutates git at root", not "root is on main".
+    // The old guard bailed when branch !== main, so breaking the rule disabled its own
+    // enforcement — a violated and a satisfied invariant looked identical (SHV-26).
+    gg(['checkout', '-q', '-b', 'the-lab/dependency-refresh']);
+    if (!guardBashVerdict(groot, 'git commit -m "y"'))
+      fails.push('guard: a commit at the root checkout OFF main was not blocked (guard stood down when the rule was already broken)');
+    if (!guardBashVerdict(groot, 'git add file'))
+      fails.push('guard: staging at the root checkout OFF main was not blocked');
+    if (guardBashVerdict(groot, 'git worktree add .claude/worktrees/y -b topic origin/main'))
+      fails.push('guard: the bootstrap worktree-add at an off-main root was wrongly blocked');
+    if (guardBashVerdict(wt, 'git commit -m "y"'))
+      fails.push('guard: a worktree commit was wrongly blocked while root sat off main');
+    gg(['checkout', '-q', 'main']);
     // Post-compaction re-grounding: root-vs-worktree identification, fail-open off-harness.
     if (sessionStartContext(groot, groot) !== null)
       fails.push('session-start: a non-harness root did not fail open (SCAN_EMPTY must silence it)');
