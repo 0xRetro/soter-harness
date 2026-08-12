@@ -52,7 +52,14 @@ are mechanisms OF the systems that use them.
   the server "Connected", which is about the SERVER, not about the tool name an
   allowlist has to match).
 - `.claude/rules/parallel-sessions.md` — the multi-session operating rule: one
-  session = one worktree = one branch; root checkout parked on main (ADR-0027)
+  environment = one branch holding at most one WRITING session; dispatched agents
+  get their own; root checkout parked on main; plus the shared-live-state half —
+  compare-and-set token where a store offers one, fetch-merge-write where it does
+  not, claim-and-search on append-only queues (ADR-0027, ADR-0030, ADR-0062)
+- `.bb/AGENTS.md` — the provider-neutral instruction pointer bb injects into every
+  thread in this workspace (`<workspace>/.bb/AGENTS.md`, all providers, tracked so
+  fresh worktrees carry it). Holds no rules of its own; points at CLAUDE.md,
+  `.claude/rules/` and the RUBRIC, so a codex session reaches them (ADR-0062)
 - per-primitive usage standards — authored via the forge ONLY on an observed RED
   baseline. Hooks evaluated 2026-07-14: baseline GREEN — a fresh agent wired a new
   guard correctly from the existing rules, cards, and checker precedents alone, so
@@ -60,7 +67,8 @@ are mechanisms OF the systems that use them.
   immutability guard, ADR-0044). Re-propose only on an observed hook-authoring failure.
 
 ## Concepts
-hook · skill · agent · command · script · worktree · subagent · session · guide
+hook · skill · agent · command · script · worktree · environment · subagent ·
+session · guide
 
 ## Invariants
 - physical layout is platform-shaped (`.claude/skills/` etc.); a piece's system is
