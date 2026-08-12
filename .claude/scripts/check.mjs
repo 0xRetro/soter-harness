@@ -736,6 +736,61 @@ function bashWriteToAcceptedAdr(cwd, command) {
   }
   return null;
 }
+// EXTERNAL-WRITE GATE, SHELL ROUTE (ADR-0060): a PreToolUse hook refuses any Notion MCP
+// mutation no approved proposal covers — but the same API is a curl away, and that route was
+// ungated. A gate with a known hole is worse than no gate: it implies coverage it does not
+// have. Closed here, in the one shared checker, rather than in a second script (CLAUDE.md).
+//
+// Two departures from the guards above, both straight out of ADR-0060's scope. An external
+// record write has no undo, so this clause fails CLOSED: a call it cannot read as a plain
+// read is gated, and an approval store it cannot reach means "not covered". And it answers
+// no approval question itself — the Soter plugin holds the proposals, so this asks the same
+// authority the MCP hook asks, in the same event shape, and one approval means the same
+// thing on both routes. It reads the WHOLE command string, so a command that merely QUOTES
+// a Notion write is blocked too (observed while building this: echoing a test event into
+// `--guard-bash` tripped it). That is the side to err on — the ADR clause above is the same.
+const NOTION_API = /\bapi\.notion\.com\b/;
+// The API's read-by-POST endpoints: search and query read, they never write.
+const NOTION_API_READ = /api\.notion\.com\/v1\/(?:search\b|(?:databases|data_sources)\/[\w-]+\/query\b)/i;
+const NOTION_API_URL = /https?:\/\/api\.notion\.com\/\S*/gi;
+// A mutating HTTP call, spelled however a shell reaches for one — an explicit verb (curl,
+// wget, httpie), a client library's method, or a request body, which implies POST.
+const HTTP_WRITE_SHAPE = new RegExp([
+  '(?:-X|--request|--method)[\\s=]+[\'"]?(?:POST|PATCH|PUT|DELETE)\\b',   // curl -X POST
+  '\\b(?:POST|PATCH|PUT|DELETE)\\s+https?:\\/\\/api\\.notion\\.com',      // httpie: http POST <url>
+  '\\.(?:post|patch|put|delete)\\s*\\(',                                  // requests.post( / axios.patch(
+  'method\\s*[:=]\\s*[\'"](?:POST|PATCH|PUT|DELETE)',                     // fetch(url, {method: 'POST'})
+  '--post-data\\b|--post-file\\b',                                        // wget
+  '\\s(?:-d|--data(?:-raw|-binary|-urlencode|-ascii)?|--json|-F|--form|-T|--upload-file)\\b',
+].join('|'), 'i');
+function bashWritesToNotionApi(command) {
+  if (!NOTION_API.test(command)) return false;         // not the Notion API at all
+  if (!HTTP_WRITE_SHAPE.test(command)) return false;   // GET-shaped — reads pass
+  const urls = command.match(NOTION_API_URL) || [];
+  // EVERY Notion URL in the command must be a read endpoint. Asking "does a read endpoint
+  // appear" instead would wave through `curl …/query … && curl -X POST …/pages`.
+  return !(urls.length && urls.every((u) => NOTION_API_READ.test(u)));
+}
+// Null when an approved proposal covers this write, else why it does not. The gate reads the
+// hook event handed to `bb soter gate --event "$(cat)"` and matches the Notion ids inside it
+// against open approvals — a curl carries its ids in the URL and body, so the same event
+// shape works. Any non-zero exit — refused, bb absent, bb not running, timeout — is a no.
+function notionWriteUncovered(command) {
+  try {
+    execFileSync(process.env.BB_CLI || 'bb',
+      ['soter', 'gate', '--event', JSON.stringify({ tool_name: 'Bash', tool_input: { command } })],
+      { stdio: ['ignore', 'pipe', 'pipe'], timeout: 15000 });
+    return null;
+  } catch (e) {
+    return (e?.stderr?.toString() || '').trim() || 'the approval store could not be reached';
+  }
+}
+const NOTION_SHELL_BLOCK_MSG = (why) => 'BLOCKED: this command writes to the Notion API from the shell, '
+  + 'which routes around the gate on the Notion write tools. An external record write has no undo, so it '
+  + 'is gated wherever it comes from (ADR-0060). Raise the write with soter_propose, end your turn, and '
+  + 'once it is approved make the write through the Notion MCP tool — not curl. If this was a READ, use '
+  + `notion-fetch / notion-search, or a plain GET.\n\n${why}`;
+
 function guardBashVerdict(cwd, command) {
   try {
     if (!command) return null;
@@ -745,6 +800,11 @@ function guardBashVerdict(cwd, command) {
         + 'push your own branch with --force-with-lease instead.';
     const adrHit = bashWriteToAcceptedAdr(cwd, command);
     if (adrHit) return ADR_BLOCK_MSG(adrHit);
+    // Fails closed, unlike every clause around it — see the ADR-0060 note above.
+    if (bashWritesToNotionApi(command)) {
+      const why = notionWriteUncovered(command);
+      if (why) return NOTION_SHELL_BLOCK_MSG(why);
+    }
     if (!(GUARD_GIT_MUTATING.test(command) || GUARD_PUBLISH.test(command))) return null;
     // `git add -A/--all` is banned EVERYWHERE, not just at root-on-main — it once swept
     // another session's worktree gitlink into a commit (ADR-0027). Needs no repo state;
@@ -1514,11 +1574,51 @@ function selftest() {
     fs.rmSync(adrRoot, { recursive: true, force: true });
   }
 
+  // --- Stage 9: external-write gate, shell route (ADR-0060) — a shell command that writes to
+  // the Notion API is gated like the MCP write tools; reads (GET, and the API's read-by-POST
+  // search/query endpoints) pass. Classification is asserted on the pure detector so no case
+  // depends on whether bb is reachable; the two end-to-end cases prove the wiring, and the
+  // blocked one is deterministic either way — no approval can cover an all-zero id.
+  const nid = '00000000-0000-4000-8000-000000000000';
+  const auth = '-H "Authorization: Bearer $NOTION_API_KEY"';
+  const notionWrites = [
+    [`curl -X POST https://api.notion.com/v1/pages ${auth} -d '{"parent":{"database_id":"${nid}"}}'`, 'a POST creating a page'],
+    [`curl -X PATCH https://api.notion.com/v1/pages/${nid} ${auth} -d '{"archived":true}'`, 'a PATCH updating a page'],
+    [`curl https://api.notion.com/v1/pages ${auth} --json '{"parent":{"page_id":"${nid}"}}'`, 'a body-implied POST with no -X'],
+    [`curl -X DELETE https://api.notion.com/v1/blocks/${nid} ${auth}`, 'a DELETE on a block'],
+    [`curl -X POST https://api.notion.com/v1/databases/${nid}/query -d '{}' && curl -X POST https://api.notion.com/v1/pages -d @body.json`, 'a query-then-create compound'],
+    [`python3 -c "requests.post('https://api.notion.com/v1/pages', json=p)"`, 'a write through a client library'],
+    [`http POST https://api.notion.com/v1/pages parent:='{"page_id":"${nid}"}'`, 'an httpie write'],
+  ];
+  const notionReads = [
+    [`curl ${auth} https://api.notion.com/v1/pages/${nid}`, 'a bare GET fetching a page'],
+    [`curl -X GET ${auth} https://api.notion.com/v1/databases/${nid}`, 'an explicit GET'],
+    [`curl -X POST https://api.notion.com/v1/search ${auth} -d '{"query":"x"}'`, 'a POST to the search endpoint'],
+    [`curl -X POST https://api.notion.com/v1/databases/${nid}/query ${auth} -d '{}'`, 'a POST to the query endpoint'],
+    ['curl -X POST https://example.com/hook -d @payload.json', 'a POST to a non-Notion host'],
+    ['grep -rn api.notion.com .claude/skills', 'a grep mentioning the API host'],
+  ];
+  const nroot = mkroot('checker-notion-');
+  try {
+    for (const [cmd, what] of notionWrites)
+      if (!bashWritesToNotionApi(cmd)) fails.push(`notion-guard: ${what} was not read as a write`);
+    for (const [cmd, what] of notionReads)
+      if (bashWritesToNotionApi(cmd)) fails.push(`notion-guard: ${what} was wrongly read as a write`);
+    if (!guardBashVerdict(nroot, notionWrites[0][0]))
+      fails.push('notion-guard: an uncovered shell write to the Notion API was not blocked (fails closed)');
+    if (guardBashVerdict(nroot, notionReads[0][0]))
+      fails.push('notion-guard: a read-only GET against the Notion API was wrongly blocked');
+  } catch (e) {
+    fails.push(`notion-guard fixture errored: ${e.message}`);
+  } finally {
+    fs.rmSync(nroot, { recursive: true, force: true });
+  }
+
   if (fails.length) {
     for (const f of fails) console.error(`SELFTEST FAIL: ${f}`);
     process.exit(1);
   }
-  console.log(`SELFTEST PASS: ${mustFire.length} codes fired; clean silent; empty-root fails; alias-table guard live; default-root aim verified; golden freshness live; root-main guard live; adr-immutability guard live; session-start re-grounding live.`);
+  console.log(`SELFTEST PASS: ${mustFire.length} codes fired; clean silent; empty-root fails; alias-table guard live; default-root aim verified; golden freshness live; root-main guard live; adr-immutability guard live; notion shell-write gate live; session-start re-grounding live.`);
 }
 
 // ---------- main ---------------------------------------------------------------
