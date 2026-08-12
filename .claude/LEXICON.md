@@ -78,9 +78,10 @@ table below is the banned list.
 | agent | platform | an isolated-context delegate with its own tools/prompt |
 | command | platform | a typeable shortcut over existing capability |
 | script | platform | logic that is executed, never read into context |
-| worktree | platform | an isolated git working copy; the unit of session isolation — one per session (ADR-0027) — and the sandbox for authoring |
+| worktree | platform | an isolated git working copy; the git half of an environment, and the sandbox for authoring |
+| environment | platform | where a session runs: one worktree on one branch — the unit of isolation, holding at most one WRITING session (ADR-0062) |
 | subagent | platform | an agent spawned for one task (testing, exploration) |
-| session | platform | one running Claude instance (interactive or agent) touching the repo; one session = one worktree = one branch (ADR-0027) |
+| session | platform | one running agent instance (any provider, interactive or dispatched) touching the repo; bb surfaces it as a thread (ADR-0062) |
 | add-on | governance | a modular bundle of context/automation pieces that stacks on the kernel, reusing its molds, checker, and lexicon (ADR-0012) |
 | decree | governance | bringing a system into existence by ADR before it has pieces; the other birth path is ≥3 real pieces + a named consumer (ADR-0017) |
 | publish | publishing | to send a harness work-artifact to an external store |
