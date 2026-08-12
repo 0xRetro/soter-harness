@@ -21,6 +21,9 @@ warning), reviewers (the mechanical floor).
   ADR-immutability guard (`--guard-write` + a Bash-guard clause, block: any edit or
   shell write to an Accepted ADR except its own Status flip to Superseded; fail-open
   on unparseable input, ADR-0044),
+  external-write gate, shell route (a Bash-guard clause, block: a shell write to the
+  Notion API that no approved proposal covers — the Soter plugin answers coverage,
+  reads pass; fails CLOSED, alone among these, because the write has no undo, ADR-0060),
   turn gate (`--gate`, block: holds a turn open ONCE while checker errors stand;
   warnings never block; fail-open off-harness and on any internal error, ADR-0035),
   post-compaction re-grounding (`--session-start`, inject-only: emits where-am-I
